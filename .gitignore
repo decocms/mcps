@@ -1,0 +1,28 @@
+
+# Environment files
+.env
+.dev.vars
+
+# Build files
+.wrangler/
+
+# Node modules
+node_modules
+package-lock.json
+
+node_modules/
+
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
+.nitro
+.tanstack
+
+# SpecStory development history
+.specstory/
+
+# Auto-generated templates
+template-minimal/
