@@ -10,7 +10,7 @@
     "gen": "deco gen --output=shared/deco.gen.ts",
     "deploy": "npm run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
-    "build": "vite build"
+    "build": "bun --bun vite build"
   },
   "dependencies": {
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@0.23.2",
