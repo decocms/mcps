@@ -53,18 +53,20 @@ try {
   // Deploy
   const deployToken = process.env.DECO_DEPLOY_TOKEN;
   if (!deployToken) {
-    console.error("❌ Error: DECO_DEPLOY_TOKEN environment variable is required");
+    console.error(
+      "❌ Error: DECO_DEPLOY_TOKEN environment variable is required",
+    );
     process.exit(1);
   }
 
   console.log(`🚀 Deploying to ${isPreview ? "preview" : "production"}...`);
-  
+
   const deployCmd = isPreview
     ? $`deco deploy -y --no-promote ./dist/server -t ${deployToken}`
     : $`deco deploy -y ./dist/server -t ${deployToken}`;
 
   const result = await deployCmd.quiet();
-  
+
   // Try to extract preview URL from output if in preview mode
   if (isPreview) {
     const output = result.stdout.toString();
@@ -73,7 +75,7 @@ try {
       const previewUrl = urlMatch[0];
       console.log(`\n✅ Preview deployed successfully!`);
       console.log(`🔗 Preview URL: ${previewUrl}`);
-      
+
       // Output for GitHub Actions to capture
       console.log(`\n::set-output name=preview_url::${previewUrl}`);
       console.log(`::set-output name=mcp_name::${mcpName}`);
@@ -87,4 +89,3 @@ try {
   console.error(`\n❌ Deployment failed for ${mcpName}:`, error);
   process.exit(1);
 }
-

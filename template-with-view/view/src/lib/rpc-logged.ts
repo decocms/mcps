@@ -10,7 +10,7 @@ const persistToolCall = (entry: {
   output: any;
 }) => {
   const key = "toolCalls";
-  const existing: typeof entry[] = JSON.parse(
+  const existing: (typeof entry)[] = JSON.parse(
     localStorage.getItem(key) ?? "[]",
   );
   const updated = [...existing, entry];
@@ -37,7 +37,7 @@ export const client = new Proxy(rawClient, {
       const input = args[0];
 
       try {
-        const output = await orig.apply(this, args);
+        const output = await orig.apply(target, args);
         persistToolCall({
           timestamp: Date.now(),
           tool: String(prop),

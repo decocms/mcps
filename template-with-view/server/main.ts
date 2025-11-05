@@ -5,10 +5,7 @@
  * application at /.
  */
 import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
-import {
-  type Env as DecoEnv,
-  StateSchema,
-} from "../shared/deco.gen.ts";
+import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
@@ -20,11 +17,12 @@ import { views } from "./views.ts";
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv & DecoEnv & {
-  ASSETS: {
-    fetch: (request: Request, init?: RequestInit) => Promise<Response>;
+export type Env = DefaultEnv &
+  DecoEnv & {
+    ASSETS: {
+      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
+    };
   };
-};
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {

@@ -5,13 +5,18 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "5.9.3",
+    "oxfmt": "^0.9.0",
+    "oxlint": "^1.26.0"
   },
   "scripts": {
-    "new": "bun scripts/new.ts"
+    "new": "bun scripts/new.ts",
+    "fmt": "oxfmt",
+    "lint": "oxlint",
+    "check": "bun run --filter=* check"
   },
   "workspaces": [
-    "object-storage",
     "shared",
     "template-with-view"
   ]

@@ -29,11 +29,15 @@
       "@/*": ["./view/src/*"],
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"]
+      "worker/*": ["./worker/*"],
+      "npm:@cloudflare/workers-types@*": ["node_modules/@cloudflare/workers-types"],
+      "npm:zod@*": ["node_modules/zod"],
+      "npm:@modelcontextprotocol/sdk@*/types.js": ["node_modules/@modelcontextprotocol/sdk/dist/esm/types.d.ts"],
+      "npm:@mastra/core@*": ["node_modules/@mastra/core"]
     },
 
     /* Types */
-    "types": ["vite/client"]
+    "types": ["vite/client", "@cloudflare/workers-types"]
   },
   "include": [
     "view",

@@ -16,9 +16,7 @@ const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-const routeTree = rootRoute.addChildren([
-  HomePage(rootRoute),
-]);
+const routeTree = rootRoute.addChildren([HomePage(rootRoute)]);
 
 const queryClient = new QueryClient();
 

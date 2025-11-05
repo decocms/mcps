@@ -8,9 +8,7 @@
 import { userTools } from "./user.ts";
 
 // Export all tools from all domains
-export const tools = [
-  ...userTools,
-];
+export const tools = [...userTools];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "./user.ts";

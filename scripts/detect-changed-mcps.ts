@@ -18,22 +18,25 @@ const headRef = args[1] || "HEAD";
 function getAllMcps(): string[] {
   const repoRoot = process.cwd();
   const entries = readdirSync(repoRoot);
-  
-  const mcps = entries.filter(entry => {
+
+  const mcps = entries.filter((entry) => {
     const fullPath = join(repoRoot, entry);
-    
+
     // Must be a directory
     if (!statSync(fullPath).isDirectory()) return false;
-    
+
     // Skip special directories
-    if (['.git', '.github', 'node_modules', 'scripts', 'shared'].includes(entry)) return false;
-    
+    if (
+      [".git", ".github", "node_modules", "scripts", "shared"].includes(entry)
+    )
+      return false;
+
     // Must have a package.json
-    if (!existsSync(join(fullPath, 'package.json'))) return false;
-    
+    if (!existsSync(join(fullPath, "package.json"))) return false;
+
     return true;
   });
-  
+
   return mcps;
 }
 
@@ -41,7 +44,7 @@ function getAllMcps(): string[] {
 async function getChangedFiles(): Promise<string[]> {
   try {
     const result = await $`git diff --name-only ${baseRef}...${headRef}`.text();
-    return result.trim().split('\n').filter(Boolean);
+    return result.trim().split("\n").filter(Boolean);
   } catch (error) {
     console.error("Error getting git diff:", error);
     // Fallback: check all MCPs
@@ -53,14 +56,16 @@ async function getChangedFiles(): Promise<string[]> {
 async function getChangedMcps(): Promise<string[]> {
   const allMcps = getAllMcps();
   const changedFiles = await getChangedFiles();
-  
+
   if (changedFiles.length === 0) {
-    console.error("No changed files detected or git diff failed, checking all MCPs");
+    console.error(
+      "No changed files detected or git diff failed, checking all MCPs",
+    );
     return allMcps;
   }
-  
+
   const changedMcps = new Set<string>();
-  
+
   for (const file of changedFiles) {
     // Check if file is in an MCP directory
     for (const mcp of allMcps) {
@@ -69,7 +74,7 @@ async function getChangedMcps(): Promise<string[]> {
       }
     }
   }
-  
+
   return Array.from(changedMcps);
 }
 
@@ -81,8 +86,9 @@ console.log(JSON.stringify(changedMcps));
 
 // Also log to stderr for debugging (won't interfere with JSON output)
 if (changedMcps.length > 0) {
-  console.error(`\n✅ Detected ${changedMcps.length} changed MCP(s): ${changedMcps.join(', ')}`);
+  console.error(
+    `\n✅ Detected ${changedMcps.length} changed MCP(s): ${changedMcps.join(", ")}`,
+  );
 } else {
   console.error("\n📭 No MCP changes detected");
 }
-

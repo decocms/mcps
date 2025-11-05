@@ -9,6 +9,7 @@
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "deploy": "npm run build && deco deploy ./dist/server",
+    "check": "tsc --noEmit",
     "build": "vite build"
   },
   "dependencies": {
@@ -33,14 +34,18 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@decocms/mcps-shared": "1.0.0",
     "@cloudflare/vite-plugin": "^1.13.4",
-    "concurrently": "^9.2.0",
-    "deco-cli": "^0.23.3",
-    "typescript": "^5.7.2",
+    "@cloudflare/workers-types": "^4.20251014.0",
+    "@decocms/mcps-shared": "1.0.0",
+    "@mastra/core": "^0.24.0",
+    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@types/mime-db": "^1.43.6",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.0",
+    "deco-cli": "^0.23.3",
+    "typescript": "^5.7.2",
     "vite": "7.2.0",
     "wrangler": "^4.28.0"
   },

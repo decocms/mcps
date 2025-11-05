@@ -52,9 +52,11 @@ const OPERATIONS = [
   })),
 ];
 
-async function fixCloudflareBuild(
-  { outputDirectory }: { outputDirectory: string },
-) {
+async function fixCloudflareBuild({
+  outputDirectory,
+}: {
+  outputDirectory: string;
+}) {
   const files = await fs.readdir(outputDirectory);
 
   const isCloudflareViteBuild = files.some((file) => file === "wrangler.json");
@@ -63,16 +65,18 @@ async function fixCloudflareBuild(
     return;
   }
 
-  const results = await Promise.allSettled(OPERATIONS.map(async (operation) => {
-    if (operation.type === "remove") {
-      await fs.rm(path.join(outputDirectory, operation.file));
-    } else if (operation.type === "rename") {
-      await fs.rename(
-        path.join(outputDirectory, operation.oldFile),
-        path.join(outputDirectory, operation.newFile),
-      );
-    }
-  }));
+  const results = await Promise.allSettled(
+    OPERATIONS.map(async (operation) => {
+      if (operation.type === "remove") {
+        await fs.rm(path.join(outputDirectory, operation.file));
+      } else if (operation.type === "rename") {
+        await fs.rename(
+          path.join(outputDirectory, operation.oldFile),
+          path.join(outputDirectory, operation.newFile),
+        );
+      }
+    }),
+  );
 
   results.forEach((result) => {
     if (result.status === "rejected") {

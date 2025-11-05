@@ -67,17 +67,13 @@ function ToolCallItem({ call }: { call: ToolCall }) {
         <div className="px-3 py-2 border-t border-slate-700 space-y-2">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-slate-400">
-                Input:
-              </span>
+              <span className="text-xs font-medium text-slate-400">Input:</span>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() =>
-                  copyToClipboard(
-                    JSON.stringify(call.input, null, 2),
-                    "Input",
-                  )}
+                  copyToClipboard(JSON.stringify(call.input, null, 2), "Input")
+                }
                 className="h-5 px-1.5"
               >
                 <Copy className="w-3 h-3" />
@@ -100,7 +96,8 @@ function ToolCallItem({ call }: { call: ToolCall }) {
                   copyToClipboard(
                     JSON.stringify(call.output, null, 2),
                     "Output",
-                  )}
+                  )
+                }
                 className="h-5 px-1.5"
               >
                 <Copy className="w-3 h-3" />
@@ -148,12 +145,15 @@ function ToolCallsTable() {
       </div>
 
       <div className="space-y-1 max-h-64 overflow-y-auto">
-        {calls.slice().reverse().map((call) => (
-          <ToolCallItem
-            key={`call-${call.tool}-${call.timestamp}`}
-            call={call}
-          />
-        ))}
+        {calls
+          .slice()
+          .reverse()
+          .map((call) => (
+            <ToolCallItem
+              key={`call-${call.tool}-${call.timestamp}`}
+              call={call}
+            />
+          ))}
       </div>
     </div>
   );
