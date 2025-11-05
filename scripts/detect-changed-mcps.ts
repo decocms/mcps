@@ -25,9 +25,16 @@ function getAllMcps(): string[] {
     // Must be a directory
     if (!statSync(fullPath).isDirectory()) return false;
 
-    // Skip special directories
+    // Skip special directories and templates
     if (
-      [".git", ".github", "node_modules", "scripts", "shared"].includes(entry)
+      [
+        ".git",
+        ".github",
+        "node_modules",
+        "scripts",
+        "shared",
+        "template-with-view",
+      ].includes(entry)
     )
       return false;
 
