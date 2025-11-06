@@ -8,7 +8,6 @@ import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
 import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-import { views } from "./views.ts";
 
 /**
  * This Env type is the main context object that is passed to
@@ -53,7 +52,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     state: StateSchema,
   },
-  views,
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.
