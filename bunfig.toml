@@ -1,0 +1,9 @@
+# Bun configuration file
+
+[install]
+# Configure JSR registry
+registry = "https://registry.npmjs.org"
+
+[install.scopes]
+"@jsr" = { token = "", url = "https://npm.jsr.io" }
+

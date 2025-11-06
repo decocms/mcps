@@ -16,6 +16,7 @@ import { parseArgs } from "util";
 import { join } from "path";
 import { mkdir, readdir, readFile, writeFile, rm } from "fs/promises";
 import { existsSync } from "fs";
+import * as readline from "readline";
 
 type TemplateType = "minimal" | "with-view";
 
@@ -72,6 +73,20 @@ async function removeDirectory(path: string) {
   if (existsSync(path)) {
     await rm(path, { recursive: true, force: true });
   }
+}
+
+async function askQuestion(question: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer: string) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
 }
 
 async function createMinimalTemplate() {
@@ -314,11 +329,22 @@ Examples:
     process.exit(1);
   }
 
+  let noView = values["no-view"] as boolean;
+  const templateWasProvided =
+    process.argv.includes("--template") || process.argv.includes("-t");
+  const noViewWasProvided = process.argv.includes("--no-view");
+
+  if (!templateWasProvided && !noViewWasProvided) {
+    const answer = await askQuestion("Do you want a view in this MCP? (y/n): ");
+    const wantsView = ["s", "sim", "y", "yes"].includes(answer);
+    noView = !wantsView;
+  }
+
   try {
     await createMCP({
       name,
       template,
-      noView: values["no-view"] as boolean,
+      noView,
       description: values.description as string | undefined,
     });
   } catch (error) {
