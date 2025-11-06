@@ -166,7 +166,6 @@ export async function generateImage(
   return makeOpenrouterRequest(env, "chat/completions", body);
 }
 
-// Função de conveniência para manter compatibilidade
 export const createGeminiClient = (env: Env) => ({
   generateImage: (prompt: string, imageUrl?: string, aspectRatio?: string) =>
     generateImage(env, prompt, imageUrl, aspectRatio),

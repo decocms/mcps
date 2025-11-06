@@ -25,14 +25,21 @@ const generateImage = (env: Env) => {
       input.aspectRatio,
     );
 
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      return {
+        error: true,
+        finishReason: "No response from Gemini API",
+      };
+    }
+
     const candidate = response.candidates[0];
-    const inlineData = candidate?.content.parts[0].inline_data;
+    const inlineData = candidate?.content?.parts?.[0]?.inline_data;
 
     // Check if image was generated
     if (!inlineData?.data) {
       return {
         error: true,
-        finishReason: candidate.finishReason || undefined,
+        finishReason: candidate?.finishReason || undefined,
       };
     }
 
