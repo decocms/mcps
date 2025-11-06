@@ -49,9 +49,8 @@ function ImageEditor() {
   const [brushSize, setBrushSize] = useState(5);
   const [showPrompt, setShowPrompt] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState<
-    NonNullable<GENERATE_IMAGEInput["aspectRatio"]>
-  >("1:1");
+  const [aspectRatio, setAspectRatio] =
+    useState<NonNullable<GENERATE_IMAGEInput["aspectRatio"]>>("1:1");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
