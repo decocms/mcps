@@ -8,7 +8,8 @@
         "./vite-plugin": "./deco-vite-plugin.ts",
         "./tools/user": "./tools/user.ts",
         "./tools": "./tools/index.ts",
-        "./image-generators": "./image-generators/index.ts"
+        "./image-generators": "./image-generators/index.ts",
+        "./storage": "./storage/index.ts"
     },
     "devDependencies": {
         "vite": "7.2.0",

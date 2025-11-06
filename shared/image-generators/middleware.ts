@@ -1,24 +1,4 @@
-/**
- * Middleware functions for enhancing image generator tools.
- *
- * These middleware can be composed to add retry logic, logging,
- * timeout, billing/contract management, and other cross-cutting concerns.
- */
 import { z } from "zod";
-
-/**
- * Wraps a function with automatic retry logic using exponential backoff.
- *
- * @param fn - The function to wrap
- * @param maxRetries - Maximum number of retry attempts (default: 3)
- *
- * @example
- * ```typescript
- * const generateWithRetry = withRetry(async (input, env) => {
- *   return await callImageAPI(input);
- * }, 3);
- * ```
- */
 export function withRetry<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
   maxRetries = 3,
@@ -32,12 +12,10 @@ export function withRetry<TEnv, TInput, TOutput>(
       } catch (error) {
         lastError = error as Error;
 
-        // Don't retry on validation errors
         if (error instanceof z.ZodError) {
           throw error;
         }
 
-        // Don't retry on client errors (4xx)
         if (
           error instanceof Error &&
           (error.message.includes("400") ||
@@ -49,7 +27,6 @@ export function withRetry<TEnv, TInput, TOutput>(
         }
 
         if (attempt < maxRetries) {
-          // Exponential backoff: 2^attempt seconds
           const delayMs = Math.pow(2, attempt) * 1000;
           console.log(
             `[Retry] Attempt ${attempt} failed, retrying in ${delayMs}ms...`,
@@ -64,23 +41,6 @@ export function withRetry<TEnv, TInput, TOutput>(
     );
   };
 }
-
-/**
- * Wraps a function with logging for monitoring and debugging.
- *
- * Logs the start, completion time, and any errors that occur.
- *
- * @param fn - The function to wrap
- * @param provider - Provider name for log messages
- *
- * @example
- * ```typescript
- * const generateWithLogging = withLogging(
- *   async (input, env) => callImageAPI(input),
- *   "Gemini"
- * );
- * ```
- */
 export function withLogging<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
   provider: string,
@@ -101,21 +61,6 @@ export function withLogging<TEnv, TInput, TOutput>(
     }
   };
 }
-
-/**
- * Wraps a function with timeout logic.
- *
- * @param fn - The function to wrap
- * @param timeoutMs - Timeout in milliseconds
- *
- * @example
- * ```typescript
- * const generateWithTimeout = withTimeout(
- *   async (input, env) => callImageAPI(input),
- *   60000 // 60 seconds
- * );
- * ```
- */
 export function withTimeout<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
   timeoutMs: number,
@@ -132,17 +77,11 @@ export function withTimeout<TEnv, TInput, TOutput>(
   };
 }
 
-/**
- * Contract/Billing authorization clause.
- */
 export interface ContractClause {
   clauseId: string;
   amount: number;
 }
 
-/**
- * Contract interface for billing management.
- */
 export interface Contract {
   CONTRACT_AUTHORIZE: (input: {
     clauses: ContractClause[];
@@ -154,41 +93,9 @@ export interface Contract {
   }) => Promise<void>;
 }
 
-/**
- * Environment that supports contract management.
- */
 export interface ContractEnv {
   DECO_CHAT_WORKSPACE: string;
 }
-
-/**
- * Wraps a function with contract authorization, settlement, retry logic, and logging.
- *
- * This middleware includes:
- * - Contract authorization and settlement for billing
- * - Automatic retry with exponential backoff
- * - Performance and error logging
- *
- * @param fn - The function to wrap
- * @param options - Configuration options
- * @param options.clauseId - The contract clause ID for billing
- * @param options.contract - Name of the contract property in the environment (e.g., "NANOBANANA_CONTRACT")
- * @param options.provider - Provider name for logging (default: "Provider")
- * @param options.maxRetries - Maximum number of retry attempts (default: 3)
- *
- * @example
- * ```typescript
- * const generateWithContract = withContractManagement(
- *   async (input, env) => callImageAPI(input),
- *   {
- *     clauseId: "gemini-2.5-flash-image-preview:generateContent",
- *     contract: "NANOBANANA_CONTRACT",
- *     provider: "Gemini",
- *     maxRetries: 3
- *   }
- * );
- * ```
- */
 export function withContractManagement<
   TEnv extends ContractEnv & Record<string, any>,
   TInput,
@@ -209,26 +116,20 @@ export function withContractManagement<
     maxRetries = 3,
   } = options;
 
-  // Core contract management logic
   const withContract = async (input: TInput, env: TEnv) => {
-    // Get contract from environment
     const contract = env[contractKey] as Contract | undefined;
 
-    // Skip contract management if not configured
     if (!contract) {
       console.log("[Contract] Contract management not configured, skipping...");
       return fn(input, env);
     }
 
-    // Authorize
     const { transactionId } = await contract.CONTRACT_AUTHORIZE({
       clauses: [{ clauseId, amount: 1 }],
     });
 
-    // Execute
     const result = await fn(input, env);
 
-    // Settle
     await contract.CONTRACT_SETTLE({
       transactionId,
       clauses: [{ clauseId, amount: 1 }],
