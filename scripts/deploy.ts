@@ -62,8 +62,8 @@ try {
   console.log(`🚀 Deploying to ${isPreview ? "preview" : "production"}...`);
 
   const deployCmd = isPreview
-    ? $`deco deploy -y --no-promote ./dist/server -t ${deployToken}`
-    : $`deco deploy -y ./dist/server -t ${deployToken}`;
+    ? $`deco deploy -y --public --no-promote ./dist/server -t ${deployToken}`
+    : $`deco deploy -y --public ./dist/server -t ${deployToken}`;
 
   const result = await deployCmd.quiet();
 
