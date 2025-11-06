@@ -1,5 +1,5 @@
 import { createClient } from "@deco/workers-runtime/client";
-import type { Env } from "../../../server/deco.gen.ts";
+import type { Env } from "../../../shared/deco.gen.ts";
 
 type SelfMCP = Env["SELF"];
 

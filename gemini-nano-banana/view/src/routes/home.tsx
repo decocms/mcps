@@ -4,6 +4,7 @@ import { UserButton } from "@/components/user-button";
 import { useOptionalUser } from "@/lib/hooks";
 import { client } from "@/lib/rpc";
 import { createRoute, type RootRoute } from "@tanstack/react-router";
+import type { GENERATE_IMAGEInput } from "../../../shared/deco.gen";
 import {
   ArrowUpRight,
   Circle,
@@ -48,7 +49,9 @@ function ImageEditor() {
   const [brushSize, setBrushSize] = useState(5);
   const [showPrompt, setShowPrompt] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState<string>("1:1");
+  const [aspectRatio, setAspectRatio] = useState<
+    NonNullable<GENERATE_IMAGEInput["aspectRatio"]>
+  >("1:1");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -816,7 +819,13 @@ function ImageEditor() {
               </label>
               <select
                 value={aspectRatio}
-                onChange={(e) => setAspectRatio(e.target.value)}
+                onChange={(e) =>
+                  setAspectRatio(
+                    e.target.value as NonNullable<
+                      GENERATE_IMAGEInput["aspectRatio"]
+                    >,
+                  )
+                }
                 className="w-full p-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="1:1">1:1 (Square - 1024x1024)</option>

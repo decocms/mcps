@@ -33,7 +33,7 @@ export const client = new Proxy(rawClient, {
     const orig = (target as any)[prop];
     if (typeof orig !== "function") return orig;
 
-    return async function (...args: any[]) {
+    return async function (this: any, ...args: any[]) {
       const input = args[0];
 
       try {
