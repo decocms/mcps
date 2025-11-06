@@ -54,6 +54,13 @@ try {
   console.log("🔨 Building...");
   await $`bun run build`;
 
+  // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
+  const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
+  if (existsSync(wranglerJsonPath)) {
+    console.log("🧹 Removing wrangler.json from build output...");
+    await $`rm ${wranglerJsonPath}`;
+  }
+
   // Deploy
   const deployToken = process.env.DECO_DEPLOY_TOKEN;
   if (!deployToken) {
