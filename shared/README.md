@@ -36,8 +36,6 @@ Framework para criar tools de geração de imagem que seguem um contrato padrão
 ```typescript
 import {
   createImageGeneratorTool,
-  withRetry,
-  withLogging,
   withContractManagement,
   saveImageToFileSystem,
   type GenerateImageInput,
@@ -65,7 +63,11 @@ export const generateImage = (env: Env) => {
   return createImageGeneratorTool(env, {
     id: "GENERATE_IMAGE",
     provider: "Seu Provider",
-    execute: withRetry(withLogging(executeGeneration, "Provider"), 3),
+    execute: withContractManagement(executeGeneration, {
+      clauseId: "provider:generateImage",
+      contract: "YOUR_CONTRACT",
+      provider: "Provider",
+    }),
   });
 };
 ```
@@ -110,15 +112,23 @@ Adiciona timeout para prevenir execuções muito longas.
 const timedGeneration = withTimeout(executeGeneration, 60000); // 60 segundos
 ```
 
-##### `withContractManagement(fn, clauseId)`
+##### `withContractManagement(fn, options)`
 
-Adiciona autorização e settlement de contratos para billing.
+Adiciona autorização e settlement de contratos para billing, além de **incluir automaticamente retry e logging**.
+
+Opções:
+- `clauseId` (obrigatório) - ID da cláusula do contrato
+- `contract` (obrigatório) - Nome da propriedade do contrato no environment
+- `provider` (opcional) - Nome do provider para logs (padrão: "Provider")
+- `maxRetries` (opcional) - Número máximo de tentativas (padrão: 3)
 
 ```typescript
-const billedGeneration = withContractManagement(
-  executeGeneration,
-  "gemini-2.5-flash-image-preview:generateContent"
-);
+const billedGeneration = withContractManagement(executeGeneration, {
+  clauseId: "gemini-2.5-flash-image-preview:generateContent",
+  contract: "NANOBANANA_CONTRACT",
+  provider: "Gemini",
+  maxRetries: 3,
+});
 ```
 
 #### Storage Utilities
@@ -146,18 +156,17 @@ const { mimeType, imageData } = extractImageData(response.inline_data);
 
 #### Composição de Middlewares
 
-Middlewares podem ser compostos para adicionar múltiplas funcionalidades:
+O `withContractManagement` já inclui retry e logging automaticamente. Se precisar adicionar timeout ou outros middlewares:
 
 ```typescript
-const robustExecute = withContractManagement(
-  withRetry(
-    withLogging(
-      withTimeout(executeGeneration, 60000),
-      "Gemini"
-    ),
-    3
-  ),
-  "gemini:generateImage"
+const robustExecute = withTimeout(
+  withContractManagement(executeGeneration, {
+    clauseId: "gemini:generateImage",
+    contract: "NANOBANANA_CONTRACT",
+    provider: "Gemini",
+    maxRetries: 3,
+  }),
+  60000
 );
 ```
 
@@ -167,8 +176,6 @@ const robustExecute = withContractManagement(
 // gemini-nano-banana/server/tools/gemini.ts
 import {
   createImageGeneratorTool,
-  withRetry,
-  withLogging,
   withContractManagement,
   saveImageToFileSystem,
   extractImageData,
@@ -216,14 +223,13 @@ const generateImage = (env: Env) => {
     };
   };
 
-  // Apply middlewares
-  const executeWithMiddlewares = withContractManagement(
-    withRetry(
-      withLogging(executeGeneration, "Gemini"),
-      3
-    ),
-    "gemini-2.5-flash-image-preview:generateContent"
-  );
+  // Apply middlewares (retry and logging included automatically)
+  const executeWithMiddlewares = withContractManagement(executeGeneration, {
+    clauseId: "gemini-2.5-flash-image-preview:generateContent",
+    contract: "NANOBANANA_CONTRACT",
+    provider: "Gemini",
+    maxRetries: 3,
+  });
 
   // Create the tool
   return createImageGeneratorTool(env, {
@@ -258,8 +264,7 @@ Para criar um novo MCP de geração de imagem (ex: DALL-E):
 // dall-e/server/tools/generate.ts
 import {
   createImageGeneratorTool,
-  withRetry,
-  withLogging,
+  withContractManagement,
   saveImageToFileSystem,
 } from "@decocms/mcps-shared/image-generators";
 
@@ -276,11 +281,15 @@ const generateImage = (env: Env) => {
     return { image: data.data[0].url };
   };
 
-  // Reutilize todos os helpers!
+  // Reutilize todos os helpers! (retry e logging já incluídos)
   return createImageGeneratorTool(env, {
     id: "GENERATE_IMAGE",
     provider: "DALL-E 3",
-    execute: withRetry(withLogging(executeGeneration, "DALL-E"), 3),
+    execute: withContractManagement(executeGeneration, {
+      clauseId: "dall-e:generateImage",
+      contract: "OPENAI_CONTRACT",
+      provider: "DALL-E",
+    }),
   });
 };
 ```

@@ -76,8 +76,6 @@ export interface ImageGeneratorEnv {
  * Options for creating an image generator tool.
  */
 export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
-  /** Unique identifier for the tool */
-  id: string;
   /** Provider name (e.g., "Gemini", "DALL-E", "Midjourney") */
   provider: string;
   /** Optional custom description */
@@ -113,7 +111,7 @@ export function createImageGeneratorTool<TEnv extends ImageGeneratorEnv>(
   options: CreateImageGeneratorOptions<TEnv>,
 ) {
   return createPrivateTool({
-    id: options.id,
+    id: "GENERATE_IMAGE",
     description:
       options.description || `Generate images using ${options.provider}`,
     inputSchema: GenerateImageInputSchema,

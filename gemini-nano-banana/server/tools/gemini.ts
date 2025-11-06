@@ -1,7 +1,5 @@
 import {
   createImageGeneratorTool,
-  withRetry,
-  withLogging,
   withContractManagement,
   saveImageToFileSystem,
   extractImageData,
@@ -59,15 +57,15 @@ const generateImage = (env: Env) => {
     };
   };
 
-  // Apply middlewares: contract management -> retry -> logging
-  const executeWithMiddlewares = withContractManagement(
-    withRetry(withLogging(executeGeneration, "Gemini"), 3),
-    "gemini-2.5-flash-image-preview:generateContent",
-  );
+  const executeWithMiddlewares = withContractManagement(executeGeneration, {
+    clauseId: "gemini-2.5-flash-image",
+    contract: "NANOBANANA_CONTRACT",
+    provider: "Gemini",
+    maxRetries: 3,
+  });
 
   // Create the tool
   return createImageGeneratorTool(env, {
-    id: "GENERATE_IMAGE",
     provider: "Gemini 2.5 Flash Image Preview",
     description: "Generate an image using the Gemini API",
     execute: executeWithMiddlewares,

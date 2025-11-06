@@ -141,56 +141,82 @@ export interface ContractClause {
 }
 
 /**
+ * Contract interface for billing management.
+ */
+export interface Contract {
+  CONTRACT_AUTHORIZE: (input: {
+    clauses: ContractClause[];
+  }) => Promise<{ transactionId: string }>;
+  CONTRACT_SETTLE: (input: {
+    transactionId: string;
+    clauses: ContractClause[];
+    vendorId: string;
+  }) => Promise<void>;
+}
+
+/**
  * Environment that supports contract management.
  */
 export interface ContractEnv {
   DECO_CHAT_WORKSPACE: string;
-  NANOBANANA_CONTRACT?: {
-    CONTRACT_AUTHORIZE: (input: {
-      clauses: ContractClause[];
-    }) => Promise<{ transactionId: string }>;
-    CONTRACT_SETTLE: (input: {
-      transactionId: string;
-      clauses: ContractClause[];
-      vendorId: string;
-    }) => Promise<void>;
-  };
 }
 
 /**
- * Wraps a function with contract authorization and settlement.
+ * Wraps a function with contract authorization, settlement, retry logic, and logging.
  *
- * This middleware handles billing/authorization before executing the function
- * and settles the contract after successful execution.
+ * This middleware includes:
+ * - Contract authorization and settlement for billing
+ * - Automatic retry with exponential backoff
+ * - Performance and error logging
  *
  * @param fn - The function to wrap
- * @param clauseId - The contract clause ID for billing
+ * @param options - Configuration options
+ * @param options.clauseId - The contract clause ID for billing
+ * @param options.contract - Name of the contract property in the environment (e.g., "NANOBANANA_CONTRACT")
+ * @param options.provider - Provider name for logging (default: "Provider")
+ * @param options.maxRetries - Maximum number of retry attempts (default: 3)
  *
  * @example
  * ```typescript
  * const generateWithContract = withContractManagement(
  *   async (input, env) => callImageAPI(input),
- *   "gemini-2.5-flash-image-preview:generateContent"
+ *   {
+ *     clauseId: "gemini-2.5-flash-image-preview:generateContent",
+ *     contract: "NANOBANANA_CONTRACT",
+ *     provider: "Gemini",
+ *     maxRetries: 3
+ *   }
  * );
  * ```
  */
 export function withContractManagement<
-  TEnv extends ContractEnv,
+  TEnv extends ContractEnv & Record<string, any>,
   TInput,
   TOutput,
 >(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
-  clauseId: string,
+  options: {
+    clauseId: string;
+    contract: string;
+    provider?: string;
+    maxRetries?: number;
+  },
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
-  return async (input: TInput, env: TEnv) => {
+  const { clauseId, contract: contractKey, provider = "Provider", maxRetries = 3 } = options;
+
+  // Core contract management logic
+  const withContract = async (input: TInput, env: TEnv) => {
+    // Get contract from environment
+    const contract = env[contractKey] as Contract | undefined;
+
     // Skip contract management if not configured
-    if (!env.NANOBANANA_CONTRACT) {
+    if (!contract) {
       console.log("[Contract] Contract management not configured, skipping...");
       return fn(input, env);
     }
 
     // Authorize
-    const { transactionId } = await env.NANOBANANA_CONTRACT.CONTRACT_AUTHORIZE({
+    const { transactionId } = await contract.CONTRACT_AUTHORIZE({
       clauses: [{ clauseId, amount: 1 }],
     });
 
@@ -198,7 +224,7 @@ export function withContractManagement<
     const result = await fn(input, env);
 
     // Settle
-    await env.NANOBANANA_CONTRACT.CONTRACT_SETTLE({
+    await contract.CONTRACT_SETTLE({
       transactionId,
       clauses: [{ clauseId, amount: 1 }],
       vendorId: env.DECO_CHAT_WORKSPACE,
@@ -206,4 +232,6 @@ export function withContractManagement<
 
     return result;
   };
+
+  return withRetry(withLogging(withContract, provider), maxRetries);
 }

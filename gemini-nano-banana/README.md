@@ -187,21 +187,22 @@ state: StateSchema.extend({
 
 ### Middlewares de Geração de Imagem
 
-O sistema usa uma arquitetura de middlewares em camadas:
+O sistema usa `withContractManagement` que automaticamente inclui:
 
-1. **Logging Middleware**: Registra início e fim das operações
-2. **Retry Middleware**: Tenta novamente em caso de falha (máx. 3x)
-3. **Contract Management**: Gerencia autorização e pagamento
+1. **Contract Management**: Gerencia autorização e pagamento (camada interna)
+2. **Logging Middleware**: Registra início e fim das operações
+3. **Retry Middleware**: Tenta novamente em caso de falha (máx. 3x, camada externa)
 
 ```typescript
-const executeWithMiddlewares = withContractManagement(
-  withRetry(
-    withLogging(executeGeneration, "Gemini"), 
-    3
-  ),
-  "gemini-2.5-flash-image-preview:generateContent"
-);
+const executeWithMiddlewares = withContractManagement(executeGeneration, {
+  clauseId: "gemini-2.5-flash-image-preview:generateContent",
+  contract: "NANOBANANA_CONTRACT",
+  provider: "Gemini",
+  maxRetries: 3,
+});
 ```
+
+**Vantagens**: Não precisa compor manualmente `withRetry` e `withLogging` - tudo vem incluso!
 
 ### Formato de Input/Output
 
