@@ -37,7 +37,7 @@ export const client = new Proxy(rawClient, {
       const input = args[0];
 
       try {
-        const output = await orig.apply(target, args);
+        const output = await orig.apply(this, args);
         persistToolCall({
           timestamp: Date.now(),
           tool: String(prop),

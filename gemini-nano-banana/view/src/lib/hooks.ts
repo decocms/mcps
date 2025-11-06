@@ -1,5 +1,7 @@
 import { client } from "./rpc-logged";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { FailedToFetchUserError } from "@/components/logged-provider";
 
 export interface User {
@@ -59,3 +61,9 @@ export const useOptionalUser = () => {
     retry: false,
   });
 };
+
+/**
+ * Example hooks from the template
+ */
+
+// (Removed all TODO-related hooks)

@@ -7,7 +7,23 @@
  */
 import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
-import type { Env } from "../main.ts";
+
+/**
+ * Generic Env type that any MCP using user tools must satisfy.
+ * Your MCP's Env type should extend this interface.
+ */
+export interface UserToolsEnv {
+  DECO_CHAT_REQUEST_CONTEXT: {
+    ensureAuthenticated: () => {
+      id: string;
+      email: string;
+      user_metadata: {
+        full_name: string | null;
+        avatar_url: string | null;
+      };
+    } | null | undefined;
+  };
+}
 
 /**
  * `createPrivateTool` is a wrapper around `createTool` that
@@ -18,7 +34,7 @@ import type { Env } from "../main.ts";
  * are not present in the request. You can also call it manually
  * to get the user object.
  */
-export const createGetUserTool = (env: Env) =>
+export const createGetUserTool = <TEnv extends UserToolsEnv>(env: TEnv) =>
   createPrivateTool({
     id: "GET_USER",
     description: "Get the current logged in user",
@@ -47,3 +63,4 @@ export const createGetUserTool = (env: Env) =>
 
 // Export all user-related tools
 export const userTools = [createGetUserTool];
+

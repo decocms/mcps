@@ -11,6 +11,21 @@ import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
 
 /**
+ * Contract authorization clause
+ */
+interface ContractClause {
+  clauseId: string;
+  amount: number;
+}
+
+/**
+ * File system read/write response
+ */
+interface FileSystemUrlResponse {
+  url: string;
+}
+
+/**
  * This Env type is the main context object that is passed to
  * all of your Application.
  *
@@ -21,6 +36,28 @@ export type Env = DefaultEnv &
   DecoEnv & {
     ASSETS: {
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
+    };
+    NANOBANANA_CONTRACT: {
+      CONTRACT_AUTHORIZE: (input: {
+        clauses: ContractClause[];
+      }) => Promise<{ transactionId: string }>;
+      CONTRACT_SETTLE: (input: {
+        transactionId: string;
+        clauses: ContractClause[];
+        vendorId: string;
+      }) => Promise<void>;
+    };
+    FILE_SYSTEM: {
+      FS_READ: (input: {
+        path: string;
+        expiresIn: number;
+      }) => Promise<FileSystemUrlResponse>;
+      FS_WRITE: (input: {
+        path: string;
+        metadata?: Record<string, string>;
+        contentType?: string;
+        expiresIn: number;
+      }) => Promise<FileSystemUrlResponse>;
     };
   };
 

@@ -5,10 +5,10 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { userTools } from "./user.ts";
+import { userTools } from "@decocms/mcps-shared/tools/user";
 
 // Export all tools from all domains
 export const tools = [...userTools];
 
 // Re-export domain-specific tools for direct access if needed
-export { userTools } from "./user.ts";
+export { userTools } from "@decocms/mcps-shared/tools/user";
