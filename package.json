@@ -19,6 +19,7 @@
   "workspaces": [
     "object-storage",
     "shared",
+    "template-minimal",
     "template-with-view"
   ],
   "dependencies": {

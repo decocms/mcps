@@ -39,6 +39,10 @@ console.log(`📁 Path: ${mcpPath}`);
 console.log(`🔧 Mode: ${isPreview ? "Preview" : "Production"}\n`);
 
 try {
+  // Install workspace dependencies first (from root)
+  console.log("📦 Installing workspace dependencies...");
+  await $`bun install`;
+
   // Change to MCP directory
   process.chdir(mcpPath);
 
