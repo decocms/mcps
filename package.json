@@ -17,6 +17,7 @@
     "check": "bun run --filter=* check"
   },
   "workspaces": [
+    "object-storage",
     "shared",
     "template-with-view"
   ]
