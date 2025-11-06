@@ -330,7 +330,8 @@ Examples:
   }
 
   let noView = values["no-view"] as boolean;
-  const templateWasProvided = process.argv.includes("--template") || process.argv.includes("-t");
+  const templateWasProvided =
+    process.argv.includes("--template") || process.argv.includes("-t");
   const noViewWasProvided = process.argv.includes("--no-view");
 
   if (!templateWasProvided && !noViewWasProvided) {
