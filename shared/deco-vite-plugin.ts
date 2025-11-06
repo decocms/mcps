@@ -30,7 +30,6 @@ function shouldPerformDecoGen({ filePath }: { filePath: string }): boolean {
 }
 
 const FILES_TO_REMOVE = [
-  "wrangler.json",
   ".dev.vars",
   // TODO: Support source maps
   "index.js.map",
@@ -68,7 +67,7 @@ async function fixCloudflareBuild({
   const results = await Promise.allSettled(
     OPERATIONS.map(async (operation) => {
       if (operation.type === "remove") {
-        await fs.rm(path.join(outputDirectory, operation.file));
+        await fs.rm(path.join(outputDirectory, operation.file), { force: true });
       } else if (operation.type === "rename") {
         await fs.rename(
           path.join(outputDirectory, operation.oldFile),
