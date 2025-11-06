@@ -14,7 +14,8 @@
     "new": "bun scripts/new.ts",
     "fmt": "oxfmt",
     "lint": "oxlint",
-    "check": "bun run --filter=* check"
+    "check": "bun run --filter=* check",
+    "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
     "object-storage",

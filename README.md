@@ -2,6 +2,22 @@
 
 First-party MCPs maintained by the decocms team.
 
+## Getting Started
+
+After cloning the repository, install dependencies:
+
+```bash
+bun install
+```
+
+This will automatically set up git hooks that run formatting and linting checks before each commit.
+
+To manually set up the git hooks later, run:
+
+```bash
+bun run prepare
+```
+
 ## Creating a New MCP
 
 Use the `new.ts` script to quickly scaffold a new MCP app from templates:
