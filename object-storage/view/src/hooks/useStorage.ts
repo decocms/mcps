@@ -18,7 +18,6 @@ export function useListObjects(params?: {
   return useQuery({
     queryKey: ["objects", params?.prefix, params?.continuationToken],
     queryFn: async () => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.LIST_OBJECTS({
         prefix: params?.prefix,
         maxKeys: params?.maxKeys,
@@ -35,7 +34,6 @@ export function useObjectMetadata(key: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["objectMetadata", key],
     queryFn: async () => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.GET_OBJECT_METADATA({ key });
     },
     enabled: enabled && !!key,
@@ -48,7 +46,6 @@ export function useObjectMetadata(key: string, enabled: boolean = true) {
 export function useGetPresignedUrl() {
   return useMutation({
     mutationFn: async (params: { key: string; expiresIn?: number }) => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.GET_PRESIGNED_URL(params);
     },
   });
@@ -66,7 +63,6 @@ export function usePutPresignedUrl() {
       expiresIn?: number;
       contentType?: string;
     }) => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.PUT_PRESIGNED_URL(params);
     },
     onSuccess: () => {
@@ -85,7 +81,6 @@ export function useDeleteObject() {
 
   return useMutation({
     mutationFn: async (key: string) => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.DELETE_OBJECT({ key });
     },
     onSuccess: () => {
@@ -103,7 +98,6 @@ export function useDeleteObjects() {
 
   return useMutation({
     mutationFn: async (keys: string[]) => {
-      // @ts-expect-error - Types will be available after running `bun run gen`
       return await client.DELETE_OBJECTS({ keys });
     },
     onSuccess: () => {

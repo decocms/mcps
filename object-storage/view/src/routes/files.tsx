@@ -67,7 +67,12 @@ function FileBrowserPage() {
 
   // Extract folders and files from the current prefix
   const folders = new Set<string>();
-  const files: typeof data.objects = [];
+  const files: Array<{
+    key: string;
+    size: number;
+    lastModified: string;
+    etag: string;
+  }> = [];
 
   if (data?.objects) {
     for (const obj of data.objects) {
