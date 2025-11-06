@@ -46,6 +46,4 @@ export const createGetUserTool = (env: Env) =>
   });
 
 // Export all user-related tools
-export const userTools = [
-  createGetUserTool,
-];
+export const userTools = [createGetUserTool];
