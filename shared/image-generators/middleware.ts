@@ -202,7 +202,12 @@ export function withContractManagement<
     maxRetries?: number;
   },
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
-  const { clauseId, contract: contractKey, provider = "Provider", maxRetries = 3 } = options;
+  const {
+    clauseId,
+    contract: contractKey,
+    provider = "Provider",
+    maxRetries = 3,
+  } = options;
 
   // Core contract management logic
   const withContract = async (input: TInput, env: TEnv) => {
