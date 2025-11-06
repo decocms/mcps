@@ -20,5 +20,8 @@
     "object-storage",
     "shared",
     "template-with-view"
-  ]
+  ],
+  "dependencies": {
+    "@types/node": "^24.10.0"
+  }
 }
