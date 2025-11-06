@@ -89,6 +89,9 @@ jobs:
     needs: [detect-changes, deploy]
     if: always() && needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
     steps:
       - name: Download all deployment artifacts
         uses: actions/download-artifact@v4
