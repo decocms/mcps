@@ -67,7 +67,9 @@ async function fixCloudflareBuild({
   const results = await Promise.allSettled(
     OPERATIONS.map(async (operation) => {
       if (operation.type === "remove") {
-        await fs.rm(path.join(outputDirectory, operation.file), { force: true });
+        await fs.rm(path.join(outputDirectory, operation.file), {
+          force: true,
+        });
       } else if (operation.type === "rename") {
         await fs.rename(
           path.join(outputDirectory, operation.oldFile),
