@@ -105,7 +105,7 @@ async function makeOpenrouterRequest(
     );
   }
 
-  const data = await response.json() as OpenRouterResponse;
+  const data = (await response.json()) as OpenRouterResponse;
   const choices = data.choices[0];
 
   const image = choices.message.images?.[0]?.image_url?.url;

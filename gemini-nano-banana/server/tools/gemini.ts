@@ -15,14 +15,14 @@ const generateImage = (env: Env) => {
   // Core generation logic
   const executeGeneration = async (
     input: GenerateImageInput,
-    env: Env
+    env: Env,
   ): Promise<GenerateImageOutput> => {
     // Call Gemini API
     const client = createGeminiClient(env);
     const response = await client.generateImage(
       input.prompt,
       input.baseImageUrl || undefined,
-      input.aspectRatio
+      input.aspectRatio,
     );
 
     const candidate = response.candidates[0];
@@ -54,11 +54,8 @@ const generateImage = (env: Env) => {
 
   // Apply middlewares: contract management -> retry -> logging
   const executeWithMiddlewares = withContractManagement(
-    withRetry(
-      withLogging(executeGeneration, "Gemini"),
-      3
-    ),
-    "gemini-2.5-flash-image-preview:generateContent"
+    withRetry(withLogging(executeGeneration, "Gemini"), 3),
+    "gemini-2.5-flash-image-preview:generateContent",
   );
 
   // Create the tool

@@ -14,14 +14,17 @@ import { z } from "zod";
  */
 export interface UserToolsEnv {
   DECO_CHAT_REQUEST_CONTEXT: {
-    ensureAuthenticated: () => {
-      id: string;
-      email: string;
-      user_metadata: {
-        full_name: string | null;
-        avatar_url: string | null;
-      };
-    } | null | undefined;
+    ensureAuthenticated: () =>
+      | {
+          id: string;
+          email: string;
+          user_metadata: {
+            full_name: string | null;
+            avatar_url: string | null;
+          };
+        }
+      | null
+      | undefined;
   };
 }
 
@@ -63,4 +66,3 @@ export const createGetUserTool = <TEnv extends UserToolsEnv>(env: TEnv) =>
 
 // Export all user-related tools
 export const userTools = [createGetUserTool];
-

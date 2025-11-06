@@ -1,6 +1,6 @@
 /**
  * Storage utilities for saving generated images.
- * 
+ *
  * Provides helpers for storing images in file systems, S3-compatible storage,
  * and other backends.
  */
@@ -60,11 +60,11 @@ export interface SaveImageResult {
 
 /**
  * Saves a base64-encoded image to the file system.
- * 
+ *
  * @param env - Environment with FILE_SYSTEM binding
  * @param options - Save options
  * @returns The URL and path of the saved image
- * 
+ *
  * @example
  * ```typescript
  * const result = await saveImageToFileSystem(env, {
@@ -77,7 +77,7 @@ export interface SaveImageResult {
  */
 export async function saveImageToFileSystem<TEnv extends FileSystemEnv>(
   env: TEnv,
-  options: SaveImageOptions
+  options: SaveImageOptions,
 ): Promise<SaveImageResult> {
   if (!env.FILE_SYSTEM) {
     throw new Error("FILE_SYSTEM binding not configured");
@@ -131,7 +131,7 @@ export async function saveImageToFileSystem<TEnv extends FileSystemEnv>(
 
   if (!uploadResponse.ok) {
     throw new Error(
-      `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`
+      `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`,
     );
   }
 
@@ -143,7 +143,7 @@ export async function saveImageToFileSystem<TEnv extends FileSystemEnv>(
 
 /**
  * Extracts MIME type and data from an inline data object.
- * 
+ *
  * @param inlineData - Inline data object with mime_type and data
  * @returns Object with mimeType and imageData
  */
@@ -159,4 +159,3 @@ export function extractImageData(inlineData: {
     imageData: inlineData.data,
   };
 }
-

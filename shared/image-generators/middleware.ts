@@ -1,6 +1,6 @@
 /**
  * Middleware functions for enhancing image generator tools.
- * 
+ *
  * These middleware can be composed to add retry logic, logging,
  * timeout, billing/contract management, and other cross-cutting concerns.
  */
@@ -8,10 +8,10 @@ import { z } from "zod";
 
 /**
  * Wraps a function with automatic retry logic using exponential backoff.
- * 
+ *
  * @param fn - The function to wrap
  * @param maxRetries - Maximum number of retry attempts (default: 3)
- * 
+ *
  * @example
  * ```typescript
  * const generateWithRetry = withRetry(async (input, env) => {
@@ -21,7 +21,7 @@ import { z } from "zod";
  */
 export function withRetry<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
-  maxRetries = 3
+  maxRetries = 3,
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
   return async (input: TInput, env: TEnv) => {
     let lastError: Error | undefined;
@@ -52,7 +52,7 @@ export function withRetry<TEnv, TInput, TOutput>(
           // Exponential backoff: 2^attempt seconds
           const delayMs = Math.pow(2, attempt) * 1000;
           console.log(
-            `[Retry] Attempt ${attempt} failed, retrying in ${delayMs}ms...`
+            `[Retry] Attempt ${attempt} failed, retrying in ${delayMs}ms...`,
           );
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
@@ -60,19 +60,19 @@ export function withRetry<TEnv, TInput, TOutput>(
     }
 
     throw new Error(
-      `Failed after ${maxRetries} attempts: ${lastError?.message}`
+      `Failed after ${maxRetries} attempts: ${lastError?.message}`,
     );
   };
 }
 
 /**
  * Wraps a function with logging for monitoring and debugging.
- * 
+ *
  * Logs the start, completion time, and any errors that occur.
- * 
+ *
  * @param fn - The function to wrap
  * @param provider - Provider name for log messages
- * 
+ *
  * @example
  * ```typescript
  * const generateWithLogging = withLogging(
@@ -83,7 +83,7 @@ export function withRetry<TEnv, TInput, TOutput>(
  */
 export function withLogging<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
-  provider: string
+  provider: string,
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
   return async (input: TInput, env: TEnv) => {
     const startTime = Date.now();
@@ -104,10 +104,10 @@ export function withLogging<TEnv, TInput, TOutput>(
 
 /**
  * Wraps a function with timeout logic.
- * 
+ *
  * @param fn - The function to wrap
  * @param timeoutMs - Timeout in milliseconds
- * 
+ *
  * @example
  * ```typescript
  * const generateWithTimeout = withTimeout(
@@ -118,14 +118,14 @@ export function withLogging<TEnv, TInput, TOutput>(
  */
 export function withTimeout<TEnv, TInput, TOutput>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
-  timeoutMs: number
+  timeoutMs: number,
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
   return async (input: TInput, env: TEnv) => {
     const timeoutPromise = new Promise<TOutput>((_, reject) =>
       setTimeout(
         () => reject(new Error(`Timeout after ${timeoutMs}ms`)),
-        timeoutMs
-      )
+        timeoutMs,
+      ),
     );
 
     return Promise.race([fn(input, env), timeoutPromise]);
@@ -159,13 +159,13 @@ export interface ContractEnv {
 
 /**
  * Wraps a function with contract authorization and settlement.
- * 
+ *
  * This middleware handles billing/authorization before executing the function
  * and settles the contract after successful execution.
- * 
+ *
  * @param fn - The function to wrap
  * @param clauseId - The contract clause ID for billing
- * 
+ *
  * @example
  * ```typescript
  * const generateWithContract = withContractManagement(
@@ -174,9 +174,13 @@ export interface ContractEnv {
  * );
  * ```
  */
-export function withContractManagement<TEnv extends ContractEnv, TInput, TOutput>(
+export function withContractManagement<
+  TEnv extends ContractEnv,
+  TInput,
+  TOutput,
+>(
   fn: (input: TInput, env: TEnv) => Promise<TOutput>,
-  clauseId: string
+  clauseId: string,
 ): (input: TInput, env: TEnv) => Promise<TOutput> {
   return async (input: TInput, env: TEnv) => {
     // Skip contract management if not configured
@@ -190,23 +194,16 @@ export function withContractManagement<TEnv extends ContractEnv, TInput, TOutput
       clauses: [{ clauseId, amount: 1 }],
     });
 
-    try {
-      // Execute
-      const result = await fn(input, env);
+    // Execute
+    const result = await fn(input, env);
 
-      // Settle
-      await env.NANOBANANA_CONTRACT.CONTRACT_SETTLE({
-        transactionId,
-        clauses: [{ clauseId, amount: 1 }],
-        vendorId: env.DECO_CHAT_WORKSPACE,
-      });
+    // Settle
+    await env.NANOBANANA_CONTRACT.CONTRACT_SETTLE({
+      transactionId,
+      clauses: [{ clauseId, amount: 1 }],
+      vendorId: env.DECO_CHAT_WORKSPACE,
+    });
 
-      return result;
-    } catch (error) {
-      // If execution fails, we might want to handle contract rollback here
-      // depending on business logic
-      throw error;
-    }
+    return result;
   };
 }
-
