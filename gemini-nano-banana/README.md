@@ -2,7 +2,7 @@
 
 ## Descrição do Projeto
 
-O **Gemini Nano Banana MCP** é um servidor Model Context Protocol (MCP) que integra a API Gemini 2.5 Flash Image Preview para geração de imagens baseadas em texto. Este projeto oferece uma interface web moderna construída com React e Vite, e é hospedado como uma aplicação Cloudflare Workers.
+O **Gemini Nano Banana MCP** é um servidor Model Context Protocol (MCP) que integra a API Gemini 2.5 Flash Image Preview para geração de imagens baseadas em texto. Este projeto é hospedado como uma aplicação Cloudflare Workers.
 
 ### Propósito
 
@@ -136,15 +136,8 @@ gemini-nano-banana/
 │   │   └── utils/      # Utilitários
 │   │       └── gemini.ts # Cliente Gemini
 │   └── views.ts        # Configuração de views
-├── view/               # Interface React
-│   └── src/
-│       ├── components/ # Componentes React
-│       ├── hooks/      # React hooks personalizados
-│       ├── lib/        # Bibliotecas e utilitários
-│       └── routes/     # Rotas da aplicação
-├── shared/             # Código compartilhado
-│   └── deco.gen.ts    # Tipos gerados
-└── public/            # Arquivos estáticos
+└── shared/             # Código compartilhado
+    └── deco.gen.ts    # Tipos gerados
 ```
 
 ### Variáveis de Ambiente / Bindings
@@ -238,18 +231,14 @@ const executeWithMiddlewares = withContractManagement(
 
 ### Endpoints
 
-- `/` - Interface web React
 - `/mcp` - Endpoint do servidor MCP
-- Todos os outros requests são servidos pelos assets estáticos
+- Todos os outros requests fazem fallback para assets estáticos
 
 ## Tecnologias Utilizadas
 
 - **Runtime**: Cloudflare Workers
 - **Framework MCP**: Deco Workers Runtime
-- **Frontend**: React 19, Vite, TailwindCSS 4
-- **Roteamento**: TanStack Router
-- **State Management**: TanStack Query
-- **UI Components**: Radix UI, Lucide Icons
+- **Build Tool**: Vite
 - **Validação**: Zod
 - **Linguagem**: TypeScript
 
