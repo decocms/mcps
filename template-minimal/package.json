@@ -1,7 +1,7 @@
 {
-  "name": "mcp-template-with-view",
+  "name": "mcp-template-minimal",
   "version": "1.0.0",
-  "description": "Template for MCP with Vite + React view",
+  "description": "Minimal template for MCP server",
   "private": true,
   "type": "module",
   "scripts": {
