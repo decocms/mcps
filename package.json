@@ -17,6 +17,7 @@
     "check": "bun run --filter=* check"
   },
   "workspaces": [
+    "gemini-nano-banana",
     "object-storage",
     "shared",
     "template-minimal",
