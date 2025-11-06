@@ -106,7 +106,9 @@ export async function saveImageToFileSystem<TEnv extends FileSystemEnv>(
     throw new Error("FILE_SYSTEM binding not configured");
   }
 
-  const { FileSystemStorageAdapter } = await import("@decocms/mcps-shared/storage");
+  const { FileSystemStorageAdapter } = await import(
+    "@decocms/mcps-shared/storage"
+  );
   const storage = new FileSystemStorageAdapter(env.FILE_SYSTEM);
   return saveImage(storage, options);
 }

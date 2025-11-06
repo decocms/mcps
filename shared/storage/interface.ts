@@ -41,4 +41,3 @@ export interface ExtendedObjectStorage extends ObjectStorage {
     errors: Array<{ key: string; message: string }>;
   }>;
 }
-

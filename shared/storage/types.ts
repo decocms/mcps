@@ -24,4 +24,3 @@ export interface FileSystemBinding {
     expiresIn: number;
   }) => Promise<FileSystemUrlResponse>;
 }
-

@@ -23,4 +23,3 @@ export class FileSystemStorageAdapter implements ObjectStorage {
     return url;
   }
 }
-

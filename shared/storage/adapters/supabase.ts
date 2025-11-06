@@ -22,7 +22,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ expiresIn }),
@@ -34,7 +34,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       throw new Error(`Failed to generate Supabase read URL: ${error}`);
     }
 
-    const data = await response.json() as { signedURL: string };
+    const data = (await response.json()) as { signedURL: string };
     return `${this.projectUrl}${data.signedURL}`;
   }
 
@@ -51,7 +51,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -65,7 +65,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       throw new Error(`Failed to generate Supabase write URL: ${error}`);
     }
 
-    const data = await response.json() as { url: string; token: string };
+    const data = (await response.json()) as { url: string; token: string };
     return `${this.projectUrl}${data.url}?token=${data.token}`;
   }
   async uploadFile(
@@ -97,7 +97,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: formData,
       },
@@ -108,7 +108,7 @@ export class SupabaseStorageAdapter implements ObjectStorage {
       throw new Error(`Failed to upload file to Supabase: ${error}`);
     }
 
-    const result = await response.json() as { Key?: string };
+    const result = (await response.json()) as { Key?: string };
     const publicUrl = `${this.projectUrl}/storage/v1/object/public/${this.bucketName}/${path}`;
 
     return {
@@ -121,4 +121,3 @@ export class SupabaseStorageAdapter implements ObjectStorage {
     return `${this.projectUrl}/storage/v1/object/public/${this.bucketName}/${path}`;
   }
 }
-

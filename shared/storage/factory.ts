@@ -60,4 +60,3 @@ export function createStorageFromEnv(env: {
     "No storage configuration found. Please configure either FILE_SYSTEM binding or S3 state.",
   );
 }
-

@@ -3,7 +3,7 @@ import type { S3Config } from "../types.ts";
 export function createS3Client(config: S3Config): any {
   try {
     const { S3Client } = require("@aws-sdk/client-s3");
-    
+
     const clientConfig: any = {
       region: config.region,
       credentials: {
@@ -18,7 +18,7 @@ export function createS3Client(config: S3Config): any {
     }
 
     return new S3Client(clientConfig);
-  } catch (error) {
+  } catch {
     throw new Error(
       "S3StorageAdapter requires @aws-sdk/client-s3. Install it with: npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner",
     );
@@ -153,4 +153,3 @@ export class S3StorageAdapter implements ExtendedObjectStorage {
     };
   }
 }
-
