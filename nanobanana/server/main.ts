@@ -4,7 +4,11 @@
  * your MCP server at /mcp.
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
+import {
+  type Env as DecoEnv,
+  Scopes,
+  StateSchema,
+} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
 
@@ -32,7 +36,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [],
+    scopes: [
+      Scopes.NANOBANANA_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.NANOBANANA_CONTRACT.CONTRACT_SETTLE,
+      Scopes.FILE_SYSTEM.FS_WRITE,
+      Scopes.FILE_SYSTEM.FS_READ,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
