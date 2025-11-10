@@ -14,10 +14,11 @@
     "new": "bun scripts/new.ts",
     "fmt": "oxfmt",
     "lint": "oxlint",
-    "check": "bun run --filter=* check"
+    "check": "bun run --filter=* check",
+    "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco"
   },
   "workspaces": [
-    "gemini-nano-banana",
+    "nanobanana",
     "object-storage",
     "shared",
     "template-minimal",

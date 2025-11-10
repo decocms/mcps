@@ -1,5 +1,5 @@
 {
-  "name": "gemini-nano-banana",
+  "name": "nanobanana",
   "version": "1.0.0",
   "description": "MCP server for image generation using Gemini 2.5 Flash Image Preview",
   "private": true,
