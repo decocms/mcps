@@ -3,17 +3,19 @@ import type { Env } from "server/main";
 import { createGeminiClient } from "./utils/gemini";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 
-// const executeWithMiddlewares = withContractManagement(executeGeneration, {
-//   clauseId: "gemini-2.5-flash-image",
-//   contract: "NANOBANANA_CONTRACT",
-//   provider: "Gemini",
-//   maxRetries: 3,
-// });
-
 export const geminiTools = createImageGeneratorTools<Env>({
-  provider: "Gemini 2.5 Flash Image Preview",
-  description: "Generate an image using the Gemini API",
+  metadata: {
+    provider: "Gemini 2.5 Flash Image Preview",
+    description: "Generate an image using the Gemini API",
+  },
   getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
+  getContract: (env) => ({
+    binding: env.NANOBANANA_CONTRACT,
+    clause: {
+      clauseId: "gemini-2.5-flash-image-preview:generateContent",
+      amount: 1,
+    },
+  }),
   execute: async ({ env, input }) => {
     // Call Gemini API
     const client = createGeminiClient(env);

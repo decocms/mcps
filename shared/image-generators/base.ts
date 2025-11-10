@@ -2,6 +2,14 @@ import { z } from "zod";
 import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { saveImage } from "./storage";
 import { ObjectStorage } from "../storage";
+import {
+  applyMiddlewares,
+  Contract,
+  ContractClause,
+  withLogging,
+  withRetry,
+  withTimeout,
+} from "./middleware";
 
 export type ImageGeneratorStorage = Pick<
   ObjectStorage,
@@ -78,8 +86,10 @@ export interface ImageGeneratorEnv {
 }
 
 export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
-  provider: string;
-  description?: string;
+  metadata: {
+    provider: string;
+    description?: string;
+  };
   execute: ({
     env,
     input,
@@ -88,7 +98,14 @@ export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
     input: GenerateImageInput;
   }) => Promise<GenerateImageCallbackOutput>;
   getStorage: (env: TEnv) => ImageGeneratorStorage;
+  getContract: (env: TEnv) => {
+    binding: Contract;
+    clause: ContractClause;
+  };
 }
+
+const MAX_IMAGE_GEN_RETRIES = 3;
+const MAX_IMAGE_GEN_TIMEOUT_MS = 120_000; // 2 minutes
 
 export function createImageGeneratorTools<TEnv extends ImageGeneratorEnv>(
   options: CreateImageGeneratorOptions<TEnv>,
@@ -97,29 +114,68 @@ export function createImageGeneratorTools<TEnv extends ImageGeneratorEnv>(
     createPrivateTool({
       id: "GENERATE_IMAGE",
       description:
-        options.description || `Generate images using ${options.provider}`,
+        options.metadata.description ||
+        `Generate images using ${options.metadata.provider}`,
       inputSchema: GenerateImageInputSchema,
       outputSchema: GenerateImageOutputSchema,
       execute: async ({ context }: { context: GenerateImageInput }) => {
-        const result = await options.execute({ env, input: context });
+        const doExecute = async () => {
+          const contract = options.getContract(env);
 
-        if ("error" in result) {
+          const { transactionId } = await contract.binding.CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: contract.clause.clauseId,
+                amount: contract.clause.amount,
+              },
+            ],
+          });
+
+          const result = await options.execute({ env, input: context });
+
+          if ("error" in result) {
+            return {
+              error: true,
+              finishReason: result.finishReason,
+            };
+          }
+
+          const storage = options.getStorage(env);
+          const saveImageResult = await saveImage(storage, {
+            imageData: result.data,
+            mimeType: result.mimeType || "image/png",
+            metadata: { prompt: context.prompt },
+          });
+
+          await contract.binding.CONTRACT_SETTLE({
+            transactionId,
+            clauses: [
+              {
+                clauseId: contract.clause.clauseId,
+                amount: contract.clause.amount,
+              },
+            ],
+            vendorId: env.DECO_CHAT_WORKSPACE,
+          });
+
           return {
-            error: true,
-            finishReason: result.finishReason,
+            image: saveImageResult.url,
           };
-        }
+        };
 
-        const storage = options.getStorage(env);
-        const saveImageResult = await saveImage(storage, {
-          imageData: result.data,
-          mimeType: result.mimeType || "image/png",
-          metadata: { prompt: context.prompt },
+        const withMiddlewares = applyMiddlewares({
+          fn: doExecute,
+          middlewares: [
+            withLogging({
+              title: options.metadata.provider,
+              startMessage: "Starting image generation...",
+            }),
+            withRetry(MAX_IMAGE_GEN_RETRIES),
+            withTimeout(MAX_IMAGE_GEN_TIMEOUT_MS),
+          ],
         });
 
-        return {
-          image: saveImageResult.url,
-        };
+        return withMiddlewares();
       },
     });
 
