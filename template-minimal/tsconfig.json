@@ -42,5 +42,11 @@
     "server",
     "shared",
     "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules/@deco/workers-runtime",
+    "node_modules/.bun/@jsr+deco__workers-runtime*",
+    "../node_modules/@deco/workers-runtime",
+    "../node_modules/.bun/@jsr+deco__workers-runtime*"
   ]
 }
