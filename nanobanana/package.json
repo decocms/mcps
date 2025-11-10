@@ -1,11 +1,11 @@
 {
-  "name": "mcp-template-minimal",
+  "name": "nanobanana",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "MCP server for image generation using Gemini 2.5 Flash Image Preview",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev --vite",
+    "dev": "deco dev",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "deploy": "npm run build && deco deploy ./dist/server",

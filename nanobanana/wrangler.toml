@@ -1,0 +1,39 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "nanobanana"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco-team"
+
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Use Nano Banana Integration to create images using AI."
+icon = "https://assets.decocache.com/starting/62401ea6-55e6-433d-b614-e43196890e05/nanobanana.png"
+friendlyName = "Nano Banana"
+
+[[deco.bindings]]
+type = "contract"
+name = "NANOBANANA_CONTRACT"
+
+[deco.bindings.contract]
+body = "U$0.10 per image"
+
+[[deco.bindings.contract.clauses]]
+id = "gemini-2.5-flash-image-preview:generateContent"
+price = 0.1
+description = "$0.10 per image"
+
+[[deco.bindings]]
+name = "FILE_SYSTEM"
+type = "mcp"
+integration_name = "@deco/file-system"
