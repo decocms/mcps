@@ -26,7 +26,6 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./view/src/*"],
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"],
       "worker/*": ["./worker/*"],
@@ -37,10 +36,9 @@
     },
 
     /* Types */
-    "types": ["vite/client", "@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"]
   },
   "include": [
-    "view",
     "server",
     "shared",
     "vite.config.ts"
