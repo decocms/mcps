@@ -1,37 +1,37 @@
 # @decocms/mcps-shared
 
-Pacote compartilhado de utilidades, tools e helpers para criar MCPs (Model Context Protocol servers) na plataforma Deco.
+Shared package of utilities, tools and helpers for creating MCPs (Model Context Protocol servers) on the Deco platform.
 
-## Módulos Disponíveis
+## Available Modules
 
-### 1. Tools de Usuário (`/tools/user`)
+### 1. User Tools (`/tools/user`)
 
-Tools comuns de autenticação e gerenciamento de usuário.
+Common authentication and user management tools.
 
-#### Uso
+#### Usage
 
 ```typescript
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import type { UserToolsEnv } from "@decocms/mcps-shared/tools/user";
 
-// Seu Env deve estender UserToolsEnv
+// Your Env must extend UserToolsEnv
 export type Env = UserToolsEnv & {
-  // Suas variáveis específicas...
+  // Your specific variables...
 };
 
-// Use os tools compartilhados
+// Use the shared tools
 export const tools = [...userTools];
 ```
 
-#### Tools Inclusos
+#### Included Tools
 
-- `GET_USER` - Retorna informações do usuário autenticado
+- `GET_USER` - Returns authenticated user information
 
-### 2. Sistema de Image Generators (`/image-generators`)
+### 2. Image Generators System (`/image-generators`)
 
-Framework para criar tools de geração de imagem que seguem um contrato padrão, facilitando a criação de MCPs para diferentes providers de IA (Gemini, DALL-E, Midjourney, Stable Diffusion, etc).
+Framework for creating image generation tools that follow a standard contract, making it easier to create MCPs for different AI providers (Gemini, DALL-E, Midjourney, Stable Diffusion, etc).
 
-#### Uso Básico
+#### Basic Usage
 
 ```typescript
 import {
@@ -47,10 +47,10 @@ export const generateImage = (env: Env) => {
     input: GenerateImageInput,
     env: Env
   ): Promise<GenerateImageOutput> => {
-    // Chame a API do seu provider
+    // Call your provider's API
     const response = await callProviderAPI(input.prompt, input.aspectRatio);
     
-    // Salve a imagem
+    // Save the image
     const { url } = await saveImageToFileSystem(env, {
       imageData: response.imageData,
       mimeType: "image/png",
@@ -62,7 +62,7 @@ export const generateImage = (env: Env) => {
 
   return createImageGeneratorTool(env, {
     id: "GENERATE_IMAGE",
-    provider: "Seu Provider",
+    provider: "Your Provider",
     execute: withContractManagement(executeGeneration, {
       clauseId: "provider:generateImage",
       contract: "YOUR_CONTRACT",
@@ -72,25 +72,25 @@ export const generateImage = (env: Env) => {
 };
 ```
 
-#### Schema Padrão
+#### Standard Schema
 
-Todos os image generators seguem o mesmo contrato:
+All image generators follow the same contract:
 
 **Input:**
-- `prompt` (string, obrigatório) - Descrição da imagem a ser gerada
-- `baseImageUrl` (string, opcional) - URL de uma imagem base para image-to-image
-- `aspectRatio` (enum, opcional) - Aspect ratio: "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"
+- `prompt` (string, required) - Description of the image to be generated
+- `baseImageUrl` (string, optional) - URL of a base image for image-to-image
+- `aspectRatio` (enum, optional) - Aspect ratio: "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"
 
 **Output:**
-- `image` (string, opcional) - URL da imagem gerada
-- `error` (boolean, opcional) - Se houve erro na geração
-- `finishReason` (string, opcional) - Razão do término (sucesso, filtro de conteúdo, etc)
+- `image` (string, optional) - URL of the generated image
+- `error` (boolean, optional) - Whether there was an error in generation
+- `finishReason` (string, optional) - Reason for completion (success, content filter, etc)
 
-#### Middlewares Disponíveis
+#### Available Middlewares
 
 ##### `withRetry(fn, maxRetries?)`
 
-Adiciona lógica de retry automático com exponential backoff.
+Adds automatic retry logic with exponential backoff.
 
 ```typescript
 const resilientGeneration = withRetry(executeGeneration, 3);
@@ -98,7 +98,7 @@ const resilientGeneration = withRetry(executeGeneration, 3);
 
 ##### `withLogging(fn, providerName)`
 
-Adiciona logging de performance e erros.
+Adds performance and error logging.
 
 ```typescript
 const loggedGeneration = withLogging(executeGeneration, "Gemini");
@@ -106,21 +106,21 @@ const loggedGeneration = withLogging(executeGeneration, "Gemini");
 
 ##### `withTimeout(fn, timeoutMs)`
 
-Adiciona timeout para prevenir execuções muito longas.
+Adds timeout to prevent very long executions.
 
 ```typescript
-const timedGeneration = withTimeout(executeGeneration, 60000); // 60 segundos
+const timedGeneration = withTimeout(executeGeneration, 60000); // 60 seconds
 ```
 
 ##### `withContractManagement(fn, options)`
 
-Adiciona autorização e settlement de contratos para billing, além de **incluir automaticamente retry e logging**.
+Adds contract authorization and settlement for billing, plus **automatically includes retry and logging**.
 
-Opções:
-- `clauseId` (obrigatório) - ID da cláusula do contrato
-- `contract` (obrigatório) - Nome da propriedade do contrato no environment
-- `provider` (opcional) - Nome do provider para logs (padrão: "Provider")
-- `maxRetries` (opcional) - Número máximo de tentativas (padrão: 3)
+Options:
+- `clauseId` (required) - Contract clause ID
+- `contract` (required) - Contract property name in environment
+- `provider` (optional) - Provider name for logs (default: "Provider")
+- `maxRetries` (optional) - Maximum number of attempts (default: 3)
 
 ```typescript
 const billedGeneration = withContractManagement(executeGeneration, {
@@ -135,28 +135,28 @@ const billedGeneration = withContractManagement(executeGeneration, {
 
 ##### `saveImageToFileSystem(env, options)`
 
-Salva uma imagem base64 no file system.
+Saves a base64 image to the file system.
 
 ```typescript
 const { url, path } = await saveImageToFileSystem(env, {
   imageData: "data:image/png;base64,...",
   mimeType: "image/png",
   metadata: { prompt: "a beautiful sunset" },
-  directory: "/images", // opcional
+  directory: "/images", // optional
 });
 ```
 
 ##### `extractImageData(inlineData)`
 
-Extrai MIME type e data de um objeto inline_data.
+Extracts MIME type and data from an inline_data object.
 
 ```typescript
 const { mimeType, imageData } = extractImageData(response.inline_data);
 ```
 
-#### Composição de Middlewares
+#### Middleware Composition
 
-O `withContractManagement` já inclui retry e logging automaticamente. Se precisar adicionar timeout ou outros middlewares:
+`withContractManagement` already includes retry and logging automatically. If you need to add timeout or other middlewares:
 
 ```typescript
 const robustExecute = withTimeout(
@@ -170,7 +170,7 @@ const robustExecute = withTimeout(
 );
 ```
 
-## Exemplo Completo: MCP Gemini Image Generator
+## Complete Example: Gemini Image Generator MCP
 
 ```typescript
 // gemini-nano-banana/server/tools/gemini.ts
@@ -242,23 +242,23 @@ const generateImage = (env: Env) => {
 export const geminiTools = [generateImage];
 ```
 
-## Benefícios
+## Benefits
 
-1. **Redução de Código**: Elimina duplicação de código comum entre MCPs de imagem
-2. **Consistência**: Todos os MCPs seguem o mesmo contrato de input/output
-3. **Manutenibilidade**: Bug fixes e melhorias beneficiam todos os MCPs automaticamente
-4. **Extensibilidade**: Fácil adicionar novos providers (DALL-E, Midjourney, etc)
-5. **Type Safety**: TypeScript garante compatibilidade entre MCPs
-6. **Billing Integration**: Sistema de contratos integrado para gerenciamento de custos
+1. **Code Reduction**: Eliminates common code duplication across image MCPs
+2. **Consistency**: All MCPs follow the same input/output contract
+3. **Maintainability**: Bug fixes and improvements benefit all MCPs automatically
+4. **Extensibility**: Easy to add new providers (DALL-E, Midjourney, etc)
+5. **Type Safety**: TypeScript ensures compatibility between MCPs
+6. **Billing Integration**: Integrated contract system for cost management
 
-## Criando um Novo MCP de Imagem
+## Creating a New Image MCP
 
-Para criar um novo MCP de geração de imagem (ex: DALL-E):
+To create a new image generation MCP (e.g., DALL-E):
 
-1. Implemente apenas a lógica específica do provider
-2. Use os helpers compartilhados para storage, retry, logging
-3. Componha os middlewares conforme necessário
-4. O contrato de input/output já está definido
+1. Implement only provider-specific logic
+2. Use shared helpers for storage, retry, logging
+3. Compose middlewares as needed
+4. The input/output contract is already defined
 
 ```typescript
 // dall-e/server/tools/generate.ts
@@ -270,7 +270,7 @@ import {
 
 const generateImage = (env: Env) => {
   const executeGeneration = async (input, env) => {
-    // Apenas implemente a chamada específica do DALL-E
+    // Only implement DALL-E specific call
     const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Authorization": `Bearer ${env.OPENAI_API_KEY}` },
@@ -281,7 +281,7 @@ const generateImage = (env: Env) => {
     return { image: data.data[0].url };
   };
 
-  // Reutilize todos os helpers! (retry e logging já incluídos)
+  // Reuse all helpers! (retry and logging already included)
   return createImageGeneratorTool(env, {
     id: "GENERATE_IMAGE",
     provider: "DALL-E 3",
@@ -294,23 +294,23 @@ const generateImage = (env: Env) => {
 };
 ```
 
-## Adicionando Novos Tools Compartilhados
+## Adding New Shared Tools
 
-Para adicionar novos tools compartilhados:
+To add new shared tools:
 
-1. Crie o arquivo em `/shared/tools/` ou `/shared/image-generators/`
-2. Adicione o export em `/shared/package.json`:
+1. Create the file in `/shared/tools/` or `/shared/image-generators/`
+2. Add the export in `/shared/package.json`:
 
 ```json
 {
   "exports": {
-    "./tools/meu-tool": "./tools/meu-tool.ts"
+    "./tools/my-tool": "./tools/my-tool.ts"
   }
 }
 ```
 
-3. Importe nos MCPs:
+3. Import in MCPs:
 
 ```typescript
-import { meuTool } from "@decocms/mcps-shared/tools/meu-tool";
+import { myTool } from "@decocms/mcps-shared/tools/my-tool";
 ```

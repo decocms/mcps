@@ -1,197 +1,197 @@
 # Gemini Nano Banana MCP
 
-## Descrição do Projeto
+## Project Description
 
-O **Gemini Nano Banana MCP** é um servidor Model Context Protocol (MCP) que integra a API Gemini 2.5 Flash Image Preview para geração de imagens baseadas em texto. Este projeto é hospedado como uma aplicação Cloudflare Workers.
+**Gemini Nano Banana MCP** is a Model Context Protocol (MCP) server that integrates the Gemini 2.5 Flash Image Preview API for text-to-image generation. This project is hosted as a Cloudflare Workers application.
 
-### Propósito
+### Purpose
 
-Este servidor MCP permite que aplicações cliente:
-- Gerem imagens a partir de prompts de texto usando o modelo Gemini
-- Utilizem imagens base para modificações e variações
-- Personalizem proporções de imagem (aspect ratios)
-- Armazenem e acessem imagens geradas através de um sistema de arquivos
-- Gerenciem autorização e pagamentos através do sistema NanoBanana Contract
+This MCP server allows client applications to:
+- Generate images from text prompts using the Gemini model
+- Use base images for modifications and variations
+- Customize image aspect ratios
+- Store and access generated images through a file system
+- Manage authorization and payments through the NanoBanana Contract system
 
-### Características Principais
+### Key Features
 
-- 🎨 **Geração de Imagens com IA**: Integração completa com Gemini 2.5 Flash Image Preview
-- 🔄 **Sistema de Retry**: Tentativas automáticas em caso de falha (até 3 tentativas)
-- 📝 **Logging Detalhado**: Registro de todas as operações de geração
-- 💰 **Gerenciamento de Contratos**: Sistema integrado de autorização e pagamento
-- 💾 **Armazenamento Persistente**: Sistema de arquivos para salvar imagens geradas
-- 🖼️ **Suporte a Imagens Base**: Modificação de imagens existentes
-- 📐 **Aspect Ratios Personalizáveis**: Controle sobre proporções da imagem
-- 👤 **Ferramentas de Usuário**: Gerenciamento de informações do usuário
+- 🎨 **AI Image Generation**: Full integration with Gemini 2.5 Flash Image Preview
+- 🔄 **Retry System**: Automatic retry on failure (up to 3 attempts)
+- 📝 **Detailed Logging**: Records all generation operations
+- 💰 **Contract Management**: Integrated authorization and payment system
+- 💾 **Persistent Storage**: File system for saving generated images
+- 🖼️ **Base Image Support**: Modification of existing images
+- 📐 **Customizable Aspect Ratios**: Control over image proportions
+- 👤 **User Tools**: User information management
 
-## Setup / Instalação
+## Setup / Installation
 
-### Pré-requisitos
+### Prerequisites
 
 - Node.js >= 22.0.0
-- Bun (gerenciador de pacotes)
-- Conta Cloudflare (para deploy)
-- Acesso à API Gemini
+- Bun (package manager)
+- Cloudflare account (for deployment)
+- Gemini API access
 
-### Instalação Local
+### Local Installation
 
-1. Clone o repositório:
+1. Clone the repository:
 ```bash
 cd gemini-nano-banana
 ```
 
-2. Instale as dependências:
+2. Install dependencies:
 ```bash
 bun install
 ```
 
-3. Configure as variáveis de ambiente necessárias:
+3. Configure required environment variables:
 ```bash
 bun run configure
 ```
 
-4. Gere os tipos TypeScript:
+4. Generate TypeScript types:
 ```bash
 bun run gen
 ```
 
-5. Inicie o servidor de desenvolvimento:
+5. Start the development server:
 ```bash
 bun run dev
 ```
 
-O servidor estará disponível em `http://localhost:8787` (porta padrão do Cloudflare Workers).
+The server will be available at `http://localhost:8787` (default Cloudflare Workers port).
 
-### Build para Produção
+### Production Build
 
 ```bash
 bun run build
 ```
 
-### Deploy
+### Deployment
 
 ```bash
 bun run deploy
 ```
 
-## Exemplos de Uso
+## Usage Examples
 
-### Gerando uma Imagem Simples
+### Generating a Simple Image
 
 ```typescript
-// Cliente MCP
+// MCP Client
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "Um gato laranja sentado em uma cadeira azul, estilo cartoon"
+  prompt: "An orange cat sitting on a blue chair, cartoon style"
 });
 
-// Resultado
+// Result
 {
-  image: "https://...", // URL da imagem gerada
+  image: "https://...", // Generated image URL
   finishReason: "STOP"
 }
 ```
 
-### Gerando com Aspect Ratio Específico
+### Generating with Specific Aspect Ratio
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "Paisagem montanhosa ao pôr do sol",
+  prompt: "Mountain landscape at sunset",
   aspectRatio: "16:9"
 });
 ```
 
-### Modificando uma Imagem Existente
+### Modifying an Existing Image
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "Adicione neve nas montanhas",
+  prompt: "Add snow on the mountains",
   baseImageUrl: "https://example.com/landscape.jpg"
 });
 ```
 
-### Tratamento de Erros
+### Error Handling
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "Gere uma imagem..."
+  prompt: "Generate an image..."
 });
 
 if (result.error) {
-  console.error("Falha na geração:", result.finishReason);
-  // Motivos possíveis: SAFETY, MAX_TOKENS, RECITATION, etc.
+  console.error("Generation failed:", result.finishReason);
+  // Possible reasons: SAFETY, MAX_TOKENS, RECITATION, etc.
 }
 ```
 
-## Detalhes de Configuração
+## Configuration Details
 
-### Estrutura de Arquivos
+### File Structure
 
 ```
 gemini-nano-banana/
-├── server/              # Código do servidor MCP
-│   ├── main.ts         # Entry point principal
-│   ├── tools/          # Ferramentas MCP
-│   │   ├── index.ts    # Agregador de ferramentas
-│   │   ├── gemini.ts   # Ferramenta de geração de imagens
-│   │   └── utils/      # Utilitários
-│   │       └── gemini.ts # Cliente Gemini
-│   └── views.ts        # Configuração de views
-└── shared/             # Código compartilhado
-    └── deco.gen.ts    # Tipos gerados
+├── server/              # MCP server code
+│   ├── main.ts         # Main entry point
+│   ├── tools/          # MCP tools
+│   │   ├── index.ts    # Tools aggregator
+│   │   ├── gemini.ts   # Image generation tool
+│   │   └── utils/      # Utilities
+│   │       └── gemini.ts # Gemini client
+│   └── views.ts        # Views configuration
+└── shared/             # Shared code
+    └── deco.gen.ts    # Generated types
 ```
 
-### Variáveis de Ambiente / Bindings
+### Environment Variables / Bindings
 
-O projeto utiliza os seguintes bindings do Cloudflare Workers:
+The project uses the following Cloudflare Workers bindings:
 
 #### `NANOBANANA_CONTRACT`
-Sistema de autorização e pagamento para uso da API:
-- `CONTRACT_AUTHORIZE`: Autoriza uma transação antes da geração
-- `CONTRACT_SETTLE`: Finaliza a transação após a geração
+Authorization and payment system for API usage:
+- `CONTRACT_AUTHORIZE`: Authorizes a transaction before generation
+- `CONTRACT_SETTLE`: Finalizes the transaction after generation
 
 #### `FILE_SYSTEM`
-Sistema de armazenamento de imagens:
-- `FS_READ`: Lê arquivos do sistema de arquivos
-- `FS_WRITE`: Escreve arquivos no sistema de arquivos
+Image storage system:
+- `FS_READ`: Reads files from the file system
+- `FS_WRITE`: Writes files to the file system
 
-### Configuração do OAuth
+### OAuth Configuration
 
-O projeto suporta OAuth para autenticação. Configure os scopes necessários em `server/main.ts`:
+The project supports OAuth for authentication. Configure required scopes in `server/main.ts`:
 
 ```typescript
 oauth: {
-  scopes: [], // Adicione scopes conforme necessário
+  scopes: [], // Add scopes as needed
   state: StateSchema,
 }
 ```
 
 ### State Schema
 
-O State Schema define o estado da aplicação instalada. Você pode estendê-lo para adicionar campos personalizados, como chaves de API:
+The State Schema defines the installed application state. You can extend it to add custom fields such as API keys:
 
 ```typescript
 state: StateSchema.extend({
   geminiApiKey: z.string().optional(),
-  // outros campos...
+  // other fields...
 })
 ```
 
-### Scripts Disponíveis
+### Available Scripts
 
-- `bun run dev` - Inicia servidor de desenvolvimento com hot reload
-- `bun run configure` - Configura o projeto Deco
-- `bun run gen` - Gera tipos TypeScript
-- `bun run build` - Compila para produção
-- `bun run deploy` - Faz deploy para Cloudflare Workers
-- `bun run check` - Verifica tipos TypeScript sem compilar
+- `bun run dev` - Starts development server with hot reload
+- `bun run configure` - Configures the Deco project
+- `bun run gen` - Generates TypeScript types
+- `bun run build` - Compiles for production
+- `bun run deploy` - Deploys to Cloudflare Workers
+- `bun run check` - Type checks TypeScript without compiling
 
-### Middlewares de Geração de Imagem
+### Image Generation Middlewares
 
-O sistema usa `withContractManagement` que automaticamente inclui:
+The system uses `withContractManagement` which automatically includes:
 
-1. **Contract Management**: Gerencia autorização e pagamento (camada interna)
-2. **Logging Middleware**: Registra início e fim das operações
-3. **Retry Middleware**: Tenta novamente em caso de falha (máx. 3x, camada externa)
+1. **Contract Management**: Manages authorization and payment (inner layer)
+2. **Logging Middleware**: Records start and end of operations
+3. **Retry Middleware**: Retries on failure (max 3x, outer layer)
 
 ```typescript
 const executeWithMiddlewares = withContractManagement(executeGeneration, {
@@ -202,46 +202,46 @@ const executeWithMiddlewares = withContractManagement(executeGeneration, {
 });
 ```
 
-**Vantagens**: Não precisa compor manualmente `withRetry` e `withLogging` - tudo vem incluso!
+**Advantages**: No need to manually compose `withRetry` and `withLogging` - everything is included!
 
-### Formato de Input/Output
+### Input/Output Format
 
 #### Input (`GenerateImageInput`)
 ```typescript
 {
-  prompt: string;              // Descrição da imagem desejada
-  baseImageUrl?: string;       // URL de imagem base (opcional)
-  aspectRatio?: string;        // Proporção (ex: "16:9", "1:1")
+  prompt: string;              // Description of the desired image
+  baseImageUrl?: string;       // Base image URL (optional)
+  aspectRatio?: string;        // Ratio (e.g., "16:9", "1:1")
 }
 ```
 
 #### Output (`GenerateImageOutput`)
 ```typescript
-// Sucesso
+// Success
 {
-  image: string;               // URL da imagem gerada
-  finishReason?: string;       // Motivo de finalização
+  image: string;               // Generated image URL
+  finishReason?: string;       // Completion reason
 }
 
-// Erro
+// Error
 {
   error: true;
-  finishReason?: string;       // Motivo da falha
+  finishReason?: string;       // Failure reason
 }
 ```
 
 ### Endpoints
 
-- `/mcp` - Endpoint do servidor MCP
-- Todos os outros requests fazem fallback para assets estáticos
+- `/mcp` - MCP server endpoint
+- All other requests fallback to static assets
 
-## Tecnologias Utilizadas
+## Technologies Used
 
 - **Runtime**: Cloudflare Workers
-- **Framework MCP**: Deco Workers Runtime
+- **MCP Framework**: Deco Workers Runtime
 - **Build Tool**: Vite
-- **Validação**: Zod
-- **Linguagem**: TypeScript
+- **Validation**: Zod
+- **Language**: TypeScript
 
-## Licença
+## License
 

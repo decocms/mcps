@@ -1,23 +1,23 @@
-# Storage - Módulo Compartilhado
+# Storage - Shared Module
 
-Módulo unificado de storage para todos os MCPs. Fornece uma interface consistente para trabalhar com diferentes provedores de armazenamento de objetos.
+Unified storage module for all MCPs. Provides a consistent interface for working with different object storage providers.
 
 ## 🚀 Quick Start
 
-**Não quer ler tudo? Comece aqui:**
-- 📖 **[Quick Start - 3 passos para salvar imagens](./QUICKSTART.md)**
-- 📖 **[Todos os provedores disponíveis (Supabase, R2, S3...)](./PROVIDERS.md)**
-- 📖 **[Guia completo do Supabase](./SUPABASE_GUIDE.md)**
+**Don't want to read everything? Start here:**
+- 📖 **[Quick Start - 3 steps to save images](./QUICKSTART.md)**
+- 📖 **[All available providers (Supabase, R2, S3...)](./PROVIDERS.md)**
+- 📖 **[Complete Supabase guide](./SUPABASE_GUIDE.md)**
 
-## 🎯 Objetivo
+## 🎯 Goal
 
-Centralizar toda a lógica de storage S3-compatível e file system em um único lugar, permitindo que todos os MCPs reutilizem o mesmo código.
+Centralize all S3-compatible storage and file system logic in a single place, allowing all MCPs to reuse the same code.
 
-**✨ A melhor parte:** Você pode usar **qualquer provedor** (Supabase, AWS S3, Cloudflare R2, MinIO, etc.) e trocar entre eles mudando apenas 1 linha de código!
+**✨ The best part:** You can use **any provider** (Supabase, AWS S3, Cloudflare R2, MinIO, etc.) and switch between them by changing just 1 line of code!
 
-## 📦 Componentes
+## 📦 Components
 
-### Interface Core
+### Core Interface
 
 ```typescript
 interface ObjectStorage {
@@ -40,24 +40,24 @@ interface ExtendedObjectStorage extends ObjectStorage {
 
 ### Factories
 
-- `createStorageFromState()` - Cria storage a partir do state do MCP
-- `createS3Storage()` - Cria storage S3
-- `createFileSystemStorage()` - Cria storage file system
-- `createStorageFromEnv()` - Auto-detecta e cria storage apropriado
+- `createStorageFromState()` - Creates storage from MCP state
+- `createS3Storage()` - Creates S3 storage
+- `createFileSystemStorage()` - Creates file system storage
+- `createStorageFromEnv()` - Auto-detects and creates appropriate storage
 
-## 🚀 Uso Básico
+## 🚀 Basic Usage
 
-### 1. Usando com MCP State
+### 1. Using with MCP State
 
 ```typescript
 import { createStorageFromState } from "@decocms/mcps-shared/storage";
 
-// Dentro de um tool MCP
+// Inside an MCP tool
 const storage = createStorageFromState(env.DECO_CHAT_REQUEST_CONTEXT.state);
 const url = await storage.getReadUrl("/image.png", 3600);
 ```
 
-### 2. Usando S3 Diretamente
+### 2. Using S3 Directly
 
 ```typescript
 import { S3StorageAdapter } from "@decocms/mcps-shared/storage";
@@ -76,7 +76,7 @@ const writeUrl = await storage.getWriteUrl("/file.png", {
 });
 ```
 
-### 3. Usando FILE_SYSTEM
+### 3. Using FILE_SYSTEM
 
 ```typescript
 import { FileSystemStorageAdapter } from "@decocms/mcps-shared/storage";
@@ -85,21 +85,21 @@ const storage = new FileSystemStorageAdapter(env.FILE_SYSTEM);
 const url = await storage.getReadUrl("/file.png", 3600);
 ```
 
-### 4. Auto-detecção
+### 4. Auto-detection
 
 ```typescript
 import { createStorageFromEnv } from "@decocms/mcps-shared/storage";
 
-// Tenta FILE_SYSTEM primeiro, depois S3 do state
+// Tries FILE_SYSTEM first, then S3 from state
 const storage = createStorageFromEnv(env);
 const url = await storage.getReadUrl("/file.png", 3600);
 ```
 
-## 📝 Exemplos de Integração
+## 📝 Integration Examples
 
-### Exemplo 1: MCP object-storage
+### Example 1: object-storage MCP
 
-**Antes:**
+**Before:**
 
 ```typescript
 // object-storage/server/lib/s3-client.ts
@@ -121,7 +121,7 @@ const command = new GetObjectCommand({ Bucket: state.bucketName, Key: key });
 const url = await getSignedUrl(s3Client, command, { expiresIn });
 ```
 
-**Depois:**
+**After:**
 
 ```typescript
 // object-storage/server/tools/storage.ts
@@ -131,9 +131,9 @@ const storage = createStorageFromState(env.DECO_CHAT_REQUEST_CONTEXT.state);
 const url = await storage.getReadUrl(key, expiresIn);
 ```
 
-### Exemplo 2: MCP gemini-nano-banana (image generator)
+### Example 2: gemini-nano-banana MCP (image generator)
 
-**Antes:**
+**Before:**
 
 ```typescript
 import { saveImageToFileSystem } from "@decocms/mcps-shared/image-generators";
@@ -145,7 +145,7 @@ const { url } = await saveImageToFileSystem(env, {
 });
 ```
 
-**Depois (usando FILE_SYSTEM):**
+**After (using FILE_SYSTEM):**
 
 ```typescript
 import { FileSystemStorageAdapter } from "@decocms/mcps-shared/storage";
@@ -159,13 +159,13 @@ const { url } = await saveImage(storage, {
 });
 ```
 
-**Depois (usando R2 - mais barato!):**
+**After (using R2 - cheaper!):**
 
 ```typescript
 import { createStorageFromState } from "@decocms/mcps-shared/storage";
 import { saveImage } from "@decocms/mcps-shared/image-generators";
 
-// Configure R2 no state do MCP
+// Configure R2 in MCP state
 const storage = createStorageFromState(env.DECO_CHAT_REQUEST_CONTEXT.state);
 const { url } = await saveImage(storage, {
   imageData,
@@ -174,7 +174,7 @@ const { url } = await saveImage(storage, {
 });
 ```
 
-### Exemplo 3: Novo MCP com Storage
+### Example 3: New MCP with Storage
 
 ```typescript
 import { createPrivateTool } from "@decocms/runtime/mastra";
@@ -190,28 +190,28 @@ export const createUploadTool = (env: Env) =>
       content: z.string(), // base64
     }),
     execute: async ({ context }) => {
-      // Auto-detecta storage (FILE_SYSTEM ou S3)
+      // Auto-detect storage (FILE_SYSTEM or S3)
       const storage = createStorageFromEnv(env);
       
-      // Gera URL de upload
+      // Generate upload URL
       const writeUrl = await storage.getWriteUrl(context.path, {
         expiresIn: 60,
       });
       
-      // Faz upload
+      // Upload
       const buffer = Buffer.from(context.content, "base64");
       await fetch(writeUrl, { method: "PUT", body: buffer });
       
-      // Retorna URL de leitura
+      // Return read URL
       const readUrl = await storage.getReadUrl(context.path, 3600);
       return { url: readUrl };
     },
   });
 ```
 
-## 🔧 Configuração do State
+## 🔧 State Configuration
 
-Para usar S3StorageAdapter via state, configure no MCP:
+To use S3StorageAdapter via state, configure in MCP:
 
 ```typescript
 export const StateSchema = BaseStateSchema.extend({
@@ -224,9 +224,9 @@ export const StateSchema = BaseStateSchema.extend({
 });
 ```
 
-## 🎨 Operações Avançadas
+## 🎨 Advanced Operations
 
-### Listar Objetos
+### List Objects
 
 ```typescript
 import { S3StorageAdapter } from "@decocms/mcps-shared/storage";
@@ -238,11 +238,11 @@ const result = await storage.listObjects({
   maxKeys: 100,
 });
 
-console.log(result.objects); // Array de objetos
-console.log(result.isTruncated); // Tem mais páginas?
+console.log(result.objects); // Array of objects
+console.log(result.isTruncated); // More pages available?
 ```
 
-### Obter Metadata
+### Get Metadata
 
 ```typescript
 const metadata = await storage.getMetadata("/image.png");
@@ -250,13 +250,13 @@ console.log(metadata.contentType); // "image/png"
 console.log(metadata.contentLength); // 12345
 ```
 
-### Deletar Objetos
+### Delete Objects
 
 ```typescript
-// Deletar um
+// Delete one
 await storage.deleteObject("/image.png");
 
-// Deletar múltiplos (batch)
+// Delete multiple (batch)
 const result = await storage.deleteObjects([
   "/image1.png",
   "/image2.png",
@@ -266,7 +266,7 @@ console.log(result.deleted); // ["image1.png", "image2.png", "image3.png"]
 console.log(result.errors); // []
 ```
 
-## 🧪 Testes
+## 🧪 Testing
 
 ```typescript
 import { ObjectStorage } from "@decocms/mcps-shared/storage";
@@ -280,81 +280,81 @@ class MockStorage implements ObjectStorage {
   }
 }
 
-// Usar em testes
+// Use in tests
 const mockStorage = new MockStorage();
 const url = await mockStorage.getReadUrl("/test.png", 3600);
 expect(url).toBe("mock://read/test.png");
 ```
 
-## ✅ Benefícios
+## ✅ Benefits
 
-1. **Código Único** - Toda lógica de storage em um só lugar
-2. **Reutilização** - Todos os MCPs usam o mesmo código
-3. **Consistência** - API unificada para todos os provedores
-4. **Manutenção** - Correções beneficiam todos os MCPs
-5. **Testável** - Fácil mockar para testes
-6. **Flexível** - Adicione novos provedores facilmente
+1. **Single Codebase** - All storage logic in one place
+2. **Reusability** - All MCPs use the same code
+3. **Consistency** - Unified API for all providers
+4. **Maintenance** - Fixes benefit all MCPs
+5. **Testable** - Easy to mock for testing
+6. **Flexible** - Add new providers easily
 
-## 📚 Compatibilidade
+## 📚 Compatibility
 
-### MCPs que podem usar:
+### MCPs that can use:
 
-- ✅ **object-storage** - Substituir lógica custom por adapters
-- ✅ **gemini-nano-banana** - Já usa via image-generators
-- ✅ **Qualquer novo MCP** - Use desde o início
+- ✅ **object-storage** - Replace custom logic with adapters
+- ✅ **gemini-nano-banana** - Already uses via image-generators
+- ✅ **Any new MCP** - Use from the start
 
-### Provedores Suportados:
+### Supported Providers:
 
-- ✅ **AWS S3** - Storage original
-- ✅ **Cloudflare R2** - Egress grátis (mais barato!)
+- ✅ **AWS S3** - Original storage
+- ✅ **Cloudflare R2** - Free egress (cheaper!)
 - ✅ **Supabase Storage** - S3-compatible + RLS policies
 - ✅ **MinIO** - Self-hosted S3-compatible
 - ✅ **DigitalOcean Spaces** - S3-compatible
-- ✅ **Google Cloud Storage** - Modo S3-compatible
-- ✅ **Deco FILE_SYSTEM** - Binding nativo do Deco
-- ✅ **Qualquer provedor S3-compatible**
+- ✅ **Google Cloud Storage** - S3-compatible mode
+- ✅ **Deco FILE_SYSTEM** - Native Deco binding
+- ✅ **Any S3-compatible provider**
 
-📖 **[Guia completo do Supabase](./SUPABASE_GUIDE.md)**
+📖 **[Complete Supabase guide](./SUPABASE_GUIDE.md)**
 
-## 🔄 Migração
+## 🔄 Migration
 
-### Para object-storage:
+### For object-storage:
 
 ```typescript
-// Substituir
+// Replace
 const s3Client = createS3Client(env);
 const command = new GetObjectCommand({ ... });
 const url = await getSignedUrl(s3Client, command, { expiresIn });
 
-// Por
+// With
 const storage = createStorageFromState(env.DECO_CHAT_REQUEST_CONTEXT.state);
 const url = await storage.getReadUrl(key, expiresIn);
 ```
 
-### Para image-generators:
+### For image-generators:
 
 ```typescript
-// Substituir
+// Replace
 const storage = new S3StorageAdapter(s3Client, bucket);
 
-// Por
+// With
 import { S3StorageAdapter } from "@decocms/mcps-shared/storage";
 const storage = new S3StorageAdapter(config);
 ```
 
-## 📦 Dependências
+## 📦 Dependencies
 
-Opcionais (apenas se usar S3):
+Optional (only if using S3):
 ```bash
 npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Ao adicionar novos adapters:
+When adding new adapters:
 
-1. Implemente `ObjectStorage` ou `ExtendedObjectStorage`
-2. Adicione testes
-3. Documente no README
-4. Adicione factory helper se apropriado
+1. Implement `ObjectStorage` or `ExtendedObjectStorage`
+2. Add tests
+3. Document in README
+4. Add factory helper if appropriate
 

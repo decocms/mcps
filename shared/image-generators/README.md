@@ -1,18 +1,18 @@
 # Image Generators - Shared Module
 
-Módulo compartilhado para construir ferramentas MCP de geração de imagens com suporte flexível a diferentes provedores de storage.
+Shared module for building MCP image generation tools with flexible support for different storage providers.
 
-## Características
+## Features
 
-- 🔌 **Storage Plugável**: Injete qualquer provedor de storage (S3, R2, MinIO, file system, etc.)
-- 🎨 **Middleware Padronizado**: Interface unificada para diferentes geradores de IA
-- 📦 **Type-Safe**: Totalmente tipado com TypeScript
-- 🧪 **Testável**: Arquitetura baseada em interfaces facilita testes
-- 🔄 **Backward Compatible**: Mantém compatibilidade com código existente
+- 🔌 **Pluggable Storage**: Inject any storage provider (S3, R2, MinIO, file system, etc.)
+- 🎨 **Standardized Middleware**: Unified interface for different AI generators
+- 📦 **Type-Safe**: Fully typed with TypeScript
+- 🧪 **Testable**: Interface-based architecture facilitates testing
+- 🔄 **Backward Compatible**: Maintains compatibility with existing code
 
-## Instalação
+## Installation
 
-Este módulo faz parte do monorepo de MCPs. Para usar:
+This module is part of the MCPs monorepo. To use:
 
 ```typescript
 import {
@@ -24,11 +24,11 @@ import {
 } from "@shared/image-generators";
 ```
 
-## Componentes Principais
+## Main Components
 
 ### 1. ObjectStorage Interface
 
-Interface genérica para provedores de storage:
+Generic interface for storage providers:
 
 ```typescript
 interface ObjectStorage {
@@ -37,11 +37,11 @@ interface ObjectStorage {
 }
 ```
 
-### 2. Adapters Disponíveis
+### 2. Available Adapters
 
 #### S3StorageAdapter
 
-Para qualquer provedor compatível com S3 (AWS S3, R2, MinIO, etc.):
+For any S3-compatible provider (AWS S3, R2, MinIO, etc.):
 
 ```typescript
 import { S3Client } from "@aws-sdk/client-s3";
@@ -53,7 +53,7 @@ const storage = new S3StorageAdapter(s3Client, "my-bucket");
 
 #### FileSystemStorageAdapter
 
-Para usar com binding FILE_SYSTEM do Deco:
+For use with Deco's FILE_SYSTEM binding:
 
 ```typescript
 import { FileSystemStorageAdapter } from "@shared/image-generators";
@@ -61,11 +61,11 @@ import { FileSystemStorageAdapter } from "@shared/image-generators";
 const storage = new FileSystemStorageAdapter(env.FILE_SYSTEM);
 ```
 
-### 3. Funções de Storage
+### 3. Storage Functions
 
 #### saveImage()
 
-Função principal para salvar imagens usando qualquer ObjectStorage:
+Main function for saving images using any ObjectStorage:
 
 ```typescript
 const result = await saveImage(storage, {
@@ -73,26 +73,26 @@ const result = await saveImage(storage, {
   mimeType: "image/png",
   metadata: { prompt: "beautiful sunset" },
   directory: "/images",
-  fileName: "custom-name", // opcional
-  readExpiresIn: 3600, // 1 hora (padrão)
-  writeExpiresIn: 60, // 1 minuto (padrão)
+  fileName: "custom-name", // optional
+  readExpiresIn: 3600, // 1 hour (default)
+  writeExpiresIn: 60, // 1 minute (default)
 });
 
-console.log(result.url);  // URL pública para acessar a imagem
-console.log(result.path); // Caminho onde foi salva
+console.log(result.url);  // Public URL to access the image
+console.log(result.path); // Path where it was saved
 ```
 
 #### extractImageData()
 
-Extrai dados de imagem de objetos inline:
+Extracts image data from inline objects:
 
 ```typescript
 const { mimeType, imageData } = extractImageData(inlineData);
 ```
 
-## Uso Básico
+## Basic Usage
 
-### Exemplo Completo: Gerador de Imagens com S3
+### Complete Example: Image Generator with S3
 
 ```typescript
 import { S3Client } from "@aws-sdk/client-s3";
@@ -105,7 +105,7 @@ import {
 import { z } from "zod";
 
 export const createImageGeneratorTool = (env: Env) => {
-  // Configurar storage uma vez
+  // Configure storage once
   const s3Client = new S3Client({
     region: env.AWS_REGION,
     credentials: {
@@ -117,20 +117,20 @@ export const createImageGeneratorTool = (env: Env) => {
 
   return createTool({
     id: "GENERATE_IMAGE",
-    description: "Gera uma imagem usando IA",
+    description: "Generates an image using AI",
     inputSchema: z.object({
-      prompt: z.string().describe("Descrição da imagem"),
+      prompt: z.string().describe("Image description"),
     }),
     execute: async ({ context, input }) => {
-      // 1. Gerar imagem com IA
+      // 1. Generate image with AI
       const generatedImage = await yourAIModel.generate(input.prompt);
       
-      // 2. Extrair dados da imagem
+      // 2. Extract image data
       const { mimeType, imageData } = extractImageData(
         generatedImage.inlineData
       );
       
-      // 3. Salvar usando storage injetado
+      // 3. Save using injected storage
       const result = await saveImage(storage, {
         imageData,
         mimeType,
@@ -151,7 +151,7 @@ export const createImageGeneratorTool = (env: Env) => {
 };
 ```
 
-## Provedores de Storage Suportados
+## Supported Storage Providers
 
 ### AWS S3
 
@@ -208,19 +208,19 @@ const gcsClient = new S3Client({
 const storage = new S3StorageAdapter(gcsClient, "bucket-name");
 ```
 
-## Implementação Customizada
+## Custom Implementation
 
-Crie seu próprio adapter implementando `ObjectStorage`:
+Create your own adapter by implementing `ObjectStorage`:
 
 ```typescript
 class MyCustomStorage implements ObjectStorage {
   async getReadUrl(path: string, expiresIn: number): Promise<string> {
-    // Sua lógica para gerar URL de leitura
+    // Your logic for generating read URL
     return "https://...";
   }
 
   async getWriteUrl(path: string, options: {...}): Promise<string> {
-    // Sua lógica para gerar URL de escrita
+    // Your logic for generating write URL
     return "https://...";
   }
 }
@@ -229,9 +229,9 @@ const storage = new MyCustomStorage();
 const result = await saveImage(storage, { ... });
 ```
 
-## Testes
+## Testing
 
-Facilite testes criando mocks da interface:
+Facilitate testing by creating interface mocks:
 
 ```typescript
 class MockStorage implements ObjectStorage {
@@ -244,7 +244,7 @@ class MockStorage implements ObjectStorage {
   }
 }
 
-// Em seus testes
+// In your tests
 const mockStorage = new MockStorage();
 const result = await saveImage(mockStorage, { ... });
 expect(result.url).toBe("mock://read/...");
@@ -252,19 +252,19 @@ expect(result.url).toBe("mock://read/...");
 
 ## Middleware (Base)
 
-O módulo também inclui utilitários base para construir ferramentas de geração:
+The module also includes base utilities for building generation tools:
 
 ```typescript
 import { createImageGeneratorTool } from "@shared/image-generators";
 
-// TODO: Documentação do middleware será expandida
+// TODO: Middleware documentation will be expanded
 ```
 
-## Migração
+## Migration
 
-### De `saveImageToFileSystem` para `saveImage`
+### From `saveImageToFileSystem` to `saveImage`
 
-**Antes:**
+**Before:**
 
 ```typescript
 const result = await saveImageToFileSystem(env, {
@@ -273,7 +273,7 @@ const result = await saveImageToFileSystem(env, {
 });
 ```
 
-**Depois:**
+**After:**
 
 ```typescript
 const storage = new FileSystemStorageAdapter(env.FILE_SYSTEM);
@@ -283,36 +283,36 @@ const result = await saveImage(storage, {
 });
 ```
 
-A função antiga ainda funciona (marcada como `@deprecated`), mas recomenda-se migrar para maior flexibilidade.
+The old function still works (marked as `@deprecated`), but migration is recommended for greater flexibility.
 
-## Exemplos Completos
+## Complete Examples
 
-Veja [EXAMPLES.md](./EXAMPLES.md) para exemplos detalhados de uso com diferentes provedores.
+See [EXAMPLES.md](./EXAMPLES.md) for detailed usage examples with different providers.
 
-## Dependências
+## Dependencies
 
-### Obrigatórias
+### Required
 
-- Nenhuma! O módulo core não tem dependências externas.
+- None! The core module has no external dependencies.
 
-### Opcionais
+### Optional
 
-Para usar `S3StorageAdapter`:
+To use `S3StorageAdapter`:
 
 ```bash
 npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
 
-## Contribuindo
+## Contributing
 
-Este módulo faz parte do monorepo de MCPs. Para contribuir:
+This module is part of the MCPs monorepo. To contribute:
 
-1. Mantenha a interface `ObjectStorage` simples e genérica
-2. Adicione testes para novos adapters
-3. Documente novos provedores de storage
-4. Mantenha backward compatibility
+1. Keep the `ObjectStorage` interface simple and generic
+2. Add tests for new adapters
+3. Document new storage providers
+4. Maintain backward compatibility
 
-## Licença
+## License
 
-Veja LICENSE no repositório principal.
+See LICENSE in the main repository.
 
