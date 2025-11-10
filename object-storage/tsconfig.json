@@ -29,11 +29,7 @@
       "@/*": ["./view/src/*"],
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"],
-      "npm:@cloudflare/workers-types@*": ["node_modules/@cloudflare/workers-types"],
-      "npm:zod@*": ["node_modules/zod"],
-      "npm:@modelcontextprotocol/sdk@*/types.js": ["node_modules/@modelcontextprotocol/sdk/dist/esm/types.d.ts"],
-      "npm:@mastra/core@*": ["node_modules/@mastra/core"]
+      "worker/*": ["./worker/*"]
     },
 
     /* Types */
@@ -44,11 +40,5 @@
     "server",
     "shared",
     "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules/@deco/workers-runtime",
-    "node_modules/.bun/@jsr+deco__workers-runtime*",
-    "../node_modules/@deco/workers-runtime",
-    "../node_modules/.bun/@jsr+deco__workers-runtime*"
   ]
 }
