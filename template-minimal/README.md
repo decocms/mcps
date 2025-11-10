@@ -1,1 +1,1 @@
-# Object Storage MCP
+# Template Minimal

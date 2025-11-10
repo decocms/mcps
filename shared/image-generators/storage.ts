@@ -97,22 +97,6 @@ export async function saveImage(
   };
 }
 
-/** @deprecated Use saveImage with FileSystemStorageAdapter instead */
-export async function saveImageToFileSystem<TEnv extends FileSystemEnv>(
-  env: TEnv,
-  options: SaveImageOptions,
-): Promise<SaveImageResult> {
-  if (!env.FILE_SYSTEM) {
-    throw new Error("FILE_SYSTEM binding not configured");
-  }
-
-  const { FileSystemStorageAdapter } = await import(
-    "@decocms/mcps-shared/storage"
-  );
-  const storage = new FileSystemStorageAdapter(env.FILE_SYSTEM);
-  return saveImage(storage, options);
-}
-
 export function extractImageData(inlineData: {
   mime_type?: string;
   data: string;

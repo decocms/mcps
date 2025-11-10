@@ -1,14 +1,12 @@
 /**
  * This is the main entry point for your application and
  * MCP server. This is a Cloudflare workers app, and serves
- * both your MCP server at /mcp and your views as a react
- * application at /.
+ * your MCP server at /mcp.
  */
 import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
 import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-import { views } from "./views.ts";
 
 /**
  * Contract authorization clause
@@ -90,7 +88,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     state: StateSchema,
   },
-  views,
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.

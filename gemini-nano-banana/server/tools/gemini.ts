@@ -1,10 +1,11 @@
 import {
   createImageGeneratorTool,
   withContractManagement,
-  saveImageToFileSystem,
   extractImageData,
   type GenerateImageInput,
   type GenerateImageOutput,
+  createStorageFromEnv,
+  saveImage,
 } from "@decocms/mcps-shared/image-generators";
 import type { Env } from "server/main";
 import { createGeminiClient } from "./utils/gemini";
@@ -44,15 +45,17 @@ const generateImage = (env: Env) => {
     // Extract image data
     const { mimeType, imageData } = extractImageData(inlineData);
 
-    // Save to file system
-    const { url } = await saveImageToFileSystem(env, {
+    const storage = createStorageFromEnv(env);
+    
+    // Save to storage
+    const saveImageResult = await saveImage(storage, {
       imageData,
       mimeType,
       metadata: { prompt: input.prompt },
     });
 
     return {
-      image: url,
+      image: saveImageResult.url,
       finishReason: candidate.finishReason,
     };
   };
