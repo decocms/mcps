@@ -11,7 +11,7 @@
  */
 import { StateSchema } from "../shared/deco.gen.ts";
 import { Env } from "./main.ts";
-import type { CreateMCPServerOptions } from "@deco/workers-runtime/mastra";
+import type { CreateMCPServerOptions } from "@decocms/runtime/mastra";
 
 export const views: CreateMCPServerOptions<
   Env,

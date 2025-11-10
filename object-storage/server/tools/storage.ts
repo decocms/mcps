@@ -16,7 +16,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createPrivateTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createS3Client, getPresignedUrlExpiration } from "../lib/s3-client.ts";

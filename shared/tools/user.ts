@@ -5,7 +5,7 @@
  * - Getting current user information
  * - User authentication checks
  */
-import { createPrivateTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 
 /**

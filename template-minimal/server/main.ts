@@ -3,7 +3,7 @@
  * MCP server. This is a Cloudflare workers app, and serves
  * your MCP server at /mcp.
  */
-import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
+import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";

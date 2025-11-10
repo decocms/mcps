@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createPrivateTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/mastra";
 import { saveImage } from "./storage";
 import { ObjectStorage } from "../storage";
 import {

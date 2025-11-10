@@ -4,7 +4,7 @@
  * both your MCP server at /mcp and your views as a react
  * application at /.
  */
-import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
+import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
