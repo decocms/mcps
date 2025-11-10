@@ -15,9 +15,9 @@ echo "Running pre-commit checks..."
 
 # Run format check
 echo "Running oxfmt..."
-bun run fmt
+bun run fmt --check
 if [ $? -ne 0 ]; then
-  echo "❌ Format check failed. Please fix formatting issues."
+  echo "❌ Format check failed. Please fix formatting issues by running 'bun run fmt'."
   exit 1
 fi
 
@@ -25,7 +25,7 @@ fi
 echo "Running oxlint..."
 bun run lint
 if [ $? -ne 0 ]; then
-  echo "❌ Lint check failed. Please fix linting issues."
+  echo "❌ Lint check failed. Please fix linting issues by running 'bun run lint'."
   exit 1
 fi
 
