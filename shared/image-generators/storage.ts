@@ -1,35 +1,4 @@
-// Re-export storage primitives from shared/storage
-export {
-  type ObjectStorage,
-  type ExtendedObjectStorage,
-  S3StorageAdapter,
-  FileSystemStorageAdapter,
-  createStorageFromState,
-  createS3Storage,
-  createFileSystemStorage,
-  createStorageFromEnv,
-} from "@decocms/mcps-shared/storage";
-
 import type { ObjectStorage } from "@decocms/mcps-shared/storage";
-
-/** @deprecated Use FileSystemBinding from @decocms/mcps-shared/storage instead */
-export interface FileSystemUrlResponse {
-  url: string;
-}
-export interface FileSystemEnv {
-  FILE_SYSTEM?: {
-    FS_READ: (input: {
-      path: string;
-      expiresIn: number;
-    }) => Promise<FileSystemUrlResponse>;
-    FS_WRITE: (input: {
-      path: string;
-      metadata?: Record<string, string>;
-      contentType?: string;
-      expiresIn: number;
-    }) => Promise<FileSystemUrlResponse>;
-  };
-}
 
 export interface SaveImageOptions {
   imageData: string;
@@ -43,8 +12,9 @@ export interface SaveImageOptions {
 
 export interface SaveImageResult {
   url: string;
-  path: string;
+  key: string;
 }
+
 export async function saveImage(
   storage: ObjectStorage,
   options: SaveImageOptions,
@@ -64,8 +34,9 @@ export async function saveImage(
   const path = `${directory}/${name}.${extension}`;
 
   const [readUrl, writeUrl] = await Promise.all([
-    storage.getReadUrl(path, readExpiresIn),
-    storage.getWriteUrl(path, {
+    storage.createPresignedReadUrl({ key: path, expiresIn: readExpiresIn }),
+    storage.createPresignedPutUrl({
+      key: path,
       contentType: mimeType,
       metadata,
       expiresIn: writeExpiresIn,
@@ -93,19 +64,6 @@ export async function saveImage(
 
   return {
     url: readUrl,
-    path,
-  };
-}
-
-export function extractImageData(inlineData: {
-  mime_type?: string;
-  data: string;
-}): {
-  mimeType: string;
-  imageData: string;
-} {
-  return {
-    mimeType: inlineData.mime_type || "image/png",
-    imageData: inlineData.data,
+    key: path,
   };
 }

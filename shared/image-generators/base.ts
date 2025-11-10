@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { createPrivateTool } from "@deco/workers-runtime/mastra";
+import { saveImage } from "./storage";
+import { ObjectStorage } from "../storage";
+
+export type ImageGeneratorStorage = Pick<
+  ObjectStorage,
+  "createPresignedReadUrl" | "createPresignedPutUrl"
+>;
 
 export const AspectRatioSchema = z.enum([
   "1:1",
@@ -31,6 +38,29 @@ export const GenerateImageInputSchema = z.object({
   ),
 });
 
+export interface GenerateImageCallbackOutputSuccess {
+  /**
+   * The raw data of the image
+   */
+  data: string;
+  /**
+   * The mime type of the image
+   */
+  mimeType?: string;
+}
+
+export interface GenerateImageCallbackOutputError {
+  error: true;
+  /**
+   * The finish reason of the image generation
+   */
+  finishReason?: string;
+}
+
+type GenerateImageCallbackOutput =
+  | GenerateImageCallbackOutputSuccess
+  | GenerateImageCallbackOutputError;
+
 export const GenerateImageOutputSchema = z.object({
   image: z.string().optional().describe("URL of the generated image"),
   error: z.boolean().optional().describe("Whether the request failed"),
@@ -41,7 +71,7 @@ export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
 export interface ImageGeneratorEnv {
-  DECO_CHAT_REQUEST_CONTEXT: {
+  DECO_REQUEST_CONTEXT: {
     ensureAuthenticated: () => any;
   };
   DECO_CHAT_WORKSPACE: string;
@@ -50,23 +80,48 @@ export interface ImageGeneratorEnv {
 export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
   provider: string;
   description?: string;
-  execute: (
-    input: GenerateImageInput,
-    env: TEnv,
-  ) => Promise<GenerateImageOutput>;
+  execute: ({
+    env,
+    input,
+  }: {
+    env: TEnv;
+    input: GenerateImageInput;
+  }) => Promise<GenerateImageCallbackOutput>;
+  getStorage: (env: TEnv) => ImageGeneratorStorage;
 }
-export function createImageGeneratorTool<TEnv extends ImageGeneratorEnv>(
-  env: TEnv,
+
+export function createImageGeneratorTools<TEnv extends ImageGeneratorEnv>(
   options: CreateImageGeneratorOptions<TEnv>,
 ) {
-  return createPrivateTool({
-    id: "GENERATE_IMAGE",
-    description:
-      options.description || `Generate images using ${options.provider}`,
-    inputSchema: GenerateImageInputSchema,
-    outputSchema: GenerateImageOutputSchema,
-    execute: async ({ context }: { context: GenerateImageInput }) => {
-      return options.execute(context, env);
-    },
-  });
+  const generateImage = (env: TEnv) =>
+    createPrivateTool({
+      id: "GENERATE_IMAGE",
+      description:
+        options.description || `Generate images using ${options.provider}`,
+      inputSchema: GenerateImageInputSchema,
+      outputSchema: GenerateImageOutputSchema,
+      execute: async ({ context }: { context: GenerateImageInput }) => {
+        const result = await options.execute({ env, input: context });
+
+        if ("error" in result) {
+          return {
+            error: true,
+            finishReason: result.finishReason,
+          };
+        }
+
+        const storage = options.getStorage(env);
+        const saveImageResult = await saveImage(storage, {
+          imageData: result.data,
+          mimeType: result.mimeType || "image/png",
+          metadata: { prompt: context.prompt },
+        });
+
+        return {
+          image: saveImageResult.url,
+        };
+      },
+    });
+
+  return [generateImage];
 }

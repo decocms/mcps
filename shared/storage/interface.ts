@@ -1,16 +1,16 @@
 export interface ObjectStorage {
-  getReadUrl(path: string, expiresIn: number): Promise<string>;
-  getWriteUrl(
-    path: string,
-    options: {
-      contentType?: string;
-      metadata?: Record<string, string>;
-      expiresIn: number;
-    },
-  ): Promise<string>;
-}
+  createPresignedReadUrl(options: {
+    key: string;
+    expiresIn?: number;
+  }): Promise<string>;
 
-export interface ExtendedObjectStorage extends ObjectStorage {
+  createPresignedPutUrl(options: {
+    key: string;
+    contentType?: string;
+    metadata?: Record<string, string>;
+    expiresIn: number;
+  }): Promise<string>;
+
   listObjects?(options: {
     prefix?: string;
     maxKeys?: number;
@@ -26,7 +26,7 @@ export interface ExtendedObjectStorage extends ObjectStorage {
     isTruncated: boolean;
   }>;
 
-  getMetadata?(key: string): Promise<{
+  getMetadata?(options: { key: string }): Promise<{
     contentType?: string;
     contentLength: number;
     lastModified: Date;
@@ -34,9 +34,9 @@ export interface ExtendedObjectStorage extends ObjectStorage {
     metadata?: Record<string, string>;
   }>;
 
-  deleteObject?(key: string): Promise<void>;
+  deleteObject?(options: { key: string }): Promise<void>;
 
-  deleteObjects?(keys: string[]): Promise<{
+  deleteObjects?(options: { keys: string[] }): Promise<{
     deleted: string[];
     errors: Array<{ key: string; message: string }>;
   }>;

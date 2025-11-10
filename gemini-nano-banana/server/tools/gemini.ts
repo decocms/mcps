@@ -1,21 +1,20 @@
-import {
-  createImageGeneratorTool,
-  withContractManagement,
-  extractImageData,
-  type GenerateImageInput,
-  type GenerateImageOutput,
-  createStorageFromEnv,
-  saveImage,
-} from "@decocms/mcps-shared/image-generators";
+import { createImageGeneratorTools } from "@decocms/mcps-shared/image-generators";
 import type { Env } from "server/main";
 import { createGeminiClient } from "./utils/gemini";
+import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 
-const generateImage = (env: Env) => {
-  // Core generation logic
-  const executeGeneration = async (
-    input: GenerateImageInput,
-    env: Env,
-  ): Promise<GenerateImageOutput> => {
+// const executeWithMiddlewares = withContractManagement(executeGeneration, {
+//   clauseId: "gemini-2.5-flash-image",
+//   contract: "NANOBANANA_CONTRACT",
+//   provider: "Gemini",
+//   maxRetries: 3,
+// });
+
+export const geminiTools = createImageGeneratorTools<Env>({
+  provider: "Gemini 2.5 Flash Image Preview",
+  description: "Generate an image using the Gemini API",
+  getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
+  execute: async ({ env, input }) => {
     // Call Gemini API
     const client = createGeminiClient(env);
     const response = await client.generateImage(
@@ -42,37 +41,6 @@ const generateImage = (env: Env) => {
       };
     }
 
-    // Extract image data
-    const { mimeType, imageData } = extractImageData(inlineData);
-
-    const storage = createStorageFromEnv(env);
-    
-    // Save to storage
-    const saveImageResult = await saveImage(storage, {
-      imageData,
-      mimeType,
-      metadata: { prompt: input.prompt },
-    });
-
-    return {
-      image: saveImageResult.url,
-      finishReason: candidate.finishReason,
-    };
-  };
-
-  const executeWithMiddlewares = withContractManagement(executeGeneration, {
-    clauseId: "gemini-2.5-flash-image",
-    contract: "NANOBANANA_CONTRACT",
-    provider: "Gemini",
-    maxRetries: 3,
-  });
-
-  // Create the tool
-  return createImageGeneratorTool(env, {
-    provider: "Gemini 2.5 Flash Image Preview",
-    description: "Generate an image using the Gemini API",
-    execute: executeWithMiddlewares,
-  });
-};
-
-export const geminiTools = [generateImage];
+    return inlineData;
+  },
+});
