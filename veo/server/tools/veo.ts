@@ -2,6 +2,10 @@ import type { Env } from "server/main";
 import { createVeoClient } from "./utils/veo";
 import { createVideoGeneratorTools } from "@decocms/mcps-shared/video-generators";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
+import {
+  OPERATION_MAX_WAIT_MS,
+  OPERATION_POLL_INTERVAL_MS,
+} from "../constants";
 
 export const veoTools = createVideoGeneratorTools<Env>({
   metadata: {
@@ -43,8 +47,8 @@ export const veoTools = createVideoGeneratorTools<Env>({
     // Poll until complete (6 minutes max, poll every 10 seconds)
     const completed = await client.pollOperationUntilComplete(
       operation.name,
-      360000,
-      10000,
+      OPERATION_MAX_WAIT_MS,
+      OPERATION_POLL_INTERVAL_MS,
     );
 
     // Check if completed successfully
