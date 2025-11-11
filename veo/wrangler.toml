@@ -1,0 +1,43 @@
+#:schema node_modules/@deco/workers-runtime/config-schema.json
+name = "veo3"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = true
+local = false
+
+[deco.integration]
+description = "Generate high-quality videos with audio using Google Gemini Veo 3 and Veo 3.1 models. Supports text-to-video, image-to-video, and video extension."
+icon = "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg"
+friendlyName = "Google Veo 3.1"
+
+[[deco.bindings]]
+type = "contract"
+name = "VEO3_CONTRACT"
+
+[deco.bindings.contract]
+body = "U$6.00 per video generation, U$7.00 per image-to-video, U$4.00 per video extension"
+
+[[deco.bindings.contract.clauses]]
+id = "veo-3:generateVideo"
+price = 6
+description = "$6.00 per text-to-video generation"
+
+[[deco.bindings.contract.clauses]]
+id = "veo-3:generateVideoFromImage"
+price = 7
+description = "$7.00 per image-to-video generation"
+
+[[deco.bindings.contract.clauses]]
+id = "veo-3:extendVideo"
+price = 4
+description = "$4.00 per video extension"
+
+[[deco.bindings]]
+name = "FILE_SYSTEM"
+type = "mcp"
+integration_name = "@deco/file-system"
