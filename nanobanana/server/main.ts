@@ -1,29 +1,16 @@
 /**
  * This is the main entry point for your application and
  * MCP server. This is a Cloudflare workers app, and serves
- * both your MCP server at /mcp and your views as a react
- * application at /.
+ * your MCP server at /mcp.
  */
-import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
-import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
+import { DefaultEnv, withRuntime } from "@decocms/runtime";
+import {
+  type Env as DecoEnv,
+  Scopes,
+  StateSchema,
+} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-import { views } from "./views.ts";
-
-/**
- * Contract authorization clause
- */
-interface ContractClause {
-  clauseId: string;
-  amount: number;
-}
-
-/**
- * File system read/write response
- */
-interface FileSystemUrlResponse {
-  url: string;
-}
 
 /**
  * This Env type is the main context object that is passed to
@@ -37,28 +24,6 @@ export type Env = DefaultEnv &
     ASSETS: {
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
     };
-    NANOBANANA_CONTRACT: {
-      CONTRACT_AUTHORIZE: (input: {
-        clauses: ContractClause[];
-      }) => Promise<{ transactionId: string }>;
-      CONTRACT_SETTLE: (input: {
-        transactionId: string;
-        clauses: ContractClause[];
-        vendorId: string;
-      }) => Promise<void>;
-    };
-    FILE_SYSTEM: {
-      FS_READ: (input: {
-        path: string;
-        expiresIn: number;
-      }) => Promise<FileSystemUrlResponse>;
-      FS_WRITE: (input: {
-        path: string;
-        metadata?: Record<string, string>;
-        contentType?: string;
-        expiresIn: number;
-      }) => Promise<FileSystemUrlResponse>;
-    };
   };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
@@ -71,7 +36,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [],
+    scopes: [
+      Scopes.NANOBANANA_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.NANOBANANA_CONTRACT.CONTRACT_SETTLE,
+      Scopes.FILE_SYSTEM.FS_WRITE,
+      Scopes.FILE_SYSTEM.FS_READ,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -90,7 +60,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     state: StateSchema,
   },
-  views,
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.

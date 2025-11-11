@@ -1,5 +1,5 @@
-import { OPENROUTER_BASE_URL } from "server/constants";
-import { Env } from "server/main";
+import { OPENROUTER_BASE_URL } from "../../constants";
+import { Env } from "../../main";
 import z from "zod";
 
 export const models = z.enum(["gemini-2.5-flash-image-preview"]);
