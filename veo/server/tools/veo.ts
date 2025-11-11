@@ -12,7 +12,7 @@ export const veoTools = createVideoGeneratorTools<Env>({
   getContract: (env) => ({
     binding: env.VEO3_CONTRACT,
     clause: {
-      clauseId: "veo3:generateVideo",
+      clauseId: "veo-3:generateVideo",
       amount: 1,
     },
   }),

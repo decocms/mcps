@@ -1,7 +1,7 @@
 {
   "name": "veo",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "Veo 3 MCP",
   "private": true,
   "type": "module",
   "scripts": {
