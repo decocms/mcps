@@ -23,7 +23,8 @@
     "object-storage",
     "shared",
     "template-minimal",
-    "template-with-view"
+    "template-with-view",
+    "veo"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
