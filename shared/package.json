@@ -10,7 +10,8 @@
         "./tools": "./tools/index.ts",
         "./image-generators": "./image-generators/index.ts",
         "./video-generators": "./video-generators/index.ts",
-        "./storage": "./storage/index.ts"
+        "./storage": "./storage/index.ts",
+        "./vector-databases": "./vector-databases/index.ts"
     },
     "devDependencies": {
         "vite": "7.2.0",

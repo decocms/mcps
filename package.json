@@ -21,6 +21,7 @@
   "workspaces": [
     "nanobanana",
     "object-storage",
+    "pinecone",
     "shared",
     "template-minimal",
     "template-with-view",
