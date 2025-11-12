@@ -1,6 +1,12 @@
 import { GEMINI_API_BASE_URL } from "../../constants";
 import { Env } from "server/main";
 import z from "zod";
+import {
+  assertEnvKey,
+  parseApiError,
+  pollUntilComplete,
+  fetchImageAsBase64,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 // Veo 3 model variants
 export const VeoModels = z.enum([
@@ -192,65 +198,7 @@ export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
  * Assert that the Google Gemini API key is set
  */
 function assertApiKey(env: Env) {
-  if (!env.GOOGLE_GENAI_API_KEY) {
-    throw new Error("GOOGLE_GENAI_API_KEY is not set in environment");
-  }
-}
-
-/**
- * Fetch image from URL and convert to base64
- * Supports both HTTP URLs and data URLs
- */
-async function fetchImageAsBase64(imageUrl: string): Promise<{
-  base64: string;
-  mimeType: string;
-}> {
-  console.log(
-    `[fetchImageAsBase64] Fetching image from: ${imageUrl.substring(0, 100)}...`,
-  );
-
-  // If it's already a data URL, extract the base64 part
-  if (imageUrl.startsWith("data:")) {
-    const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (match) {
-      return {
-        mimeType: match[1],
-        base64: match[2],
-      };
-    }
-    throw new Error("Invalid data URL format");
-  }
-
-  // Fetch the image from HTTP(S) URL
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch image: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  // Get the content type
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-
-  // Convert to base64
-  const arrayBuffer = await response.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-
-  // Convert bytes to base64
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const base64 = btoa(binary);
-
-  console.log(
-    `[fetchImageAsBase64] Successfully converted ${bytes.length} bytes to base64 (${contentType})`,
-  );
-
-  return {
-    base64,
-    mimeType: contentType,
-  };
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 }
 
 /**
@@ -281,17 +229,7 @@ async function makeGeminiRequest(
   const response = await fetch(url, options);
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      throw new Error(
-        `Gemini API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "Gemini");
   }
 
   return await response.json();
@@ -553,16 +491,7 @@ export async function getOperationStatus(
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[getOperationStatus] Error response:`, errorText);
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      throw new Error(
-        `Gemini API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "Gemini");
   }
 
   const data = await response.json();
@@ -637,24 +566,15 @@ export async function pollOperationUntilComplete(
   maxWaitMs: number = 360000, // 6 minutes
   pollIntervalMs: number = 10000, // 10 seconds
 ): Promise<OperationResponse> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const operation = await getOperationStatus(env, operationName);
-
-    if (operation.done) {
-      return operation;
-    }
-
-    if (operation.error) {
-      throw new Error(`Operation failed: ${operation.error.message}`);
-    }
-
-    // Wait before next poll
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-  }
-
-  throw new Error(`Operation timed out after ${maxWaitMs}ms`);
+  return pollUntilComplete<OperationResponse>({
+    checkFn: () => getOperationStatus(env, operationName),
+    isDoneFn: (operation: OperationResponse) => operation.done === true,
+    getErrorFn: (operation: OperationResponse) =>
+      operation.error?.message || null,
+    maxWaitMs,
+    pollIntervalMs,
+    timeoutMessage: `Operation timed out after ${maxWaitMs}ms`,
+  });
 }
 
 /**

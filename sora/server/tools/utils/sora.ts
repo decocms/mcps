@@ -1,6 +1,11 @@
 import { OPENAI_BASE_URL, OPENAI_VIDEOS_ENDPOINT } from "server/constants";
 import { Env } from "server/main";
 import z from "zod";
+import {
+  assertEnvKey,
+  parseApiError,
+  pollUntilComplete,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 // Sora 2 models
 export const models = z.enum(["sora-2"]);
@@ -57,9 +62,7 @@ export const ListVideosResponseSchema = z.object({
 export type ListVideosResponse = z.infer<typeof ListVideosResponseSchema>;
 
 function assertApiKey(env: Env) {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set");
-  }
+  assertEnvKey(env, "OPENAI_API_KEY");
 }
 
 async function makeOpenAIRequest(
@@ -87,19 +90,7 @@ async function makeOpenAIRequest(
   const response = await fetch(url, options);
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.json();
@@ -146,19 +137,7 @@ export async function createVideo(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-
-      // Try to parse the error as JSON to extract meaningful message
-      try {
-        const errorJson = JSON.parse(errorText);
-        const errorMessage = errorJson.error?.message || errorText;
-        throw new Error(errorMessage);
-      } catch {
-        // If JSON parsing fails, use the raw error text
-        throw new Error(
-          `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-        );
-      }
+      await parseApiError(response, "OpenAI");
     }
 
     const data = await response.json();
@@ -250,19 +229,7 @@ export async function retrieveVideoContent(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   // For video content, we get a direct video file or redirect URL
@@ -301,19 +268,7 @@ export async function downloadVideoContent(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.blob();
@@ -337,19 +292,7 @@ export async function downloadSupportingAsset(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.blob();
@@ -364,23 +307,14 @@ export async function pollVideoUntilComplete(
   maxWaitMs: number = 600000, // 10 minutes default
   pollIntervalMs: number = 10000, // 10 seconds
 ): Promise<VideoResponse> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const videoResponse = await retrieveVideo(env, videoId);
-
-    if (
-      videoResponse.status === "completed" ||
-      videoResponse.status === "failed"
-    ) {
-      return videoResponse;
-    }
-
-    // Wait before next poll
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-  }
-
-  throw new Error(`Video generation timed out after ${maxWaitMs}ms`);
+  return pollUntilComplete<VideoResponse>({
+    checkFn: () => retrieveVideo(env, videoId),
+    isDoneFn: (video: VideoResponse) =>
+      video.status === "completed" || video.status === "failed",
+    maxWaitMs,
+    pollIntervalMs,
+    timeoutMessage: `Video generation timed out after ${maxWaitMs}ms`,
+  });
 }
 
 // Convenience function to create client

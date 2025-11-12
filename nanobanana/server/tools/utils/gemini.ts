@@ -1,6 +1,10 @@
 import { OPENROUTER_BASE_URL } from "../../constants";
 import { Env } from "../../main";
 import z from "zod";
+import {
+  assertEnvKey,
+  parseApiError,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 export const models = z.enum(["gemini-2.5-flash-image-preview"]);
 
@@ -74,18 +78,12 @@ interface OpenRouterResponse {
   }>;
 }
 
-function assertApiKey(env: Env) {
-  if (!env.NANOBANANA_API_KEY) {
-    throw new Error("NANOBANANA_API_KEY is not set");
-  }
-}
-
 async function makeOpenrouterRequest(
   env: Env,
   endpoint: string,
   body: any,
 ): Promise<GeminiResponse> {
-  assertApiKey(env);
+  assertEnvKey(env, "NANOBANANA_API_KEY");
 
   const url = `${OPENROUTER_BASE_URL}${endpoint}`;
 
@@ -99,10 +97,7 @@ async function makeOpenrouterRequest(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Openrouter API error: ${response.status} ${response.statusText}\n${errorText}`,
-    );
+    await parseApiError(response, "Openrouter");
   }
 
   const data = (await response.json()) as OpenRouterResponse;
