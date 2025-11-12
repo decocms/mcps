@@ -6,4 +6,5 @@
 
 export * from "./interface.ts";
 export * from "./types.ts";
+export * from "./schemas.ts";
 export * from "./adapters/pinecone.ts";
