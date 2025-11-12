@@ -61,7 +61,7 @@ async function makeRequest<T>(
  * Factory function to create Pinecone client from environment
  */
 export const createPineconeClient = (env: Env) => {
-  const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+  const state = env.DECO_REQUEST_CONTEXT.state;
   const config: PineconeClientConfig = {
     apiKey: state.apiKey,
     indexHost: state.indexHost,
