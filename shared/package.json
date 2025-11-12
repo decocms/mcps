@@ -10,6 +10,7 @@
         "./tools": "./tools/index.ts",
         "./image-generators": "./image-generators/index.ts",
         "./video-generators": "./video-generators/index.ts",
+        "./audio-transcribers": "./audio-transcribers/index.ts",
         "./storage": "./storage/index.ts"
     },
     "devDependencies": {
