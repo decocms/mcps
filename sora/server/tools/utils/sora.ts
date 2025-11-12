@@ -120,7 +120,6 @@ export async function createVideo(
     }
     const imageBlob = await imageResponse.blob();
 
-    // Create form data
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("model", model);
@@ -144,7 +143,6 @@ export async function createVideo(
     return VideoResponseSchema.parse(data);
   }
 
-  // Otherwise use JSON
   const body = {
     model,
     prompt,
@@ -162,7 +160,6 @@ export async function createVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// Remix Video
 export async function remixVideo(
   env: Env,
   videoId: string,
@@ -182,7 +179,6 @@ export async function remixVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// List Videos
 export async function listVideos(
   env: Env,
   limit: number = 20,
@@ -198,7 +194,6 @@ export async function listVideos(
   return ListVideosResponseSchema.parse(data);
 }
 
-// Retrieve Video
 export async function retrieveVideo(
   env: Env,
   videoId: string,
@@ -212,7 +207,6 @@ export async function retrieveVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// Retrieve Video Content (returns URL only, for backward compatibility)
 export async function retrieveVideoContent(
   env: Env,
   videoId: string,
@@ -232,10 +226,8 @@ export async function retrieveVideoContent(
     await parseApiError(response, "OpenAI");
   }
 
-  // For video content, we get a direct video file or redirect URL
   const contentType = response.headers.get("content-type") || "video/mp4";
 
-  // If it's a redirect, get the final URL
   if (response.redirected) {
     return {
       url: response.url,
@@ -243,15 +235,12 @@ export async function retrieveVideoContent(
     };
   }
 
-  // If we get direct content, we need to handle it
-  // For now, return the URL as-is
   return {
     url: response.url,
     contentType,
   };
 }
 
-// Download Video Content (returns Blob for saving to FS)
 export async function downloadVideoContent(
   env: Env,
   videoId: string,
@@ -298,9 +287,6 @@ export async function downloadSupportingAsset(
   return await response.blob();
 }
 
-/**
- * Poll a video until it's complete or timeout
- */
 export async function pollVideoUntilComplete(
   env: Env,
   videoId: string,
@@ -317,7 +303,6 @@ export async function pollVideoUntilComplete(
   });
 }
 
-// Convenience function to create client
 export const createSoraClient = (env: Env) => ({
   createVideo: (
     prompt: string,

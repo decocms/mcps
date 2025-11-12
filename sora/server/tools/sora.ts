@@ -7,7 +7,6 @@ import {
   OPERATION_POLL_INTERVAL_MS,
 } from "../constants";
 
-// Map aspect ratios from standard format to Sora's size format
 function mapAspectRatioToSize(aspectRatio?: string): string {
   switch (aspectRatio) {
     case "16:9":
@@ -47,16 +46,12 @@ export const soraTools = createVideoGeneratorTools<Env>({
   execute: async ({ env, input }) => {
     const client = createSoraClient(env);
 
-    // Convert aspect ratio to Sora size format
     const size = mapAspectRatioToSize(input.aspectRatio);
 
-    // Convert duration to Sora format (string)
     const seconds = mapDuration(input.duration);
 
-    // Use baseImageUrl or firstFrameUrl as input reference
     const inputReferenceUrl = input.baseImageUrl || input.firstFrameUrl;
 
-    // Start video generation
     const createResponse = await client.createVideo(
       input.prompt,
       "sora-2", // default model
@@ -72,7 +67,6 @@ export const soraTools = createVideoGeneratorTools<Env>({
       OPERATION_POLL_INTERVAL_MS,
     );
 
-    // Check if completed successfully
     if (videoResponse.status === "failed") {
       return {
         error: true,
@@ -87,7 +81,6 @@ export const soraTools = createVideoGeneratorTools<Env>({
       };
     }
 
-    // Download video content
     const videoBlob = await client.downloadVideoContent(createResponse.id);
 
     return {
