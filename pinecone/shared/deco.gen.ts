@@ -116,7 +116,7 @@ export type Array_3 = String_13[];
  */
 export type Boolean_1 = boolean;
 /**
- * Optional namespace to delete from (uses state default if not provided)
+ * Optional namespace to delete from (uses default if not provided)
  */
 export type String_14 = string;
 
@@ -158,7 +158,7 @@ export interface DELETE_VECTORSOutput {}
 export type Array_4 = [String_15, ...String_15[]];
 export type String_15 = string;
 /**
- * Optional namespace to fetch from (uses state default if not provided)
+ * Optional namespace to fetch from (uses default if not provided)
  */
 export type String_16 = string;
 
@@ -229,7 +229,7 @@ export type String_21 = string;
  */
 export type Number_1 = number;
 /**
- * Optional namespace to search within (uses state default if not provided)
+ * Optional namespace to search within (uses default if not provided)
  */
 export type String_22 = string;
 /**
@@ -323,7 +323,7 @@ export type Number_7 = number;
  */
 export type Array_12 = Number_7[];
 /**
- * Optional namespace to organize vectors (uses state default if not provided)
+ * Optional namespace to organize vectors (uses default if not provided)
  */
 export type String_26 = string;
 
@@ -403,7 +403,7 @@ export interface Env {
       input: DECO_CHAT_VIEWS_LISTInput,
     ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
     /**
-     * Delete vectors from the Pinecone index. You can delete specific vectors by IDs, delete all vectors in a namespace, or delete vectors matching a metadata filter. Use with caution as this operation is irreversible.
+     * Delete vectors from the vector database index. You can delete specific vectors by IDs, delete all vectors in a namespace, or delete vectors matching a metadata filter. Use with caution as this operation is irreversible.
      */
     DELETE_VECTORS: (
       input: DELETE_VECTORSInput,
@@ -421,7 +421,7 @@ export interface Env {
      */
     QUERY_VECTORS: (input: QUERY_VECTORSInput) => Promise<QUERY_VECTORSOutput>;
     /**
-     * Insert or update vectors in the Pinecone index. If a vector with the same ID exists, it will be updated. Supports batch operations with multiple vectors at once. Use this to add embeddings to your vector database.
+     * Insert or update vectors in the vector database index. If a vector with the same ID exists, it will be updated. Supports batch operations with multiple vectors at once. Use this to add embeddings to your vector database.
      */
     UPSERT_VECTORS: (
       input: UPSERT_VECTORSInput,
