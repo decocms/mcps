@@ -21,6 +21,7 @@
   "workspaces": [
     "nanobanana",
     "object-storage",
+    "readonly-sql",
     "shared",
     "template-minimal",
     "template-with-view",
