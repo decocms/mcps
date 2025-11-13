@@ -44,7 +44,12 @@ export const createQuerySqlTool = (env: Env) =>
         .describe(
           "Array of result rows, each row is an object with column names as keys",
         ),
-      rowCount: z.number().describe("Total number of rows returned"),
+      totalRowCount: z
+        .number()
+        .describe("Total number of rows that matched the query"),
+      returnedCount: z
+        .number()
+        .describe("Number of rows actually returned (after applying limit)"),
       fields: z
         .array(
           z.object({
@@ -97,7 +102,8 @@ export const createQuerySqlTool = (env: Env) =>
 
         return {
           rows,
-          rowCount: rows.length,
+          totalRowCount: result.rowCount,
+          returnedCount: rows.length,
           fields: result.fields,
           truncated,
         };

@@ -68,7 +68,8 @@ Execute a read-only SQL query against the configured database.
 
 **Output:**
 - `rows` (array): Array of result rows, each row is an object with column names as keys
-- `rowCount` (number): Number of rows returned
+- `totalRowCount` (number): Total number of rows that matched the query
+- `returnedCount` (number): Number of rows actually returned (after applying limit)
 - `fields` (array): Metadata about columns (name, data type)
 - `truncated` (boolean): Whether results were truncated due to limit
 
