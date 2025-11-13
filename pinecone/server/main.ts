@@ -13,22 +13,15 @@ import {
 import { tools } from "./tools/index.ts";
 
 /**
- * State schema for Pinecone configuration.
+ * State schema for Pinecone Assistant configuration.
  * Users fill these values when installing the MCP.
  */
 export const StateSchema = BaseStateSchema.extend({
   apiKey: z.string().describe("Pinecone API key for authentication"),
   indexHost: z
     .string()
-    .describe(
-      "Pinecone index host URL (e.g., https://index-name-project.svc.environment.pinecone.io)",
-    ),
-  namespace: z
-    .string()
-    .optional()
-    .describe(
-      "Optional namespace to organize vectors within the index (defaults to empty string)",
-    ),
+    .describe("Pinecone API host URL (e.g., https://api.pinecone.io)"),
+  assistant: z.string().describe("Pinecone assistant name"),
 });
 
 /**

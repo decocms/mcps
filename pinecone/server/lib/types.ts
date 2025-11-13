@@ -1,3 +1,9 @@
+/**
+ * Type definitions for Pinecone Assistant API.
+ * These types define the structure of requests and responses
+ * when interacting with the Pinecone Assistant API.
+ */
+
 export interface ChatContextRequest {
   query: string;
   filter?: Record<string, unknown>;
@@ -7,12 +13,13 @@ export interface FileUploadRequest {
   form: FormData;
 }
 
-type FileStatus =
+export type FileStatus =
   | "Processing"
   | "Available"
   | "Deleting"
   | "ProcessingFailed"
   | "Deleted";
+
 export interface FileUploadResponse {
   name: string;
   id: string;
