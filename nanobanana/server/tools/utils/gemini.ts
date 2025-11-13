@@ -51,8 +51,8 @@ export const GeminiResponseSchema = z.object({
         )
         .optional(),
       blockReason: z.string().optional(),
-    }) // Tipagem completa baseada na documentação oficial da API Gemini
-    .optional(), // Tipagem completa baseada na documentação oficial da API Gemini
+    })
+    .optional(),
   usageMetadata: z
     .object({
       promptTokenCount: z.number().optional(),
@@ -64,7 +64,6 @@ export const GeminiResponseSchema = z.object({
 
 export type GeminiResponse = z.infer<typeof GeminiResponseSchema>;
 
-// Interface para a resposta do OpenRouter
 interface OpenRouterResponse {
   choices: Array<{
     message: {
@@ -127,7 +126,6 @@ async function makeOpenrouterRequest(
   };
 }
 
-// Função para gerar conteúdo com ou sem imagem
 export async function generateImage(
   env: Env,
   prompt: string,
@@ -149,7 +147,6 @@ export async function generateImage(
     modalities: ["image", "text"],
   };
 
-  // Add aspect ratio configuration if provided
   if (aspectRatio) {
     body.image_config = {
       aspect_ratio: aspectRatio,
