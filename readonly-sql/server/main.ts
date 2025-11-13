@@ -36,12 +36,7 @@ export const StateSchema = BaseStateSchema.extend({
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-  };
+export type Env = DefaultEnv & DecoEnv;
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
@@ -73,12 +68,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools,
-  /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
-   */
-  fetch: (req, env) => env.ASSETS.fetch(req),
 });
 
 export default runtime;
