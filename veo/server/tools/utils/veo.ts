@@ -3,6 +3,7 @@ import { Env } from "server/main";
 import z from "zod";
 import {
   assertEnvKey,
+  makeApiRequest,
   parseApiError,
   pollUntilComplete,
   fetchImageAsBase64,
@@ -194,23 +195,13 @@ export const VideoMetadataSchema = z.object({
 
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
 
-/**
- * Assert that the Google Gemini API key is set
- */
-function assertApiKey(env: Env) {
-  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
-}
-
-/**
- * Make a request to the Gemini API
- */
 async function makeGeminiRequest(
   env: Env,
   endpoint: string,
   method: "GET" | "POST" = "POST",
   body?: any,
 ): Promise<any> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   const url = `${GEMINI_API_BASE_URL}${endpoint}`;
 
@@ -226,13 +217,7 @@ async function makeGeminiRequest(
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, options);
-
-  if (!response.ok) {
-    await parseApiError(response, "Gemini");
-  }
-
-  return await response.json();
+  return await makeApiRequest(url, options, "Gemini");
 }
 
 /**
@@ -368,9 +353,6 @@ export async function generateVideo(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Generate a video from an image reference
- */
 export async function generateVideoFromImage(
   env: Env,
   prompt: string,
@@ -390,10 +372,6 @@ export async function generateVideoFromImage(
   });
 }
 
-/**
- * Generate a video with start and end frames
- * Creates a transition between two images
- */
 export async function generateVideoWithFrames(
   env: Env,
   prompt: string,
@@ -420,9 +398,6 @@ export async function generateVideoWithFrames(
   });
 }
 
-/**
- * Extend a previously generated video
- */
 export async function extendVideo(
   env: Env,
   previousOperationName: string,
@@ -466,14 +441,11 @@ export async function extendVideo(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Get the status of a video generation operation
- */
 export async function getOperationStatus(
   env: Env,
   operationName: string,
 ): Promise<OperationResponse> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   const url = `${GEMINI_API_BASE_URL}/${operationName}`;
 
@@ -505,14 +477,11 @@ export async function getOperationStatus(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Download video content from Gemini
- */
 export async function downloadVideo(
   env: Env,
   videoUri: string,
 ): Promise<ReadableStream> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   console.log(`[downloadVideo] Starting stream download from URI: ${videoUri}`);
 
@@ -541,11 +510,8 @@ export async function downloadVideo(
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[downloadVideo] ❌ Download failed: ${errorText}`);
-    throw new Error(
-      `Failed to download video: ${response.status} ${response.statusText}\n${errorText}`,
-    );
+    console.error(`[downloadVideo] ❌ Download failed`);
+    await parseApiError(response, "Gemini");
   }
 
   if (!response.body) {
@@ -557,29 +523,23 @@ export async function downloadVideo(
   return response.body;
 }
 
-/**
- * Poll an operation until it's complete or timeout
- */
 export async function pollOperationUntilComplete(
   env: Env,
   operationName: string,
   maxWaitMs: number = 360000, // 6 minutes
   pollIntervalMs: number = 10000, // 10 seconds
 ): Promise<OperationResponse> {
-  return pollUntilComplete<OperationResponse>({
+  return await pollUntilComplete({
     checkFn: () => getOperationStatus(env, operationName),
-    isDoneFn: (operation: OperationResponse) => operation.done === true,
-    getErrorFn: (operation: OperationResponse) =>
-      operation.error?.message || null,
+    isDoneFn: (operation) => operation.done === true,
+    getErrorFn: (operation) =>
+      operation.error ? operation.error.message : null,
     maxWaitMs,
     pollIntervalMs,
     timeoutMessage: `Operation timed out after ${maxWaitMs}ms`,
   });
 }
 
-/**
- * Convenience function to create Veo client
- */
 export const createVeoClient = (env: Env) => ({
   generateVideo: (
     prompt: string,

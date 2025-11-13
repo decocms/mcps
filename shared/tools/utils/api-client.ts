@@ -1,34 +1,22 @@
-/**
- * Shared utilities for making API requests with consistent error handling
- */
-
-/**
- * Assert that an environment variable is set
- */
 export function assertEnvKey(env: Record<string, any>, key: string): void {
   if (!env[key]) {
     throw new Error(`${key} is not set in environment`);
   }
 }
 
-/**
- * Parse error response from API
- */
 export async function parseApiError(
   response: Response,
   apiName: string,
 ): Promise<never> {
   const errorText = await response.text();
 
-  // Try to parse the error as JSON to extract meaningful message
   try {
     const errorJson = JSON.parse(errorText);
     const errorMessage = errorJson.error?.message || errorText;
     throw new Error(errorMessage);
-  } catch (e) {
-    // If JSON parsing fails or no error message, use the raw error text
-    if (e instanceof Error && e.message !== errorText) {
-      throw e; // Re-throw if it's our own error
+  } catch (error) {
+    if (error instanceof Error && !(error instanceof SyntaxError)) {
+      throw error;
     }
     throw new Error(
       `${apiName} API error: ${response.status} ${response.statusText}\n${errorText}`,
@@ -36,9 +24,6 @@ export async function parseApiError(
   }
 }
 
-/**
- * Make a generic API request with consistent error handling
- */
 export async function makeApiRequest(
   url: string,
   options: RequestInit,
@@ -97,10 +82,6 @@ export async function pollUntilComplete<T>(options: {
   throw new Error(timeoutMessage);
 }
 
-/**
- * Fetch and convert image to base64
- * Supports both HTTP URLs and data URLs
- */
 export async function fetchImageAsBase64(imageUrl: string): Promise<{
   base64: string;
   mimeType: string;
@@ -137,11 +118,16 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
   const bytes = new Uint8Array(arrayBuffer);
 
   // Convert bytes to base64
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  let base64: string;
+  if (typeof Buffer !== "undefined") {
+    base64 = Buffer.from(bytes).toString("base64");
+  } else {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    base64 = btoa(binary);
   }
-  const base64 = btoa(binary);
 
   console.log(
     `[fetchImageAsBase64] Successfully converted ${bytes.length} bytes to base64 (${contentType})`,
@@ -153,9 +139,6 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
   };
 }
 
-/**
- * Download content from URL with authentication
- */
 export async function downloadWithAuth(
   url: string,
   authHeaders: Record<string, string>,
