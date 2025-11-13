@@ -1,6 +1,10 @@
 import { OPENROUTER_BASE_URL } from "../../constants";
 import { Env } from "../../main";
 import z from "zod";
+import {
+  assertEnvKey,
+  makeApiRequest,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 export const models = z.enum(["gemini-2.5-flash-image-preview"]);
 
@@ -60,7 +64,6 @@ export const GeminiResponseSchema = z.object({
 
 export type GeminiResponse = z.infer<typeof GeminiResponseSchema>;
 
-// Interface para a resposta do OpenRouter
 interface OpenRouterResponse {
   choices: Array<{
     message: {
@@ -74,38 +77,27 @@ interface OpenRouterResponse {
   }>;
 }
 
-function assertApiKey(env: Env) {
-  if (!env.NANOBANANA_API_KEY) {
-    throw new Error("NANOBANANA_API_KEY is not set");
-  }
-}
-
 async function makeOpenrouterRequest(
   env: Env,
   endpoint: string,
   body: any,
 ): Promise<GeminiResponse> {
-  assertApiKey(env);
+  assertEnvKey(env, "NANOBANANA_API_KEY");
 
   const url = `${OPENROUTER_BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.NANOBANANA_API_KEY}`,
+  const data = (await makeApiRequest(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.NANOBANANA_API_KEY}`,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Openrouter API error: ${response.status} ${response.statusText}\n${errorText}`,
-    );
-  }
-
-  const data = (await response.json()) as OpenRouterResponse;
+    "Openrouter",
+  )) as OpenRouterResponse;
   const choices = data.choices[0];
 
   const image = choices.message.images?.[0]?.image_url?.url;
@@ -134,7 +126,6 @@ async function makeOpenrouterRequest(
   };
 }
 
-// Função para gerar conteúdo com ou sem imagem
 export async function generateImage(
   env: Env,
   prompt: string,
@@ -156,7 +147,6 @@ export async function generateImage(
     modalities: ["image", "text"],
   };
 
-  // Add aspect ratio configuration if provided
   if (aspectRatio) {
     body.image_config = {
       aspect_ratio: aspectRatio,
