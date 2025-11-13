@@ -1,4 +1,4 @@
-import { OPENAI_BASE_URL, OPENAI_VIDEOS_ENDPOINT } from "server/constants";
+import { OPENAI_BASE_URL, OPENAI_VIDEOS_ENDPOINT } from "../../constants";
 import { Env } from "server/main";
 import z from "zod";
 import {
@@ -217,13 +217,6 @@ export async function retrieveVideoContent(
 
   const contentType = response.headers.get("content-type") || "video/mp4";
 
-  if (response.redirected) {
-    return {
-      url: response.url,
-      contentType,
-    };
-  }
-
   return {
     url: response.url,
     contentType,
@@ -285,6 +278,10 @@ export async function pollVideoUntilComplete(
     checkFn: () => retrieveVideo(env, videoId),
     isDoneFn: (video: VideoResponse) =>
       video.status === "completed" || video.status === "failed",
+    getErrorFn: (video: VideoResponse) =>
+      video.status === "failed"
+        ? video.error?.message || "Video generation failed"
+        : null,
     maxWaitMs,
     pollIntervalMs,
     timeoutMessage: `Video generation timed out after ${maxWaitMs}ms`,
