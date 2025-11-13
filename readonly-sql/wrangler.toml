@@ -1,0 +1,16 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "readonly-sql"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Connect to known SQL databases, locked for read-only operations via MCP"
+icon = "https://assets.decocache.com/mcp/b3781189-1b0e-407b-8f57-3e768e439e4b/sqldb.png"
+friendlyName = "Readonly SQL"
