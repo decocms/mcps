@@ -23,6 +23,7 @@
     "object-storage",
     "readonly-sql",
     "shared",
+    "sora",
     "template-minimal",
     "template-with-view",
     "veo"
