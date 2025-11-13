@@ -1,6 +1,13 @@
 import { GEMINI_API_BASE_URL } from "../../constants";
 import { Env } from "server/main";
 import z from "zod";
+import {
+  assertEnvKey,
+  makeApiRequest,
+  parseApiError,
+  pollUntilComplete,
+  fetchImageAsBase64,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 // Veo 3 model variants
 export const VeoModels = z.enum([
@@ -182,81 +189,13 @@ export const VideoMetadataSchema = z.object({
 
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
 
-/**
- * Assert that the Google Gemini API key is set
- */
-function assertApiKey(env: Env) {
-  if (!env.GOOGLE_GENAI_API_KEY) {
-    throw new Error("GOOGLE_GENAI_API_KEY is not set in environment");
-  }
-}
-
-/**
- * Fetch image from URL and convert to base64
- * Supports both HTTP URLs and data URLs
- */
-async function fetchImageAsBase64(imageUrl: string): Promise<{
-  base64: string;
-  mimeType: string;
-}> {
-  console.log(
-    `[fetchImageAsBase64] Fetching image from: ${imageUrl.substring(0, 100)}...`,
-  );
-
-  // If it's already a data URL, extract the base64 part
-  if (imageUrl.startsWith("data:")) {
-    const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (match) {
-      return {
-        mimeType: match[1],
-        base64: match[2],
-      };
-    }
-    throw new Error("Invalid data URL format");
-  }
-
-  // Fetch the image from HTTP(S) URL
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch image: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  // Get the content type
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-
-  // Convert to base64
-  const arrayBuffer = await response.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-
-  // Convert bytes to base64
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const base64 = btoa(binary);
-
-  console.log(
-    `[fetchImageAsBase64] Successfully converted ${bytes.length} bytes to base64 (${contentType})`,
-  );
-
-  return {
-    base64,
-    mimeType: contentType,
-  };
-}
-
-/**
- * Make a request to the Gemini API
- */
 async function makeGeminiRequest(
   env: Env,
   endpoint: string,
   method: "GET" | "POST" = "POST",
   body?: any,
 ): Promise<any> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   const url = `${GEMINI_API_BASE_URL}${endpoint}`;
 
@@ -272,23 +211,7 @@ async function makeGeminiRequest(
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, options);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      throw new Error(
-        `Gemini API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
-  }
-
-  return await response.json();
+  return await makeApiRequest(url, options, "Gemini");
 }
 
 /**
@@ -424,9 +347,6 @@ export async function generateVideo(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Generate a video from an image reference
- */
 export async function generateVideoFromImage(
   env: Env,
   prompt: string,
@@ -446,10 +366,6 @@ export async function generateVideoFromImage(
   });
 }
 
-/**
- * Generate a video with start and end frames
- * Creates a transition between two images
- */
 export async function generateVideoWithFrames(
   env: Env,
   prompt: string,
@@ -476,9 +392,6 @@ export async function generateVideoWithFrames(
   });
 }
 
-/**
- * Extend a previously generated video
- */
 export async function extendVideo(
   env: Env,
   previousOperationName: string,
@@ -522,14 +435,11 @@ export async function extendVideo(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Get the status of a video generation operation
- */
 export async function getOperationStatus(
   env: Env,
   operationName: string,
 ): Promise<OperationResponse> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   const url = `${GEMINI_API_BASE_URL}/${operationName}`;
 
@@ -545,18 +455,8 @@ export async function getOperationStatus(
   console.log(`[getOperationStatus] Response status: ${response.status}`);
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[getOperationStatus] Error response:`, errorText);
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      throw new Error(
-        `Gemini API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    console.error(`[getOperationStatus] Error response`);
+    await parseApiError(response, "Gemini");
   }
 
   const data = await response.json();
@@ -570,14 +470,11 @@ export async function getOperationStatus(
   return OperationResponseSchema.parse(data);
 }
 
-/**
- * Download video content from Gemini
- */
 export async function downloadVideo(
   env: Env,
   videoUri: string,
 ): Promise<ReadableStream> {
-  assertApiKey(env);
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
   console.log(`[downloadVideo] Starting stream download from URI: ${videoUri}`);
 
@@ -606,11 +503,8 @@ export async function downloadVideo(
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[downloadVideo] ❌ Download failed: ${errorText}`);
-    throw new Error(
-      `Failed to download video: ${response.status} ${response.statusText}\n${errorText}`,
-    );
+    console.error(`[downloadVideo] ❌ Download failed`);
+    await parseApiError(response, "Gemini");
   }
 
   if (!response.body) {
@@ -622,38 +516,23 @@ export async function downloadVideo(
   return response.body;
 }
 
-/**
- * Poll an operation until it's complete or timeout
- */
 export async function pollOperationUntilComplete(
   env: Env,
   operationName: string,
   maxWaitMs: number = 360000, // 6 minutes
   pollIntervalMs: number = 10000, // 10 seconds
 ): Promise<OperationResponse> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const operation = await getOperationStatus(env, operationName);
-
-    if (operation.done) {
-      return operation;
-    }
-
-    if (operation.error) {
-      throw new Error(`Operation failed: ${operation.error.message}`);
-    }
-
-    // Wait before next poll
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-  }
-
-  throw new Error(`Operation timed out after ${maxWaitMs}ms`);
+  return await pollUntilComplete({
+    checkFn: () => getOperationStatus(env, operationName),
+    isDoneFn: (operation) => operation.done === true,
+    getErrorFn: (operation) =>
+      operation.error ? operation.error.message : null,
+    maxWaitMs,
+    pollIntervalMs,
+    timeoutMessage: `Operation timed out after ${maxWaitMs}ms`,
+  });
 }
 
-/**
- * Convenience function to create Veo client
- */
 export const createVeoClient = (env: Env) => ({
   generateVideo: (
     prompt: string,
