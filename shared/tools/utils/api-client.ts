@@ -1,19 +1,9 @@
-/**
- * Shared utilities for making API requests with consistent error handling
- */
-
-/**
- * Assert that an environment variable is set
- */
 export function assertEnvKey(env: Record<string, any>, key: string): void {
   if (!env[key]) {
     throw new Error(`${key} is not set in environment`);
   }
 }
 
-/**
- * Parse error response from API
- */
 export async function parseApiError(
   response: Response,
   apiName: string,
@@ -34,9 +24,6 @@ export async function parseApiError(
   }
 }
 
-/**
- * Make a generic API request with consistent error handling
- */
 export async function makeApiRequest(
   url: string,
   options: RequestInit,
@@ -95,10 +82,6 @@ export async function pollUntilComplete<T>(options: {
   throw new Error(timeoutMessage);
 }
 
-/**
- * Fetch and convert image to base64
- * Supports both HTTP URLs and data URLs
- */
 export async function fetchImageAsBase64(imageUrl: string): Promise<{
   base64: string;
   mimeType: string;
@@ -156,9 +139,6 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
   };
 }
 
-/**
- * Download content from URL with authentication
- */
 export async function downloadWithAuth(
   url: string,
   authHeaders: Record<string, string>,
