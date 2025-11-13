@@ -12,8 +12,7 @@
         "./tools/utils/api-client": "./tools/utils/api-client.ts",
         "./image-generators": "./image-generators/index.ts",
         "./video-generators": "./video-generators/index.ts",
-        "./storage": "./storage/index.ts",
-        "./vector-databases": "./vector-databases/index.ts"
+        "./storage": "./storage/index.ts"
     },
     "devDependencies": {
         "vite": "7.2.0",

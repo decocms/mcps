@@ -32,13 +32,11 @@ export const createUploadFileTool = (env: Env) =>
     outputSchema: fileUploadOutputSchema,
     execute: async ({ input }) => {
       return await withFileOperationErrorHandling(async () => {
-        // Cria File a partir de URL ou conteúdo
+      
         const { file } = await createFileFromInput(input);
         
-        // Cria FormData
         const formData = createFormDataWithFile(file);
         
-        // Envia para API
         const result = await apiClient.uploadFile(formData);
         
         return createFileUploadSuccess({
@@ -202,10 +200,6 @@ const query = buildFileListQueryParams({
 3. **Type Safety**: Full TypeScript support with type inference
 4. **Error Handling**: Standardized error responses across all operations
 5. **Flexibility**: Works with any backend API or storage service
-
-#### Complete Example
-
-See [EXAMPLE_USAGE.md](./tools/EXAMPLE_USAGE.md) for complete before/after examples showing how to refactor existing file management code.
 
 ### 3. Image Generators System (`/image-generators`)
 
