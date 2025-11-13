@@ -41,9 +41,10 @@ export async function createDatabaseClient(
   connectionString: string,
 ): Promise<DatabaseClient> {
   switch (type) {
-    case "postgres":
+    case "postgres": {
       const { PostgresClient } = await import("./clients/postgres.ts");
       return new PostgresClient(connectionString);
+    }
 
     case "mysql":
       throw new Error("MySQL support is not yet implemented");

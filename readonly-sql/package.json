@@ -1,7 +1,7 @@
 {
   "name": "readonly-sql",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "Minimal read-only SQL MCP server for query handling",
   "private": true,
   "type": "module",
   "scripts": {

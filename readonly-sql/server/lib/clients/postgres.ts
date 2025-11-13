@@ -24,8 +24,11 @@ export class PostgresClient implements DatabaseClient {
 
   async query(sqlQuery: string, params: any[] = []): Promise<QueryResult> {
     try {
-      // Execute the query
-      const result = await this.sql.unsafe(sqlQuery, params);
+      // Execute the query within a read-only transaction
+      // This ensures the database will reject any write attempts
+      const result = await this.sql.begin("read only", async (sql) => {
+        return await sql.unsafe(sqlQuery, params);
+      });
 
       // Extract field information
       const fields =

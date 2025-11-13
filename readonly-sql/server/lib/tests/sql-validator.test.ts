@@ -206,4 +206,84 @@ describe("SQL Validator", () => {
       expect(result.isValid).toBe(false);
     });
   });
+
+  describe("String Literals - Should Not Trigger False Positives", () => {
+    test("should allow SELECT with write keyword in single-quoted string", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT 'INSERT INTO users' as msg FROM orders",
+      );
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    test("should allow SELECT with multiple write keywords in string", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT 'DELETE FROM users; DROP TABLE orders' as danger FROM logs",
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow SELECT with escaped single quotes in string", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT 'It''s an INSERT statement' as msg FROM logs",
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow SELECT with write keyword in double-quoted identifier", () => {
+      const result = validateReadOnlyQuery(
+        'SELECT "DELETE" as column_name FROM metadata',
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow SELECT with write keyword in dollar-quoted string", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT $$INSERT INTO users VALUES ('test')$$ as query FROM history",
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow SELECT with write keyword in tagged dollar-quoted string", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT $tag$DELETE FROM users WHERE id = 1$tag$ as sql FROM logs",
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow complex query with mixed string types and keywords", () => {
+      const result = validateReadOnlyQuery(`
+        SELECT 
+          'INSERT is here' as single_quote,
+          "UPDATE" as identifier,
+          $$DROP TABLE users$$ as dollar_quote
+        FROM system_info
+        WHERE description = 'Contains DELETE keyword'
+      `);
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should still reject actual write operations after string literals", () => {
+      const result = validateReadOnlyQuery(`
+        SELECT 'This is safe: INSERT' as msg FROM users;
+        DELETE FROM logs WHERE old = true
+      `);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("DELETE");
+    });
+
+    test("should allow nested dollar quotes with keywords", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT $outer$Text with $$nested DELETE$$ inside$outer$ FROM docs",
+      );
+      expect(result.isValid).toBe(true);
+    });
+
+    test("should allow string with semicolon and write keyword", () => {
+      const result = validateReadOnlyQuery(
+        "SELECT 'multiple; INSERT INTO table;' as sql_example FROM examples",
+      );
+      expect(result.isValid).toBe(true);
+    });
+  });
 });

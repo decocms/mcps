@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { createDatabaseClient } from "../lib/db-client.ts";
+import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
 import { validateReadOnlyQuery } from "../lib/sql-validator.ts";
 
 /**
@@ -70,7 +70,7 @@ export const createQuerySqlTool = (env: Env) =>
       }
 
       // Create database client
-      let client;
+      let client: DatabaseClient | undefined = undefined;
       try {
         client = await createDatabaseClient(
           state.databaseType,
@@ -103,7 +103,7 @@ export const createQuerySqlTool = (env: Env) =>
         };
       } finally {
         // Always close the connection
-        await client.close();
+        if (client) await client.close();
       }
     },
   });

@@ -71,8 +71,11 @@ export function validateReadOnlyQuery(query: string): ValidationResult {
   // Remove comments to avoid false positives
   const withoutComments = removeComments(normalizedQuery);
 
+  // Sanitize string literals to avoid false positives from keywords in strings
+  const sanitized = sanitizeLiterals(withoutComments);
+
   // Check for write keywords at the start of statements
-  const statements = withoutComments.split(";").filter((s) => s.trim());
+  const statements = sanitized.split(";").filter((s) => s.trim());
 
   for (const statement of statements) {
     const trimmedStatement = statement.trim();
@@ -130,6 +133,101 @@ function removeComments(query: string): string {
 
   // Remove single-line comments --
   result = result.replace(/--[^\n]*/g, " ");
+
+  return result;
+}
+
+/**
+ * Sanitizes a SQL query by removing/replacing string literals and dollar-quoted literals
+ * with spaces to preserve positioning. This prevents false positives when write keywords
+ * appear inside string literals.
+ *
+ * Handles:
+ * - Single-quoted strings: 'text' with escaped quotes like 'it''s' or 'it\'s'
+ * - Double-quoted identifiers: "identifier" with escaped quotes
+ * - PostgreSQL dollar-quoted strings: $$text$$, $tag$text$tag$
+ *
+ * @param query - The SQL query to sanitize
+ * @returns Query with literal contents replaced by spaces
+ */
+function sanitizeLiterals(query: string): string {
+  let result = "";
+  let i = 0;
+
+  while (i < query.length) {
+    const char = query[i];
+    const remaining = query.substring(i);
+
+    // Handle dollar-quoted strings (PostgreSQL): $$content$$ or $tag$content$tag$
+    if (char === "$") {
+      const dollarMatch = remaining.match(/^(\$[a-zA-Z_]*\$)/);
+      if (dollarMatch) {
+        const tag = dollarMatch[1];
+        const tagLength = tag.length;
+        // Find the closing tag
+        const closeIndex = remaining.indexOf(tag, tagLength);
+        if (closeIndex !== -1) {
+          // Replace the entire dollar-quoted literal with spaces
+          const literalLength = closeIndex + tagLength;
+          result += " ".repeat(literalLength);
+          i += literalLength;
+          continue;
+        }
+      }
+    }
+
+    // Handle single-quoted strings: 'text'
+    if (char === "'") {
+      result += " "; // Replace opening quote with space
+      i++;
+      while (i < query.length) {
+        if (query[i] === "'") {
+          // Check for escaped quote: ''
+          if (i + 1 < query.length && query[i + 1] === "'") {
+            result += "  "; // Two spaces for ''
+            i += 2;
+          } else {
+            // Closing quote
+            result += " "; // Replace closing quote with space
+            i++;
+            break;
+          }
+        } else {
+          result += " "; // Replace content with space
+          i++;
+        }
+      }
+      continue;
+    }
+
+    // Handle double-quoted identifiers: "identifier"
+    if (char === '"') {
+      result += " "; // Replace opening quote with space
+      i++;
+      while (i < query.length) {
+        if (query[i] === '"') {
+          // Check for escaped quote: ""
+          if (i + 1 < query.length && query[i + 1] === '"') {
+            result += "  "; // Two spaces for ""
+            i += 2;
+          } else {
+            // Closing quote
+            result += " "; // Replace closing quote with space
+            i++;
+            break;
+          }
+        } else {
+          result += " "; // Replace content with space
+          i++;
+        }
+      }
+      continue;
+    }
+
+    // Regular character - keep as is
+    result += char;
+    i++;
+  }
 
   return result;
 }
