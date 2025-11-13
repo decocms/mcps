@@ -7,10 +7,8 @@ import {
   pollUntilComplete,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 
-// Sora 2 models
 export const models = z.enum(["sora-2"]);
 
-// Video Response Schema
 export const VideoResponseSchema = z.object({
   id: z.string(),
   object: z.literal("video"),
@@ -61,18 +59,13 @@ export const ListVideosResponseSchema = z.object({
 
 export type ListVideosResponse = z.infer<typeof ListVideosResponseSchema>;
 
-function assertApiKey(env: Env) {
-  assertEnvKey(env, "OPENAI_API_KEY");
-}
-
 async function makeOpenAIRequest(
   env: Env,
   endpoint: string,
   method: "GET" | "POST" = "POST",
   body?: any,
 ): Promise<any> {
-  assertApiKey(env);
-
+  assertEnvKey(env, "OPENAI_API_KEY");
   const url = `${OPENAI_BASE_URL}${endpoint}`;
 
   const options: RequestInit = {
@@ -96,7 +89,6 @@ async function makeOpenAIRequest(
   return await response.json();
 }
 
-// Create Video
 export async function createVideo(
   env: Env,
   prompt: string,
@@ -105,13 +97,10 @@ export async function createVideo(
   size: string = "720x1280",
   inputReferenceUrl?: string,
 ): Promise<VideoResponse> {
-  assertApiKey(env);
-
+  assertEnvKey(env, "OPENAI_API_KEY");
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}`;
 
-  // If we have an image reference, use multipart/form-data
   if (inputReferenceUrl) {
-    // Fetch the image
     const imageResponse = await fetch(inputReferenceUrl);
     if (!imageResponse.ok) {
       throw new Error(
@@ -211,7 +200,7 @@ export async function retrieveVideoContent(
   env: Env,
   videoId: string,
 ): Promise<{ url: string; contentType: string }> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content`;
 
@@ -245,7 +234,7 @@ export async function downloadVideoContent(
   env: Env,
   videoId: string,
 ): Promise<Blob> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content`;
 
@@ -263,13 +252,12 @@ export async function downloadVideoContent(
   return await response.blob();
 }
 
-// Download Supporting Asset (thumbnail or spritesheet)
 export async function downloadSupportingAsset(
   env: Env,
   videoId: string,
   variant: "thumbnail" | "spritesheet",
 ): Promise<Blob> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content?variant=${variant}`;
 

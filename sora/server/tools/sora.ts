@@ -10,21 +10,19 @@ import {
 function mapAspectRatioToSize(aspectRatio?: string): string {
   switch (aspectRatio) {
     case "16:9":
-      return "1280x720"; // landscape
+      return "1280x720";
     case "9:16":
-      return "720x1280"; // portrait
+      return "720x1280";
     case "1:1":
-      return "1024x1024"; // square (if supported)
+      return "1024x1024";
     default:
-      return "720x1280"; // default to portrait
+      return "720x1280";
   }
 }
 
-// Map duration from number to string
 function mapDuration(duration?: number): string {
-  if (!duration) return "4"; // default
+  if (!duration) return "4";
 
-  // Sora supports 4, 8, or 12 seconds
   if (duration <= 4) return "4";
   if (duration <= 8) return "8";
   return "12";
