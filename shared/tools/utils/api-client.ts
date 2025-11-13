@@ -20,15 +20,13 @@ export async function parseApiError(
 ): Promise<never> {
   const errorText = await response.text();
 
-  // Try to parse the error as JSON to extract meaningful message
   try {
     const errorJson = JSON.parse(errorText);
     const errorMessage = errorJson.error?.message || errorText;
     throw new Error(errorMessage);
-  } catch (e) {
-    // If JSON parsing fails or no error message, use the raw error text
-    if (e instanceof Error && e.message !== errorText) {
-      throw e; // Re-throw if it's our own error
+  } catch (error) {
+    if (error instanceof Error && !(error instanceof SyntaxError)) {
+      throw error;
     }
     throw new Error(
       `${apiName} API error: ${response.status} ${response.statusText}\n${errorText}`,
@@ -137,11 +135,16 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
   const bytes = new Uint8Array(arrayBuffer);
 
   // Convert bytes to base64
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  let base64: string;
+  if (typeof Buffer !== "undefined") {
+    base64 = Buffer.from(bytes).toString("base64");
+  } else {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    base64 = btoa(binary);
   }
-  const base64 = btoa(binary);
 
   console.log(
     `[fetchImageAsBase64] Successfully converted ${bytes.length} bytes to base64 (${contentType})`,
