@@ -22,7 +22,9 @@
     "nanobanana",
     "object-storage",
     "pinecone",
+    "readonly-sql",
     "shared",
+    "sora",
     "template-minimal",
     "template-with-view",
     "veo"

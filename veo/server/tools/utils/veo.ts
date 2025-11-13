@@ -101,7 +101,13 @@ export const VideoGenerationRequestSchema = z.object({
     .optional()
     .describe("Video aspect ratio"),
   duration: z
-    .union([z.literal(4), z.literal(6), z.literal(8)])
+    .union([
+      z.literal(4),
+      z.literal(5),
+      z.literal(6),
+      z.literal(7),
+      z.literal(8),
+    ])
     .optional()
     .describe("Video duration in seconds"),
   resolution: z.enum(["720p", "1080p"]).optional().describe("Video resolution"),
@@ -455,7 +461,8 @@ export async function getOperationStatus(
   console.log(`[getOperationStatus] Response status: ${response.status}`);
 
   if (!response.ok) {
-    console.error(`[getOperationStatus] Error response`);
+    const errorText = await response.text();
+    console.error(`[getOperationStatus] Error response:`, errorText);
     await parseApiError(response, "Gemini");
   }
 

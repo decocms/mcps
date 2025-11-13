@@ -1,0 +1,38 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "sora"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Use OpenAI Sora 2 to generate professional videos using AI."
+icon = "https://cdn.openai.com/nf2/nf2-lp/misc/dark-mode-icon.png?w=3840&q=100&fm=webp"
+friendlyName = "OpenAI Sora 2"
+
+[[deco.bindings]]
+type = "contract"
+name = "SORA2_CONTRACT"
+
+[deco.bindings.contract]
+body = "U$5.00 per video, U$3.00 per remix"
+
+[[deco.bindings.contract.clauses]]
+id = "sora-2:createVideo"
+price = 5
+description = "$5.00 per video generation"
+
+[[deco.bindings.contract.clauses]]
+id = "sora-2:remixVideo"
+price = 3
+description = "$3.00 per video remix"
+
+[[deco.bindings]]
+name = "FILE_SYSTEM"
+type = "mcp"
+integration_name = "@deco/file-system"
