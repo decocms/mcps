@@ -8,6 +8,7 @@
         "./vite-plugin": "./deco-vite-plugin.ts",
         "./tools/user": "./tools/user.ts",
         "./tools": "./tools/index.ts",
+        "./tools/utils/api-client": "./tools/utils/api-client.ts",
         "./image-generators": "./image-generators/index.ts",
         "./video-generators": "./video-generators/index.ts",
         "./storage": "./storage/index.ts",
