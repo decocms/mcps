@@ -61,6 +61,18 @@ export interface ValidationResult {
  */
 export function validateReadOnlyQuery(query: string): ValidationResult {
   const errors: string[] = [];
+
+  // Check if query is undefined, null, or not a string
+  if (query === undefined || query === null) {
+    errors.push("Query cannot be undefined or null");
+    return { isValid: false, errors };
+  }
+
+  if (typeof query !== "string") {
+    errors.push("Query must be a string");
+    return { isValid: false, errors };
+  }
+
   const normalizedQuery = query.trim();
 
   if (!normalizedQuery) {

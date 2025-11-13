@@ -157,6 +157,38 @@ describe("SQL Validator", () => {
   });
 
   describe("Edge Cases", () => {
+    test("should reject undefined query", () => {
+      const result = validateReadOnlyQuery(undefined as any);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("undefined or null");
+    });
+
+    test("should reject null query", () => {
+      const result = validateReadOnlyQuery(null as any);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("undefined or null");
+    });
+
+    test("should reject non-string query (number)", () => {
+      const result = validateReadOnlyQuery(123 as any);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("must be a string");
+    });
+
+    test("should reject non-string query (object)", () => {
+      const result = validateReadOnlyQuery({
+        query: "SELECT * FROM users",
+      } as any);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("must be a string");
+    });
+
+    test("should reject non-string query (array)", () => {
+      const result = validateReadOnlyQuery(["SELECT * FROM users"] as any);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain("must be a string");
+    });
+
     test("should reject empty query", () => {
       const result = validateReadOnlyQuery("");
       expect(result.isValid).toBe(false);

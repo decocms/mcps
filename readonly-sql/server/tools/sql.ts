@@ -62,8 +62,8 @@ export const createQuerySqlTool = (env: Env) =>
         .boolean()
         .describe("Whether the results were truncated due to the limit"),
     }),
-    execute: async (ctx: any) => {
-      const { query, params = [], limit } = ctx;
+    execute: async ({ context }) => {
+      const { query, params = [], limit } = context;
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
 
       // Validate the query is read-only
