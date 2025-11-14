@@ -41,6 +41,60 @@ export const soraTools = createVideoGeneratorTools<Env>({
       amount: 1,
     },
   }),
+  listVideos: async ({ env, input }) => {
+    const client = createSoraClient(env);
+
+    const response = await client.listVideos(input.limit, input.after);
+
+    return {
+      videos: response.data.map((video) => ({
+        id: video.id,
+        status: video.status,
+        prompt: video.prompt,
+        model: video.model,
+        created_at: video.created_at,
+        duration: video.duration,
+        url: video.url,
+      })),
+      has_more: response.has_more,
+      first_id: response.first_id,
+      last_id: response.last_id,
+    };
+  },
+  extendVideo: async ({ env, input }) => {
+    const client = createSoraClient(env);
+
+    const remixResponse = await client.remixVideo(input.videoId, input.prompt);
+
+    // Poll until complete
+    const videoResponse = await client.pollVideoUntilComplete(
+      remixResponse.id,
+      OPERATION_MAX_WAIT_MS,
+      OPERATION_POLL_INTERVAL_MS,
+    );
+
+    if (videoResponse.status === "failed") {
+      return {
+        error: true,
+        finishReason: videoResponse.error?.message || "video_extension_failed",
+      };
+    }
+
+    if (videoResponse.status !== "completed") {
+      return {
+        error: true,
+        finishReason: "operation_timeout",
+      };
+    }
+
+    const videoBlob = await client.downloadVideoContent(remixResponse.id);
+
+    return {
+      data: videoBlob,
+      mimeType: "video/mp4",
+      operationName: remixResponse.id,
+    };
+  },
   execute: async ({ env, input }) => {
     const client = createSoraClient(env);
 
