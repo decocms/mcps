@@ -25,7 +25,7 @@
     "@modelcontextprotocol/sdk": "^1.21.0",
     "@types/bun": "^1.1.13",
     "@types/mime-db": "^1.43.6",
-    "deco-cli": "^0.23.3",
+    "deco-cli": "^0.26.0",
     "typescript": "^5.7.2",
     "vite": "7.2.0",
     "wrangler": "^4.28.0"
