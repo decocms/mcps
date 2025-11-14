@@ -8,8 +8,11 @@
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import { soraTools } from "./sora.ts";
 
+// Convert soraTools object to array of tool functions
+const soraToolsArray = Object.values(soraTools);
+
 // Export all tools from all domains
-export const tools = [...userTools, ...soraTools];
+export const tools = [...userTools, ...soraToolsArray];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
