@@ -1,11 +1,14 @@
-import { OPENAI_BASE_URL, OPENAI_VIDEOS_ENDPOINT } from "server/constants";
+import { OPENAI_BASE_URL, OPENAI_VIDEOS_ENDPOINT } from "../../constants";
 import { Env } from "server/main";
 import z from "zod";
+import {
+  assertEnvKey,
+  parseApiError,
+  pollUntilComplete,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
-// Sora 2 models
 export const models = z.enum(["sora-2"]);
 
-// Video Response Schema
 export const VideoResponseSchema = z.object({
   id: z.string(),
   object: z.literal("video"),
@@ -56,20 +59,13 @@ export const ListVideosResponseSchema = z.object({
 
 export type ListVideosResponse = z.infer<typeof ListVideosResponseSchema>;
 
-function assertApiKey(env: Env) {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set");
-  }
-}
-
 async function makeOpenAIRequest(
   env: Env,
   endpoint: string,
   method: "GET" | "POST" = "POST",
   body?: any,
 ): Promise<any> {
-  assertApiKey(env);
-
+  assertEnvKey(env, "OPENAI_API_KEY");
   const url = `${OPENAI_BASE_URL}${endpoint}`;
 
   const options: RequestInit = {
@@ -87,25 +83,12 @@ async function makeOpenAIRequest(
   const response = await fetch(url, options);
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.json();
 }
 
-// Create Video
 export async function createVideo(
   env: Env,
   prompt: string,
@@ -114,13 +97,10 @@ export async function createVideo(
   size: string = "720x1280",
   inputReferenceUrl?: string,
 ): Promise<VideoResponse> {
-  assertApiKey(env);
-
+  assertEnvKey(env, "OPENAI_API_KEY");
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}`;
 
-  // If we have an image reference, use multipart/form-data
   if (inputReferenceUrl) {
-    // Fetch the image
     const imageResponse = await fetch(inputReferenceUrl);
     if (!imageResponse.ok) {
       throw new Error(
@@ -129,7 +109,6 @@ export async function createVideo(
     }
     const imageBlob = await imageResponse.blob();
 
-    // Create form data
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("model", model);
@@ -146,26 +125,13 @@ export async function createVideo(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-
-      // Try to parse the error as JSON to extract meaningful message
-      try {
-        const errorJson = JSON.parse(errorText);
-        const errorMessage = errorJson.error?.message || errorText;
-        throw new Error(errorMessage);
-      } catch {
-        // If JSON parsing fails, use the raw error text
-        throw new Error(
-          `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-        );
-      }
+      await parseApiError(response, "OpenAI");
     }
 
     const data = await response.json();
     return VideoResponseSchema.parse(data);
   }
 
-  // Otherwise use JSON
   const body = {
     model,
     prompt,
@@ -183,7 +149,6 @@ export async function createVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// Remix Video
 export async function remixVideo(
   env: Env,
   videoId: string,
@@ -203,7 +168,6 @@ export async function remixVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// List Videos
 export async function listVideos(
   env: Env,
   limit: number = 20,
@@ -219,7 +183,6 @@ export async function listVideos(
   return ListVideosResponseSchema.parse(data);
 }
 
-// Retrieve Video
 export async function retrieveVideo(
   env: Env,
   videoId: string,
@@ -233,12 +196,11 @@ export async function retrieveVideo(
   return VideoResponseSchema.parse(data);
 }
 
-// Retrieve Video Content (returns URL only, for backward compatibility)
 export async function retrieveVideoContent(
   env: Env,
   videoId: string,
 ): Promise<{ url: string; contentType: string }> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content`;
 
@@ -250,46 +212,22 @@ export async function retrieveVideoContent(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
-  // For video content, we get a direct video file or redirect URL
   const contentType = response.headers.get("content-type") || "video/mp4";
 
-  // If it's a redirect, get the final URL
-  if (response.redirected) {
-    return {
-      url: response.url,
-      contentType,
-    };
-  }
-
-  // If we get direct content, we need to handle it
-  // For now, return the URL as-is
   return {
     url: response.url,
     contentType,
   };
 }
 
-// Download Video Content (returns Blob for saving to FS)
 export async function downloadVideoContent(
   env: Env,
   videoId: string,
 ): Promise<Blob> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content`;
 
@@ -301,31 +239,18 @@ export async function downloadVideoContent(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.blob();
 }
 
-// Download Supporting Asset (thumbnail or spritesheet)
 export async function downloadSupportingAsset(
   env: Env,
   videoId: string,
   variant: "thumbnail" | "spritesheet",
 ): Promise<Blob> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content?variant=${variant}`;
 
@@ -337,53 +262,32 @@ export async function downloadSupportingAsset(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse the error as JSON to extract meaningful message
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
+    await parseApiError(response, "OpenAI");
   }
 
   return await response.blob();
 }
 
-/**
- * Poll a video until it's complete or timeout
- */
 export async function pollVideoUntilComplete(
   env: Env,
   videoId: string,
   maxWaitMs: number = 600000, // 10 minutes default
   pollIntervalMs: number = 10000, // 10 seconds
 ): Promise<VideoResponse> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const videoResponse = await retrieveVideo(env, videoId);
-
-    if (
-      videoResponse.status === "completed" ||
-      videoResponse.status === "failed"
-    ) {
-      return videoResponse;
-    }
-
-    // Wait before next poll
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-  }
-
-  throw new Error(`Video generation timed out after ${maxWaitMs}ms`);
+  return pollUntilComplete<VideoResponse>({
+    checkFn: () => retrieveVideo(env, videoId),
+    isDoneFn: (video: VideoResponse) =>
+      video.status === "completed" || video.status === "failed",
+    getErrorFn: (video: VideoResponse) =>
+      video.status === "failed"
+        ? video.error?.message || "Video generation failed"
+        : null,
+    maxWaitMs,
+    pollIntervalMs,
+    timeoutMessage: `Video generation timed out after ${maxWaitMs}ms`,
+  });
 }
 
-// Convenience function to create client
 export const createSoraClient = (env: Env) => ({
   createVideo: (
     prompt: string,
