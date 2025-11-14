@@ -49,7 +49,7 @@ export const soraTools = createVideoGeneratorTools<
 
       const createResponse = await client.createVideo(
         input.prompt,
-        "sora-2", // default model
+        "sora-2",
         seconds,
         size,
         inputReferenceUrl,
