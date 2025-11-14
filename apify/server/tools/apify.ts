@@ -1,26 +1,33 @@
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { createApifyClient } from "./utils/client";
-import type {
-  ActorRun,
-} from "./utils/types";
+import type { ActorRun } from "./utils/types";
 import { z } from "zod";
 
 /**
  * Tool schemas
  */
 const listActorsSchema = z.object({
-  limit: z.number().int().min(1).max(1000).optional().describe(
-    "Maximum number of actors to return (default: 10)",
-  ),
-  offset: z.number().int().min(0).optional().describe(
-    "Number of actors to skip (default: 0)",
-  ),
-  my: z.boolean().optional().describe(
-    "If true, only return actors owned by the user",
-  ),
-  desc: z.boolean().optional().describe(
-    "If true, sort results in descending order by creation date",
-  ),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .describe("Maximum number of actors to return (default: 10)"),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Number of actors to skip (default: 0)"),
+  my: z
+    .boolean()
+    .optional()
+    .describe("If true, only return actors owned by the user"),
+  desc: z
+    .boolean()
+    .optional()
+    .describe("If true, sort results in descending order by creation date"),
 });
 
 const getActorSchema = z.object({
@@ -29,42 +36,59 @@ const getActorSchema = z.object({
 
 const listActorRunsSchema = z.object({
   actorId: z.string().describe("The ID of the actor"),
-  limit: z.number().int().min(1).max(1000).optional().describe(
-    "Maximum number of runs to return (default: 10)",
-  ),
-  offset: z.number().int().min(0).optional().describe(
-    "Number of runs to skip (default: 0)",
-  ),
-  status: z.string().optional().describe(
-    "Filter runs by status (READY, RUNNING, SUCCEEDED, FAILED, etc.)",
-  ),
-  desc: z.boolean().optional().describe(
-    "If true, sort results in descending order by creation date",
-  ),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .describe("Maximum number of runs to return (default: 10)"),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Number of runs to skip (default: 0)"),
+  status: z
+    .string()
+    .optional()
+    .describe(
+      "Filter runs by status (READY, RUNNING, SUCCEEDED, FAILED, etc.)",
+    ),
+  desc: z
+    .boolean()
+    .optional()
+    .describe("If true, sort results in descending order by creation date"),
 });
 
 const getActorRunSchema = z.object({
   actorId: z.string().describe("The ID of the actor"),
   runId: z.string().describe("The ID of the actor run"),
-  includeDatasetItems: z.boolean().optional().describe(
-    "If true, include dataset items in the response",
-  ),
+  includeDatasetItems: z
+    .boolean()
+    .optional()
+    .describe("If true, include dataset items in the response"),
 });
 
 const runActorSchema = z.object({
   actorId: z.string().describe("The ID of the actor to run"),
-  input: z.string().describe(
-    "Input data for the actor run (Stringified JSON object)",
-  ),
-  timeout: z.number().int().optional().describe(
-    "Maximum timeout for the run in seconds",
-  ),
-  memory: z.number().int().optional().describe(
-    "Amount of memory allocated for the run in megabytes",
-  ),
-  build: z.string().optional().describe(
-    "Specific build version to use (optional)",
-  ),
+  input: z
+    .string()
+    .describe("Input data for the actor run (Stringified JSON object)"),
+  timeout: z
+    .number()
+    .int()
+    .optional()
+    .describe("Maximum timeout for the run in seconds"),
+  memory: z
+    .number()
+    .int()
+    .optional()
+    .describe("Amount of memory allocated for the run in megabytes"),
+  build: z
+    .string()
+    .optional()
+    .describe("Specific build version to use (optional)"),
 });
 
 /**
@@ -73,10 +97,10 @@ const runActorSchema = z.object({
 function getApifyToken(): string {
   // Try to get from environment (works in both Node and Cloudflare Workers)
   const token = process?.env?.APIFY_TOKEN || (globalThis as any).APIFY_TOKEN;
-  
+
   if (!token) {
     throw new Error(
-      "Apify token not configured. Set APIFY_TOKEN in .dev.vars file or environment variable."
+      "Apify token not configured. Set APIFY_TOKEN in .dev.vars file or environment variable.",
     );
   }
   return token;
@@ -155,9 +179,7 @@ export const createListActorRunsTool = () =>
         });
       } catch (error) {
         throw new Error(
-          error instanceof Error
-            ? error.message
-            : "Failed to list actor runs",
+          error instanceof Error ? error.message : "Failed to list actor runs",
         );
       }
     },
@@ -263,9 +285,7 @@ export const createRunActorAsyncTool = () =>
         return result.data as ActorRun;
       } catch (error) {
         throw new Error(
-          error instanceof Error
-            ? error.message
-            : "Failed to start actor run",
+          error instanceof Error ? error.message : "Failed to start actor run",
         );
       }
     },

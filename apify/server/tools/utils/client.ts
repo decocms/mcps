@@ -23,7 +23,7 @@ export class ApifyClient {
 
   private getHeaders(): Headers {
     return new Headers({
-      "Authorization": `Bearer ${this.token}`,
+      Authorization: `Bearer ${this.token}`,
       "Content-Type": "application/json",
     });
   }
@@ -180,7 +180,10 @@ export class ApifyClient {
    * GET /v2/acts/:actorId/runs/:runId
    */
   async getActorRun(actorId: string, runId: string): Promise<ActorRun> {
-    return this.makeRequest<ActorRun>("GET", `/v2/acts/${actorId}/runs/${runId}`);
+    return this.makeRequest<ActorRun>(
+      "GET",
+      `/v2/acts/${actorId}/runs/${runId}`,
+    );
   }
 
   /**
@@ -217,4 +220,3 @@ export class ApifyClient {
 export function createApifyClient(token: string): ApifyClient {
   return new ApifyClient(token);
 }
-

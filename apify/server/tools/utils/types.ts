@@ -170,4 +170,3 @@ export interface DatasetItemsQueryParams {
   /** Simplified format for easier processing */
   simplified?: boolean | 0 | 1;
 }
-

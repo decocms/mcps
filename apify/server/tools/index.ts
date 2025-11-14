@@ -14,4 +14,3 @@ export const tools = [...userTools, ...apifyTools];
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
 export { apifyTools } from "./apify.ts";
-
