@@ -8,8 +8,11 @@
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import { veoTools } from "./veo.ts";
 
+// Convert veoTools object to array of tool functions
+const veoToolsArray = Object.values(veoTools);
+
 // Export all tools from all domains
-export const tools = [...userTools, ...veoTools];
+export const tools = [...userTools, ...veoToolsArray];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
