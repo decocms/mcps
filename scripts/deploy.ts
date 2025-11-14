@@ -21,8 +21,18 @@ const isPreview = args.includes("--preview");
 const envArgs: string[] = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--env" && args[i + 1]) {
-    envArgs.push(args[i + 1]);
-    i++; // Skip next argument as it's the value
+    const envValue = args[i + 1];
+    if (!envValue.includes("=")) {
+      console.error(`❌ Error: Invalid --env format: ${envValue}`);
+      console.error("Expected format: --env KEY=VALUE");
+      process.exit(1);
+    }
+    envArgs.push(envValue);
+    i++;
+  } else if (args[i] === "--env") {
+    console.error("❌ Error: --env flag requires a value");
+    console.error("Usage: --env KEY=VALUE");
+    process.exit(1);
   }
 }
 
