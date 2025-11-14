@@ -90,45 +90,94 @@ export interface VideoGeneratorEnv {
   DECO_CHAT_WORKSPACE: string;
 }
 
-export interface CreateVideoGeneratorOptions<TEnv extends VideoGeneratorEnv> {
-  metadata: {
-    provider: string;
-    description?: string;
-  };
+/**
+ * Configuration for generate video tool
+ */
+export interface GenerateToolConfig<
+  TEnv extends VideoGeneratorEnv,
+  TClient = unknown,
+> {
   execute: ({
     env,
     input,
+    client,
   }: {
     env: TEnv;
     input: GenerateVideoInput;
+    client: TClient;
   }) => Promise<GenerateVideoCallbackOutput>;
-  listVideos?: ({
-    env,
-    input,
-  }: {
-    env: TEnv;
-    input: ListVideosInput;
-  }) => Promise<ListVideosOutput>;
-  extendVideo?: ({
-    env,
-    input,
-  }: {
-    env: TEnv;
-    input: ExtendVideoInput;
-  }) => Promise<ExtendVideoCallbackOutput>;
-  getStorage: (env: TEnv) => VideoGeneratorStorage;
   getContract: (env: TEnv) => {
     binding: Contract;
     clause: ContractClause;
   };
 }
 
+/**
+ * Configuration for list videos tool
+ */
+export interface ListToolConfig<
+  TEnv extends VideoGeneratorEnv,
+  TClient = unknown,
+> {
+  execute: ({
+    env,
+    input,
+    client,
+  }: {
+    env: TEnv;
+    input: ListVideosInput;
+    client: TClient;
+  }) => Promise<ListVideosOutput>;
+  getContract?: (env: TEnv) => {
+    binding: Contract;
+    clause: ContractClause;
+  };
+}
+
+/**
+ * Configuration for extend video tool
+ */
+export interface ExtendToolConfig<
+  TEnv extends VideoGeneratorEnv,
+  TClient = unknown,
+> {
+  execute: ({
+    env,
+    input,
+    client,
+  }: {
+    env: TEnv;
+    input: ExtendVideoInput;
+    client: TClient;
+  }) => Promise<ExtendVideoCallbackOutput>;
+  getContract?: (env: TEnv) => {
+    binding: Contract;
+    clause: ContractClause;
+  };
+}
+
+export interface CreateVideoGeneratorOptions<
+  TEnv extends VideoGeneratorEnv,
+  TClient = unknown,
+> {
+  metadata: {
+    provider: string;
+    description?: string;
+  };
+  getStorage: (env: TEnv) => VideoGeneratorStorage;
+  getClient?: (env: TEnv) => TClient;
+  generateTool: GenerateToolConfig<TEnv, TClient>;
+  listTool?: ListToolConfig<TEnv, TClient>;
+  extendTool?: ExtendToolConfig<TEnv, TClient>;
+}
+
 const MAX_VIDEO_GEN_RETRIES = 3;
 const MAX_VIDEO_GEN_TIMEOUT_MS = 360_000; // 6 minutes for video generation
 
-export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
-  options: CreateVideoGeneratorOptions<TEnv>,
-) {
+export function createVideoGeneratorTools<
+  TEnv extends VideoGeneratorEnv,
+  TClient = unknown,
+>(options: CreateVideoGeneratorOptions<TEnv, TClient>) {
   const generateVideo = (env: TEnv) =>
     createPrivateTool({
       id: "GENERATE_VIDEO",
@@ -139,7 +188,7 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
       outputSchema: GenerateVideoOutputSchema,
       execute: async ({ context }: { context: GenerateVideoInput }) => {
         const doExecute = async () => {
-          const contract = options.getContract(env);
+          const contract = options.generateTool.getContract(env);
 
           const { transactionId } = await contract.binding.CONTRACT_AUTHORIZE({
             clauses: [
@@ -150,7 +199,12 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
             ],
           });
 
-          const result = await options.execute({ env, input: context });
+          const client = options.getClient?.(env) as TClient;
+          const result = await options.generateTool.execute({
+            env,
+            input: context,
+            client,
+          });
 
           if ("error" in result) {
             return {
@@ -204,7 +258,7 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
       },
     });
 
-  const listVideos = options.listVideos
+  const listVideos = options.listTool
     ? (env: TEnv) =>
         createPrivateTool({
           id: "LIST_VIDEOS",
@@ -212,12 +266,13 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
           inputSchema: ListVideosInputSchema,
           outputSchema: ListVideosOutputSchema,
           execute: async ({ context }: { context: ListVideosInput }) => {
-            return options.listVideos!({ env, input: context });
+            const client = options.getClient?.(env) as TClient;
+            return options.listTool!.execute({ env, input: context, client });
           },
         })
     : null;
 
-  const extendVideo = options.extendVideo
+  const extendVideo = options.extendTool
     ? (env: TEnv) =>
         createPrivateTool({
           id: "EXTEND_VIDEO",
@@ -226,21 +281,29 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
           outputSchema: ExtendVideoOutputSchema,
           execute: async ({ context }: { context: ExtendVideoInput }) => {
             const doExecute = async () => {
-              const contract = options.getContract(env);
+              const contractConfig = options.extendTool!.getContract?.(env);
 
-              const { transactionId } =
-                await contract.binding.CONTRACT_AUTHORIZE({
-                  clauses: [
-                    {
-                      clauseId: contract.clause.clauseId,
-                      amount: contract.clause.amount,
-                    },
-                  ],
-                });
+              let transactionId: string | undefined;
 
-              const result = await options.extendVideo!({
+              // Only authorize contract if getContract is provided
+              if (contractConfig) {
+                const authResponse =
+                  await contractConfig.binding.CONTRACT_AUTHORIZE({
+                    clauses: [
+                      {
+                        clauseId: contractConfig.clause.clauseId,
+                        amount: contractConfig.clause.amount,
+                      },
+                    ],
+                  });
+                transactionId = authResponse.transactionId;
+              }
+
+              const client = options.getClient?.(env) as TClient;
+              const result = await options.extendTool!.execute({
                 env,
                 input: context,
+                client,
               });
 
               if ("error" in result) {
@@ -263,16 +326,19 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
                 },
               });
 
-              await contract.binding.CONTRACT_SETTLE({
-                transactionId,
-                clauses: [
-                  {
-                    clauseId: contract.clause.clauseId,
-                    amount: contract.clause.amount,
-                  },
-                ],
-                vendorId: env.DECO_CHAT_WORKSPACE,
-              });
+              // Only settle contract if we authorized one
+              if (contractConfig && transactionId) {
+                await contractConfig.binding.CONTRACT_SETTLE({
+                  transactionId,
+                  clauses: [
+                    {
+                      clauseId: contractConfig.clause.clauseId,
+                      amount: contractConfig.clause.amount,
+                    },
+                  ],
+                  vendorId: env.DECO_CHAT_WORKSPACE,
+                });
+              }
 
               return {
                 video: saveVideoResult.url,
@@ -297,10 +363,10 @@ export function createVideoGeneratorTools<TEnv extends VideoGeneratorEnv>(
         })
     : null;
 
-  // Build tools array based on what's available
-  const tools: Array<(env: TEnv) => any> = [generateVideo];
-  if (listVideos) tools.push(listVideos);
-  if (extendVideo) tools.push(extendVideo);
-
-  return tools;
+  // Build tools object with available tools as properties
+  return {
+    generateVideo,
+    ...(listVideos && { listVideos }),
+    ...(extendVideo && { extendVideo }),
+  };
 }
