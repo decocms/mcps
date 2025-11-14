@@ -111,13 +111,35 @@ try {
       ]
     : ["deco", "deploy", "-y", "--public", "./dist/server", "-t", deployToken];
 
-  // Add --env options
+  const envVarsToPass = [
+    "OPENAI_API_KEY",
+    "GOOGLE_GENAI_API_KEY",
+    "NANOBANANA_API_KEY",
+    "PINECONE_TOKEN",
+    "PINECONE_INDEX",
+    "GEMINI_API_KEY",
+  ];
+
+  const autoEnvArgs: string[] = [];
+  for (const envVar of envVarsToPass) {
+    if (process.env[envVar]) {
+      autoEnvArgs.push(`${envVar}=${process.env[envVar]}`);
+    }
+  }
+
   for (const envVar of envArgs) {
     baseCmd.push("--env", envVar);
   }
 
-  if (envArgs.length > 0) {
-    console.log(`🔐 Setting ${envArgs.length} environment variable(s)`);
+  for (const envVar of autoEnvArgs) {
+    baseCmd.push("--env", envVar);
+  }
+
+  const totalEnvVars = envArgs.length + autoEnvArgs.length;
+  if (totalEnvVars > 0) {
+    console.log(
+      `🔐 Setting ${totalEnvVars} environment variable(s) (${autoEnvArgs.length} auto-detected)`,
+    );
   }
 
   const result = await $`${baseCmd}`.quiet();

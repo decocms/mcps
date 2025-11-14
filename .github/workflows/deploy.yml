@@ -63,6 +63,13 @@ jobs:
         run: bun run scripts/deploy.ts ${{ matrix.mcp }}
         env:
           DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
+          NANOBANANA_API_KEY: ${{ secrets.NANOBANANA_API_KEY }}
+          PINECONE_TOKEN: ${{ secrets.PINECONE_TOKEN }}
+          PINECONE_INDEX: ${{ secrets.PINECONE_INDEX }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Notify success
         if: success()
