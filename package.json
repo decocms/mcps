@@ -21,6 +21,7 @@
   "workspaces": [
     "nanobanana",
     "object-storage",
+    "pinecone",
     "readonly-sql",
     "shared",
     "sora",
