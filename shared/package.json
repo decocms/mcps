@@ -7,7 +7,7 @@
     "exports": {
         "./vite-plugin": "./deco-vite-plugin.ts",
         "./tools/user": "./tools/user.ts",
-        "./tools/file-management": "./tools/file-management.ts",
+        "./tools/file-management": "./tools/file-management/index.ts",
         "./tools": "./tools/index.ts",
         "./tools/utils/api-client": "./tools/utils/api-client.ts",
         "./image-generators": "./image-generators/index.ts",

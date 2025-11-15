@@ -6,11 +6,14 @@
  * the domain separation.
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
-import { assistantTools } from "./assistant.ts";
+import { pineconeAssistantTools } from "./pinecone.ts";
+
+// Convert assistantTools object to array of tool functions
+const assistantToolsArray = Object.values(pineconeAssistantTools);
 
 // Export all tools from all domains
-export const tools = [...userTools, ...assistantTools];
+export const tools = [...userTools, ...assistantToolsArray];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
-export { assistantTools } from "./assistant.ts";
+export { pineconeAssistantTools } from "./pinecone.ts";

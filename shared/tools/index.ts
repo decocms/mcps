@@ -3,3 +3,4 @@
  */
 export * from "./user.ts";
 export * from "./file-management.ts";
+export * from "./file-management/index.ts";
