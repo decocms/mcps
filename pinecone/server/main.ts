@@ -7,6 +7,7 @@ import { z } from "zod";
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
+  Scopes,
   StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
 
@@ -48,7 +49,10 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [],
+    scopes: [
+      Scopes.PINECONE_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.PINECONE_CONTRACT.CONTRACT_SETTLE,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user

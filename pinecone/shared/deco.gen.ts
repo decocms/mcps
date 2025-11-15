@@ -631,11 +631,11 @@ export interface Env {
       input: DECO_CHAT_VIEWS_LISTInput,
     ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
     /**
-     * Deletes a file from the Pinecone assistant
+     * Deletes a file from Pinecone Assistant
      */
     delete_file: (input: DeleteFileInput) => Promise<DeleteFileOutput>;
     /**
-     * Gets details of a specific file from the Pinecone assistant
+     * Gets details of a specific file from Pinecone Assistant
      */
     get_file: (input: GetFileInput) => Promise<GetFileOutput>;
     /**
@@ -643,7 +643,7 @@ export interface Env {
      */
     GET_USER: (input: GET_USERInput) => Promise<GET_USEROutput>;
     /**
-     * Lists all files in the Pinecone assistant
+     * Lists all files in Pinecone Assistant
      */
     list_files: (input: ListFilesInput) => Promise<ListFilesOutput>;
     /**
@@ -651,7 +651,7 @@ export interface Env {
      */
     search_context: (input: SearchContextInput) => Promise<SearchContextOutput>;
     /**
-     * Uploads a file to the Pinecone assistant. You can provide either a file URL or file content. The file will be processed and made available for context retrieval.
+     * Manage files and search context in Pinecone Assistant
      */
     upload_file: (input: UploadFileInput) => Promise<UploadFileOutput>;
   }>;
