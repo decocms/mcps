@@ -35,6 +35,13 @@ export const pineconeAssistantTools = createFileManagementTools<
     },
     successMessage:
       "File uploaded successfully. It may take a few minutes to be available.",
+    getContract: (env) => ({
+      binding: env.PINECONE_CONTRACT,
+      clause: {
+        clauseId: "pinecone:upsert",
+        amount: 1,
+      },
+    }),
   },
 
   listTool: {
@@ -58,6 +65,13 @@ export const pineconeAssistantTools = createFileManagementTools<
     execute: async ({ client, input }) => {
       return await client.getFile(input.fileId, input.includeUrl ?? true);
     },
+    getContract: (env) => ({
+      binding: env.PINECONE_CONTRACT,
+      clause: {
+        clauseId: "pinecone:fetch",
+        amount: 1,
+      },
+    }),
   },
 
   deleteTool: {
@@ -65,6 +79,13 @@ export const pineconeAssistantTools = createFileManagementTools<
       await client.deleteFile(input.fileId);
     },
     successMessage: "File deleted successfully",
+    getContract: (env) => ({
+      binding: env.PINECONE_CONTRACT,
+      clause: {
+        clauseId: "pinecone:delete",
+        amount: 1,
+      },
+    }),
   },
 
   searchTool: {
@@ -135,5 +156,12 @@ export const pineconeAssistantTools = createFileManagementTools<
         );
       }
     },
+    getContract: (env) => ({
+      binding: env.PINECONE_CONTRACT,
+      clause: {
+        clauseId: "pinecone:query",
+        amount: 1,
+      },
+    }),
   },
 });

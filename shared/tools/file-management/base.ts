@@ -32,6 +32,7 @@ export interface FileManagementEnv {
   DECO_REQUEST_CONTEXT: {
     ensureAuthenticated: () => any;
   };
+  DECO_CHAT_WORKSPACE: string;
 }
 
 /**
@@ -111,6 +112,10 @@ export interface UploadToolConfig<
     client: TClient;
   }) => Promise<FileUploadResponse>;
   successMessage?: string;
+  getContract?: (env: TEnv) => {
+    binding: any;
+    clause: { clauseId: string; amount: number };
+  };
 }
 
 /**
@@ -147,6 +152,10 @@ export interface GetToolConfig<
     input: FileGetInput;
     client: TClient;
   }) => Promise<FileGetResponse>;
+  getContract?: (env: TEnv) => {
+    binding: any;
+    clause: { clauseId: string; amount: number };
+  };
 }
 
 /**
@@ -166,6 +175,10 @@ export interface DeleteToolConfig<
     client: TClient;
   }) => Promise<void>;
   successMessage?: string;
+  getContract?: (env: TEnv) => {
+    binding: any;
+    clause: { clauseId: string; amount: number };
+  };
 }
 
 /**
@@ -187,6 +200,10 @@ export interface SearchToolConfig<
     client: TClient;
   }) => Promise<SearchOutput>;
   description?: string;
+  getContract?: (env: TEnv) => {
+    binding: any;
+    clause: { clauseId: string; amount: number };
+  };
 }
 
 /**
@@ -222,6 +239,23 @@ export function createFileManagementTools<
       outputSchema: fileUploadOutputSchema,
       execute: async ({ context }: { context: FileUploadInput }) => {
         return await withFileOperationErrorHandling(async () => {
+          const contractConfig = options.uploadTool.getContract?.(env);
+          let transactionId: string | undefined;
+
+          // Only authorize contract if getContract is provided
+          if (contractConfig) {
+            const authResponse =
+              await contractConfig.binding.CONTRACT_AUTHORIZE({
+                clauses: [
+                  {
+                    clauseId: contractConfig.clause.clauseId,
+                    amount: contractConfig.clause.amount,
+                  },
+                ],
+              });
+            transactionId = authResponse.transactionId;
+          }
+
           const client = options.getClient(env);
 
           // Execute provider-specific upload logic (handles file preparation internally)
@@ -234,6 +268,20 @@ export function createFileManagementTools<
           // Check for API errors
           if (data.error_message) {
             throw new Error(data.error_message);
+          }
+
+          // Only settle contract if we authorized one
+          if (contractConfig && transactionId) {
+            await contractConfig.binding.CONTRACT_SETTLE({
+              transactionId,
+              clauses: [
+                {
+                  clauseId: contractConfig.clause.clauseId,
+                  amount: contractConfig.clause.amount,
+                },
+              ],
+              vendorId: env.DECO_CHAT_WORKSPACE,
+            });
           }
 
           // Return standardized success response
@@ -289,6 +337,23 @@ export function createFileManagementTools<
       outputSchema: fileGetOutputSchema,
       execute: async ({ context }: { context: FileGetInput }) => {
         return await withFileOperationErrorHandling(async () => {
+          const contractConfig = options.getTool.getContract?.(env);
+          let transactionId: string | undefined;
+
+          // Only authorize contract if getContract is provided
+          if (contractConfig) {
+            const authResponse =
+              await contractConfig.binding.CONTRACT_AUTHORIZE({
+                clauses: [
+                  {
+                    clauseId: contractConfig.clause.clauseId,
+                    amount: contractConfig.clause.amount,
+                  },
+                ],
+              });
+            transactionId = authResponse.transactionId;
+          }
+
           // Validate input using shared utility
           validateFileId(context.fileId);
 
@@ -298,6 +363,20 @@ export function createFileManagementTools<
             input: context,
             client,
           });
+
+          // Only settle contract if we authorized one
+          if (contractConfig && transactionId) {
+            await contractConfig.binding.CONTRACT_SETTLE({
+              transactionId,
+              clauses: [
+                {
+                  clauseId: contractConfig.clause.clauseId,
+                  amount: contractConfig.clause.amount,
+                },
+              ],
+              vendorId: env.DECO_CHAT_WORKSPACE,
+            });
+          }
 
           // Return standardized success response
           return {
@@ -326,11 +405,42 @@ export function createFileManagementTools<
       outputSchema: fileDeleteOutputSchema,
       execute: async ({ context }: { context: FileDeleteInput }) => {
         return await withFileOperationErrorHandling(async () => {
+          const contractConfig = options.deleteTool.getContract?.(env);
+          let transactionId: string | undefined;
+
+          // Only authorize contract if getContract is provided
+          if (contractConfig) {
+            const authResponse =
+              await contractConfig.binding.CONTRACT_AUTHORIZE({
+                clauses: [
+                  {
+                    clauseId: contractConfig.clause.clauseId,
+                    amount: contractConfig.clause.amount,
+                  },
+                ],
+              });
+            transactionId = authResponse.transactionId;
+          }
+
           // Validate input using shared utility
           validateFileId(context.fileId);
 
           const client = options.getClient(env);
           await options.deleteTool.execute({ env, input: context, client });
+
+          // Only settle contract if we authorized one
+          if (contractConfig && transactionId) {
+            await contractConfig.binding.CONTRACT_SETTLE({
+              transactionId,
+              clauses: [
+                {
+                  clauseId: contractConfig.clause.clauseId,
+                  amount: contractConfig.clause.amount,
+                },
+              ],
+              vendorId: env.DECO_CHAT_WORKSPACE,
+            });
+          }
 
           // Return standardized success response
           return createFileDeleteSuccess(
@@ -351,8 +461,45 @@ export function createFileManagementTools<
           inputSchema: searchToolConfig.inputSchema,
           outputSchema: searchToolConfig.outputSchema,
           execute: async ({ context }: { context: any }) => {
+            const contractConfig = searchToolConfig.getContract?.(env);
+            let transactionId: string | undefined;
+
+            // Only authorize contract if getContract is provided
+            if (contractConfig) {
+              const authResponse =
+                await contractConfig.binding.CONTRACT_AUTHORIZE({
+                  clauses: [
+                    {
+                      clauseId: contractConfig.clause.clauseId,
+                      amount: contractConfig.clause.amount,
+                    },
+                  ],
+                });
+              transactionId = authResponse.transactionId;
+            }
+
             const client = options.getClient(env);
-            return searchToolConfig.execute({ env, input: context, client });
+            const result = await searchToolConfig.execute({
+              env,
+              input: context,
+              client,
+            });
+
+            // Only settle contract if we authorized one
+            if (contractConfig && transactionId) {
+              await contractConfig.binding.CONTRACT_SETTLE({
+                transactionId,
+                clauses: [
+                  {
+                    clauseId: contractConfig.clause.clauseId,
+                    amount: contractConfig.clause.amount,
+                  },
+                ],
+                vendorId: env.DECO_CHAT_WORKSPACE,
+              });
+            }
+
+            return result;
           },
         });
       }
