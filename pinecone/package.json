@@ -1,7 +1,7 @@
 {
   "name": "pinecone",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "MCP server for Pinecone Assistant API integration",
   "private": true,
   "type": "module",
   "scripts": {

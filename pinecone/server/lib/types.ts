@@ -55,8 +55,8 @@ export interface FileReference {
   metadata: null | Record<string, unknown>;
   updated_on: string;
   created_on: string;
-  percent_done: number;
-  signed_url: string;
+  percent_done: number | null;
+  signed_url: string | null;
   error_message: null | string;
 }
 
