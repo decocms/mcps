@@ -73,7 +73,16 @@ export function createApifyRunToolWithContract<
 
           // Try to get contract if available
           try {
+            console.log(`[Apify Contract] Attempting to get contract for clause...`);
             const contract = config.getContract(env);
+            
+            console.log(`[Apify Contract] Contract info:`, {
+              hasBinding: !!contract?.binding,
+              hasCONTRACT_AUTHORIZE: !!contract?.binding?.CONTRACT_AUTHORIZE,
+              clauseId: contract?.clause?.clauseId,
+              bindingType: typeof contract?.binding,
+            });
+            
             if (contract?.binding?.CONTRACT_AUTHORIZE) {
               console.log(`[Apify Contract] Requesting authorization for clause: ${contract.clause.clauseId}`, {
                 amount: maxCost,
@@ -96,6 +105,8 @@ export function createApifyRunToolWithContract<
               });
             } else {
               console.log(`[Apify Contract] No CONTRACT_AUTHORIZE binding available`);
+              console.log(`[Apify Contract] CONTRACT_AUTHORIZE methods available:`, 
+                Object.keys(contract?.binding || {}).filter(k => k.includes('CONTRACT')));
             }
           } catch (contractError) {
             console.warn(`[Apify Contract] Contract authorization failed, proceeding without it`, contractError);

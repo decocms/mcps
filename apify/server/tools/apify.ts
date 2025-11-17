@@ -244,13 +244,26 @@ export const createRunActorSyncTool = (env: Env) =>
         
         try {
           if (context.actorId && !context.memory && !context.timeout) {
+            console.log(`[Cost Estimation] Fetching actor ${context.actorId} for default values`);
             const client = createApifyClient(env);
             const actor = await client.getActor(context.actorId);
-            memory = actor?.defaultRunOptions?.memoryMbytes || 128;
-            timeout = actor?.defaultRunOptions?.timeoutSecs || 300;
+            
+            if (actor?.defaultRunOptions) {
+              memory = actor.defaultRunOptions.memoryMbytes;
+              timeout = actor.defaultRunOptions.timeoutSecs;
+              console.log(`[Cost Estimation] Actor defaults found:`, {
+                memory,
+                timeout,
+              });
+            } else {
+              console.log(`[Cost Estimation] No defaultRunOptions found, using fallback`);
+              memory = 128;
+              timeout = 300;
+            }
           }
         } catch (err) {
           // If we can't fetch actor details, use defaults
+          console.warn(`[Cost Estimation] Failed to fetch actor, using defaults:`, err);
           memory = context.memory || 128;
           timeout = context.timeout || 300;
         }
@@ -259,9 +272,18 @@ export const createRunActorSyncTool = (env: Env) =>
         memory = memory || 128;
         timeout = timeout || 300;
         
+        console.log(`[Cost Estimation] Final values for calculation:`, {
+          memory,
+          timeout,
+          formula: `((${timeout}/60)*0.01) + ((${memory}/128)*0.001)`,
+        });
+        
         // Cost estimate: 0.01 per minute + 0.001 per 128MB
         // This gives more accurate estimates based on actor configuration
         const estimatedCost = ((timeout / 60) * 0.01) + ((memory / 128) * 0.001);
+        
+        console.log(`[Cost Estimation] Final estimated cost: $${(Math.ceil(estimatedCost * 100) / 100).toFixed(4)}`);
+        
         return Math.ceil(estimatedCost * 100) / 100; // Round to 2 decimals
       },
       getContract: (env: any) => ({
