@@ -1,0 +1,17 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "discord-bot"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Discord Bot integration for sending messages, managing channels, roles, threads, webhooks, and server moderation. Full control of your Discord server through MCP tools."
+icon = "https://support.discord.com/hc/user_images/PRywUXcqg0v5DD6s7C3LyQ.jpeg"
+friendlyName = "Discord teste"
+
