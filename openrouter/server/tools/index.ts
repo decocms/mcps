@@ -17,7 +17,10 @@ import {
   createCompareModelsTool,
   createRecommendModelTool,
 } from "./models/index.ts";
-import { createChatCompletionTool } from "./chat/index.ts";
+import {
+  createChatCompletionTool,
+  createGetChatMetadataTool,
+} from "./chat/index.ts";
 
 // Export all tools from all modules
 export const tools = [
@@ -29,4 +32,5 @@ export const tools = [
   createRecommendModelTool,
   // Chat Module
   createChatCompletionTool,
+  createGetChatMetadataTool,
 ];

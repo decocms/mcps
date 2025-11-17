@@ -25,6 +25,7 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 
 #### AI Chat
 - **`OPENROUTER_CHAT_COMPLETION`** – Non-streaming chat completions
+- **`OPENROUTER_GET_CHAT_METADATA`** – Returns the deployed `POST /api/chat` URL plus usage instructions
 - **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `OPENROUTER_CHAT_COMPLETION` tool schema.
 
 ### 🌐 **API Routes**
@@ -197,6 +198,17 @@ const response = await OPENROUTER_CHAT_COMPLETION({
     exclude: ["SomeProvider"] // Exclude specific providers
   }
 });
+```
+
+### 6. Discover the Streaming Endpoint
+
+If you need to programmatically discover where to send streaming requests, call the metadata tool:
+
+```typescript
+const metadata = await OPENROUTER_GET_CHAT_METADATA();
+
+console.log(metadata.chatEndpoint); // e.g. https://openrouter.deco.page/api/chat
+console.log(metadata.docs); // Helpful links for OpenRouter streaming + AI SDK usage
 ```
 
 ### 6. Streaming Chat
