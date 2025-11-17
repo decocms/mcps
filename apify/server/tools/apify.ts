@@ -225,7 +225,7 @@ export const createRunActorSyncTool = (env: Env) =>
         }
         const client = createApifyClient(env);
         const parsedInput = JSON.parse(ctx.input);
-        const result = await client.runActorSync(
+        const items = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
           parsedInput,
           {
@@ -234,16 +234,7 @@ export const createRunActorSyncTool = (env: Env) =>
             build: ctx.build,
           },
         );
-        
-        // Get dataset items if available
-        let items: Array<Record<string, unknown>> = [];
-        if (result.defaultDatasetId) {
-          items = await client.getDatasetItems(result.defaultDatasetId, {
-            limit: 1000,
-          });
-        }
-        
-        return { items, runId: result.id, usageTotalUsd: result.usageTotalUsd };
+        return { items };
       },
       getMaxCost: async (context: any) => {
         // Estimate based on memory and timeout
@@ -252,14 +243,6 @@ export const createRunActorSyncTool = (env: Env) =>
         const timeout = context.timeout || 300; // Default 5 minutes
         // Rough estimate: 0.01 per minute + 0.001 per 128MB
         return Math.ceil((timeout / 60) * 0.01 + (memory / 128) * 0.001);
-      },
-      getActualCost: async (result: any) => {
-        // Try to extract actual cost from result if available
-        // Apify API returns usageTotalUsd in the run result
-        if (result?.usageTotalUsd) {
-          return Math.ceil(result.usageTotalUsd * 100) / 100; // Round to 2 decimals
-        }
-        return 0;
       },
       getContract: (env: any) => ({
         binding: env.APIFY_CONTRACT,
@@ -299,14 +282,6 @@ export const createRunActorAsyncTool = (env: Env) =>
         // Async is cheaper than sync: 0.5 micro dollars
         // Fixed cost for async run initiation
         return 0.5;
-      },
-      getActualCost: async (result: any) => {
-        // For async runs, try to get the estimated cost
-        // This might be estimated only; actual cost is determined when run completes
-        if (result?.usageTotalUsd) {
-          return Math.ceil(result.usageTotalUsd * 100) / 100;
-        }
-        return 0;
       },
       getContract: (env: any) => ({
         binding: env.APIFY_CONTRACT,

@@ -32,7 +32,6 @@ export interface ApifyRunToolConfig<TEnv extends { APIFY_CONTRACT?: Contract }> 
     client: any;
   }) => Promise<any>;
   getMaxCost: (context: any) => number | Promise<number>;
-  getActualCost?: (result: any) => number | Promise<number>;
   getContract: (env: TEnv) => {
     binding: Contract;
     clause: ContractClause;
@@ -90,12 +89,6 @@ export function createApifyRunToolWithContract<
             // Settle if we have a transaction ID
             if (transactionId) {
               try {
-                // Get actual cost if available, otherwise use maxCost
-                let actualCost = maxCost;
-                if (config.getActualCost) {
-                  actualCost = await config.getActualCost(result);
-                }
-
                 const contract = config.getContract(env);
                 if (contract?.binding?.CONTRACT_SETTLE) {
                   await contract.binding.CONTRACT_SETTLE({
@@ -103,7 +96,7 @@ export function createApifyRunToolWithContract<
                     clauses: [
                       {
                         clauseId: contract.clause.clauseId,
-                        amount: actualCost,
+                        amount: maxCost,
                       },
                     ],
                     vendorId: "apify",
