@@ -18,6 +18,19 @@ import {
   aggregateStatisticsOutputSchema,
 } from "../lib/types.ts";
 
+function resolveTribunal(
+  customTribunal: string | undefined,
+  state: { defaultTribunal?: string },
+): string {
+  const tribunal = customTribunal || state.defaultTribunal;
+  if (!tribunal) {
+    throw new Error(
+      "Tribunal not specified. Provide the tribunal code or configure a default tribunal.",
+    );
+  }
+  return tribunal;
+}
+
 /**
  * SEARCH_PROCESSES - Search processes in Datajud with filters
  */
@@ -32,13 +45,7 @@ export const createSearchProcessesTool = (env: Env) =>
       const { tribunal: customTribunal, filters, size, from, sort } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 
-      // Determine which tribunal to use
-      const tribunal = customTribunal || state.defaultTribunal;
-      if (!tribunal) {
-        throw new Error(
-          "Tribunal not specified. Provide the tribunal code or configure a default tribunal.",
-        );
-      }
+      const tribunal = resolveTribunal(customTribunal, state);
 
       // Create Datajud client
       const client = createDatajudClient({
@@ -82,13 +89,7 @@ export const createGetProcessTool = (env: Env) =>
       const { tribunal: customTribunal, numeroProcesso } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 
-      // Determine which tribunal to use
-      const tribunal = customTribunal || state.defaultTribunal;
-      if (!tribunal) {
-        throw new Error(
-          "Tribunal not specified. Provide the tribunal code or configure a default tribunal.",
-        );
-      }
+      const tribunal = resolveTribunal(customTribunal, state);
 
       // Create Datajud client
       const client = createDatajudClient({
@@ -126,13 +127,7 @@ export const createAggregateStatisticsTool = (env: Env) =>
       const { tribunal: customTribunal, aggregations, filters } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 
-      // Determine which tribunal to use
-      const tribunal = customTribunal || state.defaultTribunal;
-      if (!tribunal) {
-        throw new Error(
-          "Tribunal not specified. Provide the tribunal code or configure a default tribunal.",
-        );
-      }
+      const tribunal = resolveTribunal(customTribunal, state);
 
       // Create Datajud client
       const client = createDatajudClient({
