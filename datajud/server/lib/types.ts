@@ -1,8 +1,81 @@
-/**
- * Zod schemas for Datajud MCP tools
- */
-
 import { z } from "zod";
+
+/**
+ * Judicial process data structure from Datajud
+ */
+export interface ProcessoDatajud {
+  numeroProcesso?: string;
+  classe?: {
+    codigo?: string;
+    nome?: string;
+  };
+  sistema?: {
+    codigo?: string;
+    nome?: string;
+  };
+  formato?: {
+    codigo?: string;
+    nome?: string;
+  };
+  tribunal?: string;
+  dataAjuizamento?: string;
+  procEl?: boolean;
+  dataHoraUltimaAtualizacao?: string;
+  grau?: string;
+  orgaoJulgador?: {
+    codigoOrgao?: string;
+    nomeOrgao?: string;
+    instancia?: string;
+  };
+  assuntos?: Array<{
+    codigo?: string;
+    nome?: string;
+    principal?: boolean;
+  }>;
+  movimentos?: Array<{
+    codigo?: string;
+    nome?: string;
+    dataHora?: string;
+  }>;
+  nivelSigilo?: number;
+  [key: string]: unknown; // For additional MTD fields
+}
+
+/**
+ * Elasticsearch search response from Datajud API
+ */
+export interface DatajudSearchResponse {
+  took: number;
+  timed_out: boolean;
+  _shards: {
+    total: number;
+    successful: number;
+    skipped: number;
+    failed: number;
+  };
+  hits: {
+    total: {
+      value: number;
+      relation: string;
+    };
+    max_score: number | null;
+    hits: Array<{
+      _index: string;
+      _id: string;
+      _score: number | null;
+      _source: ProcessoDatajud;
+    }>;
+  };
+  aggregations?: Record<string, unknown>;
+}
+
+/**
+ * Configuration for Datajud client
+ */
+export interface DatajudClientConfig {
+  apiKey: string;
+  tribunal: string;
+}
 
 /**
  * Common tribunal field used across multiple tools

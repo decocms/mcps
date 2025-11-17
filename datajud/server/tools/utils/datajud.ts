@@ -5,77 +5,11 @@
  */
 
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
-
-/**
- * Types based on the Data Transfer Model (MTD) from Datajud
- */
-export interface ProcessoDatajud {
-  numeroProcesso?: string;
-  classe?: {
-    codigo?: string;
-    nome?: string;
-  };
-  sistema?: {
-    codigo?: string;
-    nome?: string;
-  };
-  formato?: {
-    codigo?: string;
-    nome?: string;
-  };
-  tribunal?: string;
-  dataAjuizamento?: string;
-  procEl?: boolean;
-  dataHoraUltimaAtualizacao?: string;
-  grau?: string;
-  orgaoJulgador?: {
-    codigoOrgao?: string;
-    nomeOrgao?: string;
-    instancia?: string;
-  };
-  assuntos?: Array<{
-    codigo?: string;
-    nome?: string;
-    principal?: boolean;
-  }>;
-  movimentos?: Array<{
-    codigo?: string;
-    nome?: string;
-    dataHora?: string;
-  }>;
-  nivelSigilo?: number;
-  [key: string]: unknown; // Para campos adicionais do MTD
-}
-
-export interface DatajudSearchResponse {
-  took: number;
-  timed_out: boolean;
-  _shards: {
-    total: number;
-    successful: number;
-    skipped: number;
-    failed: number;
-  };
-  hits: {
-    total: {
-      value: number;
-      relation: string;
-    };
-    max_score: number | null;
-    hits: Array<{
-      _index: string;
-      _id: string;
-      _score: number | null;
-      _source: ProcessoDatajud;
-    }>;
-  };
-  aggregations?: Record<string, unknown>;
-}
-
-export interface DatajudClientConfig {
-  apiKey: string;
-  tribunal: string;
-}
+import type {
+  DatajudClientConfig,
+  DatajudSearchResponse,
+  ProcessoDatajud,
+} from "../../lib/types.ts";
 
 /**
  * Makes an authenticated request to the Datajud Public API

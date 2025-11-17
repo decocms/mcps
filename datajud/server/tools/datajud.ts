@@ -16,7 +16,7 @@ import {
   getProcessOutputSchema,
   aggregateStatisticsInputSchema,
   aggregateStatisticsOutputSchema,
-} from "../lib/type.ts";
+} from "../lib/types.ts";
 
 /**
  * SEARCH_PROCESSES - Search processes in Datajud with filters
