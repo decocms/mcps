@@ -57,21 +57,26 @@ export function createApifyRunToolWithContract<
       inputSchema,
       execute: async ({ context }: { context: any }) => {
         try {
-          // Get max cost for this run
           const maxCost = await config.getMaxCost(context);
+          let transactionId: string | undefined;
 
-          // Pre-authorize the maximum cost
-          const contract = config.getContract(env);
-          const authResponse = await contract.binding.CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: contract.clause.clauseId,
-                amount: maxCost,
-              },
-            ],
-          });
-
-          const { transactionId } = authResponse;
+          // Try to get contract if available
+          try {
+            const contract = config.getContract(env);
+            if (contract?.binding?.CONTRACT_AUTHORIZE) {
+              const authResponse = await contract.binding.CONTRACT_AUTHORIZE({
+                clauses: [
+                  {
+                    clauseId: contract.clause.clauseId,
+                    amount: maxCost,
+                  },
+                ],
+              });
+              transactionId = authResponse.transactionId;
+            }
+          } catch (contractError) {
+            console.warn("Contract not available, proceeding without authorization", contractError);
+          }
 
           try {
             // Execute the actual operation
@@ -81,34 +86,48 @@ export function createApifyRunToolWithContract<
               client: null, // Will be passed by caller if needed
             });
 
-            // Settle with actual cost (or max if unknown)
-            await contract.binding.CONTRACT_SETTLE({
-              transactionId,
-              clauses: [
-                {
-                  clauseId: contract.clause.clauseId,
-                  amount: maxCost, // Use max cost (actual would require post-execution info)
-                },
-              ],
-              vendorId: "apify",
-            });
+            // Settle if we have a transaction ID
+            if (transactionId) {
+              try {
+                const contract = config.getContract(env);
+                if (contract?.binding?.CONTRACT_SETTLE) {
+                  await contract.binding.CONTRACT_SETTLE({
+                    transactionId,
+                    clauses: [
+                      {
+                        clauseId: contract.clause.clauseId,
+                        amount: maxCost,
+                      },
+                    ],
+                    vendorId: "apify",
+                  });
+                }
+              } catch (settleError) {
+                console.error("Failed to settle contract:", settleError);
+              }
+            }
 
             return result;
           } catch (executionError) {
-            // If execution fails, still try to settle (potentially for 0 or partial amount)
-            try {
-              await contract.binding.CONTRACT_SETTLE({
-                transactionId,
-                clauses: [
-                  {
-                    clauseId: contract.clause.clauseId,
-                    amount: 0, // No charge on failure
-                  },
-                ],
-                vendorId: "apify",
-              });
-            } catch (settleError) {
-              console.error("Failed to settle contract:", settleError);
+            // If execution fails and we have a transaction ID, try to settle for 0
+            if (transactionId) {
+              try {
+                const contract = config.getContract(env);
+                if (contract?.binding?.CONTRACT_SETTLE) {
+                  await contract.binding.CONTRACT_SETTLE({
+                    transactionId,
+                    clauses: [
+                      {
+                        clauseId: contract.clause.clauseId,
+                        amount: 0, // No charge on failure
+                      },
+                    ],
+                    vendorId: "apify",
+                  });
+                }
+              } catch (settleError) {
+                console.error("Failed to settle contract on error:", settleError);
+              }
             }
 
             throw executionError;

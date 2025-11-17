@@ -7,7 +7,6 @@ import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
-  Scopes,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
 
@@ -57,10 +56,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * your app for running Apify actors, you will be able to use
      * `env.APIFY_CONTRACT` and charge for actor executions.
      */
-    scopes: [
-      Scopes.APIFY_CONTRACT?.CONTRACT_AUTHORIZE,
-      Scopes.APIFY_CONTRACT?.CONTRACT_SETTLE,
-    ].filter(Boolean),
+    scopes: [],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
