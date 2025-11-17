@@ -7,13 +7,14 @@ import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
+  Scopes,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
 
-import { tools } from "./tools/index.ts";
+import { createTools } from "./tools/index.ts";
 
 /**
- * Extended StateSchema with Apify token configuration.
+ * Extended StateSchema with Apify token and contract binding.
  */
 export const StateSchema = BaseStateSchema.extend({
   APIFY_TOKEN: z
@@ -24,6 +25,14 @@ export const StateSchema = BaseStateSchema.extend({
     .describe(
       "Your Apify API token. Get it from https://console.apify.com/account/integrations",
     ),
+  APIFY_CONTRACT: z
+    .object({
+      value: z.string().describe("Apify Contract Binding"),
+      __type: z
+        .literal("@deco/apify-contract")
+        .default("@deco/apify-contract"),
+    })
+    .describe("Contract binding for Apify actor executions"),
 });
 
 /**
@@ -44,9 +53,14 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
     /**
      * These scopes define the asking permissions of your
-     * app when a user is installing it.
+     * app when a user is installing it. When a user authorizes
+     * your app for running Apify actors, you will be able to use
+     * `env.APIFY_CONTRACT` and charge for actor executions.
      */
-    scopes: [],
+    scopes: [
+      Scopes.APIFY_CONTRACT?.CONTRACT_AUTHORIZE,
+      Scopes.APIFY_CONTRACT?.CONTRACT_SETTLE,
+    ].filter(Boolean),
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -65,7 +79,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     state: StateSchema,
   },
-  tools,
+  tools: createTools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.
    * If you wanted to add custom api routes that dont make sense to be a tool,

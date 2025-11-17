@@ -1,7 +1,11 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
-import { createApifyClient } from "./utils/client";
+import type { Env } from "server/main";
+import {
+  createApifyClient,
+} from "./utils/client";
 import type { ActorRun } from "./utils/types";
 import { z } from "zod";
+import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createApifyRunToolWithContract } from "./generator";
 
 /**
  * Tool schemas
@@ -11,7 +15,7 @@ const listActorsSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(1000)
+    .max(25)
     .optional()
     .describe("Maximum number of actors to return (default: 10)"),
   offset: z
@@ -92,37 +96,22 @@ const runActorSchema = z.object({
 });
 
 /**
- * Helper function to get token from environment
- */
-function getApifyToken(): string {
-  // Try to get from environment (works in both Node and Cloudflare Workers)
-  const token = process?.env?.APIFY_TOKEN || (globalThis as any).APIFY_TOKEN;
-
-  if (!token) {
-    throw new Error(
-      "Apify token not configured. Set APIFY_TOKEN in .dev.vars file or environment variable.",
-    );
-  }
-  return token;
-}
-
-/**
  * Create List Actors Tool
+ * Follows Sora pattern: client is created with env in closure
  */
-export const createListActorsTool = () =>
+export const createListActorsTool = (env: Env) =>
   createPrivateTool({
     id: "LIST_ACTORS",
     description: "List all actors accessible to the user",
     inputSchema: listActorsSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }: any) => {
       try {
-        const token = getApifyToken();
-        const client = createApifyClient(token);
+        const client = createApifyClient(env);
         return await client.listActors({
-          limit: (context as any).limit,
-          offset: (context as any).offset,
-          my: (context as any).my,
-          desc: (context as any).desc,
+          limit: context.limit,
+          offset: context.offset,
+          my: context.my,
+          desc: context.desc,
         });
       } catch (error) {
         throw new Error(
@@ -135,19 +124,18 @@ export const createListActorsTool = () =>
 /**
  * Create Get Actor Tool
  */
-export const createGetActorTool = () =>
+export const createGetActorTool = (env: Env) =>
   createPrivateTool({
     id: "GET_ACTOR",
     description: "Get details of a specific actor",
     inputSchema: getActorSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }: any) => {
       try {
-        const token = getApifyToken();
-        if (!(context as any).actorId) {
+        if (!context.actorId) {
           throw new Error("Actor ID is required");
         }
-        const client = createApifyClient(token);
-        return await client.getActor((context as any).actorId);
+        const client = createApifyClient(env);
+        return await client.getActor(context.actorId);
       } catch (error) {
         throw new Error(
           error instanceof Error ? error.message : "Failed to get actor",
@@ -159,23 +147,22 @@ export const createGetActorTool = () =>
 /**
  * Create List Actor Runs Tool
  */
-export const createListActorRunsTool = () =>
+export const createListActorRunsTool = (env: Env) =>
   createPrivateTool({
     id: "LIST_ACTOR_RUNS",
     description: "List runs of a specific actor",
     inputSchema: listActorRunsSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }: any) => {
       try {
-        const token = getApifyToken();
-        if (!(context as any).actorId) {
+        if (!context.actorId) {
           throw new Error("Actor ID is required");
         }
-        const client = createApifyClient(token);
-        return await client.getActorRuns((context as any).actorId, {
-          limit: (context as any).limit,
-          offset: (context as any).offset,
-          status: (context as any).status,
-          desc: (context as any).desc,
+        const client = createApifyClient(env);
+        return await client.getActorRuns(context.actorId, {
+          limit: context.limit,
+          offset: context.offset,
+          status: context.status,
+          desc: context.desc,
         });
       } catch (error) {
         throw new Error(
@@ -188,22 +175,20 @@ export const createListActorRunsTool = () =>
 /**
  * Create Get Actor Run Tool
  */
-export const createGetActorRunTool = () =>
+export const createGetActorRunTool = (env: Env) =>
   createPrivateTool({
     id: "GET_ACTOR_RUN",
     description: "Get details of a specific actor run",
     inputSchema: getActorRunSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }: any) => {
       try {
-        const token = getApifyToken();
-        const ctx = context as any;
-        if (!ctx.actorId || !ctx.runId) {
+        if (!context.actorId || !context.runId) {
           throw new Error("Actor ID and Run ID are required");
         }
-        const client = createApifyClient(token);
-        const result = await client.getActorRun(ctx.actorId, ctx.runId);
+        const client = createApifyClient(env);
+        const result = await client.getActorRun(context.actorId, context.runId);
 
-        if (ctx.includeDatasetItems && result.defaultDatasetId) {
+        if (context.includeDatasetItems && result.defaultDatasetId) {
           const items = await client.getDatasetItems(result.defaultDatasetId, {
             limit: 1000,
           });
@@ -226,20 +211,19 @@ export const createGetActorRunTool = () =>
 
 /**
  * Create Run Actor Synchronously Tool
+ * With contract support for billing
  */
-export const createRunActorSyncTool = () =>
-  createPrivateTool({
-    id: "RUN_ACTOR_SYNC",
-    description: "Run an actor synchronously and return dataset items",
-    inputSchema: runActorSchema,
-    execute: async ({ context }) => {
-      try {
-        const token = getApifyToken();
-        const ctx = context as any;
+export const createRunActorSyncTool = (env: Env) =>
+  createApifyRunToolWithContract(
+    "RUN_ACTOR_SYNC",
+    "Run an actor synchronously and return dataset items",
+    runActorSchema,
+    {
+      execute: async ({ env, context: ctx }) => {
         if (!ctx.actorId) {
           throw new Error("Actor ID is required");
         }
-        const client = createApifyClient(token);
+        const client = createApifyClient(env);
         const parsedInput = JSON.parse(ctx.input);
         return await client.runActorSyncGetDatasetItems(
           ctx.actorId,
@@ -250,31 +234,37 @@ export const createRunActorSyncTool = () =>
             build: ctx.build,
           },
         );
-      } catch (error) {
-        throw new Error(
-          error instanceof Error ? error.message : "Failed to run actor",
-        );
-      }
+      },
+      getMaxCost: async () => {
+        // Default: 1 micro dollar per execution
+        // Could be fetched from Apify API based on actor memory/timeout
+        return 1;
+      },
+      getContract: (env: any) => ({
+        binding: env.APIFY_CONTRACT,
+        clause: {
+          clauseId: "apify:runActorSync",
+          amount: 1,
+        },
+      }),
     },
-  });
+  )(env);
 
 /**
  * Create Run Actor Asynchronously Tool
+ * With contract support for billing
  */
-export const createRunActorAsyncTool = () =>
-  createPrivateTool({
-    id: "RUN_ACTOR_ASYNC",
-    description:
-      "Run an actor asynchronously and return immediately without waiting for completion",
-    inputSchema: runActorSchema,
-    execute: async ({ context }) => {
-      try {
-        const token = getApifyToken();
-        const ctx = context as any;
+export const createRunActorAsyncTool = (env: Env) =>
+  createApifyRunToolWithContract(
+    "RUN_ACTOR_ASYNC",
+    "Run an actor asynchronously and return immediately without waiting for completion",
+    runActorSchema,
+    {
+      execute: async ({ env, context: ctx }) => {
         if (!ctx.actorId) {
           throw new Error("Actor ID is required");
         }
-        const client = createApifyClient(token);
+        const client = createApifyClient(env);
         const parsedInput = JSON.parse(ctx.input);
         const result = await client.runActor(ctx.actorId, parsedInput, {
           timeout: ctx.timeout,
@@ -283,16 +273,37 @@ export const createRunActorAsyncTool = () =>
         });
 
         return result.data as ActorRun;
-      } catch (error) {
-        throw new Error(
-          error instanceof Error ? error.message : "Failed to start actor run",
-        );
-      }
+      },
+      getMaxCost: async () => {
+        // Default: 1 micro dollar per execution
+        // Could be fetched from Apify API based on actor memory/timeout
+        return 1;
+      },
+      getContract: (env: any) => ({
+        binding: env.APIFY_CONTRACT,
+        clause: {
+          clauseId: "apify:runActorAsync",
+          amount: 1,
+        },
+      }),
     },
-  });
+  )(env);
 
 /**
- * Export all Apify tools
+ * Factory function to create all Apify tools
+ * Takes env and returns tool instances with client captured in closure
+ */
+export const createApifyTools = (env: Env) => [
+  createListActorsTool(env),
+  createGetActorTool(env),
+  createListActorRunsTool(env),
+  createGetActorRunTool(env),
+  createRunActorSyncTool(env),
+  createRunActorAsyncTool(env),
+];
+
+/**
+ * Legacy export for compatibility - tools as creators
  */
 export const apifyTools = [
   createListActorsTool,
