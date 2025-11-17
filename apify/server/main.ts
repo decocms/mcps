@@ -6,25 +6,11 @@
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
-  StateSchema as BaseStateSchema,
+  StateSchema,
   Scopes,
 } from "../shared/deco.gen.ts";
-import { z } from "zod";
-import { createTools } from "./tools/index.ts";
 
-/**
- * Extended StateSchema with Apify token
- */
-export const StateSchema = BaseStateSchema.extend({
-  APIFY_TOKEN: z
-    .object({
-      value: z.string().describe("Apify API Token"),
-      __type: z.literal("@deco/secret").default("@deco/secret"),
-    })
-    .describe(
-      "Your Apify API token. Get it from https://console.apify.com/account/integrations",
-    ),
-});
+import { createTools } from "./tools/index.ts";
 
 /**
  * This Env type is the main context object that is passed to
