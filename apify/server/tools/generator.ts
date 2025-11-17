@@ -57,13 +57,29 @@ export function createApifyRunToolWithContract<
       inputSchema,
       execute: async ({ context }: { context: any }) => {
         try {
+          console.log(`[Apify Contract] Starting ${id} tool execution`);
+          
           const maxCost = await config.getMaxCost(context);
+          console.log(`[Apify Contract] Estimated max cost: $${maxCost}`, {
+            toolId: id,
+            context: {
+              actorId: context.actorId,
+              memory: context.memory,
+              timeout: context.timeout,
+            },
+          });
+          
           let transactionId: string | undefined;
 
           // Try to get contract if available
           try {
             const contract = config.getContract(env);
             if (contract?.binding?.CONTRACT_AUTHORIZE) {
+              console.log(`[Apify Contract] Requesting authorization for clause: ${contract.clause.clauseId}`, {
+                amount: maxCost,
+                clauseId: contract.clause.clauseId,
+              });
+              
               const authResponse = await contract.binding.CONTRACT_AUTHORIZE({
                 clauses: [
                   {
@@ -73,12 +89,21 @@ export function createApifyRunToolWithContract<
                 ],
               });
               transactionId = authResponse.transactionId;
+              console.log(`[Apify Contract] Authorization successful`, {
+                transactionId,
+                totalAmount: authResponse.totalAmount,
+                timestamp: authResponse.timestamp,
+              });
+            } else {
+              console.log(`[Apify Contract] No CONTRACT_AUTHORIZE binding available`);
             }
           } catch (contractError) {
-            console.warn("Contract not available, proceeding without authorization", contractError);
+            console.warn(`[Apify Contract] Contract authorization failed, proceeding without it`, contractError);
           }
 
           try {
+            console.log(`[Apify Contract] Executing tool: ${id}`);
+            
             // Execute the actual operation
             const result = await config.execute({
               env,
@@ -86,9 +111,16 @@ export function createApifyRunToolWithContract<
               client: null, // Will be passed by caller if needed
             });
 
+            console.log(`[Apify Contract] Tool execution completed successfully`);
+
             // Settle if we have a transaction ID
             if (transactionId) {
               try {
+                console.log(`[Apify Contract] Settling transaction: ${transactionId}`, {
+                  amount: maxCost,
+                  vendorId: "apify",
+                });
+                
                 const contract = config.getContract(env);
                 if (contract?.binding?.CONTRACT_SETTLE) {
                   await contract.binding.CONTRACT_SETTLE({
@@ -101,17 +133,25 @@ export function createApifyRunToolWithContract<
                     ],
                     vendorId: "apify",
                   });
+                  
+                  console.log(`[Apify Contract] Settlement successful for transaction: ${transactionId}`);
                 }
               } catch (settleError) {
-                console.error("Failed to settle contract:", settleError);
+                console.error(`[Apify Contract] Settlement failed for transaction: ${transactionId}`, settleError);
               }
+            } else {
+              console.log(`[Apify Contract] No transaction ID - contract was not authorized`);
             }
 
             return result;
           } catch (executionError) {
+            console.error(`[Apify Contract] Tool execution failed`, executionError);
+            
             // If execution fails and we have a transaction ID, try to settle for 0
             if (transactionId) {
               try {
+                console.log(`[Apify Contract] Settling failed transaction for $0: ${transactionId}`);
+                
                 const contract = config.getContract(env);
                 if (contract?.binding?.CONTRACT_SETTLE) {
                   await contract.binding.CONTRACT_SETTLE({
@@ -124,15 +164,18 @@ export function createApifyRunToolWithContract<
                     ],
                     vendorId: "apify",
                   });
+                  
+                  console.log(`[Apify Contract] Failed transaction settled for $0: ${transactionId}`);
                 }
               } catch (settleError) {
-                console.error("Failed to settle contract on error:", settleError);
+                console.error(`[Apify Contract] Failed to settle error transaction: ${transactionId}`, settleError);
               }
             }
 
             throw executionError;
           }
         } catch (error) {
+          console.error(`[Apify Contract] Fatal error in ${id}:`, error);
           throw new Error(
             error instanceof Error ? error.message : "Failed to execute Apify run",
           );
