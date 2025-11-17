@@ -40,7 +40,8 @@ export async function handleStreamRoute(
   let session: StreamingSession;
   try {
     session = JSON.parse(sessionJson) as StreamingSession;
-  } catch (_error) {
+  } catch (error) {
+    console.error("Failed to parse streaming session", error);
     await env.STREAM_SESSIONS.delete(sessionId);
     return new Response(JSON.stringify({ error: "Invalid session data" }), {
       status: 500,
