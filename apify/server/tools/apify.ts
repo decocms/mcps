@@ -225,7 +225,7 @@ export const createRunActorSyncTool = (env: Env) =>
         }
         const client = createApifyClient(env);
         const parsedInput = JSON.parse(ctx.input);
-        const items = await client.runActorSyncGetDatasetItems(
+        const result = await client.runActorSync(
           ctx.actorId,
           parsedInput,
           {
@@ -234,7 +234,16 @@ export const createRunActorSyncTool = (env: Env) =>
             build: ctx.build,
           },
         );
-        return { items };
+        
+        // Get dataset items if available
+        let items: Array<Record<string, unknown>> = [];
+        if (result.defaultDatasetId) {
+          items = await client.getDatasetItems(result.defaultDatasetId, {
+            limit: 1000,
+          });
+        }
+        
+        return { items, runId: result.id, usageTotalUsd: result.usageTotalUsd };
       },
       getMaxCost: async (context: any) => {
         // Estimate based on memory and timeout

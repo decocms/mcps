@@ -145,6 +145,33 @@ export class ApifyClient {
   }
 
   /**
+   * Run actor synchronously and get the run details with usage information
+   * POST /v2/acts/:actorId/run-sync
+   */
+  async runActorSync(
+    actorId: string,
+    input: Record<string, unknown>,
+    options?: {
+      timeout?: number;
+      memory?: number;
+      build?: string;
+    },
+  ): Promise<ActorRun> {
+    return this.makeRequest<ActorRun>(
+      "POST",
+      `/v2/acts/${actorId}/run-sync`,
+      {
+        body: input,
+        query: {
+          timeout: options?.timeout,
+          memory: options?.memory,
+          build: options?.build,
+        },
+      },
+    );
+  }
+
+  /**
    * Run actor synchronously and get dataset items
    * POST /v2/acts/:actorId/run-sync-get-dataset-items
    */
@@ -290,6 +317,26 @@ export async function getActor(env: Env, actorId: string): Promise<Actor> {
   return makeApifyRequest(env, "GET", `/v2/acts/${actorId}`);
 }
 
+export async function runActorSync(
+  env: Env,
+  actorId: string,
+  input: Record<string, unknown>,
+  options?: {
+    timeout?: number;
+    memory?: number;
+    build?: string;
+  },
+): Promise<ActorRun> {
+  return makeApifyRequest(env, "POST", `/v2/acts/${actorId}/run-sync`, {
+    body: input,
+    query: {
+      timeout: options?.timeout,
+      memory: options?.memory,
+      build: options?.build,
+    },
+  });
+}
+
 export async function runActorSyncGetDatasetItems(
   env: Env,
   actorId: string,
@@ -388,6 +435,11 @@ export function createApifyClient(env: Env) {
       listActors(env, options),
     getActor: (actorId: string) =>
       getActor(env, actorId),
+    runActorSync: (
+      actorId: string,
+      input: Record<string, unknown>,
+      options?: Parameters<typeof runActorSync>[3],
+    ) => runActorSync(env, actorId, input, options),
     runActorSyncGetDatasetItems: (
       actorId: string,
       input: Record<string, unknown>,
