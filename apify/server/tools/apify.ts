@@ -225,7 +225,7 @@ export const createRunActorSyncTool = (env: Env) =>
         }
         const client = createApifyClient(env);
         const parsedInput = JSON.parse(ctx.input);
-        return await client.runActorSyncGetDatasetItems(
+        const items = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
           parsedInput,
           {
@@ -234,6 +234,7 @@ export const createRunActorSyncTool = (env: Env) =>
             build: ctx.build,
           },
         );
+        return { items };
       },
       getMaxCost: async () => {
         // Default: 1 micro dollar per execution
