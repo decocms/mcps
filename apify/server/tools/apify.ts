@@ -236,10 +236,21 @@ export const createRunActorSyncTool = (env: Env) =>
         );
         return { items };
       },
-      getMaxCost: async () => {
-        // Default: 1 micro dollar per execution
-        // Could be fetched from Apify API based on actor memory/timeout
-        return 1;
+      getMaxCost: async (context: any) => {
+        // Estimate based on memory and timeout
+        // Default: 1 micro dollar per execution (0.01 cents)
+        const memory = context.memory || 128; // Default 128MB
+        const timeout = context.timeout || 300; // Default 5 minutes
+        // Rough estimate: 0.01 per minute + 0.001 per 128MB
+        return Math.ceil((timeout / 60) * 0.01 + (memory / 128) * 0.001);
+      },
+      getActualCost: async (result: any) => {
+        // Try to extract actual cost from result if available
+        // Apify API returns usageTotalUsd in the run result
+        if (result?.usageTotalUsd) {
+          return Math.ceil(result.usageTotalUsd * 100) / 100; // Round to 2 decimals
+        }
+        return 0;
       },
       getContract: (env: any) => ({
         binding: env.APIFY_CONTRACT,
@@ -276,9 +287,17 @@ export const createRunActorAsyncTool = (env: Env) =>
         return result.data as ActorRun;
       },
       getMaxCost: async () => {
-        // Default: 1 micro dollar per execution
-        // Could be fetched from Apify API based on actor memory/timeout
-        return 1;
+        // Async is cheaper than sync: 0.5 micro dollars
+        // Fixed cost for async run initiation
+        return 0.5;
+      },
+      getActualCost: async (result: any) => {
+        // For async runs, try to get the estimated cost
+        // This might be estimated only; actual cost is determined when run completes
+        if (result?.usageTotalUsd) {
+          return Math.ceil(result.usageTotalUsd * 100) / 100;
+        }
+        return 0;
       },
       getContract: (env: any) => ({
         binding: env.APIFY_CONTRACT,
