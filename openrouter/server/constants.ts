@@ -37,6 +37,3 @@ export const PROVIDER_SORT_OPTIONS = [
   "throughput",
   "latency",
 ] as const;
-
-// Streaming session configuration
-export const STREAMING_SESSION_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes

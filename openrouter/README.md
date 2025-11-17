@@ -15,7 +15,7 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 
 ## Features
 
-### 🔧 **6 MCP Tools**
+### 🔧 **Tools & APIs**
 
 #### Model Discovery (4 tools)
 1. **`OPENROUTER_LIST_MODELS`** - List and filter available models
@@ -23,12 +23,12 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 3. **`OPENROUTER_COMPARE_MODELS`** - Compare multiple models side-by-side
 4. **`OPENROUTER_RECOMMEND_MODEL`** - Get AI model recommendations for tasks
 
-#### AI Chat (2 tools)
-5. **`OPENROUTER_CHAT_COMPLETION`** - Non-streaming chat completions
-6. **`OPENROUTER_START_STREAM`** - Create streaming session URLs
+#### AI Chat
+- **`OPENROUTER_CHAT_COMPLETION`** – Non-streaming chat completions
+- **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `OPENROUTER_CHAT_COMPLETION` tool schema.
 
 ### 🌐 **API Routes**
-- **`GET /api/stream/:sessionId`** - Server-Sent Events (SSE) streaming endpoint
+- **`POST /api/chat`** - Streams OpenRouter responses directly from the worker (no intermediate tool call required)
 
 ## Installation
 
@@ -64,19 +64,6 @@ When installing this MCP, you'll need to provide:
 | `siteUrl` | ❌ No | Your site URL (used for attribution and streaming endpoints) |
 | `defaultTemperature` | ❌ No | Default temperature for responses (0-2, default: 1) |
 | `defaultMaxTokens` | ❌ No | Default max tokens for responses |
-
-### Required Cloudflare bindings
-
-Add the `STREAM_SESSIONS` KV binding to `wrangler.toml` (replace IDs with your own namespace IDs):
-
-```toml
-[[kv_namespaces]]
-binding = "STREAM_SESSIONS"
-id = "replace-with-production-kv-id"
-preview_id = "replace-with-preview-kv-id"
-```
-
-This KV store keeps the short-lived streaming session descriptors that the MCP generates. Sessions expire automatically after five minutes, but we also delete them once the stream finishes.
 
 ## Usage Examples
 
@@ -214,54 +201,59 @@ const response = await OPENROUTER_CHAT_COMPLETION({
 
 ### 6. Streaming Chat
 
-Create a streaming session for real-time responses:
+Use the built-in `POST /api/chat` endpoint for real-time streaming (no tool call required). It accepts the same payload as `OPENROUTER_CHAT_COMPLETION` and returns a text stream that conforms to the [OpenRouter streaming protocol](https://openrouter.ai/docs/api-reference/streaming).
 
 ```typescript
-// Start a streaming session
-const stream = await OPENROUTER_START_STREAM({
-  messages: [
-    { role: "user", content: "Write a long story about a robot" }
-  ],
-  model: "openai/gpt-4o",
-  temperature: 0.9
+// Simple fetch-based client
+const response = await fetch("https://your-worker.workers.dev/api/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: "openai/gpt-4o",
+    messages: [{ role: "user", content: "Write a long story about a robot" }],
+    temperature: 0.9,
+  }),
 });
 
-console.log(stream.streamUrl);
-// "https://your-worker.workers.dev/api/stream/abc123"
+const reader = response.body?.getReader();
+const decoder = new TextDecoder();
 
-console.log(stream.instructions);
-// "Connect to the streamUrl using an EventSource..."
-
-// Consume the stream (in your client code):
-const eventSource = new EventSource(stream.streamUrl);
-
-eventSource.onmessage = (event) => {
-  if (event.data === "[DONE]") {
-    eventSource.close();
-    return;
-  }
-  
-  const chunk = JSON.parse(event.data);
-  const content = chunk.choices[0]?.delta?.content;
-  if (content) {
-    process.stdout.write(content); // Stream to console
-  }
-};
-
-eventSource.onerror = (error) => {
-  console.error("Stream error:", error);
-  eventSource.close();
-};
+while (reader) {
+  const { value, done } = await reader.read();
+  if (done) break;
+  const chunk = decoder.decode(value);
+  process.stdout.write(chunk);
+}
 ```
 
-#### Streaming workflow recap
+#### Vercel AI SDK compatibility
 
-Streaming is always a two-step process:
+Because the endpoint is implemented with [`streamText`](https://github.com/vercel/ai), it plugs directly into `useChat`, `useCompletion`, or any handler from the AI SDK:
 
-1. Call `OPENROUTER_START_STREAM` via MCP. The tool validates your parameters, stores them in KV, and returns a `streamUrl` plus metadata.
-2. Open an **independent** HTTP connection (EventSource, fetch with `ReadableStream`, etc.) to the returned `streamUrl`. This endpoint proxies OpenRouter’s SSE feed back to you in real time.
+```typescript
+import { useChat } from "ai/react";
 
-The MCP protocol itself only supports request/response, so the stream cannot be delivered inline with the tool call; your client must actively connect to the provided URL.
+export function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: "/api/chat",
+    body: { model: "openai/gpt-4o" },
+  });
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {messages.map((m) => (
+        <p key={m.id}>
+          <strong>{m.role}:</strong> {m.content}
+        </p>
+      ))}
+      <input value={input} onChange={handleInputChange} />
+      <button type="submit">Send</button>
+    </form>
+  );
+}
+```
+
+Any SSE-capable client (including `EventSource`, `ReadableStream`, or the official AI SDK helpers) can consume the stream, and the request body supports every option exposed by the OpenRouter API.
 
 ## Architecture
 
@@ -472,17 +464,13 @@ Use filters to find the right model:
 ```
 
 ### 5. **Use Streaming for Long Responses**
-For long-form content, use streaming for better UX:
-```typescript
-const stream = await OPENROUTER_START_STREAM({...});
-```
+For long-form content, hit `POST /api/chat` with `stream: true` semantics and pipe the response to your UI (see the examples above referencing the [OpenRouter streaming guide](https://openrouter.ai/docs/api-reference/streaming)).
 
 ## Limitations
 
-- **Streaming Sessions**: Expire after 5 minutes
-- **Session Storage**: In-memory (use Cloudflare KV for production persistence)
 - **Rate Limits**: Depend on your OpenRouter tier
 - **Model Availability**: Some models may be temporarily unavailable
+- **JSON Mode**: The streaming endpoint forwards `response_format` to OpenRouter, but the AI SDK currently only supports flat JSON schema responses (nested schemas require manual parsing).
 
 ## Support
 

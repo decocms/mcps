@@ -8,7 +8,7 @@
  * Modules:
  * - userTools: Standard user management tools (from shared)
  * - modelTools: Model discovery, comparison, and recommendations
- * - chatTools: Chat completions and streaming session management
+ * - chatTools: Chat completions
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import {
@@ -17,10 +17,7 @@ import {
   createCompareModelsTool,
   createRecommendModelTool,
 } from "./models/index.ts";
-import {
-  createChatCompletionTool,
-  createStartStreamTool,
-} from "./chat/index.ts";
+import { createChatCompletionTool } from "./chat/index.ts";
 
 // Export all tools from all modules
 export const tools = [
@@ -32,5 +29,4 @@ export const tools = [
   createRecommendModelTool,
   // Chat Module
   createChatCompletionTool,
-  createStartStreamTool,
 ];

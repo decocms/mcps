@@ -1,7 +1,6 @@
 /**
  * Chat Module
- * Tools for chat completions and streaming
+ * Tools for chat completions
  */
 
 export { createChatCompletionTool } from "./completion.ts";
-export { createStartStreamTool } from "./start-stream.ts";
