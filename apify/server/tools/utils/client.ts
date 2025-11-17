@@ -55,7 +55,30 @@ async function makeApifyRequest(
     body: options?.body ? JSON.stringify(options.body) : undefined,
   };
 
-  return makeApiRequest(url, requestInit, "Apify");
+  try {
+    const response = await fetch(url, requestInit);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    // Handle empty responses
+    const contentLength = response.headers.get("content-length");
+    if (contentLength === "0" || !response.body) {
+      return {};
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+
+    return JSON.parse(text);
+  } catch (error) {
+    console.error(`Apify API error for ${method} ${path}:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -113,7 +136,18 @@ export class ApifyClient {
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    return response.json();
+    // Handle empty responses
+    const contentLength = response.headers.get("content-length");
+    if (contentLength === "0" || !response.body) {
+      return {};
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+
+    return JSON.parse(text);
   }
 
   /**
