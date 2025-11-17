@@ -65,6 +65,19 @@ When installing this MCP, you'll need to provide:
 | `defaultTemperature` | ❌ No | Default temperature for responses (0-2, default: 1) |
 | `defaultMaxTokens` | ❌ No | Default max tokens for responses |
 
+### Required Cloudflare bindings
+
+Add the `STREAM_SESSIONS` KV binding to `wrangler.toml` (replace IDs with your own namespace IDs):
+
+```toml
+[[kv_namespaces]]
+binding = "STREAM_SESSIONS"
+id = "replace-with-production-kv-id"
+preview_id = "replace-with-preview-kv-id"
+```
+
+This KV store keeps the short-lived streaming session descriptors that the MCP generates. Sessions expire automatically after five minutes, but we also delete them once the stream finishes.
+
 ## Usage Examples
 
 ### 1. List Available Models
@@ -240,6 +253,15 @@ eventSource.onerror = (error) => {
   eventSource.close();
 };
 ```
+
+#### Streaming workflow recap
+
+Streaming is always a two-step process:
+
+1. Call `OPENROUTER_START_STREAM` via MCP. The tool validates your parameters, stores them in KV, and returns a `streamUrl` plus metadata.
+2. Open an **independent** HTTP connection (EventSource, fetch with `ReadableStream`, etc.) to the returned `streamUrl`. This endpoint proxies OpenRouter’s SSE feed back to you in real time.
+
+The MCP protocol itself only supports request/response, so the stream cannot be delivered inline with the tool call; your client must actively connect to the provided URL.
 
 ## Architecture
 

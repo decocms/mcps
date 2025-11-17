@@ -25,16 +25,9 @@ export async function handleStreamRoute(
     });
   }
 
-  // Get session from global storage
-  // Note: In production, use Cloudflare KV or Durable Objects
-  // @ts-ignore - globalThis is extended at runtime
-  const sessions =
-    (globalThis.streamingSessions as
-      | Map<string, StreamingSession>
-      | undefined) || new Map();
-  const session = sessions.get(sessionId);
-
-  if (!session) {
+  // Load session from KV
+  const sessionJson = await env.STREAM_SESSIONS.get(sessionId);
+  if (!sessionJson) {
     return new Response(
       JSON.stringify({ error: "Session not found or expired" }),
       {
@@ -44,9 +37,20 @@ export async function handleStreamRoute(
     );
   }
 
+  let session: StreamingSession;
+  try {
+    session = JSON.parse(sessionJson) as StreamingSession;
+  } catch (_error) {
+    await env.STREAM_SESSIONS.delete(sessionId);
+    return new Response(JSON.stringify({ error: "Invalid session data" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   // Check if session is expired
   if (isSessionExpired(session)) {
-    sessions.delete(sessionId);
+    await env.STREAM_SESSIONS.delete(sessionId);
     return new Response(JSON.stringify({ error: "Session expired" }), {
       status: 410,
       headers: { "Content-Type": "application/json" },
@@ -91,7 +95,7 @@ export async function handleStreamRoute(
       );
     } finally {
       // Clean up session
-      sessions.delete(sessionId);
+      await env.STREAM_SESSIONS.delete(sessionId);
       await writer.close();
     }
   })();

@@ -9,3 +9,7 @@ scope = "deco"
 workspace = "deco"
 enable_workflows = false
 local = false
+
+[[kv_namespaces]]
+binding = "STREAM_SESSIONS"
+id = "cabb6fbb32f5411889f737a050b54ee2"

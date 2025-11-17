@@ -71,6 +71,7 @@ export type Env = DefaultEnv &
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
     };
     state: z.infer<typeof StateSchema>;
+    STREAM_SESSIONS: KVNamespace;
   };
 
 const runtime = withRuntime<Env, typeof StateSchema>({

@@ -174,17 +174,14 @@ export const createStartStreamTool = (env: Env) =>
         stream: true, // Force streaming
       });
 
-      // Store session in KV or memory
-      // Note: In a real implementation, you'd want to store this in Cloudflare KV
-      // or Durable Objects for persistence across requests
-      // For now, we'll use a global Map (this will work in a Worker)
-      // @ts-ignore - globalThis is extended at runtime
-      if (!globalThis.streamingSessions) {
-        // @ts-ignore
-        globalThis.streamingSessions = new Map();
-      }
-      // @ts-ignore
-      globalThis.streamingSessions.set(session.sessionId, session);
+      // Persist session so streaming endpoint can retrieve it
+      await env.STREAM_SESSIONS.put(
+        session.sessionId,
+        JSON.stringify(session),
+        {
+          expiration: Math.floor(session.expiresAt / 1000),
+        },
+      );
 
       // Build streaming URL
       const streamUrl = buildStreamingUrl(baseUrl, session.sessionId);
