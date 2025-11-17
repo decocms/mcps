@@ -8,7 +8,7 @@
     "dev": "deco dev --vite",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
+    "deploy": "bun run build && rm -f dist/server/wrangler.json && deco deploy ./dist/server",
     "check": "tsc --noEmit",
     "build": "bun --bun vite build"
   },
