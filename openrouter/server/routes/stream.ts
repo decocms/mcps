@@ -74,7 +74,8 @@ export async function handleStreamRoute(
   let payload: StreamRequestBody;
   try {
     payload = (await request.json()) as StreamRequestBody;
-  } catch (_error) {
+  } catch (error) {
+    console.error("Failed to parse streaming request body:", error);
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
       headers: JSON_HEADERS,
