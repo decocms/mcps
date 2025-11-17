@@ -4,4 +4,4 @@
  */
 
 export { createChatCompletionTool } from "./completion.ts";
-export { createGetChatMetadataTool } from "./metadata.ts";
+export { createGetStreamEndpointTool } from "./stream-endpoint.ts";

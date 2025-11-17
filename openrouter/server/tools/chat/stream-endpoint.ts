@@ -11,9 +11,9 @@ const STREAM_DOCS_URL = "https://openrouter.ai/docs/api-reference/streaming";
 const AI_SDK_URL = "https://github.com/vercel/ai";
 const DEFAULT_BASE_URL = "https://openrouter.deco.page";
 
-export const createGetChatMetadataTool = (env: Env) =>
+export const createGetStreamEndpointTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_GET_CHAT_METADATA",
+    id: "OPENROUTER_GET_STREAM_ENDPOINT",
     description:
       "Return details about the HTTP streaming endpoint so clients can connect without guessing configuration.",
     inputSchema: z.object({}).optional(),

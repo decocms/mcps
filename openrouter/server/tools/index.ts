@@ -19,7 +19,7 @@ import {
 } from "./models/index.ts";
 import {
   createChatCompletionTool,
-  createGetChatMetadataTool,
+  createGetStreamEndpointTool,
 } from "./chat/index.ts";
 
 // Export all tools from all modules
@@ -32,5 +32,5 @@ export const tools = [
   createRecommendModelTool,
   // Chat Module
   createChatCompletionTool,
-  createGetChatMetadataTool,
+  createGetStreamEndpointTool,
 ];
