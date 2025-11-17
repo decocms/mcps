@@ -9,9 +9,25 @@ scope = "deco"
 workspace = "deco-team"
 enable_workflows = false
 local = false
-bindings = []
 
 [deco.integration]
 description = "Automate web scraping and data extraction using Apify actors. List, run, and monitor actors, retrieve results, and manage runs with support for sync and async execution."
 icon = "https://apify.com/favicon.ico"
-friendlyName = "Apify-teste"
+friendlyName = "Apify"
+
+[[deco.bindings]]
+type = "contract"
+name = "APIFY_CONTRACT"
+
+[deco.bindings.contract]
+body = "U$0.50 per sync run, U$0.25 per async run"
+
+[[deco.bindings.contract.clauses]]
+id = "apify:runActorSync"
+price = 0.5
+description = "$0.50 per synchronous actor run"
+
+[[deco.bindings.contract.clauses]]
+id = "apify:runActorAsync"
+price = 0.25
+description = "$0.25 per asynchronous actor run"
