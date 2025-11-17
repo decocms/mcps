@@ -94,10 +94,11 @@ export const createRecommendModelTool = (env: Env) =>
       context: { taskDescription: string; requirements?: TaskRequirements };
     }) => {
       const { taskDescription, requirements = {} } = context;
+      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: env.state.apiKey,
-        siteName: env.state.siteName,
-        siteUrl: env.state.siteUrl,
+        apiKey: state.apiKey,
+        siteName: state.siteName,
+        siteUrl: state.siteUrl,
       });
 
       // Fetch all available models

@@ -187,9 +187,10 @@ export const createChatCompletionTool = (env: Env) =>
         user,
       } = context;
 
+      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const resolvedTemperature =
-        temperature ?? env.state.defaultTemperature ?? DEFAULT_TEMPERATURE;
-      const resolvedMaxTokens = maxTokens ?? env.state.defaultMaxTokens;
+        temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
+      const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
 
       // Validate parameters
       validateChatParams({
@@ -201,9 +202,9 @@ export const createChatCompletionTool = (env: Env) =>
       });
 
       const client = new OpenRouterClient({
-        apiKey: env.state.apiKey,
-        siteName: env.state.siteName,
-        siteUrl: env.state.siteUrl,
+        apiKey: state.apiKey,
+        siteName: state.siteName,
+        siteUrl: state.siteUrl,
       });
 
       // Prepare request parameters

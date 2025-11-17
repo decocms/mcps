@@ -140,9 +140,10 @@ export const createStartStreamTool = (env: Env) =>
         user,
       } = context;
 
+      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const resolvedTemperature =
-        temperature ?? env.state.defaultTemperature ?? DEFAULT_TEMPERATURE;
-      const resolvedMaxTokens = maxTokens ?? env.state.defaultMaxTokens;
+        temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
+      const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
 
       // Validate parameters
       validateChatParams({
@@ -156,7 +157,7 @@ export const createStartStreamTool = (env: Env) =>
       // Get the base URL from the request
       // This is a workaround since we don't have direct access to the request URL
       // In production, you might want to configure this as an environment variable
-      const baseUrl = env.state.siteUrl || "https://your-worker.workers.dev";
+      const baseUrl = state.siteUrl || "https://your-worker.workers.dev";
 
       // Create streaming session
       const session = createStreamingSession({

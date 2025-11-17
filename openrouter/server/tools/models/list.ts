@@ -115,10 +115,11 @@ export const createListModelsTool = (env: Env) =>
       };
     }) => {
       const { filter, sortBy = "name", limit = 50 } = context;
+      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: env.state.apiKey,
-        siteName: env.state.siteName,
-        siteUrl: env.state.siteUrl,
+        apiKey: state.apiKey,
+        siteName: state.siteName,
+        siteUrl: state.siteUrl,
       });
 
       // Fetch all models
