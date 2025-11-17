@@ -216,7 +216,7 @@ export type Boolean_2 = boolean;
  */
 export type String_28 = string;
 
-export interface OPENROUTER_CHAT_COMPLETIONInput {
+export interface CHAT_COMPLETIONInput {
   messages: Array_3;
   model?: String_20;
   models?: Array_4;
@@ -263,7 +263,7 @@ export interface Object_3 {
  */
 
 /**
- * Generation ID (use with OPENROUTER_GET_GENERATION for details)
+ * Generation ID (use with GET_GENERATION for details)
  */
 export type String_29 = string;
 /**
@@ -303,7 +303,7 @@ export type Number_9 = number;
  */
 export type Number_10 = number;
 
-export interface OPENROUTER_CHAT_COMPLETIONOutput {
+export interface CHAT_COMPLETIONOutput {
   id: String_29;
   model: String_30;
   content: String_31;
@@ -350,7 +350,7 @@ export type String_34 = "price" | "context_length" | "modality" | "moderation";
  */
 export type Array_9 = String_34[];
 
-export interface OPENROUTER_COMPARE_MODELSInput {
+export interface COMPARE_MODELSInput {
   modelIds: Array_8;
   criteria?: Array_9;
 }
@@ -370,7 +370,7 @@ export type Array_10 = Object_6[];
  */
 export type String_37 = string;
 
-export interface OPENROUTER_COMPARE_MODELSOutput {
+export interface COMPARE_MODELSOutput {
   comparison: Array_10;
   recommendation?: String_37;
 }
@@ -398,7 +398,7 @@ export interface Object_7 {
  */
 export type String_38 = string;
 
-export interface OPENROUTER_GET_MODELInput {
+export interface GET_MODELInput {
   modelId: String_38;
 }
 
@@ -465,7 +465,7 @@ export type String_48 = string;
 export type String_49 = string;
 export type String_50 = string;
 
-export interface OPENROUTER_GET_MODELOutput {
+export interface GET_MODELOutput {
   id: String_39;
   name: String_40;
   description?: String_41;
@@ -534,7 +534,7 @@ export type String_53 = "price" | "context_length" | "name";
  */
 export type Number_16 = number;
 
-export interface OPENROUTER_LIST_MODELSInput {
+export interface LIST_MODELSInput {
   filter?: Object_12;
   sortBy?: String_53;
   limit?: Number_16;
@@ -602,7 +602,7 @@ export type Number_18 = number;
  */
 export type Boolean_5 = boolean;
 
-export interface OPENROUTER_LIST_MODELSOutput {
+export interface LIST_MODELSOutput {
   models: Array_11;
   total: Number_18;
   hasMore: Boolean_5;
@@ -647,7 +647,7 @@ export type String_62 = "text->text" | "text+image->text" | "text->image";
  */
 export type String_63 = "cost" | "quality" | "speed";
 
-export interface OPENROUTER_RECOMMEND_MODELInput {
+export interface RECOMMEND_MODELInput {
   taskDescription: String_61;
   requirements?: Object_14;
 }
@@ -705,7 +705,7 @@ export type String_69 = string;
  */
 export type Array_12 = Object_15[];
 
-export interface OPENROUTER_RECOMMEND_MODELOutput {
+export interface RECOMMEND_MODELOutput {
   recommendations: Array_12;
 }
 export interface Object_15 {
@@ -782,7 +782,7 @@ export type Boolean_7 = boolean;
  */
 export type String_80 = string;
 
-export interface OPENROUTER_START_STREAMInput {
+export interface GET_STREAM_ENDPOINTInput {
   messages: Array_13;
   model?: String_73;
   models?: Array_14;
@@ -838,7 +838,7 @@ export type String_83 = string;
  */
 export type String_84 = string;
 
-export interface OPENROUTER_START_STREAMOutput {
+export interface GET_STREAM_ENDPOINTOutput {
   streamUrl: String_81;
   sessionId: String_82;
   expiresAt: String_83;
@@ -894,39 +894,35 @@ export interface Env {
     /**
      * Send a non-streaming chat completion request to OpenRouter. Supports single model selection, automatic model routing (openrouter/auto), fallback chains, and provider preferences. Returns the complete response when generation is finished, including token usage and cost estimation. Perfect for standard chat interactions where you don't need real-time streaming.
      */
-    OPENROUTER_CHAT_COMPLETION: (
-      input: OPENROUTER_CHAT_COMPLETIONInput,
-    ) => Promise<OPENROUTER_CHAT_COMPLETIONOutput>;
+    CHAT_COMPLETION: (
+      input: CHAT_COMPLETIONInput,
+    ) => Promise<CHAT_COMPLETIONOutput>;
     /**
      * Compare multiple OpenRouter models side-by-side to help choose the best model for a specific use case. Compares pricing (prompt and completion costs), context length, capabilities (modality), and performance characteristics. Returns a detailed comparison table and an automatic recommendation. Useful when deciding between multiple models for a task.
      */
-    OPENROUTER_COMPARE_MODELS: (
-      input: OPENROUTER_COMPARE_MODELSInput,
-    ) => Promise<OPENROUTER_COMPARE_MODELSOutput>;
+    COMPARE_MODELS: (
+      input: COMPARE_MODELSInput,
+    ) => Promise<COMPARE_MODELSOutput>;
     /**
      * Get detailed information about a specific OpenRouter model including pricing, capabilities, context length, provider information, and supported features. Use this to learn about a model before using it for chat completions. Model IDs follow the format 'provider/model-name' (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet').
      */
-    OPENROUTER_GET_MODEL: (
-      input: OPENROUTER_GET_MODELInput,
-    ) => Promise<OPENROUTER_GET_MODELOutput>;
+    GET_MODEL: (input: GET_MODELInput) => Promise<GET_MODELOutput>;
     /**
      * List all available models from OpenRouter with their details, pricing, and capabilities. Returns comprehensive information about each model including context length, pricing per 1M tokens, modality (text, vision, etc.), and provider information. Supports filtering by price, context length, modality, and search terms. Perfect for discovering and comparing available AI models.
      */
-    OPENROUTER_LIST_MODELS: (
-      input: OPENROUTER_LIST_MODELSInput,
-    ) => Promise<OPENROUTER_LIST_MODELSOutput>;
+    LIST_MODELS: (input: LIST_MODELSInput) => Promise<LIST_MODELSOutput>;
     /**
      * Get intelligent model recommendations based on your task description and requirements. The system analyzes your task (e.g., 'code generation', 'creative writing', 'data analysis') and suggests the most suitable models considering cost, quality, context length, and capabilities. Each recommendation includes detailed reasoning explaining why the model is suitable. Perfect for discovering the right model when you're not sure which to use.
      */
-    OPENROUTER_RECOMMEND_MODEL: (
-      input: OPENROUTER_RECOMMEND_MODELInput,
-    ) => Promise<OPENROUTER_RECOMMEND_MODELOutput>;
+    RECOMMEND_MODEL: (
+      input: RECOMMEND_MODELInput,
+    ) => Promise<RECOMMEND_MODELOutput>;
     /**
      * Prepare a streaming chat completion session. Returns a URL that can be used to stream responses via Server-Sent Events (SSE). The stream URL is authenticated and pre-configured with all parameters. Perfect for real-time chat applications where you want to display responses as they're generated. Note: MCP doesn't support streaming in tool responses, so you'll need to connect to the URL directly to consume the stream.
      */
-    OPENROUTER_START_STREAM: (
-      input: OPENROUTER_START_STREAMInput,
-    ) => Promise<OPENROUTER_START_STREAMOutput>;
+    GET_STREAM_ENDPOINT: (
+      input: GET_STREAM_ENDPOINTInput,
+    ) => Promise<GET_STREAM_ENDPOINTOutput>;
   }>;
 }
 

@@ -13,7 +13,7 @@ const DEFAULT_BASE_URL = "https://openrouter.deco.page";
 
 export const createGetStreamEndpointTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_GET_STREAM_ENDPOINT",
+    id: "GET_STREAM_ENDPOINT",
     description:
       "Return details about the HTTP streaming endpoint so clients can connect without guessing configuration.",
     inputSchema: z.object({}).optional(),
@@ -44,13 +44,13 @@ export const createGetStreamEndpointTool = (env: Env) =>
         contentType: "application/json" as const,
         stream: true as const,
         description:
-          "POST JSON payloads identical to the OPENROUTER_CHAT_COMPLETION tool and receive a Server-Sent Events stream compatible with OpenRouter's streaming protocol.",
+          "POST JSON payloads identical to the CHAT_COMPLETION tool and receive a Server-Sent Events stream compatible with OpenRouter's streaming protocol.",
         docs: [
           { title: "OpenRouter Streaming", url: STREAM_DOCS_URL },
           { title: "Vercel AI SDK", url: AI_SDK_URL },
         ],
         notes: [
-          "Set the same fields you would send to OPENROUTER_CHAT_COMPLETION; the response is a text/event-stream with OpenRouter chunks.",
+          "Set the same fields you would send to CHAT_COMPLETION; the response is a text/event-stream with OpenRouter chunks.",
           "Ideal for hooking up to vercel/ai useChat hooks or any SSE client.",
           "Include apiKey/site attribution when calling from your runtime; this MCP only stores them inside the installation state.",
         ],

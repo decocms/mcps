@@ -12,7 +12,7 @@ import type { TaskRequirements } from "../../lib/types.ts";
 
 export const createRecommendModelTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_RECOMMEND_MODEL",
+    id: "RECOMMEND_MODEL",
     description:
       "Get intelligent model recommendations based on your task description and requirements. " +
       "The system analyzes your task (e.g., 'code generation', 'creative writing', 'data analysis') " +

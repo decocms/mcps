@@ -18,15 +18,15 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 ### 🔧 **Tools & APIs**
 
 #### Model Discovery (4 tools)
-1. **`OPENROUTER_LIST_MODELS`** - List and filter available models
-2. **`OPENROUTER_GET_MODEL`** - Get detailed model information
-3. **`OPENROUTER_COMPARE_MODELS`** - Compare multiple models side-by-side
-4. **`OPENROUTER_RECOMMEND_MODEL`** - Get AI model recommendations for tasks
+1. **`LIST_MODELS`** - List and filter available models
+2. **`GET_MODEL`** - Get detailed model information
+3. **`COMPARE_MODELS`** - Compare multiple models side-by-side
+4. **`RECOMMEND_MODEL`** - Get AI model recommendations for tasks
 
 #### AI Chat
-- **`OPENROUTER_CHAT_COMPLETION`** – Non-streaming chat completions
-- **`OPENROUTER_GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
-- **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `OPENROUTER_CHAT_COMPLETION` tool schema.
+- **`CHAT_COMPLETION`** – Non-streaming chat completions
+- **`GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
+- **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `CHAT_COMPLETION` tool schema.
 
 ### 🌐 **API Routes**
 - **`POST /api/chat`** - Streams OpenRouter responses directly from the worker (no intermediate tool call required)
@@ -74,13 +74,13 @@ Filter and sort through 100+ AI models:
 
 ```typescript
 // List all models, sorted by price
-const { models, total } = await OPENROUTER_LIST_MODELS({
+const { models, total } = await LIST_MODELS({
   sortBy: "price",
   limit: 10
 });
 
 // Filter for vision models under $5/1M tokens
-const { models } = await OPENROUTER_LIST_MODELS({
+const { models } = await LIST_MODELS({
   filter: {
     modality: "text+image->text",
     maxPromptPrice: 5.0,
@@ -90,7 +90,7 @@ const { models } = await OPENROUTER_LIST_MODELS({
 });
 
 // Search for specific models
-const { models } = await OPENROUTER_LIST_MODELS({
+const { models } = await LIST_MODELS({
   filter: {
     search: "gpt-4"
   }
@@ -102,7 +102,7 @@ const { models } = await OPENROUTER_LIST_MODELS({
 Get comprehensive information about a specific model:
 
 ```typescript
-const model = await OPENROUTER_GET_MODEL({
+const model = await GET_MODEL({
   modelId: "anthropic/claude-3.5-sonnet"
 });
 
@@ -116,7 +116,7 @@ console.log(model.modality); // "text->text"
 Compare multiple models to choose the best one:
 
 ```typescript
-const { comparison, recommendation } = await OPENROUTER_COMPARE_MODELS({
+const { comparison, recommendation } = await COMPARE_MODELS({
   modelIds: [
     "openai/gpt-4o",
     "anthropic/claude-3.5-sonnet",
@@ -135,7 +135,7 @@ console.log(recommendation);
 Get intelligent model suggestions based on your task:
 
 ```typescript
-const { recommendations } = await OPENROUTER_RECOMMEND_MODEL({
+const { recommendations } = await RECOMMEND_MODEL({
   taskDescription: "generate Python code with detailed explanations",
   requirements: {
     maxCostPer1MTokens: 10,
@@ -157,7 +157,7 @@ Send chat requests and get complete responses:
 
 ```typescript
 // Simple chat with auto-routing
-const response = await OPENROUTER_CHAT_COMPLETION({
+const response = await CHAT_COMPLETION({
   messages: [
     { role: "user", content: "Explain quantum computing in simple terms" }
   ]
@@ -169,7 +169,7 @@ console.log(`Cost: $${response.estimatedCost.total}`);
 console.log(`Tokens: ${response.usage.totalTokens}`);
 
 // Use a specific model
-const response = await OPENROUTER_CHAT_COMPLETION({
+const response = await CHAT_COMPLETION({
   model: "anthropic/claude-3.5-sonnet",
   messages: [
     { role: "system", content: "You are a helpful coding assistant" },
@@ -180,7 +180,7 @@ const response = await OPENROUTER_CHAT_COMPLETION({
 });
 
 // Use fallback chain for reliability
-const response = await OPENROUTER_CHAT_COMPLETION({
+const response = await CHAT_COMPLETION({
   model: "openai/gpt-4o",
   models: ["anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash-exp"],
   messages: [
@@ -190,7 +190,7 @@ const response = await OPENROUTER_CHAT_COMPLETION({
 // Tries gpt-4o first, falls back to claude if unavailable, then gemini
 
 // Optimize by provider preferences
-const response = await OPENROUTER_CHAT_COMPLETION({
+const response = await CHAT_COMPLETION({
   model: "openai/gpt-4o",
   messages: [{ role: "user", content: "Hello!" }],
   provider: {
@@ -205,7 +205,7 @@ const response = await OPENROUTER_CHAT_COMPLETION({
 If you need to programmatically discover where to send streaming requests, call the metadata tool:
 
 ```typescript
-const metadata = await OPENROUTER_GET_STREAM_ENDPOINT();
+const metadata = await GET_STREAM_ENDPOINT();
 
 console.log(metadata.chatEndpoint); // e.g. https://openrouter.deco.page/api/chat
 console.log(metadata.docs); // Helpful links for OpenRouter streaming + AI SDK usage
@@ -213,7 +213,7 @@ console.log(metadata.docs); // Helpful links for OpenRouter streaming + AI SDK u
 
 ### 6. Streaming Chat
 
-Use the built-in `POST /api/chat` endpoint for real-time streaming (no tool call required). It accepts the same payload as `OPENROUTER_CHAT_COMPLETION` and returns a text stream that conforms to the [OpenRouter streaming protocol](https://openrouter.ai/docs/api-reference/streaming).
+Use the built-in `POST /api/chat` endpoint for real-time streaming (no tool call required). It accepts the same payload as `CHAT_COMPLETION` and returns a text stream that conforms to the [OpenRouter streaming protocol](https://openrouter.ai/docs/api-reference/streaming).
 
 ```typescript
 // Simple fetch-based client
@@ -351,13 +351,13 @@ All tools include pricing information to help you optimize costs:
 
 ```typescript
 // Compare models by cost
-const { comparison } = await OPENROUTER_COMPARE_MODELS({
+const { comparison } = await COMPARE_MODELS({
   modelIds: ["openai/gpt-4o", "meta/llama-3-70b"],
   criteria: ["price"]
 });
 
 // Get recommendations prioritizing cost
-const { recommendations } = await OPENROUTER_RECOMMEND_MODEL({
+const { recommendations } = await RECOMMEND_MODEL({
   taskDescription: "general chatbot",
   requirements: {
     prioritize: "cost",
@@ -366,7 +366,7 @@ const { recommendations } = await OPENROUTER_RECOMMEND_MODEL({
 });
 
 // Every chat completion includes cost estimation
-const response = await OPENROUTER_CHAT_COMPLETION({...});
+const response = await CHAT_COMPLETION({...});
 console.log(`Cost: $${response.estimatedCost.total}`);
 ```
 

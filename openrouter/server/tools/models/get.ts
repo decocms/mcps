@@ -10,7 +10,7 @@ import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 
 export const createGetModelTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_GET_MODEL",
+    id: "GET_MODEL",
     description:
       "Get detailed information about a specific OpenRouter model including pricing, capabilities, " +
       "context length, provider information, and supported features. Use this to learn about a model " +

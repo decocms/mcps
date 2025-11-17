@@ -44,7 +44,7 @@ const ProviderPreferencesSchema = z.object({
 
 export const createChatCompletionTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_CHAT_COMPLETION",
+    id: "CHAT_COMPLETION",
     description:
       "Send a non-streaming chat completion request to OpenRouter. Supports single model selection, " +
       "automatic model routing (openrouter/auto), fallback chains, and provider preferences. " +
@@ -126,9 +126,7 @@ export const createChatCompletionTool = (env: Env) =>
     outputSchema: z.object({
       id: z
         .string()
-        .describe(
-          "Generation ID (use with OPENROUTER_GET_GENERATION for details)",
-        ),
+        .describe("Generation ID (use with GET_GENERATION for details)"),
       model: z.string().describe("Actual model that generated the response"),
       content: z.string().describe("The generated text response"),
       finishReason: z

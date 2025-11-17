@@ -11,7 +11,7 @@ import { filterModels, sortModels } from "./utils.ts";
 
 export const createListModelsTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_LIST_MODELS",
+    id: "LIST_MODELS",
     description:
       "List all available models from OpenRouter with their details, pricing, and capabilities. " +
       "Returns comprehensive information about each model including context length, pricing per 1M tokens, " +

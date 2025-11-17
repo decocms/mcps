@@ -11,7 +11,7 @@ import { compareModels } from "./utils.ts";
 
 export const createCompareModelsTool = (env: Env) =>
   createPrivateTool({
-    id: "OPENROUTER_COMPARE_MODELS",
+    id: "COMPARE_MODELS",
     description:
       "Compare multiple OpenRouter models side-by-side to help choose the best model for a specific use case. " +
       "Compares pricing (prompt and completion costs), context length, capabilities (modality), and performance " +
