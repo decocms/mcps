@@ -1,11 +1,13 @@
 /**
- * Cliente HTTP para interação com a API Pública do Datajud.
+ * HTTP client for interacting with the Datajud Public API.
  *
- * Documentação: https://datajud-wiki.cnj.jus.br/api-publica/
+ * Documentation: https://datajud-wiki.cnj.jus.br/api-publica/
  */
 
+import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
+
 /**
- * Tipos baseados no Modelo de Transferência de Dados (MTD) do Datajud
+ * Types based on the Data Transfer Model (MTD) from Datajud
  */
 export interface ProcessoDatajud {
   numeroProcesso?: string;
@@ -76,161 +78,158 @@ export interface DatajudClientConfig {
 }
 
 /**
- * Cliente para interação com a API Pública do Datajud
+ * Makes an authenticated request to the Datajud Public API
  */
-export class DatajudClient {
-  private apiKey: string;
-  private tribunal: string;
-  private baseUrl: string;
+async function makeRequest(
+  config: DatajudClientConfig,
+  query: Record<string, unknown>,
+): Promise<DatajudSearchResponse> {
+  const tribunal = config.tribunal.toLowerCase();
+  const baseUrl = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunal}/_search`;
 
-  constructor(config: DatajudClientConfig) {
-    this.apiKey = config.apiKey;
-    this.tribunal = config.tribunal.toLowerCase();
-    this.baseUrl = `https://api-publica.datajud.cnj.jus.br/api_publica_${this.tribunal}/_search`;
-  }
-
-  /**
-   * Executa uma busca na API do Datajud usando query Elasticsearch
-   */
-  async search(query: Record<string, unknown>): Promise<DatajudSearchResponse> {
-    try {
-      const response = await fetch(this.baseUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `APIKey ${this.apiKey}`,
-        },
-        body: JSON.stringify(query),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Erro na API do Datajud (${response.status}): ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
-      return data as DatajudSearchResponse;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Falha ao buscar processos: ${error.message}`);
-      }
-      throw new Error("Falha ao buscar processos: Erro desconhecido");
-    }
-  }
-
-  /**
-   * Busca um processo específico pelo número
-   */
-  async getProcessByNumber(
-    numeroProcesso: string,
-  ): Promise<ProcessoDatajud | null> {
-    const query = {
-      query: {
-        term: {
-          "numeroProcesso.keyword": numeroProcesso,
-        },
+  const response = await makeApiRequest(
+    baseUrl,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `APIKey ${config.apiKey}`,
       },
-      size: 1,
-    };
+      body: JSON.stringify(query),
+    },
+    "Datajud",
+  );
+  return response as DatajudSearchResponse;
+}
 
-    const response = await this.search(query);
+/**
+ * Searches for a specific process by number
+ */
+async function getProcessByNumber(
+  config: DatajudClientConfig,
+  numeroProcesso: string,
+): Promise<ProcessoDatajud | null> {
+  const query = {
+    query: {
+      term: {
+        "numeroProcesso.keyword": numeroProcesso,
+      },
+    },
+    size: 1,
+  };
 
-    if (response.hits.hits.length === 0) {
-      return null;
-    }
+  const response = await makeRequest(config, query);
 
-    return response.hits.hits[0]._source;
+  if (response.hits.hits.length === 0) {
+    return null;
   }
 
-  /**
-   * Busca processos com filtros
-   */
-  async searchProcesses(params: {
+  return response.hits.hits[0]._source;
+}
+
+/**
+ * Searches processes with filters
+ */
+async function searchProcesses(
+  config: DatajudClientConfig,
+  params: {
     filters?: Record<string, unknown>;
     size?: number;
     from?: number;
     sort?: Array<Record<string, unknown>>;
-  }): Promise<DatajudSearchResponse> {
-    const { filters = {}, size = 10, from = 0, sort } = params;
+  },
+): Promise<DatajudSearchResponse> {
+  const { filters = {}, size = 10, from = 0, sort } = params;
 
-    const query: Record<string, unknown> = {
-      query: {
-        bool: {
-          must: [],
-          filter: [],
-        },
+  const query: Record<string, unknown> = {
+    query: {
+      bool: {
+        must: [],
+        filter: [],
       },
-      size,
-      from,
-    };
+    },
+    size,
+    from,
+  };
 
-    // Adiciona filtros à query
-    if (Object.keys(filters).length > 0) {
-      (query.query as any).bool.filter = Object.entries(filters).map(
-        ([key, value]) => {
-          if (typeof value === "object" && value !== null) {
-            return { [key]: value };
-          }
-          // Para strings, usa match para busca mais flexível
-          if (typeof value === "string") {
-            return { match: { [key]: value } };
-          }
-          // Para outros tipos, usa term para match exato
-          return { term: { [key]: value } };
-        },
-      );
-    }
-
-    // Adiciona ordenação se especificada
-    if (sort && sort.length > 0) {
-      query.sort = sort;
-    }
-
-    return await this.search(query);
+  // Add filters to query
+  if (Object.keys(filters).length > 0) {
+    (query.query as any).bool.filter = Object.entries(filters).map(
+      ([key, value]) => {
+        if (typeof value === "object" && value !== null) {
+          return { [key]: value };
+        }
+        // For strings, use match for more flexible search
+        if (typeof value === "string") {
+          return { match: { [key]: value } };
+        }
+        // For other types, use term for exact match
+        return { term: { [key]: value } };
+      },
+    );
   }
 
-  /**
-   * Executa agregações para estatísticas
-   */
-  async aggregateStatistics(params: {
-    aggregations: Record<string, unknown>;
-    filters?: Record<string, unknown>;
-  }): Promise<DatajudSearchResponse> {
-    const { aggregations, filters = {} } = params;
-
-    const query: Record<string, unknown> = {
-      size: 0, // Não retorna documentos, apenas agregações
-      aggs: aggregations,
-    };
-
-    // Adiciona filtros se especificados
-    if (Object.keys(filters).length > 0) {
-      query.query = {
-        bool: {
-          filter: Object.entries(filters).map(([key, value]) => {
-            if (typeof value === "object" && value !== null) {
-              return { [key]: value };
-            }
-            if (typeof value === "string") {
-              return { match: { [key]: value } };
-            }
-            return { term: { [key]: value } };
-          }),
-        },
-      };
-    }
-
-    return await this.search(query);
+  // Add sorting if specified
+  if (sort && sort.length > 0) {
+    query.sort = sort;
   }
+
+  return await makeRequest(config, query);
 }
 
 /**
- * Factory function para criar uma instância do DatajudClient
+ * Executes aggregations for statistics
  */
-export function createDatajudClient(
+async function aggregateStatistics(
   config: DatajudClientConfig,
-): DatajudClient {
-  return new DatajudClient(config);
+  params: {
+    aggregations: Record<string, unknown>;
+    filters?: Record<string, unknown>;
+  },
+): Promise<DatajudSearchResponse> {
+  const { aggregations, filters = {} } = params;
+
+  const query: Record<string, unknown> = {
+    size: 0, // Don't return documents, only aggregations
+    aggs: aggregations,
+  };
+
+  // Add filters if specified
+  if (Object.keys(filters).length > 0) {
+    query.query = {
+      bool: {
+        filter: Object.entries(filters).map(([key, value]) => {
+          if (typeof value === "object" && value !== null) {
+            return { [key]: value };
+          }
+          if (typeof value === "string") {
+            return { match: { [key]: value } };
+          }
+          return { term: { [key]: value } };
+        }),
+      },
+    };
+  }
+
+  return await makeRequest(config, query);
+}
+
+/**
+ * Creates a Datajud client with all available methods
+ */
+export function createDatajudClient(config: DatajudClientConfig) {
+  return {
+    getProcessByNumber: (numeroProcesso: string) =>
+      getProcessByNumber(config, numeroProcesso),
+    searchProcesses: (params: {
+      filters?: Record<string, unknown>;
+      size?: number;
+      from?: number;
+      sort?: Array<Record<string, unknown>>;
+    }) => searchProcesses(config, params),
+    aggregateStatistics: (params: {
+      aggregations: Record<string, unknown>;
+      filters?: Record<string, unknown>;
+    }) => aggregateStatistics(config, params),
+  };
 }
