@@ -16,10 +16,40 @@ import {
 } from "../../lib/chat-contract.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
 
+const ContentPartSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("text"),
+      text: z.string().optional(),
+    })
+    .passthrough(),
+  z
+    .object({
+      type: z.literal("image_url"),
+      image_url: z
+        .object({
+          url: z.string(),
+          detail: z.string().optional(),
+        })
+        .passthrough(),
+    })
+    .passthrough(),
+]);
+
+const MessageContentSchema = z
+  .union([z.string(), z.array(ContentPartSchema)])
+  .describe("Message content (text or structured multimodal parts)");
+
 const MessageSchema = z.object({
-  role: z.enum(["user", "assistant", "system"]).describe("Message role"),
-  content: z.string().describe("Message content"),
+  role: z
+    .enum(["user", "assistant", "system", "tool"])
+    .describe("Message role"),
+  content: MessageContentSchema,
   name: z.string().optional().describe("Optional name for the message sender"),
+  tool_call_id: z
+    .string()
+    .optional()
+    .describe("Tool call ID for tool-role messages"),
 });
 
 /*
@@ -121,17 +151,22 @@ export const createChatCompletionTool = (env: Env) =>
         .string()
         .describe("Generation ID (use with GET_GENERATION for details)"),
       model: z.string().describe("Actual model that generated the response"),
-      content: z.string().describe("The generated text response"),
+      content: MessageContentSchema.describe(
+        "The generated response content (text or structured multimodal parts)",
+      ),
       finishReason: z
         .string()
         .describe(
           "Why generation stopped: 'stop' (natural end), 'length' (hit token limit), 'content_filter' (moderated), etc.",
         ),
-      usage: z.object({
-        prompt_tokens: z.number().describe("Tokens in the prompt"),
-        completion_tokens: z.number().describe("Tokens in the completion"),
-        total_tokens: z.number().describe("Total tokens used"),
-      }),
+      usage: z
+        .object({
+          prompt_tokens: z.number().describe("Tokens in the prompt"),
+          completion_tokens: z.number().describe("Tokens in the completion"),
+          total_tokens: z.number().describe("Total tokens used"),
+        })
+        .optional()
+        .describe("Token usage information (may be unavailable)"),
       estimatedCost: z
         .object({
           prompt: z
@@ -224,8 +259,12 @@ export const createChatCompletionTool = (env: Env) =>
       const response = await client.chatCompletion(params);
 
       // Extract the response
+      if (!Array.isArray(response.choices) || response.choices.length === 0) {
+        throw new Error("OpenRouter chat completion returned no choices");
+      }
+
       const choice = response.choices[0];
-      const content = choice.message.content || "";
+      const content = choice.message?.content ?? "";
 
       // Calculate cost if usage info is available
       let estimatedCost;
@@ -261,11 +300,7 @@ export const createChatCompletionTool = (env: Env) =>
               completion_tokens: response.usage.completion_tokens,
               total_tokens: response.usage.total_tokens,
             }
-          : {
-              prompt_tokens: 0,
-              completion_tokens: 0,
-              total_tokens: 0,
-            },
+          : undefined,
         estimatedCost,
       };
     },

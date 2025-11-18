@@ -235,7 +235,7 @@ console.log(metadata.chatEndpoint); // e.g. https://openrouter.deco.page/api/cha
 console.log(metadata.docs); // Helpful links for OpenRouter streaming + AI SDK usage
 ```
 
-### 6. Streaming Chat
+### 7. Streaming Chat
 
 Use the built-in `POST /api/chat` endpoint for real-time streaming (no tool call required). It accepts the same payload as `CHAT_COMPLETION` and returns a text stream that conforms to the [OpenRouter streaming protocol](https://openrouter.ai/docs/api-reference/streaming).
 
