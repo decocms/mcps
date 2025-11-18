@@ -7,8 +7,13 @@ import {
   DEFAULT_TEMPERATURE,
   OPENROUTER_BASE_URL,
 } from "../constants.ts";
-import { validateChatParams } from "../tools/chat/utils.ts";
+import { calculateChatCost, validateChatParams } from "../tools/chat/utils.ts";
 import type { ContentPart } from "../lib/types.ts";
+import { OpenRouterClient } from "../lib/openrouter-client.ts";
+import {
+  settleChatContract,
+  toMicroDollarUnits,
+} from "../lib/chat-contract.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +61,7 @@ type StreamTextParams = Parameters<typeof streamText>[0];
 type StreamMessages = NonNullable<StreamTextParams["messages"]>;
 type StreamTools = StreamTextParams["tools"];
 type StreamToolChoice = StreamTextParams["toolChoice"];
+type StreamResult = Awaited<ReturnType<typeof streamText>>;
 
 /**
  * Handle streaming chat completion via AI SDK
@@ -181,6 +187,13 @@ export async function handleStreamRoute(
       toolChoice: toolChoice as StreamToolChoice,
     });
 
+    void settleStreamingContract({
+      env,
+      result,
+      requestedModel: model,
+      state,
+    });
+
     return result.toTextStreamResponse({ headers: CORS_HEADERS });
   } catch (error) {
     console.error("Streaming error", error);
@@ -219,4 +232,102 @@ function normalizeMessages(messages?: IncomingMessage[]): NormalizedMessage[] {
       name: message.name,
     };
   });
+}
+
+type TokenUsage = {
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+};
+
+async function settleStreamingContract({
+  env,
+  result,
+  requestedModel,
+  state,
+}: {
+  env: Env;
+  result: StreamResult;
+  requestedModel: string;
+  state: Env["state"];
+}) {
+  if (!env.OPENROUTER_CHAT_CONTRACT) {
+    return;
+  }
+
+  try {
+    const [usage, responseMeta] = await Promise.all([
+      result.totalUsage.catch((error) => {
+        console.warn("Failed to read streaming usage", error);
+        return undefined;
+      }),
+      result.response.catch((error) => {
+        console.warn("Failed to read streaming response metadata", error);
+        return undefined;
+      }),
+    ]);
+
+    if (!usage) {
+      return;
+    }
+
+    const promptTokens = extractPromptTokens(usage);
+    const completionTokens = extractCompletionTokens(usage);
+
+    if (!promptTokens && !completionTokens) {
+      return;
+    }
+
+    const resolvedModelId =
+      responseMeta?.modelId && responseMeta.modelId !== AUTO_ROUTER_MODEL
+        ? responseMeta.modelId
+        : requestedModel;
+
+    if (!resolvedModelId || resolvedModelId === AUTO_ROUTER_MODEL) {
+      console.warn("Streaming contract settlement skipped: unknown model id");
+      return;
+    }
+
+    const client = new OpenRouterClient({
+      apiKey: state.apiKey,
+      siteName: state.siteName,
+      siteUrl: state.siteUrl,
+    });
+
+    const modelInfo = await client.getModel(resolvedModelId);
+    const estimatedCost = calculateChatCost(
+      promptTokens,
+      completionTokens,
+      modelInfo.pricing,
+    );
+
+    const microUnits = toMicroDollarUnits(estimatedCost.total);
+    if (!microUnits) {
+      return;
+    }
+
+    await settleChatContract(env, microUnits);
+  } catch (error) {
+    console.error("Failed to settle OpenRouter streaming contract", error);
+  }
+}
+
+function extractPromptTokens(usage: TokenUsage): number {
+  const derived =
+    usage.totalTokens != null && usage.outputTokens != null
+      ? usage.totalTokens - usage.outputTokens
+      : undefined;
+
+  return usage.promptTokens ?? usage.inputTokens ?? derived ?? 0;
+}
+
+function extractCompletionTokens(usage: TokenUsage): number {
+  const derived =
+    usage.totalTokens != null && usage.promptTokens != null
+      ? usage.totalTokens - usage.promptTokens
+      : undefined;
+
+  return usage.completionTokens ?? usage.outputTokens ?? derived ?? 0;
 }

@@ -10,9 +10,10 @@ import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { AUTO_ROUTER_MODEL, DEFAULT_TEMPERATURE } from "../../constants.ts";
 import { calculateChatCost, validateChatParams } from "./utils.ts";
 import type { ChatMessage, ProviderPreferences } from "../../lib/types.ts";
-
-const CHAT_CONTRACT_CLAUSE_ID = "openrouter:chat";
-const MICRO_DOLLAR_PRICE = 0.000001;
+import {
+  settleChatContract,
+  toMicroDollarUnits,
+} from "../../lib/chat-contract.ts";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]).describe("Message role"),
@@ -264,11 +265,7 @@ export const createChatCompletionTool = (env: Env) =>
         }
       }
 
-      if (
-        contractMicroUnits &&
-        contractMicroUnits > 0 &&
-        env.OPENROUTER_CHAT_CONTRACT
-      ) {
+      if (contractMicroUnits && contractMicroUnits > 0) {
         await settleChatContract(env, contractMicroUnits);
       }
 
@@ -292,37 +289,3 @@ export const createChatCompletionTool = (env: Env) =>
       };
     },
   });
-
-function toMicroDollarUnits(totalUsd?: number): number | undefined {
-  if (totalUsd === undefined || !Number.isFinite(totalUsd) || totalUsd <= 0) {
-    return undefined;
-  }
-  return Math.max(1, Math.ceil(totalUsd / MICRO_DOLLAR_PRICE));
-}
-
-async function settleChatContract(env: Env, microUnits: number) {
-  try {
-    const { transactionId } =
-      await env.OPENROUTER_CHAT_CONTRACT.CONTRACT_AUTHORIZE({
-        clauses: [
-          {
-            clauseId: CHAT_CONTRACT_CLAUSE_ID,
-            amount: microUnits,
-          },
-        ],
-      });
-
-    await env.OPENROUTER_CHAT_CONTRACT.CONTRACT_SETTLE({
-      transactionId,
-      clauses: [
-        {
-          clauseId: CHAT_CONTRACT_CLAUSE_ID,
-          amount: microUnits,
-        },
-      ],
-      vendorId: env.DECO_CHAT_WORKSPACE,
-    });
-  } catch (error) {
-    console.error("Failed to settle OpenRouter chat contract", error);
-  }
-}
