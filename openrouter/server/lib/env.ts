@@ -5,4 +5,3 @@ export function getOpenRouterApiKey(env: Env): string {
   assertEnvKey(env, "OPENROUTER_API_KEY");
   return env.OPENROUTER_API_KEY as string;
 }
-

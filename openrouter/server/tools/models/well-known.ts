@@ -3,6 +3,7 @@ export const WELL_KNOWN_MODEL_IDS = [
   "google/gemini-2.5-flash-lite-preview-06-17",
   "google/gemini-2.5-pro-preview",
   "google/gemini-2.5-pro-preview-03-25",
+  "google/gemini-3-pro-preview",
   "anthropic/claude-3.7-sonnet-thinking",
   "anthropic/claude-3.7-sonnet",
   "anthropic/claude-3.5-sonnet",
