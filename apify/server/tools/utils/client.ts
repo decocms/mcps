@@ -6,7 +6,7 @@ import type {
   ActorRunsResponse,
 } from "./types";
 import type { Env } from "server/main";
-import { assertEnvKey, makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
+import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
 
 const APIFY_API_BASE_URL = "https://api.apify.com";
 
@@ -22,7 +22,7 @@ async function makeApifyRequest(
     body?: unknown;
     query?: Record<string, string | number | boolean | undefined>;
   },
-): Promise<any> {
+  ): Promise<any> {
   assertEnvKey(env, "APIFY_TOKEN");
   const token = (env as any).APIFY_TOKEN?.value || (process?.env?.APIFY_TOKEN as string);
   
@@ -66,12 +66,12 @@ async function makeApifyRequest(
     // Handle empty responses
     const contentLength = response.headers.get("content-length");
     if (contentLength === "0" || !response.body) {
-      return {};
+      return { data: [] } as any;
     }
 
     const text = await response.text();
     if (!text) {
-      return {};
+      return { data: [] } as any;
     }
 
     return JSON.parse(text);
@@ -139,15 +139,15 @@ export class ApifyClient {
     // Handle empty responses
     const contentLength = response.headers.get("content-length");
     if (contentLength === "0" || !response.body) {
-      return {};
+      return { data: [] } as T;
     }
 
     const text = await response.text();
     if (!text) {
-      return {};
+      return { data: [] } as T;
     }
 
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   }
 
   /**

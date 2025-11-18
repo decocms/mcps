@@ -5,7 +5,6 @@ import {
 import type { ActorRun } from "./utils/types";
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/mastra";
-import { createApifyRunToolWithContract } from "./generator";
 
 /**
  * Tool schemas
@@ -97,7 +96,6 @@ const runActorSchema = z.object({
 
 /**
  * Create List Actors Tool
- * Follows Sora pattern: client is created with env in closure
  */
 export const createListActorsTool = (env: Env) =>
   createPrivateTool({
@@ -211,21 +209,45 @@ export const createGetActorRunTool = (env: Env) =>
 
 /**
  * Create Run Actor Synchronously Tool
- * With contract support for billing
+ * With inline contract support and precise settlement
  */
 export const createRunActorSyncTool = (env: Env) =>
-  createApifyRunToolWithContract(
-    "RUN_ACTOR_SYNC",
-    "Run an actor synchronously and return dataset items",
-    runActorSchema,
-    {
-      execute: async ({ env, context: ctx }) => {
-        if (!ctx.actorId) {
-          throw new Error("Actor ID is required");
-        }
-        const client = createApifyClient(env);
-        const parsedInput = JSON.parse(ctx.input);
-        const items = await client.runActorSyncGetDatasetItems(
+  createPrivateTool({
+    id: "RUN_ACTOR_SYNC",
+    description: "Run an actor synchronously and return dataset items",
+    inputSchema: runActorSchema,
+    execute: async ({ context: ctx }: any) => {
+      if (!ctx.actorId) {
+        throw new Error("Actor ID is required");
+      }
+
+      const client = createApifyClient(env);
+      const parsedInput = JSON.parse(ctx.input);
+
+      // Estimate costs for pre-authorization
+      const estimatedTimeout = ctx.timeout || 300; // Default 5 min
+      const estimatedMemory = ctx.memory || 256; // Default 256MB
+      const estimatedComputeUnits = Math.ceil((estimatedTimeout * estimatedMemory) / 1000);
+
+      try {
+        // PRÉ-AUTORIZA com estimativa
+        const { transactionId } = await (env as any).APIFY_CONTRACT
+          .CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          });
+
+        // EXECUTA
+        const startTime = Date.now();
+        const result = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
           parsedInput,
           {
@@ -234,132 +256,185 @@ export const createRunActorSyncTool = (env: Env) =>
             build: ctx.build,
           },
         );
-        return { items };
-      },
-      getMaxCost: async (context: any) => {
-        // Estimate based on actor defaults + user overrides
-        // First try to fetch actor to get default values
-        let memory = context.memory;
-        let timeout = context.timeout;
-        
-        try {
-          if (context.actorId && !context.memory && !context.timeout) {
-            console.log(`[Cost Estimation] Fetching actor ${context.actorId} for default values`);
-            const client = createApifyClient(env);
-            const actor = await client.getActor(context.actorId);
-            
-            if (actor?.defaultRunOptions) {
-              memory = actor.defaultRunOptions.memoryMbytes;
-              timeout = actor.defaultRunOptions.timeoutSecs;
-              console.log(`[Cost Estimation] Actor defaults found:`, {
-                memory,
-                timeout,
-              });
-            } else {
-              console.log(`[Cost Estimation] No defaultRunOptions found, using fallback`);
-              memory = 128;
-              timeout = 300;
-            }
-          }
-        } catch (err) {
-          // If we can't fetch actor details, use defaults
-          console.warn(`[Cost Estimation] Failed to fetch actor, using defaults:`, err);
-          memory = context.memory || 128;
-          timeout = context.timeout || 300;
-        }
-        
-        // Ensure we have values
-        memory = memory || 128;
-        timeout = timeout || 300;
-        
-        console.log(`[Cost Estimation] Final values for calculation:`, {
-          memory,
-          timeout,
-          formula: `((${timeout}/60)*0.01) + ((${memory}/128)*0.001)`,
+        const executionTimeMs = Date.now() - startTime;
+
+        // Calcula uso real com base na execução
+        const actualTimeout = Math.ceil(executionTimeMs / 1000);
+        const actualMemory = estimatedMemory; // Apify não retorna memory usado, usa estimativa
+        const actualComputeUnits = Math.ceil((actualTimeout * actualMemory) / 1000);
+
+        // SETTLEMENT com valores REAIS
+        await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+          transactionId,
+          vendorId: (env as any).DECO_CHAT_WORKSPACE,
+          clauses: [
+            {
+              clauseId: "apify:computeUnits",
+              amount: Math.min(actualComputeUnits, estimatedComputeUnits),
+            },
+            {
+              clauseId: "apify:memoryMB",
+              amount: actualMemory,
+            },
+          ],
         });
-        
-        // Cost estimate: 0.01 per minute + 0.001 per 128MB
-        // This gives more accurate estimates based on actor configuration
-        const estimatedCost = ((timeout / 60) * 0.01) + ((memory / 128) * 0.001);
-        
-        console.log(`[Cost Estimation] Final estimated cost: $${(Math.ceil(estimatedCost * 100) / 100).toFixed(4)}`);
-        
-        return Math.ceil(estimatedCost * 100) / 100; // Round to 2 decimals
-      },
-      getContract: (env: any) => ({
-        binding: env.APIFY_CONTRACT,
-        clause: {
-          clauseId: "apify:runActorSync",
-          amount: 1,
-        },
-      }),
+
+        return result;
+      } catch (error) {
+        try {
+          // SETTLEMENT ZERO em caso de erro
+          const { transactionId } = await (env as any).APIFY_CONTRACT
+            .CONTRACT_AUTHORIZE({
+              clauses: [
+                {
+                  clauseId: "apify:computeUnits",
+                  amount: estimatedComputeUnits,
+                },
+                {
+                  clauseId: "apify:memoryMB",
+                  amount: estimatedMemory,
+                },
+              ],
+            });
+
+          await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+            transactionId,
+            vendorId: (env as any).DECO_CHAT_WORKSPACE,
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: 0,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: 0,
+              },
+            ],
+          });
+        } catch (settleError) {
+          console.error("Failed to settle contract on error:", settleError);
+        }
+
+        throw new Error(
+          error instanceof Error ? error.message : "Failed to run actor",
+        );
+      }
     },
-  )(env);
+  });
 
 /**
  * Create Run Actor Asynchronously Tool
- * With contract support for billing
+ * With inline contract support and precise settlement
  */
 export const createRunActorAsyncTool = (env: Env) =>
-  createApifyRunToolWithContract(
-    "RUN_ACTOR_ASYNC",
-    "Run an actor asynchronously and return immediately without waiting for completion",
-    runActorSchema,
-    {
-      execute: async ({ env, context: ctx }) => {
-        if (!ctx.actorId) {
-          throw new Error("Actor ID is required");
-        }
-        const client = createApifyClient(env);
-        const parsedInput = JSON.parse(ctx.input);
+  createPrivateTool({
+    id: "RUN_ACTOR_ASYNC",
+    description:
+      "Run an actor asynchronously and return immediately without waiting for completion",
+    inputSchema: runActorSchema,
+    execute: async ({ context: ctx }: any) => {
+      if (!ctx.actorId) {
+        throw new Error("Actor ID is required");
+      }
+
+      const client = createApifyClient(env);
+      const parsedInput = JSON.parse(ctx.input);
+
+      // Estimate costs for pre-authorization (async runs may take longer)
+      const estimatedTimeout = ctx.timeout || 3600; // Default 1 hour for async
+      const estimatedMemory = ctx.memory || 256;
+      const estimatedComputeUnits = Math.ceil((estimatedTimeout * estimatedMemory) / 1000);
+
+      try {
+        // PRÉ-AUTORIZA com estimativa
+        const { transactionId } = await (env as any).APIFY_CONTRACT
+          .CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          });
+
+        // EXECUTA (retorna imediatamente)
         const result = await client.runActor(ctx.actorId, parsedInput, {
           timeout: ctx.timeout,
           memory: ctx.memory,
           build: ctx.build,
         });
 
+        // Para async, não sabemos o tempo real até depois
+        // Settlement é feito com estimativa (pode ser refinado com webhook)
+        const actualComputeUnits = estimatedComputeUnits; // Estimativa temporária
+        const actualMemory = estimatedMemory;
+
+        // SETTLEMENT com estimativa (melhor seria usar webhooks)
+        await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+          transactionId,
+          vendorId: (env as any).DECO_CHAT_WORKSPACE,
+          clauses: [
+            {
+              clauseId: "apify:computeUnits",
+              amount: actualComputeUnits,
+            },
+            {
+              clauseId: "apify:memoryMB",
+              amount: actualMemory,
+            },
+          ],
+        });
+
         return result.data as ActorRun;
-      },
-      getMaxCost: async (context: any) => {
-        // For async, estimate based on actor defaults (less cost than sync)
-        let memory = context.memory;
-        let timeout = context.timeout;
-        
+      } catch (error) {
         try {
-          if (context.actorId && !context.memory && !context.timeout) {
-            const client = createApifyClient(env);
-            const actor = await client.getActor(context.actorId);
-            memory = actor?.defaultRunOptions?.memoryMbytes || 128;
-            timeout = actor?.defaultRunOptions?.timeoutSecs || 300;
-          }
-        } catch (err) {
-          // If we can't fetch actor details, use defaults
-          memory = context.memory || 128;
-          timeout = context.timeout || 300;
+          // SETTLEMENT ZERO em caso de erro
+          const { transactionId } = await (env as any).APIFY_CONTRACT
+            .CONTRACT_AUTHORIZE({
+              clauses: [
+                {
+                  clauseId: "apify:computeUnits",
+                  amount: estimatedComputeUnits,
+                },
+                {
+                  clauseId: "apify:memoryMB",
+                  amount: estimatedMemory,
+                },
+              ],
+            });
+
+          await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+            transactionId,
+            vendorId: (env as any).DECO_CHAT_WORKSPACE,
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: 0,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: 0,
+              },
+            ],
+          });
+        } catch (settleError) {
+          console.error("Failed to settle contract on error:", settleError);
         }
-        
-        // Ensure we have values
-        memory = memory || 128;
-        timeout = timeout || 300;
-        
-        // Async is 50% cheaper than sync
-        // Cost estimate: 0.005 per minute + 0.0005 per 128MB
-        const estimatedCost = ((timeout / 60) * 0.005) + ((memory / 128) * 0.0005);
-        return Math.ceil(estimatedCost * 100) / 100; // Round to 2 decimals
-      },
-      getContract: (env: any) => ({
-        binding: env.APIFY_CONTRACT,
-        clause: {
-          clauseId: "apify:runActorAsync",
-          amount: 1,
-        },
-      }),
+
+        throw new Error(
+          error instanceof Error ? error.message : "Failed to start actor run",
+        );
+      }
     },
-  )(env);
+  });
 
 /**
  * Factory function to create all Apify tools
- * Takes env and returns tool instances with client captured in closure
+ * Takes env and returns tool instances with contract support
  */
 export const createApifyTools = (env: Env) => [
   createListActorsTool(env),
@@ -371,7 +446,7 @@ export const createApifyTools = (env: Env) => [
 ];
 
 /**
- * Legacy export for compatibility - tools as creators
+ * Legacy export for compatibility
  */
 export const apifyTools = [
   createListActorsTool,
