@@ -14,6 +14,7 @@ import {
   settleChatContract,
   toMicroDollarUnits,
 } from "../../lib/chat-contract.ts";
+import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]).describe("Message role"),
@@ -199,6 +200,7 @@ export const createChatCompletionTool = (env: Env) =>
       } = context;
 
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const apiKey = getOpenRouterApiKey(env);
       const resolvedTemperature =
         temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
       const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
@@ -219,7 +221,7 @@ export const createChatCompletionTool = (env: Env) =>
       });
 
       const client = new OpenRouterClient({
-        apiKey: state.apiKey,
+        apiKey,
       });
 
       // Prepare request parameters

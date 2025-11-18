@@ -9,6 +9,7 @@ import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { filterModels, sortModels } from "./utils.ts";
 import { WELL_KNOWN_MODEL_IDS } from "./well-known.ts";
+import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 type ListedModel = Awaited<ReturnType<OpenRouterClient["listModels"]>>[number];
 
@@ -137,9 +138,8 @@ export const createListModelsTool = (env: Env) =>
       } = context;
       const pageSize = limit;
       const offset = (page - 1) * pageSize;
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: state.apiKey,
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all models

@@ -58,11 +58,12 @@ bun run dev
 
 ## Configuration
 
-When installing this MCP, you'll need to provide:
+This MCP now reads your OpenRouter credentials from the `OPENROUTER_API_KEY`
+environment variable (see the setup section for creating `.dev.vars`). When
+installing the app you can optionally customize:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `apiKey` | ✅ Yes | Your OpenRouter API key from [openrouter.ai/keys](https://openrouter.ai/keys) |
 | `defaultTemperature` | ❌ No | Default temperature for responses (0-2, default: 1) |
 | `defaultMaxTokens` | ❌ No | Default max tokens for responses |
 

@@ -22,12 +22,6 @@ import { handleCustomRoutes } from "./routes/index.ts";
  * State Schema defines the configuration users provide during installation
  */
 export const StateSchema = BaseStateSchema.extend({
-  apiKey: z
-    .string()
-    .describe(
-      "Your OpenRouter API Key (get it from https://openrouter.ai/keys)",
-    ),
-
   // Default generation parameters
   defaultTemperature: z
     .number()
@@ -56,6 +50,7 @@ export type Env = DefaultEnv &
     ASSETS: {
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
     };
+    OPENROUTER_API_KEY: string;
     state: z.infer<typeof StateSchema>;
   };
 

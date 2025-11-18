@@ -9,6 +9,7 @@ import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { recommendModelsForTask } from "./utils.ts";
 import type { TaskRequirements } from "../../lib/types.ts";
+import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 export const createRecommendModelTool = (env: Env) =>
   createPrivateTool({
@@ -94,9 +95,8 @@ export const createRecommendModelTool = (env: Env) =>
       context: { taskDescription: string; requirements?: TaskRequirements };
     }) => {
       const { taskDescription, requirements = {} } = context;
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: state.apiKey,
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all available models

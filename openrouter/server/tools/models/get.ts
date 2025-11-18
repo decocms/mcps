@@ -7,6 +7,7 @@ import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 export const createGetModelTool = (env: Env) =>
   createPrivateTool({
@@ -83,9 +84,8 @@ export const createGetModelTool = (env: Env) =>
     }),
     execute: async ({ context }: { context: { modelId: string } }) => {
       const { modelId } = context;
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: state.apiKey,
+        apiKey: getOpenRouterApiKey(env),
       });
 
       const model = await client.getModel(modelId);

@@ -14,6 +14,7 @@ import {
   settleChatContract,
   toMicroDollarUnits,
 } from "../lib/chat-contract.ts";
+import { getOpenRouterApiKey } from "../lib/env.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -131,13 +132,14 @@ export async function handleStreamRoute(
   }
 
   const state = env.state;
+  const apiKey = getOpenRouterApiKey(env);
   const resolvedTemperature =
     temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
   const resolvedMaxTokens =
     maxTokens ?? state.defaultMaxTokens ?? DEFAULT_MAX_TOKENS;
 
   const openrouter = createOpenRouter({
-    apiKey: state.apiKey,
+    apiKey,
     baseURL: OPENROUTER_BASE_URL,
     compatibility: "strict",
   });
@@ -187,7 +189,6 @@ export async function handleStreamRoute(
       env,
       result,
       requestedModel: model,
-      state,
     });
 
     return result.toTextStreamResponse({ headers: CORS_HEADERS });
@@ -242,12 +243,10 @@ async function settleStreamingContract({
   env,
   result,
   requestedModel,
-  state,
 }: {
   env: Env;
   result: StreamResult;
   requestedModel: string;
-  state: Env["state"];
 }) {
   if (!env.OPENROUTER_CHAT_CONTRACT) {
     return;
@@ -287,7 +286,7 @@ async function settleStreamingContract({
     }
 
     const client = new OpenRouterClient({
-      apiKey: state.apiKey,
+      apiKey: getOpenRouterApiKey(env),
     });
 
     const modelInfo = await client.getModel(resolvedModelId);

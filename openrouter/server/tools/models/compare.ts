@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { compareModels } from "./utils.ts";
+import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 export const createCompareModelsTool = (env: Env) =>
   createPrivateTool({
@@ -58,9 +59,8 @@ export const createCompareModelsTool = (env: Env) =>
       };
     }) => {
       const { modelIds, criteria } = context;
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
-        apiKey: state.apiKey,
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all models
