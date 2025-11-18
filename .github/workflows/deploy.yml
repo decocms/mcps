@@ -1,6 +1,7 @@
 name: Deploy MCPs (Production)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
