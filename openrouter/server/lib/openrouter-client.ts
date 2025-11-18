@@ -23,8 +23,6 @@ import type {
 
 export interface OpenRouterClientConfig {
   apiKey: string;
-  siteName?: string;
-  siteUrl?: string;
 }
 
 const MODEL_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -39,37 +37,19 @@ const PRICE_FALLBACK = "0";
 export class OpenRouterClient {
   private sdk: OpenRouterSDK;
   private modelCache: Map<string, CachedModelEntry>;
-  private defaultHeaders: Record<string, string>;
 
   constructor(config: OpenRouterClientConfig) {
     this.sdk = new OpenRouterSDK({
       apiKey: config.apiKey,
     });
     this.modelCache = new Map();
-    this.defaultHeaders = {};
-
-    if (config.siteUrl) {
-      this.defaultHeaders["HTTP-Referer"] = config.siteUrl;
-    }
-    if (config.siteName) {
-      this.defaultHeaders["X-Title"] = config.siteName;
-    }
-  }
-
-  private requestOptions() {
-    return {
-      headers: this.defaultHeaders,
-    };
   }
 
   /**
    * List all available models
    */
   async listModels(): Promise<ModelInfo[]> {
-    const response: ModelsListResponse = await this.sdk.models.list(
-      undefined,
-      this.requestOptions(),
-    );
+    const response: ModelsListResponse = await this.sdk.models.list();
 
     const models = response.data ?? [];
     const converted = models.map((model) => this.toModelInfo(model));
@@ -115,10 +95,7 @@ export class OpenRouterClient {
     }
 
     const sdkParams = this.toSDKChatParams(params);
-    const response = await this.sdk.chat.send(
-      { ...sdkParams, stream: false },
-      this.requestOptions(),
-    );
+    const response = await this.sdk.chat.send({ ...sdkParams, stream: false });
 
     return this.fromSDKChatResponse(response);
   }
@@ -128,10 +105,7 @@ export class OpenRouterClient {
    */
   async getGeneration(generationId: string): Promise<GenerationInfo> {
     const response: GetGenerationResponse =
-      await this.sdk.generations.getGeneration(
-        { id: generationId },
-        this.requestOptions(),
-      );
+      await this.sdk.generations.getGeneration({ id: generationId });
 
     return this.toGenerationInfo(response.data);
   }

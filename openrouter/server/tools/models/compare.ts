@@ -61,8 +61,6 @@ export const createCompareModelsTool = (env: Env) =>
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
         apiKey: state.apiKey,
-        siteName: state.siteName,
-        siteUrl: state.siteUrl,
       });
 
       // Fetch all models

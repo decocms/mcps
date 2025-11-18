@@ -14,8 +14,22 @@ export function calculateChatCost(
   completion: number;
   total: number;
 } {
+  if (!Number.isFinite(promptTokens) || promptTokens < 0) {
+    throw new Error("Prompt tokens must be a non-negative number");
+  }
+  if (!Number.isFinite(completionTokens) || completionTokens < 0) {
+    throw new Error("Completion tokens must be a non-negative number");
+  }
+
   const promptCostPerToken = parseFloat(pricing.prompt);
   const completionCostPerToken = parseFloat(pricing.completion);
+
+  if (
+    Number.isNaN(promptCostPerToken) ||
+    Number.isNaN(completionCostPerToken)
+  ) {
+    throw new Error("Invalid pricing values returned by OpenRouter");
+  }
 
   const promptCost = promptTokens * promptCostPerToken;
   const completionCost = completionTokens * completionCostPerToken;
@@ -37,7 +51,7 @@ export function validateChatParams(params: {
   maxTokens?: number;
   topP?: number;
 }): void {
-  if (!params.messages || params.messages.length === 0) {
+  if (!Array.isArray(params.messages) || params.messages.length === 0) {
     throw new Error("Messages array is required and cannot be empty");
   }
 
@@ -54,8 +68,8 @@ export function validateChatParams(params: {
   }
 
   if (params.topP !== undefined) {
-    if (params.topP <= 0 || params.topP > 1) {
-      throw new Error("Top P must be between 0 (exclusive) and 1 (inclusive)");
+    if (params.topP < 0 || params.topP > 1) {
+      throw new Error("Top P must be between 0 and 1 (inclusive)");
     }
   }
 }

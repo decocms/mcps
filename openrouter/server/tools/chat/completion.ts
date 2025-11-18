@@ -220,8 +220,6 @@ export const createChatCompletionTool = (env: Env) =>
 
       const client = new OpenRouterClient({
         apiKey: state.apiKey,
-        siteName: state.siteName,
-        siteUrl: state.siteUrl,
       });
 
       // Prepare request parameters

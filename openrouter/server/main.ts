@@ -28,21 +28,6 @@ export const StateSchema = BaseStateSchema.extend({
       "Your OpenRouter API Key (get it from https://openrouter.ai/keys)",
     ),
 
-  // Optional fields for app attribution on openrouter.ai
-  siteName: z
-    .string()
-    .optional()
-    .describe(
-      "Your site name for rankings on openrouter.ai (optional, helps with discovery)",
-    ),
-
-  siteUrl: z
-    .string()
-    .optional()
-    .describe(
-      "Your site URL for rankings on openrouter.ai (optional, also used for streaming endpoints)",
-    ),
-
   // Default generation parameters
   defaultTemperature: z
     .number()

@@ -11,7 +11,7 @@ const STREAM_DOCS_URL = "https://openrouter.ai/docs/api-reference/streaming";
 const AI_SDK_URL = "https://github.com/vercel/ai";
 const DEFAULT_BASE_URL = "https://openrouter.deco.page";
 
-export const createGetStreamEndpointTool = (env: Env) =>
+export const createGetStreamEndpointTool = (_env: Env) =>
   createPrivateTool({
     id: "GET_STREAM_ENDPOINT",
     description:
@@ -33,8 +33,7 @@ export const createGetStreamEndpointTool = (env: Env) =>
       notes: z.array(z.string()),
     }),
     execute: async () => {
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
-      const baseUrl = (state.siteUrl || DEFAULT_BASE_URL).replace(/\/$/, "");
+      const baseUrl = DEFAULT_BASE_URL.replace(/\/$/, "");
       const chatEndpoint = `${baseUrl}/api/chat`;
 
       return {
@@ -52,7 +51,6 @@ export const createGetStreamEndpointTool = (env: Env) =>
         notes: [
           "Set the same fields you would send to CHAT_COMPLETION; the response is a text/event-stream with OpenRouter chunks.",
           "Ideal for hooking up to vercel/ai useChat hooks or any SSE client.",
-          "Include apiKey/site attribution when calling from your runtime; this MCP only stores them inside the installation state.",
         ],
       };
     },

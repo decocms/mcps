@@ -63,8 +63,6 @@ When installing this MCP, you'll need to provide:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `apiKey` | ✅ Yes | Your OpenRouter API key from [openrouter.ai/keys](https://openrouter.ai/keys) |
-| `siteName` | ❌ No | Your site name (helps with rankings on openrouter.ai) |
-| `siteUrl` | ❌ No | Your site URL (used for attribution and streaming endpoints) |
 | `defaultTemperature` | ❌ No | Default temperature for responses (0-2, default: 1) |
 | `defaultMaxTokens` | ❌ No | Default max tokens for responses |
 

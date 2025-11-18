@@ -140,10 +140,6 @@ export async function handleStreamRoute(
     apiKey: state.apiKey,
     baseURL: OPENROUTER_BASE_URL,
     compatibility: "strict",
-    headers: {
-      ...(state.siteUrl ? { "HTTP-Referer": state.siteUrl } : {}),
-      ...(state.siteName ? { "X-Title": state.siteName } : {}),
-    },
   });
 
   const extraBody: Record<string, unknown> = {};
@@ -292,8 +288,6 @@ async function settleStreamingContract({
 
     const client = new OpenRouterClient({
       apiKey: state.apiKey,
-      siteName: state.siteName,
-      siteUrl: state.siteUrl,
     });
 
     const modelInfo = await client.getModel(resolvedModelId);
