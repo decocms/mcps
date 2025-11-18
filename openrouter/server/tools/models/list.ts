@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { filterModels, sortModels } from "./utils.ts";
+import { WELL_KNOWN_MODEL_IDS } from "./well-known.ts";
 
 export const createListModelsTool = (env: Env) =>
   createPrivateTool({
@@ -62,6 +63,20 @@ export const createListModelsTool = (env: Env) =>
         .default(50)
         .optional()
         .describe("Maximum number of models to return (default: 50)"),
+      page: z
+        .number()
+        .int()
+        .min(1)
+        .default(1)
+        .optional()
+        .describe("1-based page number for pagination (default: 1)"),
+      wellKnownOnly: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe(
+          "When true, only returns Deco's curated, well-known models (ignores other filters except sort)",
+        ),
     }),
     outputSchema: z.object({
       models: z.array(
@@ -98,7 +113,9 @@ export const createListModelsTool = (env: Env) =>
       total: z.number().describe("Total number of models matching filters"),
       hasMore: z
         .boolean()
-        .describe("Whether there are more results beyond the limit"),
+        .describe("Whether there are more results beyond the current page"),
+      page: z.number().describe("Current page number"),
+      pageSize: z.number().describe("Number of models per page"),
     }),
     execute: async ({
       context,
@@ -112,9 +129,19 @@ export const createListModelsTool = (env: Env) =>
         };
         sortBy?: "price" | "context_length" | "name";
         limit?: number;
+        page?: number;
+        wellKnownOnly?: boolean;
       };
     }) => {
-      const { filter, sortBy = "name", limit = 50 } = context;
+      const {
+        filter,
+        sortBy = "name",
+        limit = 50,
+        page = 1,
+        wellKnownOnly = false,
+      } = context;
+      const pageSize = limit;
+      const offset = (page - 1) * pageSize;
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const client = new OpenRouterClient({
         apiKey: state.apiKey,
@@ -133,12 +160,27 @@ export const createListModelsTool = (env: Env) =>
       // Sort models
       models = sortModels(models, sortBy);
 
-      // Apply limit
-      const hasMore = models.length > limit;
-      const limitedModels = models.slice(0, limit);
+      // Reorder so well-known models are prioritized (or exclusive)
+      const modelById = new Map(models.map((model) => [model.id, model]));
+      const wellKnownModels = WELL_KNOWN_MODEL_IDS.map((id) =>
+        modelById.get(id),
+      ).filter((model): model is (typeof models)[number] => Boolean(model));
+
+      const wellKnownIds = new Set(wellKnownModels.map((model) => model.id));
+      const remainingModels = models.filter(
+        (model) => !wellKnownIds.has(model.id),
+      );
+
+      const orderedModels = wellKnownOnly
+        ? wellKnownModels
+        : [...wellKnownModels, ...remainingModels];
+
+      const total = orderedModels.length;
+      const paginated = orderedModels.slice(offset, offset + pageSize);
+      const hasMore = offset + pageSize < total;
 
       return {
-        models: limitedModels.map((model) => ({
+        models: paginated.map((model) => ({
           id: model.id,
           name: model.name,
           description: model.description,
@@ -149,8 +191,10 @@ export const createListModelsTool = (env: Env) =>
           topProvider: model.top_provider ? "available" : undefined,
           isModerated: model.top_provider?.is_moderated,
         })),
-        total: models.length,
+        total,
         hasMore,
+        page,
+        pageSize,
       };
     },
   });

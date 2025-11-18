@@ -18,7 +18,7 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 ### 🔧 **Tools & APIs**
 
 #### Model Discovery (4 tools)
-1. **`LIST_MODELS`** - List and filter available models
+1. **`LIST_MODELS`** - Paginated model catalog with filters, sorting, and curated “well-known” ordering
 2. **`GET_MODEL`** - Get detailed model information
 3. **`COMPARE_MODELS`** - Compare multiple models side-by-side
 4. **`RECOMMEND_MODEL`** - Get AI model recommendations for tasks
@@ -27,6 +27,8 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 - **`CHAT_COMPLETION`** – Non-streaming chat completions
 - **`GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
 - **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `CHAT_COMPLETION` tool schema.
+
+> This MCP now relies on the official [OpenRouter TypeScript SDK](https://openrouter.ai/docs/sdks/typescript) for model discovery and chat completions. Provider preferences are temporarily unavailable because the SDK does not expose the legacy `provider` payload yet. Prefer explicit `models` fallback ordering (or `openrouter/auto`) until the SDK adds native support.
 
 ### 🌐 **API Routes**
 - **`POST /api/chat`** - Streams OpenRouter responses directly from the worker (no intermediate tool call required)
@@ -70,13 +72,16 @@ When installing this MCP, you'll need to provide:
 
 ### 1. List Available Models
 
-Filter and sort through 100+ AI models:
+Filter and sort through 100+ AI models, with pagination plus Deco’s curated “well-known” ordering:
+
+> Powered by the SDK’s `models.list` helper, which wraps [`GET /models`](https://openrouter.ai/docs/api-reference/models/get-models), so results always stay in sync with OpenRouter’s catalog.
 
 ```typescript
 // List all models, sorted by price
-const { models, total } = await LIST_MODELS({
+const { models, total, page, hasMore } = await LIST_MODELS({
   sortBy: "price",
-  limit: 10
+  limit: 10,
+  page: 1,
 });
 
 // Filter for vision models under $5/1M tokens
@@ -95,7 +100,20 @@ const { models } = await LIST_MODELS({
     search: "gpt-4"
   }
 });
+
+// Jump to the second page (results 51-100)
+const pageTwo = await LIST_MODELS({
+  limit: 50,
+  page: 2,
+});
+
+// Return only Deco's curated, well-known frontier models (always ordered)
+const featured = await LIST_MODELS({
+  wellKnownOnly: true,
+});
 ```
+
+> **Well-known models.** By default, Deco prioritizes a curated list of frontier models (Gemini 2.5, Claude 4.x, GPT-4.1 family, Grok, GPT-OSS, etc.) at the top of the response while still returning the full catalog afterward. Set `wellKnownOnly: true` to trim the response to this curated set.
 
 ### 2. Get Model Details
 

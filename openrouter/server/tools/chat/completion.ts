@@ -21,25 +21,33 @@ const ProviderPreferencesSchema = z.object({
   sort: z
     .enum(["price", "throughput", "latency"])
     .optional()
-    .describe("Sort providers by this preference"),
+    .describe(
+      "Sort providers by this preference (currently unavailable while we migrate to the OpenRouter SDK)",
+    ),
   only: z
     .array(z.string())
     .optional()
     .describe(
-      "Only use these specific providers (e.g., ['OpenAI', 'Anthropic'])",
+      "Only use these specific providers (currently unavailable while we migrate to the OpenRouter SDK)",
     ),
   exclude: z
     .array(z.string())
     .optional()
-    .describe("Exclude these providers from selection"),
+    .describe(
+      "Exclude these providers from selection (currently unavailable while we migrate to the OpenRouter SDK)",
+    ),
   requireParameters: z
     .boolean()
     .optional()
-    .describe("Require that providers support all requested parameters"),
+    .describe(
+      "Require that providers support all requested parameters (currently unavailable while we migrate to the OpenRouter SDK)",
+    ),
   allowFallbacks: z
     .boolean()
     .optional()
-    .describe("Allow fallback to other providers on failure"),
+    .describe(
+      "Allow fallback to other providers on failure (currently unavailable while we migrate to the OpenRouter SDK)",
+    ),
 });
 
 export const createChatCompletionTool = (env: Env) =>
@@ -189,6 +197,12 @@ export const createChatCompletionTool = (env: Env) =>
       const resolvedTemperature =
         temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
       const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
+
+      if (provider) {
+        throw new Error(
+          "Provider preferences are not supported by the OpenRouter TypeScript SDK yet. Please omit the `provider` field and rely on explicit model routing instead.",
+        );
+      }
 
       // Validate parameters
       validateChatParams({

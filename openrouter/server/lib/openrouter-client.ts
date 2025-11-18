@@ -3,14 +3,18 @@
  * Handles all communication with the OpenRouter API
  */
 
-import {
-  OPENROUTER_BASE_URL,
-  OPENROUTER_CHAT_ENDPOINT,
-  OPENROUTER_GENERATION_ENDPOINT,
-  OPENROUTER_MODELS_ENDPOINT,
-} from "../constants.ts";
+import { OpenRouter as OpenRouterSDK } from "@openrouter/sdk";
 import type {
-  ChatCompletionChunk,
+  ChatGenerationParams,
+  ChatMessageContentItem,
+  ChatResponse as SDKChatResponse,
+  Message as SDKMessage,
+  Model as SDKModel,
+  ModelsListResponse,
+  OpenResponsesUsage,
+} from "@openrouter/sdk/models";
+import type { GetGenerationResponse } from "@openrouter/sdk/models/operations";
+import type {
   ChatCompletionParams,
   ChatCompletionResponse,
   GenerationInfo,
@@ -30,58 +34,52 @@ interface CachedModelEntry {
   fetchedAt: number;
 }
 
+const PRICE_FALLBACK = "0";
+
 export class OpenRouterClient {
-  private apiKey: string;
-  private baseUrl: string;
-  private headers: Record<string, string>;
+  private sdk: OpenRouterSDK;
   private modelCache: Map<string, CachedModelEntry>;
+  private defaultHeaders: Record<string, string>;
 
   constructor(config: OpenRouterClientConfig) {
-    this.apiKey = config.apiKey;
-    this.baseUrl = OPENROUTER_BASE_URL;
+    this.sdk = new OpenRouterSDK({
+      apiKey: config.apiKey,
+    });
     this.modelCache = new Map();
-
-    this.headers = {
-      Authorization: `Bearer ${this.apiKey}`,
-      "Content-Type": "application/json",
-    };
+    this.defaultHeaders = {};
 
     if (config.siteUrl) {
-      this.headers["HTTP-Referer"] = config.siteUrl;
+      this.defaultHeaders["HTTP-Referer"] = config.siteUrl;
     }
     if (config.siteName) {
-      this.headers["X-Title"] = config.siteName;
+      this.defaultHeaders["X-Title"] = config.siteName;
     }
+  }
+
+  private requestOptions() {
+    return {
+      headers: this.defaultHeaders,
+    };
   }
 
   /**
    * List all available models
    */
   async listModels(): Promise<ModelInfo[]> {
-    const url = `${this.baseUrl}${OPENROUTER_MODELS_ENDPOINT}`;
+    const response: ModelsListResponse = await this.sdk.models.list(
+      undefined,
+      this.requestOptions(),
+    );
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
+    const models = response.data ?? [];
+    const converted = models.map((model) => this.toModelInfo(model));
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(
-        `Failed to list models: ${response.status} ${response.statusText} - ${error}`,
-      );
-    }
-
-    const data = (await response.json()) as { data?: ModelInfo[] };
-    const models = data.data || [];
-
-    // Prime cache
     const fetchedAt = Date.now();
-    for (const model of models) {
+    for (const model of converted) {
       this.modelCache.set(model.id, { model, fetchedAt });
     }
 
-    return models;
+    return converted;
   }
 
   /**
@@ -93,27 +91,14 @@ export class OpenRouterClient {
       return cached.model;
     }
 
-    const url = `${this.baseUrl}${OPENROUTER_MODELS_ENDPOINT}/${encodeURIComponent(
-      modelId,
-    )}`;
+    const models = await this.listModels();
+    const model = models.find(({ id }) => id === modelId);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(
-        `Failed to get model: ${response.status} ${response.statusText} - ${error}`,
-      );
+    if (!model) {
+      throw new Error(`Model "${modelId}" not found in OpenRouter catalog`);
     }
 
-    const data = (await response.json()) as { data: ModelInfo };
-    const model = data.data;
-
     this.modelCache.set(modelId, { model, fetchedAt: Date.now() });
-
     return model;
   }
 
@@ -123,151 +108,285 @@ export class OpenRouterClient {
   async chatCompletion(
     params: ChatCompletionParams,
   ): Promise<ChatCompletionResponse> {
-    const url = `${this.baseUrl}${OPENROUTER_CHAT_ENDPOINT}`;
-
-    const body = this.prepareChatParams(params);
-    body.stream = false;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
+    if (params.provider) {
       throw new Error(
-        `Chat completion failed: ${response.status} ${response.statusText} - ${error}`,
+        "Provider preferences are not supported by the OpenRouter TypeScript SDK yet. Please remove the provider field and try again.",
       );
     }
 
-    return await response.json();
-  }
+    const sdkParams = this.toSDKChatParams(params);
+    const response = await this.sdk.chat.send(
+      { ...sdkParams, stream: false },
+      this.requestOptions(),
+    );
 
-  /**
-   * Stream a chat completion (returns async generator)
-   */
-  async *streamChatCompletion(
-    params: ChatCompletionParams,
-  ): AsyncGenerator<ChatCompletionChunk> {
-    const url = `${this.baseUrl}${OPENROUTER_CHAT_ENDPOINT}`;
-
-    const body = this.prepareChatParams(params);
-    body.stream = true;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(
-        `Stream chat completion failed: ${response.status} ${response.statusText} - ${error}`,
-      );
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error("Response body is not readable");
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed === "data: [DONE]") continue;
-          if (!trimmed.startsWith("data: ")) continue;
-
-          try {
-            const json = trimmed.slice(6); // Remove "data: " prefix
-            const chunk = JSON.parse(json) as ChatCompletionChunk;
-            yield chunk;
-          } catch (e) {
-            // Ignore malformed chunks
-            console.warn("Failed to parse chunk:", trimmed, e);
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    return this.fromSDKChatResponse(response);
   }
 
   /**
    * Get generation information by ID
    */
   async getGeneration(generationId: string): Promise<GenerationInfo> {
-    const url = `${this.baseUrl}${OPENROUTER_GENERATION_ENDPOINT}?id=${generationId}`;
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(
-        `Failed to get generation info: ${response.status} ${response.statusText} - ${error}`,
+    const response: GetGenerationResponse =
+      await this.sdk.generations.getGeneration(
+        { id: generationId },
+        this.requestOptions(),
       );
-    }
 
-    const data = (await response.json()) as { data: GenerationInfo };
-    return data.data;
+    return this.toGenerationInfo(response.data);
   }
 
-  /**
-   * Prepare chat parameters for API request
-   * Converts camelCase to snake_case and formats properly
-   */
-  private prepareChatParams(
-    params: ChatCompletionParams,
-  ): Record<string, unknown> {
-    const body: Record<string, unknown> = {
+  private toModelInfo(model: SDKModel): ModelInfo {
+    return {
+      id: model.id,
+      name: model.name,
+      description: model.description ?? undefined,
+      context_length: model.contextLength ?? 0,
+      pricing: {
+        prompt: this.toPriceString(model.pricing.prompt),
+        completion: this.toPriceString(model.pricing.completion),
+        request: this.toPriceString(model.pricing.request),
+        image: this.toPriceString(model.pricing.image),
+      },
+      top_provider: model.topProvider
+        ? {
+            context_length: model.topProvider.contextLength ?? undefined,
+            max_completion_tokens:
+              model.topProvider.maxCompletionTokens ?? undefined,
+            is_moderated: model.topProvider.isModerated,
+          }
+        : undefined,
+      per_request_limits: model.perRequestLimits
+        ? {
+            prompt_tokens: model.perRequestLimits.promptTokens?.toString(),
+            completion_tokens:
+              model.perRequestLimits.completionTokens?.toString(),
+          }
+        : undefined,
+      architecture: {
+        modality: model.architecture.modality ?? "text->text",
+        tokenizer: model.architecture.tokenizer ?? "unknown",
+        instruct_type: model.architecture.instructType ?? undefined,
+      },
+      created: model.created,
+      supported_generation_methods: model.supportedParameters?.map(
+        (parameter) => parameter,
+      ),
+    };
+  }
+
+  private toPriceString(value: unknown): string {
+    if (value === null || value === undefined) {
+      return PRICE_FALLBACK;
+    }
+    return typeof value === "string" ? value : String(value);
+  }
+
+  private toSDKChatParams(params: ChatCompletionParams): ChatGenerationParams {
+    const messages = this.toSDKMessages(params.messages);
+
+    const sdkParams: ChatGenerationParams = {
+      messages,
       model: params.model,
-      messages: params.messages,
+      models: params.models,
+      temperature: params.temperature ?? null,
+      maxTokens: params.max_tokens ?? null,
+      topP: params.top_p ?? null,
+      frequencyPenalty: params.frequency_penalty ?? null,
+      presencePenalty: params.presence_penalty ?? null,
+      stop: params.stop ?? null,
+      logitBias: params.logit_bias ?? null,
+      logprobs: params.logprobs ?? null,
+      topLogprobs: params.top_logprobs ?? null,
+      seed: params.seed ?? null,
+      responseFormat: params.response_format
+        ? { type: params.response_format.type }
+        : undefined,
+      tools: params.tools,
+      toolChoice: params.tool_choice,
+      user: params.user,
     };
 
-    // Add optional parameters
-    if (params.temperature !== undefined) body.temperature = params.temperature;
-    if (params.max_tokens !== undefined) body.max_tokens = params.max_tokens;
-    if (params.top_p !== undefined) body.top_p = params.top_p;
-    if (params.top_k !== undefined) body.top_k = params.top_k;
-    if (params.frequency_penalty !== undefined)
-      body.frequency_penalty = params.frequency_penalty;
-    if (params.presence_penalty !== undefined)
-      body.presence_penalty = params.presence_penalty;
-    if (params.repetition_penalty !== undefined)
-      body.repetition_penalty = params.repetition_penalty;
-    if (params.min_p !== undefined) body.min_p = params.min_p;
-    if (params.top_a !== undefined) body.top_a = params.top_a;
-    if (params.seed !== undefined) body.seed = params.seed;
-    if (params.logit_bias !== undefined) body.logit_bias = params.logit_bias;
-    if (params.logprobs !== undefined) body.logprobs = params.logprobs;
-    if (params.top_logprobs !== undefined)
-      body.top_logprobs = params.top_logprobs;
-    if (params.response_format !== undefined)
-      body.response_format = params.response_format;
-    if (params.stop !== undefined) body.stop = params.stop;
-    if (params.tools !== undefined) body.tools = params.tools;
-    if (params.tool_choice !== undefined) body.tool_choice = params.tool_choice;
-    if (params.transforms !== undefined) body.transforms = params.transforms;
-    if (params.models !== undefined) body.models = params.models;
-    if (params.route !== undefined) body.route = params.route;
-    if (params.provider !== undefined) body.provider = params.provider;
-    if (params.user !== undefined) body.user = params.user;
+    return sdkParams;
+  }
 
-    return body;
+  private toSDKMessages(
+    messages: ChatCompletionParams["messages"],
+  ): SDKMessage[] {
+    return messages.map((message) => {
+      const content = this.toSDKContent(message.content);
+
+      if (message.role === "user") {
+        return {
+          role: "user",
+          content,
+          name: message.name,
+        };
+      }
+
+      if (message.role === "system") {
+        return {
+          role: "system",
+          content: this.toSystemContent(message.content),
+          name: message.name,
+        };
+      }
+
+      if (message.role === "assistant") {
+        return {
+          role: "assistant",
+          content,
+          name: message.name,
+        };
+      }
+
+      if (message.role === "tool") {
+        if (!message.tool_call_id) {
+          throw new Error(
+            "Tool messages must include 'tool_call_id' when using the OpenRouter SDK.",
+          );
+        }
+        return {
+          role: "tool",
+          content,
+          toolCallId: message.tool_call_id,
+        };
+      }
+
+      throw new Error(`Unsupported chat role: ${message.role}`);
+    });
+  }
+
+  private toSDKContent(
+    content: ChatCompletionParams["messages"][number]["content"],
+  ): string | ChatMessageContentItem[] {
+    if (typeof content === "string") {
+      return content;
+    }
+
+    return content.map((part): ChatMessageContentItem => {
+      if (part.type === "text") {
+        return {
+          type: "text",
+          text: part.text ?? "",
+        };
+      }
+
+      return {
+        type: "image_url",
+        imageUrl: {
+          url: part.image_url?.url ?? "",
+          detail: part.image_url?.detail as never,
+        },
+      };
+    });
+  }
+
+  private toSystemContent(
+    content: ChatCompletionParams["messages"][number]["content"],
+  ): string {
+    if (typeof content === "string") {
+      return content;
+    }
+
+    return content
+      .map((part) => (part.type === "text" ? (part.text ?? "") : ""))
+      .join("")
+      .trim();
+  }
+
+  private fromSDKChatResponse(
+    response: SDKChatResponse,
+  ): ChatCompletionResponse {
+    return {
+      id: response.id,
+      model: response.model,
+      created: response.created,
+      object: response.object,
+      choices: response.choices.map((choice) => ({
+        index: choice.index,
+        message: {
+          role: choice.message.role,
+          content: this.extractMessageContent(choice.message),
+          tool_calls: choice.message.toolCalls?.map((tool) => ({
+            id: tool.id,
+            type: tool.type,
+            function: {
+              name: tool.function.name,
+              arguments: tool.function.arguments,
+            },
+          })),
+        },
+        finish_reason: choice.finishReason ?? null,
+        native_finish_reason: null,
+      })),
+      usage: this.mapUsage(response.usage),
+    };
+  }
+
+  private extractMessageContent(
+    message: SDKChatResponse["choices"][number]["message"],
+  ): string | null {
+    if (typeof message.content === "string") {
+      return message.content;
+    }
+
+    if (Array.isArray(message.content)) {
+      return message.content
+        .map((part) => {
+          if (part.type === "text") {
+            return part.text ?? "";
+          }
+          return "";
+        })
+        .join("")
+        .trim();
+    }
+
+    return null;
+  }
+
+  private mapUsage(
+    usage: OpenResponsesUsage | SDKChatResponse["usage"] | undefined,
+  ): ChatCompletionResponse["usage"] | undefined {
+    if (!usage) {
+      return undefined;
+    }
+
+    if ("promptTokens" in usage) {
+      return {
+        prompt_tokens: usage.promptTokens ?? 0,
+        completion_tokens: usage.completionTokens ?? 0,
+        total_tokens: usage.totalTokens ?? 0,
+      };
+    }
+
+    const openResponsesUsage = usage as OpenResponsesUsage;
+    return {
+      prompt_tokens: openResponsesUsage.inputTokens ?? 0,
+      completion_tokens: openResponsesUsage.outputTokens ?? 0,
+      total_tokens: openResponsesUsage.totalTokens ?? 0,
+    };
+  }
+
+  private toGenerationInfo(
+    data: GetGenerationResponse["data"],
+  ): GenerationInfo {
+    return {
+      id: data.id,
+      model: data.model,
+      created_at: data.createdAt,
+      tokens_prompt: data.tokensPrompt ?? 0,
+      tokens_completion: data.tokensCompletion ?? 0,
+      native_tokens_prompt: data.nativeTokensPrompt ?? undefined,
+      native_tokens_completion: data.nativeTokensCompletion ?? undefined,
+      num_media_prompt: data.numMediaPrompt ?? undefined,
+      num_media_completion: data.numMediaCompletion ?? undefined,
+      total_cost: data.totalCost,
+      app_id: data.appId ?? undefined,
+      streamed: data.streamed ?? false,
+      cancelled: data.cancelled ?? false,
+      finish_reason: data.finishReason ?? "unknown",
+    };
   }
 }
