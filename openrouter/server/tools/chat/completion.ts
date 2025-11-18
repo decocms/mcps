@@ -54,6 +54,8 @@ const ProviderPreferencesSchema = z.object({
     ),
 });
 
+const jsonResponseFormatOptions = z.enum(["json_object"]);
+
 export const createChatCompletionTool = (env: Env) =>
   createPrivateTool({
     id: "CHAT_COMPLETION",
@@ -119,8 +121,7 @@ export const createChatCompletionTool = (env: Env) =>
         .union([z.string(), z.array(z.string())])
         .optional()
         .describe("Stop sequences to end generation early"),
-      responseFormat: z
-        .object({ type: z.literal("json_object") })
+      responseFormat: jsonResponseFormatOptions
         .optional()
         .describe(
           "Request JSON output format. Note: Only supported by some models. Check model details.",
@@ -147,9 +148,9 @@ export const createChatCompletionTool = (env: Env) =>
           "Why generation stopped: 'stop' (natural end), 'length' (hit token limit), 'content_filter' (moderated), etc.",
         ),
       usage: z.object({
-        promptTokens: z.number().describe("Tokens in the prompt"),
-        completionTokens: z.number().describe("Tokens in the completion"),
-        totalTokens: z.number().describe("Total tokens used"),
+        prompt_tokens: z.number().describe("Tokens in the prompt"),
+        completion_tokens: z.number().describe("Tokens in the completion"),
+        total_tokens: z.number().describe("Total tokens used"),
       }),
       estimatedCost: z
         .object({
@@ -177,7 +178,7 @@ export const createChatCompletionTool = (env: Env) =>
         frequencyPenalty?: number;
         presencePenalty?: number;
         stop?: string | string[];
-        responseFormat?: { type: "json_object" };
+        responseFormat?: z.infer<typeof jsonResponseFormatOptions>;
         provider?: ProviderPreferences;
         user?: string;
       };
@@ -202,7 +203,7 @@ export const createChatCompletionTool = (env: Env) =>
         temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
       const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
 
-      if (provider) {
+      if (hasProviderPreferences(provider)) {
         throw new Error(
           "Provider preferences are not supported by the OpenRouter TypeScript SDK yet. Please omit the `provider` field and rely on explicit model routing instead.",
         );
@@ -233,9 +234,8 @@ export const createChatCompletionTool = (env: Env) =>
         frequency_penalty: frequencyPenalty,
         presence_penalty: presencePenalty,
         stop,
-        response_format: responseFormat,
+        response_format: responseFormat ? { type: responseFormat } : undefined,
         models,
-        provider,
         user,
       };
 
@@ -276,16 +276,32 @@ export const createChatCompletionTool = (env: Env) =>
         finishReason: choice.finish_reason || "unknown",
         usage: response.usage
           ? {
-              promptTokens: response.usage.prompt_tokens,
-              completionTokens: response.usage.completion_tokens,
-              totalTokens: response.usage.total_tokens,
+              prompt_tokens: response.usage.prompt_tokens,
+              completion_tokens: response.usage.completion_tokens,
+              total_tokens: response.usage.total_tokens,
             }
           : {
-              promptTokens: 0,
-              completionTokens: 0,
-              totalTokens: 0,
+              prompt_tokens: 0,
+              completion_tokens: 0,
+              total_tokens: 0,
             },
         estimatedCost,
       };
     },
   });
+
+function hasProviderPreferences(provider?: ProviderPreferences): boolean {
+  if (!provider) {
+    return false;
+  }
+
+  return Object.values(provider).some((value) => {
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    if (value && typeof value === "object") {
+      return Object.keys(value as Record<string, unknown>).length > 0;
+    }
+    return value !== undefined;
+  });
+}
