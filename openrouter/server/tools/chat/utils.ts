@@ -14,11 +14,11 @@ export function calculateChatCost(
   completion: number;
   total: number;
 } {
-  const promptCostPer1M = parseFloat(pricing.prompt);
-  const completionCostPer1M = parseFloat(pricing.completion);
+  const promptCostPerToken = parseFloat(pricing.prompt);
+  const completionCostPerToken = parseFloat(pricing.completion);
 
-  const promptCost = (promptTokens / 1_000_000) * promptCostPer1M;
-  const completionCost = (completionTokens / 1_000_000) * completionCostPer1M;
+  const promptCost = promptTokens * promptCostPerToken;
+  const completionCost = completionTokens * completionCostPerToken;
 
   return {
     prompt: Number(promptCost.toFixed(6)),

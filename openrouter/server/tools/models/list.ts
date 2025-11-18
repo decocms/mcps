@@ -10,9 +10,11 @@ import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { filterModels, sortModels } from "./utils.ts";
 import { WELL_KNOWN_MODEL_IDS } from "./well-known.ts";
 
+type ListedModel = Awaited<ReturnType<OpenRouterClient["listModels"]>>[number];
+
 export const createListModelsTool = (env: Env) =>
   createPrivateTool({
-    id: "LIST_MODELS",
+    id: "MODELS_LIST",
     description:
       "List all available models from OpenRouter with their details, pricing, and capabilities. " +
       "Returns comprehensive information about each model including context length, pricing per 1M tokens, " +
@@ -84,38 +86,31 @@ export const createListModelsTool = (env: Env) =>
           id: z
             .string()
             .describe("Unique model identifier (use this for API calls)"),
+          model: z.string().describe("Model slug (same as id)"),
           name: z.string().describe("Human-readable model name"),
-          description: z.string().optional().describe("Model description"),
-          contextLength: z
+          logo: z.string().nullable().describe("Logo URL for the model"),
+          capabilities: z
+            .array(z.string())
+            .describe("Capabilities or supported generation methods"),
+          contextWindow: z
             .number()
-            .describe("Maximum context length in tokens"),
-          promptPrice: z
-            .string()
-            .describe("Cost per 1M prompt tokens in dollars (e.g., '0.50')"),
-          completionPrice: z
-            .string()
-            .describe("Cost per 1M completion tokens in dollars"),
-          modality: z
-            .string()
-            .describe(
-              "Model capability (e.g., 'text->text', 'text+image->text')",
-            ),
-          topProvider: z
-            .string()
-            .optional()
-            .describe("Recommended provider for this model"),
-          isModerated: z
-            .boolean()
-            .optional()
-            .describe("Whether content is moderated"),
+            .nullable()
+            .describe("Maximum context window supported by the model"),
+          inputCost: z
+            .number()
+            .nullable()
+            .describe("Prompt cost per token in USD"),
+          outputCost: z
+            .number()
+            .nullable()
+            .describe("Completion cost per token in USD"),
+          outputLimit: z
+            .number()
+            .nullable()
+            .describe("Maximum completion tokens supported, if available"),
+          description: z.string().nullable().describe("Model description"),
         }),
       ),
-      total: z.number().describe("Total number of models matching filters"),
-      hasMore: z
-        .boolean()
-        .describe("Whether there are more results beyond the current page"),
-      page: z.number().describe("Current page number"),
-      pageSize: z.number().describe("Number of models per page"),
     }),
     execute: async ({
       context,
@@ -151,13 +146,9 @@ export const createListModelsTool = (env: Env) =>
 
       // Fetch all models
       let models = await client.listModels();
-
-      // Apply filters if provided
       if (filter) {
         models = filterModels(models, filter);
       }
-
-      // Sort models
       models = sortModels(models, sortBy);
 
       // Reorder so well-known models are prioritized (or exclusive)
@@ -174,27 +165,55 @@ export const createListModelsTool = (env: Env) =>
       const orderedModels = wellKnownOnly
         ? wellKnownModels
         : [...wellKnownModels, ...remainingModels];
-
-      const total = orderedModels.length;
       const paginated = orderedModels.slice(offset, offset + pageSize);
-      const hasMore = offset + pageSize < total;
 
       return {
         models: paginated.map((model) => ({
           id: model.id,
+          model: model.id,
           name: model.name,
-          description: model.description,
-          contextLength: model.context_length,
-          promptPrice: model.pricing.prompt,
-          completionPrice: model.pricing.completion,
-          modality: model.architecture?.modality || "text->text",
-          topProvider: model.top_provider ? "available" : undefined,
-          isModerated: model.top_provider?.is_moderated,
+          logo: null,
+          capabilities: extractCapabilities(model),
+          contextWindow: model.context_length || null,
+          inputCost: toNumberOrNull(model.pricing.prompt),
+          outputCost: toNumberOrNull(model.pricing.completion),
+          outputLimit: extractOutputLimit(model),
+          description: model.description ?? null,
         })),
-        total,
-        hasMore,
-        page,
-        pageSize,
       };
     },
   });
+
+function toNumberOrNull(value?: string): number | null {
+  if (!value?.length) return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractOutputLimit(model: ListedModel): number | null {
+  const topProviderLimit = model.top_provider?.max_completion_tokens;
+  if (typeof topProviderLimit === "number") {
+    return topProviderLimit;
+  }
+
+  const perRequestLimit = model.per_request_limits?.completion_tokens;
+  if (perRequestLimit) {
+    const parsed = Number(perRequestLimit);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function extractCapabilities(model: ListedModel): string[] {
+  if (model.supported_generation_methods?.length) {
+    return model.supported_generation_methods;
+  }
+
+  if (model.architecture?.modality) {
+    return [model.architecture.modality];
+  }
+
+  return [];
+}

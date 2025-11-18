@@ -726,7 +726,7 @@ export type Integer = number;
  */
 export type Boolean_5 = boolean;
 
-export interface LIST_MODELSInput {
+export interface ModelsListInput {
   filter?: Object_16;
   sortBy?: String_76;
   limit?: Number_21;
@@ -755,72 +755,70 @@ export interface Object_16 {
  */
 export type String_77 = string;
 /**
- * Human-readable model name
+ * Model slug (same as id)
  */
 export type String_78 = string;
 /**
- * Model description
+ * Human-readable model name
  */
 export type String_79 = string;
 /**
- * Maximum context length in tokens
+ * Logo URL for the model
  */
-export type Number_22 = number;
-/**
- * Cost per 1M prompt tokens in dollars (e.g., '0.50')
- */
+export type StringNull_2 = String_80 | Null_2;
 export type String_80 = string;
-/**
- * Cost per 1M completion tokens in dollars
- */
+export type Null_2 = null;
 export type String_81 = string;
 /**
- * Model capability (e.g., 'text->text', 'text+image->text')
+ * Capabilities or supported generation methods
  */
-export type String_82 = string;
+export type Array_19 = String_81[];
 /**
- * Recommended provider for this model
+ * Maximum context window supported by the model
  */
-export type String_83 = string;
+export type NumberNull = Number_22 | Null_3;
+export type Number_22 = number;
+export type Null_3 = null;
 /**
- * Whether content is moderated
+ * Prompt cost per token in USD
  */
-export type Boolean_6 = boolean;
-export type Array_18 = Object_17[];
-/**
- * Total number of models matching filters
- */
+export type NumberNull_1 = Number_23 | Null_4;
 export type Number_23 = number;
+export type Null_4 = null;
 /**
- * Whether there are more results beyond the current page
+ * Completion cost per token in USD
  */
-export type Boolean_7 = boolean;
-/**
- * Current page number
- */
+export type NumberNull_2 = Number_24 | Null_5;
 export type Number_24 = number;
+export type Null_5 = null;
 /**
- * Number of models per page
+ * Maximum completion tokens supported, if available
  */
+export type NumberNull_3 = Number_25 | Null_6;
 export type Number_25 = number;
+export type Null_6 = null;
+/**
+ * Model description
+ */
+export type StringNull_3 = String_82 | Null_7;
+export type String_82 = string;
+export type Null_7 = null;
+export type Array_18 = Object_17[];
 
-export interface LIST_MODELSOutput {
+export interface ModelsListOutput {
   models: Array_18;
-  total: Number_23;
-  hasMore: Boolean_7;
-  page: Number_24;
-  pageSize: Number_25;
 }
 export interface Object_17 {
   id: String_77;
-  name: String_78;
-  description?: String_79;
-  contextLength: Number_22;
-  promptPrice: String_80;
-  completionPrice: String_81;
-  modality: String_82;
-  topProvider?: String_83;
-  isModerated?: Boolean_6;
+  model: String_78;
+  name: String_79;
+  logo: StringNull_2;
+  capabilities: Array_19;
+  contextWindow: NumberNull;
+  inputCost: NumberNull_1;
+  outputCost: NumberNull_2;
+  outputLimit: NumberNull_3;
+  description: StringNull_3;
 }
 
 /* eslint-disable */
@@ -833,7 +831,7 @@ export interface Object_17 {
 /**
  * Description of your task (e.g., 'generate Python code', 'write creative stories', 'analyze large documents', 'answer questions with images')
  */
-export type String_84 = string;
+export type String_83 = string;
 /**
  * Maximum budget per 1M tokens in dollars (e.g., 5 for $5)
  */
@@ -845,14 +843,14 @@ export type Number_27 = number;
 /**
  * Required model capability: 'text->text' for text-only, 'text+image->text' for vision, 'text->image' for image generation
  */
-export type String_85 = "text->text" | "text+image->text" | "text->image";
+export type String_84 = "text->text" | "text+image->text" | "text->image";
 /**
  * What to prioritize: 'cost' for cheapest models, 'quality' for best performance, 'speed' for fastest models
  */
-export type String_86 = "cost" | "quality" | "speed";
+export type String_85 = "cost" | "quality" | "speed";
 
 export interface RECOMMEND_MODELInput {
-  taskDescription: String_84;
+  taskDescription: String_83;
   requirements?: Object_18;
 }
 /**
@@ -861,8 +859,8 @@ export interface RECOMMEND_MODELInput {
 export interface Object_18 {
   maxCostPer1MTokens?: Number_26;
   minContextLength?: Number_27;
-  requiredModality?: String_85;
-  prioritize?: String_86;
+  requiredModality?: String_84;
+  prioritize?: String_85;
 }
 
 /* eslint-disable */
@@ -875,15 +873,15 @@ export interface Object_18 {
 /**
  * Model identifier to use for API calls
  */
-export type String_87 = string;
+export type String_86 = string;
 /**
  * Human-readable model name
  */
-export type String_88 = string;
+export type String_87 = string;
 /**
  * Explanation of why this model is recommended for your task
  */
-export type String_89 = string;
+export type String_88 = string;
 /**
  * Recommendation score (higher is better, 0-100 scale)
  */
@@ -891,11 +889,11 @@ export type Number_28 = number;
 /**
  * Cost per 1M prompt tokens
  */
-export type String_90 = string;
+export type String_89 = string;
 /**
  * Cost per 1M completion tokens
  */
-export type String_91 = string;
+export type String_90 = string;
 /**
  * Maximum context length in tokens
  */
@@ -903,27 +901,27 @@ export type Number_29 = number;
 /**
  * Model capability
  */
-export type String_92 = string;
+export type String_91 = string;
 /**
  * Top recommended models ordered by score
  */
-export type Array_19 = Object_19[];
+export type Array_20 = Object_19[];
 
 export interface RECOMMEND_MODELOutput {
-  recommendations: Array_19;
+  recommendations: Array_20;
 }
 export interface Object_19 {
-  modelId: String_87;
-  name: String_88;
-  reasoning: String_89;
+  modelId: String_86;
+  name: String_87;
+  reasoning: String_88;
   score: Number_28;
   pricing: Object_20;
   contextLength: Number_29;
-  modality: String_92;
+  modality: String_91;
 }
 export interface Object_20 {
-  promptPrice: String_90;
-  completionPrice: String_91;
+  promptPrice: String_89;
+  completionPrice: String_90;
 }
 
 import { z } from "zod";
@@ -1028,7 +1026,7 @@ export interface Env {
     /**
      * List all available models from OpenRouter with their details, pricing, and capabilities. Returns comprehensive information about each model including context length, pricing per 1M tokens, modality (text, vision, etc.), and provider information. Supports filtering by price, context length, modality, and search terms. Perfect for discovering and comparing available AI models.
      */
-    LIST_MODELS: (input: LIST_MODELSInput) => Promise<LIST_MODELSOutput>;
+    models_list: (input: ModelsListInput) => Promise<ModelsListOutput>;
     /**
      * Get intelligent model recommendations based on your task description and requirements. The system analyzes your task (e.g., 'code generation', 'creative writing', 'data analysis') and suggests the most suitable models considering cost, quality, context length, and capabilities. Each recommendation includes detailed reasoning explaining why the model is suitable. Perfect for discovering the right model when you're not sure which to use.
      */
