@@ -17,7 +17,6 @@ export const geminiTools = createImageGeneratorTools<Env>({
     },
   }),
   execute: async ({ env, input }) => {
-    // Call Gemini API
     const client = createGeminiClient(env);
     const response = await client.generateImage(
       input.prompt,

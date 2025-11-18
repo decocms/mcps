@@ -20,8 +20,10 @@
   },
   "workspaces": [
     "apify",
+    "datajud",
     "nanobanana",
     "object-storage",
+    "pinecone",
     "readonly-sql",
     "shared",
     "sora",

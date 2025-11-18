@@ -1,7 +1,7 @@
 {
-  "name": "mcp-template-minimal",
+  "name": "pinecone",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "MCP server for Pinecone Assistant API integration",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
     "@mastra/core": "^0.24.0",
     "@modelcontextprotocol/sdk": "^1.21.0",
     "@types/mime-db": "^1.43.6",
-    "deco-cli": "^0.26.0",
+    "deco-cli": "^0.23.3",
     "typescript": "^5.7.2",
     "vite": "7.2.0",
     "wrangler": "^4.28.0"

@@ -1,7 +1,7 @@
 {
-  "name": "mcp-template-minimal",
+  "name": "datajud",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "MCP server for Datajud Public API integration",
   "private": true,
   "type": "module",
   "scripts": {
