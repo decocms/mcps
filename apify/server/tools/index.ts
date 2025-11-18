@@ -16,8 +16,8 @@ import { createApifyTools } from "./apify.ts";
 export const createTools = (env: Env) => {
   const apifyTools = createApifyTools(env);
   // Map userTools - handle both direct tools and tool creators (functions)
-  const userToolsArray = userTools.map(tool =>
-    typeof tool === 'function' ? (tool as (env: Env) => any)(env) : tool
+  const userToolsArray = userTools.map((tool) =>
+    typeof tool === "function" ? (tool as (env: Env) => any)(env) : tool,
   );
   return [...userToolsArray, ...apifyTools];
 };

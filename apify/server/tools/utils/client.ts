@@ -22,10 +22,11 @@ async function makeApifyRequest(
     body?: unknown;
     query?: Record<string, string | number | boolean | undefined>;
   },
-  ): Promise<any> {
+): Promise<any> {
   assertEnvKey(env, "APIFY_TOKEN");
-  const token = (env as any).APIFY_TOKEN?.value || (process?.env?.APIFY_TOKEN as string);
-  
+  const token =
+    (env as any).APIFY_TOKEN?.value || (process?.env?.APIFY_TOKEN as string);
+
   if (!token) {
     throw new Error("Apify token not configured");
   }
@@ -57,7 +58,7 @@ async function makeApifyRequest(
 
   try {
     const response = await fetch(url, requestInit);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status}: ${errorText}`);
@@ -191,18 +192,14 @@ export class ApifyClient {
       build?: string;
     },
   ): Promise<ActorRun> {
-    return this.makeRequest<ActorRun>(
-      "POST",
-      `/v2/acts/${actorId}/run-sync`,
-      {
-        body: input,
-        query: {
-          timeout: options?.timeout,
-          memory: options?.memory,
-          build: options?.build,
-        },
+    return this.makeRequest<ActorRun>("POST", `/v2/acts/${actorId}/run-sync`, {
+      body: input,
+      query: {
+        timeout: options?.timeout,
+        memory: options?.memory,
+        build: options?.build,
       },
-    );
+    });
   }
 
   /**
@@ -381,14 +378,19 @@ export async function runActorSyncGetDatasetItems(
     build?: string;
   },
 ): Promise<Array<Record<string, unknown>>> {
-  return makeApifyRequest(env, "POST", `/v2/acts/${actorId}/run-sync-get-dataset-items`, {
-    body: input,
-    query: {
-      timeout: options?.timeout,
-      memory: options?.memory,
-      build: options?.build,
+  return makeApifyRequest(
+    env,
+    "POST",
+    `/v2/acts/${actorId}/run-sync-get-dataset-items`,
+    {
+      body: input,
+      query: {
+        timeout: options?.timeout,
+        memory: options?.memory,
+        build: options?.build,
+      },
     },
-  });
+  );
 }
 
 export async function runActor(
@@ -467,8 +469,7 @@ export function createApifyClient(env: Env) {
   return {
     listActors: (options?: Parameters<typeof listActors>[1]) =>
       listActors(env, options),
-    getActor: (actorId: string) =>
-      getActor(env, actorId),
+    getActor: (actorId: string) => getActor(env, actorId),
     runActorSync: (
       actorId: string,
       input: Record<string, unknown>,

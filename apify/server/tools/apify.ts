@@ -1,7 +1,5 @@
 import type { Env } from "server/main";
-import {
-  createApifyClient,
-} from "./utils/client";
+import { createApifyClient } from "./utils/client";
 import type { ActorRun } from "./utils/types";
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/mastra";
@@ -98,11 +96,13 @@ const runActorSyncOutputSchema = z.object({
   data: z.any().describe("Dataset items from the actor run"),
 });
 
-const runActorAsyncOutputSchema = z.object({
-  id: z.string().describe("Run ID"),
-  status: z.string().describe("Current status of the run"),
-  actorId: z.string().describe("Actor ID"),
-}).passthrough();
+const runActorAsyncOutputSchema = z
+  .object({
+    id: z.string().describe("Run ID"),
+    status: z.string().describe("Current status of the run"),
+    actorId: z.string().describe("Actor ID"),
+  })
+  .passthrough();
 
 /**
  * Create List Actors Tool
@@ -238,23 +238,26 @@ export const createRunActorSyncTool = (env: Env) =>
       // Estimate costs for pre-authorization
       const estimatedTimeout = ctx.timeout || 300; // Default 5 min
       const estimatedMemory = ctx.memory || 256; // Default 256MB
-      const estimatedComputeUnits = Math.ceil((estimatedTimeout * estimatedMemory) / 1000);
+      const estimatedComputeUnits = Math.ceil(
+        (estimatedTimeout * estimatedMemory) / 1000,
+      );
 
       try {
         // PRÉ-AUTORIZA com estimativa
-        const { transactionId } = await (env as any).APIFY_CONTRACT
-          .CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          });
+        const { transactionId } = await (
+          env as any
+        ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
+          clauses: [
+            {
+              clauseId: "apify:computeUnits",
+              amount: estimatedComputeUnits,
+            },
+            {
+              clauseId: "apify:memoryMB",
+              amount: estimatedMemory,
+            },
+          ],
+        });
 
         // EXECUTA
         const startTime = Date.now();
@@ -272,7 +275,9 @@ export const createRunActorSyncTool = (env: Env) =>
         // Calcula uso real com base na execução
         const actualTimeout = Math.ceil(executionTimeMs / 1000);
         const actualMemory = estimatedMemory; // Apify não retorna memory usado, usa estimativa
-        const actualComputeUnits = Math.ceil((actualTimeout * actualMemory) / 1000);
+        const actualComputeUnits = Math.ceil(
+          (actualTimeout * actualMemory) / 1000,
+        );
 
         // SETTLEMENT com valores REAIS
         await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
@@ -294,19 +299,20 @@ export const createRunActorSyncTool = (env: Env) =>
       } catch (error) {
         try {
           // SETTLEMENT ZERO em caso de erro
-          const { transactionId } = await (env as any).APIFY_CONTRACT
-            .CONTRACT_AUTHORIZE({
-              clauses: [
-                {
-                  clauseId: "apify:computeUnits",
-                  amount: estimatedComputeUnits,
-                },
-                {
-                  clauseId: "apify:memoryMB",
-                  amount: estimatedMemory,
-                },
-              ],
-            });
+          const { transactionId } = await (
+            env as any
+          ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          });
 
           await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
             transactionId,
@@ -355,23 +361,26 @@ export const createRunActorAsyncTool = (env: Env) =>
       // Estimate costs for pre-authorization (async runs may take longer)
       const estimatedTimeout = ctx.timeout || 3600; // Default 1 hour for async
       const estimatedMemory = ctx.memory || 256;
-      const estimatedComputeUnits = Math.ceil((estimatedTimeout * estimatedMemory) / 1000);
+      const estimatedComputeUnits = Math.ceil(
+        (estimatedTimeout * estimatedMemory) / 1000,
+      );
 
       try {
         // PRÉ-AUTORIZA com estimativa
-        const { transactionId } = await (env as any).APIFY_CONTRACT
-          .CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          });
+        const { transactionId } = await (
+          env as any
+        ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
+          clauses: [
+            {
+              clauseId: "apify:computeUnits",
+              amount: estimatedComputeUnits,
+            },
+            {
+              clauseId: "apify:memoryMB",
+              amount: estimatedMemory,
+            },
+          ],
+        });
 
         // EXECUTA (retorna imediatamente)
         const result = await client.runActor(ctx.actorId, parsedInput, {
@@ -410,19 +419,20 @@ export const createRunActorAsyncTool = (env: Env) =>
       } catch (error) {
         try {
           // SETTLEMENT ZERO em caso de erro
-          const { transactionId } = await (env as any).APIFY_CONTRACT
-            .CONTRACT_AUTHORIZE({
-              clauses: [
-                {
-                  clauseId: "apify:computeUnits",
-                  amount: estimatedComputeUnits,
-                },
-                {
-                  clauseId: "apify:memoryMB",
-                  amount: estimatedMemory,
-                },
-              ],
-            });
+          const { transactionId } = await (
+            env as any
+          ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          });
 
           await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
             transactionId,
