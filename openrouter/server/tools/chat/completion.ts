@@ -11,6 +11,9 @@ import { AUTO_ROUTER_MODEL, DEFAULT_TEMPERATURE } from "../../constants.ts";
 import { calculateChatCost, validateChatParams } from "./utils.ts";
 import type { ChatMessage, ProviderPreferences } from "../../lib/types.ts";
 
+const CHAT_CONTRACT_CLAUSE_ID = "openrouter:chat";
+const MICRO_DOLLAR_PRICE = 0.000001;
+
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]).describe("Message role"),
   content: z.string().describe("Message content"),
@@ -244,6 +247,7 @@ export const createChatCompletionTool = (env: Env) =>
 
       // Calculate cost if usage info is available
       let estimatedCost;
+      let contractMicroUnits: number | undefined;
       if (response.usage) {
         // Try to get actual model pricing
         try {
@@ -253,10 +257,19 @@ export const createChatCompletionTool = (env: Env) =>
             response.usage.completion_tokens,
             modelInfo.pricing,
           );
+          contractMicroUnits = toMicroDollarUnits(estimatedCost.total);
         } catch (error) {
           // If we can't get model info, skip cost calculation
           console.warn("Could not calculate cost:", error);
         }
+      }
+
+      if (
+        contractMicroUnits &&
+        contractMicroUnits > 0 &&
+        env.OPENROUTER_CHAT_CONTRACT
+      ) {
+        await settleChatContract(env, contractMicroUnits);
       }
 
       return {
@@ -279,3 +292,37 @@ export const createChatCompletionTool = (env: Env) =>
       };
     },
   });
+
+function toMicroDollarUnits(totalUsd?: number): number | undefined {
+  if (totalUsd === undefined || !Number.isFinite(totalUsd) || totalUsd <= 0) {
+    return undefined;
+  }
+  return Math.max(1, Math.ceil(totalUsd / MICRO_DOLLAR_PRICE));
+}
+
+async function settleChatContract(env: Env, microUnits: number) {
+  try {
+    const { transactionId } =
+      await env.OPENROUTER_CHAT_CONTRACT.CONTRACT_AUTHORIZE({
+        clauses: [
+          {
+            clauseId: CHAT_CONTRACT_CLAUSE_ID,
+            amount: microUnits,
+          },
+        ],
+      });
+
+    await env.OPENROUTER_CHAT_CONTRACT.CONTRACT_SETTLE({
+      transactionId,
+      clauses: [
+        {
+          clauseId: CHAT_CONTRACT_CLAUSE_ID,
+          amount: microUnits,
+        },
+      ],
+      vendorId: env.DECO_CHAT_WORKSPACE,
+    });
+  } catch (error) {
+    console.error("Failed to settle OpenRouter chat contract", error);
+  }
+}

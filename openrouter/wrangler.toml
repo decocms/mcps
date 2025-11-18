@@ -9,3 +9,15 @@ scope = "deco"
 workspace = "deco"
 enable_workflows = false
 local = false
+
+[[deco.bindings]]
+type = "contract"
+name = "OPENROUTER_CHAT_CONTRACT"
+
+[deco.bindings.contract]
+body = "Charge per OpenRouter chat completion using micro-dollar metering"
+
+[[deco.bindings.contract.clauses]]
+id = "openrouter:chat"
+price = 0.000001
+description = "1 micro-dollar per unit (billed by usage)"

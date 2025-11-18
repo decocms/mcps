@@ -10,6 +10,7 @@
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
+  Scopes,
   StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
@@ -75,7 +76,10 @@ export type Env = DefaultEnv &
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
-    scopes: [], // No special OAuth scopes needed
+    scopes: [
+      Scopes.OPENROUTER_CHAT_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.OPENROUTER_CHAT_CONTRACT.CONTRACT_SETTLE,
+    ],
     state: StateSchema,
   },
   tools,

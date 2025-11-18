@@ -7,121 +7,16 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-/**
- * Array of messages in the conversation. Each message has a role (user/assistant/system) and content.
- *
- * @minItems 1
- */
-export type Array = [Object, ...Object[]];
-/**
- * Message role
- */
-export type String = "user" | "assistant" | "system";
-/**
- * Message content
- */
-export type String_1 = string;
-/**
- * Optional name for the message sender
- */
-export type String_2 = string;
-/**
- * Model ID to use (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'). Use 'openrouter/auto' for automatic selection. Default: openrouter/auto
- */
-export type String_3 = string;
-export type String_4 = string;
-/**
- * Fallback chain: array of model IDs to try in sequence if the primary model fails (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet'])
- */
-export type Array_1 = String_4[];
-/**
- * Sampling temperature (0-2). Higher values make output more random. Default: 1
- */
+export type String = string;
 export type Number = number;
-/**
- * Maximum tokens to generate in the completion
- */
-export type Number_1 = number;
-/**
- * Nucleus sampling parameter (0-1). Alternative to temperature.
- */
-export type Number_2 = number;
-/**
- * Reduce repetition of tokens by frequency (-2 to 2)
- */
-export type Number_3 = number;
-/**
- * Reduce repetition of topics (-2 to 2)
- */
-export type Number_4 = number;
-export type String_5 = string;
-export type String_6 = string;
-export type Array_2 = String_6[];
-export type String_7 = "json_object";
-/**
- * Sort providers by this preference (currently unavailable while we migrate to the OpenRouter SDK)
- */
-export type String_8 = "price" | "throughput" | "latency";
-export type String_9 = string;
-/**
- * Only use these specific providers (currently unavailable while we migrate to the OpenRouter SDK)
- */
-export type Array_3 = String_9[];
-export type String_10 = string;
-/**
- * Exclude these providers from selection (currently unavailable while we migrate to the OpenRouter SDK)
- */
-export type Array_4 = String_10[];
-/**
- * Require that providers support all requested parameters (currently unavailable while we migrate to the OpenRouter SDK)
- */
-export type Boolean = boolean;
-/**
- * Allow fallback to other providers on failure (currently unavailable while we migrate to the OpenRouter SDK)
- */
-export type Boolean_1 = boolean;
-/**
- * Unique identifier for your end-user (helps with abuse detection)
- */
-export type String_11 = string;
+export type Array = Object[];
 
-export interface CHAT_COMPLETIONInput {
-  messages: Array;
-  model?: String_3;
-  models?: Array_1;
-  temperature?: Number;
-  maxTokens?: Number_1;
-  topP?: Number_2;
-  frequencyPenalty?: Number_3;
-  presencePenalty?: Number_4;
-  /**
-   * Stop sequences to end generation early
-   */
-  stop?: String_5 | Array_2;
-  responseFormat?: Object_1;
-  provider?: Object_2;
-  user?: String_11;
+export interface CONTRACT_AUTHORIZEInput {
+  clauses: Array;
 }
 export interface Object {
-  role: String;
-  content: String_1;
-  name?: String_2;
-}
-/**
- * Request JSON output format. Note: Only supported by some models. Check model details.
- */
-export interface Object_1 {
-  type: String_7;
-}
-/**
- * Provider routing preferences to optimize selection by price, speed, or specific providers
- */
-export interface Object_2 {
-  sort?: String_8;
-  only?: Array_3;
-  exclude?: Array_4;
-  requireParameters?: Boolean;
-  allowFallbacks?: Boolean_1;
+  clauseId: String;
+  amount: Number;
 }
 
 /* eslint-disable */
@@ -131,67 +26,81 @@ export interface Object_2 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-/**
- * Generation ID (use with GET_GENERATION for details)
- */
-export type String_12 = string;
-/**
- * Actual model that generated the response
- */
-export type String_13 = string;
-/**
- * The generated text response
- */
-export type String_14 = string;
-/**
- * Why generation stopped: 'stop' (natural end), 'length' (hit token limit), 'content_filter' (moderated), etc.
- */
-export type String_15 = string;
-/**
- * Tokens in the prompt
- */
-export type Number_5 = number;
-/**
- * Tokens in the completion
- */
-export type Number_6 = number;
-/**
- * Total tokens used
- */
-export type Number_7 = number;
-/**
- * Estimated cost for prompt tokens in dollars
- */
-export type Number_8 = number;
-/**
- * Estimated cost for completion tokens in dollars
- */
-export type Number_9 = number;
-/**
- * Total estimated cost in dollars
- */
-export type Number_10 = number;
+export type String_1 = string;
+export type String_2 = string;
+export type Number_1 = number;
 
-export interface CHAT_COMPLETIONOutput {
-  id: String_12;
-  model: String_13;
-  content: String_14;
-  finishReason: String_15;
-  usage: Object_3;
-  estimatedCost?: Object_4;
+export interface CONTRACT_AUTHORIZEOutput {
+  transactionId: String_1;
+  totalAmount: String_2;
+  timestamp: Number_1;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface CONTRACT_GETInput {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_3 = string;
+export type String_4 = string;
+export type String_5 = string;
+export type StringNumber = String_6 | Number_2;
+export type String_6 = string;
+export type Number_2 = number;
+export type String_7 = string;
+export type String_8 = string;
+export type Array_2 = String_8[];
+export type Array_1 = Object_2[];
+
+export interface CONTRACT_GETOutput {
+  appName?: String_3;
+  contract: Object_1;
+}
+export interface Object_1 {
+  body?: String_4;
+  clauses?: Array_1;
+}
+export interface Object_2 {
+  id: String_5;
+  price: StringNumber;
+  description?: String_7;
+  usedByTools?: Array_2;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_9 = string;
+export type String_10 = string;
+export type Number_3 = number;
+export type Array_3 = Object_3[];
+export type Number_4 = number;
+export type String_11 = string;
+
+export interface CONTRACT_SETTLEInput {
+  transactionId: String_9;
+  clauses?: Array_3;
+  amount?: Number_4;
+  vendorId: String_11;
 }
 export interface Object_3 {
-  promptTokens: Number_5;
-  completionTokens: Number_6;
-  totalTokens: Number_7;
-}
-/**
- * Estimated cost based on model pricing
- */
-export interface Object_4 {
-  prompt: Number_8;
-  completion: Number_9;
-  total: Number_10;
+  clauseId: String_10;
+  amount: Number_3;
 }
 
 /* eslint-disable */
@@ -201,27 +110,10 @@ export interface Object_4 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-/**
- * Array of 2-5 model IDs to compare (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash-exp'])
- *
- * @minItems 2
- * @maxItems 5
- */
-export type Array_5 =
-  | [String_16, String_16]
-  | [String_16, String_16, String_16]
-  | [String_16, String_16, String_16, String_16]
-  | [String_16, String_16, String_16, String_16, String_16];
-export type String_16 = string;
-export type String_17 = "price" | "context_length" | "modality" | "moderation";
-/**
- * Specific criteria to focus on in comparison. If not specified, all criteria are included.
- */
-export type Array_6 = String_17[];
+export type String_12 = string;
 
-export interface COMPARE_MODELSInput {
-  modelIds: Array_5;
-  criteria?: Array_6;
+export interface CONTRACT_SETTLEOutput {
+  transactionId: String_12;
 }
 
 /* eslint-disable */
@@ -231,41 +123,10 @@ export interface COMPARE_MODELSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_18 = string;
-export type String_19 = string;
-export type Array_7 = Object_5[];
-/**
- * Automated recommendation based on comparison
- */
-export type String_20 = string;
-
-export interface COMPARE_MODELSOutput {
-  comparison: Array_7;
-  recommendation?: String_20;
-}
-export interface Object_5 {
-  modelId: String_18;
-  name: String_19;
-  metrics: Object_6;
-}
-/**
- * Model metrics based on selected criteria
- */
-export interface Object_6 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_21 = string;
+export type String_13 = string;
 
 export interface DECO_CHAT_OAUTH_STARTInput {
-  returnUrl: String_21;
+  returnUrl: String_13;
 }
 
 /* eslint-disable */
@@ -275,514 +136,12 @@ export interface DECO_CHAT_OAUTH_STARTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_22 = string;
-export type Array_8 = String_22[];
+export type String_14 = string;
+export type Array_4 = String_14[];
 
 export interface DECO_CHAT_OAUTH_STARTOutput {
   stateSchema?: unknown;
-  scopes?: Array_8;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface DECO_CHAT_STATE_VALIDATIONInput {
-  state?: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type Boolean_2 = boolean;
-
-export interface DECO_CHAT_STATE_VALIDATIONOutput {
-  valid: Boolean_2;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface DECO_CHAT_VIEWS_LISTInput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_23 = string;
-export type String_24 = string;
-export type String_25 = string;
-export type String_26 = string;
-export type String_27 = string;
-export type String_28 = string;
-export type String_29 = string;
-export type String_30 = string;
-export type String_31 = string;
-export type Array_10 = String_31[];
-export type String_32 = string;
-export type String_33 = "none" | "open" | "autoPin";
-export type Array_9 = Object_7[];
-
-export interface DECO_CHAT_VIEWS_LISTOutput {
-  views: Array_9;
-}
-export interface Object_7 {
-  id?: String_23;
-  name?: String_24;
-  title: String_25;
-  description?: String_26;
-  icon: String_27;
-  url?: String_28;
-  mimeTypePattern?: String_29;
-  resourceName?: String_30;
-  tools?: Array_10;
-  prompt?: String_32;
-  installBehavior?: String_33;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The model ID in format 'provider/model-name' (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash-exp')
- */
-export type String_34 = string;
-
-export interface GET_MODELInput {
-  modelId: String_34;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Unique model identifier
- */
-export type String_35 = string;
-/**
- * Human-readable model name
- */
-export type String_36 = string;
-/**
- * Detailed model description
- */
-export type String_37 = string;
-/**
- * Maximum context length in tokens (includes prompt + completion)
- */
-export type Number_11 = number;
-/**
- * Cost per 1M prompt tokens in dollars
- */
-export type String_38 = string;
-/**
- * Cost per 1M completion tokens in dollars
- */
-export type String_39 = string;
-/**
- * Fixed cost per request (if applicable)
- */
-export type String_40 = string;
-/**
- * Cost per image input (if applicable)
- */
-export type String_41 = string;
-export type Number_12 = number;
-/**
- * Maximum tokens in completion
- */
-export type Number_13 = number;
-/**
- * Whether provider moderates content
- */
-export type Boolean_3 = boolean;
-/**
- * Model capability (e.g., 'text->text', 'text+image->text')
- */
-export type String_42 = string;
-/**
- * Tokenizer used by the model
- */
-export type String_43 = string;
-/**
- * Instruction format if applicable
- */
-export type String_44 = string;
-export type String_45 = string;
-export type String_46 = string;
-
-export interface GET_MODELOutput {
-  id: String_35;
-  name: String_36;
-  description?: String_37;
-  contextLength: Number_11;
-  pricing: Object_8;
-  topProvider?: Object_9;
-  architecture?: Object_10;
-  perRequestLimits?: Object_11;
-}
-export interface Object_8 {
-  prompt: String_38;
-  completion: String_39;
-  request?: String_40;
-  image?: String_41;
-}
-/**
- * Information about the recommended provider
- */
-export interface Object_9 {
-  contextLength?: Number_12;
-  maxCompletionTokens?: Number_13;
-  isModerated: Boolean_3;
-}
-export interface Object_10 {
-  modality: String_42;
-  tokenizer: String_43;
-  instructType?: String_44;
-}
-/**
- * Per-request token limits if applicable
- */
-export interface Object_11 {
-  promptTokens?: String_45;
-  completionTokens?: String_46;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface GET_STREAM_ENDPOINTInput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_47 = string;
-export type String_48 = string;
-export type String_49 = "POST";
-export type String_50 = "application/json";
-export type Boolean_4 = true;
-export type String_51 = string;
-export type String_52 = string;
-export type String_53 = string;
-export type Array_11 = Object_12[];
-export type String_54 = string;
-export type Array_12 = String_54[];
-
-export interface GET_STREAM_ENDPOINTOutput {
-  apiBaseUrl: String_47;
-  chatEndpoint: String_48;
-  method: String_49;
-  contentType: String_50;
-  stream: Boolean_4;
-  description: String_51;
-  docs: Array_11;
-  notes: Array_12;
-}
-export interface Object_12 {
-  title: String_52;
-  url: String_53;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface GET_USERInput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_55 = string;
-export type StringNull = String_56 | Null;
-export type String_56 = string;
-export type Null = null;
-export type StringNull_1 = String_57 | Null_1;
-export type String_57 = string;
-export type Null_1 = null;
-export type String_58 = string;
-
-export interface GET_USEROutput {
-  id: String_55;
-  name: StringNull;
-  avatar: StringNull_1;
-  email: String_58;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Filter by model modality: 'text->text' for text-only, 'text+image->text' for vision models, 'text->image' for image generation
- */
-export type String_59 = "text->text" | "text+image->text" | "text->image";
-/**
- * Maximum price per 1M prompt tokens in dollars (e.g., 5 for $5)
- */
-export type Number_14 = number;
-/**
- * Minimum context length required in tokens (e.g., 100000 for 100k tokens)
- */
-export type Number_15 = number;
-/**
- * Search term to filter models by name, ID, or description (case-insensitive)
- */
-export type String_60 = string;
-/**
- * Sort results by: 'price' (cheapest first), 'context_length' (largest first), or 'name' (alphabetical)
- */
-export type String_61 = "price" | "context_length" | "name";
-/**
- * Maximum number of models to return (default: 50)
- */
-export type Number_16 = number;
-/**
- * 1-based page number for pagination (default: 1)
- */
-export type Integer = number;
-/**
- * When true, only returns Deco's curated, well-known models (ignores other filters except sort)
- */
-export type Boolean_5 = boolean;
-
-export interface LIST_MODELSInput {
-  filter?: Object_13;
-  sortBy?: String_61;
-  limit?: Number_16;
-  page?: Integer;
-  wellKnownOnly?: Boolean_5;
-}
-/**
- * Optional filters to narrow down the model list
- */
-export interface Object_13 {
-  modality?: String_59;
-  maxPromptPrice?: Number_14;
-  minContextLength?: Number_15;
-  search?: String_60;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Unique model identifier (use this for API calls)
- */
-export type String_62 = string;
-/**
- * Human-readable model name
- */
-export type String_63 = string;
-/**
- * Model description
- */
-export type String_64 = string;
-/**
- * Maximum context length in tokens
- */
-export type Number_17 = number;
-/**
- * Cost per 1M prompt tokens in dollars (e.g., '0.50')
- */
-export type String_65 = string;
-/**
- * Cost per 1M completion tokens in dollars
- */
-export type String_66 = string;
-/**
- * Model capability (e.g., 'text->text', 'text+image->text')
- */
-export type String_67 = string;
-/**
- * Recommended provider for this model
- */
-export type String_68 = string;
-/**
- * Whether content is moderated
- */
-export type Boolean_6 = boolean;
-export type Array_13 = Object_14[];
-/**
- * Total number of models matching filters
- */
-export type Number_18 = number;
-/**
- * Whether there are more results beyond the current page
- */
-export type Boolean_7 = boolean;
-/**
- * Current page number
- */
-export type Number_19 = number;
-/**
- * Number of models per page
- */
-export type Number_20 = number;
-
-export interface LIST_MODELSOutput {
-  models: Array_13;
-  total: Number_18;
-  hasMore: Boolean_7;
-  page: Number_19;
-  pageSize: Number_20;
-}
-export interface Object_14 {
-  id: String_62;
-  name: String_63;
-  description?: String_64;
-  contextLength: Number_17;
-  promptPrice: String_65;
-  completionPrice: String_66;
-  modality: String_67;
-  topProvider?: String_68;
-  isModerated?: Boolean_6;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Description of your task (e.g., 'generate Python code', 'write creative stories', 'analyze large documents', 'answer questions with images')
- */
-export type String_69 = string;
-/**
- * Maximum budget per 1M tokens in dollars (e.g., 5 for $5)
- */
-export type Number_21 = number;
-/**
- * Minimum required context length in tokens (e.g., 100000 for 100k)
- */
-export type Number_22 = number;
-/**
- * Required model capability: 'text->text' for text-only, 'text+image->text' for vision, 'text->image' for image generation
- */
-export type String_70 = "text->text" | "text+image->text" | "text->image";
-/**
- * What to prioritize: 'cost' for cheapest models, 'quality' for best performance, 'speed' for fastest models
- */
-export type String_71 = "cost" | "quality" | "speed";
-
-export interface RECOMMEND_MODELInput {
-  taskDescription: String_69;
-  requirements?: Object_15;
-}
-/**
- * Optional requirements and constraints for model selection
- */
-export interface Object_15 {
-  maxCostPer1MTokens?: Number_21;
-  minContextLength?: Number_22;
-  requiredModality?: String_70;
-  prioritize?: String_71;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Model identifier to use for API calls
- */
-export type String_72 = string;
-/**
- * Human-readable model name
- */
-export type String_73 = string;
-/**
- * Explanation of why this model is recommended for your task
- */
-export type String_74 = string;
-/**
- * Recommendation score (higher is better, 0-100 scale)
- */
-export type Number_23 = number;
-/**
- * Cost per 1M prompt tokens
- */
-export type String_75 = string;
-/**
- * Cost per 1M completion tokens
- */
-export type String_76 = string;
-/**
- * Maximum context length in tokens
- */
-export type Number_24 = number;
-/**
- * Model capability
- */
-export type String_77 = string;
-/**
- * Top recommended models ordered by score
- */
-export type Array_14 = Object_16[];
-
-export interface RECOMMEND_MODELOutput {
-  recommendations: Array_14;
-}
-export interface Object_16 {
-  modelId: String_72;
-  name: String_73;
-  reasoning: String_74;
-  score: Number_23;
-  pricing: Object_17;
-  contextLength: Number_24;
-  modality: String_77;
-}
-export interface Object_17 {
-  promptPrice: String_75;
-  completionPrice: String_76;
+  scopes?: Array_4;
 }
 
 import { z } from "zod";
@@ -803,67 +162,49 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   };
 };
 
-export const StateSchema = z.object({});
+export const StateSchema = z.object({
+  OPENROUTER_CHAT_CONTRACT: z.object({
+    value: z.string(),
+    __type: z
+      .literal("@deco/openrouter-68cfdea5555177d9155f913ecdbafa38")
+      .default("@deco/openrouter-68cfdea5555177d9155f913ecdbafa38"),
+  }),
+});
 
 export interface Env {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-  SELF: Mcp<{
+  OPENROUTER_CHAT_CONTRACT: Mcp<{
     /**
-     * Send a non-streaming chat completion request to OpenRouter. Supports single model selection, automatic model routing (openrouter/auto), fallback chains, and provider preferences. Returns the complete response when generation is finished, including token usage and cost estimation. Perfect for standard chat interactions where you don't need real-time streaming.
+     * Authorize a charge for a contract clause. Creates a single authorization with transactionId.
      */
-    CHAT_COMPLETION: (
-      input: CHAT_COMPLETIONInput,
-    ) => Promise<CHAT_COMPLETIONOutput>;
+    CONTRACT_AUTHORIZE: (
+      input: CONTRACT_AUTHORIZEInput,
+    ) => Promise<CONTRACT_AUTHORIZEOutput>;
     /**
-     * Compare multiple OpenRouter models side-by-side to help choose the best model for a specific use case. Compares pricing (prompt and completion costs), context length, capabilities (modality), and performance characteristics. Returns a detailed comparison table and an automatic recommendation. Useful when deciding between multiple models for a task.
+     * Get the current contract state.
      */
-    COMPARE_MODELS: (
-      input: COMPARE_MODELSInput,
-    ) => Promise<COMPARE_MODELSOutput>;
+    CONTRACT_GET: (input: CONTRACT_GETInput) => Promise<CONTRACT_GETOutput>;
     /**
-     * OAuth for Deco Chat
+     * Settle the current authorized charge. Processes the payment for the current authorization.
+     */
+    CONTRACT_SETTLE: (
+      input: CONTRACT_SETTLEInput,
+    ) => Promise<CONTRACT_SETTLEOutput>;
+    /**
+     * Start the OAuth flow for the contract app.
      */
     DECO_CHAT_OAUTH_START: (
       input: DECO_CHAT_OAUTH_STARTInput,
     ) => Promise<DECO_CHAT_OAUTH_STARTOutput>;
-    /**
-     * Validate the state of the OAuth flow
-     */
-    DECO_CHAT_STATE_VALIDATION: (
-      input: DECO_CHAT_STATE_VALIDATIONInput,
-    ) => Promise<DECO_CHAT_STATE_VALIDATIONOutput>;
-    /**
-     * List views exposed by this MCP
-     */
-    DECO_CHAT_VIEWS_LIST: (
-      input: DECO_CHAT_VIEWS_LISTInput,
-    ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
-    /**
-     * Get detailed information about a specific OpenRouter model including pricing, capabilities, context length, provider information, and supported features. Use this to learn about a model before using it for chat completions. Model IDs follow the format 'provider/model-name' (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet').
-     */
-    GET_MODEL: (input: GET_MODELInput) => Promise<GET_MODELOutput>;
-    /**
-     * Return details about the HTTP streaming endpoint so clients can connect without guessing configuration.
-     */
-    GET_STREAM_ENDPOINT: (
-      input: GET_STREAM_ENDPOINTInput,
-    ) => Promise<GET_STREAM_ENDPOINTOutput>;
-    /**
-     * Get the current logged in user
-     */
-    GET_USER: (input: GET_USERInput) => Promise<GET_USEROutput>;
-    /**
-     * List all available models from OpenRouter with their details, pricing, and capabilities. Returns comprehensive information about each model including context length, pricing per 1M tokens, modality (text, vision, etc.), and provider information. Supports filtering by price, context length, modality, and search terms. Perfect for discovering and comparing available AI models.
-     */
-    LIST_MODELS: (input: LIST_MODELSInput) => Promise<LIST_MODELSOutput>;
-    /**
-     * Get intelligent model recommendations based on your task description and requirements. The system analyzes your task (e.g., 'code generation', 'creative writing', 'data analysis') and suggests the most suitable models considering cost, quality, context length, and capabilities. Each recommendation includes detailed reasoning explaining why the model is suitable. Perfect for discovering the right model when you're not sure which to use.
-     */
-    RECOMMEND_MODEL: (
-      input: RECOMMEND_MODELInput,
-    ) => Promise<RECOMMEND_MODELOutput>;
   }>;
 }
 
-export const Scopes = {};
+export const Scopes = {
+  OPENROUTER_CHAT_CONTRACT: {
+    CONTRACT_AUTHORIZE: "OPENROUTER_CHAT_CONTRACT::CONTRACT_AUTHORIZE",
+    CONTRACT_GET: "OPENROUTER_CHAT_CONTRACT::CONTRACT_GET",
+    CONTRACT_SETTLE: "OPENROUTER_CHAT_CONTRACT::CONTRACT_SETTLE",
+    DECO_CHAT_OAUTH_START: "OPENROUTER_CHAT_CONTRACT::DECO_CHAT_OAUTH_START",
+  },
+};
