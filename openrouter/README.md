@@ -107,13 +107,16 @@ const pageTwo = await LIST_MODELS({
   page: 2,
 });
 
-// Return only Deco's curated, well-known frontier models (always ordered)
-const featured = await LIST_MODELS({
-  wellKnownOnly: true,
+// Default behavior returns Deco's curated, well-known frontier models
+const curated = await LIST_MODELS();
+
+// Disable the curated filter to browse the entire catalog
+const everything = await LIST_MODELS({
+  wellKnownOnly: false,
 });
 ```
 
-> **Well-known models.** By default, Deco prioritizes a curated list of frontier models (Gemini 2.5, Claude 4.x, GPT-4.1 family, Grok, GPT-OSS, etc.) at the top of the response while still returning the full catalog afterward. Set `wellKnownOnly: true` to trim the response to this curated set.
+> **Well-known models.** By default, Deco returns only its curated list of frontier models (Gemini 2.5, Claude 4.x, GPT-4.1 family, Grok, GPT-OSS, etc.) to keep responses focused. Set `wellKnownOnly: false` if you want to include every model from OpenRouter.
 
 ### 2. Get Model Details
 

@@ -72,10 +72,10 @@ export const createListModelsTool = (env: Env) =>
         .describe("1-based page number for pagination (default: 1)"),
       wellKnownOnly: z
         .boolean()
-        .default(false)
+        .default(true)
         .optional()
         .describe(
-          "When true, only returns Deco's curated, well-known models (ignores other filters except sort)",
+          "When true (default), only returns Deco's curated, well-known models. Set to false to include the full catalog.",
         ),
     }),
     outputSchema: z.object({
@@ -138,7 +138,7 @@ export const createListModelsTool = (env: Env) =>
         sortBy = "name",
         limit = 50,
         page = 1,
-        wellKnownOnly = false,
+        wellKnownOnly = true,
       } = context;
       const pageSize = limit;
       const offset = (page - 1) * pageSize;
