@@ -1,13 +1,3 @@
-/**
- * MCP tools for Discord guild (server) operations
- *
- * This file implements tools for:
- * - Listing bot guilds
- * - Getting guild information
- * - Managing guild members
- * - User operations
- */
-
 import type { Env } from "../main.ts";
 import { createDiscordClient } from "./utils/discord-client.ts";
 import { createPrivateTool } from "@decocms/runtime/mastra";
@@ -193,9 +183,9 @@ export const createBanMemberTool = (env: Env) =>
 /**
  * GET_CURRENT_USER - Get information about the bot's user account
  */
-export const createGetCurrentUserTool = (env: Env) =>
+export const createGetCurrentDiscordUserTool = (env: Env) =>
   createPrivateTool({
-    id: "GET_CURRENT_USER",
+    id: "GET_CURRENT_DISCORD_USER",
     description:
       "Get information about the bot's own user account including username, discriminator, ID, and bot status.",
     inputSchema: getCurrentUserInputSchema,
@@ -223,9 +213,9 @@ export const createGetCurrentUserTool = (env: Env) =>
 /**
  * GET_USER - Get information about a specific user
  */
-export const createGetUserTool = (env: Env) =>
+export const createGetDiscordUserTool = (env: Env) =>
   createPrivateTool({
-    id: "GET_USER",
+    id: "GET_DISCORD_USER",
     description:
       "Get information about a specific Discord user by their user ID. Returns username, discriminator, and public profile information.",
     inputSchema: getUserInputSchema,
@@ -259,6 +249,6 @@ export const guildTools = [
   createGetGuildTool,
   createGetGuildMembersTool,
   createBanMemberTool,
-  createGetCurrentUserTool,
-  createGetUserTool,
+  createGetCurrentDiscordUserTool,
+  createGetDiscordUserTool,
 ];
