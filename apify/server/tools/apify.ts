@@ -3,6 +3,7 @@ import { createApifyClient } from "./utils/client";
 import type { ActorRun } from "./utils/types";
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/mastra";
+import { APIFY_ERROR_MESSAGES } from "../constants";
 
 /**
  * Tool schemas
@@ -123,7 +124,9 @@ export const createListActorsTool = (env: Env) =>
         });
       } catch (error) {
         throw new Error(
-          error instanceof Error ? error.message : "Failed to list actors",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.FAILED_PRECONDITION,
         );
       }
     },
@@ -140,13 +143,15 @@ export const createGetActorTool = (env: Env) =>
     execute: async ({ context }: any) => {
       try {
         if (!context.actorId) {
-          throw new Error("Actor ID is required");
+          throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
         const client = createApifyClient(env);
         return await client.getActor(context.actorId);
       } catch (error) {
         throw new Error(
-          error instanceof Error ? error.message : "Failed to get actor",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.ACTOR_NOT_FOUND,
         );
       }
     },
@@ -163,7 +168,7 @@ export const createListActorRunsTool = (env: Env) =>
     execute: async ({ context }: any) => {
       try {
         if (!context.actorId) {
-          throw new Error("Actor ID is required");
+          throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
         const client = createApifyClient(env);
         return await client.getActorRuns(context.actorId, {
@@ -174,7 +179,9 @@ export const createListActorRunsTool = (env: Env) =>
         });
       } catch (error) {
         throw new Error(
-          error instanceof Error ? error.message : "Failed to list actor runs",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.FAILED_PRECONDITION,
         );
       }
     },
@@ -191,7 +198,7 @@ export const createGetActorRunTool = (env: Env) =>
     execute: async ({ context }: any) => {
       try {
         if (!context.actorId || !context.runId) {
-          throw new Error("Actor ID and Run ID are required");
+          throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
         const client = createApifyClient(env);
         const result = await client.getActorRun(context.actorId, context.runId);
@@ -211,7 +218,9 @@ export const createGetActorRunTool = (env: Env) =>
         return { data: result };
       } catch (error) {
         throw new Error(
-          error instanceof Error ? error.message : "Failed to get actor run",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.RUN_NOT_FOUND,
         );
       }
     },
@@ -229,7 +238,7 @@ export const createRunActorSyncTool = (env: Env) =>
     outputSchema: runActorSyncOutputSchema,
     execute: async ({ context: ctx }: any) => {
       if (!ctx.actorId) {
-        throw new Error("Actor ID is required");
+        throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
       }
 
       const client = createApifyClient(env);
@@ -333,7 +342,9 @@ export const createRunActorSyncTool = (env: Env) =>
         }
 
         throw new Error(
-          error instanceof Error ? error.message : "Failed to run actor",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.FAILED_PRECONDITION,
         );
       }
     },
@@ -352,7 +363,7 @@ export const createRunActorAsyncTool = (env: Env) =>
     outputSchema: runActorAsyncOutputSchema,
     execute: async ({ context: ctx }: any) => {
       if (!ctx.actorId) {
-        throw new Error("Actor ID is required");
+        throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
       }
 
       const client = createApifyClient(env);
@@ -453,7 +464,9 @@ export const createRunActorAsyncTool = (env: Env) =>
         }
 
         throw new Error(
-          error instanceof Error ? error.message : "Failed to start actor run",
+          error instanceof Error
+            ? error.message
+            : APIFY_ERROR_MESSAGES.FAILED_PRECONDITION,
         );
       }
     },

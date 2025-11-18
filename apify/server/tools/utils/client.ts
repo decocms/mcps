@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import type { Env } from "server/main";
 import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
+import { APIFY_ERROR_MESSAGES } from "../../constants";
 
 const APIFY_API_BASE_URL = "https://api.apify.com";
 
@@ -28,7 +29,7 @@ async function makeApifyRequest(
     (env as any).APIFY_TOKEN?.value || (process?.env?.APIFY_TOKEN as string);
 
   if (!token) {
-    throw new Error("Apify token not configured");
+    throw new Error(APIFY_ERROR_MESSAGES.UNAUTHENTICATED);
   }
 
   let url = `${APIFY_API_BASE_URL}${path}`;
