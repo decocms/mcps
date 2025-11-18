@@ -13,17 +13,19 @@ import {
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { APIFY_ERROR_MESSAGES } from "../constants";
 
+// Type for the Apify client returned by createApifyClient
+type ApifyClientInstance = ReturnType<typeof createApifyClient>;
+
 /**
  * Create List Actors Tool
  */
-export const createListActorsTool = (env: Env) =>
+const createListActorsTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "LIST_ACTORS",
     description: "List all actors accessible to the user",
     inputSchema: listActorsInputSchema,
     execute: async ({ context }: any) => {
       try {
-        const client = createApifyClient(env);
         return await client.listActors({
           limit: context.limit,
           offset: context.offset,
@@ -43,7 +45,7 @@ export const createListActorsTool = (env: Env) =>
 /**
  * Create Get Actor Tool
  */
-export const createGetActorTool = (env: Env) =>
+const createGetActorTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "GET_ACTOR",
     description: "Get details of a specific actor",
@@ -53,7 +55,6 @@ export const createGetActorTool = (env: Env) =>
         if (!context.actorId) {
           throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
-        const client = createApifyClient(env);
         return await client.getActor(context.actorId);
       } catch (error) {
         throw new Error(
@@ -68,7 +69,7 @@ export const createGetActorTool = (env: Env) =>
 /**
  * Create List Actor Runs Tool
  */
-export const createListActorRunsTool = (env: Env) =>
+const createListActorRunsTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "LIST_ACTOR_RUNS",
     description: "List runs of a specific actor",
@@ -78,7 +79,6 @@ export const createListActorRunsTool = (env: Env) =>
         if (!context.actorId) {
           throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
-        const client = createApifyClient(env);
         return await client.getActorRuns(context.actorId, {
           limit: context.limit,
           offset: context.offset,
@@ -98,7 +98,7 @@ export const createListActorRunsTool = (env: Env) =>
 /**
  * Create Get Actor Run Tool
  */
-export const createGetActorRunTool = (env: Env) =>
+const createGetActorRunTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "GET_ACTOR_RUN",
     description: "Get details of a specific actor run",
@@ -108,7 +108,6 @@ export const createGetActorRunTool = (env: Env) =>
         if (!context.actorId || !context.runId) {
           throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
         }
-        const client = createApifyClient(env);
         const result = await client.getActorRun(context.actorId, context.runId);
 
         if (context.includeDatasetItems && result.defaultDatasetId) {
@@ -138,7 +137,7 @@ export const createGetActorRunTool = (env: Env) =>
  * Create Run Actor Synchronously Tool
  * With inline contract support and precise settlement
  */
-export const createRunActorSyncTool = (env: Env) =>
+const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
   createPrivateTool({
     id: "RUN_ACTOR_SYNC",
     description: "Run an actor synchronously and return dataset items",
@@ -149,7 +148,6 @@ export const createRunActorSyncTool = (env: Env) =>
         throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
       }
 
-      const client = createApifyClient(env);
       const parsedInput = JSON.parse(ctx.input);
 
       // Estimate costs for pre-authorization
@@ -256,7 +254,7 @@ export const createRunActorSyncTool = (env: Env) =>
  * Create Run Actor Asynchronously Tool
  * With inline contract support and precise settlement
  */
-export const createRunActorAsyncTool = (env: Env) =>
+const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
   createPrivateTool({
     id: "RUN_ACTOR_ASYNC",
     description:
@@ -268,7 +266,6 @@ export const createRunActorAsyncTool = (env: Env) =>
         throw new Error(APIFY_ERROR_MESSAGES.INVALID_ARGUMENT);
       }
 
-      const client = createApifyClient(env);
       const parsedInput = JSON.parse(ctx.input);
 
       // Estimate costs for pre-authorization (async runs may take longer)
@@ -370,25 +367,17 @@ export const createRunActorAsyncTool = (env: Env) =>
 
 /**
  * Factory function to create all Apify tools
- * Takes env and returns tool instances with contract support
+ * Follows Sora pattern: create client once, pass to tools as parameters
  */
-export const createApifyTools = (env: Env) => [
-  createListActorsTool(env),
-  createGetActorTool(env),
-  createListActorRunsTool(env),
-  createGetActorRunTool(env),
-  createRunActorSyncTool(env),
-  createRunActorAsyncTool(env),
-];
+export const createApifyTools = (env: Env) => {
+  const client = createApifyClient(env);
 
-/**
- * Legacy export for compatibility
- */
-export const apifyTools = [
-  createListActorsTool,
-  createGetActorTool,
-  createListActorRunsTool,
-  createGetActorRunTool,
-  createRunActorSyncTool,
-  createRunActorAsyncTool,
-];
+  return [
+    createListActorsTool(client),
+    createGetActorTool(client),
+    createListActorRunsTool(client),
+    createGetActorRunTool(client),
+    createRunActorSyncTool(env, client),
+    createRunActorAsyncTool(env, client),
+  ];
+};

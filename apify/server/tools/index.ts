@@ -11,16 +11,12 @@ import { createApifyTools } from "./apify.ts";
 
 /**
  * Factory function to create all tools with env context
- * Follows Sora pattern for dynamic tool creation
+ * Follows Sora pattern for dynamic tool creation with cleaner code
  */
-export const createTools = (env: Env) => {
-  const apifyTools = createApifyTools(env);
-  // Map userTools - handle both direct tools and tool creators (functions)
-  const userToolsArray = userTools.map((tool) =>
-    typeof tool === "function" ? (tool as (env: Env) => any)(env) : tool,
-  );
-  return [...userToolsArray, ...apifyTools];
-};
+export const createTools = (env: Env) => [
+  ...userTools,
+  ...createApifyTools(env),
+];
 
 // Re-export for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
