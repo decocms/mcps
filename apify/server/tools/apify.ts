@@ -251,22 +251,25 @@ export const createRunActorSyncTool = (env: Env) =>
         (estimatedTimeout * estimatedMemory) / 1000,
       );
 
+      let transactionId: string | undefined;
+
       try {
         // PRÉ-AUTORIZA com estimativa
-        const { transactionId } = await (
-          env as any
-        ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "apify:computeUnits",
-              amount: estimatedComputeUnits,
-            },
-            {
-              clauseId: "apify:memoryMB",
-              amount: estimatedMemory,
-            },
-          ],
-        });
+        const authResult = await (env as any).APIFY_CONTRACT.CONTRACT_AUTHORIZE(
+          {
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          },
+        );
+        transactionId = authResult.transactionId;
 
         // EXECUTA
         const startTime = Date.now();
@@ -307,36 +310,27 @@ export const createRunActorSyncTool = (env: Env) =>
         return { data: items };
       } catch (error) {
         try {
-          // SETTLEMENT ZERO em caso de erro
-          const { transactionId } = await (
-            env as any
-          ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          });
-
-          await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
-            transactionId,
-            vendorId: (env as any).DECO_CHAT_WORKSPACE,
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: 0,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: 0,
-              },
-            ],
-          });
+          // SETTLEMENT ZERO com o transactionId original em caso de erro
+          if (transactionId) {
+            await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+              transactionId,
+              vendorId: (env as any).DECO_CHAT_WORKSPACE,
+              clauses: [
+                {
+                  clauseId: "apify:computeUnits",
+                  amount: 0,
+                },
+                {
+                  clauseId: "apify:memoryMB",
+                  amount: 0,
+                },
+              ],
+            });
+          } else {
+            console.warn(
+              "Cannot settle contract: original transactionId not available",
+            );
+          }
         } catch (settleError) {
           console.error("Failed to settle contract on error:", settleError);
         }
@@ -376,22 +370,25 @@ export const createRunActorAsyncTool = (env: Env) =>
         (estimatedTimeout * estimatedMemory) / 1000,
       );
 
+      let transactionId: string | undefined;
+
       try {
         // PRÉ-AUTORIZA com estimativa
-        const { transactionId } = await (
-          env as any
-        ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "apify:computeUnits",
-              amount: estimatedComputeUnits,
-            },
-            {
-              clauseId: "apify:memoryMB",
-              amount: estimatedMemory,
-            },
-          ],
-        });
+        const authResult = await (env as any).APIFY_CONTRACT.CONTRACT_AUTHORIZE(
+          {
+            clauses: [
+              {
+                clauseId: "apify:computeUnits",
+                amount: estimatedComputeUnits,
+              },
+              {
+                clauseId: "apify:memoryMB",
+                amount: estimatedMemory,
+              },
+            ],
+          },
+        );
+        transactionId = authResult.transactionId;
 
         // EXECUTA (retorna imediatamente)
         const result = await client.runActor(ctx.actorId, parsedInput, {
@@ -429,36 +426,27 @@ export const createRunActorAsyncTool = (env: Env) =>
         };
       } catch (error) {
         try {
-          // SETTLEMENT ZERO em caso de erro
-          const { transactionId } = await (
-            env as any
-          ).APIFY_CONTRACT.CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          });
-
-          await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
-            transactionId,
-            vendorId: (env as any).DECO_CHAT_WORKSPACE,
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: 0,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: 0,
-              },
-            ],
-          });
+          // SETTLEMENT ZERO com o transactionId original em caso de erro
+          if (transactionId) {
+            await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+              transactionId,
+              vendorId: (env as any).DECO_CHAT_WORKSPACE,
+              clauses: [
+                {
+                  clauseId: "apify:computeUnits",
+                  amount: 0,
+                },
+                {
+                  clauseId: "apify:memoryMB",
+                  amount: 0,
+                },
+              ],
+            });
+          } else {
+            console.warn(
+              "Cannot settle contract: original transactionId not available",
+            );
+          }
         } catch (settleError) {
           console.error("Failed to settle contract on error:", settleError);
         }

@@ -7,9 +7,7 @@ import type {
 } from "./types";
 import type { Env } from "server/main";
 import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
-import { APIFY_ERROR_MESSAGES } from "../../constants";
-
-const APIFY_API_BASE_URL = "https://api.apify.com";
+import { APIFY_API_BASE_URL } from "../../constants";
 
 /**
  * Helper function to make requests to Apify API
@@ -25,12 +23,7 @@ async function makeApifyRequest(
   },
 ): Promise<any> {
   assertEnvKey(env, "APIFY_TOKEN");
-  const token =
-    (env as any).APIFY_TOKEN?.value || (process?.env?.APIFY_TOKEN as string);
-
-  if (!token) {
-    throw new Error(APIFY_ERROR_MESSAGES.UNAUTHENTICATED);
-  }
+  const token = (env as any).APIFY_TOKEN as string;
 
   let url = `${APIFY_API_BASE_URL}${path}`;
 
