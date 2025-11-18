@@ -16,29 +16,18 @@ export const createGetStreamEndpointTool = (_env: Env) =>
     id: "GET_STREAM_ENDPOINT",
     description:
       "Return details about the HTTP streaming endpoint so clients can connect without guessing configuration.",
-    inputSchema: z.object({}).optional(),
-    outputSchema: z.object({
-      apiBaseUrl: z.string().url(),
-      chatEndpoint: z.string().url(),
-      method: z.literal("POST"),
-      contentType: z.literal("application/json"),
-      stream: z.literal(true),
-      description: z.string(),
-      docs: z.array(
-        z.object({
-          title: z.string(),
-          url: z.string().url(),
-        }),
-      ),
-      notes: z.array(z.string()),
-    }),
+    inputSchema: z.object({}).strict(),
+    outputSchema: z
+      .object({
+        url: z.string().url(),
+      })
+      .passthrough(),
     execute: async () => {
       const baseUrl = DEFAULT_BASE_URL.replace(/\/$/, "");
       const chatEndpoint = `${baseUrl}/api/chat`;
 
       return {
-        apiBaseUrl: baseUrl,
-        chatEndpoint,
+        url: chatEndpoint,
         method: "POST" as const,
         contentType: "application/json" as const,
         stream: true as const,
@@ -52,6 +41,7 @@ export const createGetStreamEndpointTool = (_env: Env) =>
           "Set the same fields you would send to CHAT_COMPLETION; the response is a text/event-stream with OpenRouter chunks.",
           "Ideal for hooking up to vercel/ai useChat hooks or any SSE client.",
         ],
+        apiBaseUrl: baseUrl,
       };
     },
   });
