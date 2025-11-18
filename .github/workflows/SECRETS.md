@@ -24,6 +24,10 @@ Este documento lista todos os secrets necessários para fazer deploy dos MCPs no
 - **`NANOBANANA_API_KEY`**: API key para o serviço Nanobanana (OpenRouter)
   - Obtenha em: https://openrouter.ai/keys
 
+### MCP: `openrouter`
+- **`OPENROUTER_API_KEY`**: API key usada pelo MCP OpenRouter
+  - Obtenha em: https://openrouter.ai/keys
+
 ### MCP: `pinecone`
 - **`PINECONE_TOKEN`**: Token de API do Pinecone
   - Obtenha em: https://app.pinecone.io/
