@@ -9,7 +9,7 @@ import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { AUTO_ROUTER_MODEL, DEFAULT_TEMPERATURE } from "../../constants.ts";
 import { calculateChatCost, validateChatParams } from "./utils.ts";
-import type { ChatMessage, ProviderPreferences } from "../../lib/types.ts";
+import type { ChatMessage } from "../../lib/types.ts";
 import {
   settleChatContract,
   toMicroDollarUnits,
@@ -22,38 +22,15 @@ const MessageSchema = z.object({
   name: z.string().optional().describe("Optional name for the message sender"),
 });
 
+/*
 const ProviderPreferencesSchema = z.object({
-  sort: z
-    .enum(["price", "throughput", "latency"])
-    .optional()
-    .describe(
-      "Sort providers by this preference (currently unavailable while we migrate to the OpenRouter SDK)",
-    ),
-  only: z
-    .array(z.string())
-    .optional()
-    .describe(
-      "Only use these specific providers (currently unavailable while we migrate to the OpenRouter SDK)",
-    ),
-  exclude: z
-    .array(z.string())
-    .optional()
-    .describe(
-      "Exclude these providers from selection (currently unavailable while we migrate to the OpenRouter SDK)",
-    ),
-  requireParameters: z
-    .boolean()
-    .optional()
-    .describe(
-      "Require that providers support all requested parameters (currently unavailable while we migrate to the OpenRouter SDK)",
-    ),
-  allowFallbacks: z
-    .boolean()
-    .optional()
-    .describe(
-      "Allow fallback to other providers on failure (currently unavailable while we migrate to the OpenRouter SDK)",
-    ),
+  sort: z.enum(["price", "throughput", "latency"]).optional(),
+  only: z.array(z.string()).optional(),
+  exclude: z.array(z.string()).optional(),
+  requireParameters: z.boolean().optional(),
+  allowFallbacks: z.boolean().optional(),
 });
+*/
 
 const jsonResponseFormatOptions = z.enum(["json_object"]);
 
@@ -62,7 +39,7 @@ export const createChatCompletionTool = (env: Env) =>
     id: "CHAT_COMPLETION",
     description:
       "Send a non-streaming chat completion request to OpenRouter. Supports single model selection, " +
-      "automatic model routing (openrouter/auto), fallback chains, and provider preferences. " +
+      "automatic model routing (openrouter/auto) and fallback chains. " +
       "Returns the complete response when generation is finished, including token usage and cost estimation. " +
       "Perfect for standard chat interactions where you don't need real-time streaming.",
     inputSchema: z.object({
@@ -127,9 +104,11 @@ export const createChatCompletionTool = (env: Env) =>
         .describe(
           "Request JSON output format. Note: Only supported by some models. Check model details.",
         ),
+      /*
       provider: ProviderPreferencesSchema.optional().describe(
         "Provider routing preferences to optimize selection by price, speed, or specific providers",
       ),
+      */
       user: z
         .string()
         .optional()
@@ -180,7 +159,7 @@ export const createChatCompletionTool = (env: Env) =>
         presencePenalty?: number;
         stop?: string | string[];
         responseFormat?: z.infer<typeof jsonResponseFormatOptions>;
-        provider?: ProviderPreferences;
+        // provider?: ProviderPreferences;
         user?: string;
       };
     }) => {
@@ -195,7 +174,7 @@ export const createChatCompletionTool = (env: Env) =>
         presencePenalty,
         stop,
         responseFormat,
-        provider,
+        // provider,
         user,
       } = context;
 
@@ -205,11 +184,13 @@ export const createChatCompletionTool = (env: Env) =>
         temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
       const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
 
+      /*
       if (hasProviderPreferences(provider)) {
         throw new Error(
           "Provider preferences are not supported by the OpenRouter TypeScript SDK yet. Please omit the `provider` field and rely on explicit model routing instead.",
         );
       }
+      */
 
       // Validate parameters
       validateChatParams({
@@ -290,6 +271,7 @@ export const createChatCompletionTool = (env: Env) =>
     },
   });
 
+/*
 function hasProviderPreferences(provider?: ProviderPreferences): boolean {
   if (!provider) {
     return false;
@@ -305,3 +287,4 @@ function hasProviderPreferences(provider?: ProviderPreferences): boolean {
     return value !== undefined;
   });
 }
+*/

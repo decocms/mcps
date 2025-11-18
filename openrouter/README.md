@@ -28,7 +28,9 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 - **`GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
 - **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `CHAT_COMPLETION` tool schema.
 
+<!--
 > This MCP now relies on the official [OpenRouter TypeScript SDK](https://openrouter.ai/docs/sdks/typescript) for model discovery and chat completions. Provider preferences are temporarily unavailable because the SDK does not expose the legacy `provider` payload yet. Prefer explicit `models` fallback ordering (or `openrouter/auto`) until the SDK adds native support.
+-->
 
 ### 🌐 **API Routes**
 - **`POST /api/chat`** - Streams OpenRouter responses directly from the worker (no intermediate tool call required)
@@ -209,6 +211,7 @@ const response = await CHAT_COMPLETION({
 });
 // Tries gpt-4o first, falls back to claude if unavailable, then gemini
 
+<!--
 // Optimize by provider preferences
 const response = await CHAT_COMPLETION({
   model: "openai/gpt-4o",
@@ -218,6 +221,7 @@ const response = await CHAT_COMPLETION({
     exclude: ["SomeProvider"] // Exclude specific providers
   }
 });
+-->
 ```
 
 ### 6. Discover the Streaming Endpoint
