@@ -20,14 +20,14 @@ type = "contract"
 name = "APIFY_CONTRACT"
 
 [deco.bindings.contract]
-body = "U$0.50 per sync run, U$0.25 per async run"
+body = "Apify actor execution with dynamic compute units and memory billing"
 
 [[deco.bindings.contract.clauses]]
-id = "apify:runActorSync"
-price = 0.5
-description = "$0.50 per synchronous actor run"
+id = "apify:computeUnits"
+price = 0.001
+description = "Compute units: (timeout_seconds × memory_MB) / 1000"
 
 [[deco.bindings.contract.clauses]]
-id = "apify:runActorAsync"
-price = 0.25
-description = "$0.25 per asynchronous actor run"
+id = "apify:memoryMB"
+price = 0.0001
+description = "Memory allocated in megabytes"

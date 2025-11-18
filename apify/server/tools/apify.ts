@@ -94,6 +94,16 @@ const runActorSchema = z.object({
     .describe("Specific build version to use (optional)"),
 });
 
+const runActorSyncOutputSchema = z.object({
+  data: z.any().describe("Dataset items from the actor run"),
+});
+
+const runActorAsyncOutputSchema = z.object({
+  id: z.string().describe("Run ID"),
+  status: z.string().describe("Current status of the run"),
+  actorId: z.string().describe("Actor ID"),
+}).passthrough();
+
 /**
  * Create List Actors Tool
  */
@@ -216,6 +226,7 @@ export const createRunActorSyncTool = (env: Env) =>
     id: "RUN_ACTOR_SYNC",
     description: "Run an actor synchronously and return dataset items",
     inputSchema: runActorSchema,
+    outputSchema: runActorSyncOutputSchema,
     execute: async ({ context: ctx }: any) => {
       if (!ctx.actorId) {
         throw new Error("Actor ID is required");
@@ -247,7 +258,7 @@ export const createRunActorSyncTool = (env: Env) =>
 
         // EXECUTA
         const startTime = Date.now();
-        const result = await client.runActorSyncGetDatasetItems(
+        const items = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
           parsedInput,
           {
@@ -279,7 +290,7 @@ export const createRunActorSyncTool = (env: Env) =>
           ],
         });
 
-        return result;
+        return { data: items };
       } catch (error) {
         try {
           // SETTLEMENT ZERO em caso de erro
@@ -332,6 +343,7 @@ export const createRunActorAsyncTool = (env: Env) =>
     description:
       "Run an actor asynchronously and return immediately without waiting for completion",
     inputSchema: runActorSchema,
+    outputSchema: runActorAsyncOutputSchema,
     execute: async ({ context: ctx }: any) => {
       if (!ctx.actorId) {
         throw new Error("Actor ID is required");
@@ -389,7 +401,12 @@ export const createRunActorAsyncTool = (env: Env) =>
           ],
         });
 
-        return result.data as ActorRun;
+        const runData = result.data as ActorRun;
+        return {
+          id: runData.id,
+          status: runData.status,
+          actorId: runData.actId || ctx.actorId,
+        };
       } catch (error) {
         try {
           // SETTLEMENT ZERO em caso de erro

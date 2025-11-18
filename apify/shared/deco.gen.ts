@@ -463,7 +463,24 @@ export interface RUN_ACTOR_ASYNCInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface RUN_ACTOR_ASYNCOutput {}
+/**
+ * Run ID
+ */
+export type String_40 = string;
+/**
+ * Current status of the run
+ */
+export type String_41 = string;
+/**
+ * Actor ID
+ */
+export type String_42 = string;
+
+export interface RUN_ACTOR_ASYNCOutput {
+  id: String_40;
+  status: String_41;
+  actorId: String_42;
+}
 
 /* eslint-disable */
 /**
@@ -475,11 +492,11 @@ export interface RUN_ACTOR_ASYNCOutput {}
 /**
  * The ID of the actor to run
  */
-export type String_40 = string;
+export type String_43 = string;
 /**
  * Input data for the actor run (Stringified JSON object)
  */
-export type String_41 = string;
+export type String_44 = string;
 /**
  * Maximum timeout for the run in seconds
  */
@@ -491,14 +508,14 @@ export type Integer_7 = number;
 /**
  * Specific build version to use (optional)
  */
-export type String_42 = string;
+export type String_45 = string;
 
 export interface RUN_ACTOR_SYNCInput {
-  actorId: String_40;
-  input: String_41;
+  actorId: String_43;
+  input: String_44;
   timeout?: Integer_6;
   memory?: Integer_7;
-  build?: String_42;
+  build?: String_45;
 }
 
 /* eslint-disable */
@@ -508,7 +525,14 @@ export interface RUN_ACTOR_SYNCInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface RUN_ACTOR_SYNCOutput {}
+export interface RUN_ACTOR_SYNCOutput {
+  /**
+   * Dataset items from the actor run
+   */
+  data?: {
+    [k: string]: unknown;
+  };
+}
 
 import { z } from "zod";
 
@@ -532,8 +556,8 @@ export const StateSchema = z.object({
   APIFY_CONTRACT: z.object({
     value: z.string(),
     __type: z
-      .literal("@deco-team/apify-c6ce5f8b3e46105257b19e1e0f1132dd")
-      .default("@deco-team/apify-c6ce5f8b3e46105257b19e1e0f1132dd"),
+      .literal("@deco-team/apify-ed48e48556ae3c01cbe8a3cf3a1a34ae")
+      .default("@deco-team/apify-ed48e48556ae3c01cbe8a3cf3a1a34ae"),
   }),
 });
 
