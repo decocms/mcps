@@ -58,6 +58,40 @@ type StreamRequestBody = {
   seed?: number;
 };
 
+type ModelMessage =
+  | SystemModelMessage
+  | UserModelMessage
+  | AssistantModelMessage;
+
+interface SystemModelMessage {
+  role: "system";
+  content: string;
+}
+
+interface UserModelMessage {
+  role: "user";
+  content: UserContent;
+}
+
+type UserContent = string | Array<UserTextPart | UserImagePart>;
+
+interface UserTextPart {
+  type: "text";
+  text: string;
+}
+
+interface UserImagePart {
+  type: "image";
+  image: string;
+}
+
+interface AssistantModelMessage {
+  role: "assistant";
+  content: AssistantContent;
+}
+
+type AssistantContent = string;
+
 type StreamTextParams = Parameters<typeof streamText>[0];
 type StreamMessages = NonNullable<StreamTextParams["messages"]>;
 type StreamTools = StreamTextParams["tools"];
@@ -201,65 +235,65 @@ export async function handleStreamRoute(
   }
 }
 
-function toModelMessages(messages?: IncomingMessage[]): StreamMessages {
+function toModelMessages(messages?: IncomingMessage[]): ModelMessage[] {
   if (!messages || messages.length === 0) {
-    return [] as StreamMessages;
+    return [];
   }
 
-  const converted = messages.map((message) => {
+  return messages.map((message) => {
     const role = normalizeRole(message.role);
 
     if (role === "system") {
       return {
-        role: "system" as const,
+        role: "system",
         content: toSystemContent(message.content),
       };
     }
 
-    const contentParts = toModelContentParts(message.content);
-
     if (role === "assistant") {
       return {
-        role: "assistant" as const,
-        content:
-          contentParts.length > 0 ? contentParts : [{ type: "text", text: "" }],
+        role: "assistant",
+        content: toAssistantContent(message.content),
       };
     }
 
     return {
-      role: "user" as const,
-      content:
-        contentParts.length > 0 ? contentParts : [{ type: "text", text: "" }],
+      role: "user",
+      content: toUserContent(message.content),
     };
   });
-
-  return converted as StreamMessages;
 }
 
-type ModelTextPart = {
-  type: "text";
-  text: string;
-};
-
-type ModelImagePart = {
-  type: "image";
-  image: string;
-};
-
-type ModelContentPart = ModelTextPart | ModelImagePart;
-
-function toModelContentParts(
+function toAssistantContent(
   content: IncomingMessage["content"],
-): ModelContentPart[] {
-  if (!content) {
-    return [];
-  }
-
+): AssistantContent {
   if (typeof content === "string") {
-    return [{ type: "text", text: content }];
+    return content;
   }
 
-  const parts: ModelContentPart[] = [];
+  if (!content || content.length === 0) {
+    return "";
+  }
+
+  const text = content
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("\n")
+    .trim();
+
+  return text || "";
+}
+
+function toUserContent(content: IncomingMessage["content"]): UserContent {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (!content || content.length === 0) {
+    return "";
+  }
+
+  const parts: Exclude<UserContent, string> = [];
 
   for (const part of content) {
     if (part.type === "text") {
@@ -273,6 +307,14 @@ function toModelContentParts(
         image: part.image_url.url,
       });
     }
+  }
+
+  if (parts.length === 0) {
+    return "";
+  }
+
+  if (parts.length === 1 && parts[0].type === "text") {
+    return parts[0].text;
   }
 
   return parts;
