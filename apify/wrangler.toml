@@ -1,0 +1,33 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "apify"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Automate web scraping and data extraction using Apify actors. List, run, and monitor actors, retrieve results, and manage runs with support for sync and async execution."
+icon = "https://apify.com/favicon.ico"
+friendlyName = "Apify"
+
+[[deco.bindings]]
+type = "contract"
+name = "APIFY_CONTRACT"
+
+[deco.bindings.contract]
+body = "Apify actor execution with dynamic compute units and memory billing"
+
+[[deco.bindings.contract.clauses]]
+id = "apify:computeUnits"
+price = 0.001
+description = "Compute units: (timeout_seconds × memory_MB) / 1000"
+
+[[deco.bindings.contract.clauses]]
+id = "apify:memoryMB"
+price = 0.0001
+description = "Memory allocated in megabytes"

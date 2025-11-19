@@ -19,6 +19,7 @@
     "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
+    "apify",
     "datajud",
     "nanobanana",
     "object-storage",
