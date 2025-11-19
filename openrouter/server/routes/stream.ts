@@ -114,11 +114,11 @@ export async function handleStreamRoute(
     seed,
   } = payload;
 
-  const normalizedMessages = normalizeMessages(messages) as StreamMessages;
+  const modelMessages = toModelMessages(messages);
 
   try {
     validateChatParams({
-      messages: normalizedMessages,
+      messages: modelMessages,
       model,
       temperature,
       maxTokens,
@@ -171,7 +171,7 @@ export async function handleStreamRoute(
   try {
     const result = await streamText({
       model: modelInstance,
-      messages: normalizedMessages,
+      messages: modelMessages as StreamMessages,
       temperature: resolvedTemperature,
       maxOutputTokens: resolvedMaxTokens,
       topP,
@@ -201,31 +201,106 @@ export async function handleStreamRoute(
   }
 }
 
-type NormalizedMessage = {
-  role: string;
-  content: ContentPart[];
-  name?: string;
-};
+function toModelMessages(messages?: IncomingMessage[]): StreamMessages {
+  if (!messages || messages.length === 0) {
+    return [] as StreamMessages;
+  }
 
-function normalizeMessages(messages?: IncomingMessage[]): NormalizedMessage[] {
-  if (!messages) return [];
+  const converted = messages.map((message) => {
+    const role = normalizeRole(message.role);
 
-  return messages.map((message) => {
-    const content = Array.isArray(message.content)
-      ? message.content
-      : [
-          {
-            type: "text",
-            text: message.content != null ? String(message.content) : "",
-          } satisfies ContentPart,
-        ];
+    if (role === "system") {
+      return {
+        role: "system" as const,
+        content: toSystemContent(message.content),
+      };
+    }
+
+    const contentParts = toModelContentParts(message.content);
+
+    if (role === "assistant") {
+      return {
+        role: "assistant" as const,
+        content:
+          contentParts.length > 0 ? contentParts : [{ type: "text", text: "" }],
+      };
+    }
 
     return {
-      role: message.role,
-      content,
-      name: message.name,
+      role: "user" as const,
+      content:
+        contentParts.length > 0 ? contentParts : [{ type: "text", text: "" }],
     };
   });
+
+  return converted as StreamMessages;
+}
+
+type ModelTextPart = {
+  type: "text";
+  text: string;
+};
+
+type ModelImagePart = {
+  type: "image";
+  image: string;
+};
+
+type ModelContentPart = ModelTextPart | ModelImagePart;
+
+function toModelContentParts(
+  content: IncomingMessage["content"],
+): ModelContentPart[] {
+  if (!content) {
+    return [];
+  }
+
+  if (typeof content === "string") {
+    return [{ type: "text", text: content }];
+  }
+
+  const parts: ModelContentPart[] = [];
+
+  for (const part of content) {
+    if (part.type === "text") {
+      parts.push({
+        type: "text",
+        text: part.text ?? "",
+      });
+    } else if (part.type === "image_url" && part.image_url?.url) {
+      parts.push({
+        type: "image",
+        image: part.image_url.url,
+      });
+    }
+  }
+
+  return parts;
+}
+
+function toSystemContent(content: IncomingMessage["content"]): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .filter((part) => part.type === "text")
+      .map((part) => part.text ?? "")
+      .join("\n");
+  }
+
+  return "";
+}
+
+function normalizeRole(role: string): "assistant" | "user" | "system" {
+  if (role === "assistant" || role === "user" || role === "system") {
+    return role;
+  }
+  if (role === "tool") {
+    return "assistant";
+  }
+  return "user";
 }
 
 type TokenUsage = {
