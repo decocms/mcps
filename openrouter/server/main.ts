@@ -21,26 +21,7 @@ import { handleCustomRoutes } from "./routes/index.ts";
 /**
  * State Schema defines the configuration users provide during installation
  */
-export const StateSchema = BaseStateSchema.extend({
-  // Default generation parameters
-  defaultTemperature: z
-    .number()
-    .min(0)
-    .max(2)
-    .default(1)
-    .optional()
-    .describe(
-      "Default temperature for model responses (0-2, higher is more random). Default: 1",
-    ),
-
-  defaultMaxTokens: z
-    .number()
-    .positive()
-    .optional()
-    .describe(
-      "Default maximum tokens for responses (leave empty to use model defaults)",
-    ),
-});
+export const StateSchema = BaseStateSchema;
 
 /**
  * Environment type combining Deco bindings and Cloudflare Workers context

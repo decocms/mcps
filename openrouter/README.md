@@ -60,14 +60,10 @@ bun run dev
 
 ## Configuration
 
-This MCP now reads your OpenRouter credentials from the `OPENROUTER_API_KEY`
-environment variable (see the setup section for creating `.dev.vars`). When
-installing the app you can optionally customize:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `defaultTemperature` | ❌ No | Default temperature for responses (0-2, default: 1) |
-| `defaultMaxTokens` | ❌ No | Default max tokens for responses |
+This MCP reads your OpenRouter credentials exclusively from the
+`OPENROUTER_API_KEY` environment variable (see the setup section for creating
+`.dev.vars`). There are no additional install-time settings—OpenRouter’s own
+model defaults handle temperature and max-token behavior.
 
 ## Usage Examples
 

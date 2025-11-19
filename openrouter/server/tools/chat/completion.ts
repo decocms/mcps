@@ -213,11 +213,9 @@ export const createChatCompletionTool = (env: Env) =>
         user,
       } = context;
 
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
       const apiKey = getOpenRouterApiKey(env);
-      const resolvedTemperature =
-        temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
-      const resolvedMaxTokens = maxTokens ?? state.defaultMaxTokens;
+      const resolvedTemperature = temperature ?? DEFAULT_TEMPERATURE;
+      const resolvedMaxTokens = maxTokens;
 
       /*
       if (hasProviderPreferences(provider)) {

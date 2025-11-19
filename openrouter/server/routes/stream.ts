@@ -131,12 +131,9 @@ export async function handleStreamRoute(
     });
   }
 
-  const state = env.state;
   const apiKey = getOpenRouterApiKey(env);
-  const resolvedTemperature =
-    temperature ?? state.defaultTemperature ?? DEFAULT_TEMPERATURE;
-  const resolvedMaxTokens =
-    maxTokens ?? state.defaultMaxTokens ?? DEFAULT_MAX_TOKENS;
+  const resolvedTemperature = temperature ?? DEFAULT_TEMPERATURE;
+  const resolvedMaxTokens = maxTokens ?? DEFAULT_MAX_TOKENS;
 
   const openrouter = createOpenRouter({
     apiKey,
