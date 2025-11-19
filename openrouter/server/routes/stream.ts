@@ -27,6 +27,14 @@ const JSON_HEADERS = {
   "Content-Type": "application/json",
 };
 
+const SSE_HEADERS = {
+  ...CORS_HEADERS,
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-transform",
+  Connection: "keep-alive",
+  "X-Accel-Buffering": "no",
+};
+
 type IncomingMessage = {
   role: string;
   content: string | ContentPart[];
@@ -148,6 +156,19 @@ export async function handleStreamRoute(
     seed,
   } = payload;
 
+  console.info(
+    "[stream] request received",
+    JSON.stringify({
+      model,
+      messageCount: messages?.length ?? 0,
+      temperature,
+      maxTokens,
+      hasTools: Boolean(tools),
+      providerSpecified: Boolean(provider),
+      route,
+    }),
+  );
+
   const modelMessages = toModelMessages(messages);
 
   try {
@@ -168,6 +189,8 @@ export async function handleStreamRoute(
   const apiKey = getOpenRouterApiKey(env);
   const resolvedTemperature = temperature ?? DEFAULT_TEMPERATURE;
   const resolvedMaxTokens = maxTokens ?? DEFAULT_MAX_TOKENS;
+  const requestStartedAt = Date.now();
+  const requestId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 
   const openrouter = createOpenRouter({
     apiKey,
@@ -216,13 +239,30 @@ export async function handleStreamRoute(
       toolChoice: toolChoice as StreamToolChoice,
     });
 
+    console.info(
+      "[stream] upstream call finished",
+      JSON.stringify({
+        model,
+        durationMs: Date.now() - requestStartedAt,
+        requestId,
+      }),
+    );
+
     void settleStreamingContract({
       env,
       result,
       requestedModel: model,
     });
 
-    return result.toTextStreamResponse({ headers: CORS_HEADERS });
+    const sseStream = createSSEStream(result, {
+      model,
+      requestId,
+    });
+
+    return new Response(sseStream, {
+      status: 200,
+      headers: SSE_HEADERS,
+    });
   } catch (error) {
     console.error("Streaming error", error);
     return new Response(
@@ -343,6 +383,116 @@ function normalizeRole(role: string): "assistant" | "user" | "system" {
     return "assistant";
   }
   return "user";
+}
+
+function createSSEStream(
+  result: StreamResult,
+  meta: { model: string; requestId: string },
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const startedAt = Date.now();
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let chunkCount = 0;
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(encodeSSE(event, data, encoder));
+      };
+
+      send("stream", {
+        type: "start",
+        model: meta.model,
+        requestId: meta.requestId,
+      });
+
+      console.info(
+        "[stream] SSE pipeline start",
+        JSON.stringify({ requestId: meta.requestId, model: meta.model }),
+      );
+
+      try {
+        for await (const delta of result.textStream) {
+          chunkCount += 1;
+          send("message", {
+            type: "message.delta",
+            index: chunkCount,
+            role: "assistant",
+            content: [{ type: "output_text", text: delta }],
+          });
+        }
+
+        const usage = await result.totalUsage.catch(() => null);
+        if (usage) {
+          send("metadata", { usage });
+        }
+
+        send("done", {
+          type: "message.end",
+          totalDurationMs: Date.now() - startedAt,
+          chunks: chunkCount,
+        });
+
+        console.info(
+          "[stream] SSE pipeline complete",
+          JSON.stringify({
+            requestId: meta.requestId,
+            chunks: chunkCount,
+            durationMs: Date.now() - startedAt,
+          }),
+        );
+
+        controller.close();
+      } catch (error) {
+        console.error(
+          "[stream] SSE pipeline error",
+          error instanceof Error ? (error.stack ?? error.message) : error,
+        );
+        send("error", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+        controller.close();
+      }
+    },
+    cancel(reason) {
+      console.warn(
+        "[stream] SSE stream cancelled",
+        JSON.stringify({
+          requestId: meta.requestId,
+          reason:
+            typeof reason === "string"
+              ? reason
+              : reason instanceof Error
+                ? reason.message
+                : undefined,
+        }),
+      );
+    },
+  });
+}
+
+function encodeSSE(
+  event: string,
+  data: unknown,
+  encoder: TextEncoder,
+): Uint8Array {
+  let payload = `event: ${event}\n`;
+  const text =
+    typeof data === "string"
+      ? data
+      : data === undefined
+        ? ""
+        : JSON.stringify(data);
+
+  if (text.length === 0) {
+    payload += "data:\n\n";
+    return encoder.encode(payload);
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    payload += `data: ${line}\n`;
+  }
+  payload += "\n";
+  return encoder.encode(payload);
 }
 
 type TokenUsage = {
