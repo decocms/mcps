@@ -1157,3 +1157,103 @@ export const listWebhooksInputSchema = z.object({
 export const listWebhooksOutputSchema = z.object({
   webhooks: z.array(createWebhookOutputSchema),
 });
+
+// ========================================
+// Discord Interactions (Webhooks)
+// ========================================
+
+/**
+ * Tipos de interação do Discord
+ */
+export enum InteractionType {
+  PING = 1,
+  APPLICATION_COMMAND = 2,
+  MESSAGE_COMPONENT = 3,
+  APPLICATION_COMMAND_AUTOCOMPLETE = 4,
+  MODAL_SUBMIT = 5,
+}
+
+/**
+ * Tipos de resposta de interação
+ */
+export enum InteractionResponseType {
+  PONG = 1,
+  CHANNEL_MESSAGE_WITH_SOURCE = 4,
+  DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE = 5,
+  DEFERRED_UPDATE_MESSAGE = 6,
+  UPDATE_MESSAGE = 7,
+  APPLICATION_COMMAND_AUTOCOMPLETE_RESULT = 8,
+  MODAL = 9,
+}
+
+/**
+ * Dados da interação de comando
+ */
+export interface InteractionDataOption {
+  name: string;
+  type: number;
+  value?: string | number | boolean;
+  options?: InteractionDataOption[];
+  focused?: boolean;
+}
+
+export interface InteractionData {
+  id: string;
+  name: string;
+  type: number;
+  resolved?: any;
+  options?: InteractionDataOption[];
+  guild_id?: string;
+  target_id?: string;
+  custom_id?: string;
+  component_type?: number;
+  values?: string[];
+  components?: DiscordComponent[];
+}
+
+/**
+ * Estrutura principal da interação recebida do Discord
+ */
+export interface DiscordInteraction {
+  id: string;
+  application_id: string;
+  type: InteractionType;
+  data?: InteractionData;
+  guild_id?: string;
+  channel_id?: string;
+  member?: DiscordGuildMember;
+  user?: DiscordUser;
+  token: string;
+  version: number;
+  message?: DiscordMessage;
+  locale?: string;
+  guild_locale?: string;
+  app_permissions?: string;
+}
+
+/**
+ * Resposta de interação
+ */
+export interface InteractionResponse {
+  type: InteractionResponseType;
+  data?: InteractionCallbackData;
+}
+
+export interface InteractionCallbackData {
+  tts?: boolean;
+  content?: string;
+  embeds?: DiscordEmbed[];
+  allowed_mentions?: AllowedMentions;
+  flags?: number;
+  components?: DiscordMessageComponent[];
+  attachments?: DiscordMessageAttachment[];
+}
+
+/**
+ * Payload recebido via webhook
+ */
+export interface WebhookPayload {
+  body: string;
+  signature: string | null;
+  timestamp: string | null;
+}

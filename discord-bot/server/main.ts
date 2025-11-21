@@ -10,6 +10,7 @@ import {
 } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
+import { handleDiscordWebhook } from "./lib/webhook-handler.ts";
 
 /**
  * State schema for Discord Bot MCP configuration.
@@ -20,6 +21,11 @@ export const StateSchema = BaseStateSchema.extend({
     .string()
     .describe(
       "Discord Bot Token from Developer Portal (https://discord.com/developers/applications)",
+    ),
+  discordPublicKey: z
+    .string()
+    .describe(
+      "Discord Application Public Key from Developer Portal (required for webhook interactions)",
     ),
 });
 
@@ -54,9 +60,24 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
   tools,
   /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
+   * Custom fetch handler to handle webhooks and fallback to assets
    */
-  fetch: (req: Request, env: Env) => env.ASSETS.fetch(req),
+  fetch: async (req: Request, env: Env) => {
+    const url = new URL(req.url);
+
+    // Rota para receber webhooks do Discord
+    if (url.pathname === "/discord/webhook" && req.method === "POST") {
+      return await handleDiscordWebhook(req, env);
+    }
+
+    // Fallback para assets (se disponível)
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(req);
+    }
+
+    // Resposta padrão se ASSETS não estiver disponível
+    return new Response("Not Found", { status: 404 });
+  },
 });
 
 export default runtime;
