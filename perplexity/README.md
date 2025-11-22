@@ -37,9 +37,10 @@ Este servidor MCP permite que aplicações cliente:
 
 ### Instalação Local
 
-1. Clone o repositório:
+1. Clone o repositório e entre no diretório do Perplexity:
 ```bash
-cd perplexity
+git clone https://github.com/deco-cx/mcps.git
+cd mcps/perplexity
 ```
 
 2. Instale as dependências:
