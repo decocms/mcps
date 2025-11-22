@@ -17,10 +17,7 @@ import {
   createCompareModelsTool,
   createRecommendModelTool,
 } from "./models/index.ts";
-import {
-  createChatCompletionTool,
-  createGetStreamEndpointTool,
-} from "./chat/index.ts";
+import { createChatCompletionTool } from "./chat/index.ts";
 
 // Export all tools from all modules
 export const tools = [
@@ -32,5 +29,5 @@ export const tools = [
   createRecommendModelTool,
   // Chat Module
   createChatCompletionTool,
-  createGetStreamEndpointTool,
+  // Note: Stream endpoint info is now included in each model via DECO_COLLECTION_MODELS_GET
 ];
