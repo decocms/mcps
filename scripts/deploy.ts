@@ -119,6 +119,7 @@ try {
     "PINECONE_TOKEN",
     "PINECONE_INDEX",
     "GEMINI_API_KEY",
+    "PERPLEXITY_API_KEY",
   ];
 
   const autoEnvArgs: string[] = [];
