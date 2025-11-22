@@ -18,6 +18,13 @@ export const createPerplexityTools = createSearchAITools<Env, PerplexityClient>(
     },
     getClient: getPerplexityClient,
     askTool: {
+      getContract: (env) => ({
+        binding: env.PERPLEXITY_CONTRACT,
+        clause: {
+          clauseId: "perplexity:ask",
+          amount: 1,
+        },
+      }),
       execute: async ({ client, input }) => {
         const {
           prompt,
@@ -70,7 +77,15 @@ export const createPerplexityTools = createSearchAITools<Env, PerplexityClient>(
         }
       },
     },
+
     chatTool: {
+      getContract: (env) => ({
+        binding: env.PERPLEXITY_CONTRACT,
+        clause: {
+          clauseId: "perplexity:chat",
+          amount: 1,
+        },
+      }),
       execute: async ({ client, input }) => {
         const {
           messages,

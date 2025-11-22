@@ -35,21 +35,35 @@ export const mySearchTools = createSearchAITools({
   getClient: (env) => new MySearchAIClient({ apiKey: env.state.API_KEY }),
   askTool: {
     execute: async ({ client, input }) => {
-      const response = await client.ask(input.prompt);
-      return {
-        answer: response.text,
-        usage: response.usage,
-      };
+      try {
+        const response = await client.ask(input.prompt);
+        return {
+          answer: response.text,
+          usage: response.usage,
+        };
+      } catch (error) {
+        return {
+          error: true,
+          message: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
     },
   },
   chatTool: {
     execute: async ({ client, input }) => {
-      const response = await client.chat(input.messages);
-      return {
-        answer: response.text,
-        model: response.model,
-        usage: response.usage,
-      };
+      try {
+        const response = await client.chat(input.messages);
+        return {
+          answer: response.text,
+          model: response.model,
+          usage: response.usage,
+        };
+      } catch (error) {
+        return {
+          error: true,
+          message: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
     },
   },
 });
@@ -232,6 +246,42 @@ The factory automatically handles:
 - **Timeouts**: Operations timeout after `timeoutMs` milliseconds
 - **Logging**: All operations are logged with start/end timestamps
 - **Graceful Errors**: Errors are caught and formatted consistently
+
+### Discriminated Union Pattern
+
+The callback output uses a discriminated union with the `error` property for clean type narrowing:
+
+```typescript
+const result = await execute({ client, input });
+
+if (result.error) {
+  // TypeScript knows this is SearchAICallbackOutputError
+  console.error(result.message);
+  return {
+    error: true,
+    message: result.message,
+  };
+} else {
+  // TypeScript knows this is SearchAICallbackOutputSuccess
+  return {
+    answer: result.answer,
+    model: result.model,
+    usage: result.usage,
+  };
+}
+```
+
+**Success Output:**
+- `error?: false` - Explicit discriminator (optional, defaults to undefined)
+- `answer: string` - The AI-generated answer
+- `model?: string` - Model used
+- `usage?: {...}` - Token usage information
+- Plus optional `sources`, `related_questions`, `images`
+
+**Error Output:**
+- `error: true` - Explicit discriminator (required)
+- `message?: string` - Error message
+- `finish_reason?: string` - Reason for failure
 
 ## Best Practices
 

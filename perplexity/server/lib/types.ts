@@ -1,22 +1,19 @@
 // Types for Perplexity API requests and responses
 import { z } from "zod";
+import {
+  type Message as SearchAIMessage,
+  MessageSchema as SearchAIMessageSchema,
+} from "@decocms/mcps-shared/search-ai";
 
-// Model options
+export type Message = SearchAIMessage;
+export const MessageSchema = SearchAIMessageSchema;
+
 export type PerplexityModel =
   | "sonar"
   | "sonar-pro"
   | "sonar-deep-research"
   | "sonar-reasoning-pro"
   | "sonar-reasoning";
-
-// Message roles
-export type MessageRole = "system" | "user" | "assistant";
-
-// Message structure
-export interface Message {
-  role: MessageRole;
-  content: string;
-}
 
 // Web search options
 export interface WebSearchOptions {
@@ -67,14 +64,6 @@ export interface ChatCompletionRequest {
 }
 
 // Zod Schemas for validation and documentation
-
-// Schema for message
-export const MessageSchema = z.object({
-  role: z
-    .enum(["system", "user", "assistant"])
-    .describe("The role of the message sender"),
-  content: z.string().describe("The content of the message"),
-});
 
 // Schema for chat completion
 export const ChatCompletionSchema = z.object({

@@ -16,6 +16,23 @@ icon = "https://assets.decocache.com/mcp/1b3b7880-e7a5-413b-8db2-601e84b22bcd/Pe
 friendlyName = "Perplexity"
 
 [[deco.bindings]]
+type = "contract"
+name = "PERPLEXITY_CONTRACT"
+
+[deco.bindings.contract]
+body = "Pay per search query"
+
+[[deco.bindings.contract.clauses]]
+id = "perplexity:ask"
+price = 0.01
+description = "$0.01 per simple question"
+
+[[deco.bindings.contract.clauses]]
+id = "perplexity:chat"
+price = 0.02
+description = "$0.02 per chat message"
+
+[[deco.bindings]]
 name = "FILE_SYSTEM"
 type = "mcp"
 integration_name = "@deco/file-system"

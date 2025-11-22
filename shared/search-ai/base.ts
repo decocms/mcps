@@ -139,7 +139,7 @@ export function createSearchAITools<
             client,
           });
 
-          if ("error" in result) {
+          if (result.error) {
             throw new Error(result.message || "Search AI request failed");
           }
 
@@ -213,7 +213,7 @@ export function createSearchAITools<
             client,
           });
 
-          if ("error" in result) {
+          if (result.error) {
             throw new Error(result.message || "Search AI chat request failed");
           }
 

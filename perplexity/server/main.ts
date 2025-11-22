@@ -56,7 +56,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * These scopes define the asking permissions of your
      * app when a user is installing it.
      */
-    scopes: [Scopes.FILE_SYSTEM.FS_WRITE, Scopes.FILE_SYSTEM.FS_READ],
+    scopes: [
+      Scopes.PERPLEXITY_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.PERPLEXITY_CONTRACT.CONTRACT_SETTLE,
+      Scopes.FILE_SYSTEM.FS_WRITE,
+      Scopes.FILE_SYSTEM.FS_READ,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user

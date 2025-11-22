@@ -20,6 +20,9 @@ Este servidor MCP permite que aplicações cliente:
 - 🔍 **Busca Personalizada**: Filtros de domínio, recência e contexto
 - 🎯 **Múltiplos Modelos**: Suporte para sonar, sonar-pro, sonar-deep-research, sonar-reasoning-pro e sonar-reasoning
 - ⚙️ **Controle Fino**: Ajuste de temperatura, top_p, max_tokens e muito mais
+- 💰 **Sistema de Contratos**: Gerenciamento de autorização e pagamento por consulta
+- 🔄 **Retry Automático**: Sistema de retry com até 3 tentativas
+- ⏱️ **Timeout Configurável**: Proteção contra requisições longas
 - 👤 **Ferramentas de Usuário**: Gerenciamento de informações do usuário
 - 📊 **Informações de Uso**: Retorna contagem de tokens utilizados
 
@@ -174,6 +177,14 @@ Modelo padrão a ser usado (opcional):
 - Opções: `sonar`, `sonar-pro`, `sonar-deep-research`, `sonar-reasoning-pro`, `sonar-reasoning`
 - Padrão: `sonar`
 
+#### `PERPLEXITY_CONTRACT`
+Sistema de autorização e pagamento por uso:
+- `CONTRACT_AUTHORIZE`: Autoriza uma transação antes da consulta
+- `CONTRACT_SETTLE`: Finaliza a transação após a consulta
+- **Clauses configuradas:**
+  - `perplexity:ask`: $0.01 por pergunta simples
+  - `perplexity:chat`: $0.02 por mensagem de chat
+
 #### `FILE_SYSTEM`
 Sistema de armazenamento de arquivos:
 - `FS_READ`: Lê arquivos do sistema de arquivos
@@ -186,6 +197,8 @@ O projeto suporta OAuth para autenticação. Configure os escopos necessários e
 ```typescript
 oauth: {
   scopes: [
+    Scopes.PERPLEXITY_CONTRACT.CONTRACT_AUTHORIZE,
+    Scopes.PERPLEXITY_CONTRACT.CONTRACT_SETTLE,
     Scopes.FILE_SYSTEM.FS_READ,
     Scopes.FILE_SYSTEM.FS_WRITE,
   ],

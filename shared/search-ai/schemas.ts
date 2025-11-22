@@ -134,8 +134,12 @@ export type SearchAIOutput = z.infer<typeof SearchAIOutputSchema>;
 
 /**
  * Success output from the search AI execution callback
+ *
+ * Note: This structure mirrors SearchAIOutput to maintain consistency.
+ * When updating SearchAIOutput, consider updating this type as well.
  */
 export interface SearchAICallbackOutputSuccess {
+  error?: false; // Explicit discriminator for type narrowing
   answer: string;
   model?: string;
   finish_reason?: string;
@@ -160,11 +164,23 @@ export interface SearchAICallbackOutputSuccess {
  * Error output from the search AI execution callback
  */
 export interface SearchAICallbackOutputError {
-  error: true;
+  error: true; // Explicit discriminator for type narrowing
   message?: string;
   finish_reason?: string;
 }
 
+/**
+ * Discriminated union for search AI callback output
+ *
+ * Use `error` property for type narrowing:
+ * ```typescript
+ * if (result.error) {
+ *   // TypeScript knows this is SearchAICallbackOutputError
+ * } else {
+ *   // TypeScript knows this is SearchAICallbackOutputSuccess
+ * }
+ * ```
+ */
 export type SearchAICallbackOutput =
   | SearchAICallbackOutputSuccess
   | SearchAICallbackOutputError;
