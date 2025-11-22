@@ -1,0 +1,35 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "MCP server for Discord Bot integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "deco dev --vite",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "deploy": "npm run build && deco deploy ./dist/server",
+    "check": "tsc --noEmit",
+    "build": "bun --bun vite build"
+  },
+  "dependencies": {
+    "@decocms/runtime": "0.24.0",
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.4",
+    "@cloudflare/workers-types": "^4.20251014.0",
+    "@decocms/mcps-shared": "1.0.0",
+    "@mastra/core": "^0.24.0",
+    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@types/mime-db": "^1.43.6",
+    "deco-cli": "^0.26.0",
+    "typescript": "^5.7.2",
+    "vite": "7.2.0",
+    "wrangler": "^4.28.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
