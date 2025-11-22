@@ -8,6 +8,7 @@ import type {
   ModelRecommendation,
   TaskRequirements,
 } from "../../lib/types.ts";
+import type { Env } from "../../main.ts";
 
 export interface ModelFilterCriteria {
   modality?: string;
@@ -308,8 +309,9 @@ export function buildFallbackChain(
     if (m.id === primaryModel) return false;
 
     // Same modality
-    if (m.architecture?.modality !== primary.architecture?.modality)
+    if (m.architecture?.modality !== primary.architecture?.modality) {
       return false;
+    }
 
     // Similar or lower price
     const mPrice = parseFloat(m.pricing.prompt);
@@ -413,4 +415,15 @@ export function compareModels(
   }
 
   return { comparison };
+}
+
+/**
+ * Get the base URL for the API endpoint
+ * In development, uses localhost; in production, uses the deployed URL
+ */
+export function getBaseUrl(_env: Env): string {
+  // In development, use localhost
+  //   return "http://localhost:8787";
+  // In production, use the deployed URL
+  return "https://openrouter.deco.page";
 }
