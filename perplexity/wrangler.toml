@@ -1,0 +1,22 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "perplexity"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Use Perplexity AI to get web-backed answers to your questions."
+icon = "https://assets.decocache.com/mcp/1b3b7880-e7a5-413b-8db2-601e84b22bcd/Perplexity.svg"
+friendlyName = "Perplexity"
+
+[[deco.bindings]]
+name = "FILE_SYSTEM"
+type = "mcp"
+integration_name = "@deco/file-system"
+

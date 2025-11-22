@@ -12,6 +12,7 @@
         "./tools/utils/api-client": "./tools/utils/api-client.ts",
         "./image-generators": "./image-generators/index.ts",
         "./video-generators": "./video-generators/index.ts",
+        "./search-ai": "./search-ai/index.ts",
         "./storage": "./storage/index.ts"
     },
     "devDependencies": {
