@@ -52,7 +52,7 @@ export const createGetModelTool = (env: Env) =>
         return {
           item: transformToModelEntity(model, baseUrl),
         };
-      } catch (error) {
+      } catch {
         // Model not found
         return {
           item: null,

@@ -44,6 +44,7 @@ export async function handleStreamRoute(
 
   return await fetch(openRouterUrl, {
     method: request.method,
+    // eslint-disable-next-line eslint-plugin-unicorn(no-invalid-fetch-options)
     body: request.body,
     headers,
   });
