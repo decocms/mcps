@@ -10,7 +10,9 @@
         "./tools/file-management": "./tools/file-management/index.ts",
         "./tools": "./tools/index.ts",
         "./tools/utils/api-client": "./tools/utils/api-client.ts",
+        "./tools/utils/middleware": "./tools/utils/middleware.ts",
         "./image-generators": "./image-generators/index.ts",
+        "./image-analyzers": "./image-analyzers/index.ts",
         "./video-generators": "./video-generators/index.ts",
         "./storage": "./storage/index.ts"
     },

@@ -20,6 +20,7 @@
   },
   "workspaces": [
     "datajud",
+    "gemini-pro-vision",
     "nanobanana",
     "object-storage",
     "openrouter",
