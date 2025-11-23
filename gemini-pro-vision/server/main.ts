@@ -6,23 +6,11 @@
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
-  StateSchema as BaseStateSchema,
+  StateSchema,
   Scopes,
 } from "../shared/deco.gen.ts";
-import { z } from "zod";
 
 import { tools } from "./tools/index.ts";
-
-/**
- * Extended StateSchema with Gemini API key configuration.
- */
-export const StateSchema = BaseStateSchema.extend({
-  GEMINI_API_KEY: z
-    .string()
-    .describe(
-      "Google Gemini API key. Get it at: https://aistudio.google.com/apikey",
-    ),
-});
 
 /**
  * This Env type is the main context object that is passed to
