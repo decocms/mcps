@@ -20,7 +20,7 @@ Analyzes an image and answers questions about it.
 {
   "imageUrl": "https://example.com/image.jpg",
   "prompt": "Describe this image in detail",
-  "model": "gemini-1.5-pro-vision-latest"
+  "model": "gemini-2.5-flash"
 }
 ```
 
@@ -41,7 +41,7 @@ Compares multiple images and identifies differences or similarities.
     "https://example.com/after.jpg"
   ],
   "prompt": "What are the main differences between these images?",
-  "model": "gemini-1.5-pro-vision-latest"
+  "model": "gemini-2.5-flash"
 }
 ```
 
@@ -59,7 +59,7 @@ Extracts all visible text from an image.
 {
   "imageUrl": "https://example.com/document.jpg",
   "language": "english",
-  "model": "gemini-1.5-pro-vision-latest"
+  "model": "gemini-2.5-flash"
 }
 ```
 
@@ -125,9 +125,10 @@ bun run deploy
 
 ## 🤖 Available Models
 
-- `gemini-1.5-pro-vision-latest` (default) - Best quality
-- `gemini-1.5-pro` - Faster version
-- `gemini-1.5-flash` - Ultra-fast version for simple cases
+- `gemini-2.5-flash` (default) - Fastest and most cost-effective with excellent vision support
+- `gemini-1.5-pro` - Higher quality for complex vision tasks
+- `gemini-1.5-flash` - Previous generation fast model
+- `gemini-pro-vision` - Legacy model (deprecated)
 
 ## 📝 Prompt Examples
 

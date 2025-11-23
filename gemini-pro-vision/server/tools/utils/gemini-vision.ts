@@ -87,7 +87,7 @@ async function makeGeminiRequest(
  * @param env Environment with variables
  * @param imageUrl URL of the image to analyze
  * @param prompt Prompt to guide the analysis
- * @param model Model to use (default: gemini-1.5-pro-vision-latest)
+ * @param model Model to use (default: gemini-2.5-flash)
  */
 export async function analyzeImage(
   env: Env,
