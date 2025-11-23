@@ -33,6 +33,6 @@ price = 0.10
 description = "$0.10 per image comparison (multiple images)"
 
 [[deco.bindings.contract.clauses]]
-id = "gemini-pro-vision:extractText"
+id = "gemini-pro-vision:extractTextFromImage"
 price = 0.03
 description = "$0.03 per OCR operation"

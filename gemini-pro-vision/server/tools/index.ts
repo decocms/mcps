@@ -6,11 +6,14 @@
  * the domain separation.
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
-import { createVisionTools } from "./vision.ts";
+import { geminiVisionTools } from "./vision.ts";
 
-// Export all tools as functions that receive env
-export const tools = [...userTools, createVisionTools];
+// Convert geminiVisionTools object to array of tool functions
+const geminiVisionToolsArray = Object.values(geminiVisionTools);
+
+// Export all tools from all domains
+export const tools = [...userTools, ...geminiVisionToolsArray];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
-export { createVisionTools } from "./vision.ts";
+export { geminiVisionTools } from "./vision.ts";

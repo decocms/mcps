@@ -140,15 +140,15 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
     getContract: (env) => ({
       binding: env.GEMINI_VISION_CONTRACT as Contract,
       clause: {
-        clauseId: "gemini-pro-vision:extractText",
+        clauseId: "gemini-pro-vision:extractTextFromImage",
         amount: 1,
       },
     }),
   },
 });
 
-export const createVisionTools = (env: Env) => [
-  geminiVisionToolsFactory.analyzeImage(env),
-  geminiVisionToolsFactory.compareImages!(env),
-  geminiVisionToolsFactory.extractTextFromImage!(env),
-];
+export const geminiVisionTools = {
+  analyzeImage: geminiVisionToolsFactory.analyzeImage,
+  compareImages: geminiVisionToolsFactory.compareImages!,
+  extractTextFromImage: geminiVisionToolsFactory.extractTextFromImage!,
+};
