@@ -118,7 +118,6 @@ try {
     "OPENROUTER_API_KEY",
     "PINECONE_TOKEN",
     "PINECONE_INDEX",
-    "GEMINI_API_KEY",
   ];
 
   const autoEnvArgs: string[] = [];

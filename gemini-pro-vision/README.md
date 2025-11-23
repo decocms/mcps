@@ -65,24 +65,37 @@ Extracts all visible text from an image.
 
 ## 🚀 How to Use
 
-### Installation
+### For End Users
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   cd gemini-pro-vision
-   bun install
-   ```
+Just install the MCP from the Deco marketplace and authorize the usage. You'll be charged per operation:
+- **$0.05** per image analysis
+- **$0.10** per image comparison
+- **$0.03** per OCR operation
 
-### Configuration
+No API key configuration needed!
 
-You will need a Google Gemini API key:
+### For Developers (Self-Hosting)
 
-1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
-2. Create an API key
-3. Configure the key when installing the MCP in Deco
+#### 1. Clone and Install
 
-### Local Development
+```bash
+cd gemini-pro-vision
+bun install
+```
+
+#### 2. Configure API Key
+
+Get a Google Gemini API key at [Google AI Studio](https://aistudio.google.com/apikey)
+
+**Local Development:**
+
+Create a `.dev.vars` file:
+
+```bash
+GOOGLE_GENAI_API_KEY=your_api_key_here
+```
+
+Then start the development server:
 
 ```bash
 bun run dev
@@ -90,11 +103,25 @@ bun run dev
 
 The MCP server will be available at `http://localhost:8000/mcp`
 
-### Deploy
+**Production Deploy:**
+
+Configure the secret in Cloudflare Workers:
+
+```bash
+# Using wrangler CLI
+wrangler secret put GOOGLE_GENAI_API_KEY
+
+# Or using the Cloudflare Dashboard:
+# Workers & Pages > Your Worker > Settings > Variables > Add Secret
+```
+
+Then deploy:
 
 ```bash
 bun run deploy
 ```
+
+**Note:** This MCP uses the same API key as other Google Gemini services (VEO3, etc). You can reuse the same `GOOGLE_GENAI_API_KEY` for all Google AI services.
 
 ## 🤖 Available Models
 

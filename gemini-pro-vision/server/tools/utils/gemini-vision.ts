@@ -63,9 +63,9 @@ async function makeGeminiRequest(
   endpoint: string,
   body: any,
 ): Promise<GeminiVisionResponse> {
-  assertEnvKey(env, "GEMINI_API_KEY");
+  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
 
-  const url = `${GEMINI_BASE_URL}${endpoint}?key=${env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE_URL}${endpoint}?key=${env.GOOGLE_GENAI_API_KEY}`;
 
   const data = await makeApiRequest(
     url,

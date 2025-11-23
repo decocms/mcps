@@ -16,11 +16,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
     description:
       "Analyzes images using Gemini Pro Vision. Can describe content, identify objects, read text (OCR), answer questions about images.",
   },
-  getClient: (env) =>
-    createGeminiVisionClient({
-      ...env,
-      GEMINI_API_KEY: env.DECO_REQUEST_CONTEXT.state.GEMINI_API_KEY,
-    } as Env),
+  getClient: (env) => createGeminiVisionClient(env),
 
   analyzeTool: {
     execute: async ({ input, client }) => {
@@ -144,15 +140,15 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
     getContract: (env) => ({
       binding: env.GEMINI_VISION_CONTRACT as Contract,
       clause: {
-        clauseId: "gemini-pro-vision:extractText",
+        clauseId: "gemini-pro-vision:extractTextFromImage",
         amount: 1,
       },
     }),
   },
 });
 
-export const createVisionTools = (env: Env) => [
-  geminiVisionToolsFactory.analyzeImage(env),
-  geminiVisionToolsFactory.compareImages!(env),
-  geminiVisionToolsFactory.extractTextFromImage!(env),
-];
+export const geminiVisionTools = {
+  analyzeImage: geminiVisionToolsFactory.analyzeImage,
+  compareImages: geminiVisionToolsFactory.compareImages!,
+  extractTextFromImage: geminiVisionToolsFactory.extractTextFromImage!,
+};
