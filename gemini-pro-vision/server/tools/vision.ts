@@ -16,11 +16,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
     description:
       "Analyzes images using Gemini Pro Vision. Can describe content, identify objects, read text (OCR), answer questions about images.",
   },
-  getClient: (env) =>
-    createGeminiVisionClient({
-      ...env,
-      GEMINI_API_KEY: env.DECO_REQUEST_CONTEXT.state.GEMINI_API_KEY,
-    } as Env),
+  getClient: (env) => createGeminiVisionClient(env),
 
   analyzeTool: {
     execute: async ({ input, client }) => {
