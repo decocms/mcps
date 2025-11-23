@@ -21,7 +21,7 @@ export async function handleCustomRoutes(
 ): Promise<Response | null> {
   const url = new URL(request.url);
 
-  if (url.pathname === "/api/chat") {
+  if (url.pathname === "/api/v1/chat/completions") {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
