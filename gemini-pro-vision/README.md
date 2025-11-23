@@ -1,94 +1,94 @@
 # Gemini Pro Vision MCP
 
-MCP (Model Context Protocol) para análise de imagens usando o Google Gemini Pro Vision.
+MCP (Model Context Protocol) for image analysis using Google Gemini Pro Vision.
 
-## 🎯 Funcionalidades
+## 🎯 Features
 
-Este MCP oferece três ferramentas principais para análise de imagens:
+This MCP offers three main tools for image analysis:
 
-### 1. `analyze_image` - Análise de Imagem
-Analisa uma imagem e responde perguntas sobre ela.
+### 1. `analyze_image` - Image Analysis
+Analyzes an image and answers questions about it.
 
-**Casos de uso:**
-- Descrever o conteúdo de uma imagem
-- Identificar objetos, pessoas, lugares
-- Responder perguntas sobre a imagem
-- Análise de contexto e emoções
+**Use cases:**
+- Describe image content
+- Identify objects, people, places
+- Answer questions about the image
+- Context and emotion analysis
 
-**Exemplo:**
+**Example:**
 ```json
 {
   "imageUrl": "https://example.com/image.jpg",
-  "prompt": "Descreva esta imagem em detalhes",
+  "prompt": "Describe this image in detail",
   "model": "gemini-1.5-pro-vision-latest"
 }
 ```
 
-### 2. `compare_images` - Comparação de Imagens
-Compara múltiplas imagens e identifica diferenças ou similaridades.
+### 2. `compare_images` - Image Comparison
+Compares multiple images and identifies differences or similarities.
 
-**Casos de uso:**
-- Identificar mudanças entre versões de um design
-- Comparar produtos similares
-- Verificar consistência visual
-- Detectar diferenças sutis
+**Use cases:**
+- Identify changes between design versions
+- Compare similar products
+- Verify visual consistency
+- Detect subtle differences
 
-**Exemplo:**
+**Example:**
 ```json
 {
   "imageUrls": [
     "https://example.com/before.jpg",
     "https://example.com/after.jpg"
   ],
-  "prompt": "Quais são as principais diferenças entre estas imagens?",
+  "prompt": "What are the main differences between these images?",
   "model": "gemini-1.5-pro-vision-latest"
 }
 ```
 
-### 3. `extract_text_from_image` - OCR (Extração de Texto)
-Extrai todo o texto visível de uma imagem.
+### 3. `extract_text_from_image` - OCR (Text Extraction)
+Extracts all visible text from an image.
 
-**Casos de uso:**
-- Digitalizar documentos
-- Ler placas e avisos
-- Extrair texto de screenshots
-- Processar recibos e faturas
+**Use cases:**
+- Digitize documents
+- Read signs and notices
+- Extract text from screenshots
+- Process receipts and invoices
 
-**Exemplo:**
+**Example:**
 ```json
 {
   "imageUrl": "https://example.com/document.jpg",
-  "language": "português",
+  "language": "english",
   "model": "gemini-1.5-pro-vision-latest"
 }
 ```
 
-## 🚀 Como Usar
+## 🚀 How to Use
 
-### Instalação
+### Installation
 
-1. Clone o repositório
-2. Instale as dependências:
+1. Clone the repository
+2. Install dependencies:
    ```bash
    cd gemini-pro-vision
    bun install
    ```
 
-### Configuração
+### Configuration
 
-Você precisará de uma chave da API do Google Gemini:
+You will need a Google Gemini API key:
 
-1. Acesse [Google AI Studio](https://aistudio.google.com/apikey)
-2. Crie uma chave de API
-3. Configure a chave ao instalar o MCP no Deco
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
+2. Create an API key
+3. Configure the key when installing the MCP in Deco
 
-### Desenvolvimento Local
+### Local Development
 
 ```bash
 bun run dev
 ```
 
-O servidor MCP estará disponível em `http://localhost:8000/mcp`
+The MCP server will be available at `http://localhost:8000/mcp`
 
 ### Deploy
 
@@ -96,58 +96,58 @@ O servidor MCP estará disponível em `http://localhost:8000/mcp`
 bun run deploy
 ```
 
-## 🤖 Modelos Disponíveis
+## 🤖 Available Models
 
-- `gemini-1.5-pro-vision-latest` (padrão) - Melhor qualidade
-- `gemini-1.5-pro` - Versão mais rápida
-- `gemini-1.5-flash` - Versão ultra-rápida para casos simples
+- `gemini-1.5-pro-vision-latest` (default) - Best quality
+- `gemini-1.5-pro` - Faster version
+- `gemini-1.5-flash` - Ultra-fast version for simple cases
 
-## 📝 Exemplos de Prompts
+## 📝 Prompt Examples
 
-### Análise Geral
-- "Descreva esta imagem em detalhes"
-- "Que objetos você vê nesta imagem?"
-- "Qual é o contexto desta foto?"
+### General Analysis
+- "Describe this image in detail"
+- "What objects do you see in this image?"
+- "What is the context of this photo?"
 
-### Análise Específica
-- "Identifique todas as pessoas nesta imagem"
-- "Que marca é este produto?"
-- "Esta imagem contém algum texto?"
+### Specific Analysis
+- "Identify all people in this image"
+- "What brand is this product?"
+- "Does this image contain any text?"
 
 ### OCR
-- "Extraia todo o texto desta imagem"
-- "Leia o conteúdo deste documento"
-- "Transcreva o texto visível"
+- "Extract all text from this image"
+- "Read the content of this document"
+- "Transcribe the visible text"
 
-### Comparação
-- "Quais são as diferenças entre estas imagens?"
-- "Estas duas fotos mostram a mesma pessoa?"
-- "Como o design mudou entre as versões?"
+### Comparison
+- "What are the differences between these images?"
+- "Do these two photos show the same person?"
+- "How has the design changed between versions?"
 
-## 🔧 Detalhes Técnicos
+## 🔧 Technical Details
 
 - **Runtime**: Cloudflare Workers
 - **API**: Google Gemini Vision API
-- **Suporte de imagens**: JPEG, PNG, WebP, GIF
-- **Tamanho máximo**: Limitado pela API do Gemini
-- **Resposta**: Texto em formato estruturado
+- **Image support**: JPEG, PNG, WebP, GIF
+- **Maximum size**: Limited by Gemini API
+- **Response**: Text in structured format
 
-## 📚 Documentação da API
+## 📚 API Documentation
 
-Para mais detalhes sobre a API do Gemini Vision, consulte:
-- [Documentação oficial do Gemini](https://ai.google.dev/gemini-api/docs/vision)
-- [Guia de prompts para visão](https://ai.google.dev/gemini-api/docs/vision#prompting-with-images)
+For more details about the Gemini Vision API, see:
+- [Official Gemini documentation](https://ai.google.dev/gemini-api/docs/vision)
+- [Vision prompting guide](https://ai.google.dev/gemini-api/docs/vision#prompting-with-images)
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Este MCP faz parte do monorepo de MCPs da Deco CMS. Para contribuir:
+This MCP is part of the Deco CMS MCPs monorepo. To contribute:
 
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature
-3. Faça commit das suas mudanças
-4. Abra um Pull Request
+1. Fork the repository
+2. Create a branch for your feature
+3. Commit your changes
+4. Open a Pull Request
 
-## 📄 Licença
+## 📄 License
 
-Mantido pela equipe Deco CMS.
+Maintained by the Deco CMS team.
 

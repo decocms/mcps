@@ -1,11 +1,6 @@
 import { z } from "zod";
 
 /**
- * Middleware utilities for wrapping async operations with retry, logging, timeout, etc.
- * These utilities are shared across all MCPs (video-generators, image-generators, image-analyzers, etc.)
- */
-
-/**
  * Retries a function execution with exponential backoff
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @returns A middleware function that wraps the original function with retry logic
@@ -120,10 +115,6 @@ export const applyMiddlewares = <TOutput>(options: {
     options.fn,
   );
 };
-
-// ============================================================================
-// Contract Types (used by video/image generators for billing)
-// ============================================================================
 
 /**
  * Represents a contract clause for billing

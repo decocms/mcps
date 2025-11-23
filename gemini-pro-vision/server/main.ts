@@ -19,7 +19,7 @@ export const StateSchema = BaseStateSchema.extend({
   GEMINI_API_KEY: z
     .string()
     .describe(
-      "Chave da API do Google Gemini. Obtenha em: https://aistudio.google.com/apikey",
+      "Google Gemini API key. Get it at: https://aistudio.google.com/apikey",
     ),
 });
 

@@ -5,12 +5,8 @@ import {
   type Contract,
 } from "@decocms/mcps-shared/image-analyzers";
 
-// Tipo do cliente Gemini Vision
 type GeminiVisionClient = ReturnType<typeof createGeminiVisionClient>;
 
-/**
- * Gemini Vision tools usando a factory compartilhada
- */
 const geminiVisionToolsFactory = createImageAnalyzerTools<
   Env,
   GeminiVisionClient
@@ -18,7 +14,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
   metadata: {
     provider: "Gemini Pro Vision",
     description:
-      "Analisa imagens usando o Gemini Pro Vision. Pode descrever conteúdo, identificar objetos, ler texto (OCR), responder perguntas sobre imagens.",
+      "Analyzes images using Gemini Pro Vision. Can describe content, identify objects, read text (OCR), answer questions about images.",
   },
   getClient: (env) =>
     createGeminiVisionClient({
@@ -39,7 +35,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         !response.candidates ||
         response.candidates.length === 0
       ) {
-        throw new Error("Nenhuma resposta do Gemini Vision API");
+        throw new Error("No response from Gemini Vision API");
       }
 
       const candidate = response.candidates[0];
@@ -49,7 +45,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         .join("\n");
 
       if (!textParts) {
-        throw new Error("Nenhum texto retornado na análise");
+        throw new Error("No text returned in the analysis");
       }
 
       return {
@@ -80,7 +76,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         !response.candidates ||
         response.candidates.length === 0
       ) {
-        throw new Error("Nenhuma resposta do Gemini Vision API");
+        throw new Error("No response from Gemini Vision API");
       }
 
       const candidate = response.candidates[0];
@@ -90,7 +86,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         .join("\n");
 
       if (!textParts) {
-        throw new Error("Nenhum texto retornado na comparação");
+        throw new Error("No text returned in the comparison");
       }
 
       return {
@@ -113,7 +109,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
       const languageHint = input.language
         ? ` O texto está em ${input.language}.`
         : "";
-      const prompt = `Extraia TODO o texto visível nesta imagem. Mantenha a formatação e estrutura original o máximo possível.${languageHint} Retorne apenas o texto, sem comentários adicionais.`;
+      const prompt = `Extract all visible text in this image. Keep the original formatting and structure as much as possible.${languageHint} Return only the text, without additional comments.`;
 
       const response = await client.analyzeImage(
         input.imageUrl,
@@ -126,7 +122,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         !response.candidates ||
         response.candidates.length === 0
       ) {
-        throw new Error("Nenhuma resposta do Gemini Vision API");
+        throw new Error("No response from Gemini Vision API");
       }
 
       const candidate = response.candidates[0];
@@ -136,7 +132,7 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
         .join("\n");
 
       if (!textParts) {
-        throw new Error("Nenhum texto encontrado na imagem");
+        throw new Error("No text found in the image");
       }
 
       return {
@@ -155,9 +151,6 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
   },
 });
 
-/**
- * Exporta as tools como array para uso no index.ts
- */
 export const createVisionTools = (env: Env) => [
   geminiVisionToolsFactory.analyzeImage(env),
   geminiVisionToolsFactory.compareImages!(env),
