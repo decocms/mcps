@@ -38,7 +38,7 @@ export function createImageAnalyzerTools<
       id: "ANALYZE_IMAGE",
       description:
         options.metadata.description ||
-        `Analisa imagens usando ${options.metadata.provider}. Pode descrever conteúdo, identificar objetos, responder perguntas sobre a imagem.`,
+        `Analyzes images using ${options.metadata.provider}. Can describe content, identify objects, answer questions about the image.`,
       inputSchema: AnalyzeImageInputSchema,
       outputSchema: AnalyzeImageOutputSchema,
       execute: async ({ context }: { context: AnalyzeImageInput }) => {
@@ -108,7 +108,7 @@ export function createImageAnalyzerTools<
     ? (env: TEnv) =>
         createPrivateTool({
           id: "COMPARE_IMAGES",
-          description: `Compara múltiplas imagens usando ${options.metadata.provider}. Útil para identificar diferenças, similaridades, ou analisar mudanças.`,
+          description: `Compares multiple images using ${options.metadata.provider}. Useful for identifying differences, similarities, or analyzing changes.`,
           inputSchema: CompareImagesInputSchema,
           outputSchema: CompareImagesOutputSchema,
           execute: async ({ context }: { context: CompareImagesInput }) => {
@@ -179,7 +179,7 @@ export function createImageAnalyzerTools<
     ? (env: TEnv) =>
         createPrivateTool({
           id: "EXTRACT_TEXT_FROM_IMAGE",
-          description: `Extrai todo o texto visível de uma imagem usando OCR do ${options.metadata.provider}. Útil para ler documentos, placas, screenshots, etc.`,
+          description: `Extracts all visible text from an image using OCR from ${options.metadata.provider}. Useful for reading documents, signs, screenshots, etc.`,
           inputSchema: ExtractTextInputSchema,
           outputSchema: ExtractTextOutputSchema,
           execute: async ({ context }: { context: ExtractTextInput }) => {
