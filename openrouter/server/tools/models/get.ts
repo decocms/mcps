@@ -1,126 +1,149 @@
 /**
  * Tool: Get Model
  * Get detailed information about a specific OpenRouter model
+ * Implements DECO_COLLECTION_MODELS_GET from @decocms/bindings/models
  */
 
+import {
+  MODELS_COLLECTION_BINDING,
+  ModelSchema,
+} from "@decocms/bindings/models";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
-import type { Env } from "../../main.ts";
-import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
+import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import type { Env } from "../../main.ts";
+import { getBaseUrl } from "./utils.ts";
+
+// Extract the DECO_COLLECTION_MODELS_GET binding to use its input/output schemas
+const GET_MODEL_BINDING = MODELS_COLLECTION_BINDING.find(
+  (b) => b.name === "DECO_COLLECTION_MODELS_GET",
+);
+if (!GET_MODEL_BINDING?.inputSchema || !GET_MODEL_BINDING?.outputSchema) {
+  throw new Error(
+    "DECO_COLLECTION_MODELS_GET binding not found or missing schemas",
+  );
+}
 
 export const createGetModelTool = (env: Env) =>
   createPrivateTool({
-    id: "GET_MODEL",
+    id: "DECO_COLLECTION_MODELS_GET",
     description:
       "Get detailed information about a specific OpenRouter model including pricing, capabilities, " +
-      "context length, provider information, and supported features. Use this to learn about a model " +
-      "before using it for chat completions. Model IDs follow the format 'provider/model-name' " +
-      "(e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet').",
-    inputSchema: z.object({
-      modelId: z
-        .string()
-        .describe(
-          "The model ID in format 'provider/model-name' (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash-exp')",
-        ),
-    }),
-    outputSchema: z.object({
-      id: z.string().describe("Unique model identifier"),
-      name: z.string().describe("Human-readable model name"),
-      description: z.string().optional().describe("Detailed model description"),
-      contextLength: z
-        .number()
-        .describe(
-          "Maximum context length in tokens (includes prompt + completion)",
-        ),
-      pricing: z.object({
-        prompt: z.string().describe("Cost per 1M prompt tokens in dollars"),
-        completion: z
-          .string()
-          .describe("Cost per 1M completion tokens in dollars"),
-        request: z
-          .string()
-          .optional()
-          .describe("Fixed cost per request (if applicable)"),
-        image: z
-          .string()
-          .optional()
-          .describe("Cost per image input (if applicable)"),
-      }),
-      topProvider: z
-        .object({
-          contextLength: z.number().optional(),
-          maxCompletionTokens: z
-            .number()
-            .optional()
-            .describe("Maximum tokens in completion"),
-          isModerated: z
-            .boolean()
-            .describe("Whether provider moderates content"),
-        })
-        .optional()
-        .describe("Information about the recommended provider"),
-      architecture: z
-        .object({
-          modality: z
-            .string()
-            .describe(
-              "Model capability (e.g., 'text->text', 'text+image->text')",
-            ),
-          tokenizer: z.string().describe("Tokenizer used by the model"),
-          instructType: z
-            .string()
-            .optional()
-            .describe("Instruction format if applicable"),
-        })
-        .optional(),
-      perRequestLimits: z
-        .object({
-          promptTokens: z.string().optional(),
-          completionTokens: z.string().optional(),
-        })
-        .optional()
-        .describe("Per-request token limits if applicable"),
-    }),
-    execute: async ({ context }: { context: { modelId: string } }) => {
-      const { modelId } = context;
+      "context length, provider information, supported features, and streaming endpoint configuration. " +
+      "Use this to learn about a model before using it for chat completions. Model IDs follow the format " +
+      "'provider/model-name' (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet').",
+    inputSchema: GET_MODEL_BINDING.inputSchema,
+    outputSchema: GET_MODEL_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof GET_MODEL_BINDING.inputSchema>;
+    }) => {
+      const { id } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
       });
 
-      const model = await client.getModel(modelId);
+      try {
+        const model = await client.getModel(id);
+        const baseUrl = getBaseUrl(env);
 
-      return {
-        id: model.id,
-        name: model.name,
-        description: model.description,
-        contextLength: model.context_length,
-        pricing: {
-          prompt: model.pricing.prompt,
-          completion: model.pricing.completion,
-          request: model.pricing.request,
-          image: model.pricing.image,
-        },
-        topProvider: model.top_provider
-          ? {
-              contextLength: model.top_provider.context_length,
-              maxCompletionTokens: model.top_provider.max_completion_tokens,
-              isModerated: model.top_provider.is_moderated,
-            }
-          : undefined,
-        architecture: model.architecture
-          ? {
-              modality: model.architecture.modality,
-              tokenizer: model.architecture.tokenizer,
-              instructType: model.architecture.instruct_type,
-            }
-          : undefined,
-        perRequestLimits: model.per_request_limits
-          ? {
-              promptTokens: model.per_request_limits.prompt_tokens,
-              completionTokens: model.per_request_limits.completion_tokens,
-            }
-          : undefined,
-      };
+        return {
+          item: transformToModelEntity(model, baseUrl),
+        };
+      } catch {
+        // Model not found
+        return {
+          item: null,
+        };
+      }
     },
   });
+
+type ListedModel = Awaited<ReturnType<OpenRouterClient["listModels"]>>[number];
+
+function toNumberOrNull(value?: string): number | null {
+  if (!value?.length) return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractOutputLimit(model: ListedModel): number | null {
+  const topProviderLimit = model.top_provider?.max_completion_tokens;
+  if (typeof topProviderLimit === "number") {
+    return topProviderLimit;
+  }
+
+  const perRequestLimit = model.per_request_limits?.completion_tokens;
+  if (perRequestLimit) {
+    const parsed = Number(perRequestLimit);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function extractCapabilities(model: ListedModel): string[] {
+  if (model.supported_generation_methods?.length) {
+    return model.supported_generation_methods;
+  }
+
+  if (model.architecture?.modality) {
+    return [model.architecture.modality];
+  }
+
+  return [];
+}
+
+/**
+ * All models are provided through OpenRouter
+ * Using null since "openrouter" is not in the provider enum
+ */
+function extractProvider(_modelId: string): null {
+  return null;
+}
+
+function transformToModelEntity(model: ListedModel, baseUrl: string) {
+  const now = new Date().toISOString();
+  const inputCost = toNumberOrNull(model.pricing.prompt);
+  const outputCost = toNumberOrNull(model.pricing.completion);
+  const contextWindow = model.context_length || 0;
+  const maxOutputTokens = extractOutputLimit(model) || 0;
+
+  return {
+    id: model.id,
+    title: model.name,
+    created_at: model.created
+      ? new Date(model.created * 1000).toISOString()
+      : now,
+    updated_at: now,
+    created_by: undefined,
+    updated_by: undefined,
+    logo: null,
+    description: model.description ?? null,
+    capabilities: extractCapabilities(model),
+    provider: extractProvider(model.id),
+    limits:
+      contextWindow > 0 || maxOutputTokens > 0
+        ? {
+            contextWindow,
+            maxOutputTokens,
+          }
+        : null,
+    costs:
+      inputCost !== null || outputCost !== null
+        ? {
+            input: inputCost ?? 0,
+            output: outputCost ?? 0,
+          }
+        : null,
+    endpoint: {
+      url: `${baseUrl}/api/v1/chat/completions`,
+      method: "POST",
+      contentType: "application/json",
+      stream: true,
+    },
+  } as z.infer<typeof ModelSchema>;
+}
