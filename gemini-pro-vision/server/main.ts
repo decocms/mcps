@@ -7,11 +7,11 @@ import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
+  Scopes,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
 
 import { tools } from "./tools/index.ts";
-import { scopes } from "../shared/scopes.gen.ts";
 
 /**
  * Extended StateSchema with Gemini API key configuration.
@@ -49,9 +49,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * deploy your own, setup any API keys, etc.
      */
     scopes: [
-      scopes.GEMINI_VISION.GEMINI_VISION_ANALYZE_IMAGE,
-      scopes.GEMINI_VISION.GEMINI_VISION_COMPARE_IMAGES,
-      scopes.GEMINI_VISION.GEMINI_VISION_EXTRACT_TEXT_FROM_IMAGE,
+      Scopes.GEMINI_VISION_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.GEMINI_VISION_CONTRACT.CONTRACT_SETTLE,
     ],
     /**
      * The state schema of your Application defines what
