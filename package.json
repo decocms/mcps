@@ -34,7 +34,8 @@
     "template-minimal",
     "template-with-view",
     "veo",
-    "whisper"
+    "whisper",
+    "vibecoding-toolkit"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
