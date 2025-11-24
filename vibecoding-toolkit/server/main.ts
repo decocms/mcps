@@ -17,8 +17,10 @@ import { views } from "./views.ts";
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
+export type Env =
+  & DefaultEnv
+  & DecoEnv
+  & {
     ASSETS: {
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
     };

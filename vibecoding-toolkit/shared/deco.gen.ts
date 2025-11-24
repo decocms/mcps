@@ -575,36 +575,6 @@ export interface Env {
       input: DECO_CHAT_VIEWS_LISTInput,
     ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
     /**
-     * Delete an agent by ID
-     */
-    DECO_COLLECTION_AGENTS_DELETE: (
-      input: DECO_COLLECTION_AGENTS_DELETEInput,
-    ) => Promise<DECO_COLLECTION_AGENTS_DELETEOutput>;
-    /**
-     * Get a single agent by ID
-     */
-    DECO_COLLECTION_AGENTS_GET: (
-      input: DECO_COLLECTION_AGENTS_GETInput,
-    ) => Promise<DECO_COLLECTION_AGENTS_GETOutput>;
-    /**
-     * Create a new agent
-     */
-    DECO_COLLECTION_AGENTS_INSERT: (
-      input: DECO_COLLECTION_AGENTS_INSERTInput,
-    ) => Promise<DECO_COLLECTION_AGENTS_INSERTOutput>;
-    /**
-     * List agents with filtering, sorting, and pagination
-     */
-    DECO_COLLECTION_AGENTS_LIST: (
-      input: DECO_COLLECTION_AGENTS_LISTInput,
-    ) => Promise<DECO_COLLECTION_AGENTS_LISTOutput>;
-    /**
-     * Update an existing agent
-     */
-    DECO_COLLECTION_AGENTS_UPDATE: (
-      input: DECO_COLLECTION_AGENTS_UPDATEInput,
-    ) => Promise<DECO_COLLECTION_AGENTS_UPDATEOutput>;
-    /**
      * Get the current logged in user
      */
     GET_USER: (input: GET_USERInput) => Promise<GET_USEROutput>;
