@@ -623,18 +623,7 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   };
 };
 
-export const StateSchema = z.object({
-  login: z
-    .string()
-    .describe(
-      "DataForSEO API Login from https://app.dataforseo.com/api-access",
-    ),
-  password: z
-    .string()
-    .describe(
-      "DataForSEO API Password/Token from https://app.dataforseo.com/api-access (NOT your account password)",
-    ),
-});
+export const StateSchema = z.object({});
 
 export interface Env {
   DECO_CHAT_WORKSPACE: string;

@@ -3,10 +3,31 @@
  * MCP server. This is a Cloudflare workers app, and serves
  * your MCP server at /mcp.
  */
+import { z } from "zod";
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
+import {
+  type Env as DecoEnv,
+  StateSchema as BaseStateSchema,
+} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
+
+/**
+ * State schema for DataForSEO MCP configuration.
+ * Users fill these values when installing the MCP.
+ */
+export const StateSchema = BaseStateSchema.extend({
+  login: z
+    .string()
+    .describe(
+      "DataForSEO API Login from https://app.dataforseo.com/api-access",
+    ),
+  password: z
+    .string()
+    .describe(
+      "DataForSEO API Password/Token from https://app.dataforseo.com/api-access (NOT your account password)",
+    ),
+});
 
 /**
  * This Env type is the main context object that is passed to

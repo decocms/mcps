@@ -99,7 +99,7 @@ async function makeDataForSeoRequest(
   // Validate credentials
   if (!config.login || !config.password) {
     throw new Error(
-      "DataForSEO credentials are required. Please configure DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD.",
+      "DataForSEO credentials are required. Please configure login and password in the MCP settings.",
     );
   }
 
