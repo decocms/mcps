@@ -19,6 +19,7 @@
     "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
+    "data-for-seo",
     "apify",
     "datajud",
     "gemini-pro-vision",
