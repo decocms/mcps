@@ -9,23 +9,23 @@
  * - DELETE: Delete an agent
  */
 
-import { BaseCollectionEntitySchema } from "@decocms/bindings/collections";
-import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/mastra";
-import { ensureAgentsTable } from "../lib/postgres.ts";
-import type { Env } from "../main.ts";
 import {
-  CollectionListInputSchema,
+  BaseCollectionEntitySchema,
+  CollectionDeleteInputSchema,
+  CollectionDeleteOutputSchema,
   CollectionGetInputSchema,
-  createCollectionListOutputSchema,
+  CollectionListInputSchema,
   createCollectionGetOutputSchema,
   createCollectionInsertInputSchema,
   createCollectionInsertOutputSchema,
+  createCollectionListOutputSchema,
   createCollectionUpdateInputSchema,
   createCollectionUpdateOutputSchema,
-  CollectionDeleteInputSchema,
-  CollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
+import { createPrivateTool } from "@decocms/runtime/mastra";
+import { z } from "zod";
+import { ensureAgentsTable } from "../lib/postgres.ts";
+import type { Env } from "../main.ts";
 
 // Agent schema extending BaseCollectionEntitySchema
 const AgentSchema = BaseCollectionEntitySchema.extend({
@@ -44,22 +44,19 @@ function transformDbRowToAgent(row: any): z.infer<typeof AgentSchema> {
   return {
     id: row.id,
     title: row.title,
-    created_at:
-      row.created_at instanceof Date
-        ? row.created_at.toISOString()
-        : row.created_at,
-    updated_at:
-      row.updated_at instanceof Date
-        ? row.updated_at.toISOString()
-        : row.updated_at,
+    created_at: row.created_at instanceof Date
+      ? row.created_at.toISOString()
+      : row.created_at,
+    updated_at: row.updated_at instanceof Date
+      ? row.updated_at.toISOString()
+      : row.updated_at,
     created_by: row.created_by || undefined,
     updated_by: row.updated_by || undefined,
     description: row.description,
     instructions: row.instructions,
-    tool_set:
-      typeof row.tool_set === "string"
-        ? JSON.parse(row.tool_set)
-        : row.tool_set || {},
+    tool_set: typeof row.tool_set === "string"
+      ? JSON.parse(row.tool_set)
+      : row.tool_set || {},
   };
 }
 
