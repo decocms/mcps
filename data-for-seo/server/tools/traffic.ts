@@ -22,8 +22,8 @@ export const createTrafficOverviewTool = (env: Env) =>
     execute: async ({ context }) => {
       const state = env.DECO_REQUEST_CONTEXT.state;
       const client = createDataForSeoClient({
-        login: state.DATAFORSEO_LOGIN,
-        password: state.DATAFORSEO_PASSWORD,
+        login: state.login,
+        password: state.password,
       });
       const result = await client.getTrafficOverview(context.target);
       return { data: result };
@@ -40,8 +40,8 @@ export const createTrafficBySourcesTool = (env: Env) =>
     execute: async ({ context }) => {
       const state = env.DECO_REQUEST_CONTEXT.state;
       const client = createDataForSeoClient({
-        login: state.DATAFORSEO_LOGIN,
-        password: state.DATAFORSEO_PASSWORD,
+        login: state.login,
+        password: state.password,
       });
       const result = await client.getTrafficBySources(context.target);
       return { data: result };
@@ -58,8 +58,8 @@ export const createTrafficByCountryTool = (env: Env) =>
     execute: async ({ context }) => {
       const state = env.DECO_REQUEST_CONTEXT.state;
       const client = createDataForSeoClient({
-        login: state.DATAFORSEO_LOGIN,
-        password: state.DATAFORSEO_PASSWORD,
+        login: state.login,
+        password: state.password,
       });
       const result = await client.getTrafficByCountry(
         context.target,
@@ -80,8 +80,8 @@ export const createTrafficByPagesTool = (env: Env) =>
     execute: async ({ context }) => {
       const state = env.DECO_REQUEST_CONTEXT.state;
       const client = createDataForSeoClient({
-        login: state.DATAFORSEO_LOGIN,
-        password: state.DATAFORSEO_PASSWORD,
+        login: state.login,
+        password: state.password,
       });
       const result = await client.getTrafficByPages(
         context.target,

@@ -42,8 +42,8 @@ export const createRelatedKeywordsTool = (env: Env) =>
     execute: async ({ context }) => {
       const state = env.DECO_REQUEST_CONTEXT.state;
       const client = createDataForSeoClient({
-        login: state.DATAFORSEO_LOGIN,
-        password: state.DATAFORSEO_PASSWORD,
+        login: state.login,
+        password: state.password,
       });
       const result = await client.getRelatedKeywords(
         context.keywords,

@@ -624,15 +624,15 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
 };
 
 export const StateSchema = z.object({
-  DATAFORSEO_LOGIN: z
+  login: z
     .string()
     .describe(
-      "Your DataForSEO API Login (from https://app.dataforseo.com/api-access)",
+      "DataForSEO API Login from https://app.dataforseo.com/api-access",
     ),
-  DATAFORSEO_PASSWORD: z
+  password: z
     .string()
     .describe(
-      "Your DataForSEO API Password/Token (from https://app.dataforseo.com/api-access - NOT your account password)",
+      "DataForSEO API Password/Token from https://app.dataforseo.com/api-access (NOT your account password)",
     ),
 });
 

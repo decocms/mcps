@@ -50,8 +50,8 @@ bun run configure
 ```
 
 You'll need to provide:
-- **DATAFORSEO_LOGIN**: Your DataForSEO account email
-- **DATAFORSEO_PASSWORD**: Your DataForSEO account password
+- **login**: Your DataForSEO API Login (email)
+- **password**: Your DataForSEO API Password/Token
 
 4. Generate TypeScript types:
 ```bash
