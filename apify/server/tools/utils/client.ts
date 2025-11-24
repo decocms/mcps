@@ -17,6 +17,11 @@ interface ApifyRequestOptions {
   query?: Record<string, string | number | boolean | undefined>;
 }
 
+// MCP-compatible wrapper for array responses
+interface DataWrapper<T> {
+  data: T;
+}
+
 /**
  * Helper function to make requests to Apify API
  * Uses makeApiRequest as middleware and handles Apify-specific response formatting
@@ -57,6 +62,15 @@ async function makeApifyRequest<T = unknown>(
 
   // Use makeApiRequest as middleware for fetch + error handling
   const result = await makeApiRequest(url, requestInit, "Apify");
+
+  // MCPs don't support returning arrays directly - wrap in object
+  if (Array.isArray(result)) {
+    return { data: result } as unknown as T;
+  }
+
+  if (result && typeof result === "object" && "data" in result) {
+    return result as T;
+  }
 
   return result as T;
 }
@@ -122,12 +136,12 @@ export class ApifyClient {
     // Handle empty responses
     const contentLength = response.headers.get("content-length");
     if (contentLength === "0" || !response.body) {
-      return [] as unknown as T;
+      return { data: [] } as unknown as T;
     }
 
     const text = await response.text();
     if (!text) {
-      return [] as unknown as T;
+      return { data: [] } as unknown as T;
     }
 
     return JSON.parse(text) as T;
@@ -196,8 +210,8 @@ export class ApifyClient {
       memory?: number;
       build?: string;
     },
-  ): Promise<Array<Record<string, unknown>>> {
-    return this.makeRequest<Array<Record<string, unknown>>>(
+  ): Promise<DataWrapper<Array<Record<string, unknown>>>> {
+    return this.makeRequest<DataWrapper<Array<Record<string, unknown>>>>(
       "POST",
       `/v2/acts/${actorId}/run-sync-get-dataset-items`,
       {
@@ -288,8 +302,8 @@ export class ApifyClient {
       offset?: number;
       clean?: boolean;
     },
-  ): Promise<Array<Record<string, unknown>>> {
-    return this.makeRequest<Array<Record<string, unknown>>>(
+  ): Promise<DataWrapper<Array<Record<string, unknown>>>> {
+    return this.makeRequest<DataWrapper<Array<Record<string, unknown>>>>(
       "GET",
       `/v2/datasets/${datasetId}/items`,
       {
@@ -359,7 +373,7 @@ export async function runActorSyncGetDatasetItems(
     memory?: number;
     build?: string;
   },
-): Promise<Array<Record<string, unknown>>> {
+): Promise<DataWrapper<Array<Record<string, unknown>>>> {
   return makeApifyRequest(
     env,
     "POST",
@@ -432,7 +446,7 @@ export async function getDatasetItems(
     offset?: number;
     clean?: boolean;
   },
-): Promise<Array<Record<string, unknown>>> {
+): Promise<DataWrapper<Array<Record<string, unknown>>>> {
   return makeApifyRequest(env, "GET", `/v2/datasets/${datasetId}/items`, {
     query: {
       format: options?.format ?? "json",

@@ -100,13 +100,16 @@ const createGetActorRunTool = (client: ApifyClientInstance) =>
         const result = await client.getActorRun(context.actorId, context.runId);
 
         if (context.includeDatasetItems && result.defaultDatasetId) {
-          const items = await client.getDatasetItems(result.defaultDatasetId, {
-            limit: 1000,
-          });
+          const itemsResponse = await client.getDatasetItems(
+            result.defaultDatasetId,
+            {
+              limit: 1000,
+            },
+          );
           return {
             data: {
               ...result,
-              results: items,
+              results: itemsResponse.data,
             },
           };
         }
@@ -152,7 +155,7 @@ const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
         );
 
         const startTime = Date.now();
-        const items = await client.runActorSyncGetDatasetItems(
+        const itemsResponse = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
           parsedInput,
           {
@@ -176,7 +179,7 @@ const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
           actualMemory,
         );
 
-        return { data: items };
+        return itemsResponse;
       } catch (error) {
         try {
           if (transactionId) {
