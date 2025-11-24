@@ -1,0 +1,38 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "gemini-pro-vision"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Analyze images using Gemini Pro Vision: OCR, object identification, content analysis and image comparison."
+icon = "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg"
+friendlyName = "Gemini Pro Vision"
+
+[[deco.bindings]]
+type = "contract"
+name = "GEMINI_VISION_CONTRACT"
+
+[deco.bindings.contract]
+body = "U$0.05 per analysis, U$0.10 per comparison, U$0.03 per OCR"
+
+[[deco.bindings.contract.clauses]]
+id = "gemini-pro-vision:analyzeImage"
+price = 0.05
+description = "$0.05 per image analysis"
+
+[[deco.bindings.contract.clauses]]
+id = "gemini-pro-vision:compareImages"
+price = 0.10
+description = "$0.10 per image comparison (multiple images)"
+
+[[deco.bindings.contract.clauses]]
+id = "gemini-pro-vision:extractTextFromImage"
+price = 0.03
+description = "$0.03 per OCR operation"

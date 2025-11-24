@@ -21,8 +21,10 @@
   "workspaces": [
     "apify",
     "datajud",
+    "gemini-pro-vision",
     "nanobanana",
     "object-storage",
+    "openrouter",
     "pinecone",
     "readonly-sql",
     "shared",

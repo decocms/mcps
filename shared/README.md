@@ -2,7 +2,62 @@
 
 Shared package of utilities, tools and helpers for creating MCPs (Model Context Protocol servers) on the Deco platform.
 
-## Available Modules
+## 🏗️ Architecture
+
+```
+shared/
+├── tools/
+│   ├── utils/
+│   │   ├── middleware.ts      # ⭐ Shared middlewares (retry, logging, timeout)
+│   │   └── api-client.ts      # API helpers
+│   ├── user.ts                # User tools
+│   └── file-management/       # File tools
+├── image-analyzers/           # Vision API abstraction
+├── image-generators/          # Image gen abstraction
+├── video-generators/          # Video gen abstraction
+└── storage/                   # Storage interfaces
+```
+
+## 📦 Available Modules
+
+### 🔧 Middleware Utilities (`/tools/utils/middleware`)
+
+**⭐ NEW: Shared across all generators and analyzers**
+
+Reutilizable middlewares for wrapping async operations:
+
+- `withRetry(maxRetries)` - Automatic retry with exponential backoff
+- `withLogging(options)` - Performance and error logging
+- `withTimeout(timeoutMs)` - Timeout for long operations
+- `applyMiddlewares(options)` - Compose multiple middlewares
+
+**Usage:**
+```typescript
+import {
+  withRetry,
+  withLogging,
+  withTimeout,
+  applyMiddlewares,
+} from "@decocms/mcps-shared/tools/utils/middleware";
+
+const robustOperation = applyMiddlewares({
+  fn: async () => await apiCall(),
+  middlewares: [
+    withLogging({ title: "My Operation" }),
+    withRetry(3),
+    withTimeout(60000),
+  ],
+});
+```
+
+**Re-exported by:**
+- `@decocms/mcps-shared/video-generators`
+- `@decocms/mcps-shared/image-generators`
+- `@decocms/mcps-shared/image-analyzers`
+
+[📖 Full documentation](./tools/utils/README.md)
+
+---
 
 ### 1. User Tools (`/tools/user`)
 
