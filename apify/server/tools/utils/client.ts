@@ -6,28 +6,33 @@ import type {
   ActorRunsResponse,
 } from "./types";
 import type { Env } from "server/main";
-import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
+import {
+  assertEnvKey,
+  makeApiRequest,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 import { APIFY_API_BASE_URL } from "../../constants";
+
+interface ApifyRequestOptions {
+  body?: Record<string, unknown>;
+  query?: Record<string, string | number | boolean | undefined>;
+}
 
 /**
  * Helper function to make requests to Apify API
- * Follows the Sora pattern of extracting token from env
+ * Uses makeApiRequest as middleware and handles Apify-specific response formatting
  */
-async function makeApifyRequest(
+async function makeApifyRequest<T = unknown>(
   env: Env,
-  method: string,
+  method: "GET" | "POST",
   path: string,
-  options?: {
-    body?: unknown;
-    query?: Record<string, string | number | boolean | undefined>;
-  },
-): Promise<any> {
+  options?: ApifyRequestOptions,
+): Promise<T> {
   assertEnvKey(env, "APIFY_TOKEN");
-  const token = (env as any).APIFY_TOKEN as string;
+  const token = (env as unknown as Record<string, string>).APIFY_TOKEN;
 
   let url = `${APIFY_API_BASE_URL}${path}`;
 
-  // Add query parameters
+  // Build query parameters
   if (options?.query) {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(options.query)) {
@@ -50,30 +55,19 @@ async function makeApifyRequest(
     body: options?.body ? JSON.stringify(options.body) : undefined,
   };
 
-  try {
-    const response = await fetch(url, requestInit);
+  // Use makeApiRequest as middleware for fetch + error handling
+  const result = await makeApiRequest(url, requestInit, "Apify");
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    // Handle empty responses
-    const contentLength = response.headers.get("content-length");
-    if (contentLength === "0" || !response.body) {
-      return { data: [] } as any;
-    }
-
-    const text = await response.text();
-    if (!text) {
-      return { data: [] } as any;
-    }
-
-    return JSON.parse(text);
-  } catch (error) {
-    console.error(`Apify API error for ${method} ${path}:`, error);
-    throw error;
+  // Handle Apify-specific response wrapping
+  if (Array.isArray(result)) {
+    return { data: result } as unknown as T;
   }
+
+  if (result && typeof result === "object" && "data" in result) {
+    return result as T;
+  }
+
+  return result as T;
 }
 
 /**
@@ -96,17 +90,14 @@ export class ApifyClient {
     });
   }
 
-  private async makeRequest<T>(
-    method: string,
+  private async makeRequest<T = unknown>(
+    method: "GET" | "POST",
     path: string,
-    options?: {
-      body?: unknown;
-      query?: Record<string, string | number | boolean | undefined>;
-    },
+    options?: ApifyRequestOptions,
   ): Promise<T> {
     let url = `${this.baseUrl}${path}`;
 
-    // Add query parameters
+    // Build query parameters
     if (options?.query) {
       const params = new URLSearchParams();
       for (const [key, value] of Object.entries(options.query)) {
@@ -120,11 +111,17 @@ export class ApifyClient {
       }
     }
 
-    const response = await fetch(url, {
+    const fetchOptions: RequestInit = {
       method,
       headers: this.getHeaders(),
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-    });
+    };
+
+    // Add body only for POST requests
+    if (method === "POST" && options?.body) {
+      fetchOptions.body = JSON.stringify(options.body);
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -134,12 +131,12 @@ export class ApifyClient {
     // Handle empty responses
     const contentLength = response.headers.get("content-length");
     if (contentLength === "0" || !response.body) {
-      return { data: [] } as T;
+      return { data: [] } as unknown as T;
     }
 
     const text = await response.text();
     if (!text) {
-      return { data: [] } as T;
+      return { data: [] } as unknown as T;
     }
 
     return JSON.parse(text) as T;

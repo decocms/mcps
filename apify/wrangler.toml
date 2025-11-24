@@ -3,10 +3,10 @@ name = "apify"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
-scope = "deco-team"
+scope = "deco"
 
 [deco]
-workspace = "deco-team"
+workspace = "deco"
 enable_workflows = false
 local = false
 
