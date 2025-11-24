@@ -118,6 +118,7 @@ try {
     "OPENROUTER_API_KEY",
     "PINECONE_TOKEN",
     "PINECONE_INDEX",
+    "APIFY_TOKEN",
   ];
 
   const autoEnvArgs: string[] = [];

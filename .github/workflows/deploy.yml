@@ -71,6 +71,7 @@ jobs:
           PINECONE_TOKEN: ${{ secrets.PINECONE_TOKEN }}
           PINECONE_INDEX: ${{ secrets.PINECONE_INDEX }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
 
       - name: Notify success
         if: success()
