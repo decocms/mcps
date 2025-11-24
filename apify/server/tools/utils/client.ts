@@ -58,15 +58,6 @@ async function makeApifyRequest<T = unknown>(
   // Use makeApiRequest as middleware for fetch + error handling
   const result = await makeApiRequest(url, requestInit, "Apify");
 
-  // Handle Apify-specific response wrapping
-  if (Array.isArray(result)) {
-    return { data: result } as unknown as T;
-  }
-
-  if (result && typeof result === "object" && "data" in result) {
-    return result as T;
-  }
-
   return result as T;
 }
 
