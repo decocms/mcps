@@ -19,3 +19,9 @@ export const APIFY_ERROR_MESSAGES = {
   INVALID_TOKEN: "API token is invalid or expired.",
   INSUFFICIENT_CREDIT: "Insufficient credits to perform this operation.",
 } as const;
+
+// Contract clause IDs
+export const CONTRACT_CLAUSES = {
+  COMPUTE_UNITS: "apify:computeUnits",
+  MEMORY_MB: "apify:memoryMB",
+} as const;

@@ -10,15 +10,13 @@ import {
   runActorSyncOutputSchema,
   runActorAsyncOutputSchema,
 } from "./utils/types";
+import { authorizeContract, settleContract } from "./utils/contract";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { APIFY_ERROR_MESSAGES } from "../constants";
 
 // Type for the Apify client returned by createApifyClient
 type ApifyClientInstance = ReturnType<typeof createApifyClient>;
 
-/**
- * Create List Actors Tool
- */
 const createListActorsTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "LIST_ACTORS",
@@ -42,9 +40,6 @@ const createListActorsTool = (client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Create Get Actor Tool
- */
 const createGetActorTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "GET_ACTOR",
@@ -66,9 +61,6 @@ const createGetActorTool = (client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Create List Actor Runs Tool
- */
 const createListActorRunsTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "LIST_ACTOR_RUNS",
@@ -95,9 +87,6 @@ const createListActorRunsTool = (client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Create Get Actor Run Tool
- */
 const createGetActorRunTool = (client: ApifyClientInstance) =>
   createPrivateTool({
     id: "GET_ACTOR_RUN",
@@ -133,10 +122,6 @@ const createGetActorRunTool = (client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Create Run Actor Synchronously Tool
- * With inline contract support and precise settlement
- */
 const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
   createPrivateTool({
     id: "RUN_ACTOR_SYNC",
@@ -160,24 +145,12 @@ const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
       let transactionId: string | undefined;
 
       try {
-        // PRÉ-AUTORIZA com estimativa
-        const authResult = await (env as any).APIFY_CONTRACT.CONTRACT_AUTHORIZE(
-          {
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          },
+        transactionId = await authorizeContract(
+          env,
+          estimatedComputeUnits,
+          estimatedMemory,
         );
-        transactionId = authResult.transactionId;
 
-        // EXECUTA
         const startTime = Date.now();
         const items = await client.runActorSyncGetDatasetItems(
           ctx.actorId,
@@ -190,48 +163,24 @@ const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
         );
         const executionTimeMs = Date.now() - startTime;
 
-        // Calcula uso real com base na execução
         const actualTimeout = Math.ceil(executionTimeMs / 1000);
-        const actualMemory = estimatedMemory; // Apify não retorna memory usado, usa estimativa
+        const actualMemory = estimatedMemory;
         const actualComputeUnits = Math.ceil(
           (actualTimeout * actualMemory) / 1000,
         );
 
-        // SETTLEMENT com valores REAIS
-        await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+        await settleContract(
+          env,
           transactionId,
-          vendorId: (env as any).DECO_CHAT_WORKSPACE,
-          clauses: [
-            {
-              clauseId: "apify:computeUnits",
-              amount: Math.min(actualComputeUnits, estimatedComputeUnits),
-            },
-            {
-              clauseId: "apify:memoryMB",
-              amount: actualMemory,
-            },
-          ],
-        });
+          Math.min(actualComputeUnits, estimatedComputeUnits),
+          actualMemory,
+        );
 
         return { data: items };
       } catch (error) {
         try {
-          // SETTLEMENT ZERO com o transactionId original em caso de erro
           if (transactionId) {
-            await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
-              transactionId,
-              vendorId: (env as any).DECO_CHAT_WORKSPACE,
-              clauses: [
-                {
-                  clauseId: "apify:computeUnits",
-                  amount: 0,
-                },
-                {
-                  clauseId: "apify:memoryMB",
-                  amount: 0,
-                },
-              ],
-            });
+            await settleContract(env, transactionId, 0, 0);
           } else {
             console.warn(
               "Cannot settle contract: original transactionId not available",
@@ -250,10 +199,6 @@ const createRunActorSyncTool = (env: Env, client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Create Run Actor Asynchronously Tool
- * With inline contract support and precise settlement
- */
 const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
   createPrivateTool({
     id: "RUN_ACTOR_ASYNC",
@@ -268,8 +213,7 @@ const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
 
       const parsedInput = JSON.parse(ctx.input);
 
-      // Estimate costs for pre-authorization (async runs may take longer)
-      const estimatedTimeout = ctx.timeout || 3600; // Default 1 hour for async
+      const estimatedTimeout = ctx.timeout || 3600;
       const estimatedMemory = ctx.memory || 256;
       const estimatedComputeUnits = Math.ceil(
         (estimatedTimeout * estimatedMemory) / 1000,
@@ -278,50 +222,24 @@ const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
       let transactionId: string | undefined;
 
       try {
-        // PRÉ-AUTORIZA com estimativa
-        const authResult = await (env as any).APIFY_CONTRACT.CONTRACT_AUTHORIZE(
-          {
-            clauses: [
-              {
-                clauseId: "apify:computeUnits",
-                amount: estimatedComputeUnits,
-              },
-              {
-                clauseId: "apify:memoryMB",
-                amount: estimatedMemory,
-              },
-            ],
-          },
+        transactionId = await authorizeContract(
+          env,
+          estimatedComputeUnits,
+          estimatedMemory,
         );
-        transactionId = authResult.transactionId;
 
-        // EXECUTA (retorna imediatamente)
         const result = await client.runActor(ctx.actorId, parsedInput, {
           timeout: ctx.timeout,
           memory: ctx.memory,
           build: ctx.build,
         });
 
-        // Para async, não sabemos o tempo real até depois
-        // Settlement é feito com estimativa (pode ser refinado com webhook)
-        const actualComputeUnits = estimatedComputeUnits; // Estimativa temporária
-        const actualMemory = estimatedMemory;
-
-        // SETTLEMENT com estimativa (melhor seria usar webhooks)
-        await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
+        await settleContract(
+          env,
           transactionId,
-          vendorId: (env as any).DECO_CHAT_WORKSPACE,
-          clauses: [
-            {
-              clauseId: "apify:computeUnits",
-              amount: actualComputeUnits,
-            },
-            {
-              clauseId: "apify:memoryMB",
-              amount: actualMemory,
-            },
-          ],
-        });
+          estimatedComputeUnits,
+          estimatedMemory,
+        );
 
         const runData = result.data as ActorRun;
         return {
@@ -331,22 +249,8 @@ const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
         };
       } catch (error) {
         try {
-          // SETTLEMENT ZERO com o transactionId original em caso de erro
           if (transactionId) {
-            await (env as any).APIFY_CONTRACT.CONTRACT_SETTLE({
-              transactionId,
-              vendorId: (env as any).DECO_CHAT_WORKSPACE,
-              clauses: [
-                {
-                  clauseId: "apify:computeUnits",
-                  amount: 0,
-                },
-                {
-                  clauseId: "apify:memoryMB",
-                  amount: 0,
-                },
-              ],
-            });
+            await settleContract(env, transactionId, 0, 0);
           } else {
             console.warn(
               "Cannot settle contract: original transactionId not available",
@@ -365,10 +269,6 @@ const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
     },
   });
 
-/**
- * Factory function to create all Apify tools
- * Follows Sora pattern: create client once, pass to tools as parameters
- */
 export const createApifyTools = (env: Env) => {
   const client = createApifyClient(env);
 
