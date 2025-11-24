@@ -96,6 +96,13 @@ async function makeDataForSeoRequest(
   method: "GET" | "POST",
   body?: any,
 ): Promise<DataForSeoTaskResponse> {
+  // Validate credentials
+  if (!config.login || !config.password) {
+    throw new Error(
+      "DataForSEO credentials are required. Please configure DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD.",
+    );
+  }
+
   const url = `${DATAFORSEO_BASE_URL}${endpoint}`;
   const basicAuth = btoa(`${config.login}:${config.password}`);
 
@@ -111,11 +118,20 @@ async function makeDataForSeoRequest(
     options.body = JSON.stringify(body);
   }
 
-  return (await makeApiRequest(
+  const response = (await makeApiRequest(
     url,
     options,
     "DataForSEO",
   )) as DataForSeoTaskResponse;
+
+  // Check for authentication errors
+  if (response.status_code === 40100) {
+    throw new Error(
+      "DataForSEO authentication failed. Please verify your credentials at https://app.dataforseo.com/api-access",
+    );
+  }
+
+  return response;
 }
 
 // Keywords Data API

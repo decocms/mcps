@@ -329,10 +329,26 @@ Check your DataForSEO dashboard for current usage and limits.
 
 ## Getting DataForSEO Credentials
 
-1. Visit https://dataforseo.com
-2. Sign up for an account
-3. Get your login (email) and password from your account settings
-4. Use these credentials when configuring the MCP server
+### Important: Use API Credentials, Not Account Password!
+
+DataForSEO uses **separate API credentials** for authentication, not your account email/password.
+
+1. **Sign up** at https://dataforseo.com
+2. **Log in** to your DataForSEO dashboard
+3. **Get API Credentials** at https://app.dataforseo.com/api-access
+   - You'll see your **API Login** (usually looks like: `your-email@example.com`)
+   - You'll see your **API Password** (a generated token, NOT your account password)
+4. **Copy both credentials** and use them when configuring this MCP
+
+⚠️ **Common Mistake**: Don't use your account password! Use the API password from the API Access page.
+
+### Troubleshooting Authentication
+
+If you get error 40100 (Not Authorized):
+- ✅ Make sure you're using the API credentials from https://app.dataforseo.com/api-access
+- ✅ Verify your API Login (email) is correct
+- ✅ Use the API Password (token), NOT your account password
+- ✅ Check if your DataForSEO account has sufficient credits
 
 ## License
 
