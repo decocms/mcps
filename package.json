@@ -32,7 +32,8 @@
     "sora",
     "template-minimal",
     "template-with-view",
-    "veo"
+    "veo",
+    "vibecoding-toolkit"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
