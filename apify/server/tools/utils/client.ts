@@ -122,12 +122,12 @@ export class ApifyClient {
     // Handle empty responses
     const contentLength = response.headers.get("content-length");
     if (contentLength === "0" || !response.body) {
-      return { data: [] } as unknown as T;
+      return [] as unknown as T;
     }
 
     const text = await response.text();
     if (!text) {
-      return { data: [] } as unknown as T;
+      return [] as unknown as T;
     }
 
     return JSON.parse(text) as T;
