@@ -19,8 +19,8 @@
     "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
-    "data-for-seo",
     "apify",
+    "data-for-seo",
     "datajud",
     "gemini-pro-vision",
     "nanobanana",
@@ -32,7 +32,8 @@
     "sora",
     "template-minimal",
     "template-with-view",
-    "veo"
+    "veo",
+    "vibecoding-toolkit"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
