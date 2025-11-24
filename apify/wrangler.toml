@@ -1,5 +1,5 @@
 #:schema node_modules/@decocms/runtime/config-schema.json
-name = "apify"
+name = "mcp-apify"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
