@@ -1,5 +1,6 @@
 import { DATAFORSEO_BASE_URL } from "../constants";
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
+import type { Env } from "../main";
 
 export interface DataForSeoClientConfig {
   login: string;
@@ -438,3 +439,12 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
   getTrafficByPages: (target: string, limit?: number, offset?: number) =>
     getTrafficByPages(config, target, limit, offset),
 });
+
+// Helper to create client from environment
+export const getClientFromEnv = (env: Env) => {
+  const state = env.DECO_REQUEST_CONTEXT.state;
+  return createDataForSeoClient({
+    login: state.login,
+    password: state.password,
+  });
+};

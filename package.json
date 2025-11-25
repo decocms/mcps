@@ -20,7 +20,6 @@
   },
   "workspaces": [
     "apify",
-    "cfm",
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",

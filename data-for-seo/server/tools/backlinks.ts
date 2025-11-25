@@ -1,5 +1,5 @@
 import type { Env } from "../main";
-import { createDataForSeoClient } from "../lib/dataforseo";
+import { getClientFromEnv } from "../lib/dataforseo";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import {
   backlinksOverviewInputSchema,
@@ -18,11 +18,7 @@ export const createBacklinksOverviewTool = (env: Env) =>
     inputSchema: backlinksOverviewInputSchema,
     outputSchema: backlinksOverviewOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getBacklinksOverview(context.target);
       return { data: result };
     },
@@ -36,11 +32,7 @@ export const createBacklinksTool = (env: Env) =>
     inputSchema: backlinksInputSchema,
     outputSchema: backlinksOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getBacklinks(
         context.target,
         context.limit,
@@ -58,11 +50,7 @@ export const createReferringDomainsTool = (env: Env) =>
     inputSchema: referringDomainsInputSchema,
     outputSchema: referringDomainsOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getReferringDomains(
         context.target,
         context.limit,

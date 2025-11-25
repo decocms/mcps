@@ -1,5 +1,5 @@
 import type { Env } from "../main";
-import { createDataForSeoClient } from "../lib/dataforseo";
+import { getClientFromEnv } from "../lib/dataforseo";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import {
   organicSerpInputSchema,
@@ -16,11 +16,7 @@ export const createOrganicSerpTool = (env: Env) =>
     inputSchema: organicSerpInputSchema,
     outputSchema: organicSerpOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getOrganicSerpLive(
         context.keyword,
         context.languageCode,
@@ -40,11 +36,7 @@ export const createNewsSerpTool = (env: Env) =>
     inputSchema: newsSerpInputSchema,
     outputSchema: newsSerpOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getNewsSerpLive(
         context.keyword,
         context.languageCode,

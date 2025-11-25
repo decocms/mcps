@@ -1,5 +1,5 @@
 import type { Env } from "../main";
-import { createDataForSeoClient } from "../lib/dataforseo";
+import { getClientFromEnv } from "../lib/dataforseo";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import {
   searchVolumeInputSchema,
@@ -16,11 +16,7 @@ export const createSearchVolumeTool = (env: Env) =>
     inputSchema: searchVolumeInputSchema,
     outputSchema: searchVolumeOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getSearchVolume(
         context.keywords,
         context.languageName,
@@ -40,11 +36,7 @@ export const createRelatedKeywordsTool = (env: Env) =>
     inputSchema: relatedKeywordsInputSchema,
     outputSchema: relatedKeywordsOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getRelatedKeywords(
         context.keywords,
         context.languageName,

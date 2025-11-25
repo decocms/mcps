@@ -1,5 +1,5 @@
 import type { Env } from "../main";
-import { createDataForSeoClient } from "../lib/dataforseo";
+import { getClientFromEnv } from "../lib/dataforseo";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import {
   trafficOverviewInputSchema,
@@ -20,11 +20,7 @@ export const createTrafficOverviewTool = (env: Env) =>
     inputSchema: trafficOverviewInputSchema,
     outputSchema: trafficOverviewOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getTrafficOverview(context.target);
       return { data: result };
     },
@@ -38,11 +34,7 @@ export const createTrafficBySourcesTool = (env: Env) =>
     inputSchema: trafficBySourcesInputSchema,
     outputSchema: trafficBySourcesOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getTrafficBySources(context.target);
       return { data: result };
     },
@@ -56,11 +48,7 @@ export const createTrafficByCountryTool = (env: Env) =>
     inputSchema: trafficByCountryInputSchema,
     outputSchema: trafficByCountryOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getTrafficByCountry(
         context.target,
         context.limit,
@@ -78,11 +66,7 @@ export const createTrafficByPagesTool = (env: Env) =>
     inputSchema: trafficByPagesInputSchema,
     outputSchema: trafficByPagesOutputSchema,
     execute: async ({ context }) => {
-      const state = env.DECO_REQUEST_CONTEXT.state;
-      const client = createDataForSeoClient({
-        login: state.login,
-        password: state.password,
-      });
+      const client = getClientFromEnv(env);
       const result = await client.getTrafficByPages(
         context.target,
         context.limit,
