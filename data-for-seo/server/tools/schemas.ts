@@ -19,15 +19,25 @@ export const searchVolumeInputSchema = z.object({
 });
 
 export const relatedKeywordsInputSchema = z.object({
-  keywords: z.array(z.string()).describe("Seed keywords to find related terms"),
-  languageName: z
-    .string()
-    .optional()
-    .describe("Language name (e.g., 'English')"),
+  keyword: z.string().describe("Seed keyword to find related terms"),
   locationName: z
     .string()
     .optional()
-    .describe("Location name (e.g., 'United States')"),
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
   depth: z.number().optional().describe("Depth of keyword expansion (1-10)"),
   limit: z.number().optional().describe("Maximum number of results"),
 });

@@ -94,14 +94,16 @@ Get search volume, CPC, and competition data for keywords.
 ```
 
 #### `DATAFORSEO_GET_RELATED_KEYWORDS`
-Get keyword suggestions related to seed keywords.
+Get keyword suggestions related to a seed keyword.
 
 **Input:**
 ```typescript
 {
-  keywords: string[];           // Seed keywords
-  languageName?: string;
-  locationName?: string;
+  keyword: string;             // Seed keyword (single keyword)
+  locationName?: string;       // Default: "United States"
+  languageName?: string;       // Default: "English"
+  locationCode?: number;       // Alternative to locationName
+  languageCode?: string;       // Alternative to languageName
   depth?: number;              // 1-10
   limit?: number;
 }

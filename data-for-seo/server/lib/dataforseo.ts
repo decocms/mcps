@@ -162,9 +162,11 @@ async function getSearchVolume(
 
 async function getRelatedKeywords(
   config: DataForSeoClientConfig,
-  keywords: string[],
-  languageName?: string,
-  locationName?: string,
+  keyword: string,
+  locationName: string = "United States",
+  languageName: string = "English",
+  locationCode?: number,
+  languageCode?: string,
   depth?: number,
   limit?: number,
 ): Promise<DataForSeoTaskResponse> {
@@ -174,9 +176,11 @@ async function getRelatedKeywords(
     "POST",
     [
       {
-        keywords,
-        language_name: languageName,
+        keyword,
         location_name: locationName,
+        language_name: languageName,
+        location_code: locationCode,
+        language_code: languageCode,
         depth,
         limit,
         include_seed_keyword: false,
@@ -303,17 +307,21 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
       locationCode,
     ),
   getRelatedKeywords: (
-    keywords: string[],
-    languageName?: string,
+    keyword: string,
     locationName?: string,
+    languageName?: string,
+    locationCode?: number,
+    languageCode?: string,
     depth?: number,
     limit?: number,
   ) =>
     getRelatedKeywords(
       config,
-      keywords,
-      languageName,
+      keyword,
       locationName,
+      languageName,
+      locationCode,
+      languageCode,
       depth,
       limit,
     ),
