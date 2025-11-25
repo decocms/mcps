@@ -170,7 +170,7 @@ async function getRelatedKeywords(
 ): Promise<DataForSeoTaskResponse> {
   return makeDataForSeoRequest(
     config,
-    "/keywords_data/google/related_keywords/live",
+    "/dataforseo_labs/google/related_keywords/live",
     "POST",
     [
       {
@@ -243,7 +243,7 @@ async function getBacklinksOverview(
   config: DataForSeoClientConfig,
   target: string,
 ): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(config, "/backlinks/domain_info/live", "POST", [
+  return makeDataForSeoRequest(config, "/backlinks/summary/live", "POST", [
     {
       target,
     },
@@ -274,79 +274,6 @@ async function getReferringDomains(
   return makeDataForSeoRequest(
     config,
     "/backlinks/referring_domains/live",
-    "POST",
-    [
-      {
-        target,
-        limit,
-        offset,
-      },
-    ],
-  );
-}
-
-// Traffic Analytics API
-async function getTrafficOverview(
-  config: DataForSeoClientConfig,
-  target: string,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/overview/live",
-    "POST",
-    [
-      {
-        target,
-      },
-    ],
-  );
-}
-
-async function getTrafficBySources(
-  config: DataForSeoClientConfig,
-  target: string,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_source/live",
-    "POST",
-    [
-      {
-        target,
-      },
-    ],
-  );
-}
-
-async function getTrafficByCountry(
-  config: DataForSeoClientConfig,
-  target: string,
-  limit?: number,
-  offset?: number,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_country/live",
-    "POST",
-    [
-      {
-        target,
-        limit,
-        offset,
-      },
-    ],
-  );
-}
-
-async function getTrafficByPages(
-  config: DataForSeoClientConfig,
-  target: string,
-  limit?: number,
-  offset?: number,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_pages/live",
     "POST",
     [
       {
@@ -430,14 +357,6 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
     getBacklinks(config, target, limit, offset),
   getReferringDomains: (target: string, limit?: number, offset?: number) =>
     getReferringDomains(config, target, limit, offset),
-
-  // Traffic
-  getTrafficOverview: (target: string) => getTrafficOverview(config, target),
-  getTrafficBySources: (target: string) => getTrafficBySources(config, target),
-  getTrafficByCountry: (target: string, limit?: number, offset?: number) =>
-    getTrafficByCountry(config, target, limit, offset),
-  getTrafficByPages: (target: string, limit?: number, offset?: number) =>
-    getTrafficByPages(config, target, limit, offset),
 });
 
 // Helper to create client from environment
