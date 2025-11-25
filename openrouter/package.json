@@ -13,8 +13,11 @@
     "build": "bun --bun vite build"
   },
   "dependencies": {
+    "@ai-sdk/provider": "^2.0.0",
+    "@ai-sdk/provider-utils": "^3.0.17",
     "@decocms/bindings": "0.1.6",
-    "@decocms/runtime": "0.24.0",
+    "@decocms/runtime": "0.25.1",
+    "@openrouter/ai-sdk-provider": "^1.2.0",
     "@openrouter/sdk": "^0.1.11",
     "zod": "^3.24.3"
   },
