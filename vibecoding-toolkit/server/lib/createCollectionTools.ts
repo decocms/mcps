@@ -21,7 +21,20 @@ import {
   CollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
 import { z } from "zod";
-import { eq, and, or, like, gt, gte, lt, lte, inArray, sql, asc, desc } from "drizzle-orm";
+import {
+  eq,
+  and,
+  or,
+  like,
+  gt,
+  gte,
+  lt,
+  lte,
+  inArray,
+  sql,
+  asc,
+  desc,
+} from "drizzle-orm";
 import type { Env } from "../main.ts";
 
 type WhereExpression = z.infer<typeof CollectionListInputSchema>["where"];
@@ -38,18 +51,21 @@ type OrderByExpression = z.infer<typeof CollectionListInputSchema>["orderBy"];
  */
 export function createCollectionTools<
   TEntitySchema extends BaseCollectionEntitySchemaType,
-  TTable extends Record<string, any>
+  TTable extends Record<string, any>,
 >(
   collectionName: string,
   entitySchema: TEntitySchema,
   drizzleTable: TTable,
-  getDb: (env: Env) => Promise<any>
+  getDb: (env: Env) => Promise<any>,
 ) {
   const toolName = (operation: string) =>
     `DECO_COLLECTION_${collectionName.toUpperCase()}_${operation}`;
 
   // Helper to build where conditions from expression
-  const buildWhereCondition = (whereExpr: WhereExpression, table: TTable): any => {
+  const buildWhereCondition = (
+    whereExpr: WhereExpression,
+    table: TTable,
+  ): any => {
     if (!whereExpr) return undefined;
 
     // Simple condition
@@ -74,7 +90,12 @@ export function createCollectionTools<
         case "lte":
           return lte(column, whereExpr.value);
         case "in":
-          return inArray(column, Array.isArray(whereExpr.value) ? whereExpr.value : [whereExpr.value]);
+          return inArray(
+            column,
+            Array.isArray(whereExpr.value)
+              ? whereExpr.value
+              : [whereExpr.value],
+          );
         case "like":
         case "contains":
           return like(column, `%${whereExpr.value}%`);
@@ -86,7 +107,7 @@ export function createCollectionTools<
     // Logical condition (and, or, not)
     if ("operator" in whereExpr && "conditions" in whereExpr) {
       const conditions = whereExpr.conditions.map((cond) =>
-        buildWhereCondition(cond as any, table)
+        buildWhereCondition(cond as any, table),
       );
 
       switch (whereExpr.operator) {
@@ -98,7 +119,9 @@ export function createCollectionTools<
           // Drizzle doesn't have a direct 'not', so we use sql
           return sql`NOT (${conditions[0]})`;
         default:
-          throw new Error(`Unsupported logical operator: ${whereExpr.operator}`);
+          throw new Error(
+            `Unsupported logical operator: ${whereExpr.operator}`,
+          );
       }
     }
 
@@ -106,7 +129,10 @@ export function createCollectionTools<
   };
 
   // Helper to build order by clause
-  const buildOrderBy = (orderByExpr: OrderByExpression, table: TTable): any[] => {
+  const buildOrderBy = (
+    orderByExpr: OrderByExpression,
+    table: TTable,
+  ): any[] => {
     if (!orderByExpr || orderByExpr.length === 0) return [];
 
     return orderByExpr.map((order) => {
@@ -171,7 +197,9 @@ export function createCollectionTools<
         const serializedItems = items.map(serializeEntity);
 
         // Get total count (without pagination)
-        let countQuery = db.select({ count: sql<number>`count(*)` }).from(drizzleTable);
+        let countQuery = db
+          .select({ count: sql<number>`count(*)` })
+          .from(drizzleTable);
         if (where) {
           const whereCondition = buildWhereCondition(where, drizzleTable);
           if (whereCondition) {
@@ -327,4 +355,3 @@ export function createCollectionTools<
     createDeleteTool,
   ];
 }
-

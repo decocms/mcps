@@ -14,5 +14,5 @@ export const agentTools = createCollectionTools(
   "agents",
   AgentSchema,
   agentsTable,
-  getDb
+  getDb,
 );
