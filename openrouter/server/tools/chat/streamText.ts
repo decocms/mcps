@@ -13,6 +13,8 @@ export const streamText = (env: Env) =>
     description: "Stream text",
     inputSchema: z.object({}).passthrough(),
     execute: async ({ context }) => {
+      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+
       const apiKey = getOpenRouterApiKey(env);
       const openRouterUrl = `${OPENROUTER_BASE_URL}${OPENROUTER_CHAT_ENDPOINT}`;
 
