@@ -146,7 +146,7 @@ async function getSearchVolume(
 ): Promise<DataForSeoTaskResponse> {
   return makeDataForSeoRequest(
     config,
-    "/keywords_data/google/search_volume/task_post",
+    "/keywords_data/google/search_volume/live",
     "POST",
     [
       {
@@ -170,7 +170,7 @@ async function getRelatedKeywords(
 ): Promise<DataForSeoTaskResponse> {
   return makeDataForSeoRequest(
     config,
-    "/keywords_data/google/related_keywords/task_post",
+    "/keywords_data/google/related_keywords/live",
     "POST",
     [
       {
