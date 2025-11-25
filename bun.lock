@@ -33,6 +33,26 @@
         "wrangler": "^4.28.0",
       },
     },
+    "cfm": {
+      "name": "cfm",
+      "version": "1.0.0",
+      "dependencies": {
+        "@decocms/runtime": "0.24.0",
+        "zod": "^3.24.3",
+      },
+      "devDependencies": {
+        "@cloudflare/vite-plugin": "^1.13.4",
+        "@cloudflare/workers-types": "^4.20251014.0",
+        "@decocms/mcps-shared": "1.0.0",
+        "@mastra/core": "^0.24.0",
+        "@modelcontextprotocol/sdk": "^1.21.0",
+        "@types/mime-db": "^1.43.6",
+        "deco-cli": "^0.26.0",
+        "typescript": "^5.7.2",
+        "vite": "7.2.0",
+        "wrangler": "^4.28.0",
+      },
+    },
     "data-for-seo": {
       "name": "data-for-seo",
       "version": "1.0.0",
@@ -1419,6 +1439,8 @@
     "call-me-maybe": ["call-me-maybe@1.0.2", "", {}, "sha512-HpX65o1Hnr9HH25ojC1YGs7HCQLq0GCOibSaWER0eNpgJ/Z1MZv2mTc7+xh6WOPxbRVcmgbv4hGU+uSQ/2xFZQ=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001757", "", {}, "sha512-r0nnL/I28Zi/yjk1el6ilj27tKcdjLsNqAOZr0yVjWPrSQyHgKI2INaEWw21bAQSv2LXRt1XuCS/GomNpWOxsQ=="],
+
+    "cfm": ["cfm@workspace:cfm"],
 
     "chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
