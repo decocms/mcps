@@ -1,0 +1,11 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "replicate"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false

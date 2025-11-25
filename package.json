@@ -28,6 +28,7 @@
     "openrouter",
     "pinecone",
     "readonly-sql",
+    "replicate",
     "shared",
     "sora",
     "template-minimal",
