@@ -19,8 +19,9 @@
     "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
-    "data-for-seo",
     "apify",
+    "cfm",
+    "data-for-seo",
     "datajud",
     "gemini-pro-vision",
     "nanobanana",
