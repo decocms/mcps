@@ -1,4 +1,4 @@
-# Replicate MCP
+# Replicate MCP 
 
 MCP (Model Context Protocol) server for interacting with the Replicate API, enabling execution of ML/AI models in the cloud.
 
