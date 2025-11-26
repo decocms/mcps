@@ -6,33 +6,27 @@ export interface PerplexityClientConfig {
   apiKey: string;
 }
 
-export class PerplexityClient {
-  private apiKey: string;
+async function chatCompletion(
+  config: PerplexityClientConfig,
+  request: ChatCompletionRequest,
+): Promise<ChatCompletion> {
+  const url = `${PERPLEXITY_BASE_URL}/chat/completions`;
 
-  constructor(config: PerplexityClientConfig) {
-    this.apiKey = config.apiKey;
-  }
-
-  private getHeaders(): Record<string, string> {
-    return {
-      Authorization: `Bearer ${this.apiKey}`,
-      "Content-Type": "application/json",
-    };
-  }
-
-  async chatCompletion(
-    request: ChatCompletionRequest,
-  ): Promise<ChatCompletion> {
-    const url = `${PERPLEXITY_BASE_URL}/chat/completions`;
-
-    return await makeApiRequest(
-      url,
-      {
-        method: "POST",
-        headers: this.getHeaders(),
-        body: JSON.stringify(request),
+  return await makeApiRequest(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
       },
-      "Perplexity",
-    );
-  }
+      body: JSON.stringify(request),
+    },
+    "Perplexity",
+  );
 }
+
+export const createPerplexityClient = (config: PerplexityClientConfig) => ({
+  chatCompletion: (request: ChatCompletionRequest) =>
+    chatCompletion(config, request),
+});
