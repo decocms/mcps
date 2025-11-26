@@ -12,12 +12,12 @@ local = false
 
 [[deco.bindings]]
 type = "contract"
-name = "OPENROUTER_CHAT_CONTRACT"
+name = "OPENROUTER_CONTRACT"
 
 [deco.bindings.contract]
-body = "Charge per OpenRouter chat completion using micro-dollar metering"
+body = "Pay-per-use OpenRouter API access charged directly from your wallet at actual cost"
 
 [[deco.bindings.contract.clauses]]
-id = "openrouter:chat"
+id = "micro-dollar"
 price = 0.000001
-description = "1 micro-dollar per unit (billed by usage)"
+description = "Pass-through pricing: OpenRouter's USD cost converted to micro-dollar units (rounded)"

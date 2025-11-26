@@ -11,7 +11,7 @@ import { AUTO_ROUTER_MODEL, DEFAULT_TEMPERATURE } from "../../constants.ts";
 import { calculateChatCost, validateChatParams } from "./utils.ts";
 import type { ChatMessage } from "../../lib/types.ts";
 import {
-  settleChatContract,
+  settleMicroDollarsContract,
   toMicroDollarUnits,
 } from "../../lib/chat-contract.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
@@ -52,6 +52,85 @@ const MessageSchema = z.object({
     .describe("Tool call ID for tool-role messages"),
 });
 
+const jsonResponseFormatOptions = z.enum(["json_object"]);
+
+export const CompletionInputSchema = z
+  .object({
+    messages: z
+      .array(MessageSchema)
+      .min(1)
+      .describe(
+        "Array of messages in the conversation. Each message has a role (user/assistant/system) and content.",
+      ),
+    model: z
+      .string()
+      .default(AUTO_ROUTER_MODEL)
+      .optional()
+      .describe(
+        "Model ID to use (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'). Use 'openrouter/auto' for automatic selection. Default: openrouter/auto",
+      ),
+    models: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Fallback chain: array of model IDs to try in sequence if the primary model fails (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet'])",
+      ),
+    temperature: z
+      .number()
+      .min(0)
+      .max(2)
+      .optional()
+      .describe(
+        "Sampling temperature (0-2). Higher values make output more random. Default: 1",
+      ),
+    maxTokens: z
+      .number()
+      .positive()
+      .optional()
+      .describe("Maximum tokens to generate in the completion"),
+    topP: z
+      .number()
+      .min(0)
+      .max(1)
+      .optional()
+      .describe(
+        "Nucleus sampling parameter (0-1). Alternative to temperature.",
+      ),
+    frequencyPenalty: z
+      .number()
+      .min(-2)
+      .max(2)
+      .optional()
+      .describe("Reduce repetition of tokens by frequency (-2 to 2)"),
+    presencePenalty: z
+      .number()
+      .min(-2)
+      .max(2)
+      .optional()
+      .describe("Reduce repetition of topics (-2 to 2)"),
+    stop: z
+      .union([z.string(), z.array(z.string())])
+      .optional()
+      .describe("Stop sequences to end generation early"),
+    responseFormat: jsonResponseFormatOptions
+      .optional()
+      .describe(
+        "Request JSON output format. Note: Only supported by some models. Check model details.",
+      ),
+    /*
+  provider: ProviderPreferencesSchema.optional().describe(
+    "Provider routing preferences to optimize selection by price, speed, or specific providers",
+  ),
+  */
+    user: z
+      .string()
+      .optional()
+      .describe(
+        "Unique identifier for your end-user (helps with abuse detection)",
+      ),
+  })
+  .passthrough();
+
 /*
 const ProviderPreferencesSchema = z.object({
   sort: z.enum(["price", "throughput", "latency"]).optional(),
@@ -62,8 +141,6 @@ const ProviderPreferencesSchema = z.object({
 });
 */
 
-const jsonResponseFormatOptions = z.enum(["json_object"]);
-
 export const createChatCompletionTool = (env: Env) =>
   createPrivateTool({
     id: "CHAT_COMPLETION",
@@ -72,80 +149,7 @@ export const createChatCompletionTool = (env: Env) =>
       "automatic model routing (openrouter/auto) and fallback chains. " +
       "Returns the complete response when generation is finished, including token usage and cost estimation. " +
       "Perfect for standard chat interactions where you don't need real-time streaming.",
-    inputSchema: z.object({
-      messages: z
-        .array(MessageSchema)
-        .min(1)
-        .describe(
-          "Array of messages in the conversation. Each message has a role (user/assistant/system) and content.",
-        ),
-      model: z
-        .string()
-        .default(AUTO_ROUTER_MODEL)
-        .optional()
-        .describe(
-          "Model ID to use (e.g., 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'). Use 'openrouter/auto' for automatic selection. Default: openrouter/auto",
-        ),
-      models: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Fallback chain: array of model IDs to try in sequence if the primary model fails (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet'])",
-        ),
-      temperature: z
-        .number()
-        .min(0)
-        .max(2)
-        .optional()
-        .describe(
-          "Sampling temperature (0-2). Higher values make output more random. Default: 1",
-        ),
-      maxTokens: z
-        .number()
-        .positive()
-        .optional()
-        .describe("Maximum tokens to generate in the completion"),
-      topP: z
-        .number()
-        .min(0)
-        .max(1)
-        .optional()
-        .describe(
-          "Nucleus sampling parameter (0-1). Alternative to temperature.",
-        ),
-      frequencyPenalty: z
-        .number()
-        .min(-2)
-        .max(2)
-        .optional()
-        .describe("Reduce repetition of tokens by frequency (-2 to 2)"),
-      presencePenalty: z
-        .number()
-        .min(-2)
-        .max(2)
-        .optional()
-        .describe("Reduce repetition of topics (-2 to 2)"),
-      stop: z
-        .union([z.string(), z.array(z.string())])
-        .optional()
-        .describe("Stop sequences to end generation early"),
-      responseFormat: jsonResponseFormatOptions
-        .optional()
-        .describe(
-          "Request JSON output format. Note: Only supported by some models. Check model details.",
-        ),
-      /*
-      provider: ProviderPreferencesSchema.optional().describe(
-        "Provider routing preferences to optimize selection by price, speed, or specific providers",
-      ),
-      */
-      user: z
-        .string()
-        .optional()
-        .describe(
-          "Unique identifier for your end-user (helps with abuse detection)",
-        ),
-    }),
+    inputSchema: CompletionInputSchema,
     outputSchema: z.object({
       id: z
         .string()
@@ -284,7 +288,7 @@ export const createChatCompletionTool = (env: Env) =>
       }
 
       if (contractMicroUnits && contractMicroUnits > 0) {
-        await settleChatContract(env, contractMicroUnits);
+        await settleMicroDollarsContract(env, contractMicroUnits);
       }
 
       return {

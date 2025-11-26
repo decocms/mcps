@@ -10,7 +10,6 @@ This MCP server allows client applications to:
 - Perform keyword research with search volume and competition data
 - Analyze SERP results (organic and news)
 - Get backlink analysis and domain metrics
-- Access traffic analytics and sources breakdown
 - Track SEO metrics programmatically
 
 ### Key Features
@@ -18,7 +17,6 @@ This MCP server allows client applications to:
 - 🔍 **Keyword Research**: Search volume, CPC, competition, and related keywords
 - 📊 **SERP Analysis**: Organic and news search results
 - 🔗 **Backlink Analysis**: Domain metrics, backlinks, and referring domains
-- 📈 **Traffic Analytics**: Overview, sources, countries, and page-level traffic data
 - 🔄 **Real-time Data**: Live API endpoints for immediate results
 - 🌐 **Multi-language Support**: Analyze data for different languages and locations
 - 🛠️ **MCP Tools**: Easy integration with MCP-compatible AI assistants
@@ -96,14 +94,16 @@ Get search volume, CPC, and competition data for keywords.
 ```
 
 #### `DATAFORSEO_GET_RELATED_KEYWORDS`
-Get keyword suggestions related to seed keywords.
+Get keyword suggestions related to a seed keyword.
 
 **Input:**
 ```typescript
 {
-  keywords: string[];           // Seed keywords
-  languageName?: string;
-  locationName?: string;
+  keyword: string;             // Seed keyword (single keyword)
+  locationName?: string;       // Default: "United States"
+  languageName?: string;       // Default: "English"
+  locationCode?: number;       // Alternative to locationName
+  languageCode?: string;       // Alternative to languageName
   depth?: number;              // 1-10
   limit?: number;
 }
@@ -175,52 +175,6 @@ Get list of domains linking to target.
 }
 ```
 
-### Traffic Tools
-
-#### `DATAFORSEO_GET_TRAFFIC_OVERVIEW`
-Get website traffic overview metrics.
-
-**Input:**
-```typescript
-{
-  target: string;              // Domain
-}
-```
-
-#### `DATAFORSEO_GET_TRAFFIC_BY_SOURCES`
-Get traffic breakdown by source.
-
-**Input:**
-```typescript
-{
-  target: string;
-}
-```
-
-#### `DATAFORSEO_GET_TRAFFIC_BY_COUNTRY`
-Get traffic distribution by country.
-
-**Input:**
-```typescript
-{
-  target: string;
-  limit?: number;
-  offset?: number;
-}
-```
-
-#### `DATAFORSEO_GET_TRAFFIC_BY_PAGES`
-Get traffic metrics for individual pages.
-
-**Input:**
-```typescript
-{
-  target: string;
-  limit?: number;
-  offset?: number;
-}
-```
-
 ## Usage Examples
 
 ### Get Keyword Search Volume
@@ -253,14 +207,6 @@ const backlinks = await client.callTool("DATAFORSEO_GET_BACKLINKS_OVERVIEW", {
 });
 ```
 
-### Analyze Website Traffic
-
-```typescript
-const traffic = await client.callTool("DATAFORSEO_GET_TRAFFIC_OVERVIEW", {
-  target: "example.com"
-});
-```
-
 ## Configuration Details
 
 ### File Structure
@@ -276,8 +222,7 @@ data-for-seo/
 │       ├── index.ts    # Tools aggregator
 │       ├── keywords.ts # Keyword tools
 │       ├── serp.ts     # SERP tools
-│       ├── backlinks.ts # Backlink tools
-│       └── traffic.ts  # Traffic tools
+│       └── backlinks.ts # Backlink tools
 ├── shared/             # Shared code
 │   └── deco.gen.ts    # Generated types
 ├── package.json

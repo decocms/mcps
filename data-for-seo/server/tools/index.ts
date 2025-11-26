@@ -9,15 +9,9 @@ import { userTools } from "@decocms/mcps-shared/tools/user";
 import { keywordTools } from "./keywords";
 import { serpTools } from "./serp";
 import { backlinkTools } from "./backlinks";
-import { trafficTools } from "./traffic";
 
 // Aggregate all DataForSEO tool factories
-const dataForSeoTools = [
-  ...keywordTools,
-  ...serpTools,
-  ...backlinkTools,
-  ...trafficTools,
-];
+const dataForSeoTools = [...keywordTools, ...serpTools, ...backlinkTools];
 
 // Export all tools from all domains
 export const tools = [...userTools, ...dataForSeoTools];
@@ -27,4 +21,3 @@ export { userTools } from "@decocms/mcps-shared/tools/user";
 export { keywordTools } from "./keywords";
 export { serpTools } from "./serp";
 export { backlinkTools } from "./backlinks";
-export { trafficTools } from "./traffic";

@@ -38,8 +38,8 @@ export type Env = DefaultEnv &
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
     scopes: [
-      Scopes.OPENROUTER_CHAT_CONTRACT.CONTRACT_AUTHORIZE,
-      Scopes.OPENROUTER_CHAT_CONTRACT.CONTRACT_SETTLE,
+      Scopes.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.OPENROUTER_CONTRACT.CONTRACT_SETTLE,
     ],
     state: StateSchema,
   },

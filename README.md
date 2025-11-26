@@ -135,3 +135,4 @@ Just create a new directory with a `package.json` - that's it! The workflows wil
 3. Deploy it when changes are pushed
 
 No manual workflow configuration needed! 🎉
+

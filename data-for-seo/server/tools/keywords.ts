@@ -32,15 +32,17 @@ export const createRelatedKeywordsTool = (env: Env) =>
   createPrivateTool({
     id: "DATAFORSEO_GET_RELATED_KEYWORDS",
     description:
-      "Get keyword suggestions related to seed keywords. Returns related terms with search volume and competition data.",
+      "Get keyword suggestions related to a seed keyword. Returns related terms with search volume and competition data.",
     inputSchema: relatedKeywordsInputSchema,
     outputSchema: relatedKeywordsOutputSchema,
     execute: async ({ context }) => {
       const client = getClientFromEnv(env);
       const result = await client.getRelatedKeywords(
-        context.keywords,
-        context.languageName,
+        context.keyword,
         context.locationName,
+        context.languageName,
+        context.locationCode,
+        context.languageCode,
         context.depth,
         context.limit,
       );

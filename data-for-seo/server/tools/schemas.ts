@@ -19,15 +19,25 @@ export const searchVolumeInputSchema = z.object({
 });
 
 export const relatedKeywordsInputSchema = z.object({
-  keywords: z.array(z.string()).describe("Seed keywords to find related terms"),
-  languageName: z
-    .string()
-    .optional()
-    .describe("Language name (e.g., 'English')"),
+  keyword: z.string().describe("Seed keyword to find related terms"),
   locationName: z
     .string()
     .optional()
-    .describe("Location name (e.g., 'United States')"),
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
   depth: z.number().optional().describe("Depth of keyword expansion (1-10)"),
   limit: z.number().optional().describe("Maximum number of results"),
 });
@@ -114,46 +124,4 @@ export const referringDomainsOutputSchema = z.object({
   data: z
     .any()
     .describe("List of referring domains with ranks and backlink counts"),
-});
-
-// Traffic Input Schemas
-export const trafficOverviewInputSchema = z.object({
-  target: z.string().describe("Target domain to analyze"),
-});
-
-export const trafficBySourcesInputSchema = z.object({
-  target: z.string().describe("Target domain to analyze"),
-});
-
-export const trafficByCountryInputSchema = z.object({
-  target: z.string().describe("Target domain to analyze"),
-  limit: z.number().optional().describe("Maximum number of results"),
-  offset: z.number().optional().describe("Offset for pagination"),
-});
-
-export const trafficByPagesInputSchema = z.object({
-  target: z.string().describe("Target domain to analyze"),
-  limit: z.number().optional().describe("Maximum number of results"),
-  offset: z.number().optional().describe("Offset for pagination"),
-});
-
-// Traffic Output Schemas
-export const trafficOverviewOutputSchema = z.object({
-  data: z
-    .any()
-    .describe("Traffic overview with visits, bounce rate, and metrics"),
-});
-
-export const trafficBySourcesOutputSchema = z.object({
-  data: z
-    .any()
-    .describe("Traffic breakdown by source (direct, organic, paid, etc)"),
-});
-
-export const trafficByCountryOutputSchema = z.object({
-  data: z.any().describe("Traffic distribution by country"),
-});
-
-export const trafficByPagesOutputSchema = z.object({
-  data: z.any().describe("Traffic metrics for individual pages"),
 });

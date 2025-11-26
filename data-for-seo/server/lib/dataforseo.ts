@@ -162,21 +162,25 @@ async function getSearchVolume(
 
 async function getRelatedKeywords(
   config: DataForSeoClientConfig,
-  keywords: string[],
-  languageName?: string,
-  locationName?: string,
+  keyword: string,
+  locationName: string = "United States",
+  languageName: string = "English",
+  locationCode?: number,
+  languageCode?: string,
   depth?: number,
   limit?: number,
 ): Promise<DataForSeoTaskResponse> {
   return makeDataForSeoRequest(
     config,
-    "/keywords_data/google/related_keywords/live",
+    "/dataforseo_labs/google/related_keywords/live",
     "POST",
     [
       {
-        keywords,
-        language_name: languageName,
+        keyword,
         location_name: locationName,
+        language_name: languageName,
+        location_code: locationCode,
+        language_code: languageCode,
         depth,
         limit,
         include_seed_keyword: false,
@@ -243,7 +247,7 @@ async function getBacklinksOverview(
   config: DataForSeoClientConfig,
   target: string,
 ): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(config, "/backlinks/domain_info/live", "POST", [
+  return makeDataForSeoRequest(config, "/backlinks/summary/live", "POST", [
     {
       target,
     },
@@ -285,79 +289,6 @@ async function getReferringDomains(
   );
 }
 
-// Traffic Analytics API
-async function getTrafficOverview(
-  config: DataForSeoClientConfig,
-  target: string,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/overview/live",
-    "POST",
-    [
-      {
-        target,
-      },
-    ],
-  );
-}
-
-async function getTrafficBySources(
-  config: DataForSeoClientConfig,
-  target: string,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_source/live",
-    "POST",
-    [
-      {
-        target,
-      },
-    ],
-  );
-}
-
-async function getTrafficByCountry(
-  config: DataForSeoClientConfig,
-  target: string,
-  limit?: number,
-  offset?: number,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_country/live",
-    "POST",
-    [
-      {
-        target,
-        limit,
-        offset,
-      },
-    ],
-  );
-}
-
-async function getTrafficByPages(
-  config: DataForSeoClientConfig,
-  target: string,
-  limit?: number,
-  offset?: number,
-): Promise<DataForSeoTaskResponse> {
-  return makeDataForSeoRequest(
-    config,
-    "/traffic_analytics/by_pages/live",
-    "POST",
-    [
-      {
-        target,
-        limit,
-        offset,
-      },
-    ],
-  );
-}
-
 export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
   // Keywords
   getSearchVolume: (
@@ -376,17 +307,21 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
       locationCode,
     ),
   getRelatedKeywords: (
-    keywords: string[],
-    languageName?: string,
+    keyword: string,
     locationName?: string,
+    languageName?: string,
+    locationCode?: number,
+    languageCode?: string,
     depth?: number,
     limit?: number,
   ) =>
     getRelatedKeywords(
       config,
-      keywords,
-      languageName,
+      keyword,
       locationName,
+      languageName,
+      locationCode,
+      languageCode,
       depth,
       limit,
     ),
@@ -430,14 +365,6 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
     getBacklinks(config, target, limit, offset),
   getReferringDomains: (target: string, limit?: number, offset?: number) =>
     getReferringDomains(config, target, limit, offset),
-
-  // Traffic
-  getTrafficOverview: (target: string) => getTrafficOverview(config, target),
-  getTrafficBySources: (target: string) => getTrafficBySources(config, target),
-  getTrafficByCountry: (target: string, limit?: number, offset?: number) =>
-    getTrafficByCountry(config, target, limit, offset),
-  getTrafficByPages: (target: string, limit?: number, offset?: number) =>
-    getTrafficByPages(config, target, limit, offset),
 });
 
 // Helper to create client from environment
