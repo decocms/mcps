@@ -163,7 +163,8 @@ export const streamText = (env: Env) =>
         const ctx = runtimeContext.get("ctx") as {
           waitUntil?: (p: Promise<any>) => void;
         };
-        const workspace = env.DECO_CHAT_WORKSPACE;
+        const split = env.DECO_WORKSPACE.split("/");
+        const workspace = split[split.length - 1];
         if (ctx?.waitUntil) {
           ctx.waitUntil(
             streamComplete.then(async () => {
