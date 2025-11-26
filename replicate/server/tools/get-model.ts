@@ -34,6 +34,52 @@ export const createGetModelTool = (env: Env) =>
       // Get model details
       const modelData = await client.models.get(owner, name);
 
+      // Validate latest_version if present
+      let latest_version;
+      if (modelData.latest_version) {
+        if (!modelData.latest_version.cog_version) {
+          throw new Error(
+            `Invalid model response: missing 'cog_version' in latest_version for model ${model}`,
+          );
+        }
+        if (
+          !modelData.latest_version.openapi_schema ||
+          typeof modelData.latest_version.openapi_schema !== "object"
+        ) {
+          throw new Error(
+            `Invalid model response: missing or invalid 'openapi_schema' in latest_version for model ${model}`,
+          );
+        }
+
+        latest_version = {
+          id: modelData.latest_version.id,
+          created_at: modelData.latest_version.created_at,
+          cog_version: modelData.latest_version.cog_version,
+          openapi_schema: modelData.latest_version.openapi_schema as Record<
+            string,
+            unknown
+          >,
+        };
+      }
+
+      // Validate default_example if present
+      let default_example;
+      if (modelData.default_example) {
+        if (
+          !modelData.default_example.input ||
+          typeof modelData.default_example.input !== "object"
+        ) {
+          throw new Error(
+            `Invalid model response: missing or invalid 'input' in default_example for model ${model}`,
+          );
+        }
+
+        default_example = {
+          input: modelData.default_example.input as Record<string, unknown>,
+          output: modelData.default_example.output,
+        };
+      }
+
       return {
         owner: modelData.owner,
         name: modelData.name,
@@ -45,24 +91,8 @@ export const createGetModelTool = (env: Env) =>
         github_url: modelData.github_url,
         paper_url: modelData.paper_url,
         license_url: modelData.license_url,
-        latest_version: modelData.latest_version
-          ? {
-              id: modelData.latest_version.id,
-              created_at: modelData.latest_version.created_at,
-              cog_version: modelData.latest_version.cog_version || "",
-              openapi_schema: (modelData.latest_version.openapi_schema ||
-                {}) as Record<string, unknown>,
-            }
-          : undefined,
-        default_example: modelData.default_example
-          ? {
-              input: (modelData.default_example.input || {}) as Record<
-                string,
-                unknown
-              >,
-              output: modelData.default_example.output,
-            }
-          : undefined,
+        latest_version,
+        default_example,
       };
     },
   });

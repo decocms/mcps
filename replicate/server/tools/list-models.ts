@@ -6,6 +6,7 @@
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Env } from "../main";
 import { ListModelsInputSchema, ListModelsOutputSchema } from "../lib/types";
+import { REPLICATE_API_URL } from "../constants";
 
 export const createListModelsTool = (env: Env) =>
   createPrivateTool({
@@ -13,27 +14,32 @@ export const createListModelsTool = (env: Env) =>
     description:
       "List available models from Replicate. " +
       "You can filter by owner (user or organization) to see their models. " +
-      "Returns model metadata including name, description, run count, and latest version info.",
+      "Returns model metadata including name, description, run count, and latest version info. " +
+      "Use the next_cursor from the response to paginate through results.",
     inputSchema: ListModelsInputSchema,
     outputSchema: ListModelsOutputSchema,
     execute: async ({ context }) => {
-      const { owner } = context;
+      const { owner, cursor } = context;
 
       // Use the search API to list models by owner
       // The Replicate SDK doesn't expose a direct list-by-owner method
       const ownerName = owner || "replicate";
 
+      // Build URL with query parameters
+      const url = new URL(`${REPLICATE_API_URL}/models`);
+      url.searchParams.set("owner", ownerName);
+      if (cursor) {
+        url.searchParams.set("cursor", cursor);
+      }
+
       // Fetch models using the REST API directly
       const apiKey = env.state.apiKey;
-      const response = await fetch(
-        `https://api.replicate.com/v1/models?owner=${ownerName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
+      const response = await fetch(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to list models: ${response.statusText}`);

@@ -14,6 +14,16 @@ import {
   BasePredictionOutputSchema,
 } from "../lib/types";
 
+/**
+ * Type guard to validate model identifier format
+ */
+function isValidModelIdentifier(
+  modelId: string,
+): modelId is `${string}/${string}` {
+  const parts = modelId.split("/");
+  return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
+}
+
 export const createRunModelTool = (env: Env) =>
   createPrivateTool({
     id: "RUN_MODEL",
@@ -74,10 +84,17 @@ export const createRunModelTool = (env: Env) =>
         });
       }
 
+      // Validate critical response fields
+      if (!prediction.model) {
+        throw new Error(
+          `Invalid prediction response: missing 'model' field. This may indicate an API error.`,
+        );
+      }
+
       return {
         id: prediction.id,
         status: prediction.status,
-        model: prediction.model || model,
+        model: prediction.model,
         output: prediction.output,
         error: prediction.error ? String(prediction.error) : undefined,
         logs: prediction.logs,
@@ -86,10 +103,3 @@ export const createRunModelTool = (env: Env) =>
       };
     },
   });
-
-function isValidModelIdentifier(
-  modelId: string,
-): modelId is `${string}/${string}` {
-  const parts = modelId.split("/");
-  return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
-}
