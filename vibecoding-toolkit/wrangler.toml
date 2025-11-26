@@ -15,8 +15,3 @@ run_worker_first = true
 workspace = "deco"
 enable_workflows = false
 local = false
-
-[[deco.bindings]]
-name = "DATABASE"
-type = "mcp"
-integration_name = "@deco/database"
