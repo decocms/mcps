@@ -4,7 +4,10 @@
  */
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
-import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
+import {
+  assertEnvKey,
+  makeApiRequest,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 import type { Env } from "../main";
 import { ListModelsInputSchema, ListModelsOutputSchema } from "../lib/types";
 import { REPLICATE_API_URL } from "../constants";
@@ -36,18 +39,16 @@ export const createListModelsTool = (env: Env) =>
       // Fetch models using the REST API directly
       assertEnvKey(env, "REPLICATE_API_TOKEN");
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Authorization: `Bearer ${env.REPLICATE_API_TOKEN}`,
-          "Content-Type": "application/json",
+      const data = (await makeApiRequest(
+        url.toString(),
+        {
+          headers: {
+            Authorization: `Bearer ${env.REPLICATE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to list models: ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as {
+        "Replicate",
+      )) as {
         results: any[];
         next?: string;
       };

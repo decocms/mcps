@@ -20,11 +20,11 @@ type = "contract"
 name = "REPLICATE_API_CONTRACT"
 
 [deco.bindings.contract]
-body = "Charge per Replicate API usage with micro-dollar metering"
+body = "$0.01 per prediction"
 
 [[deco.bindings.contract.clauses]]
 id = "replicate:prediction"
-price = 0.000001
-description = "1 micro-dollar per unit (billed by prediction usage)"
+price = 0.01
+description = "$0.01 per prediction"
 
 

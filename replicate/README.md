@@ -1,15 +1,15 @@
 # Replicate MCP
 
-MCP (Model Context Protocol) para interagir com a API do Replicate, permitindo executar modelos de ML/AI na nuvem.
+MCP (Model Context Protocol) server for interacting with the Replicate API, enabling execution of ML/AI models in the cloud.
 
-## Recursos
+## Features
 
-Este MCP oferece as seguintes ferramentas:
+This MCP provides the following tools:
 
 ### 🚀 Run Model
-Execute predições usando modelos do Replicate. Suporta qualquer modelo disponível na plataforma.
+Execute predictions using Replicate models. Supports any model available on the platform.
 
-**Exemplo de uso:**
+**Usage example:**
 ```typescript
 {
   model: "stability-ai/sdxl",
@@ -23,9 +23,9 @@ Execute predições usando modelos do Replicate. Suporta qualquer modelo dispon�
 ```
 
 ### 📊 Get Prediction
-Obtenha o status e resultados de uma predição pelo ID.
+Get the status and results of a prediction by ID.
 
-**Exemplo de uso:**
+**Usage example:**
 ```typescript
 {
   predictionId: "abc123xyz"
@@ -33,9 +33,9 @@ Obtenha o status e resultados de uma predição pelo ID.
 ```
 
 ### ❌ Cancel Prediction
-Cancele uma predição em execução.
+Cancel a running prediction.
 
-**Exemplo de uso:**
+**Usage example:**
 ```typescript
 {
   predictionId: "abc123xyz"
@@ -43,9 +43,9 @@ Cancele uma predição em execução.
 ```
 
 ### 📋 List Models
-Liste modelos disponíveis de um usuário ou organização específica.
+List available models from a specific user or organization.
 
-**Exemplo de uso:**
+**Usage example:**
 ```typescript
 {
   owner: "stability-ai"
@@ -53,36 +53,36 @@ Liste modelos disponíveis de um usuário ou organização específica.
 ```
 
 ### 🔍 Get Model
-Obtenha informações detalhadas sobre um modelo específico, incluindo schema de entrada/saída.
+Get detailed information about a specific model, including input/output schema.
 
-**Exemplo de uso:**
+**Usage example:**
 ```typescript
 {
   model: "stability-ai/sdxl"
 }
 ```
 
-## Configuração
+## Configuration
 
-### Pré-requisitos
+### Prerequisites
 
-1. Conta no Replicate: https://replicate.com
-2. API Token configurado no workspace do Deco: https://replicate.com/account/api-tokens
+1. Replicate account: https://replicate.com
+2. API Token configured in Deco workspace: https://replicate.com/account/api-tokens
 
-### Instalação
+### Installation
 
-1. Instale as dependências:
+1. Install dependencies:
 ```bash
 bun install
 ```
 
-2. O MCP usa **contract-based billing** para medir o uso da API
-3. Ao instalar, você autoriza o uso do contrato que cobra por predição executada
-4. A API key do Replicate é configurada no nível do workspace (não por instalação)
+2. This MCP uses **contract-based billing** to meter API usage
+3. Upon installation, you authorize the contract that charges per prediction executed
+4. The Replicate API key is configured at workspace level (not per installation)
 
-## Desenvolvimento
+## Development
 
-### Executar localmente
+### Run locally
 
 ```bash
 bun run dev
@@ -100,39 +100,39 @@ bun run build
 bun run deploy
 ```
 
-## Modelos Populares
+## Popular Models
 
-Alguns modelos populares que você pode usar:
+Some popular models you can use:
 
-- **Geração de Imagens:**
+- **Image Generation:**
   - `stability-ai/sdxl` - Stable Diffusion XL
   - `stability-ai/stable-diffusion` - Stable Diffusion 2.1
   - `lucataco/realistic-vision-v5` - Realistic Vision
 
-- **Geração de Texto:**
+- **Text Generation:**
   - `meta/llama-2-70b-chat` - Llama 2 70B Chat
   - `mistralai/mixtral-8x7b-instruct-v0.1` - Mixtral 8x7B
 
-- **Geração de Áudio:**
+- **Audio Generation:**
   - `meta/musicgen` - MusicGen
   - `riffusion/riffusion` - Riffusion
 
-- **Processamento de Vídeo:**
+- **Video Processing:**
   - `stability-ai/stable-video-diffusion` - Stable Video Diffusion
 
-## Documentação
+## Documentation
 
 - [Replicate API Docs](https://replicate.com/docs)
-- [Modelos Disponíveis](https://replicate.com/explore)
+- [Available Models](https://replicate.com/explore)
 - [Pricing](https://replicate.com/pricing)
 
-## Limites e Custos
+## Limits and Costs
 
-O uso do Replicate é baseado em consumo. Cada modelo tem seu próprio custo por execução. Verifique os detalhes de pricing na página do modelo antes de executar.
+Replicate usage is consumption-based. Each model has its own cost per execution. Check the pricing details on the model page before running.
 
-## Suporte
+## Support
 
-Para problemas ou dúvidas:
+For issues or questions:
 - [Replicate Community](https://discord.gg/replicate)
 - [GitHub Issues](https://github.com/replicate/replicate)
 

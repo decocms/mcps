@@ -1,7 +1,7 @@
 {
   "name": "replicate",
   "version": "1.0.0",
-  "description": "MCP para interagir com a API do Replicate",
+  "description": "MCP to interact with the Replicate API",
   "private": true,
   "type": "module",
   "scripts": {
