@@ -19,7 +19,10 @@
     "prepare": "sh scripts/setup-hooks.sh"
   },
   "workspaces": [
+    "apify",
+    "data-for-seo",
     "datajud",
+    "gemini-pro-vision",
     "nanobanana",
     "object-storage",
     "openrouter",

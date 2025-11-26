@@ -1,0 +1,17 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "data-for-seo"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Access comprehensive SEO data including keywords, SERP analysis, backlinks, and traffic analytics using DataForSEO API"
+icon = "https://dataforseo.com/wp-content/uploads/2022/04/cropped-favicon_512.png"
+friendlyName = "DataForSEO"
+
