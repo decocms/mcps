@@ -5,11 +5,12 @@
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
+import type { Prediction } from "replicate";
 import type { Env } from "../main";
 import { createReplicateClient } from "../lib/replicate";
 import {
   RunModelInputSchema,
-  StrictPredictionStatusSchema,
+  PredictionStatusSchema,
   BasePredictionOutputSchema,
 } from "../lib/types";
 
@@ -24,19 +25,24 @@ export const createRunModelTool = (env: Env) =>
     inputSchema: RunModelInputSchema,
     outputSchema: z.object({
       ...BasePredictionOutputSchema,
-      status: StrictPredictionStatusSchema,
+      status: PredictionStatusSchema,
     }),
     execute: async ({ context }) => {
       const { model, input, wait = true, webhook } = context;
 
       const client = createReplicateClient(env);
 
-      // Parse model string to get owner/name/version
       const modelParts = model.split(":");
       const modelId = modelParts[0];
       const version = modelParts[1];
 
-      // Create prediction options
+      // Validate model format: must be "owner/name" or "owner/name:version"
+      if (!isValidModelIdentifier(modelId)) {
+        throw new Error(
+          `Invalid model format: "${model}". Expected format: "owner/name" or "owner/name:version"`,
+        );
+      }
+
       const options: {
         input: Record<string, unknown>;
         version?: string;
@@ -56,11 +62,10 @@ export const createRunModelTool = (env: Env) =>
       }
 
       // Create and run prediction
-      let prediction;
+      let prediction: Prediction;
 
       if (wait) {
-        // Wait for completion
-        prediction = await client.run(modelId, options);
+        prediction = (await client.run(modelId, options)) as Prediction;
       } else {
         // Create prediction without waiting
         prediction = await client.predictions.create({
@@ -81,3 +86,10 @@ export const createRunModelTool = (env: Env) =>
       };
     },
   });
+
+function isValidModelIdentifier(
+  modelId: string,
+): modelId is `${string}/${string}` {
+  const parts = modelId.split("/");
+  return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
+}

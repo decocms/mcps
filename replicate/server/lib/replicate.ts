@@ -1,18 +1,15 @@
 import Replicate from "replicate";
+import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
 import type { Env } from "../main";
 
 /**
  * Creates a Replicate client instance with API key from env
  */
 export function createReplicateClient(env: Env): Replicate {
-  const apiKey = env.state.apiKey;
-
-  if (!apiKey) {
-    throw new Error("Replicate API key is required");
-  }
+  assertEnvKey(env.state, "apiKey");
 
   return new Replicate({
-    auth: apiKey,
+    auth: env.state.apiKey,
   });
 }
 
