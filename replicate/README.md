@@ -67,7 +67,7 @@ Obtenha informações detalhadas sobre um modelo específico, incluindo schema d
 ### Pré-requisitos
 
 1. Conta no Replicate: https://replicate.com
-2. API Token: https://replicate.com/account/api-tokens
+2. API Token configurado no workspace do Deco: https://replicate.com/account/api-tokens
 
 ### Instalação
 
@@ -76,7 +76,9 @@ Obtenha informações detalhadas sobre um modelo específico, incluindo schema d
 bun install
 ```
 
-2. Configure sua API key ao instalar o MCP no Deco Chat
+2. O MCP usa **contract-based billing** para medir o uso da API
+3. Ao instalar, você autoriza o uso do contrato que cobra por predição executada
+4. A API key do Replicate é configurada no nível do workspace (não por instalação)
 
 ## Desenvolvimento
 

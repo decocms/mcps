@@ -9,3 +9,22 @@ scope = "deco"
 workspace = "deco"
 enable_workflows = false
 local = false
+
+[deco.integration]
+description = "Execute AI/ML models in the cloud using Replicate's API. Run image generation, text models, audio processing, and more."
+icon = "https://cdn.brandfetch.io/replicate.com?c=1idGuZjjNQsbnvHtiGk"
+friendlyName = "Replicate"
+
+[[deco.bindings]]
+type = "contract"
+name = "REPLICATE_API_CONTRACT"
+
+[deco.bindings.contract]
+body = "Charge per Replicate API usage with micro-dollar metering"
+
+[[deco.bindings.contract.clauses]]
+id = "replicate:prediction"
+price = 0.000001
+description = "1 micro-dollar per unit (billed by prediction usage)"
+
+

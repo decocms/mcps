@@ -1,11 +1,15 @@
 /**
- * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * your MCP server at /mcp.
+ * Replicate MCP Server
+ *
+ * This MCP provides tools for interacting with Replicate's API,
+ * including running AI models, managing predictions, and browsing the model catalog.
+ *
+ * Uses contract-based billing for API usage metering.
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
+  Scopes,
   StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
@@ -13,23 +17,12 @@ import { z } from "zod";
 import { tools } from "./tools/index.ts";
 
 /**
- * Extended state schema with Replicate configuration
+ * State Schema defines the configuration users provide during installation
  */
-export const StateSchema = BaseStateSchema.extend({
-  apiKey: z
-    .string()
-    .min(1)
-    .describe(
-      "Your Replicate API key. Get it from https://replicate.com/account/api-tokens",
-    ),
-});
+export const StateSchema = BaseStateSchema;
 
 /**
- * This Env type is the main context object that is passed to
- * all of your Application.
- *
- * It includes all of the generated types from your
- * Deco bindings, along with the default ones.
+ * Environment type combining Deco bindings and Cloudflare Workers context
  */
 export type Env = DefaultEnv &
   DecoEnv & {
@@ -42,37 +35,18 @@ export type Env = DefaultEnv &
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
     /**
-     * These scopes define the asking permissions of your
-     * app when a user is installing it. When a user
-     * authorizes your app for using AI_GENERATE, you will
-     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
-     * and utilize the user's own AI Gateway, without having to
-     * deploy your own, setup any API keys, etc.
+     * Request contract permissions for Replicate API usage billing
+     * Note: After updating wrangler.toml, run build to regenerate scopes
      */
-    scopes: [],
-    /**
-     * The state schema of your Application defines what
-     * your installed App state will look like. When a user
-     * is installing your App, they will have to fill in
-     * a form with the fields defined in the state schema.
-     *
-     * This is powerful for building multi-tenant apps,
-     * where you can have multiple users and projects
-     * sharing different configurations on the same app.
-     *
-     * When you define a binding dependency on another app,
-     * it will automatically be linked to your StateSchema on
-     * type generation. You can also `.extend` it to add more
-     * fields to the state schema, like asking for an API Key
-     * for connecting to a third-party service.
-     */
+    scopes: [
+      Scopes.REPLICATE_API_CONTRACT?.CONTRACT_AUTHORIZE,
+      Scopes.REPLICATE_API_CONTRACT?.CONTRACT_SETTLE,
+    ],
     state: StateSchema,
   },
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
    */
   fetch: (req, env) => env.ASSETS.fetch(req),
 });

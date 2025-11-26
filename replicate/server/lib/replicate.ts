@@ -3,13 +3,13 @@ import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
 import type { Env } from "../main";
 
 /**
- * Creates a Replicate client instance with API key from env
+ * Creates a Replicate client instance with API key from contract binding
  */
 export function createReplicateClient(env: Env): Replicate {
-  assertEnvKey(env.state, "apiKey");
+  assertEnvKey(env, "REPLICATE_API_TOKEN");
 
   return new Replicate({
-    auth: env.state.apiKey,
+    auth: env.REPLICATE_API_TOKEN as string,
   });
 }
 
