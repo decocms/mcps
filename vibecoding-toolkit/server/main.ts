@@ -6,9 +6,19 @@
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
+import { z } from "zod";
 
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
+
+// Extend the state schema with PostgreSQL connection string
+const ExtendedStateSchema = StateSchema.extend({
+  postgresConnectionString: z
+    .string()
+    .describe(
+      "PostgreSQL connection string (e.g., postgres://user:password@host:port/database)",
+    ),
+});
 
 /**
  * This Env type is the main context object that is passed to
@@ -24,7 +34,7 @@ export type Env = DefaultEnv &
     };
   };
 
-const runtime = withRuntime<Env, typeof StateSchema>({
+const runtime = withRuntime<Env, typeof ExtendedStateSchema>({
   oauth: {
     /**
      * These scopes define the asking permissions of your
@@ -51,7 +61,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * fields to the state schema, like asking for an API Key
      * for connecting to a third-party service.
      */
-    state: StateSchema,
+    state: ExtendedStateSchema,
   },
   views,
   tools,
