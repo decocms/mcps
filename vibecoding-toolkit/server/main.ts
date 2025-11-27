@@ -22,6 +22,12 @@ export type Env = DefaultEnv &
     ASSETS: {
       fetch: (request: Request, init?: RequestInit) => Promise<Response>;
     };
+    POSTGRES: {
+      RUN_SQL: (params: {
+        query: string;
+        params: any[];
+      }) => Promise<{ rows: any[]; rowCount: number }>;
+    };
   };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
