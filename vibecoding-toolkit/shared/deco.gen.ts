@@ -2465,9 +2465,10 @@ export interface Object_110 {
 }
 export interface Object_111 {
   name: String_326;
-  inputSchema: Object_112;
-  outputSchema: Object_113;
+  inputSchema?: Object_112;
+  outputSchema?: Object_113;
   execute: Object_114 | String_329;
+  input?: Object_115;
   status?: String_330;
   error?: String_331;
   logs?: Array_33;
@@ -2481,6 +2482,9 @@ export interface Object_113 {
 export interface Object_114 {
   connectionId: String_327;
   toolName: String_328;
+}
+export interface Object_115 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */
@@ -2512,15 +2516,15 @@ export type String_345 = "pending" | "running" | "completed" | "failed";
 export type String_346 = string;
 export type String_347 = string;
 export type Array_35 = String_347[];
-export type Array_34 = Object_116[];
+export type Array_34 = Object_117[];
 
 export interface DECO_COLLECTION_WORKFLOWS_INSERTInput {
-  data: Object_115;
+  data: Object_116;
 }
 /**
  * Data for the new entity (id may be auto-generated)
  */
-export interface Object_115 {
+export interface Object_116 {
   id: String_333;
   title: String_334;
   created_at: String_335;
@@ -2531,24 +2535,28 @@ export interface Object_115 {
   description: String_340;
   steps: Array_34;
 }
-export interface Object_116 {
+export interface Object_117 {
   name: String_341;
-  inputSchema: Object_117;
-  outputSchema: Object_118;
-  execute: Object_119 | String_344;
+  inputSchema?: Object_118;
+  outputSchema?: Object_119;
+  execute: Object_120 | String_344;
+  input?: Object_121;
   status?: String_345;
   error?: String_346;
   logs?: Array_35;
-}
-export interface Object_117 {
-  [k: string]: unknown;
 }
 export interface Object_118 {
   [k: string]: unknown;
 }
 export interface Object_119 {
+  [k: string]: unknown;
+}
+export interface Object_120 {
   connectionId: String_342;
   toolName: String_343;
+}
+export interface Object_121 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */
@@ -2580,15 +2588,15 @@ export type String_360 = "pending" | "running" | "completed" | "failed";
 export type String_361 = string;
 export type String_362 = string;
 export type Array_37 = String_362[];
-export type Array_36 = Object_121[];
+export type Array_36 = Object_123[];
 
 export interface DECO_COLLECTION_WORKFLOWS_INSERTOutput {
-  item: Object_120;
+  item: Object_122;
 }
 /**
  * The created entity with generated id
  */
-export interface Object_120 {
+export interface Object_122 {
   id: String_348;
   title: String_349;
   created_at: String_350;
@@ -2599,24 +2607,28 @@ export interface Object_120 {
   description: String_355;
   steps: Array_36;
 }
-export interface Object_121 {
+export interface Object_123 {
   name: String_356;
-  inputSchema: Object_122;
-  outputSchema: Object_123;
-  execute: Object_124 | String_359;
+  inputSchema?: Object_124;
+  outputSchema?: Object_125;
+  execute: Object_126 | String_359;
+  input?: Object_127;
   status?: String_360;
   error?: String_361;
   logs?: Array_37;
 }
-export interface Object_122 {
-  [k: string]: unknown;
-}
-export interface Object_123 {
-  [k: string]: unknown;
-}
 export interface Object_124 {
+  [k: string]: unknown;
+}
+export interface Object_125 {
+  [k: string]: unknown;
+}
+export interface Object_126 {
   connectionId: String_357;
   toolName: String_358;
+}
+export interface Object_127 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */
@@ -2638,7 +2650,7 @@ export type String_364 =
   | "like"
   | "contains";
 export type String_365 = "and" | "or" | "not";
-export type Array_39 = Object_125[];
+export type Array_39 = Object_128[];
 export type String_366 = string;
 export type Array_41 = String_366[];
 export type String_367 = "asc" | "desc";
@@ -2646,7 +2658,7 @@ export type String_368 = "first" | "last";
 /**
  * Sort expressions
  */
-export type Array_40 = Object_127[];
+export type Array_40 = Object_130[];
 /**
  * Maximum number of items to return
  */
@@ -2660,21 +2672,21 @@ export interface DECO_COLLECTION_WORKFLOWS_LISTInput {
   /**
    * Filter expression
    */
-  where?: Object_125 | Object_126;
+  where?: Object_128 | Object_129;
   orderBy?: Array_40;
   limit?: Integer_8;
   offset?: Integer_9;
 }
-export interface Object_125 {
+export interface Object_128 {
   field: Array_38;
   operator: String_364;
   value?: unknown;
 }
-export interface Object_126 {
+export interface Object_129 {
   operator: String_365;
   conditions: Array_39;
 }
-export interface Object_127 {
+export interface Object_130 {
   field: Array_41;
   direction: String_367;
   nulls?: String_368;
@@ -2709,11 +2721,11 @@ export type String_381 = "pending" | "running" | "completed" | "failed";
 export type String_382 = string;
 export type String_383 = string;
 export type Array_44 = String_383[];
-export type Array_43 = Object_129[];
+export type Array_43 = Object_132[];
 /**
  * Array of collection items
  */
-export type Array_42 = Object_128[];
+export type Array_42 = Object_131[];
 /**
  * Total number of matching items (if available)
  */
@@ -2728,7 +2740,7 @@ export interface DECO_COLLECTION_WORKFLOWS_LISTOutput {
   totalCount?: Integer_10;
   hasMore?: Boolean_16;
 }
-export interface Object_128 {
+export interface Object_131 {
   id: String_369;
   title: String_370;
   created_at: String_371;
@@ -2739,24 +2751,28 @@ export interface Object_128 {
   description: String_376;
   steps: Array_43;
 }
-export interface Object_129 {
+export interface Object_132 {
   name: String_377;
-  inputSchema: Object_130;
-  outputSchema: Object_131;
-  execute: Object_132 | String_380;
+  inputSchema?: Object_133;
+  outputSchema?: Object_134;
+  execute: Object_135 | String_380;
+  input?: Object_136;
   status?: String_381;
   error?: String_382;
   logs?: Array_44;
 }
-export interface Object_130 {
+export interface Object_133 {
   [k: string]: unknown;
 }
-export interface Object_131 {
+export interface Object_134 {
   [k: string]: unknown;
 }
-export interface Object_132 {
+export interface Object_135 {
   connectionId: String_378;
   toolName: String_379;
+}
+export interface Object_136 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */
@@ -2792,16 +2808,16 @@ export type String_397 = "pending" | "running" | "completed" | "failed";
 export type String_398 = string;
 export type String_399 = string;
 export type Array_46 = String_399[];
-export type Array_45 = Object_134[];
+export type Array_45 = Object_138[];
 
 export interface DECO_COLLECTION_WORKFLOWS_UPDATEInput {
   id: String_384;
-  data: Object_133;
+  data: Object_137;
 }
 /**
  * Partial entity data to update
  */
-export interface Object_133 {
+export interface Object_137 {
   id?: String_385;
   title?: String_386;
   created_at?: String_387;
@@ -2812,24 +2828,28 @@ export interface Object_133 {
   description?: String_392;
   steps?: Array_45;
 }
-export interface Object_134 {
+export interface Object_138 {
   name: String_393;
-  inputSchema: Object_135;
-  outputSchema: Object_136;
-  execute: Object_137 | String_396;
+  inputSchema?: Object_139;
+  outputSchema?: Object_140;
+  execute: Object_141 | String_396;
+  input?: Object_142;
   status?: String_397;
   error?: String_398;
   logs?: Array_46;
 }
-export interface Object_135 {
+export interface Object_139 {
   [k: string]: unknown;
 }
-export interface Object_136 {
+export interface Object_140 {
   [k: string]: unknown;
 }
-export interface Object_137 {
+export interface Object_141 {
   connectionId: String_394;
   toolName: String_395;
+}
+export interface Object_142 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */
@@ -2861,15 +2881,15 @@ export type String_412 = "pending" | "running" | "completed" | "failed";
 export type String_413 = string;
 export type String_414 = string;
 export type Array_48 = String_414[];
-export type Array_47 = Object_139[];
+export type Array_47 = Object_144[];
 
 export interface DECO_COLLECTION_WORKFLOWS_UPDATEOutput {
-  item: Object_138;
+  item: Object_143;
 }
 /**
  * The updated entity
  */
-export interface Object_138 {
+export interface Object_143 {
   id: String_400;
   title: String_401;
   created_at: String_402;
@@ -2880,24 +2900,28 @@ export interface Object_138 {
   description: String_407;
   steps: Array_47;
 }
-export interface Object_139 {
+export interface Object_144 {
   name: String_408;
-  inputSchema: Object_140;
-  outputSchema: Object_141;
-  execute: Object_142 | String_411;
+  inputSchema?: Object_145;
+  outputSchema?: Object_146;
+  execute: Object_147 | String_411;
+  input?: Object_148;
   status?: String_412;
   error?: String_413;
   logs?: Array_48;
 }
-export interface Object_140 {
+export interface Object_145 {
   [k: string]: unknown;
 }
-export interface Object_141 {
+export interface Object_146 {
   [k: string]: unknown;
 }
-export interface Object_142 {
+export interface Object_147 {
   connectionId: String_409;
   toolName: String_410;
+}
+export interface Object_148 {
+  [k: string]: unknown;
 }
 
 /* eslint-disable */

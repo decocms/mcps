@@ -3,7 +3,11 @@ import { callFunction, inspect } from "@deco/cf-sandbox";
 import { evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
 import type { Env } from "../main.ts";
 import { createPrivateTool } from "@decocms/runtime/mastra";
-import { Step, StepSchema } from "../workflow-runner/index.ts";
+import {
+  resolveAtRefsInInput,
+  Step,
+  StepSchema,
+} from "../workflow-runner/index.ts";
 
 /**
  * Workflows Collection Tools
@@ -296,11 +300,19 @@ export const createDeleteTool = (env: Env) =>
     },
   });
 
-const handleSandboxStep = async (step: {
-  name: string;
-  execute: string;
-  stepInput: unknown;
-}) => {
+const handleSandboxStep = async (
+  step: {
+    name: string;
+    execute: string;
+    stepInput: unknown;
+  },
+  ctx: {
+    state: {
+      input: unknown;
+      steps: Record<string, unknown>;
+    };
+  },
+) => {
   const code = step.execute
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
@@ -321,6 +333,7 @@ const handleSandboxStep = async (step: {
       stepDefaultHandle,
       undefined,
       step.stepInput,
+      ctx,
     );
 
     const unwrappedResult = stepCtx.unwrapResult(stepCallHandle);
@@ -391,17 +404,63 @@ export const runWorkflowTool = (env: Env) =>
             : matchingStepIndex + 1
           : 0;
 
-        const steps = workflow.steps;
-        const step = steps[currentStepIndex];
-        const initialStepInput =
-          (execution.inputs?.[step.name] as Record<string, unknown>) || {};
-        const fromPreviousStepOutput =
-          existingResults[existingResults.length - 1]?.output;
+        const parsedInputs =
+          typeof execution.inputs === "string"
+            ? JSON.parse(execution.inputs)
+            : execution.inputs;
 
-        let stepInput = {
-          ...initialStepInput,
-          ...fromPreviousStepOutput,
+        // Parse workflow steps if stored as JSON string
+        const parsedSteps =
+          typeof workflow.steps === "string"
+            ? JSON.parse(workflow.steps)
+            : workflow.steps;
+
+        const steps = parsedSteps;
+        const step = steps[currentStepIndex];
+
+        // Merge: step.input (defaults) <- execution.inputs[stepName] (overrides)
+        const stepDefaultInput = (step.input as Record<string, unknown>) || {};
+        const executionStepInput =
+          (parsedInputs?.[step.name] as Record<string, unknown>) || {};
+
+        const initialStepInput = {
+          ...stepDefaultInput, // Workflow defaults (has schema, temperature)
+          ...executionStepInput, // Execution overrides
         };
+        console.log(`[DEBUG step ${step.name}]`, {
+          stepDefaultInput: JSON.stringify(stepDefaultInput),
+          executionStepInput: JSON.stringify(executionStepInput),
+          initialStepInput: JSON.stringify(initialStepInput),
+        });
+
+        // Build stepResults map from existing results
+        const stepResultsMap = new Map<string, unknown>();
+        for (const stepResult of existingResults) {
+          if (stepResult.output !== undefined && stepResult.output !== null) {
+            // Parse output if it's a JSON string
+            const parsedOutput =
+              typeof stepResult.output === "string"
+                ? JSON.parse(stepResult.output)
+                : stepResult.output;
+            stepResultsMap.set(stepResult.step_id, parsedOutput);
+          }
+        }
+
+        // Resolve @refs in the initial input
+        const { resolved: resolvedInput, errors } = resolveAtRefsInInput(
+          initialStepInput,
+          stepResultsMap,
+          execution.inputs, // globalInput - allows @input.step1.name syntax too
+        );
+
+        if (errors?.length) {
+          console.warn(
+            `[REF RESOLUTION] Warnings for step '${step.name}':`,
+            errors,
+          );
+        }
+
+        let stepInput = resolvedInput as Record<string, unknown>;
         if (step.inputSchema) {
           const inputValidation = validate(stepInput, step.inputSchema);
           if (!inputValidation.valid) {
@@ -431,11 +490,32 @@ export const runWorkflowTool = (env: Env) =>
 
         let result: unknown;
         if (typeof step.execute === "string") {
-          result = await handleSandboxStep({
-            execute: step.execute,
-            stepInput: stepInput,
-            name: step.name,
-          });
+          const stepsState: Record<string, unknown> = {};
+          for (const stepResult of existingResults) {
+            if (stepResult.output !== undefined && stepResult.output !== null) {
+              const parsedOutput =
+                typeof stepResult.output === "string"
+                  ? JSON.parse(stepResult.output)
+                  : stepResult.output;
+              stepsState[stepResult.step_id] = parsedOutput;
+            }
+          }
+
+          const sandboxCtx = {
+            state: {
+              input: parsedInputs, // The global execution inputs
+              steps: stepsState,
+            },
+          };
+
+          result = await handleSandboxStep(
+            {
+              execute: step.execute,
+              stepInput: stepInput,
+              name: step.name,
+            },
+            sandboxCtx,
+          );
         } else {
           const connection = proxyConnectionForId(step.execute.connectionId, {
             workspace: env.DECO_WORKSPACE,

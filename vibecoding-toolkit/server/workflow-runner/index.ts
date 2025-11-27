@@ -118,14 +118,36 @@ export function resolveAtRefsInInput(
 ): { resolved: unknown; errors?: Array<{ ref: string; error: string }> } {
   const errors: Array<{ ref: string; error: string }> = [];
 
+  const AT_REF_PATTERN =
+    /@([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
+
   function resolveValue(value: unknown): unknown {
-    // If it's an @ref, resolve it
+    // If it's a string that IS an @ref (entire value)
     if (isAtRef(value)) {
       const result = resolveAtRef(value, stepResults, globalInput);
       if (result.error) {
         errors.push({ ref: value, error: result.error });
       }
       return result.value;
+    }
+
+    // If it's a string that CONTAINS @refs, interpolate them
+    if (typeof value === "string" && value.includes("@")) {
+      return value.replace(AT_REF_PATTERN, (match) => {
+        if (isAtRef(match as `@${string}`)) {
+          const result = resolveAtRef(
+            match as `@${string}`,
+            stepResults,
+            globalInput,
+          );
+          if (result.error) {
+            errors.push({ ref: match, error: result.error });
+            return match; // Keep original if resolution fails
+          }
+          return String(result.value ?? "");
+        }
+        return match;
+      });
     }
 
     // If it's an array, resolve each element
@@ -206,14 +228,15 @@ export interface WorkflowState<T = unknown> {
 }
 export const StepSchema = z.object({
   name: z.string(),
-  inputSchema: z.record(z.unknown()),
-  outputSchema: z.record(z.unknown()),
+  inputSchema: z.record(z.unknown()).optional(), // Make optional since not all steps need it
+  outputSchema: z.record(z.unknown()).optional(),
   execute: z
     .object({
       connectionId: z.string(),
       toolName: z.string(),
     })
     .or(z.string()),
+  input: z.record(z.unknown()).optional(), // ← ADD THIS LINE
   status: z
     .enum(["pending", "running", "completed", "failed"])
     .default("pending"),
