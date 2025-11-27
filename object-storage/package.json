@@ -5,17 +5,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev --vite",
+    "dev": "concurrently \"bun run dev:client\" \"NODE_ENV=development bun --hot run server/main.ts\"",
+    "dev:client": "bun --bun vite dev",
+    "build:client": "bun --bun vite build",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "start": "NODE_ENV=production bun run dist/server/main.js",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "deploy": "npm run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
-    "build": "bun --bun vite build"
+    "build": "bun run build:client && bun run build:server"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.716.0",
     "@aws-sdk/s3-request-presigner": "^3.716.0",
-    "@decocms/runtime": "0.25.1",
+    "@decocms/runtime": "0.0.1-testing-beta.3",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",
@@ -25,6 +29,7 @@
     "@tanstack/react-router-devtools": "^1.121.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "hono": "^4.10.7",
     "lucide-react": "^0.476.0",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
@@ -36,8 +41,6 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.13.4",
-    "@cloudflare/workers-types": "^4.20251014.0",
     "@decocms/mcps-shared": "1.0.0",
     "@mastra/core": "^0.24.0",
     "@modelcontextprotocol/sdk": "^1.21.0",

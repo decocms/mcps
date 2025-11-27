@@ -3,14 +3,19 @@ import process from "process";
 import path from "path";
 import { exec } from "child_process";
 import fs from "fs/promises";
+import { cloudflare } from "@cloudflare/vite-plugin";
+
+const VITE_SERVER_ENVIRONMENT_NAME = "server";
 
 interface PluginConfig {
+  target?: "cloudflare" | "bun";
   port?: number;
   experimentalAutoGenerateTypes?: boolean;
 }
 
 const cwd = process.cwd();
-const DEFAULT_PORT = 8787;
+const DEFAULT_PORT = 4000;
+const CF_DEFAULT_PORT = 8787;
 const GEN_PROMISE_KEY = "deco-gen";
 
 const GEN_FILE = "deco.gen.ts";
@@ -39,7 +44,23 @@ const RENAME_MAP = {
   "index.js": "main.js",
 };
 
-const OPERATIONS = [
+type Operation =
+  | {
+      type: "remove";
+      file: string;
+    }
+  | {
+      type: "rename";
+      oldFile: string;
+      newFile: string;
+    }
+  | {
+      type: "modify";
+      file: string;
+      replace: (content: string) => string;
+    };
+
+const OPERATIONS: Operation[] = [
   ...FILES_TO_REMOVE.map((file) => ({
     type: "remove" as const,
     file,
@@ -86,9 +107,8 @@ async function fixCloudflareBuild({
   });
 }
 
-export function deco(decoConfig: PluginConfig = {}): Plugin {
+export function decoCloudflarePatchPlugin(): Plugin {
   let outputDirectory = "dist";
-  const singleFlight = new Map<string, Promise<void>>();
 
   return {
     name: "vite-plugin-deco",
@@ -96,14 +116,54 @@ export function deco(decoConfig: PluginConfig = {}): Plugin {
     configResolved(config) {
       outputDirectory = config.build.outDir || "dist";
     },
+    async closeBundle() {
+      await fixCloudflareBuild({ outputDirectory });
+    },
+    config: () => ({
+      worker: {
+        format: "es",
+      },
+      optimizeDeps: {
+        force: true,
+      },
+      build: {
+        sourcemap: true,
+      },
+      define: {
+        // Ensure proper module definitions for Cloudflare Workers context
+        "process.env.NODE_ENV": JSON.stringify(
+          process.env.NODE_ENV || "development",
+        ),
+        global: "globalThis",
+      },
+    }),
+  };
+}
+
+export function importSqlStringPlugin(): Plugin {
+  return {
+    name: "vite-plugin-import-sql-string",
+    transform(content: string, id: string) {
+      if (id.endsWith(".sql")) {
+        return {
+          code: `export default ${JSON.stringify(content)};`,
+          map: null,
+        };
+      }
+    },
+  };
+}
+
+export function decoGenPlugin(decoConfig: PluginConfig = {}): Plugin {
+  const singleFlight = new Map<string, Promise<void>>();
+
+  return {
+    name: "vite-plugin-deco-gen",
     buildStart() {
       if (!decoConfig.experimentalAutoGenerateTypes) {
         return;
       }
       performDecoGen();
-    },
-    async closeBundle() {
-      await fixCloudflareBuild({ outputDirectory });
     },
     handleHotUpdate(ctx) {
       // skip hmr entirely for the deco gen file
@@ -127,38 +187,52 @@ export function deco(decoConfig: PluginConfig = {}): Plugin {
       singleFlight.set(GEN_PROMISE_KEY, newPromise);
       return ctx.modules;
     },
+  };
+}
+
+export function baseDecoPlugin(decoConfig: PluginConfig = {}): Plugin {
+  const buildOutDir =
+    decoConfig.target === "cloudflare" ? "dist" : "dist/client";
+
+  return {
+    name: "vite-plugin-base-deco",
     config: () => ({
       server: {
         port: decoConfig.port || DEFAULT_PORT,
         strictPort: true,
       },
-      worker: {
-        format: "es",
-      },
-      optimizeDeps: {
-        force: true,
-      },
       build: {
-        sourcemap: true,
+        outDir: buildOutDir,
       },
     }),
   };
 }
 
-export function importSqlStringPlugin(): Plugin {
-  return {
-    name: "vite-plugin-import-sql-string",
-    transform(content: string, id: string) {
-      if (id.endsWith(".sql")) {
-        return {
-          code: `export default ${JSON.stringify(content)};`,
-          map: null,
-        };
-      }
-    },
-  };
-}
-
 export default function vitePlugins(decoConfig: PluginConfig = {}): Plugin[] {
-  return [deco(decoConfig), importSqlStringPlugin()];
+  const targets: Record<NonNullable<PluginConfig["target"]>, Plugin[]> = {
+    cloudflare: [
+      ...cloudflare({
+        configPath: "wrangler.toml",
+        viteEnvironment: {
+          name: VITE_SERVER_ENVIRONMENT_NAME,
+        },
+      }),
+      decoCloudflarePatchPlugin(),
+      baseDecoPlugin({
+        ...decoConfig,
+        port: decoConfig.port || CF_DEFAULT_PORT,
+      }),
+      decoGenPlugin(decoConfig),
+      importSqlStringPlugin(),
+    ],
+    bun: [baseDecoPlugin(decoConfig), decoGenPlugin(decoConfig)],
+  };
+
+  const plugins = targets[decoConfig.target || "cloudflare"];
+
+  if (!plugins) {
+    throw new Error(`Unsupported target: ${decoConfig.target}`);
+  }
+
+  return plugins;
 }

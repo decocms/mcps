@@ -13,7 +13,7 @@ import { z } from "zod";
  * Your MCP's Env type should extend this interface.
  */
 export interface UserToolsEnv {
-  DECO_CHAT_REQUEST_CONTEXT: {
+  DECO_REQUEST_CONTEXT: {
     ensureAuthenticated: () =>
       | {
           id: string;
@@ -49,7 +49,7 @@ export const createGetUserTool = <TEnv extends UserToolsEnv>(env: TEnv) =>
       email: z.string(),
     }),
     execute: async () => {
-      const user = env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+      const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
 
       if (!user) {
         throw new Error("User not found");

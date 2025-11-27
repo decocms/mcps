@@ -13,7 +13,7 @@ import type { Env } from "../main.ts";
  * @returns Configured S3Client instance
  */
 export function createS3Client(env: Env): S3Client {
-  const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+  const state = env.DECO_REQUEST_CONTEXT.state;
 
   const config: ConstructorParameters<typeof S3Client>[0] = {
     region: state.region,
@@ -48,6 +48,6 @@ export function getPresignedUrlExpiration(
     return overrideExpiration;
   }
 
-  const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+  const state = env.DECO_REQUEST_CONTEXT.state;
   return state.defaultPresignedUrlExpiration ?? 3600; // Default to 1 hour
 }

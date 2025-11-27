@@ -33,7 +33,7 @@
     },
 
     /* Types */
-    "types": ["vite/client", "@cloudflare/workers-types"]
+    "types": ["vite/client"]
   },
   "include": [
     "view",
