@@ -17,7 +17,7 @@ export async function getQuickJS() {
       const customVariant = newVariant(variant, {
         wasmModule: wasmBinary,
       });
-      
+
       return newQuickJSWASMModuleFromVariant(customVariant);
     })();
   }

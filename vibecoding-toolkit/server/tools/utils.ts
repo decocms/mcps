@@ -65,7 +65,7 @@ export const evalCodeAndReturnDefaultHandle = async (
   };
 };
 
-  // Helper function to validate execute code
+// Helper function to validate execute code
 export async function validateExecuteCode(
   functionCode: string,
   runtimeId: string,
