@@ -4,6 +4,10 @@ import {
 } from "../../constants";
 import { Env } from "../../main";
 import z from "zod";
+import {
+  assertEnvKey,
+  makeApiRequest,
+} from "@decocms/mcps-shared/tools/utils/api-client";
 
 // Whisper models
 export const WhisperModels = z.enum(["whisper-1"]);
@@ -54,15 +58,6 @@ export type VerboseTranscriptionResponse = z.infer<
 >;
 
 /**
- * Assert that the OpenAI API key is set
- */
-function assertApiKey(env: Env) {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set in environment");
-  }
-}
-
-/**
  * Fetch audio file from URL
  */
 async function fetchAudioFile(audioUrl: string): Promise<Blob> {
@@ -100,7 +95,7 @@ export async function transcribeAudio(
     timestampGranularities?: Array<"word" | "segment">;
   },
 ): Promise<TranscriptionResponse | VerboseTranscriptionResponse> {
-  assertApiKey(env);
+  assertEnvKey(env, "OPENAI_API_KEY");
 
   const url = `${OPENAI_BASE_URL}${OPENAI_AUDIO_TRANSCRIPTIONS_ENDPOINT}`;
 
@@ -140,29 +135,17 @@ export async function transcribeAudio(
 
   console.log(`[transcribeAudio] Sending request to Whisper API`);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+  const data = await makeApiRequest(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: formData,
     },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      const errorMessage = errorJson.error?.message || errorText;
-      throw new Error(errorMessage);
-    } catch {
-      throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
-      );
-    }
-  }
-
-  const data = await response.json();
+    "OpenAI Whisper",
+  );
 
   console.log(`[transcribeAudio] Successfully transcribed audio`);
 

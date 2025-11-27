@@ -6,7 +6,7 @@
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
-  // Scopes, // TODO: Uncomment when contract is configured
+  Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
 
@@ -36,9 +36,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * the contract is configured in the Deco platform.
      */
     scopes: [
-      // TODO: Add when contract is configured
-      // Scopes.WHISPER_CONTRACT.CONTRACT_AUTHORIZE,
-      // Scopes.WHISPER_CONTRACT.CONTRACT_SETTLE,
+      Scopes.WHISPER_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.WHISPER_CONTRACT.CONTRACT_SETTLE,
     ],
     /**
      * The state schema of your Application defines what

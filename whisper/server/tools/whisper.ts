@@ -5,30 +5,13 @@ import {
   type TranscribeAudioInput,
 } from "@decocms/mcps-shared/audio-transcribers";
 
-// Mock contract binding for development until WHISPER_CONTRACT is configured
-const mockContract = {
-  CONTRACT_AUTHORIZE: async ({ clauses }: any) => {
-    console.log("[MOCK CONTRACT] Authorize called with clauses:", clauses);
-    return { transactionId: `mock-tx-${Date.now()}` };
-  },
-  CONTRACT_SETTLE: async ({ transactionId, clauses, vendorId }: any) => {
-    console.log("[MOCK CONTRACT] Settle called:", {
-      transactionId,
-      clauses,
-      vendorId,
-    });
-    return { success: true };
-  },
-};
-
 export const whisperTools = createAudioTranscriberTools<Env>({
   metadata: {
     provider: "OpenAI Whisper",
     description: "Transcribe audio to text using OpenAI Whisper",
   },
   getContract: (env: Env) => ({
-    // TODO: Replace with env.WHISPER_CONTRACT when configured in Deco
-    binding: (env as any).WHISPER_CONTRACT || mockContract,
+    binding: env.WHISPER_CONTRACT,
     clause: {
       clauseId: "whisper-1:transcribeAudio",
       amount: 1,
