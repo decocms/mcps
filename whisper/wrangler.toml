@@ -12,7 +12,7 @@ local = false
 
 [deco.integration]
 description = "Transcribe audio to text using OpenAI Whisper with high accuracy. Supports multiple languages and timestamp extraction."
-icon = "https://cdn.openai.com/nf2/nf2-lp/misc/dark-mode-icon.png?w=3840&q=100&fm=webp"
+icon = "https://play-lh.googleusercontent.com/FqeON94A62lSzL7VUBjRo_o3BO3HWav1y0orcQRXI-p1-MD0Rf-qrM7pIqLgixVnexY"
 friendlyName = "OpenAI Whisper"
 
 [[deco.bindings]]
