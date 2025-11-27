@@ -1,0 +1,28 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "whisper"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Transcribe audio to text using OpenAI Whisper with high accuracy. Supports multiple languages and timestamp extraction."
+icon = "https://cdn.openai.com/nf2/nf2-lp/misc/dark-mode-icon.png?w=3840&q=100&fm=webp"
+friendlyName = "OpenAI Whisper"
+
+[[deco.bindings]]
+type = "contract"
+name = "WHISPER_CONTRACT"
+
+[deco.bindings.contract]
+body = "$0.01 per transcription"
+
+[[deco.bindings.contract.clauses]]
+id = "whisper-1:transcribeAudio"
+price = 0.01
+description = "$0.01 per audio transcription"
