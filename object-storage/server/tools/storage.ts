@@ -7,15 +7,6 @@
  * - Generating presigned URLs for GET and PUT operations
  * - Deleting objects (single and batch)
  */
-import {
-  DeleteObjectCommand,
-  DeleteObjectsCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  ListObjectsV2Command,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../main.ts";
@@ -66,26 +57,28 @@ export const createListObjectsTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { prefix, maxKeys, continuationToken } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
 
-      const command = new ListObjectsV2Command({
-        Bucket: state.bucketName,
-        Prefix: prefix,
-        MaxKeys: maxKeys,
-        ContinuationToken: continuationToken,
+      const response = await s3Client.list({
+        prefix,
+        maxKeys,
+        startAfter: continuationToken,
       });
 
-      const response = await s3Client.send(command);
-
       return {
-        objects: (response.Contents || []).map((obj) => ({
-          key: obj.Key!,
-          size: obj.Size!,
-          lastModified: obj.LastModified!.toISOString(),
-          etag: obj.ETag!,
+        objects: (response.contents || []).map((obj) => ({
+          key: obj.key,
+          size: obj.size ?? 0,
+          lastModified: obj.lastModified
+            ? typeof obj.lastModified === "object"
+              ? (obj.lastModified as Date).toISOString()
+              : String(obj.lastModified)
+            : "",
+          etag: obj.eTag ?? "",
         })),
-        nextContinuationToken: response.NextContinuationToken,
-        isTruncated: response.IsTruncated ?? false,
+        nextContinuationToken: response.isTruncated
+          ? response.contents?.at(-1)?.key
+          : undefined,
+        isTruncated: response.isTruncated ?? false,
       };
     },
   });
@@ -114,21 +107,15 @@ export const createGetObjectMetadataTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
 
-      const command = new HeadObjectCommand({
-        Bucket: state.bucketName,
-        Key: key,
-      });
-
-      const response = await s3Client.send(command);
+      const stat = await s3Client.file(key).stat();
 
       return {
-        contentType: response.ContentType,
-        contentLength: response.ContentLength!,
-        lastModified: response.LastModified!.toISOString(),
-        etag: response.ETag!,
-        metadata: response.Metadata,
+        contentType: stat.type,
+        contentLength: stat.size,
+        lastModified: stat.lastModified.toISOString(),
+        etag: stat.etag,
+        metadata: undefined, // Bun's stat doesn't include custom metadata
       };
     },
   });
@@ -159,15 +146,10 @@ export const createGetPresignedUrlTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key, expiresIn } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
-      const command = new GetObjectCommand({
-        Bucket: state.bucketName,
-        Key: key,
-      });
-
-      const url = await getSignedUrl(s3Client, command, {
+      const url = s3Client.file(key).presign({
+        method: "GET",
         expiresIn: expirationSeconds,
       });
 
@@ -208,17 +190,12 @@ export const createPutPresignedUrlTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key, expiresIn, contentType } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
-      const command = new PutObjectCommand({
-        Bucket: state.bucketName,
-        Key: key,
-        ContentType: contentType,
-      });
-
-      const url = await getSignedUrl(s3Client, command, {
+      const url = s3Client.file(key).presign({
+        method: "PUT",
         expiresIn: expirationSeconds,
+        type: contentType,
       });
 
       return {
@@ -245,14 +222,8 @@ export const createDeleteObjectTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
 
-      const command = new DeleteObjectCommand({
-        Bucket: state.bucketName,
-        Key: key,
-      });
-
-      await s3Client.send(command);
+      await s3Client.file(key).delete();
 
       return {
         success: true,
@@ -291,23 +262,29 @@ export const createDeleteObjectsTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { keys } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_REQUEST_CONTEXT.state;
 
-      const command = new DeleteObjectsCommand({
-        Bucket: state.bucketName,
-        Delete: {
-          Objects: keys.map((key: string) => ({ Key: key })),
-        },
+      // Bun doesn't have batch delete, so we use Promise.allSettled for parallel deletes
+      const results = await Promise.allSettled(
+        keys.map((key: string) => s3Client.file(key).delete()),
+      );
+
+      const deleted: string[] = [];
+      const errors: Array<{ key: string; message: string }> = [];
+
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          deleted.push(keys[index]);
+        } else {
+          errors.push({
+            key: keys[index],
+            message: result.reason?.message || "Unknown error",
+          });
+        }
       });
 
-      const response = await s3Client.send(command);
-
       return {
-        deleted: (response.Deleted || []).map((obj) => obj.Key!),
-        errors: (response.Errors || []).map((err) => ({
-          key: err.Key!,
-          message: err.Message || "Unknown error",
-        })),
+        deleted,
+        errors,
       };
     },
   });

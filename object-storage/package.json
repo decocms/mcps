@@ -17,8 +17,6 @@
     "build": "bun run build:client && bun run build:server"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.716.0",
-    "@aws-sdk/s3-request-presigner": "^3.716.0",
     "@decocms/runtime": "0.0.1-testing-beta.3",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
