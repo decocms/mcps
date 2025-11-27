@@ -7,16 +7,19 @@
     "exports": {
         "./vite-plugin": "./deco-vite-plugin.ts",
         "./tools/user": "./tools/user.ts",
+        "./tools/file-management": "./tools/file-management/index.ts",
         "./tools": "./tools/index.ts",
         "./tools/utils/api-client": "./tools/utils/api-client.ts",
+        "./tools/utils/middleware": "./tools/utils/middleware.ts",
         "./image-generators": "./image-generators/index.ts",
+        "./image-analyzers": "./image-analyzers/index.ts",
         "./video-generators": "./video-generators/index.ts",
         "./audio-transcribers": "./audio-transcribers/index.ts",
         "./storage": "./storage/index.ts"
     },
     "devDependencies": {
         "vite": "7.2.0",
-        "@decocms/runtime": "0.24.0",
+        "@decocms/runtime": "0.25.1",
         "zod": "^3.24.3"
     }
 }

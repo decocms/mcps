@@ -1,0 +1,30 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "replicate"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Execute AI/ML models in the cloud using Replicate's API. Run image generation, text models, audio processing, and more."
+icon = "https://cdn.brandfetch.io/replicate.com?c=1idGuZjjNQsbnvHtiGk"
+friendlyName = "Replicate"
+
+[[deco.bindings]]
+type = "contract"
+name = "REPLICATE_API_CONTRACT"
+
+[deco.bindings.contract]
+body = "$0.01 per prediction"
+
+[[deco.bindings.contract.clauses]]
+id = "replicate:prediction"
+price = 0.01
+description = "$0.01 per prediction"
+
+

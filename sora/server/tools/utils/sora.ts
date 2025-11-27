@@ -4,6 +4,8 @@ import z from "zod";
 import {
   assertEnvKey,
   parseApiError,
+  makeApiRequest,
+  downloadWithAuth,
   pollUntilComplete,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 
@@ -48,7 +50,6 @@ export const VideoResponseSchema = z.object({
 
 export type VideoResponse = z.infer<typeof VideoResponseSchema>;
 
-// List Videos Response Schema
 export const ListVideosResponseSchema = z.object({
   object: z.literal("list"),
   data: z.array(VideoResponseSchema),
@@ -74,19 +75,10 @@ async function makeOpenAIRequest(
       "Content-Type": "application/json",
       Authorization: `Bearer ${env.OPENAI_API_KEY}`,
     },
+    ...(body && method === "POST" && { body: JSON.stringify(body) }),
   };
 
-  if (body && method === "POST") {
-    options.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(url, options);
-
-  if (!response.ok) {
-    await parseApiError(response, "OpenAI");
-  }
-
-  return await response.json();
+  return makeApiRequest(url, options, "OpenAI");
 }
 
 export async function createVideo(
@@ -228,21 +220,12 @@ export async function downloadVideoContent(
   videoId: string,
 ): Promise<Blob> {
   assertEnvKey(env, "OPENAI_API_KEY");
-
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-    },
-  });
-
-  if (!response.ok) {
-    await parseApiError(response, "OpenAI");
-  }
-
-  return await response.blob();
+  return downloadWithAuth(
+    url,
+    { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
+    "OpenAI",
+  );
 }
 
 export async function downloadSupportingAsset(
@@ -251,21 +234,12 @@ export async function downloadSupportingAsset(
   variant: "thumbnail" | "spritesheet",
 ): Promise<Blob> {
   assertEnvKey(env, "OPENAI_API_KEY");
-
   const url = `${OPENAI_BASE_URL}${OPENAI_VIDEOS_ENDPOINT}/${videoId}/content?variant=${variant}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-    },
-  });
-
-  if (!response.ok) {
-    await parseApiError(response, "OpenAI");
-  }
-
-  return await response.blob();
+  return downloadWithAuth(
+    url,
+    { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
+    "OpenAI",
+  );
 }
 
 export async function pollVideoUntilComplete(

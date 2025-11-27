@@ -1,0 +1,16 @@
+export {
+  createFileManagementTools,
+  type FileManagementClient,
+  type FileManagementEnv,
+  type FileUploadResponse,
+  type FileGetResponse,
+  type FileListResponse,
+  type SearchResultItem,
+  type SearchOutput,
+  type UploadToolConfig,
+  type ListToolConfig,
+  type GetToolConfig,
+  type DeleteToolConfig,
+  type SearchToolConfig,
+  type CreateFileManagementOptions,
+} from "./base.ts";

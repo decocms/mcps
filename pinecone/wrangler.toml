@@ -1,0 +1,43 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "pinecone"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Pinecone vector database for storing and querying embeddings. Perform semantic search, similarity matching, and manage vector data at scale."
+icon = "https://www.pinecone.io/images/pinecone-logo.svg"
+friendlyName = "Pinecone"
+
+[[deco.bindings]]
+type = "contract"
+name = "PINECONE_CONTRACT"
+
+[deco.bindings.contract]
+body = "Pay per vector operation"
+
+[[deco.bindings.contract.clauses]]
+id = "pinecone:upsert"
+price = 0.01
+description = "$0.01 per 1000 vectors upserted"
+
+[[deco.bindings.contract.clauses]]
+id = "pinecone:query"
+price = 0.005
+description = "$0.005 per 1000 queries"
+
+[[deco.bindings.contract.clauses]]
+id = "pinecone:fetch"
+price = 0.002
+description = "$0.002 per 1000 fetches"
+
+[[deco.bindings.contract.clauses]]
+id = "pinecone:delete"
+price = 0.001
+description = "$0.001 per 1000 deletes"
