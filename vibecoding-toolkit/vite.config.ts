@@ -27,16 +27,20 @@ export default defineConfig({
     },
   },
 
+  // Treat WASM files as assets to be bundled
+  assetsInclude: ["**/*.wasm"],
+
+  // Exclude quickjs from dependency optimization
+  optimizeDeps: {
+    exclude: ["@jitl/quickjs-wasmfile-release-sync", "quickjs-emscripten-core"],
+  },
+
   define: {
-    // Ensure proper module definitions for Cloudflare Workers context
     "process.env.NODE_ENV": JSON.stringify(
       process.env.NODE_ENV || "development",
     ),
     global: "globalThis",
-    // '__filename': '""',
-    // '__dirname': '""',
   },
 
-  // Clear cache more aggressively
   cacheDir: "node_modules/.vite",
 });

@@ -7,9 +7,10 @@
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import { agentTools } from "./agent.ts";
+import { workflowTools } from "./workflow.ts";
 
 // Export all tools from all domains
-export const tools = [...userTools, ...agentTools];
+export const tools = [...userTools, ...agentTools, ...workflowTools];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";

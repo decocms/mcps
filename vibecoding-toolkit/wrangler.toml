@@ -1,9 +1,9 @@
 #:schema node_modules/@decocms/runtime/config-schema.json
-name = "vibecoding-toolkit"
+name = "durable-mcps-toolkit"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
-scope = "deco"
+scope = "oimoi"
 
 [assets]
 directory = "./dist/client"
@@ -12,6 +12,11 @@ not_found_handling = "single-page-application"
 run_worker_first = true
 
 [deco]
-workspace = "deco"
+workspace = "oimoi"
 enable_workflows = false
 local = false
+
+[[deco.bindings]]
+name = "INTEGRATIONS"
+type = "mcp"
+integration_name = "@deco/integrations"
