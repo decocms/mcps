@@ -67,7 +67,35 @@ export async function transcribeAudio(
 
   console.log(`[transcribeAudio] Sending request to Whisper API`);
 
-  const data = await makeApiRequest(
+  const responseFormat = options?.responseFormat || "json";
+  const isJsonFormat =
+    responseFormat === "json" || responseFormat === "verbose_json";
+
+  // Use makeApiRequest with appropriate response type
+  if (isJsonFormat) {
+    const data = await makeApiRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        },
+        body: formData,
+      },
+      "OpenAI Whisper",
+      "json",
+    );
+
+    console.log(`[transcribeAudio] Successfully transcribed audio`);
+
+    if (responseFormat === "verbose_json") {
+      return VerboseTranscriptionResponseSchema.parse(data);
+    }
+    return TranscriptionResponseSchema.parse(data);
+  }
+
+  // For text formats (text, srt, vtt), use text response type
+  const text = await makeApiRequest<string>(
     url,
     {
       method: "POST",
@@ -77,16 +105,13 @@ export async function transcribeAudio(
       body: formData,
     },
     "OpenAI Whisper",
+    "text",
   );
 
   console.log(`[transcribeAudio] Successfully transcribed audio`);
 
-  // Parse response based on format
-  if (options?.responseFormat === "verbose_json") {
-    return VerboseTranscriptionResponseSchema.parse(data);
-  }
-
-  return TranscriptionResponseSchema.parse(data);
+  // Return text format as TranscriptionResponse
+  return TranscriptionResponseSchema.parse({ text });
 }
 
 /**

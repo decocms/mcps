@@ -24,18 +24,31 @@ export async function parseApiError(
   }
 }
 
-export async function makeApiRequest(
+export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
+
+export async function makeApiRequest<T = any>(
   url: string,
   options: RequestInit,
   apiName: string,
-): Promise<any> {
+  responseType: ApiResponseType = "json",
+): Promise<T> {
   const response = await fetch(url, options);
 
   if (!response.ok) {
     await parseApiError(response, apiName);
   }
 
-  return await response.json();
+  switch (responseType) {
+    case "text":
+      return (await response.text()) as T;
+    case "blob":
+      return (await response.blob()) as T;
+    case "arrayBuffer":
+      return (await response.arrayBuffer()) as T;
+    case "json":
+    default:
+      return (await response.json()) as T;
+  }
 }
 
 /**

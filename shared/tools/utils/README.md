@@ -10,16 +10,17 @@ Funções auxiliares para fazer requisições a APIs externas:
 
 - `assertEnvKey(env, key)` - Valida que uma variável de ambiente existe
 - `parseApiError(response, apiName)` - Parseia erros de APIs
-- `makeApiRequest(url, options, apiName)` - Faz requisição HTTP com tratamento de erro
+- `makeApiRequest(url, options, apiName, responseType?)` - Faz requisição HTTP com tratamento de erro. Suporta diferentes tipos de resposta: "json" (padrão), "text", "blob", "arrayBuffer"
 - `pollUntilComplete(options)` - Polling com timeout
 - `downloadFile(url)` - Download simples de arquivos (áudio, vídeo, etc.) retornando Blob
 - `fetchImageAsBase64(imageUrl)` - Baixa imagem e converte para base64
 - `downloadWithAuth(url, authHeaders, apiName)` - Download com autenticação
 
-**Exemplo:**
+**Exemplos:**
 ```typescript
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 
+// JSON response (padrão)
 const data = await makeApiRequest(
   "https://api.example.com/endpoint",
   {
@@ -28,6 +29,22 @@ const data = await makeApiRequest(
     body: JSON.stringify({ prompt: "test" }),
   },
   "Example API"
+);
+
+// Text response
+const text = await makeApiRequest<string>(
+  "https://api.example.com/text-endpoint",
+  { method: "GET" },
+  "Example API",
+  "text"
+);
+
+// Blob response
+const blob = await makeApiRequest<Blob>(
+  "https://api.example.com/file",
+  { method: "GET" },
+  "Example API",
+  "blob"
 );
 ```
 
