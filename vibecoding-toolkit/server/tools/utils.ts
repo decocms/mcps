@@ -3,7 +3,7 @@ import {
   inspect,
   installConsole,
   QuickJSHandle,
-} from "../cf-sandbox/index.ts";
+} from "@deco/cf-sandbox";
 import { Validator } from "jsonschema";
 
 // Cache for compiled validators
@@ -34,7 +34,7 @@ export const evalCodeAndReturnDefaultHandle = async (
     stackSizeBytes: 1 << 20, // 1MB,
   });
 
-  const ctx = runtime.newContext({ interruptAfterMs: 100 });
+  const ctx = runtime.newContext({ interruptAfterMs: 30000 });
 
   // Install built-ins
   const guestConsole = installConsole(ctx);

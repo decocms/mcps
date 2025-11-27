@@ -34,7 +34,8 @@
     "template-minimal",
     "template-with-view",
     "veo",
-    "vibecoding-toolkit"
+    "vibecoding-toolkit",
+    "packages/*"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

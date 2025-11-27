@@ -5,7 +5,6 @@ import {
   QuickJSRuntime,
 } from "quickjs-emscripten-core";
 import { getQuickJS } from "./quickjs.ts";
-import type { EvaluationResult, Log } from "./types.ts";
 
 // Export utilities
 export { callFunction } from "./utils/call-function.ts";
@@ -16,7 +15,7 @@ export { toQuickJS } from "./utils/to-quickjs.ts";
 export { installConsole, installFetch } from "./builtins/index.ts";
 
 // Export types
-export type { EvaluationResult, Log };
+export type { EvaluationResult, Log } from "./types.ts";
 
 // Export QuickJS types
 export type {

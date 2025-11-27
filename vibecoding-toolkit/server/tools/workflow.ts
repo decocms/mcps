@@ -1,561 +1,505 @@
 import z from "zod";
-import { callFunction, inspect } from "../cf-sandbox/index.ts";
+import { callFunction, inspect } from "@deco/cf-sandbox";
 import { evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
 import type { Env } from "../main.ts";
 import { createPrivateTool } from "@decocms/runtime/mastra";
+import { Step, StepSchema } from "../workflow-runner/index.ts";
 
-function isAtRef(value: unknown): value is `@${string}` {
-  return typeof value === "string" && value.startsWith("@");
-}
+/**
+ * Workflows Collection Tools
+ *
+ * Implements the 5 standard collection operations for workflows:
+ * - LIST: Query workflows with filtering, sorting, and pagination
+ * - GET: Fetch a single workflow by ID
+ * - INSERT: Create a new workflow
+ * - UPDATE: Update an existing workflow
+ * - DELETE: Delete a workflow
+ */
 
-function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input";
-  id?: string;
-  path?: string;
-} {
-  const refStr = ref.substring(1); // Remove @ prefix
+import { ensureTable } from "../lib/postgres.ts";
+import {
+  CollectionDeleteInputSchema,
+  CollectionDeleteOutputSchema,
+  CollectionGetInputSchema,
+  CollectionListInputSchema,
+  createCollectionGetOutputSchema,
+  createCollectionInsertInputSchema,
+  createCollectionInsertOutputSchema,
+  createCollectionListOutputSchema,
+  createCollectionUpdateInputSchema,
+  createCollectionUpdateOutputSchema,
+} from "@decocms/bindings/collections";
+import { buildOrderByClause, buildWhereClause } from "../lib/postgres.ts";
+import { WorkflowSchema } from "../collections/workflow.ts";
 
-  // Input reference: @input.path.to.value
-  if (refStr.startsWith("input")) {
-    const path = refStr.substring(6); // Remove 'input.'
-    return { type: "input", path };
-  }
-
-  // Step reference: @stepId.path.to.value
-  const [id, ...pathParts] = refStr.split(".");
-
-  // If path starts with 'output.', remove it since stepResults already contains the output
-  let path = pathParts.join(".");
-  if (path.startsWith("output.")) {
-    path = path.substring(7); // Remove 'output.'
-  }
-
-  return { type: "step", id, path };
-}
-
-function getValue(
-  obj: Record<string, unknown> | unknown[] | unknown,
-  path: string,
-): unknown {
-  if (!path) return obj;
-
-  const keys = path.split(".");
-  let current: unknown = obj;
-
-  for (const key of keys) {
-    if (current === null || current === undefined) {
-      return undefined;
+/**
+ * Transform database row to match WorkflowSchema
+ */
+function transformDbRowToWorkflow(
+  row: unknown,
+): z.infer<typeof WorkflowSchema> {
+  // Parse steps and transform to correct structure
+  let steps: Step[] = [];
+  if ((row as Record<string, unknown>).steps) {
+    const parsedSteps = JSON.parse(
+      (row as Record<string, unknown>).steps as string,
+    );
+    const guardContract = z.array(StepSchema);
+    const guardResult = guardContract.safeParse(parsedSteps);
+    if (!guardResult.success) {
+      throw new Error(`Invalid steps: ${guardResult.error.message}`);
     }
-    if (typeof current === "object" && !Array.isArray(current)) {
-      current = (current as Record<string, unknown>)[key];
-    } else if (Array.isArray(current)) {
-      const index = parseInt(key, 10);
-      current = isNaN(index) ? undefined : current[index];
-    } else {
-      return undefined;
-    }
+    steps = guardResult.data;
   }
 
-  return current;
+  return { ...(row as z.infer<typeof WorkflowSchema>), steps };
 }
 
-function resolveAtRef(
-  ref: `@${string}`,
-  stepResults: Map<string, unknown>,
-  globalInput?: unknown,
-): { value: unknown; error?: string } {
-  try {
-    const parsed = parseAtRef(ref);
+/**
+ * LIST Tool - Query workflows with filtering, sorting, and pagination
+ */
+export const createListTool = (env: Env) =>
+  createPrivateTool({
+    id: "DECO_COLLECTION_WORKFLOWS_LIST",
+    description: "List workflows with filtering, sorting, and pagination",
+    inputSchema: CollectionListInputSchema,
+    outputSchema: createCollectionListOutputSchema(WorkflowSchema),
+    execute: async ({ context }) => {
+      await ensureTable(env, "workflows");
 
-    switch (parsed.type) {
-      case "input": {
-        const value = getValue(
-          (globalInput as Record<string, unknown>) || {},
-          parsed.path || "",
-        );
-        if (value === undefined) {
-          return {
-            value: null,
-            error: `Input path not found: ${parsed.path}`,
-          };
-        }
-        return { value };
+      const { where, orderBy, limit = 50, offset = 0 } = context;
+
+      // Build WHERE clause
+      let whereClause = "";
+      let params: any[] = [];
+      if (where) {
+        const result = buildWhereClause(where, params);
+        whereClause = result.clause ? `WHERE ${result.clause}` : "";
+        params = result.params;
       }
 
-      case "step": {
-        const identifier = parsed.id || "";
-        const stepResult = stepResults.get(identifier);
+      // Build ORDER BY clause
+      const orderByClause = buildOrderByClause(orderBy);
 
-        if (stepResult === undefined) {
-          return {
-            value: null,
-            error: `Step not found or not executed: ${identifier}`,
-          };
-        }
-        const value = getValue(stepResult, parsed.path || "");
-        if (value === undefined) {
-          return {
-            value: null,
-            error: `Path not found in step result: ${parsed.path}`,
-          };
-        }
-        return { value };
-      }
+      // Query items with pagination
+      const sql = `
+        SELECT * FROM workflows
+        ${whereClause}
+        ${orderByClause}
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
 
-      default:
-        return { value: null, error: `Unknown reference type: ${ref}` };
-    }
-  } catch (error) {
-    return {
-      value: null,
-      error: `Failed to resolve ${ref}: ${String(error)}`,
-    };
-  }
-}
+      const itemsResult: any = await env.DATABASE.DATABASES_RUN_SQL({
+        sql,
+        params: [...params, limit, offset],
+      });
 
-function resolveAtRefsInInput(
-  input: unknown,
-  stepResults: Map<string, unknown>,
-  globalInput?: unknown,
-): { resolved: unknown; errors?: Array<{ ref: string; error: string }> } {
-  const errors: Array<{ ref: string; error: string }> = [];
+      // Get total count
+      const countQuery = `SELECT COUNT(*) as count FROM workflows ${whereClause}`;
+      const countResult = await env.DATABASE.DATABASES_RUN_SQL({
+        sql: countQuery,
+        params,
+      });
+      const totalCount = parseInt(
+        (
+          countResult.result[0]?.results?.[0] as {
+            count: string;
+          }
+        )?.count || "0",
+        10,
+      );
 
-  function resolveValue(value: unknown): unknown {
-    // If it's an @ref, resolve it
-    if (isAtRef(value)) {
-      const result = resolveAtRef(value, stepResults, globalInput);
-      if (result.error) {
-        errors.push({ ref: value, error: result.error });
-      }
-      return result.value;
-    }
-
-    // If it's an array, resolve each element
-    if (Array.isArray(value)) {
-      return value.map((v) => resolveValue(v));
-    }
-
-    // If it's an object, resolve each property
-    if (value !== null && typeof value === "object") {
-      const resolvedObj: Record<string, unknown> = {};
-      for (const [key, val] of Object.entries(value)) {
-        resolvedObj[key] = resolveValue(val);
-      }
-      return resolvedObj;
-    }
-
-    // Primitive value, return as-is
-    return value;
-  }
-
-  const resolved = resolveValue(input);
-  return { resolved, errors: errors.length > 0 ? errors : undefined };
-}
-
-export const ToolDependencySchema = z.object({
-  integrationId: z
-    .string()
-    .min(1)
-    .describe(
-      "The integration ID (format: i:<uuid> or a:<uuid>) that this depends on",
-    ),
-  toolNames: z
-    .array(z.string().min(1))
-    .min(1)
-    .describe("List of tool names from this integration that will be used."),
-});
-
-const RetriesSchema = z.object({
-  limit: z
-    .number()
-    .int()
-    .min(0)
-    .default(2)
-    .describe("Number of retry attempts for this step (default: 2)"),
-  delay: z
-    .number()
-    .int()
-    .min(0)
-    .default(2000)
-    .describe("Delay in milliseconds between retry attempts (default: 2000)"),
-  backoff: z
-    .enum(["constant", "linear", "exponential"])
-    .default("exponential")
-    .describe("Backoff strategy for retry attempts (default: exponential)"),
-});
-
-// Code step definition - includes both definition and execution state
-export const CodeStepDefinitionSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .describe("The unique name of the step within the workflow"),
-  title: z.string().optional().describe("The title of the step"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A clear description of what this step does"),
-  inputSchema: z
-    .object({})
-    .passthrough()
-    .optional()
-    .describe("JSON Schema defining the input structure for this step"),
-  outputSchema: z
-    .object({})
-    .passthrough()
-    .optional()
-    .describe("JSON Schema defining the output structure for this step"),
-  execute: z
-    .string()
-    .min(1)
-    .describe(
-      "ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.",
-    ),
-  dependencies: z
-    .array(ToolDependencySchema)
-    .optional()
-    .describe(
-      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the step to execute successfully. Tools are accessible via ctx.env['{INTEGRATION_ID}']['{TOOL_NAME}'](). Use READ_MCP to find available integration IDs and their tools.",
-    ),
-});
-
-export const WorkflowStepDefinitionSchema = z.object({
-  def: CodeStepDefinitionSchema,
-  input: z
-    .record(z.unknown())
-    .optional()
-    .describe(
-      "Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property",
-    ),
-  output: z
-    .record(z.unknown())
-    .optional()
-    .describe("Execution output of the step (if it has been run)"),
-  options: z
-    .object({
-      retries: RetriesSchema.optional(),
-      timeout: z
-        .number()
-        .positive()
-        .default(300_000) // 5 minutes
-        .optional()
-        .describe(
-          "Maximum execution time in milliseconds (default: 5 minutes)",
+      return {
+        items: itemsResult.result[0]?.results?.map(
+          (item: Record<string, unknown>) => transformDbRowToWorkflow(item),
         ),
-    })
-    .optional()
-    .describe("Options for the step"),
-  views: z
-    .array(z.string())
-    .optional()
-    .describe("List of URIs of View Resources that this step can render."),
-});
+        totalCount,
+        hasMore: offset + itemsResult.rows.length < totalCount,
+      };
+    },
+  });
 
-export type WorkflowStepDefinition = z.infer<
-  typeof WorkflowStepDefinitionSchema
->;
-export interface WorkflowState<T = unknown> {
-  input: T;
-  steps: Record<string, unknown>;
-  sleep: (name: string, duration: number) => Promise<void>;
-  sleepUntil: (name: string, date: Date | number) => Promise<void>;
-}
-const StepSchema = z.object({
-  name: z.string(),
-  inputSchema: z.record(z.unknown()),
-  outputSchema: z.record(z.unknown()),
-  execute: z
-    .object({
-      connectionId: z.string(),
-      toolName: z.string(),
-    })
-    .or(z.string()),
-  input: z.record(z.unknown()),
-  output: z.record(z.unknown()),
-  status: z
-    .enum(["pending", "running", "completed", "failed"])
-    .default("pending"),
-  error: z.string().optional(),
-  logs: z.array(z.string()).optional(),
-});
-export type Step = z.infer<typeof StepSchema>;
+/**
+ * GET Tool - Fetch a single workflow by ID
+ */
+export const createGetTool = (env: Env) =>
+  createPrivateTool({
+    id: "DECO_COLLECTION_WORKFLOWS_GET",
+    description: "Get a single workflow by ID",
+    inputSchema: CollectionGetInputSchema,
+    outputSchema: createCollectionGetOutputSchema(WorkflowSchema),
+    execute: async ({ context }) => {
+      await ensureTable(env, "workflows");
+
+      const { id } = context;
+
+      const result = await env.DATABASE.DATABASES_RUN_SQL({
+        sql: "SELECT * FROM workflows WHERE id = $1 LIMIT 1",
+        params: [id] as any[],
+      });
+
+      const item = result.result[0]?.results?.[0] || null;
+
+      return {
+        item: item
+          ? transformDbRowToWorkflow(item as Record<string, unknown>)
+          : null,
+      };
+    },
+  });
+
+/**
+ * INSERT Tool - Create a new workflow
+ */
+export const createInsertTool = (env: Env) =>
+  createPrivateTool({
+    id: "DECO_COLLECTION_WORKFLOWS_INSERT",
+    description: "Create a new workflow",
+    inputSchema: createCollectionInsertInputSchema(WorkflowSchema),
+    outputSchema: createCollectionInsertOutputSchema(WorkflowSchema),
+    execute: async ({ context }) => {
+      await ensureTable(env, "workflows");
+
+      const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+
+      const { data } = context;
+
+      const result = await env.DATABASE.DATABASES_RUN_SQL({
+        sql: `
+          INSERT INTO workflows (
+            id, name, created_at, updated_at, created_by, updated_by,
+            description, steps
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7
+          )
+          RETURNING *
+        `,
+        params: [
+          id,
+          data.name,
+          now,
+          now,
+          user?.id || null,
+          user?.id || null,
+          data.description,
+          JSON.stringify(data.steps || []),
+        ],
+      });
+
+      return {
+        item: transformDbRowToWorkflow(
+          result.result[0]?.results?.[0] as Record<string, unknown>,
+        ),
+      };
+    },
+  });
+
+/**
+ * UPDATE Tool - Update an existing workflow
+ */
+export const createUpdateTool = (env: Env) =>
+  createPrivateTool({
+    id: "DECO_COLLECTION_WORKFLOWS_UPDATE",
+    description: "Update an existing workflow",
+    inputSchema: createCollectionUpdateInputSchema(WorkflowSchema),
+    outputSchema: createCollectionUpdateOutputSchema(WorkflowSchema),
+    execute: async ({ context }) => {
+      await ensureTable(env, "workflows");
+
+      const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
+      const now = new Date().toISOString();
+
+      const { id, data } = context;
+
+      // Build SET clause dynamically based on provided fields
+      const setClauses: string[] = [];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      // Always update these fields
+      setClauses.push(`updated_at = $${paramIndex++}`);
+      params.push(now);
+
+      setClauses.push(`updated_by = $${paramIndex++}`);
+      params.push(user?.id || null);
+
+      // Conditionally update other fields
+      if (data.title !== undefined) {
+        setClauses.push(`title = $${paramIndex++}`);
+        params.push(data.title);
+      }
+      if (data.description !== undefined) {
+        setClauses.push(`description = $${paramIndex++}`);
+        params.push(data.description);
+      }
+      if (data.instructions !== undefined) {
+        setClauses.push(`instructions = $${paramIndex++}`);
+        params.push(data.instructions);
+      }
+      if (data.tool_set !== undefined) {
+        setClauses.push(`tool_set = $${paramIndex++}`);
+        params.push(JSON.stringify(data.tool_set));
+      }
+
+      // Add id as the last parameter
+      params.push(id);
+
+      const sql = `
+        UPDATE workflows
+        SET ${setClauses.join(", ")}
+        WHERE id = $${paramIndex}
+        RETURNING *
+      `;
+
+      const result = await env.DATABASE.DATABASES_RUN_SQL({
+        sql,
+        params,
+      });
+
+      if (result.result[0]?.results?.length === 0) {
+        throw new Error(`Workflow with id ${id} not found`);
+      }
+
+      return {
+        item: transformDbRowToWorkflow(
+          result.result[0]?.results?.[0] as Record<string, unknown>,
+        ),
+      };
+    },
+  });
+
+/**
+ * DELETE Tool - Delete a workflow by ID
+ */
+export const createDeleteTool = (env: Env) =>
+  createPrivateTool({
+    id: "DECO_COLLECTION_WORKFLOWS_DELETE",
+    description: "Delete a workflow by ID",
+    inputSchema: CollectionDeleteInputSchema,
+    outputSchema: CollectionDeleteOutputSchema,
+    execute: async ({ context }) => {
+      await ensureTable(env, "workflows");
+
+      const { id } = context;
+
+      await env.DATABASE.DATABASES_RUN_SQL({
+        sql: "DELETE FROM workflows WHERE id = $1",
+        params: [id],
+      });
+
+      return {
+        success: true,
+        id,
+      };
+    },
+  });
+
+const handleSandboxStep = async (step: {
+  name: string;
+  execute: string;
+  stepInput: unknown;
+}) => {
+  const code = step.execute
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\r/g, "\r");
+
+  const stepEvaluation = await evalCodeAndReturnDefaultHandle(code, step.name);
+
+  const {
+    ctx: stepCtx,
+    defaultHandle: stepDefaultHandle,
+    guestConsole: stepConsole,
+  } = stepEvaluation;
+  let result: unknown;
+
+  try {
+    const stepCallHandle = await callFunction(
+      stepCtx,
+      stepDefaultHandle,
+      undefined,
+      step.stepInput,
+    );
+
+    const unwrappedResult = stepCtx.unwrapResult(stepCallHandle);
+    result = stepCtx.dump(unwrappedResult);
+
+    // Log any console output from the step execution
+    if (stepConsole.logs.length > 0) {
+      console.log(`Step '${step.name}' logs:`, stepConsole.logs);
+    }
+  } finally {
+    stepCtx.dispose();
+  }
+  return result;
+};
 
 export const runWorkflowTool = (env: Env) =>
   createPrivateTool({
-    id: "RUN_WORKFLOW",
+    id: "START_EXECUTION",
     description: "Run one or more MCP tools with durable execution",
     inputSchema: z.object({
-      input: z.record(z.unknown()),
-      // steps: z.array(StepSchema),
-      runtimeId: z.string(),
+      executionId: z.string(),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       result: z.unknown(),
     }),
     execute: async ({ context: ctx }) => {
-      const state = {
-        steps: {} as Record<string, unknown>,
-        input: ctx.input,
-      };
+      try {
+        const { executionId } = ctx;
 
-      const steps: Step[] = [
-        {
-          name: "step1",
-          inputSchema: {
-            properties: {
-              name: {
-                type: "string",
-              },
-            },
-            required: ["name"],
-            type: "object",
-          },
-          outputSchema: {
-            properties: {
-              upperCaseName: {
-                type: "string",
-              },
-            },
-            required: ["upperCaseName"],
-            type: "object",
-          },
-          execute:
-            "export default async function (input, ctx) {\nreturn { upperCaseName: input.name.toUpperCase() };\n}",
-          input: {
-            name: "John Doe",
-          },
-          output: {},
-          error: undefined,
-          status: "pending",
-          logs: [],
-        },
-        {
-          name: "step2",
-          inputSchema: {
-            properties: {
-              upperCaseName: {
-                type: "string",
-              },
-            },
-            required: ["upperCaseName"],
-            type: "object",
-          },
-          outputSchema: {
-            properties: {
-              duplicateName: {
-                type: "string",
-              },
-            },
-            required: ["duplicateName"],
-            type: "object",
-          },
-          execute:
-            "export default async function (input, ctx) {\nreturn { duplicateName: input.upperCaseName };\n}",
-          input: {
-            upperCaseName: "@step1.output.upperCaseName",
-          },
-          output: {},
-          error: undefined,
-          status: "pending",
-          logs: [],
-        },
-        {
-          name: "step3",
-          inputSchema: {},
-          outputSchema: {},
-          input: {
-            model: "anthropic:claude-sonnet-4-5",
-            messages: [
-              {
-                role: "user",
-                content: "Generate poem about John Doe",
-              },
-            ],
-            schema: {
-              type: "object",
-              properties: { poem: { type: "string" } },
-            },
-            temperature: 0.7,
-          },
-          output: {},
-          logs: [],
-          status: "pending",
-          error: undefined,
-          execute: {
-            connectionId: "i:ai-generation",
-            toolName: "AI_GENERATE_OBJECT",
-          },
-        },
-      ];
+        const { item: execution } =
+          await env.SELF.DECO_COLLECTION_WORKFLOW_EXECUTIONS_GET({
+            id: executionId,
+          });
+        if (!execution) {
+          throw new Error(`Execution with id ${executionId} not found`);
+        }
 
-      for (const step of steps) {
-        let stepInput = step.input;
-        const stepDef = step;
-        const stepResultsMap = new Map(Object.entries(state.steps));
-
-        // Debug logging
-        console.log(
-          `[REF RESOLUTION] Step '${stepDef.name}' input before resolution:`,
-          JSON.stringify(stepInput),
-        );
-        console.log(
-          `[REF RESOLUTION] Available step results:`,
-          Array.from(stepResultsMap.keys()),
-        );
-
-        const resolution = resolveAtRefsInInput(
-          stepInput,
-          stepResultsMap,
-          state.input,
-        );
-
-        // Log any resolution errors
-        if (resolution.errors && resolution.errors.length > 0) {
-          console.error(
-            `[REF RESOLUTION] Errors resolving refs in step '${stepDef.name}':`,
-            resolution.errors,
+        if (execution.status !== "running" && execution.status !== "pending") {
+          throw new Error(
+            `Execution with id ${executionId} is not running or pending`,
           );
         }
 
-        // Use the resolved input
-        stepInput = resolution.resolved as Record<string, unknown>;
-        console.log(
-          `[REF RESOLUTION] Step '${stepDef.name}' input after resolution:`,
-          JSON.stringify(stepInput),
+        const { item: workflow } = await env.SELF.DECO_COLLECTION_WORKFLOWS_GET(
+          {
+            id: execution.workflow_id,
+          },
         );
-
-        // Validate resolved input against step's inputSchema
-        if (stepDef.inputSchema) {
-          const inputValidation = validate(
-            resolution.resolved,
-            stepDef.inputSchema,
+        if (!workflow) {
+          throw new Error(
+            `Workflow with id ${execution.workflow_id} not found`,
           );
+        }
+
+        const { items: existingResults } =
+          await env.SELF.DECO_COLLECTION_EXECUTION_STEP_RESULTS_GET_ALL({
+            id: executionId,
+          });
+
+        const lastResult = existingResults[existingResults.length - 1];
+        const matchingStepIndex = workflow.steps.findIndex(
+          (step) => step.name === lastResult?.step_id,
+        );
+        const currentStepIndex = lastResult
+          ? lastResult.completed_at_epoch_ms === null
+            ? matchingStepIndex
+            : matchingStepIndex + 1
+          : 0;
+
+        const steps = workflow.steps;
+        const step = steps[currentStepIndex];
+        const initialStepInput =
+          (execution.inputs?.[step.name] as Record<string, unknown>) || {};
+        const fromPreviousStepOutput =
+          existingResults[existingResults.length - 1]?.output;
+
+        let stepInput = {
+          ...initialStepInput,
+          ...fromPreviousStepOutput,
+        };
+        if (step.inputSchema) {
+          const inputValidation = validate(stepInput, step.inputSchema);
           if (!inputValidation.valid) {
-            const errorMessage = `Step '${stepDef.name}' input validation failed after ref resolution: ${inspect(
+            const errorMessage = `Step '${step.name}' input validation failed after ref resolution: ${inspect(
               inputValidation.errors,
             )}`;
             console.error(`[INPUT VALIDATION]`, errorMessage);
             throw new Error(errorMessage);
           }
         }
+        const [stepResult, executionUpdate] = await Promise.all([
+          env.SELF.DECO_COLLECTION_EXECUTION_STEP_RESULTS_INSERT({
+            data: {
+              execution_id: executionId,
+              step_id: step.name,
+              started_at_epoch_ms: new Date().getTime(),
+            },
+          }),
+          env.SELF.DECO_COLLECTION_WORKFLOW_EXECUTIONS_UPDATE({
+            id: executionId,
+            data: {
+              status: "running",
+              started_at_epoch_ms: new Date().getTime(),
+            },
+          }),
+        ]);
+
+        let result: unknown;
         if (typeof step.execute === "string") {
-          const stepEvaluation = await evalCodeAndReturnDefaultHandle(
-            step.execute,
-            ctx.runtimeId,
-          );
-
-          const {
-            ctx: stepCtx,
-            defaultHandle: stepDefaultHandle,
-            guestConsole: stepConsole,
-          } = stepEvaluation;
-
-          const stepCallHandle = await callFunction(
-            stepCtx,
-            stepDefaultHandle,
-            undefined,
-            step.input,
-          );
-
-          const result = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
-
-          // Log any console output from the step execution
-          if (stepConsole.logs.length > 0) {
-            console.log(`Step '${step.name}' logs:`, stepConsole.logs);
-          }
-
-          // Return the full result object (with .result wrapper) so refs can access it
-          // Refs use format @step.output.result.X which maps to result.X after stripping output.
-          console.log(
-            `[STEP EXECUTION] Raw result structure:`,
-            JSON.stringify(result),
-          );
-
-          step.output = result;
-          state.steps[step.name] = result;
-          step.status = "completed";
+          result = await handleSandboxStep({
+            execute: step.execute,
+            stepInput: stepInput,
+            name: step.name,
+          });
         } else {
           const connection = proxyConnectionForId(step.execute.connectionId, {
             workspace: env.DECO_WORKSPACE,
             token: env.DECO_REQUEST_CONTEXT.token,
           });
 
-          console.log("Connection:", connection);
-
-          const result = await env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
+          result = await env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
             connection: connection as any,
             params: {
               name: step.execute.toolName,
-              arguments: step.input,
+              arguments: stepInput,
             },
           });
-          console.log("Result:", result);
-          step.output = result as Record<string, unknown>;
-          step.status = "completed";
         }
-      }
 
-      console.log("Steps:", { steps });
-      return { success: true, steps };
+        await env.SELF.DECO_COLLECTION_EXECUTION_STEP_RESULTS_UPDATE({
+          data: {
+            completed_at_epoch_ms: new Date().getTime(),
+            step_id: step.name,
+            execution_id: executionId,
+            output: result as Record<string, unknown>,
+          },
+        });
+
+        const isLastStep = currentStepIndex === steps.length - 1;
+
+        if (!isLastStep) {
+          await env.WORKFLOW_QUEUE.send({
+            executionId,
+            nextStepName: steps[currentStepIndex + 1].name,
+            ctx: env,
+          });
+        }
+
+        if (isLastStep) {
+          await env.SELF.DECO_COLLECTION_WORKFLOW_EXECUTIONS_UPDATE({
+            id: executionId,
+            data: {
+              status: "completed" as const,
+              output: result as Record<string, unknown>,
+            },
+          });
+        }
+
+        return {
+          success: true,
+          result: result,
+        };
+      } catch (error) {
+        console.error("Error in workflow execution:", error);
+        throw error;
+      }
     },
   });
 
-const cache = new Map<string, unknown>();
-
-// Helper function to create a tool caller
-const createToolCaller = (
-  env: Env,
-  integrationId: string,
-  toolName: string,
-) => {
-  return async (args: Record<string, unknown>) => {
-    let connection;
-    connection = cache.get(integrationId);
-    if (!connection) {
-      const mConnection:
-        | {
-            connection?: Record<string, unknown>;
-          }
-        | unknown = await env.INTEGRATIONS.INTEGRATIONS_GET({
-        id: integrationId,
-      });
-      cache.set(integrationId, mConnection);
-    }
-    connection = cache.get(integrationId);
-
-    const response:
-      | {
-          structuredContent?: Record<string, unknown>;
-          content?: string;
-        }
-      | unknown = await env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
-      connection: connection as any,
-      params: {
-        name: toolName,
-        arguments: args,
-      },
-    });
-
-    if (
-      typeof response === "object" &&
-      response !== null &&
-      "structuredContent" in response
-    ) {
-      return response.structuredContent;
-    } else if (
-      typeof response === "object" &&
-      response !== null &&
-      "content" in response
-    ) {
-      return response.content;
-    } else {
-      return response;
-    }
-  };
-};
-
-export const workflowTools = [runWorkflowTool];
+// Export all tools as an array
+export const workflowTools = [
+  createListTool,
+  createGetTool,
+  createInsertTool,
+  createUpdateTool,
+  createDeleteTool,
+  runWorkflowTool,
+];
 
 export const proxyConnectionForId = (
   integrationId: string,

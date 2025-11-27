@@ -20,3 +20,17 @@ local = false
 name = "INTEGRATIONS"
 type = "mcp"
 integration_name = "@deco/integrations"
+
+[[deco.bindings]]
+name = "DATABASE"
+type = "mcp"
+integration_name = "@deco/database"
+
+[[queues.producers]]
+binding = "WORKFLOW_QUEUE"
+queue = "queue"
+
+[[queues.consumers]]
+queue = "queue"
+max_batch_size = 1
+max_batch_timeout = 1
