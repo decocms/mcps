@@ -12,6 +12,7 @@ Funções auxiliares para fazer requisições a APIs externas:
 - `parseApiError(response, apiName)` - Parseia erros de APIs
 - `makeApiRequest(url, options, apiName)` - Faz requisição HTTP com tratamento de erro
 - `pollUntilComplete(options)` - Polling com timeout
+- `downloadFile(url)` - Download simples de arquivos (áudio, vídeo, etc.) retornando Blob
 - `fetchImageAsBase64(imageUrl)` - Baixa imagem e converte para base64
 - `downloadWithAuth(url, authHeaders, apiName)` - Download com autenticação
 

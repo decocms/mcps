@@ -139,6 +139,24 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
   };
 }
 
+export async function downloadFile(url: string): Promise<Blob> {
+  console.log(`[downloadFile] Fetching file from: ${url.substring(0, 100)}...`);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch file: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const blob = await response.blob();
+  console.log(
+    `[downloadFile] Successfully fetched ${blob.size} bytes (${blob.type})`,
+  );
+
+  return blob;
+}
+
 export async function downloadWithAuth(
   url: string,
   authHeaders: Record<string, string>,

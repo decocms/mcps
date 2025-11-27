@@ -1,7 +1,7 @@
 {
   "name": "whisper",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "Whisper MCP for transcribing audio files",
   "private": true,
   "type": "module",
   "scripts": {

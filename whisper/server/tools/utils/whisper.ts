@@ -3,86 +3,19 @@ import {
   OPENAI_AUDIO_TRANSCRIPTIONS_ENDPOINT,
 } from "../../constants";
 import { Env } from "../../main";
-import z from "zod";
 import {
   assertEnvKey,
   makeApiRequest,
+  downloadFile,
 } from "@decocms/mcps-shared/tools/utils/api-client";
+import {
+  WhisperModel,
+  TranscriptionResponseSchema,
+  VerboseTranscriptionResponseSchema,
+  type TranscriptionResponse,
+  type VerboseTranscriptionResponse,
+} from "./types";
 
-// Whisper models
-export const WhisperModels = z.enum(["whisper-1"]);
-
-export type WhisperModel = z.infer<typeof WhisperModels>;
-
-// Transcription response schema
-export const TranscriptionResponseSchema = z.object({
-  text: z.string().describe("The transcribed text"),
-});
-
-// Verbose transcription response schema (with timestamps)
-export const VerboseTranscriptionResponseSchema = z.object({
-  task: z.string().optional(),
-  language: z.string().optional(),
-  duration: z.number().optional(),
-  text: z.string(),
-  words: z
-    .array(
-      z.object({
-        word: z.string(),
-        start: z.number(),
-        end: z.number(),
-      }),
-    )
-    .optional(),
-  segments: z
-    .array(
-      z.object({
-        id: z.number(),
-        seek: z.number().optional(),
-        start: z.number(),
-        end: z.number(),
-        text: z.string(),
-        tokens: z.array(z.number()).optional(),
-        temperature: z.number().optional(),
-        avg_logprob: z.number().optional(),
-        compression_ratio: z.number().optional(),
-        no_speech_prob: z.number().optional(),
-      }),
-    )
-    .optional(),
-});
-
-export type TranscriptionResponse = z.infer<typeof TranscriptionResponseSchema>;
-export type VerboseTranscriptionResponse = z.infer<
-  typeof VerboseTranscriptionResponseSchema
->;
-
-/**
- * Fetch audio file from URL
- */
-async function fetchAudioFile(audioUrl: string): Promise<Blob> {
-  console.log(
-    `[fetchAudioFile] Fetching audio from: ${audioUrl.substring(0, 100)}...`,
-  );
-
-  const response = await fetch(audioUrl);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch audio file: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  const blob = await response.blob();
-  console.log(
-    `[fetchAudioFile] Successfully fetched ${blob.size} bytes (${blob.type})`,
-  );
-
-  return blob;
-}
-
-/**
- * Transcribe audio using OpenAI Whisper API
- */
 export async function transcribeAudio(
   env: Env,
   audioUrl: string,
@@ -99,8 +32,7 @@ export async function transcribeAudio(
 
   const url = `${OPENAI_BASE_URL}${OPENAI_AUDIO_TRANSCRIPTIONS_ENDPOINT}`;
 
-  // Fetch the audio file
-  const audioBlob = await fetchAudioFile(audioUrl);
+  const audioBlob = await downloadFile(audioUrl);
 
   // Create form data
   const formData = new FormData();

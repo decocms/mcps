@@ -1,21 +1,21 @@
 # Whisper MCP
 
-MCP (Model Context Protocol) server para transcrição de áudio usando OpenAI Whisper.
+MCP (Model Context Protocol) server for audio transcription using OpenAI Whisper.
 
-## Visão Geral
+## Overview
 
-Este servidor MCP fornece capacidades de transcrição de áudio usando a API Whisper da OpenAI. Ele suporta múltiplos idiomas, timestamps detalhados, e vários formatos de saída.
+This MCP server provides audio transcription capabilities using OpenAI's Whisper API. It supports multiple languages, detailed timestamps, and various output formats.
 
-## Recursos
+## Features
 
-- 🎙️ **Transcrição de Áudio** - Converte áudio em texto com alta precisão
-- 🌍 **Multi-idioma** - Suporta mais de 90 idiomas ou detecção automática
-- ⏱️ **Timestamps** - Timestamps detalhados por palavra ou segmento
-- 📝 **Múltiplos Formatos** - JSON, texto, SRT, VTT, ou verbose JSON
-- 🔄 **Auto-retry** - Retry automático com backoff exponencial
-- 📊 **Logging** - Logging estruturado para debugging
+- 🎙️ **Audio Transcription** - Convert audio to text with high accuracy
+- 🌍 **Multi-language** - Supports 90+ languages or automatic detection
+- ⏱️ **Timestamps** - Detailed timestamps per word or segment
+- 📝 **Multiple Formats** - JSON, text, SRT, VTT, or verbose JSON
+- 🔄 **Auto-retry** - Automatic retry with exponential backoff
+- 📊 **Logging** - Structured logging for debugging
 
-## Formatos de Áudio Suportados
+## Supported Audio Formats
 
 - FLAC
 - M4A
@@ -28,32 +28,32 @@ Este servidor MCP fornece capacidades de transcrição de áudio usando a API Wh
 - WAV
 - WEBM
 
-**Limite de tamanho:** 25 MB por arquivo
+**Size limit:** 25 MB per file
 
-## Instalação
+## Installation
 
 ```bash
 cd whisper
 bun install
 ```
 
-## Configuração
+## Configuration
 
-### Variáveis de Ambiente
+### Environment Variables
 
-Configure as seguintes variáveis de ambiente:
+Configure the following environment variables:
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### Desenvolvimento Local
+### Local Development
 
 ```bash
 bun run dev
 ```
 
-### Build para Produção
+### Production Build
 
 ```bash
 bun run build
@@ -65,51 +65,51 @@ bun run build
 bun run deploy
 ```
 
-## Uso
+## Usage
 
 ### Tool: TRANSCRIBE_AUDIO
 
-Transcreve um arquivo de áudio em texto.
+Transcribes an audio file to text.
 
-#### Parâmetros de Entrada
+#### Input Parameters
 
 ```typescript
 {
-  audioUrl: string;                          // URL do arquivo de áudio
-  language?: string;                         // Código do idioma (ex: 'pt', 'en', 'es')
-  prompt?: string;                           // Prompt opcional para guiar a transcrição
+  audioUrl: string;                          // Audio file URL
+  language?: string;                         // Language code (e.g., 'pt', 'en', 'es')
+  prompt?: string;                           // Optional prompt to guide transcription
   responseFormat?: "json" | "text" | "srt" | "verbose_json" | "vtt";
-  temperature?: number;                      // Temperatura de amostragem (0-1)
-  timestampGranularities?: Array<"word" | "segment">;  // Para timestamps detalhados
+  temperature?: number;                      // Sampling temperature (0-1)
+  timestampGranularities?: Array<"word" | "segment">;  // For detailed timestamps
 }
 ```
 
-#### Resposta
+#### Response
 
 ```typescript
 {
-  text?: string;                             // Texto transcrito
-  language?: string;                         // Idioma detectado
-  duration?: number;                         // Duração em segundos
-  segments?: Array<{                         // Segmentos com timestamps
+  text?: string;                             // Transcribed text
+  language?: string;                         // Detected language
+  duration?: number;                         // Duration in seconds
+  segments?: Array<{                         // Segments with timestamps
     id: number;
     start: number;
     end: number;
     text: string;
   }>;
-  words?: Array<{                            // Palavras individuais com timestamps
+  words?: Array<{                            // Individual words with timestamps
     word: string;
     start: number;
     end: number;
   }>;
-  error?: boolean;                           // Se a requisição falhou
-  finishReason?: string;                     // Motivo de falha
+  error?: boolean;                           // Whether the request failed
+  finishReason?: string;                     // Failure reason
 }
 ```
 
-### Exemplos
+### Examples
 
-#### Transcrição Básica
+#### Basic Transcription
 
 ```typescript
 const result = await transcribeAudio({
@@ -119,7 +119,7 @@ const result = await transcribeAudio({
 console.log(result.text);
 ```
 
-#### Transcrição com Idioma Específico
+#### Transcription with Specific Language
 
 ```typescript
 const result = await transcribeAudio({
@@ -128,7 +128,7 @@ const result = await transcribeAudio({
 });
 ```
 
-#### Transcrição com Timestamps
+#### Transcription with Timestamps
 
 ```typescript
 const result = await transcribeAudio({
@@ -136,18 +136,18 @@ const result = await transcribeAudio({
   timestampGranularities: ["word", "segment"]
 });
 
-// Acesse timestamps por palavra
+// Access word-level timestamps
 result.words?.forEach(word => {
   console.log(`${word.word} (${word.start}s - ${word.end}s)`);
 });
 
-// Acesse timestamps por segmento
+// Access segment-level timestamps
 result.segments?.forEach(segment => {
   console.log(`${segment.text} (${segment.start}s - ${segment.end}s)`);
 });
 ```
 
-#### Transcrição com Prompt Contextual
+#### Transcription with Contextual Prompt
 
 ```typescript
 const result = await transcribeAudio({
@@ -157,115 +157,115 @@ const result = await transcribeAudio({
 });
 ```
 
-## Arquitetura
+## Architecture
 
-Este projeto segue o padrão DRY (Don't Repeat Yourself) e utiliza código compartilhado:
+This project follows the DRY (Don't Repeat Yourself) pattern and uses shared code:
 
 ```
 whisper/
 ├── server/
-│   ├── main.ts                    # Entry point do MCP server
-│   ├── constants.ts               # Configurações da API
+│   ├── main.ts                    # MCP server entry point
+│   ├── constants.ts               # API configuration
 │   └── tools/
-│       ├── index.ts               # Exportação das tools
-│       ├── whisper.ts             # Tool principal de transcrição
+│       ├── index.ts               # Tools export
+│       ├── whisper.ts             # Main transcription tool
 │       └── utils/
-│           └── whisper.ts         # Cliente Whisper e utilitários
+│           └── whisper.ts         # Whisper client and utilities
 ├── shared/
-│   └── deco.gen.ts               # Tipos gerados automaticamente
-└── README.md                     # Este arquivo
+│   └── deco.gen.ts               # Auto-generated types
+└── README.md                     # This file
 
-shared/ (código compartilhado)
+shared/ (shared code)
 └── audio-transcribers/
-    ├── base.ts                   # Abstração base para transcritores
-    ├── index.ts                  # Exportações
-    └── README.md                 # Documentação do módulo compartilhado
+    ├── base.ts                   # Base abstraction for transcribers
+    ├── index.ts                  # Exports
+    └── README.md                 # Shared module documentation
 ```
 
-## Configuração de Contrato
+## Contract Configuration
 
-⚠️ **Nota:** Este projeto usa um contrato mock para desenvolvimento. Quando o `WHISPER_CONTRACT` for configurado na plataforma Deco, atualize:
+⚠️ **Note:** This project uses a mock contract for development. When `WHISPER_CONTRACT` is configured on the Deco platform, update:
 
-1. `server/main.ts` - Descomente os scopes do contrato
-2. `server/tools/whisper.ts` - Remova o mock e use `env.WHISPER_CONTRACT`
+1. `server/main.ts` - Uncomment contract scopes
+2. `server/tools/whisper.ts` - Remove mock and use `env.WHISPER_CONTRACT`
 
 ## Best Practices
 
-### Detecção de Idioma
+### Language Detection
 
-- Para melhores resultados, especifique o idioma se souber qual é
-- A detecção automática funciona bem, mas pode adicionar latência
+- For best results, specify the language if you know it
+- Automatic detection works well but may add latency
 
-### Temperatura
+### Temperature
 
-- Use valores baixos (0-0.3) para conteúdo factual/técnico
-- Use valores altos (0.7-1.0) para conteúdo criativo
+- Use low values (0-0.3) for factual/technical content
+- Use high values (0.7-1.0) for creative content
 
 ### Timestamps
 
-- Timestamps de palavra aumentam o tempo de processamento
-- Use apenas quando necessário para sincronização precisa
+- Word-level timestamps increase processing time
+- Use only when needed for precise synchronization
 
-### Tamanho de Arquivo
+### File Size
 
-- Arquivos maiores que 25 MB precisam ser divididos
-- Considere pré-processar áudio para reduzir tamanho (bitrate menor, sample rate menor)
+- Files larger than 25 MB need to be split
+- Consider pre-processing audio to reduce size (lower bitrate, lower sample rate)
 
 ### Performance
 
-- A API Whisper é assíncrona - não há polling necessário
-- Timeout padrão: 5 minutos
-- Retry automático: 3 tentativas
+- Whisper API is asynchronous - no polling needed
+- Default timeout: 5 minutes
+- Automatic retry: 3 attempts
 
 ## Troubleshooting
 
-### Erro: "Cannot find module '@decocms/mcps-shared/audio-transcribers'"
+### Error: "Cannot find module '@decocms/mcps-shared/audio-transcribers'"
 
-Execute:
+Run:
 ```bash
 bun install
 ```
 
-### Erro: "OPENAI_API_KEY is not set"
+### Error: "OPENAI_API_KEY is not set"
 
-Configure a variável de ambiente:
+Configure the environment variable:
 ```bash
 export OPENAI_API_KEY=your_key_here
 ```
 
-### Erro: "Failed to fetch audio file"
+### Error: "Failed to fetch audio file"
 
-- Verifique se a URL do áudio é acessível
-- Certifique-se de que o formato do áudio é suportado
-- Verifique se o arquivo não excede 25 MB
+- Check if the audio URL is accessible
+- Make sure the audio format is supported
+- Verify the file doesn't exceed 25 MB
 
-## Desenvolvimento
+## Development
 
-### Verificar Tipos
+### Check Types
 
 ```bash
 bun run check
 ```
 
-### Gerar Tipos
+### Generate Types
 
 ```bash
 bun run gen
 ```
 
-### Configurar
+### Configure
 
 ```bash
 bun run configure
 ```
 
-## Recursos Adicionais
+## Additional Resources
 
-- [Documentação da API Whisper](https://platform.openai.com/docs/api-reference/audio)
+- [Whisper API Documentation](https://platform.openai.com/docs/api-reference/audio)
 - [MCP Shared README](../shared/audio-transcribers/README.md)
 - [Deco Runtime Documentation](https://github.com/decocms/runtime)
 
-## Licença
+## License
 
 MIT
 
