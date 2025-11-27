@@ -1,0 +1,78 @@
+/**
+ * Tool: List Models
+ * List available models from a Replicate user/organization
+ */
+
+import { createPrivateTool } from "@decocms/runtime/mastra";
+import {
+  assertEnvKey,
+  makeApiRequest,
+} from "@decocms/mcps-shared/tools/utils/api-client";
+import type { Env } from "../main";
+import { ListModelsInputSchema, ListModelsOutputSchema } from "../lib/types";
+import { REPLICATE_API_URL } from "../constants";
+
+export const createListModelsTool = (env: Env) =>
+  createPrivateTool({
+    id: "LIST_MODELS",
+    description:
+      "List available models from Replicate. " +
+      "You can filter by owner (user or organization) to see their models. " +
+      "Returns model metadata including name, description, run count, and latest version info. " +
+      "Use the next_cursor from the response to paginate through results.",
+    inputSchema: ListModelsInputSchema,
+    outputSchema: ListModelsOutputSchema,
+    execute: async ({ context }) => {
+      const { owner, cursor } = context;
+
+      // Use the search API to list models by owner
+      // The Replicate SDK doesn't expose a direct list-by-owner method
+      const ownerName = owner || "replicate";
+
+      // Build URL with query parameters
+      const url = new URL(`${REPLICATE_API_URL}/models`);
+      url.searchParams.set("owner", ownerName);
+      if (cursor) {
+        url.searchParams.set("cursor", cursor);
+      }
+
+      // Fetch models using the REST API directly
+      assertEnvKey(env, "REPLICATE_API_TOKEN");
+
+      const data = (await makeApiRequest(
+        url.toString(),
+        {
+          headers: {
+            Authorization: `Bearer ${env.REPLICATE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        },
+        "Replicate",
+      )) as {
+        results: any[];
+        next?: string;
+      };
+
+      // Transform response
+      const models = data.results || [];
+
+      return {
+        models: models.map((model: any) => ({
+          owner: model.owner,
+          name: model.name,
+          description: model.description,
+          visibility: model.visibility,
+          run_count: model.run_count || 0,
+          cover_image_url: model.cover_image_url,
+          url: model.url,
+          latest_version: model.latest_version
+            ? {
+                id: model.latest_version.id,
+                created_at: model.latest_version.created_at,
+              }
+            : undefined,
+        })),
+        next_cursor: data.next,
+      };
+    },
+  });
