@@ -13,8 +13,8 @@
     "build": "bun --bun vite build"
   },
   "dependencies": {
-    "@decocms/bindings": "^0.1.6",
-    "@decocms/runtime": "0.24.0",
+    "@decocms/bindings": "0.2.4",
+    "@decocms/runtime": "0.28.1",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",
