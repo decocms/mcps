@@ -1,71 +1,71 @@
 # Perplexity AI MCP
 
-## Descrição do Projeto
+## Project Description
 
-**Perplexity AI MCP** é um servidor Model Context Protocol (MCP) que integra a API do Perplexity AI para fornecer respostas fundamentadas na web. Este projeto é hospedado como uma aplicação Cloudflare Workers.
+**Perplexity AI MCP** is a Model Context Protocol (MCP) server that integrates the Perplexity AI API to provide web-grounded answers. This project is hosted as a Cloudflare Workers application.
 
-### Propósito
+### Purpose
 
-Este servidor MCP permite que aplicações cliente:
-- Façam perguntas em linguagem natural e recebam respostas fundamentadas na web
-- Realizem conversas multi-turno com contexto de histórico de mensagens
-- Personalizem parâmetros de busca (domínios, recência, contexto)
-- Utilizem diferentes modelos Perplexity (sonar, sonar-pro, etc.)
-- Controlem a geração de respostas (temperatura, tokens, etc.)
+This MCP server allows client applications to:
+- Ask questions in natural language and receive web-grounded answers
+- Conduct multi-turn conversations with message history context
+- Customize search parameters (domains, recency, context)
+- Use different Perplexity models (sonar, sonar-pro, etc.)
+- Control response generation (temperature, tokens, etc.)
 
-### Recursos Principais
+### Key Features
 
-- 🤖 **Integração com Perplexity AI**: Acesso completo à API do Perplexity
-- 💬 **Dois Modos de Interação**: Prompt simples ou conversação multi-turno
-- 🔍 **Busca Personalizada**: Filtros de domínio, recência e contexto
-- 🎯 **Múltiplos Modelos**: Suporte para sonar, sonar-pro, sonar-deep-research, sonar-reasoning-pro e sonar-reasoning
-- ⚙️ **Controle Fino**: Ajuste de temperatura, top_p, max_tokens e muito mais
-- 💰 **Sistema de Contratos**: Gerenciamento de autorização e pagamento por consulta
-- 🔄 **Retry Automático**: Sistema de retry com até 3 tentativas
-- ⏱️ **Timeout Configurável**: Proteção contra requisições longas
-- 👤 **Ferramentas de Usuário**: Gerenciamento de informações do usuário
-- 📊 **Informações de Uso**: Retorna contagem de tokens utilizados
+- 🤖 **Perplexity AI Integration**: Full access to the Perplexity API
+- 💬 **Two Interaction Modes**: Simple prompt or multi-turn conversation
+- 🔍 **Custom Search**: Domain, recency, and context filters
+- 🎯 **Multiple Models**: Support for sonar, sonar-pro, sonar-deep-research, sonar-reasoning-pro, and sonar-reasoning
+- ⚙️ **Fine Control**: Adjust temperature, top_p, max_tokens, and much more
+- 💰 **Contract System**: Authorization and payment management per query
+- 🔄 **Automatic Retry**: Retry system with up to 3 attempts
+- ⏱️ **Configurable Timeout**: Protection against long requests
+- 👤 **User Tools**: User information management
+- 📊 **Usage Information**: Returns token count used
 
-## Configuração / Instalação
+## Configuration / Installation
 
-### Pré-requisitos
+### Prerequisites
 
 - Node.js >= 22.0.0
-- Bun (gerenciador de pacotes)
-- Conta Cloudflare (para deploy)
-- Chave de API do Perplexity (obtenha em https://www.perplexity.ai/settings/api)
+- Bun (package manager)
+- Cloudflare account (for deployment)
+- Perplexity API key (get it at https://www.perplexity.ai/settings/api)
 
-### Instalação Local
+### Local Installation
 
-1. Clone o repositório e entre no diretório do Perplexity:
+1. Clone the repository and enter the Perplexity directory:
 ```bash
 git clone https://github.com/deco-cx/mcps.git
 cd mcps/perplexity
 ```
 
-2. Instale as dependências:
+2. Install dependencies:
 ```bash
 bun install
 ```
 
-3. Configure as variáveis de ambiente necessárias:
+3. Configure the necessary environment variables:
 ```bash
 bun run configure
 ```
 
-4. Gere os tipos TypeScript:
+4. Generate TypeScript types:
 ```bash
 bun run gen
 ```
 
-5. Inicie o servidor de desenvolvimento:
+5. Start the development server:
 ```bash
 bun run dev
 ```
 
-O servidor estará disponível em `http://localhost:8787` (porta padrão do Cloudflare Workers).
+The server will be available at `http://localhost:8787` (default Cloudflare Workers port).
 
-### Build de Produção
+### Production Build
 
 ```bash
 bun run build
@@ -77,19 +77,19 @@ bun run build
 bun run deploy
 ```
 
-## Exemplos de Uso
+## Usage Examples
 
-### Fazer uma Pergunta Simples
+### Ask a Simple Question
 
 ```typescript
-// Cliente MCP
+// MCP Client
 const result = await client.callTool("ask_perplexity", {
-  prompt: "Qual é a capital da França e sua população atual?"
+  prompt: "What is the capital of France and its current population?"
 });
 
-// Resultado
+// Result
 {
-  answer: "A capital da França é Paris, com uma população metropolitana...",
+  answer: "The capital of France is Paris, with a metropolitan population...",
   usage: {
     prompt_tokens: 15,
     completion_tokens: 120,
@@ -98,23 +98,23 @@ const result = await client.callTool("ask_perplexity", {
 }
 ```
 
-### Conversa Multi-Turno
+### Multi-Turn Conversation
 
 ```typescript
 const result = await client.callTool("chat_with_perplexity", {
   messages: [
-    { role: "user", content: "O que é inteligência artificial?" },
-    { role: "assistant", content: "IA é a simulação de processos..." },
-    { role: "user", content: "Quais são as principais aplicações?" }
+    { role: "user", content: "What is artificial intelligence?" },
+    { role: "assistant", content: "AI is the simulation of processes..." },
+    { role: "user", content: "What are the main applications?" }
   ]
 });
 ```
 
-### Busca com Filtros Personalizados
+### Search with Custom Filters
 
 ```typescript
 const result = await client.callTool("ask_perplexity", {
-  prompt: "Últimas notícias sobre tecnologia",
+  prompt: "Latest news about technology",
   search_recency_filter: "day",
   search_domain_filter: ["techcrunch.com", "theverge.com"],
   search_context_size: "maximum",
@@ -122,78 +122,78 @@ const result = await client.callTool("ask_perplexity", {
 });
 ```
 
-### Usar Modelo de Raciocínio
+### Use Reasoning Model
 
 ```typescript
 const result = await client.callTool("ask_perplexity", {
-  prompt: "Explique o teorema de Pitágoras e como prová-lo",
+  prompt: "Explain the Pythagorean theorem and how to prove it",
   model: "sonar-reasoning-pro",
   temperature: 0.1
 });
 ```
 
-### Tratamento de Erros
+### Error Handling
 
 ```typescript
 try {
   const result = await client.callTool("ask_perplexity", {
-    prompt: "Minha pergunta..."
+    prompt: "My question..."
   });
   console.log(result.answer);
 } catch (error) {
-  console.error("Erro ao consultar Perplexity:", error.message);
+  console.error("Error querying Perplexity:", error.message);
 }
 ```
 
-## Detalhes de Configuração
+## Configuration Details
 
-### Estrutura de Arquivos
+### File Structure
 
 ```
 perplexity/
-├── server/              # Código do servidor MCP
-│   ├── main.ts         # Ponto de entrada principal
-│   ├── constants.ts    # Constantes (URLs base, etc)
-│   ├── lib/            # Bibliotecas
-│   │   ├── types.ts    # Definições de tipos TypeScript
-│   │   └── perplexity-client.ts # Cliente da API Perplexity
-│   └── tools/          # Ferramentas MCP
-│       ├── index.ts    # Agregador de ferramentas
-│       └── perplexity.ts # Ferramentas do Perplexity
-└── shared/             # Código compartilhado
-    └── deco.gen.ts    # Tipos gerados
+├── server/              # MCP server code
+│   ├── main.ts         # Main entry point
+│   ├── constants.ts    # Constants (base URLs, etc)
+│   ├── lib/            # Libraries
+│   │   ├── types.ts    # TypeScript type definitions
+│   │   └── perplexity-client.ts # Perplexity API client
+│   └── tools/          # MCP tools
+│       ├── index.ts    # Tool aggregator
+│       └── perplexity.ts # Perplexity tools
+└── shared/             # Shared code
+    └── deco.gen.ts    # Generated types
 ```
 
-### Variáveis de Ambiente / Bindings
+### Environment Variables / Bindings
 
-O projeto utiliza os seguintes bindings do Cloudflare Workers:
+The project uses the following Cloudflare Workers bindings:
 
 #### `PERPLEXITY_API_KEY`
-Chave de API do Perplexity AI:
-- Obtenha sua chave em: https://www.perplexity.ai/settings/api
-- Configure durante a instalação da integração
+Perplexity AI API key:
+- Get your key at: https://www.perplexity.ai/settings/api
+- Configure during integration installation
 
 #### `DEFAULT_MODEL`
-Modelo padrão a ser usado (opcional):
-- Opções: `sonar`, `sonar-pro`, `sonar-deep-research`, `sonar-reasoning-pro`, `sonar-reasoning`
-- Padrão: `sonar`
+Default model to use (optional):
+- Options: `sonar`, `sonar-pro`, `sonar-deep-research`, `sonar-reasoning-pro`, `sonar-reasoning`
+- Default: `sonar`
 
 #### `PERPLEXITY_CONTRACT`
-Sistema de autorização e pagamento por uso:
-- `CONTRACT_AUTHORIZE`: Autoriza uma transação antes da consulta
-- `CONTRACT_SETTLE`: Finaliza a transação após a consulta
-- **Clauses configuradas:**
-  - `perplexity:ask`: $0.01 por pergunta simples
-  - `perplexity:chat`: $0.02 por mensagem de chat
+Authorization and pay-per-use system:
+- `CONTRACT_AUTHORIZE`: Authorizes a transaction before the query
+- `CONTRACT_SETTLE`: Settles the transaction after the query
+- **Configured clauses:**
+  - `perplexity:ask`: $0.01 per simple question
+  - `perplexity:chat`: $0.02 per chat message
 
 #### `FILE_SYSTEM`
-Sistema de armazenamento de arquivos:
-- `FS_READ`: Lê arquivos do sistema de arquivos
-- `FS_WRITE`: Escreve arquivos no sistema de arquivos
+File storage system:
+- `FS_READ`: Reads files from the file system
+- `FS_WRITE`: Writes files to the file system
 
-### Configuração OAuth
+### OAuth Configuration
 
-O projeto suporta OAuth para autenticação. Configure os escopos necessários em `server/main.ts`:
+The project supports OAuth for authentication. Configure the necessary scopes in `server/main.ts`:
 
 ```typescript
 oauth: {
@@ -209,87 +209,87 @@ oauth: {
 
 ### State Schema
 
-O State Schema define o estado da aplicação instalada. Você pode estendê-lo para adicionar campos personalizados:
+The State Schema defines the installed application state. You can extend it to add custom fields:
 
 ```typescript
 const StateSchema = BaseStateSchema.extend({
   PERPLEXITY_API_KEY: z.string(),
   DEFAULT_MODEL: z.enum([...]).optional(),
-  // outros campos...
+  // other fields...
 })
 ```
 
-### Scripts Disponíveis
+### Available Scripts
 
-- `bun run dev` - Inicia servidor de desenvolvimento com hot reload
-- `bun run configure` - Configura o projeto Deco
-- `bun run gen` - Gera tipos TypeScript
-- `bun run build` - Compila para produção
-- `bun run deploy` - Faz deploy no Cloudflare Workers
-- `bun run check` - Verifica tipos TypeScript sem compilar
+- `bun run dev` - Starts development server with hot reload
+- `bun run configure` - Configures the Deco project
+- `bun run gen` - Generates TypeScript types
+- `bun run build` - Compiles for production
+- `bun run deploy` - Deploys to Cloudflare Workers
+- `bun run check` - Checks TypeScript types without compiling
 
-### Ferramentas MCP Disponíveis
+### Available MCP Tools
 
 #### `ask_perplexity`
-Faz uma pergunta simples ao Perplexity AI.
+Asks a simple question to Perplexity AI.
 
-**Parâmetros:**
-- `prompt` (string, obrigatório): A pergunta ou prompt
-- `model` (string, opcional): Modelo a usar (padrão: "sonar")
-- `max_tokens` (number, opcional): Máximo de tokens na resposta
-- `temperature` (number, opcional): Controla aleatoriedade (0-2, padrão: 0.2)
-- `top_p` (number, opcional): Controla diversidade (0-1, padrão: 0.9)
-- `search_domain_filter` (string[], opcional): Limita busca a domínios específicos (máx 3)
-- `return_images` (boolean, opcional): Incluir imagens nos resultados
-- `return_related_questions` (boolean, opcional): Retornar perguntas relacionadas
-- `search_recency_filter` (string, opcional): Filtrar por tempo ("week", "day", "month")
-- `search_context_size` (string, opcional): Quantidade de contexto ("low", "medium", "high", "maximum")
+**Parameters:**
+- `prompt` (string, required): The question or prompt
+- `model` (string, optional): Model to use (default: "sonar")
+- `max_tokens` (number, optional): Maximum tokens in the response
+- `temperature` (number, optional): Controls randomness (0-2, default: 0.2)
+- `top_p` (number, optional): Controls diversity (0-1, default: 0.9)
+- `search_domain_filter` (string[], optional): Limits search to specific domains (max 3)
+- `return_images` (boolean, optional): Include images in results
+- `return_related_questions` (boolean, optional): Return related questions
+- `search_recency_filter` (string, optional): Filter by time ("week", "day", "month")
+- `search_context_size` (string, optional): Amount of context ("low", "medium", "high", "maximum")
 
 #### `chat_with_perplexity`
-Mantém uma conversa multi-turno com o Perplexity AI.
+Maintains a multi-turn conversation with Perplexity AI.
 
-**Parâmetros:**
-- `messages` (Message[], obrigatório): Array de mensagens da conversa
-  - Cada mensagem: `{ role: "system" | "user" | "assistant", content: string }`
-- Todos os outros parâmetros do `ask_perplexity` também estão disponíveis
+**Parameters:**
+- `messages` (Message[], required): Array of conversation messages
+  - Each message: `{ role: "system" | "user" | "assistant", content: string }`
+- All other parameters from `ask_perplexity` are also available
 
-### Modelos Disponíveis
+### Available Models
 
-- **sonar**: Modelo padrão, rápido e eficiente
-- **sonar-pro**: Versão premium com respostas mais detalhadas
-- **sonar-deep-research**: Para pesquisas aprofundadas e análises complexas
-- **sonar-reasoning-pro**: Para raciocínio avançado e lógica
-- **sonar-reasoning**: Para tarefas que requerem raciocínio
+- **sonar**: Default model, fast and efficient
+- **sonar-pro**: Premium version with more detailed responses
+- **sonar-deep-research**: For in-depth research and complex analysis
+- **sonar-reasoning-pro**: For advanced reasoning and logic
+- **sonar-reasoning**: For tasks requiring reasoning
 
-### Formato de Entrada/Saída
+### Input/Output Format
 
-#### Entrada (`ask_perplexity`)
+#### Input (`ask_perplexity`)
 ```typescript
 {
   prompt: string;
   model?: "sonar" | "sonar-pro" | ...;
   temperature?: number;
   max_tokens?: number;
-  // ... outros parâmetros
+  // ... other parameters
 }
 ```
 
-#### Saída
+#### Output
 ```typescript
 {
   content: [{
     type: "text",
-    text: string // JSON stringificado com answer, usage, etc
+    text: string // Stringified JSON with answer, usage, etc
   }]
 }
 ```
 
-Formato do JSON:
+JSON format:
 ```typescript
 {
-  answer: string;              // Resposta gerada
-  model?: string;              // Modelo usado
-  finish_reason?: string;      // Razão de término
+  answer: string;              // Generated answer
+  model?: string;              // Model used
+  finish_reason?: string;      // Completion reason
   usage: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -300,17 +300,17 @@ Formato do JSON:
 
 ### Endpoints
 
-- `/mcp` - Endpoint do servidor MCP
-- Todas as outras requisições fazem fallback para assets estáticos
+- `/mcp` - MCP server endpoint
+- All other requests fallback to static assets
 
-## Tecnologias Utilizadas
+## Technologies Used
 
 - **Runtime**: Cloudflare Workers
-- **Framework MCP**: Deco Workers Runtime
+- **MCP Framework**: Deco Workers Runtime
 - **Build Tool**: Vite
-- **Validação**: Zod
-- **Linguagem**: TypeScript
+- **Validation**: Zod
+- **Language**: TypeScript
 
-## Licença
+## License
 
 MIT

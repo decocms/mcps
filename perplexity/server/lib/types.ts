@@ -1,8 +1,6 @@
 // Types for Perplexity API requests and responses
 import { z } from "zod";
 import {
-  AskInputSchema,
-  ChatInputSchema,
   type Message as SearchAIMessage,
   MessageSchema as SearchAIMessageSchema,
 } from "@decocms/mcps-shared/search-ai";
