@@ -1,6 +1,6 @@
 import { createImageGeneratorTools } from "@decocms/mcps-shared/image-generators";
 import type { Env } from "server/main";
-import { createGeminiClient } from "./utils/gemini";
+import { createGeminiClient, Model } from "./utils/gemini";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 
 export const geminiTools = createImageGeneratorTools<Env>({
@@ -22,6 +22,7 @@ export const geminiTools = createImageGeneratorTools<Env>({
       input.prompt,
       input.baseImageUrl || undefined,
       input.aspectRatio,
+      input.model as Model,
     );
 
     if (!response || !response.candidates || response.candidates.length === 0) {

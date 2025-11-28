@@ -44,6 +44,11 @@ export const GenerateImageInputSchema = z.object({
   aspectRatio: AspectRatioSchema.optional().describe(
     "Aspect ratio for the generated image (default: 1:1)",
   ),
+  model: z
+    .string()
+    .describe(
+      "Optional model identifier to use for image generation, when supported by the provider",
+    ),
 });
 
 export interface GenerateImageCallbackOutputSuccess {
