@@ -8,32 +8,10 @@ import { z } from "zod";
 import {
   type Env as DecoEnv,
   Scopes,
-  StateSchema as BaseStateSchema,
+  StateSchema,
 } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-
-/**
- * Extended state schema with Perplexity API configuration
- */
-const StateSchema = BaseStateSchema.extend({
-  PERPLEXITY_API_KEY: z
-    .string()
-    .describe(
-      "Your Perplexity API Key from https://www.perplexity.ai/settings/api",
-    ),
-  DEFAULT_MODEL: z
-    .enum([
-      "sonar",
-      "sonar-pro",
-      "sonar-deep-research",
-      "sonar-reasoning-pro",
-      "sonar-reasoning",
-    ])
-    .optional()
-    .default("sonar")
-    .describe("Default Perplexity model to use"),
-});
 
 /**
  * This Env type is the main context object that is passed to
