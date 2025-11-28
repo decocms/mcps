@@ -9,6 +9,7 @@ import type { Env } from "server/main";
 import {
   assertEnvKey,
   makeApiRequest,
+  parseApiError,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 import { APIFY_API_BASE_URL } from "../../constants";
 
@@ -136,8 +137,7 @@ export class ApifyClient {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      await parseApiError(response, "Apify");
     }
 
     // Handle empty responses
