@@ -1,12 +1,21 @@
-import { createImageGeneratorTools } from "@decocms/mcps-shared/image-generators";
+import {
+  createImageGeneratorTools,
+  GenerateImageInput,
+} from "@decocms/mcps-shared/image-generators";
 import type { Env } from "server/main";
-import { createGeminiClient } from "./utils/gemini";
+import { createGeminiClient, models, Model } from "./utils/gemini";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 
-export const geminiTools = createImageGeneratorTools<Env>({
+type GeminiGenerateInput = GenerateImageInput & { model: Model };
+
+export const geminiTools = createImageGeneratorTools<Env, Model>({
   metadata: {
     provider: "Gemini 2.5 Flash Image Preview",
     description: "Generate an image using the Gemini API",
+    models: [
+      "gemini-2.5-flash-image-preview",
+      "gemini-3-pro-image-preview",
+    ] as const,
   },
   getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
   getContract: (env) => ({
@@ -16,12 +25,16 @@ export const geminiTools = createImageGeneratorTools<Env>({
       amount: 1,
     },
   }),
-  execute: async ({ env, input }) => {
+  execute: async ({ env, input }: { env: Env; input: GeminiGenerateInput }) => {
+    const modelToUse = input.model ?? "gemini-2.5-flash-image-preview";
+    const parsedModel: Model = models.parse(modelToUse);
+
     const client = createGeminiClient(env);
     const response = await client.generateImage(
       input.prompt,
       input.baseImageUrl || undefined,
       input.aspectRatio,
+      parsedModel,
     );
 
     if (!response || !response.candidates || response.candidates.length === 0) {

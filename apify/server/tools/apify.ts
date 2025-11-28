@@ -273,14 +273,21 @@ const createRunActorAsyncTool = (env: Env, client: ApifyClientInstance) =>
   });
 
 export const createApifyTools = (env: Env) => {
-  const client = createApifyClient(env);
+  try {
+    const client = createApifyClient(env);
 
-  return [
-    createListActorsTool(client),
-    createGetActorTool(client),
-    createListActorRunsTool(client),
-    createGetActorRunTool(client),
-    createRunActorSyncTool(env, client),
-    createRunActorAsyncTool(env, client),
-  ];
+    return [
+      createListActorsTool(client),
+      createGetActorTool(client),
+      createListActorRunsTool(client),
+      createGetActorRunTool(client),
+      createRunActorSyncTool(env, client),
+      createRunActorAsyncTool(env, client),
+    ];
+  } catch (error) {
+    console.error("Error creating Apify tools:", error);
+    // Return empty array if tools fail to create
+    // This allows the MCP to still work with userTools
+    return [];
+  }
 };

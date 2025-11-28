@@ -29,11 +29,13 @@
     "perplexity",
     "pinecone",
     "readonly-sql",
+    "replicate",
     "shared",
     "sora",
     "template-minimal",
     "template-with-view",
-    "veo"
+    "veo",
+    "whisper"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

@@ -14,8 +14,9 @@
         "./image-generators": "./image-generators/index.ts",
         "./image-analyzers": "./image-analyzers/index.ts",
         "./video-generators": "./video-generators/index.ts",
-        "./search-ai": "./search-ai/index.ts",
-        "./storage": "./storage/index.ts"
+        "./audio-transcribers": "./audio-transcribers/index.ts",
+        "./storage": "./storage/index.ts",
+        "./search-ai": "./search-ai/index.ts"
     },
     "devDependencies": {
         "vite": "7.2.0",
