@@ -5,16 +5,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "tsc --noEmit",
+    "gen": "deco gen --output=shared/deco.gen.ts",
     "dev": "concurrently \"bun run dev:client\" \"NODE_ENV=development bun --hot run server/main.ts\"",
+    "dev:tunnel": "deco link -p 3000 -- bun run dev",
     "dev:client": "bun --bun vite dev",
     "build:client": "bun --bun vite build",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
-    "start": "NODE_ENV=production bun run dist/server/main.js",
-    "configure": "deco configure",
-    "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
-    "check": "tsc --noEmit",
-    "build": "bun run build:client && bun run build:server"
+    "build": "bun run build:client && bun run build:server",
+    "start": "NODE_ENV=production bun run dist/server/main.js"
   },
   "dependencies": {
     "@decocms/runtime": "0.0.1-testing-beta.3",
