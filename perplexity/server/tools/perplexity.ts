@@ -1,4 +1,7 @@
-import { createSearchAITools } from "@decocms/mcps-shared/search-ai";
+import {
+  createSearchAITools,
+  type SearchAICallbackOutput,
+} from "@decocms/mcps-shared/search-ai";
 import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
 import type { Env } from "../main";
 import { createPerplexityClient } from "../lib/perplexity-client";
@@ -11,6 +14,71 @@ import {
 function getPerplexityClient(env: Env) {
   assertEnvKey(env, "PERPLEXITY_API_KEY");
   return createPerplexityClient({ apiKey: env.PERPLEXITY_API_KEY as string });
+}
+
+/**
+ * Shared helper to execute Perplexity API requests
+ * Eliminates code duplication between askTool and chatTool
+ */
+async function executePerplexityRequest({
+  client,
+  messages,
+  model = "sonar",
+  max_tokens,
+  temperature = 0.2,
+  top_p = 0.9,
+  search_domain_filter,
+  return_images = false,
+  return_related_questions = false,
+  search_recency_filter,
+  search_context_size = "high",
+}: {
+  client: ReturnType<typeof createPerplexityClient>;
+  messages: Message[];
+  model?: PerplexityModel;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  search_domain_filter?: string[];
+  return_images?: boolean;
+  return_related_questions?: boolean;
+  search_recency_filter?: string;
+  search_context_size?: "low" | "medium" | "high" | "maximum";
+}): Promise<SearchAICallbackOutput> {
+  try {
+    const response = await client.chatCompletion({
+      model,
+      messages,
+      max_tokens,
+      temperature,
+      top_p,
+      search_domain_filter,
+      return_images,
+      return_related_questions,
+      search_recency_filter,
+      web_search_options: { search_context_size },
+    });
+
+    const answer =
+      response.choices[0]?.message?.content || "No response generated";
+
+    return {
+      answer,
+      model: response.model,
+      finish_reason: response.choices[0]?.finish_reason,
+      usage: {
+        prompt_tokens: response.usage.prompt_tokens,
+        completion_tokens: response.usage.completion_tokens,
+        total_tokens: response.usage.total_tokens,
+      },
+    };
+  } catch (error) {
+    return {
+      error: true as const,
+      message:
+        error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
 }
 
 export const createPerplexityTools = createSearchAITools<
@@ -34,55 +102,12 @@ export const createPerplexityTools = createSearchAITools<
       },
     }),
     execute: async ({ client, input }) => {
-      const {
-        prompt,
-        model = "sonar",
-        max_tokens,
-        temperature = 0.2,
-        top_p = 0.9,
-        search_domain_filter,
-        return_images = false,
-        return_related_questions = false,
-        search_recency_filter,
-        search_context_size = "high",
-      } = input;
-
-      try {
-        const response = await client.chatCompletion({
-          model,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens,
-          temperature,
-          top_p,
-          search_domain_filter,
-          return_images,
-          return_related_questions,
-          search_recency_filter,
-          web_search_options: {
-            search_context_size,
-          },
-        });
-
-        const answer =
-          response.choices[0]?.message?.content || "No response generated";
-
-        return {
-          answer,
-          model: response.model,
-          finish_reason: response.choices[0]?.finish_reason,
-          usage: {
-            prompt_tokens: response.usage.prompt_tokens,
-            completion_tokens: response.usage.completion_tokens,
-            total_tokens: response.usage.total_tokens,
-          },
-        };
-      } catch (error) {
-        return {
-          error: true,
-          message:
-            error instanceof Error ? error.message : "Unknown error occurred",
-        };
-      }
+      const { prompt, ...rest } = input;
+      return executePerplexityRequest({
+        client,
+        messages: [{ role: "user", content: prompt }],
+        ...rest,
+      });
     },
   },
 
@@ -95,55 +120,19 @@ export const createPerplexityTools = createSearchAITools<
       },
     }),
     execute: async ({ client, input }) => {
-      const {
-        messages,
-        model,
-        max_tokens,
-        temperature = 0.2,
-        top_p = 0.9,
-        search_domain_filter,
-        return_images = false,
-        return_related_questions = false,
-        search_recency_filter,
-        search_context_size = "high",
-      } = input;
-
-      try {
-        const response = await client.chatCompletion({
-          model,
-          messages: messages as Message[],
-          max_tokens,
-          temperature,
-          top_p,
-          search_domain_filter,
-          return_images,
-          return_related_questions,
-          search_recency_filter,
-          web_search_options: {
-            search_context_size,
-          },
-        });
-
-        const answer =
-          response.choices[0]?.message?.content || "No response generated";
-
-        return {
-          answer,
-          model: response.model,
-          finish_reason: response.choices[0]?.finish_reason,
-          usage: {
-            prompt_tokens: response.usage.prompt_tokens,
-            completion_tokens: response.usage.completion_tokens,
-            total_tokens: response.usage.total_tokens,
-          },
-        };
-      } catch (error) {
-        return {
-          error: true,
-          message:
-            error instanceof Error ? error.message : "Unknown error occurred",
-        };
-      }
+      return executePerplexityRequest({
+        client,
+        messages: input.messages as Message[],
+        model: input.model,
+        max_tokens: input.max_tokens,
+        temperature: input.temperature,
+        top_p: input.top_p,
+        search_domain_filter: input.search_domain_filter,
+        return_images: input.return_images,
+        return_related_questions: input.return_related_questions,
+        search_recency_filter: input.search_recency_filter,
+        search_context_size: input.search_context_size,
+      });
     },
   },
 });
