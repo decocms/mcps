@@ -22,7 +22,7 @@ export const geminiTools = createImageGeneratorTools<Env>({
       input.prompt,
       input.baseImageUrl || undefined,
       input.aspectRatio,
-      input.model as Model,
+      (input.model as Model) || "gemini-2.5-flash-image-preview",
     );
 
     if (!response || !response.candidates || response.candidates.length === 0) {
