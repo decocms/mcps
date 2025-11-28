@@ -66,7 +66,7 @@ export type AskInput = z.infer<typeof AskInputSchema>;
 export const createAskInputSchema = <T extends string>(
   models: readonly T[],
 ) => {
-  return AskInputSchema.extend({
+  return AskInputSchema.omit({ model: true }).extend({
     model: z.enum(models as [T, ...T[]]),
   });
 };
@@ -103,7 +103,7 @@ export type ChatInput = z.infer<typeof ChatInputSchema>;
 export const createChatInputSchema = <T extends string>(
   models: readonly T[],
 ) => {
-  return ChatInputSchema.extend({
+  return ChatInputSchema.omit({ model: true }).extend({
     model: z.enum(models as [T, ...T[]]),
   });
 };
