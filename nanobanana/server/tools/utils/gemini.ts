@@ -142,8 +142,10 @@ export async function generateImage(
     content.push({ type: "image_url", image_url: { url: imageUrl } });
   }
 
+  const modelToUse = model || "gemini-2.5-flash-image-preview";
+
   const body: any = {
-    model: `google/${model}`,
+    model: `google/${modelToUse}`,
     messages: [
       {
         role: "user",
