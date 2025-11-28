@@ -12,6 +12,15 @@ export async function parseApiError(
 
   try {
     const errorJson = JSON.parse(errorText);
+    if (errorJson.isError && Array.isArray(errorJson.content)) {
+      const textContent = errorJson.content.find(
+        (item: any) => item.type === "text" && item.text,
+      );
+      if (textContent?.text) {
+        throw new Error(textContent.text);
+      }
+    }
+
     const errorMessage = errorJson.error?.message || errorText;
     throw new Error(errorMessage);
   } catch (error) {
