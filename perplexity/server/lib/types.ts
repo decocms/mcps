@@ -68,9 +68,7 @@ export interface ChatCompletionRequest {
 
 // Zod Schemas for validation and documentation
 
-// Schema for chat completion
-export const ChatCompletionSchema = z.object({
-  prompt: z.string().describe("The text prompt or question to ask Perplexity"),
+const CommonChatOptionsSchema = z.object({
   model: z
     .enum([
       "sonar",
@@ -125,62 +123,13 @@ export const ChatCompletionSchema = z.object({
     .describe("Amount of web search context to include"),
 });
 
-// Schema for chat with messages
-export const ChatWithMessagesSchema = z.object({
+export const ChatCompletionSchema = CommonChatOptionsSchema.extend({
+  prompt: z.string().describe("The text prompt or question to ask Perplexity"),
+});
+
+export const ChatWithMessagesSchema = CommonChatOptionsSchema.extend({
   messages: z
     .array(MessageSchema)
     .min(1)
     .describe("Array of conversation messages"),
-  model: z
-    .enum([
-      "sonar",
-      "sonar-pro",
-      "sonar-deep-research",
-      "sonar-reasoning-pro",
-      "sonar-reasoning",
-    ])
-    .optional()
-    .describe("The model to use for generation. Defaults to 'sonar'"),
-  max_tokens: z
-    .number()
-    .optional()
-    .describe("Maximum number of tokens in the response"),
-  temperature: z
-    .number()
-    .min(0)
-    .max(2)
-    .optional()
-    .default(0.2)
-    .describe("Controls randomness (0-2). Lower is more focused"),
-  top_p: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .default(0.9)
-    .describe("Controls diversity via nucleus sampling (0-1)"),
-  search_domain_filter: z
-    .array(z.string())
-    .max(3)
-    .optional()
-    .describe("Limit search to specific domains (max 3)"),
-  return_images: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Include images in search results"),
-  return_related_questions: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Return related questions"),
-  search_recency_filter: z
-    .string()
-    .optional()
-    .describe("Filter by time (e.g., 'week', 'day', 'month')"),
-  search_context_size: z
-    .enum(["low", "medium", "high", "maximum"])
-    .optional()
-    .default("high")
-    .describe("Amount of web search context to include"),
 });
