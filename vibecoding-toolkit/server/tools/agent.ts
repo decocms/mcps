@@ -1,43 +1,108 @@
 /**
- * Agent Collection Tools
+ * Agent Binding Implementation
  *
- * Implements the 5 standard collection operations for agents:
- * - LIST: Query agents with filtering, sorting, and pagination
- * - GET: Fetch a single agent by ID
- * - INSERT: Create a new agent
- * - UPDATE: Update an existing agent
- * - DELETE: Delete an agent
+ * Implements the AGENTS_BINDING from @decocms/bindings/agent:
+ * - COLLECTION_AGENT_LIST: Query agents with filtering, sorting, and pagination
+ * - COLLECTION_AGENT_GET: Fetch a single agent by ID
+ * - COLLECTION_AGENT_CREATE: Create a new agent
+ * - COLLECTION_AGENT_UPDATE: Update an existing agent
+ * - COLLECTION_AGENT_DELETE: Delete an agent
  */
 
+import { AGENTS_BINDING, AgentSchema } from "@decocms/bindings/agent";
 import {
-  BaseCollectionEntitySchema, CollectionDeleteInputSchema,
-  CollectionDeleteOutputSchema, CollectionGetInputSchema, CollectionListInputSchema, createCollectionGetOutputSchema,
-  createCollectionInsertInputSchema,
-  createCollectionInsertOutputSchema, createCollectionListOutputSchema, createCollectionUpdateInputSchema,
-  createCollectionUpdateOutputSchema
+  CollectionGetInputSchema,
+  createCollectionGetOutputSchema,
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import { z } from "zod";
 import { ensureAgentsTable, getPostgres } from "../lib/postgres.ts";
 import type { Env } from "../main.ts";
 
-// Agent schema extending BaseCollectionEntitySchema
-const AgentSchema = BaseCollectionEntitySchema.extend({
-  description: z.string(),
-  instructions: z.string(),
-  tool_set: z.record(z.string(), z.array(z.string())),
-});
+// ============================================================================
+// Types
+// ============================================================================
 
-type WhereExpression = z.infer<typeof CollectionListInputSchema>["where"];
-type OrderByExpression = z.infer<typeof CollectionListInputSchema>["orderBy"];
+type WhereExpression = {
+  field?: string[];
+  operator?: string;
+  value?: unknown;
+  conditions?: WhereExpression[];
+};
+
+type OrderByExpression = Array<{
+  field: string[];
+  direction: string;
+  nulls?: string;
+}>;
+
+// Extract binding schemas
+const LIST_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_LIST",
+);
+const GET_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_GET",
+);
+const CREATE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_CREATE",
+);
+const UPDATE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_UPDATE",
+);
+const DELETE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_DELETE",
+);
+
+if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
+  throw new Error("COLLECTION_AGENT_LIST binding not found or missing schemas");
+}
+if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
+  throw new Error("COLLECTION_AGENT_GET binding not found or missing schemas");
+}
+if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_CREATE binding not found or missing schemas",
+  );
+}
+if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_UPDATE binding not found or missing schemas",
+  );
+}
+if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_DELETE binding not found or missing schemas",
+  );
+}
+
+// ============================================================================
+// Standard Agent (always available)
+// ============================================================================
+
+const STANDARD_AGENT: z.infer<typeof AgentSchema> = {
+  id: "standard",
+  title: "Standard Agent",
+  created_at: "2024-01-01T00:00:00.000Z",
+  updated_at: "2024-01-01T00:00:00.000Z",
+  created_by: undefined,
+  updated_by: undefined,
+  description: "The default standard agent",
+  instructions: "",
+  tool_set: {},
+  avatar: "https://assets.webdraw.app/uploads/capy.png",
+};
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 /**
  * Build SQL WHERE clause from filter expression
  */
 function buildWhereClause(
-  whereExpr: WhereExpression,
-  params: any[] = [],
-): { clause: string; params: any[] } {
+  whereExpr: WhereExpression | undefined,
+  params: unknown[] = [],
+): { clause: string; params: unknown[] } {
   if (!whereExpr) {
     return { clause: "", params };
   }
@@ -48,52 +113,52 @@ function buildWhereClause(
     "operator" in whereExpr &&
     !("conditions" in whereExpr)
   ) {
-    const simpleExpr = whereExpr as any;
-    const fieldPath = simpleExpr.field;
+    const fieldPath = whereExpr.field;
+    if (!fieldPath) return { clause: "", params };
     const fieldName = fieldPath[fieldPath.length - 1];
     const paramIndex = params.length + 1;
 
-    switch (simpleExpr.operator) {
+    switch (whereExpr.operator) {
       case "eq":
-        params.push(simpleExpr.value);
+        params.push(whereExpr.value);
         return { clause: `${fieldName} = $${paramIndex}`, params };
       case "gt":
-        params.push(simpleExpr.value);
+        params.push(whereExpr.value);
         return { clause: `${fieldName} > $${paramIndex}`, params };
       case "gte":
-        params.push(simpleExpr.value);
+        params.push(whereExpr.value);
         return { clause: `${fieldName} >= $${paramIndex}`, params };
       case "lt":
-        params.push(simpleExpr.value);
+        params.push(whereExpr.value);
         return { clause: `${fieldName} < $${paramIndex}`, params };
       case "lte":
-        params.push(simpleExpr.value);
+        params.push(whereExpr.value);
         return { clause: `${fieldName} <= $${paramIndex}`, params };
-      case "in":
-        const values = Array.isArray(simpleExpr.value)
-          ? simpleExpr.value
-          : [simpleExpr.value];
+      case "in": {
+        const values = Array.isArray(whereExpr.value)
+          ? whereExpr.value
+          : [whereExpr.value];
         params.push(values);
         return { clause: `${fieldName} = ANY($${paramIndex})`, params };
+      }
       case "like":
       case "contains":
-        params.push(`%${simpleExpr.value}%`);
+        params.push(`%${whereExpr.value}%`);
         return { clause: `${fieldName} ILIKE $${paramIndex}`, params };
       default:
-        throw new Error(`Unsupported operator: ${simpleExpr.operator}`);
+        throw new Error(`Unsupported operator: ${whereExpr.operator}`);
     }
   }
 
   // Logical condition (and, or, not)
   if ("operator" in whereExpr && "conditions" in whereExpr) {
-    const logicalExpr = whereExpr as any;
-    const conditions = logicalExpr.conditions.map((cond: any) => {
+    const conditions = (whereExpr.conditions || []).map((cond) => {
       const result = buildWhereClause(cond, params);
       params = result.params;
       return result.clause;
     });
 
-    switch (logicalExpr.operator) {
+    switch (whereExpr.operator) {
       case "and":
         return { clause: `(${conditions.join(" AND ")})`, params };
       case "or":
@@ -101,9 +166,7 @@ function buildWhereClause(
       case "not":
         return { clause: `NOT (${conditions[0]})`, params };
       default:
-        throw new Error(
-          `Unsupported logical operator: ${logicalExpr.operator}`,
-        );
+        throw new Error(`Unsupported logical operator: ${whereExpr.operator}`);
     }
   }
 
@@ -113,7 +176,9 @@ function buildWhereClause(
 /**
  * Build SQL ORDER BY clause from sort expression
  */
-function buildOrderByClause(orderByExpr: OrderByExpression): string {
+function buildOrderByClause(
+  orderByExpr: OrderByExpression | undefined,
+): string {
   if (!orderByExpr || orderByExpr.length === 0) {
     return "ORDER BY created_at DESC";
   }
@@ -129,16 +194,33 @@ function buildOrderByClause(orderByExpr: OrderByExpression): string {
   return `ORDER BY ${orderClauses.join(", ")}`;
 }
 
+// ============================================================================
+// Tool Implementations
+// ============================================================================
+
 /**
- * LIST Tool - Query agents with filtering, sorting, and pagination
+ * COLLECTION_AGENT_LIST - Query agents with filtering, sorting, and pagination
  */
 export const createListTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_LIST",
+    id: "COLLECTION_AGENT_LIST",
     description: "List agents with filtering, sorting, and pagination",
-    inputSchema: CollectionListInputSchema,
-    outputSchema: createCollectionListOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
+    inputSchema: LIST_BINDING.inputSchema,
+    outputSchema: LIST_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof LIST_BINDING.inputSchema>;
+    }) => {
+      // If POSTGRES is not available, return only the standard agent
+      if (!env.POSTGRES) {
+        return {
+          items: [STANDARD_AGENT],
+          totalCount: 1,
+          hasMore: false,
+        };
+      }
+
       await ensureAgentsTable(env);
       const sql = getPostgres(env);
 
@@ -146,15 +228,15 @@ export const createListTool = (env: Env) =>
 
       // Build WHERE clause
       let whereClause = "";
-      let params: any[] = [];
+      let params: unknown[] = [];
       if (where) {
-        const result = buildWhereClause(where, params);
+        const result = buildWhereClause(where as WhereExpression, params);
         whereClause = result.clause ? `WHERE ${result.clause}` : "";
         params = result.params;
       }
 
       // Build ORDER BY clause
-      const orderByClause = buildOrderByClause(orderBy);
+      const orderByClause = buildOrderByClause(orderBy as OrderByExpression);
 
       // Query items with pagination
       const query = `
@@ -183,11 +265,11 @@ export const createListTool = (env: Env) =>
   });
 
 /**
- * GET Tool - Fetch a single agent by ID
+ * COLLECTION_AGENT_GET - Fetch a single agent by ID
  */
 export const createGetTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_GET",
+    id: "COLLECTION_AGENT_GET",
     description: "Get a single agent by ID",
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(AgentSchema),
@@ -215,15 +297,19 @@ export const createGetTool = (env: Env) =>
   });
 
 /**
- * INSERT Tool - Create a new agent
+ * COLLECTION_AGENT_CREATE - Create a new agent
  */
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_INSERT",
+    id: "COLLECTION_AGENT_CREATE",
     description: "Create a new agent",
-    inputSchema: createCollectionInsertInputSchema(AgentSchema),
-    outputSchema: createCollectionInsertOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
+    inputSchema: CREATE_BINDING.inputSchema,
+    outputSchema: CREATE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof CREATE_BINDING.inputSchema>;
+    }) => {
       await ensureAgentsTable(env);
       const sql = getPostgres(env);
 
@@ -261,15 +347,19 @@ export const createInsertTool = (env: Env) =>
   });
 
 /**
- * UPDATE Tool - Update an existing agent
+ * COLLECTION_AGENT_UPDATE - Update an existing agent
  */
 export const createUpdateTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_UPDATE",
+    id: "COLLECTION_AGENT_UPDATE",
     description: "Update an existing agent",
-    inputSchema: createCollectionUpdateInputSchema(AgentSchema),
-    outputSchema: createCollectionUpdateOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
+    inputSchema: UPDATE_BINDING.inputSchema,
+    outputSchema: UPDATE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof UPDATE_BINDING.inputSchema>;
+    }) => {
       await ensureAgentsTable(env);
       const sql = getPostgres(env);
 
@@ -285,12 +375,15 @@ export const createUpdateTool = (env: Env) =>
       };
 
       if (data.title !== undefined) updates.title = data.title;
-      if (data.description !== undefined)
+      if (data.description !== undefined) {
         updates.description = data.description;
-      if (data.instructions !== undefined)
+      }
+      if (data.instructions !== undefined) {
         updates.instructions = data.instructions;
-      if (data.tool_set !== undefined)
+      }
+      if (data.tool_set !== undefined) {
         updates.tool_set = JSON.stringify(data.tool_set);
+      }
 
       const result = await sql`
         UPDATE agents
@@ -313,15 +406,19 @@ export const createUpdateTool = (env: Env) =>
   });
 
 /**
- * DELETE Tool - Delete an agent by ID
+ * COLLECTION_AGENT_DELETE - Delete an agent by ID
  */
 export const createDeleteTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_DELETE",
+    id: "COLLECTION_AGENT_DELETE",
     description: "Delete an agent by ID",
-    inputSchema: CollectionDeleteInputSchema,
-    outputSchema: CollectionDeleteOutputSchema,
-    execute: async ({ context }) => {
+    inputSchema: DELETE_BINDING.inputSchema,
+    outputSchema: DELETE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof DELETE_BINDING.inputSchema>;
+    }) => {
       await ensureAgentsTable(env);
       const sql = getPostgres(env);
 
@@ -332,8 +429,7 @@ export const createDeleteTool = (env: Env) =>
       `;
 
       return {
-        success: true,
-        id,
+        item: agent,
       };
     },
   });
