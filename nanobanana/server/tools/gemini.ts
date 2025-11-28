@@ -6,12 +6,16 @@ import type { Env } from "server/main";
 import { createGeminiClient, models, Model } from "./utils/gemini";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 
-type GeminiGenerateInput = GenerateImageInput;
+type GeminiGenerateInput = GenerateImageInput & { model: Model };
 
-export const geminiTools = createImageGeneratorTools<Env>({
+export const geminiTools = createImageGeneratorTools<Env, Model>({
   metadata: {
     provider: "Gemini 2.5 Flash Image Preview",
     description: "Generate an image using the Gemini API",
+    models: [
+      "gemini-2.5-flash-image-preview",
+      "gemini-3-pro-image-preview",
+    ] as const,
   },
   getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
   getContract: (env) => ({
@@ -22,7 +26,7 @@ export const geminiTools = createImageGeneratorTools<Env>({
     },
   }),
   execute: async ({ env, input }: { env: Env; input: GeminiGenerateInput }) => {
-    const modelToUse = input.model || "gemini-2.5-flash-image-preview";
+    const modelToUse = input.model ?? "gemini-2.5-flash-image-preview";
     const parsedModel: Model = models.parse(modelToUse);
 
     const client = createGeminiClient(env);

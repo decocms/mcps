@@ -76,6 +76,14 @@ export const GenerateImageOutputSchema = z.object({
   finishReason: z.string().optional().describe("Native finish reason"),
 });
 
+export const createImageInputSchema = <T extends string>(
+  models: readonly T[],
+) => {
+  return GenerateImageInputSchema.extend({
+    model: z.enum(models as [T, ...T[]]),
+  });
+};
+
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
@@ -86,17 +94,21 @@ export interface ImageGeneratorEnv {
   DECO_CHAT_WORKSPACE: string;
 }
 
-export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
+export interface CreateImageGeneratorOptions<
+  TEnv extends ImageGeneratorEnv,
+  TModel extends string = string,
+> {
   metadata: {
     provider: string;
     description?: string;
+    models?: readonly TModel[];
   };
   execute: ({
     env,
     input,
   }: {
     env: TEnv;
-    input: GenerateImageInput;
+    input: GenerateImageInput & { model: TModel };
   }) => Promise<GenerateImageCallbackOutput>;
   getStorage: (env: TEnv) => ImageGeneratorStorage;
   getContract: (env: TEnv) => {
@@ -106,20 +118,27 @@ export interface CreateImageGeneratorOptions<TEnv extends ImageGeneratorEnv> {
 }
 
 const MAX_IMAGE_GEN_RETRIES = 3;
-const MAX_IMAGE_GEN_TIMEOUT_MS = 120_000; // 2 minutes
+const MAX_IMAGE_GEN_TIMEOUT_MS = 120_000;
 
-export function createImageGeneratorTools<TEnv extends ImageGeneratorEnv>(
-  options: CreateImageGeneratorOptions<TEnv>,
-) {
+export function createImageGeneratorTools<
+  TEnv extends ImageGeneratorEnv,
+  TModel extends string,
+>(options: CreateImageGeneratorOptions<TEnv, TModel>) {
+  const inputSchema = options.metadata.models
+    ? createImageInputSchema(options.metadata.models)
+    : GenerateImageInputSchema;
+
+  type Input = z.infer<typeof inputSchema>;
+
   const generateImage = (env: TEnv) =>
     createPrivateTool({
       id: "GENERATE_IMAGE",
       description:
         options.metadata.description ||
         `Generate images using ${options.metadata.provider}`,
-      inputSchema: GenerateImageInputSchema,
+      inputSchema,
       outputSchema: GenerateImageOutputSchema,
-      execute: async ({ context }: { context: GenerateImageInput }) => {
+      execute: async ({ context }: { context: Input }) => {
         const doExecute = async () => {
           const contract = options.getContract(env);
 
@@ -132,7 +151,7 @@ export function createImageGeneratorTools<TEnv extends ImageGeneratorEnv>(
             ],
           });
 
-          const result = await options.execute({ env, input: context });
+          const result = await options.execute({ env, input: context as any });
 
           if ("error" in result) {
             return {

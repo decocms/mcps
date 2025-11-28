@@ -10,9 +10,8 @@ export const models = z.enum([
   "gemini-2.5-flash-image-preview",
   "gemini-3-pro-image-preview",
 ]);
-export type Model = z.infer<typeof models> | undefined;
+export type Model = z.infer<typeof models>;
 
-// Tipagem completa baseada na documentação oficial da API Gemini
 export const GeminiResponseSchema = z.object({
   candidates: z.array(
     z.object({
