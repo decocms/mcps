@@ -41,7 +41,7 @@ export const SearchOptionsSchema = z.object({
 export const AskInputSchema = z
   .object({
     prompt: z.string().describe("The question or prompt to ask the AI"),
-    model: SearchAIModelSchema.optional(),
+    model: SearchAIModelSchema,
     max_tokens: z
       .number()
       .optional()
@@ -63,6 +63,14 @@ export const AskInputSchema = z
 
 export type AskInput = z.infer<typeof AskInputSchema>;
 
+export const createAskInputSchema = <T extends string>(
+  models: readonly T[],
+) => {
+  return AskInputSchema.extend({
+    model: z.enum(models as [T, ...T[]]),
+  });
+};
+
 // Schema for multi-turn chat
 export const ChatInputSchema = z
   .object({
@@ -70,7 +78,7 @@ export const ChatInputSchema = z
       .array(MessageSchema)
       .min(1)
       .describe("Array of conversation messages"),
-    model: SearchAIModelSchema.optional(),
+    model: SearchAIModelSchema,
     max_tokens: z
       .number()
       .optional()
@@ -92,10 +100,18 @@ export const ChatInputSchema = z
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
+export const createChatInputSchema = <T extends string>(
+  models: readonly T[],
+) => {
+  return ChatInputSchema.extend({
+    model: z.enum(models as [T, ...T[]]),
+  });
+};
+
 // Output schema for search AI responses
 export const SearchAIOutputSchema = z.object({
   answer: z.string().describe("The AI-generated answer"),
-  model: z.string().optional().describe("The model used"),
+  model: z.string().describe("The model used"),
   finish_reason: z.string().optional().describe("Reason for completion"),
   usage: z
     .object({

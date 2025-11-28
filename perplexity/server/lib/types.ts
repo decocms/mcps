@@ -1,6 +1,8 @@
 // Types for Perplexity API requests and responses
 import { z } from "zod";
 import {
+  AskInputSchema,
+  ChatInputSchema,
   type Message as SearchAIMessage,
   MessageSchema as SearchAIMessageSchema,
 } from "@decocms/mcps-shared/search-ai";
@@ -8,12 +10,15 @@ import {
 export type Message = SearchAIMessage;
 export const MessageSchema = SearchAIMessageSchema;
 
-export type PerplexityModel =
-  | "sonar"
-  | "sonar-pro"
-  | "sonar-deep-research"
-  | "sonar-reasoning-pro"
-  | "sonar-reasoning";
+export const PerplexityModels = [
+  "sonar",
+  "sonar-pro",
+  "sonar-deep-research",
+  "sonar-reasoning-pro",
+  "sonar-reasoning",
+] as const;
+
+export type PerplexityModel = (typeof PerplexityModels)[number];
 
 // Web search options
 export interface WebSearchOptions {

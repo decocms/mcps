@@ -10,6 +10,8 @@ import {
   AskInputSchema,
   ChatInputSchema,
   SearchAIOutputSchema,
+  createAskInputSchema,
+  createChatInputSchema,
   type AskInput,
   type ChatInput,
   type SearchAIOutput,
@@ -23,6 +25,7 @@ import {
   type Contract,
   type ContractClause,
 } from "./middleware";
+import z from "zod";
 
 export interface SearchAIEnv {
   DECO_REQUEST_CONTEXT: {
@@ -34,17 +37,21 @@ export interface SearchAIEnv {
 /**
  * Configuration for the ask tool (simple question)
  */
-export interface AskToolConfig<TEnv extends SearchAIEnv, TClient = unknown> {
+export interface AskToolConfig<
+  TEnv extends SearchAIEnv,
+  TClient = unknown,
+  TModel extends string = string,
+> {
   execute: ({
     env,
     input,
     client,
   }: {
     env: TEnv;
-    input: AskInput;
+    input: AskInput & { model: TModel };
     client: TClient;
   }) => Promise<SearchAICallbackOutput>;
-  inputSchema?: typeof AskInputSchema;
+  inputSchema?: z.ZodType<AskInput & { model: TModel }>;
   getContract?: (env: TEnv) => {
     binding: Contract;
     clause: ContractClause;
@@ -54,17 +61,21 @@ export interface AskToolConfig<TEnv extends SearchAIEnv, TClient = unknown> {
 /**
  * Configuration for the chat tool (multi-turn conversation)
  */
-export interface ChatToolConfig<TEnv extends SearchAIEnv, TClient = unknown> {
+export interface ChatToolConfig<
+  TEnv extends SearchAIEnv,
+  TClient = unknown,
+  TModel extends string = string,
+> {
   execute: ({
     env,
     input,
     client,
   }: {
     env: TEnv;
-    input: ChatInput;
+    input: ChatInput & { model: TModel };
     client: TClient;
   }) => Promise<SearchAICallbackOutput>;
-  inputSchema?: typeof ChatInputSchema;
+  inputSchema?: z.ZodType<ChatInput & { model: TModel }>;
   getContract?: (env: TEnv) => {
     binding: Contract;
     clause: ContractClause;
@@ -77,14 +88,16 @@ export interface ChatToolConfig<TEnv extends SearchAIEnv, TClient = unknown> {
 export interface CreateSearchAIOptions<
   TEnv extends SearchAIEnv,
   TClient = unknown,
+  TModel extends string = string,
 > {
   metadata: {
     provider: string;
     description?: string;
+    models: readonly TModel[];
   };
   getClient: (env: TEnv) => TClient;
-  askTool: AskToolConfig<TEnv, TClient>;
-  chatTool: ChatToolConfig<TEnv, TClient>;
+  askTool: AskToolConfig<TEnv, TClient, TModel>;
+  chatTool: ChatToolConfig<TEnv, TClient, TModel>;
   maxRetries?: number;
   timeoutMs?: number;
 }
@@ -98,22 +111,32 @@ const DEFAULT_TIMEOUT_MS = 60_000; // 1 minute
 export function createSearchAITools<
   TEnv extends SearchAIEnv,
   TClient = unknown,
->(options: CreateSearchAIOptions<TEnv, TClient>) {
+  TModel extends string = string,
+>(options: CreateSearchAIOptions<TEnv, TClient, TModel>) {
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   /**
    * ASK tool - Simple question/answer
    */
-  const ask = (env: TEnv) =>
-    createPrivateTool({
+
+  const ask = (env: TEnv) => {
+    const inputSchema =
+      options.askTool.inputSchema ??
+      (options.metadata.models
+        ? createAskInputSchema(options.metadata.models)
+        : AskInputSchema);
+
+    type AskInputType = z.infer<typeof inputSchema>;
+
+    return createPrivateTool({
       id: "ASK",
       description:
         options.metadata.description ||
         `Ask a question to ${options.metadata.provider} and get web-backed answers`,
-      inputSchema: options.askTool.inputSchema || AskInputSchema,
+      inputSchema,
       outputSchema: SearchAIOutputSchema,
-      execute: async ({ context }: { context: AskInput }) => {
+      execute: async ({ context }: { context: AskInputType }) => {
         const doExecute = async (): Promise<SearchAIOutput> => {
           // Handle contract if provided
           let transactionId: string | undefined;
@@ -135,7 +158,7 @@ export function createSearchAITools<
           const client = options.getClient(env);
           const result = await options.askTool.execute({
             env,
-            input: context,
+            input: context as AskInput & { model: TModel },
             client,
           });
 
@@ -157,7 +180,10 @@ export function createSearchAITools<
             });
           }
 
-          return result;
+          return {
+            ...result,
+            model: result.model || (context as any).model,
+          };
         };
 
         const withMiddlewares = applyMiddlewares({
@@ -175,19 +201,28 @@ export function createSearchAITools<
         return withMiddlewares();
       },
     });
+  };
 
   /**
    * CHAT tool - Multi-turn conversation
    */
-  const chat = (env: TEnv) =>
-    createPrivateTool({
+  const chat = (env: TEnv) => {
+    const inputSchema =
+      options.chatTool.inputSchema ??
+      (options.metadata.models
+        ? createChatInputSchema(options.metadata.models)
+        : ChatInputSchema);
+
+    type ChatInputType = z.infer<typeof inputSchema>;
+
+    return createPrivateTool({
       id: "CHAT",
       description:
         `Have a multi-turn conversation with ${options.metadata.provider}. ` +
         `This allows you to provide message history for more contextual responses.`,
-      inputSchema: options.chatTool.inputSchema || ChatInputSchema,
+      inputSchema,
       outputSchema: SearchAIOutputSchema,
-      execute: async ({ context }: { context: ChatInput }) => {
+      execute: async ({ context }: { context: ChatInputType }) => {
         const doExecute = async (): Promise<SearchAIOutput> => {
           // Handle contract if provided
           let transactionId: string | undefined;
@@ -209,7 +244,7 @@ export function createSearchAITools<
           const client = options.getClient(env);
           const result = await options.chatTool.execute({
             env,
-            input: context,
+            input: context as ChatInput & { model: TModel },
             client,
           });
 
@@ -231,7 +266,10 @@ export function createSearchAITools<
             });
           }
 
-          return result;
+          return {
+            ...result,
+            model: result.model || (context as any).model,
+          };
         };
 
         const withMiddlewares = applyMiddlewares({
@@ -249,6 +287,7 @@ export function createSearchAITools<
         return withMiddlewares();
       },
     });
+  };
 
   return [ask, chat];
 }

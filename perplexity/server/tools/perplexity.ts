@@ -2,21 +2,27 @@ import { createSearchAITools } from "@decocms/mcps-shared/search-ai";
 import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
 import type { Env } from "../main";
 import { createPerplexityClient } from "../lib/perplexity-client";
-import type { Message } from "../lib/types";
+import {
+  PerplexityModels,
+  type PerplexityModel,
+  type Message,
+} from "../lib/types";
 
 function getPerplexityClient(env: Env) {
-  assertEnvKey(env.state, "PERPLEXITY_API_KEY");
-  return createPerplexityClient({ apiKey: env.state.PERPLEXITY_API_KEY });
+  assertEnvKey(env, "PERPLEXITY_API_KEY");
+  return createPerplexityClient({ apiKey: env.PERPLEXITY_API_KEY as string });
 }
 
 export const createPerplexityTools = createSearchAITools<
   Env,
-  ReturnType<typeof createPerplexityClient>
+  ReturnType<typeof createPerplexityClient>,
+  PerplexityModel
 >({
   metadata: {
     provider: "Perplexity AI",
     description:
       "Ask questions to Perplexity AI and get web-backed answers with real-time search",
+    models: PerplexityModels,
   },
   getClient: getPerplexityClient,
   askTool: {
@@ -91,7 +97,7 @@ export const createPerplexityTools = createSearchAITools<
     execute: async ({ client, input }) => {
       const {
         messages,
-        model = "sonar",
+        model,
         max_tokens,
         temperature = 0.2,
         top_p = 0.9,
