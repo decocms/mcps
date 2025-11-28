@@ -7,29 +7,37 @@
  *
  * Modules:
  * - userTools: Standard user management tools (from shared)
- * - modelTools: Model discovery, comparison, and recommendations
- * - chatTools: Chat completions
+ * - llmBinding: LLM binding implementation (metadata, stream, generate, list, get)
+ * - modelTools: Model comparison and recommendations (separate utilities)
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
-import { createChatCompletionTool } from "./chat/index.ts";
-import { streamText } from "./chat/streamText.ts";
+import {
+  createListLLMTool,
+  createGetLLMTool,
+  createLLMMetadataTool,
+  createLLMStreamTool,
+  createLLMGenerateTool,
+} from "./llm-binding.ts";
 import {
   createCompareModelsTool,
-  createGetModelTool,
-  createListModelsTool,
   createRecommendModelTool,
 } from "./models/index.ts";
 
 // Export all tools from all modules
 export const tools = [
   ...userTools,
-  // Models Module
-  createListModelsTool,
-  createGetModelTool,
+  // LLM Binding - implements all 5 required tools:
+  // - COLLECTION_LLM_LIST
+  // - COLLECTION_LLM_GET
+  // - LLM_METADATA
+  // - LLM_DO_STREAM
+  // - LLM_DO_GENERATE
+  createListLLMTool,
+  createGetLLMTool,
+  createLLMMetadataTool,
+  createLLMStreamTool,
+  createLLMGenerateTool,
+  // Additional model utilities (not part of LLM binding)
   createCompareModelsTool,
   createRecommendModelTool,
-  // Chat Module
-  createChatCompletionTool,
-  streamText,
-  // Note: Stream endpoint info is now included in each model via DECO_COLLECTION_MODELS_GET
 ];

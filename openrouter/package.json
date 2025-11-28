@@ -15,10 +15,11 @@
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/provider-utils": "^3.0.17",
-    "@decocms/bindings": "0.1.6",
-    "@decocms/runtime": "0.25.1",
+    "@decocms/bindings": "0.2.4",
+    "@decocms/runtime": "0.28.1",
     "@openrouter/ai-sdk-provider": "^1.2.0",
     "@openrouter/sdk": "^0.1.11",
+    "ai": "^5.0.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {
