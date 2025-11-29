@@ -36,6 +36,26 @@ import { LanguageModelV2StreamPart } from "@ai-sdk/provider";
  */
 const OPENROUTER_PROVIDER = "openrouter" as const;
 
+/**
+ * Default logo for providers without a specific logo
+ */
+const DEFAULT_LOGO =
+  "https://assets.decocache.com/decocms/bc2ca488-2bae-4aac-8d3e-ead262dad764/agent.png";
+
+/**
+ * Provider logo mapping - maps provider names to their logo URLs
+ */
+const PROVIDER_LOGOS: Record<string, string> = {
+  openai:
+    "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+  anthropic:
+    "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
+  google:
+    "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
+  "x-ai":
+    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -124,6 +144,12 @@ function extractCapabilities(model: ListedModel): string[] {
   return capabilities;
 }
 
+function extractProviderLogo(modelId: string): string {
+  // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
+  const provider = modelId.split("/")[0] || "";
+  return PROVIDER_LOGOS[provider] ?? DEFAULT_LOGO;
+}
+
 function transformToLLMEntity(
   model: ListedModel,
   _baseUrl: string,
@@ -133,6 +159,7 @@ function transformToLLMEntity(
   const outputCost = toNumberOrNull(model.pricing.completion);
   const contextWindow = model.context_length || 0;
   const maxOutputTokens = extractOutputLimit(model) || 0;
+  const logo = extractProviderLogo(model.id);
 
   return {
     id: model.id,
@@ -143,7 +170,7 @@ function transformToLLMEntity(
     updated_at: now,
     created_by: undefined,
     updated_by: undefined,
-    logo: null,
+    logo,
     description: model.description ?? null,
     capabilities: extractCapabilities(model),
     provider: OPENROUTER_PROVIDER,
