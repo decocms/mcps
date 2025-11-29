@@ -38,10 +38,15 @@ export async function ensureTable(
 
 export async function ensureCollectionsTables(env: Env) {
   for (const tableName of Object.keys(collectionsQueries)) {
-    await ensureTable(
-      env,
-      tableName as keyof typeof collectionsQueries as keyof typeof collectionsQueries,
-    );
+    try {
+      await ensureTable(
+        env,
+        tableName as keyof typeof collectionsQueries as keyof typeof collectionsQueries,
+      );
+    } catch (error) {
+      console.error(`Error ensuring ${tableName} table exists:`, error);
+      throw error;
+    }
   }
 }
 

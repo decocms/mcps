@@ -1,8 +1,21 @@
 /**
- * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * both your MCP server at /mcp and your views as a react
- * application at /.
+ * Vibecoding Toolkit - Main Entry Point
+ *
+ * This is the main entry point for the Vibecoding Toolkit MCP server.
+ * Built on Cloudflare Workers, it serves:
+ * - MCP server at /mcp
+ * - React application views at /
+ * - Workflow queue handler for durable execution
+ * - Cron-based orphan recovery for stuck workflows
+ *
+ * ## Scheduler Architecture
+ *
+ * The toolkit uses a pluggable scheduler architecture for workflow execution:
+ * - **Serverless (Cloudflare Workers)**: QueueScheduler with cron-based recovery
+ * - **Traditional Servers (Node.js)**: PollingScheduler with adaptive intervals
+ *
+ * @see docs/SCHEDULER_ARCHITECTURE.md for full design
+ * @see server/scheduler/ for scheduler implementations
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
@@ -14,7 +27,14 @@ import {
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
 import { Queue } from "@cloudflare/workers-types";
-import { createClient } from "@decocms/runtime/client";
+import { handleWorkflowQueue, MessageBatch } from "./queue-handler.ts";
+import { QueueMessage } from "./collections/workflow.ts";
+
+// Re-export scheduler module for external use
+export * from "./scheduler/index.ts";
+
+// Re-export library utilities
+export * from "./lib/index.ts";
 
 /**
  * This Env type is the main context object that is passed to
@@ -78,40 +98,83 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
 export default {
   ...runtime,
-  async queue(
-    batch: MessageBatch<{ executionId: string; ctx: any }>,
-    env: Env,
-  ) {
-    for (const message of batch.messages) {
-      const ctx = message.body.ctx;
-      console.log({ ctx });
-      try {
-        const response = await fetch(
-          "https://localhost-c11ba5a9.deco.host" +
-            "/mcp/call-tool/START_EXECUTION",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${ctx.DECO_REQUEST_CONTEXT.token}`,
-              "Content-Type": "application/json",
-              "X-Deco-MCP-Client": "true",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              executionId: message.body.executionId,
-            }),
+  
+  /**
+   * Queue handler for workflow execution.
+   * Processes workflow messages from Cloudflare Queues.
+   */
+  async queue(batch: MessageBatch<QueueMessage>, env: Env) {
+    await handleWorkflowQueue(batch, env);
+  },
+
+  /**
+   * Scheduled handler for orphan recovery.
+   * Runs on a cron schedule to recover stuck workflows.
+   *
+   * Uses internal HTTP call to the MCP tool endpoint. Since cron handlers
+   * run with the worker's bindings, we can construct a request and route it
+   * through the runtime.
+   *
+   * To enable cron, add to wrangler.toml:
+   *   [triggers]
+   *   crons = ["*\/5 * * * *"]  (every 5 minutes)
+   */
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    console.log(`[CRON] Running orphan recovery (cron: ${event.cron})`);
+    
+    try {
+      // Call the recovery tool via internal fetch
+      // The runtime handler will process this as an MCP tool call
+      const request = new Request(
+        `${env.DECO_APP_ENTRYPOINT || 'http://localhost:8787'}/mcp/call-tool/RECOVER_ORPHAN_EXECUTIONS`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Deco-MCP-Client': 'true',
+            // Cron jobs run without user auth - use internal service call
+            'X-Deco-Internal-Cron': 'true',
           },
-        );
-        // console.log({ response });
-        if (!response.ok) {
-          throw new Error(`Failed to start execution: ${response.statusText}`);
+          body: JSON.stringify({
+            limit: 100,
+            lockExpiryBufferMs: 60000,
+            maxAgeMs: 24 * 60 * 60 * 1000,
+          }),
         }
-        const data = await response.json();
-        console.log({ data });
-        return { success: true };
-      } catch (error) {
-        console.error({ error });
-      }
+      );
+
+      // Use waitUntil to ensure the request completes even if handler returns early
+      ctx.waitUntil(
+        (async () => {
+          try {
+            const response = await runtime.fetch!(request as any, env, ctx as any);
+            if (!response.ok) {
+              console.error(`[CRON] Recovery failed: ${response.status} ${response.statusText}`);
+              return;
+            }
+            const result = await response.json();
+            console.log(`[CRON] Recovery complete:`, JSON.stringify(result, null, 2));
+          } catch (error) {
+            console.error('[CRON] Recovery error:', error);
+          }
+        })()
+      );
+    } catch (error) {
+      console.error('[CRON] Failed to initiate recovery:', error);
     }
   },
 };
+
+/**
+ * Type definitions for Cloudflare scheduled events
+ */
+interface ScheduledEvent {
+  cron: string;
+  type: "scheduled";
+  scheduledTime: number;
+}
+
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+  passThroughOnException(): void;
+}
