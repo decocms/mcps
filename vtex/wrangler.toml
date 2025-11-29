@@ -1,0 +1,19 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "vtex"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "integrations"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Connect to VTEX e-commerce platform for product search, catalog management, and shopping cart operations using Intelligent Search API"
+icon = "https://upload.wikimedia.org/wikipedia/commons/a/a9/VTEX_Logo.svg"
+friendlyName = "VTEX Commerce"
+
+[observability.logs]
+enabled = true
