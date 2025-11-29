@@ -127,7 +127,7 @@ export function extractSchemas(code: string): {
 /**
  * Transform execution result
  */
-export interface TransformResult {
+export interface CodeResult {
   success: boolean;
   output?: unknown;
   error?: string;
@@ -135,17 +135,17 @@ export interface TransformResult {
 }
 
 /**
- * Execute a transform step in the QuickJS sandbox
+ * Execute a code step in the QuickJS sandbox
  *
  * @param code - TypeScript code with Input/Output interfaces
  * @param input - Input data (already resolved @refs)
  * @param stepName - Step name for logging
  */
-export async function executeTransform(
+export async function executeCode(
   code: string,
   input: unknown,
   stepName: string,
-): Promise<TransformResult> {
+): Promise<CodeResult> {
   let ctx: any;
   let runtime: any;
 
@@ -153,11 +153,14 @@ export async function executeTransform(
     // 1. Transpile TypeScript to JavaScript
     const jsCode = transpileTypeScript(code);
 
-    // 2. Create sandbox runtime
-    runtime = await createSandboxRuntime(`transform-${stepName}`, {
-      memoryLimitBytes: 64 * 1024 * 1024, // 64MB
-      stackSizeBytes: 1 << 20, // 1MB
-    });
+    // 2. Create sandbox runtime (unique ID to avoid cache corruption)
+    runtime = await createSandboxRuntime(
+      `transform-${stepName}-${Date.now()}`,
+      {
+        memoryLimitBytes: 64 * 1024 * 1024, // 64MB
+        stackSizeBytes: 1 << 20, // 1MB
+      },
+    );
 
     ctx = runtime.newContext({ interruptAfterMs: 10000 }); // 10s timeout
 
@@ -208,11 +211,9 @@ export async function executeTransform(
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {
+    // Only dispose context, runtime is cached and reused
     if (ctx) {
       ctx.dispose();
-    }
-    if (runtime) {
-      runtime.dispose();
     }
   }
 }
@@ -220,7 +221,7 @@ export async function executeTransform(
 /**
  * Validate transform code without executing it
  */
-export async function validateTransformCode(
+export async function validateCode(
   code: string,
   stepName: string,
 ): Promise<{
@@ -239,7 +240,7 @@ export async function validateTransformCode(
     const jsCode = transpileTypeScript(code);
 
     // 3. Create sandbox runtime for validation
-    runtime = await createSandboxRuntime(`validate-${stepName}`, {
+    runtime = await createSandboxRuntime(`validate-${stepName}-${Date.now()}`, {
       memoryLimitBytes: 32 * 1024 * 1024,
       stackSizeBytes: 512 * 1024,
     });
@@ -279,11 +280,9 @@ export async function validateTransformCode(
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {
+    // Only dispose context, runtime is cached and reused
     if (ctx) {
       ctx.dispose();
-    }
-    if (runtime) {
-      runtime.dispose();
     }
   }
 }

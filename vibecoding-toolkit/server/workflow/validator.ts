@@ -10,10 +10,15 @@
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
 
-import type { Workflow, Step, ValidationError, Trigger } from "./schema.ts";
-import { getStepType, validateStepType } from "./schema.ts";
+import { getStepType, ValidationError } from "./schema.ts";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateTransformCode } from "./transform-executor.ts";
+import { validateCode } from "./transform-executor.ts";
+import {
+  CodeActionSchema,
+  Step,
+  Trigger,
+  Workflow,
+} from "../collections/workflow.ts";
 
 // ============================================================================
 // Validation Result
@@ -36,26 +41,10 @@ export interface ValidationResult {
 // ============================================================================
 
 /**
- * Validate that a step has exactly one type defined
- */
-function validateStepHasOneType(step: Step): ValidationError | null {
-  if (!validateStepType(step)) {
-    return {
-      type: "invalid_typescript",
-      step: step.name,
-      field: "type",
-      message: `Step must have exactly one of: tool, transform, or sleep`,
-    };
-  }
-  return null;
-}
-
-/**
  * Validate @refs in a step's input
  */
 function validateStepRefs(
   step: Step,
-  _phaseIndex: number,
   availableSteps: Map<string, number>,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -136,22 +125,25 @@ function validateStepRefs(
 /**
  * Validate a transform step's TypeScript code
  */
-async function validateTransformStep(step: Step): Promise<{
+async function validateCodeStep(step: Step): Promise<{
   error: ValidationError | null;
   schema?: { input: Record<string, unknown>; output: Record<string, unknown> };
 }> {
-  if (!step.transform) {
+  const parsed = CodeActionSchema.safeParse(step.action);
+  const isCodeAction = parsed.success;
+  if (!isCodeAction) {
     return { error: null };
   }
 
-  const result = await validateTransformCode(step.transform, step.name);
+  const codeAction = parsed.data;
+  const result = await validateCode(codeAction.code, step.name);
 
   if (!result.valid) {
     return {
       error: {
         type: "invalid_typescript",
         step: step.name,
-        field: "transform",
+        field: "code",
         message: result.error || "Invalid TypeScript code",
       },
     };
@@ -265,26 +257,16 @@ export async function validateWorkflow(
       }
       stepNames.add(step.name);
 
-      // Validate step has exactly one type
-      const typeError = validateStepHasOneType(step);
-      if (typeError) {
-        errors.push(typeError);
-        continue;
-      }
-
       // Validate @refs
-      const refErrors = validateStepRefs(step, phaseIndex, availableSteps);
+      const refErrors = validateStepRefs(step, availableSteps);
       errors.push(...refErrors);
+      const stepType = getStepType(step);
 
       // Validate transform steps
-      if (step.transform) {
-        const { error, schema } = await validateTransformStep(step);
-        if (error) {
-          errors.push(error);
-        }
-        if (schema) {
-          schemas[step.name] = schema;
-        }
+      if (stepType.type === "code") {
+        const { error, schema } = await validateCodeStep(step);
+        if (error) errors.push(error);
+        if (schema) schemas[step.name] = schema;
       }
 
       // Validate forEach maxIterations
@@ -298,16 +280,6 @@ export async function validateWorkflow(
           step: step.name,
           field: "maxIterations",
           message: "maxIterations must be positive",
-        });
-      }
-
-      // Validate retry config is only on tool steps
-      if (step.retry && getStepType(step) !== "tool") {
-        errors.push({
-          type: "invalid_typescript",
-          step: step.name,
-          field: "retry",
-          message: "retry configuration is only valid for tool steps",
         });
       }
     }
@@ -341,62 +313,5 @@ export async function validateWorkflow(
     valid: errors.length === 0,
     errors,
     schemas: Object.keys(schemas).length > 0 ? schemas : undefined,
-  };
-}
-
-/**
- * Quick validation without schema extraction (for updates)
- */
-export function validateWorkflowSync(workflow: Workflow): ValidationResult {
-  const errors: ValidationError[] = [];
-
-  const stepNames = new Set<string>();
-  const duplicateNames = new Set<string>();
-  const availableSteps = new Map<string, number>();
-
-  for (let phaseIndex = 0; phaseIndex < workflow.steps.length; phaseIndex++) {
-    const phase = workflow.steps[phaseIndex];
-
-    for (const step of phase) {
-      if (stepNames.has(step.name)) {
-        duplicateNames.add(step.name);
-      }
-      stepNames.add(step.name);
-
-      const typeError = validateStepHasOneType(step);
-      if (typeError) {
-        errors.push(typeError);
-        continue;
-      }
-
-      const refErrors = validateStepRefs(step, phaseIndex, availableSteps);
-      errors.push(...refErrors);
-    }
-
-    for (const step of phase) {
-      availableSteps.set(step.name, phaseIndex);
-    }
-  }
-
-  for (const name of duplicateNames) {
-    errors.push({
-      type: "invalid_typescript",
-      step: name,
-      field: "name",
-      message: `Duplicate step name: ${name}`,
-    });
-  }
-
-  if (workflow.triggers) {
-    for (let i = 0; i < workflow.triggers.length; i++) {
-      const trigger = workflow.triggers[i];
-      const triggerErrors = validateTriggerRefs(trigger, i, stepNames);
-      errors.push(...triggerErrors);
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
   };
 }

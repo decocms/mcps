@@ -50,7 +50,6 @@ function transformDbRowToExecution(
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     created_by: row.created_by ? (row.created_by as string) : undefined,
-    updated_by: row.updated_by ? (row.updated_by as string) : undefined,
     retry_count: row.retry_count ?? 0,
     max_retries: row.max_retries ?? 10,
     started_at_epoch_ms: row.started_at_epoch_ms ?? undefined,
@@ -93,16 +92,16 @@ export async function createExecution(
   await ensureTable(env, "workflow_executions");
 
   const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
-  const now = new Date().toISOString();
+  const now = new Date().getTime();
   const id = crypto.randomUUID();
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       INSERT INTO workflow_executions (
-        id, workflow_id, status, created_at, updated_at, created_by, updated_by,
+        id, workflow_id, status, created_at, updated_at, created_by,
         inputs, retry_count, max_retries
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+        $1, $2, $3, $4, $5, $6, $7, $8, $9
       )
       RETURNING *
     `,
@@ -112,7 +111,6 @@ export async function createExecution(
       data.status || "pending",
       now,
       now,
-      user?.id || null,
       user?.id || null,
       JSON.stringify(data.inputs || {}),
       0,
@@ -135,25 +133,16 @@ export async function updateExecution(
     status: "pending" | "running" | "completed" | "failed" | "cancelled";
     output: Record<string, unknown>;
     error: string;
-    recovery_attempts: number;
-    workflow_timeout_ms: number;
-    workflow_deadline_epoch_ms: number;
     inputs: Record<string, unknown>;
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
     retry_count: number;
     max_retries: number;
-    last_error: string;
-    last_retry_at: string;
-    locked_at: string;
-    locked_until: string;
+    locked_until_epoch_ms: number;
     lock_id: string;
   }>,
 ): Promise<WorkflowExecution> {
-  await ensureTable(env, "workflow_executions");
-
-  const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
-  const now = new Date().toISOString();
+  const now = new Date().getTime();
 
   const setClauses: string[] = [];
   const params: unknown[] = [];
@@ -162,9 +151,6 @@ export async function updateExecution(
   // Always update these fields
   setClauses.push(`updated_at = $${paramIndex++}`);
   params.push(now);
-
-  setClauses.push(`updated_by = $${paramIndex++}`);
-  params.push(user?.id || null);
 
   // Conditionally update other fields
   if (data.status !== undefined) {
@@ -178,18 +164,6 @@ export async function updateExecution(
   if (data.error !== undefined) {
     setClauses.push(`error = $${paramIndex++}`);
     params.push(data.error);
-  }
-  if (data.recovery_attempts !== undefined) {
-    setClauses.push(`recovery_attempts = $${paramIndex++}`);
-    params.push(data.recovery_attempts);
-  }
-  if (data.workflow_timeout_ms !== undefined) {
-    setClauses.push(`workflow_timeout_ms = $${paramIndex++}`);
-    params.push(data.workflow_timeout_ms);
-  }
-  if (data.workflow_deadline_epoch_ms !== undefined) {
-    setClauses.push(`workflow_deadline_epoch_ms = $${paramIndex++}`);
-    params.push(data.workflow_deadline_epoch_ms);
   }
   if (data.inputs !== undefined) {
     setClauses.push(`inputs = $${paramIndex++}`);
@@ -211,21 +185,9 @@ export async function updateExecution(
     setClauses.push(`max_retries = $${paramIndex++}`);
     params.push(data.max_retries);
   }
-  if (data.last_error !== undefined) {
-    setClauses.push(`last_error = $${paramIndex++}`);
-    params.push(data.last_error);
-  }
-  if (data.last_retry_at !== undefined) {
-    setClauses.push(`last_retry_at = $${paramIndex++}`);
-    params.push(data.last_retry_at);
-  }
-  if (data.locked_at !== undefined) {
-    setClauses.push(`locked_at = $${paramIndex++}`);
-    params.push(data.locked_at);
-  }
-  if (data.locked_until !== undefined) {
-    setClauses.push(`locked_until = $${paramIndex++}`);
-    params.push(data.locked_until);
+  if (data.locked_until_epoch_ms !== undefined) {
+    setClauses.push(`locked_until_epoch_ms = $${paramIndex++}`);
+    params.push(data.locked_until_epoch_ms);
   }
   if (data.lock_id !== undefined) {
     setClauses.push(`lock_id = $${paramIndex++}`);
@@ -426,10 +388,8 @@ export async function createStepResult(
   data: {
     execution_id: string;
     step_id: string;
-    step_index?: number;
     status?: "pending" | "running" | "completed" | "failed";
     input?: Record<string, unknown>;
-    child_workflow_id?: string;
     started_at_epoch_ms?: number;
   },
 ): Promise<CreateStepResultOutcome> {
@@ -442,18 +402,16 @@ export async function createStepResult(
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       INSERT INTO execution_step_results
-      (execution_id, step_id, step_index, status, input, child_workflow_id, started_at_epoch_ms, attempt_count, errors)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (execution_id, step_id, status, input, started_at_epoch_ms, attempt_count, errors)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (execution_id, step_id) DO NOTHING
       RETURNING *
     `,
     params: [
       data.execution_id,
       data.step_id,
-      data.step_index ?? null,
       status,
       data.input ? JSON.stringify(data.input) : null,
-      data.child_workflow_id ?? null,
       startedAt,
       1,
       "[]",
@@ -496,7 +454,6 @@ export async function updateStepResult(
     input: Record<string, unknown>;
     output: unknown; // Can be object or array (forEach steps produce arrays)
     error: string;
-    child_workflow_id: string;
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
     attempt_count: number;
@@ -525,10 +482,6 @@ export async function updateStepResult(
   if (data.error !== undefined) {
     setClauses.push(`error = $${paramIndex++}`);
     params.push(data.error);
-  }
-  if (data.child_workflow_id !== undefined) {
-    setClauses.push(`child_workflow_id = $${paramIndex++}`);
-    params.push(data.child_workflow_id);
   }
   if (data.started_at_epoch_ms !== undefined) {
     setClauses.push(`started_at_epoch_ms = $${paramIndex++}`);

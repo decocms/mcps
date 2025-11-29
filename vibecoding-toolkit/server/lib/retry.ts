@@ -6,9 +6,6 @@
  * - Retryable error detection
  * - Per-step and workflow-level retry configuration
  *
- * @see docs/WORKFLOW_EXECUTION_DESIGN.md Section 4.4
- * @see docs/DURABLE_PATTERNS.md Section 3
- * @see docs/DBOS_PATTERNS.md Section 5
  */
 
 /**
@@ -224,168 +221,10 @@ export function isRetryableError(error: unknown): boolean {
 }
 
 /**
- * Check if we should continue retrying.
- *
- * @param retryCount - Current retry count (0-indexed)
- * @param error - The error that occurred
- * @param config - Retry configuration
- * @returns RetryDecision with retry status and delay
- */
-export function shouldRetry(
-  retryCount: number,
-  error: unknown,
-  config: RetryConfig = DEFAULT_RETRY_CONFIG,
-): RetryDecision {
-  if (retryCount >= config.maxRetries) {
-    return {
-      retry: false,
-      reason: `Max retries (${config.maxRetries}) exceeded`,
-    };
-  }
-
-  if (!isRetryableError(error)) {
-    return {
-      retry: false,
-      reason: `Non-retryable error: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-
-  return {
-    retry: true,
-    delaySeconds: calculateBackoff(retryCount, config),
-  };
-}
-
-/**
- * Check if a step should retry based on step-level configuration.
- *
- * @param attemptCount - Current attempt count (1-indexed)
- * @param error - The error that occurred
- * @param config - Step retry configuration
- * @returns RetryDecision with retry status and delay
- */
-export function shouldStepRetry(
-  attemptCount: number,
-  error: unknown,
-  config: StepRetryConfig = {},
-): RetryDecision {
-  const {
-    retriesAllowed = DEFAULT_STEP_RETRY_CONFIG.retriesAllowed,
-    maxAttempts = DEFAULT_STEP_RETRY_CONFIG.maxAttempts,
-  } = config;
-
-  if (!retriesAllowed) {
-    return {
-      retry: false,
-      reason: "Retries not allowed for this step",
-    };
-  }
-
-  if (attemptCount >= maxAttempts) {
-    return {
-      retry: false,
-      reason: `Max step attempts (${maxAttempts}) exceeded`,
-    };
-  }
-
-  if (!isRetryableError(error)) {
-    return {
-      retry: false,
-      reason: `Non-retryable error: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-
-  return {
-    retry: true,
-    delaySeconds: calculateStepBackoff(attemptCount, config),
-  };
-}
-
-/**
- * Execute a function with retry logic.
- *
- * @param fn - Function to execute
- * @param config - Retry configuration
- * @returns Result of the function
- * @throws Last error if all retries fail
- */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  config: RetryConfig = DEFAULT_RETRY_CONFIG,
-): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      const decision = shouldRetry(attempt, error, config);
-
-      if (!decision.retry) {
-        throw error;
-      }
-
-      console.log(
-        `[RETRY] Attempt ${attempt + 1} failed, retrying in ${decision.delaySeconds}s: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-
-      await sleep(decision.delaySeconds! * 1000);
-    }
-  }
-
-  throw lastError;
-}
-
-/**
  * Sleep for a specified duration.
  *
  * @param ms - Duration in milliseconds
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Create an AbortController that times out after a duration.
- *
- * @param timeoutMs - Timeout in milliseconds
- * @returns AbortController with timeout
- */
-export function createTimeoutController(timeoutMs: number): {
-  controller: AbortController;
-  cleanup: () => void;
-} {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  return {
-    controller,
-    cleanup: () => clearTimeout(timeoutId),
-  };
-}
-
-/**
- * Execute a function with a timeout.
- *
- * @param fn - Function to execute
- * @param timeoutMs - Timeout in milliseconds
- * @param timeoutMessage - Message for timeout error
- * @returns Result of the function
- * @throws TimeoutError if the function takes too long
- */
-export async function withTimeout<T>(
-  fn: () => Promise<T>,
-  timeoutMs: number,
-  timeoutMessage = "Operation timed out",
-): Promise<T> {
-  return Promise.race([
-    fn(),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs),
-    ),
-  ]);
 }

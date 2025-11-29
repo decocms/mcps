@@ -44,27 +44,35 @@ export async function acquireLock(
   const { durationMs = DEFAULT_LOCK_DURATION_MS, verbose = true } = config;
 
   const lockId = crypto.randomUUID();
-  const now = new Date();
-  const lockUntil = new Date(now.getTime() + durationMs);
+  const now = Date.now();
+  const lockUntil = now + durationMs;
 
   try {
-    const result = await env.DATABASE.DATABASES_RUN_SQL({
+    // Try to acquire lock with atomic UPDATE
+    await env.DATABASE.DATABASES_RUN_SQL({
       sql: `
         UPDATE workflow_executions 
         SET 
-          locked_at = $1, 
-          locked_until = $2, 
-          lock_id = $3,
-          updated_at = $1
+          locked_until_epoch_ms = $1, 
+          lock_id = $2,
+          updated_at = $3
         WHERE id = $4 
-          AND (locked_until IS NULL OR locked_until < $1)
+          AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $5)
           AND status IN ('pending', 'running')
-        RETURNING id
       `,
-      params: [now.toISOString(), lockUntil.toISOString(), lockId, executionId],
+      params: [lockUntil, lockId, now, executionId, now],
     });
 
-    const acquired = (result.result[0]?.results?.length ?? 0) > 0;
+    // Check if WE got the lock (our lockId is now in the row)
+    const check = await env.DATABASE.DATABASES_RUN_SQL({
+      sql: "SELECT lock_id FROM workflow_executions WHERE id = $1",
+      params: [executionId],
+    });
+
+    const row = check.result[0]?.results?.[0] as
+      | { lock_id: string | null }
+      | undefined;
+    const acquired = row?.lock_id === lockId;
 
     if (verbose) {
       console.log(
@@ -81,7 +89,6 @@ export async function acquireLock(
     return { acquired: false };
   }
 }
-
 /**
  * Release a lock on a workflow execution.
  * Only releases if the lockId matches (prevents releasing someone else's lock).
@@ -101,14 +108,13 @@ export async function releaseLock(
       sql: `
         UPDATE workflow_executions 
         SET 
-          locked_at = NULL, 
-          locked_until = NULL, 
+          locked_until_epoch_ms = NULL, 
           lock_id = NULL,
           updated_at = $1
         WHERE id = $2 AND lock_id = $3
         RETURNING id
       `,
-      params: [new Date().toISOString(), executionId, lockId],
+      params: [new Date().getTime(), executionId, lockId],
     });
 
     const released = (result.result[0]?.results?.length ?? 0) > 0;
@@ -150,13 +156,13 @@ export async function extendLock(
     const result = await env.DATABASE.DATABASES_RUN_SQL({
       sql: `
         UPDATE workflow_executions 
-        SET locked_until = $1, updated_at = $2
+        SET locked_until_epoch_ms = $1, updated_at = $2
         WHERE id = $3 AND lock_id = $4
         RETURNING id
       `,
       params: [
-        newLockUntil.toISOString(),
-        new Date().toISOString(),
+        newLockUntil.getTime(),
+        new Date().getTime(),
         executionId,
         lockId,
       ],
@@ -188,14 +194,13 @@ export async function getLockStatus(
   executionId: string,
 ): Promise<{
   isLocked: boolean;
-  lockedAt?: string;
-  lockedUntil?: string;
+  lockedUntil?: number;
   lockId?: string;
 }> {
   try {
     const result = await env.DATABASE.DATABASES_RUN_SQL({
       sql: `
-        SELECT locked_at, locked_until, lock_id 
+        SELECT locked_until_epoch_ms, lock_id 
         FROM workflow_executions 
         WHERE id = $1
       `,
@@ -204,8 +209,7 @@ export async function getLockStatus(
 
     const row = result.result[0]?.results?.[0] as
       | {
-          locked_at?: string;
-          locked_until?: string;
+          locked_until_epoch_ms?: number;
           lock_id?: string;
         }
       | undefined;
@@ -215,13 +219,14 @@ export async function getLockStatus(
     }
 
     const now = new Date();
-    const lockedUntil = row.locked_until ? new Date(row.locked_until) : null;
+    const lockedUntil = row.locked_until_epoch_ms
+      ? new Date(row.locked_until_epoch_ms)
+      : null;
     const isLocked = lockedUntil !== null && lockedUntil > now;
 
     return {
       isLocked,
-      lockedAt: row.locked_at,
-      lockedUntil: row.locked_until,
+      lockedUntil: row.locked_until_epoch_ms,
       lockId: row.lock_id,
     };
   } catch (error) {

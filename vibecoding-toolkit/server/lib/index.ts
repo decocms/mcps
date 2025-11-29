@@ -25,12 +25,7 @@ export {
   calculateBackoff,
   calculateStepBackoff,
   isRetryableError,
-  shouldRetry,
-  shouldStepRetry,
-  withRetry,
   sleep,
-  createTimeoutController,
-  withTimeout,
   DEFAULT_RETRY_CONFIG,
   DEFAULT_STEP_RETRY_CONFIG,
   type RetryConfig,
@@ -42,14 +37,7 @@ export {
 export {
   isRetryableDbError,
   withDbRetry,
-  trackExecutionError,
-  markExecutionFailed,
   markExecutionCompleted,
-  persistStepResult,
-  trackStepError,
-  logWorkflowOperation,
-  zeroRetries,
-  incrementRetries,
   type DbRetryConfig,
 } from "./db-utils.ts";
 

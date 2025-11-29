@@ -106,14 +106,14 @@ export async function recoverOrphanedExecutions(
 
   // Find orphaned executions
   // When force=true, recover running executions regardless of lock status
-  // When force=false, only recover if lock has expired (locked_until < bufferTime)
+  // When force=false, only recover if lock has expired (locked_until_epoch_ms < bufferTime)
   const lockCondition = force
-    ? "AND locked_until IS NOT NULL" // Any lock (force recovery)
-    : "AND locked_until IS NOT NULL AND locked_until < $1"; // Expired lock only
+    ? "AND locked_until_epoch_ms IS NOT NULL" // Any lock (force recovery)
+    : "AND locked_until_epoch_ms IS NOT NULL AND locked_until_epoch_ms < $1"; // Expired lock only
 
   const orphanQuery = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
-      SELECT id, workflow_id, retry_count, max_retries, locked_until
+      SELECT id, workflow_id, retry_count, max_retries, locked_until_epoch_ms
       FROM workflow_executions
       WHERE status = 'running'
         ${lockCondition}
@@ -173,14 +173,13 @@ export async function recoverOrphanedExecutions(
         sql: `
           UPDATE workflow_executions
           SET 
-            locked_at = NULL,
-            locked_until = NULL,
+            locked_until_epoch_ms = NULL,
             lock_id = NULL,
             status = 'pending',
             updated_at = $1
           WHERE id = $2
         `,
-        params: [now.toISOString(), orphan.id],
+        params: [now.getTime(), orphan.id],
       });
 
       // Re-queue for execution
@@ -259,7 +258,7 @@ export async function recoverPendingExecutions(
       SELECT id, workflow_id, retry_count, max_retries
       FROM workflow_executions
       WHERE status = 'pending'
-        AND (locked_until IS NULL OR locked_until < $1)
+        AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $1)
         AND created_at < $2
         AND created_at > $3
         AND retry_count < max_retries

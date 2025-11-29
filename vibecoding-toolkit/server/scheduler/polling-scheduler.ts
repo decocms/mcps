@@ -279,7 +279,7 @@ export class PollingScheduler implements RunnableScheduler {
 
     if (this.config.verbose) {
       const when = options?.runAt
-        ? `at ${options.runAt.toISOString()}`
+        ? `at ${options.runAt.getTime()}`
         : "immediately";
       console.log(`[POLLING] Scheduled execution ${executionId} ${when}`);
     }

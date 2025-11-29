@@ -8,12 +8,8 @@
  */
 
 import type { Env } from "../main.ts";
-import type {
-  PollingDatabaseAdapter,
-  PendingExecution,
-} from "./polling-scheduler.ts";
+import type { PollingDatabaseAdapter } from "./polling-scheduler.ts";
 import { executeWorkflow } from "../workflow/executor.ts";
-import { ensureTable } from "../lib/postgres.ts";
 
 /**
  * Configuration for the polling database adapter
@@ -34,16 +30,9 @@ export interface PollingDbAdapterConfig {
  * @param config - Optional configuration
  * @returns PollingDatabaseAdapter implementation
  */
-export function createPollingDbAdapter(
-  env: Env,
-  config: PollingDbAdapterConfig = {},
-): PollingDatabaseAdapter {
-  const { useOptimizations = true } = config;
-
+export function createPollingDbAdapter(env: Env): PollingDatabaseAdapter {
   return {
     async findPendingExecutions(options) {
-      await ensureTable(env, "workflow_executions");
-
       const { limit, lockDurationMs, scheduledBefore } = options;
       const now = new Date();
       const lockUntil = new Date(now.getTime() + lockDurationMs);
@@ -54,17 +43,20 @@ export function createPollingDbAdapter(
       const query = `
         UPDATE workflow_executions
         SET 
-          locked_at = $1,
-          locked_until = $2,
+          locked_until_epoch_ms = $2,
           lock_id = $3,
           status = CASE WHEN status = 'pending' THEN 'running' ELSE status END,
           updated_at = $1
         WHERE id IN (
           SELECT id FROM workflow_executions
           WHERE status IN ('pending', 'running')
-            AND (locked_until IS NULL OR locked_until < $1)
+            AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $1)
             AND retry_count < max_retries
-            ${scheduledBefore ? "AND (started_at_epoch_ms IS NULL OR started_at_epoch_ms <= $5)" : ""}
+            ${
+              scheduledBefore
+                ? "AND (started_at_epoch_ms IS NULL OR started_at_epoch_ms <= $5)"
+                : ""
+            }
           ORDER BY created_at ASC
           LIMIT $4
         )
@@ -72,8 +64,8 @@ export function createPollingDbAdapter(
       `;
 
       const params: unknown[] = [
-        now.toISOString(),
-        lockUntil.toISOString(),
+        now.getTime(),
+        lockUntil.getTime(),
         lockId,
         limit,
       ];
@@ -101,22 +93,19 @@ export function createPollingDbAdapter(
             sql: `
               UPDATE workflow_executions
               SET 
-                locked_at = NULL,
-                locked_until = NULL,
+                locked_until_epoch_ms = NULL,
                 lock_id = NULL,
                 updated_at = $1
               WHERE id = $2 AND lock_id = $3
             `,
-            params: [new Date().toISOString(), row.id, lockId],
+            params: [new Date().getTime(), row.id, lockId],
           });
         },
       }));
     },
 
     async createExecution(executionId, options) {
-      await ensureTable(env, "workflow_executions");
-
-      const now = new Date().toISOString();
+      const now = new Date().getTime();
 
       // Check if execution already exists
       const existing = await env.DATABASE.DATABASES_RUN_SQL({
@@ -151,13 +140,12 @@ export function createPollingDbAdapter(
         sql: `
           UPDATE workflow_executions
           SET 
-            locked_at = NULL,
-            locked_until = NULL,
+            locked_until_epoch_ms = NULL,
             lock_id = NULL,
             updated_at = $1
           WHERE id = $2 AND lock_id = $3
         `,
-        params: [new Date().toISOString(), executionId, lockId],
+        params: [new Date().getTime(), executionId, lockId],
       });
     },
 
@@ -176,11 +164,9 @@ export function createPostgresPollingDbAdapter(
 ): PollingDatabaseAdapter {
   return {
     async findPendingExecutions(options) {
-      await ensureTable(env, "workflow_executions");
-
       const { limit, lockDurationMs, scheduledBefore } = options;
-      const now = new Date();
-      const lockUntil = new Date(now.getTime() + lockDurationMs);
+      const now = new Date().getTime();
+      const lockUntil = new Date(now + lockDurationMs);
       const lockId = crypto.randomUUID();
 
       // PostgreSQL-optimized query using FOR UPDATE SKIP LOCKED
@@ -189,17 +175,21 @@ export function createPostgresPollingDbAdapter(
         SELECT id, retry_count 
         FROM workflow_executions
         WHERE status IN ('pending', 'running')
-          AND (locked_until IS NULL OR locked_until < $1)
+          AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $1)
           AND retry_count < max_retries
-          ${scheduledBefore ? "AND (started_at_epoch_ms IS NULL OR started_at_epoch_ms <= $3)" : ""}
+          ${
+            scheduledBefore
+              ? "AND (started_at_epoch_ms IS NULL OR started_at_epoch_ms <= $3)"
+              : ""
+          }
         ORDER BY created_at ASC
         LIMIT $2
         FOR UPDATE SKIP LOCKED
       `;
 
-      const selectParams: unknown[] = [now.toISOString(), limit];
+      const selectParams: unknown[] = [now, limit];
       if (scheduledBefore) {
-        selectParams.push(scheduledBefore.getTime());
+        selectParams.push(scheduledBefore);
       }
 
       // This is a simplified version - in production you'd want a transaction
@@ -223,14 +213,13 @@ export function createPostgresPollingDbAdapter(
         sql: `
           UPDATE workflow_executions
           SET 
-            locked_at = $1,
-            locked_until = $2,
+            locked_until_epoch_ms = $2,
             lock_id = $3,
             status = CASE WHEN status = 'pending' THEN 'running' ELSE status END,
             updated_at = $1
           WHERE id = ANY($4)
         `,
-        params: [now.toISOString(), lockUntil.toISOString(), lockId, ids],
+        params: [now, lockUntil.getTime(), lockId, ids],
       });
 
       return rows.map((row) => ({
@@ -242,13 +231,12 @@ export function createPostgresPollingDbAdapter(
             sql: `
               UPDATE workflow_executions
               SET 
-                locked_at = NULL,
-                locked_until = NULL,
+                locked_until_epoch_ms = NULL,
                 lock_id = NULL,
                 updated_at = $1
               WHERE id = $2 AND lock_id = $3
             `,
-            params: [new Date().toISOString(), row.id, lockId],
+            params: [new Date().getTime(), row.id, lockId],
           });
         },
       }));

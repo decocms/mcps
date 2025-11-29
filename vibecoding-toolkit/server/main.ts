@@ -26,8 +26,8 @@ import {
 
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
-import { Queue } from "@cloudflare/workers-types";
-import { handleWorkflowQueue, MessageBatch } from "./queue-handler.ts";
+import { MessageBatch, Queue } from "@cloudflare/workers-types";
+import { handleWorkflowQueue } from "./queue-handler.ts";
 import { QueueMessage } from "./collections/workflow.ts";
 
 // Re-export scheduler module for external use

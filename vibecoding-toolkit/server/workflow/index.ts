@@ -51,24 +51,7 @@
  */
 
 // Schema exports
-export {
-  StepSchema,
-  TriggerSchema,
-  WorkflowSchema,
-  PhaseResultSchema,
-  ExecutionStateSchema,
-  ValidationErrorSchema,
-  type Step,
-  type Trigger,
-  type Workflow,
-  type PhaseResult,
-  type ExecutionState,
-  type ValidationError,
-  validateStepType,
-  getStepType,
-  getAllStepNames,
-  getAvailableSteps,
-} from "./schema.ts";
+export { getStepType } from "./schema.ts";
 
 // @ref resolution exports
 export {
@@ -88,9 +71,8 @@ export {
 export {
   transpileTypeScript,
   extractSchemas,
-  executeTransform,
-  validateTransformCode,
-  type TransformResult,
+  validateCode,
+  type CodeResult,
 } from "./transform-executor.ts";
 
 // Workflow executor exports
@@ -103,11 +85,4 @@ export {
 } from "./executor.ts";
 
 // Validation exports
-export {
-  validateWorkflow,
-  validateWorkflowSync,
-  type ValidationResult,
-} from "./validator.ts";
-
-// Tools exports
-export { workflowTools } from "./tools.ts";
+export { validateWorkflow, type ValidationResult } from "./validator.ts";

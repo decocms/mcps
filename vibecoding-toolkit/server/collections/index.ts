@@ -7,6 +7,7 @@ import {
   executionStepResultsTableIdempotentQuery,
   executionStepResultsTableIndexesQuery,
 } from "./workflow";
+import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
 
 /**
  * Collection queries for database table creation.
@@ -16,10 +17,10 @@ import {
  * managed by direct database functions in lib/execution-db.ts.
  */
 const collectionsQueries = {
-  agents: {
-    idempotent: agentTableIdempotentQuery,
-    indexes: agentTableIndexesQuery,
-  },
+  // agents: {
+  //   idempotent: agentTableIdempotentQuery,
+  //   indexes: agentTableIndexesQuery,
+  // },
   workflows: {
     idempotent: workflowTableIdempotentQuery,
     indexes: workflowTableIndexesQuery,
@@ -32,6 +33,10 @@ const collectionsQueries = {
   execution_step_results: {
     idempotent: executionStepResultsTableIdempotentQuery,
     indexes: executionStepResultsTableIndexesQuery,
+  },
+  tools: {
+    idempotent: toolsTableIdempotentQuery,
+    indexes: toolsTableIndexesQuery,
   },
 };
 

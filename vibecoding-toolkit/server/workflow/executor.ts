@@ -13,30 +13,31 @@
  */
 
 import type { Env } from "../main.ts";
+import { CodeAction, getStepType } from "./schema.ts";
 import {
-  type Step,
-  type Workflow,
-  type Trigger,
-  getStepType,
-} from "./schema.ts";
-import {
-  type RefContext,
-  resolveAllRefs,
   canResolveAllRefs,
   isAtRef,
+  type RefContext,
+  resolveAllRefs,
   resolveRef,
 } from "./ref-resolver.ts";
-import { executeTransform } from "./transform-executor.ts";
+import { executeCode } from "./transform-executor.ts";
 import {
-  getExecution,
-  updateExecution,
   createStepResult,
-  updateStepResult,
+  getExecution,
   getStepResult,
   getStepResults,
+  updateExecution,
+  updateStepResult,
 } from "../lib/execution-db.ts";
 import { acquireLock, releaseLock } from "../lib/workflow-lock.ts";
-import type { QueueMessage } from "../collections/workflow.ts";
+import {
+  type QueueMessage,
+  SleepActionSchema,
+  type Step,
+  ToolCallActionSchema,
+  type Trigger,
+} from "../collections/workflow.ts";
 
 /**
  * Error thrown when a step needs to be re-scheduled (e.g., for long sleeps)
@@ -111,9 +112,12 @@ async function executeToolStep(
   step: Step,
   input: Record<string, unknown>,
 ): Promise<unknown> {
-  if (!step.tool) throw new Error("Tool step missing tool configuration");
+  const parsed = ToolCallActionSchema.safeParse(step.action);
+  const isToolAction = parsed.success;
+  if (!isToolAction) throw new Error("Tool step missing tool configuration");
+  const toolAction = parsed.data;
 
-  const connection = createProxyConnection(step.tool.connectionId, {
+  const connection = createProxyConnection(toolAction.connectionId, {
     workspace: env.DECO_WORKSPACE,
     token: env.DECO_REQUEST_CONTEXT.token,
   });
@@ -121,7 +125,7 @@ async function executeToolStep(
   const result = await env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
     connection: connection as any,
     params: {
-      name: step.tool.toolName,
+      name: toolAction.toolName,
       arguments: input,
     },
   });
@@ -133,18 +137,21 @@ async function executeToolStep(
  * Execute a sleep step
  */
 async function executeSleepStep(step: Step, ctx: RefContext): Promise<void> {
-  if (!step.sleep) throw new Error("Sleep step missing sleep configuration");
+  const parsed = SleepActionSchema.safeParse(step.action);
+  const isSleepAction = parsed.success;
+  if (!isSleepAction) throw new Error("Sleep step missing sleep configuration");
+  const sleepAction = parsed.data;
 
-  let sleepMs = step.sleep.ms || 0;
+  let sleepMs = "sleepMs" in sleepAction ? sleepAction.sleepMs : 0;
 
   // Handle 'until' with @ref resolution
-  if (step.sleep.until) {
+  if ("sleepUntil" in sleepAction) {
     let until: Date;
-    if (isAtRef(step.sleep.until as `@${string}`)) {
-      const { value } = resolveRef(step.sleep.until as `@${string}`, ctx);
+    if (isAtRef(sleepAction.sleepUntil as `@${string}`)) {
+      const { value } = resolveRef(sleepAction.sleepUntil as `@${string}`, ctx);
       until = new Date(value as string);
     } else {
-      until = new Date(step.sleep.until);
+      until = new Date(sleepAction.sleepUntil);
     }
 
     const now = Date.now();
@@ -164,23 +171,23 @@ async function executeSingleStep(
   step: Step,
   resolvedInput: Record<string, unknown>,
   ctx: RefContext,
-): Promise<{ output: unknown; error?: string }> {
+): Promise<{ output: unknown }> {
   const stepType = getStepType(step);
 
-  switch (stepType) {
+  switch (stepType.type) {
     case "tool": {
       const output = await executeToolStep(env, step, resolvedInput);
       return { output };
     }
 
-    case "transform": {
-      const result = await executeTransform(
-        step.transform!,
+    case "code": {
+      const result = await executeCode(
+        (stepType.action as CodeAction).code,
         resolvedInput,
         step.name,
       );
       if (!result.success) {
-        return { output: undefined, error: result.error };
+        throw new Error(`Code step ${step.name} failed: ${result.error}`);
       }
       return { output: result.output };
     }
@@ -191,10 +198,7 @@ async function executeSingleStep(
     }
 
     default:
-      return {
-        output: undefined,
-        error: `Unknown step type for step: ${step.name}`,
-      };
+      throw new Error(`Unknown step type for step: ${step.name}`);
   }
 }
 
@@ -221,21 +225,12 @@ async function executeStepWithForEach(
 
     // If no forEach, execute once
     if (!step.forEach) {
-      const { output, error } = await executeSingleStep(
+      const { output } = await executeSingleStep(
         env,
         step,
         baseInput as Record<string, unknown>,
         ctx,
       );
-
-      if (error) {
-        return {
-          status: "failed",
-          error,
-          startedAt,
-          completedAt: Date.now(),
-        };
-      }
 
       return {
         status: "completed",
@@ -293,7 +288,7 @@ async function executeStepWithForEach(
       }
 
       try {
-        const { output, error } = await executeSingleStep(
+        const { output } = await executeSingleStep(
           env,
           step,
           iterInput as Record<string, unknown>,
@@ -304,12 +299,9 @@ async function executeStepWithForEach(
           index: i,
           item,
           output,
-          error,
         });
 
-        if (!error) {
-          outputs.push(output);
-        }
+        outputs.push(output);
       } catch (error) {
         iterations.push({
           index: i,
@@ -384,7 +376,6 @@ async function executeStepWithCheckpoint(
   step: Step,
   ctx: RefContext,
   executionId: string,
-  phaseIndex: number,
   verbose: boolean = false,
 ): Promise<StepExecutionResult> {
   // 1. Check for cached result (DBOS pattern: deterministic replay)
@@ -402,7 +393,6 @@ async function executeStepWithCheckpoint(
   const { result: stepRecord, created } = await createStepResult(env, {
     execution_id: executionId,
     step_id: step.name,
-    step_index: phaseIndex,
     status: "running",
     started_at_epoch_ms: Date.now(),
   });
@@ -471,14 +461,7 @@ async function executePhase(
   // Execute all steps in parallel with checkpointing
   const results = await Promise.allSettled(
     phase.map((step) =>
-      executeStepWithCheckpoint(
-        env,
-        step,
-        ctx,
-        executionId,
-        phaseIndex,
-        verbose,
-      ),
+      executeStepWithCheckpoint(env, step, ctx, executionId, verbose),
     ),
   );
 
@@ -609,21 +592,18 @@ async function fireTriggers(
             authorization: env.DECO_REQUEST_CONTEXT.token,
           };
 
-          // Create execution record first (with parent tracking)
+          // Create execution record with parent tracking
           await env.DATABASE.DATABASES_RUN_SQL({
             sql: `
               INSERT INTO workflow_executions (
-                id, workflow_id, status, created_at, updated_at, inputs,
-                workflow_timeout_ms, max_retries, parent_execution_id
-              ) VALUES ($1, $2, 'pending', $3, $3, $4, $5, $6, $7)
+                id, workflow_id, status, created_at, updated_at, inputs, parent_execution_id
+              ) VALUES ($1, $2, 'pending', $3, $3, $4, $5)
             `,
             params: [
               message.executionId,
               trigger.workflowId,
-              new Date().toISOString(),
+              new Date().getTime(),
               JSON.stringify(inputs),
-              trigger.workflow_timeout_ms || null,
-              trigger.max_retries || 10,
               parentExecutionId,
             ],
           });
@@ -648,21 +628,18 @@ async function fireTriggers(
           authorization: env.DECO_REQUEST_CONTEXT.token,
         };
 
-        // Create execution record (with parent tracking)
+        // Create execution record with parent tracking
         await env.DATABASE.DATABASES_RUN_SQL({
           sql: `
             INSERT INTO workflow_executions (
-              id, workflow_id, status, created_at, updated_at, inputs,
-              workflow_timeout_ms, max_retries, parent_execution_id
-            ) VALUES ($1, $2, 'pending', $3, $3, $4, $5, $6, $7)
+              id, workflow_id, status, created_at, updated_at, inputs, parent_execution_id
+            ) VALUES ($1, $2, 'pending', $3, $3, $4, $5)
           `,
           params: [
             message.executionId,
             trigger.workflowId,
-            new Date().toISOString(),
+            new Date().getTime(),
             JSON.stringify(inputs),
-            trigger.workflow_timeout_ms || null,
-            trigger.max_retries || 10,
             parentExecutionId,
           ],
         });
@@ -709,12 +686,8 @@ export async function executeWorkflow(
   const startTime = Date.now();
 
   try {
-    // 1. Check execution status FIRST (before lock) to prevent retry loops
-    // This is critical for safety guard pattern - completed executions should
-    // return success immediately so no new safety guards are scheduled.
     const preCheckExecution = await getExecution(env, executionId);
     if (!preCheckExecution) {
-      // Execution doesn't exist - don't retry
       return {
         success: false,
         error: `Execution ${executionId} not found`,
@@ -728,11 +701,9 @@ export async function executeWorkflow(
           `[WORKFLOW] Execution ${executionId} is already ${preCheckExecution.status}, skipping`,
         );
       }
-      // Return success for completed/failed/cancelled - no retry needed
       return { success: true, output: preCheckExecution.output };
     }
 
-    // 2. Acquire lock (only for pending/running executions)
     const lock = await acquireLock(env, executionId, {
       durationMs: lockDurationMs,
     });
@@ -746,7 +717,6 @@ export async function executeWorkflow(
     }
     lockId = lock.lockId;
 
-    // 3. Re-check execution status after acquiring lock (might have changed)
     const execution = await getExecution(env, executionId);
     if (!execution) {
       throw new Error(`Execution ${executionId} not found`);
@@ -761,8 +731,7 @@ export async function executeWorkflow(
       return { success: true, output: execution.output };
     }
 
-    // 3. Load workflow
-    const { item: workflow } = await env.SELF.DECO_COLLECTION_WORKFLOWS_GET({
+    const { item: workflow } = await env.SELF.COLLECTION_WORKFLOW_GET({
       id: execution.workflow_id,
     });
 
@@ -770,50 +739,28 @@ export async function executeWorkflow(
       throw new Error(`Workflow ${execution.workflow_id} not found`);
     }
 
-    // Parse steps - expect 2D array format or convert from old format
+    // Parse steps - stored as {phases: [...], triggers: [...]} in DB
     let parsedSteps = workflow.steps
       ? typeof workflow.steps === "string"
         ? JSON.parse(workflow.steps)
         : workflow.steps
       : { phases: [], triggers: [] };
 
-    // Handle stored format with phases/triggers wrapper
-    // Capture triggers BEFORE overwriting parsedSteps with phases
-    const storedTriggers = parsedSteps.triggers;
-    if (verbose) {
-      console.log(`[WORKFLOW] Stored triggers found:`, storedTriggers);
-    }
-    if (parsedSteps.phases) {
-      parsedSteps = parsedSteps.phases;
-    }
+    // Extract phases array from wrapper
+    const phases: Step[][] = parsedSteps.phases || parsedSteps;
+    const triggers: Trigger[] = parsedSteps.triggers || workflow.triggers || [];
 
-    const workflowData: Workflow = {
-      name: workflow.name,
-      description: workflow.description,
-      steps: parsedSteps,
-      triggers: (workflow as any).triggers || storedTriggers,
-    };
     if (verbose) {
-      console.log(`[WORKFLOW] Final triggers:`, workflowData.triggers);
-    }
-
-    // Convert flat array to 2D if needed (backwards compatibility)
-    if (
-      workflowData.steps.length > 0 &&
-      !Array.isArray(workflowData.steps[0])
-    ) {
-      workflowData.steps = (workflowData.steps as unknown as Step[]).map(
-        (step) => [step],
+      console.log(
+        `[WORKFLOW] Phases: ${phases.length}, Triggers: ${triggers.length}`,
       );
     }
 
-    // 4. Parse inputs
     const workflowInput =
       typeof execution.inputs === "string"
         ? JSON.parse(execution.inputs)
         : execution.inputs || {};
 
-    // 5. Update status
     if (execution.status === "pending") {
       await updateExecution(env, executionId, {
         status: "running",
@@ -821,10 +768,8 @@ export async function executeWorkflow(
       });
     }
 
-    // 6. Build initial context and load any existing step outputs (for crash recovery)
     const stepOutputs = new Map<string, unknown>();
 
-    // Load existing step results for crash recovery (deterministic replay)
     const existingStepResults = await getStepResults(env, executionId);
     for (const stepResult of existingStepResults) {
       if (
@@ -845,15 +790,10 @@ export async function executeWorkflow(
       workflowInput,
     };
 
-    // 7. Execute phases sequentially
     let lastOutput: unknown;
 
-    for (
-      let phaseIndex = 0;
-      phaseIndex < workflowData.steps.length;
-      phaseIndex++
-    ) {
-      const phase = workflowData.steps[phaseIndex];
+    for (let phaseIndex = 0; phaseIndex < phases.length; phaseIndex++) {
+      const phase = phases[phaseIndex];
 
       if (verbose) {
         console.log(
@@ -905,7 +845,6 @@ export async function executeWorkflow(
       // Pattern #6: Reset retry count after successful phase
       await updateExecution(env, executionId, {
         retry_count: 0,
-        last_error: undefined,
       });
     }
 
@@ -917,27 +856,16 @@ export async function executeWorkflow(
 
     // 9. Fire triggers
     let triggerResults: WorkflowExecutionResult["triggerResults"];
-    if (verbose) {
-      console.log(
-        `[WORKFLOW] Triggers to fire: ${workflowData.triggers?.length || 0}`,
-        workflowData.triggers,
-      );
-    }
-    if (workflowData.triggers && workflowData.triggers.length > 0) {
+    if (triggers.length > 0) {
       // Update context with final output
       ctx.output = lastOutput;
       if (verbose) {
         console.log(
-          `[WORKFLOW] Firing ${workflowData.triggers.length} triggers with output:`,
+          `[WORKFLOW] Firing ${triggers.length} triggers with output:`,
           lastOutput,
         );
       }
-      triggerResults = await fireTriggers(
-        env,
-        workflowData.triggers,
-        ctx,
-        executionId,
-      );
+      triggerResults = await fireTriggers(env, triggers, ctx, executionId);
       if (verbose) {
         console.log(`[WORKFLOW] Trigger results:`, triggerResults);
       }
@@ -949,12 +877,13 @@ export async function executeWorkflow(
       output: lastOutput as Record<string, unknown>,
       completed_at_epoch_ms: Date.now(),
       retry_count: 0,
-      last_error: undefined,
     });
 
     if (verbose) {
       console.log(
-        `[WORKFLOW] Execution ${executionId} completed in ${Date.now() - startTime}ms`,
+        `[WORKFLOW] Execution ${executionId} completed in ${
+          Date.now() - startTime
+        }ms`,
       );
     }
 
@@ -970,8 +899,6 @@ export async function executeWorkflow(
       status: "failed",
       error: error instanceof Error ? error.message : String(error),
       retry_count: retryCount + 1,
-      last_error: error instanceof Error ? error.message : String(error),
-      last_retry_at: new Date().toISOString(),
     });
 
     return {

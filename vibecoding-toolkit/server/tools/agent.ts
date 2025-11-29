@@ -413,7 +413,11 @@ export const createDeleteTool = (env: Env) =>
     id: "COLLECTION_AGENT_DELETE",
     description: "Delete an agent by ID",
     inputSchema: DELETE_BINDING.inputSchema,
-    outputSchema: DELETE_BINDING.outputSchema,
+    outputSchema: z.object({
+      item: z.object({
+        id: z.string(),
+      }),
+    }),
     execute: async ({
       context,
     }: {
@@ -429,7 +433,9 @@ export const createDeleteTool = (env: Env) =>
       `;
 
       return {
-        item: agent,
+        item: {
+          id,
+        },
       };
     },
   });

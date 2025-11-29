@@ -67,7 +67,7 @@ export class QueueScheduler implements WorkflowScheduler {
     if (delaySeconds > MAX_QUEUE_DELAY_SECONDS) {
       throw new Error(
         `Queue scheduler max delay is 7 days (${MAX_QUEUE_DELAY_SECONDS}s). ` +
-          `Requested: ${delaySeconds}s (${options?.runAt?.toISOString()})`,
+          `Requested: ${delaySeconds}s (${options?.runAt?.getTime()})`,
       );
     }
 
