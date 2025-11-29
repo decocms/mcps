@@ -1,94 +1,242 @@
 /**
- * Agent Collection Tools
+ * Agent Binding Implementation
  *
- * Implements the 5 standard collection operations for agents:
- * - LIST: Query agents with filtering, sorting, and pagination
- * - GET: Fetch a single agent by ID
- * - INSERT: Create a new agent
- * - UPDATE: Update an existing agent
- * - DELETE: Delete an agent
+ * Implements the AGENTS_BINDING from @decocms/bindings/agent:
+ * - COLLECTION_AGENT_LIST: Query agents with filtering, sorting, and pagination
+ * - COLLECTION_AGENT_GET: Fetch a single agent by ID
+ * - COLLECTION_AGENT_CREATE: Create a new agent
+ * - COLLECTION_AGENT_UPDATE: Update an existing agent
+ * - COLLECTION_AGENT_DELETE: Delete an agent
  */
 
-import { BaseCollectionEntitySchema } from "@decocms/bindings/collections";
-import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { AGENTS_BINDING, AgentSchema } from "@decocms/bindings/agent";
 import {
-  buildOrderByClause,
-  buildWhereClause,
-  ensureTable,
-} from "../lib/postgres.ts";
-import type { Env } from "../main.ts";
-import {
-  CollectionListInputSchema,
   CollectionGetInputSchema,
-  createCollectionListOutputSchema,
   createCollectionGetOutputSchema,
-  createCollectionInsertInputSchema,
-  createCollectionInsertOutputSchema,
-  createCollectionUpdateInputSchema,
-  createCollectionUpdateOutputSchema,
-  CollectionDeleteInputSchema,
-  CollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
+import { createPrivateTool } from "@decocms/runtime/mastra";
+import { z } from "zod";
+import { ensureAgentsTable, getPostgres } from "../lib/postgres.ts";
+import type { Env } from "../main.ts";
 
-// Agent schema extending BaseCollectionEntitySchema
-const AgentSchema = BaseCollectionEntitySchema.extend({
-  description: z.string(),
-  instructions: z.string(),
-  tool_set: z.record(z.string(), z.array(z.string())),
-});
+// ============================================================================
+// Types
+// ============================================================================
+
+type WhereExpression = {
+  field?: string[];
+  operator?: string;
+  value?: unknown;
+  conditions?: WhereExpression[];
+};
+
+type OrderByExpression = Array<{
+  field: string[];
+  direction: string;
+  nulls?: string;
+}>;
+
+// Extract binding schemas
+const LIST_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_LIST",
+);
+const GET_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_GET",
+);
+const CREATE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_CREATE",
+);
+const UPDATE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_UPDATE",
+);
+const DELETE_BINDING = AGENTS_BINDING.find(
+  (b) => b.name === "COLLECTION_AGENT_DELETE",
+);
+
+if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
+  throw new Error("COLLECTION_AGENT_LIST binding not found or missing schemas");
+}
+if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
+  throw new Error("COLLECTION_AGENT_GET binding not found or missing schemas");
+}
+if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_CREATE binding not found or missing schemas",
+  );
+}
+if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_UPDATE binding not found or missing schemas",
+  );
+}
+if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_AGENT_DELETE binding not found or missing schemas",
+  );
+}
+
+// ============================================================================
+// Standard Agent (always available)
+// ============================================================================
+
+const STANDARD_AGENT: z.infer<typeof AgentSchema> = {
+  id: "standard",
+  title: "Standard Agent",
+  created_at: "2024-01-01T00:00:00.000Z",
+  updated_at: "2024-01-01T00:00:00.000Z",
+  created_by: undefined,
+  updated_by: undefined,
+  description: "The default standard agent",
+  instructions: "",
+  tool_set: {},
+  avatar: "https://assets.webdraw.app/uploads/capy.png",
+};
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 /**
- * Transform database row to match AgentSchema
+ * Build SQL WHERE clause from filter expression
  */
-function transformDbRowToAgent(row: any): z.infer<typeof AgentSchema> {
-  return {
-    id: row.id,
-    title: row.title,
-    created_at:
-      row.created_at instanceof Date
-        ? row.created_at.toISOString()
-        : row.created_at,
-    updated_at:
-      row.updated_at instanceof Date
-        ? row.updated_at.toISOString()
-        : row.updated_at,
-    created_by: row.created_by || undefined,
-    updated_by: row.updated_by || undefined,
-    description: row.description,
-    instructions: row.instructions,
-    tool_set:
-      typeof row.tool_set === "string"
-        ? JSON.parse(row.tool_set)
-        : row.tool_set || {},
-  };
+function buildWhereClause(
+  whereExpr: WhereExpression | undefined,
+  params: unknown[] = [],
+): { clause: string; params: unknown[] } {
+  if (!whereExpr) {
+    return { clause: "", params };
+  }
+
+  // Simple condition
+  if (
+    "field" in whereExpr &&
+    "operator" in whereExpr &&
+    !("conditions" in whereExpr)
+  ) {
+    const fieldPath = whereExpr.field;
+    if (!fieldPath) return { clause: "", params };
+    const fieldName = fieldPath[fieldPath.length - 1];
+    const paramIndex = params.length + 1;
+
+    switch (whereExpr.operator) {
+      case "eq":
+        params.push(whereExpr.value);
+        return { clause: `${fieldName} = $${paramIndex}`, params };
+      case "gt":
+        params.push(whereExpr.value);
+        return { clause: `${fieldName} > $${paramIndex}`, params };
+      case "gte":
+        params.push(whereExpr.value);
+        return { clause: `${fieldName} >= $${paramIndex}`, params };
+      case "lt":
+        params.push(whereExpr.value);
+        return { clause: `${fieldName} < $${paramIndex}`, params };
+      case "lte":
+        params.push(whereExpr.value);
+        return { clause: `${fieldName} <= $${paramIndex}`, params };
+      case "in": {
+        const values = Array.isArray(whereExpr.value)
+          ? whereExpr.value
+          : [whereExpr.value];
+        params.push(values);
+        return { clause: `${fieldName} = ANY($${paramIndex})`, params };
+      }
+      case "like":
+      case "contains":
+        params.push(`%${whereExpr.value}%`);
+        return { clause: `${fieldName} ILIKE $${paramIndex}`, params };
+      default:
+        throw new Error(`Unsupported operator: ${whereExpr.operator}`);
+    }
+  }
+
+  // Logical condition (and, or, not)
+  if ("operator" in whereExpr && "conditions" in whereExpr) {
+    const conditions = (whereExpr.conditions || []).map((cond) => {
+      const result = buildWhereClause(cond, params);
+      params = result.params;
+      return result.clause;
+    });
+
+    switch (whereExpr.operator) {
+      case "and":
+        return { clause: `(${conditions.join(" AND ")})`, params };
+      case "or":
+        return { clause: `(${conditions.join(" OR ")})`, params };
+      case "not":
+        return { clause: `NOT (${conditions[0]})`, params };
+      default:
+        throw new Error(`Unsupported logical operator: ${whereExpr.operator}`);
+    }
+  }
+
+  return { clause: "", params };
 }
 
 /**
- * LIST Tool - Query agents with filtering, sorting, and pagination
+ * Build SQL ORDER BY clause from sort expression
+ */
+function buildOrderByClause(
+  orderByExpr: OrderByExpression | undefined,
+): string {
+  if (!orderByExpr || orderByExpr.length === 0) {
+    return "ORDER BY created_at DESC";
+  }
+
+  const orderClauses = orderByExpr.map((order) => {
+    const fieldPath = order.field;
+    const fieldName = fieldPath[fieldPath.length - 1];
+    const direction = order.direction.toUpperCase();
+    const nulls = order.nulls ? ` NULLS ${order.nulls.toUpperCase()}` : "";
+    return `${fieldName} ${direction}${nulls}`;
+  });
+
+  return `ORDER BY ${orderClauses.join(", ")}`;
+}
+
+// ============================================================================
+// Tool Implementations
+// ============================================================================
+
+/**
+ * COLLECTION_AGENT_LIST - Query agents with filtering, sorting, and pagination
  */
 export const createListTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_LIST",
+    id: "COLLECTION_AGENT_LIST",
     description: "List agents with filtering, sorting, and pagination",
-    inputSchema: CollectionListInputSchema,
-    outputSchema: createCollectionListOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
-      await ensureTable(env, "agents");
+    inputSchema: LIST_BINDING.inputSchema,
+    outputSchema: LIST_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof LIST_BINDING.inputSchema>;
+    }) => {
+      // If POSTGRES is not available, return only the standard agent
+      if (!env.POSTGRES) {
+        return {
+          items: [STANDARD_AGENT],
+          totalCount: 1,
+          hasMore: false,
+        };
+      }
+
+      await ensureAgentsTable(env);
+      const sql = getPostgres(env);
 
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       // Build WHERE clause
       let whereClause = "";
-      let params: any[] = [];
+      let params: unknown[] = [];
       if (where) {
-        const result = buildWhereClause(where, params);
+        const result = buildWhereClause(where as WhereExpression, params);
         whereClause = result.clause ? `WHERE ${result.clause}` : "";
         params = result.params;
       }
 
       // Build ORDER BY clause
-      const orderByClause = buildOrderByClause(orderBy);
+      const orderByClause = buildOrderByClause(orderBy as OrderByExpression);
 
       // Query items with pagination
       const query = `
@@ -98,65 +246,72 @@ export const createListTool = (env: Env) =>
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `;
 
-      const itemsResult = await env.POSTGRES.RUN_SQL({
-        query,
-        params: [...params, limit, offset],
-      });
+      const items = await sql.unsafe(query, [...params, limit, offset]);
 
       // Get total count
       const countQuery = `SELECT COUNT(*) as count FROM agents ${whereClause}`;
-      const countResult = await env.POSTGRES.RUN_SQL({
-        query: countQuery,
-        params,
-      });
-      const totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
+      const countResult = await sql.unsafe(countQuery, params);
+      const totalCount = parseInt(countResult[0]?.count || "0", 10);
 
       return {
-        items: itemsResult.rows.map((item: any) => transformDbRowToAgent(item)),
+        items: items.map((item: any) => ({
+          ...item,
+          tool_set: item.tool_set || {},
+        })),
         totalCount,
-        hasMore: offset + itemsResult.rows.length < totalCount,
+        hasMore: offset + items.length < totalCount,
       };
     },
   });
 
 /**
- * GET Tool - Fetch a single agent by ID
+ * COLLECTION_AGENT_GET - Fetch a single agent by ID
  */
 export const createGetTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_GET",
+    id: "COLLECTION_AGENT_GET",
     description: "Get a single agent by ID",
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(AgentSchema),
     execute: async ({ context }) => {
-      await ensureTable(env, "agents");
+      await ensureAgentsTable(env);
+      const sql = getPostgres(env);
 
       const { id } = context;
 
-      const result = await env.POSTGRES.RUN_SQL({
-        query: "SELECT * FROM agents WHERE id = $1 LIMIT 1",
-        params: [id],
-      });
+      const result = await sql`
+        SELECT * FROM agents WHERE id = ${id} LIMIT 1
+      `;
 
-      const item = result.rows[0] || null;
+      const item = result[0] || null;
 
       return {
-        item: item ? transformDbRowToAgent(item) : null,
+        item: item
+          ? ({
+              ...item,
+              tool_set: item.tool_set || {},
+            } as z.infer<typeof AgentSchema>)
+          : null,
       };
     },
   });
 
 /**
- * INSERT Tool - Create a new agent
+ * COLLECTION_AGENT_CREATE - Create a new agent
  */
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_INSERT",
+    id: "COLLECTION_AGENT_CREATE",
     description: "Create a new agent",
-    inputSchema: createCollectionInsertInputSchema(AgentSchema),
-    outputSchema: createCollectionInsertOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
-      await ensureTable(env, "agents");
+    inputSchema: CREATE_BINDING.inputSchema,
+    outputSchema: CREATE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof CREATE_BINDING.inputSchema>;
+    }) => {
+      await ensureAgentsTable(env);
+      const sql = getPostgres(env);
 
       const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
@@ -164,46 +319,49 @@ export const createInsertTool = (env: Env) =>
 
       const { data } = context;
 
-      const result = await env.POSTGRES.RUN_SQL({
-        query: `
-          INSERT INTO agents (
-            id, title, created_at, updated_at, created_by, updated_by,
-            description, instructions, tool_set
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9
-          )
-          RETURNING *
-        `,
-        params: [
-          id,
-          data.title,
-          now,
-          now,
-          user?.id || null,
-          user?.id || null,
-          data.description,
-          data.instructions,
-          JSON.stringify(data.tool_set || {}),
-        ],
-      });
+      const result = await sql`
+        INSERT INTO agents (
+          id, title, created_at, updated_at, created_by, updated_by,
+          description, instructions, tool_set
+        ) VALUES (
+          ${id},
+          ${data.title},
+          ${now},
+          ${now},
+          ${user?.id || null},
+          ${user?.id || null},
+          ${data.description},
+          ${data.instructions},
+          ${JSON.stringify(data.tool_set || {})}
+        )
+        RETURNING *
+      `;
 
       return {
-        item: transformDbRowToAgent(result.rows[0]),
+        item: {
+          ...result[0],
+          tool_set: result[0].tool_set || {},
+        } as z.infer<typeof AgentSchema>,
       };
     },
   });
 
 /**
- * UPDATE Tool - Update an existing agent
+ * COLLECTION_AGENT_UPDATE - Update an existing agent
  */
 export const createUpdateTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_UPDATE",
+    id: "COLLECTION_AGENT_UPDATE",
     description: "Update an existing agent",
-    inputSchema: createCollectionUpdateInputSchema(AgentSchema),
-    outputSchema: createCollectionUpdateOutputSchema(AgentSchema),
-    execute: async ({ context }) => {
-      await ensureTable(env, "agents");
+    inputSchema: UPDATE_BINDING.inputSchema,
+    outputSchema: UPDATE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof UPDATE_BINDING.inputSchema>;
+    }) => {
+      await ensureAgentsTable(env);
+      const sql = getPostgres(env);
 
       const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
@@ -211,82 +369,67 @@ export const createUpdateTool = (env: Env) =>
       const { id, data } = context;
 
       // Build SET clause dynamically based on provided fields
-      const setClauses: string[] = [];
-      const params: any[] = [];
-      let paramIndex = 1;
+      const updates: any = {
+        updated_at: now,
+        updated_by: user?.id || null,
+      };
 
-      // Always update these fields
-      setClauses.push(`updated_at = $${paramIndex++}`);
-      params.push(now);
-
-      setClauses.push(`updated_by = $${paramIndex++}`);
-      params.push(user?.id || null);
-
-      // Conditionally update other fields
-      if (data.title !== undefined) {
-        setClauses.push(`title = $${paramIndex++}`);
-        params.push(data.title);
-      }
+      if (data.title !== undefined) updates.title = data.title;
       if (data.description !== undefined) {
-        setClauses.push(`description = $${paramIndex++}`);
-        params.push(data.description);
+        updates.description = data.description;
       }
       if (data.instructions !== undefined) {
-        setClauses.push(`instructions = $${paramIndex++}`);
-        params.push(data.instructions);
+        updates.instructions = data.instructions;
       }
       if (data.tool_set !== undefined) {
-        setClauses.push(`tool_set = $${paramIndex++}`);
-        params.push(JSON.stringify(data.tool_set));
+        updates.tool_set = JSON.stringify(data.tool_set);
       }
 
-      // Add id as the last parameter
-      params.push(id);
-
-      const query = `
+      const result = await sql`
         UPDATE agents
-        SET ${setClauses.join(", ")}
-        WHERE id = $${paramIndex}
+        SET ${sql(updates)}
+        WHERE id = ${id}
         RETURNING *
       `;
 
-      const result = await env.POSTGRES.RUN_SQL({
-        query,
-        params,
-      });
-
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         throw new Error(`Agent with id ${id} not found`);
       }
 
       return {
-        item: transformDbRowToAgent(result.rows[0]),
+        item: {
+          ...result[0],
+          tool_set: result[0].tool_set || {},
+        } as z.infer<typeof AgentSchema>,
       };
     },
   });
 
 /**
- * DELETE Tool - Delete an agent by ID
+ * COLLECTION_AGENT_DELETE - Delete an agent by ID
  */
 export const createDeleteTool = (env: Env) =>
   createPrivateTool({
-    id: "DECO_COLLECTION_AGENTS_DELETE",
+    id: "COLLECTION_AGENT_DELETE",
     description: "Delete an agent by ID",
-    inputSchema: CollectionDeleteInputSchema,
-    outputSchema: CollectionDeleteOutputSchema,
-    execute: async ({ context }) => {
-      await ensureTable(env, "agents");
+    inputSchema: DELETE_BINDING.inputSchema,
+    outputSchema: DELETE_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof DELETE_BINDING.inputSchema>;
+    }) => {
+      await ensureAgentsTable(env);
+      const sql = getPostgres(env);
 
       const { id } = context;
 
-      await env.POSTGRES.RUN_SQL({
-        query: "DELETE FROM agents WHERE id = $1",
-        params: [id],
-      });
+      await sql`
+        DELETE FROM agents WHERE id = ${id}
+      `;
 
       return {
-        success: true,
-        id,
+        item: agent,
       };
     },
   });

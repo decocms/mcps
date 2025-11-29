@@ -12,6 +12,15 @@ export async function parseApiError(
 
   try {
     const errorJson = JSON.parse(errorText);
+    if (errorJson.isError && Array.isArray(errorJson.content)) {
+      const textContent = errorJson.content.find(
+        (item: any) => item.type === "text" && item.text,
+      );
+      if (textContent?.text) {
+        throw new Error(textContent.text);
+      }
+    }
+
     const errorMessage = errorJson.error?.message || errorText;
     throw new Error(errorMessage);
   } catch (error) {
@@ -24,18 +33,31 @@ export async function parseApiError(
   }
 }
 
-export async function makeApiRequest(
+export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
+
+export async function makeApiRequest<T = any>(
   url: string,
   options: RequestInit,
   apiName: string,
-): Promise<any> {
+  responseType: ApiResponseType = "json",
+): Promise<T> {
   const response = await fetch(url, options);
 
   if (!response.ok) {
     await parseApiError(response, apiName);
   }
 
-  return await response.json();
+  switch (responseType) {
+    case "text":
+      return (await response.text()) as T;
+    case "blob":
+      return (await response.blob()) as T;
+    case "arrayBuffer":
+      return (await response.arrayBuffer()) as T;
+    case "json":
+    default:
+      return (await response.json()) as T;
+  }
 }
 
 /**
@@ -137,6 +159,24 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{
     base64,
     mimeType: contentType,
   };
+}
+
+export async function downloadFile(url: string): Promise<Blob> {
+  console.log(`[downloadFile] Fetching file from: ${url.substring(0, 100)}...`);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch file: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const blob = await response.blob();
+  console.log(
+    `[downloadFile] Successfully fetched ${blob.size} bytes (${blob.type})`,
+  );
+
+  return blob;
 }
 
 export async function downloadWithAuth(

@@ -13,10 +13,14 @@ import { createApifyTools } from "./apify.ts";
  * Factory function to create all tools with env context
  * Follows Sora pattern for dynamic tool creation with cleaner code
  */
-export const createTools = (env: Env) => [
-  ...userTools,
-  ...createApifyTools(env),
-];
+export const createTools = (env: Env) => {
+  try {
+    return [...userTools, ...createApifyTools(env)];
+  } catch (error) {
+    console.error("Error creating tools:", error);
+    return [...userTools];
+  }
+};
 
 // Re-export for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";

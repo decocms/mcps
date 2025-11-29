@@ -1,9 +1,10 @@
 /**
  * Models Module
- * Tools for model discovery, comparison, and recommendations
+ * Additional tools for model comparison and recommendations
+ *
+ * Note: List and Get tools are now part of the LLM binding
+ * implementation in server/tools/llm-binding.ts
  */
 
-export { createListModelsTool } from "./list.ts";
-export { createGetModelTool } from "./get.ts";
 export { createCompareModelsTool } from "./compare.ts";
 export { createRecommendModelTool } from "./recommend.ts";

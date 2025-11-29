@@ -2,7 +2,7 @@
 
 ## Project Description
 
-**Gemini Nano Banana MCP** is a Model Context Protocol (MCP) server that integrates the Gemini 2.5 Flash Image Preview API for text-to-image generation. This project is hosted as a Cloudflare Workers application.
+**Gemini Nano Banana MCP** is a Model Context Protocol (MCP) server that integrates the Gemini 2.5 Flash Image Preview and nanoBanana Pro API for text-to-image generation. This project is hosted as a Cloudflare Workers application.
 
 ### Purpose
 

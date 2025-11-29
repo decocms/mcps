@@ -9,6 +9,7 @@ import type { Env } from "server/main";
 import {
   assertEnvKey,
   makeApiRequest,
+  parseApiError,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 import { APIFY_API_BASE_URL } from "../../constants";
 
@@ -32,7 +33,14 @@ async function makeApifyRequest<T = unknown>(
   path: string,
   options?: ApifyRequestOptions,
 ): Promise<T> {
-  assertEnvKey(env, "APIFY_TOKEN");
+  // Validate token only when making actual requests, not during tool creation
+  try {
+    assertEnvKey(env, "APIFY_TOKEN");
+  } catch {
+    throw new Error(
+      "APIFY_TOKEN is not set in environment. Please configure your Apify API token.",
+    );
+  }
   const token = (env as unknown as Record<string, string>).APIFY_TOKEN;
 
   let url = `${APIFY_API_BASE_URL}${path}`;
@@ -129,8 +137,7 @@ export class ApifyClient {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      await parseApiError(response, "Apify");
     }
 
     // Handle empty responses

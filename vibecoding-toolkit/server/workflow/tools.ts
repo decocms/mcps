@@ -26,7 +26,6 @@ import {
 import { runFullRecovery } from "../lib/orphan-recovery.ts";
 import {
   CollectionDeleteInputSchema,
-  CollectionDeleteOutputSchema,
   CollectionGetInputSchema,
   CollectionListInputSchema,
   createCollectionGetOutputSchema,
@@ -347,7 +346,10 @@ export const createDeleteTool = (env: Env) =>
     id: "DECO_COLLECTION_WORKFLOWS_DELETE",
     description: "Delete a workflow by ID",
     inputSchema: CollectionDeleteInputSchema,
-    outputSchema: CollectionDeleteOutputSchema,
+    outputSchema: z.object({
+      success: z.boolean(),
+      id: z.string(),
+    }),
     execute: async ({ context }) => {
       await ensureTable(env, "workflows");
 

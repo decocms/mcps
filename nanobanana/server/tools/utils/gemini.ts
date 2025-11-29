@@ -6,9 +6,12 @@ import {
   makeApiRequest,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 
-export const models = z.enum(["gemini-2.5-flash-image-preview"]);
+export const models = z.enum([
+  "gemini-2.5-flash-image-preview",
+  "gemini-3-pro-image-preview",
+]);
+export type Model = z.infer<typeof models>;
 
-// Tipagem completa baseada na documentação oficial da API Gemini
 export const GeminiResponseSchema = z.object({
   candidates: z.array(
     z.object({
@@ -131,13 +134,17 @@ export async function generateImage(
   prompt: string,
   imageUrl?: string,
   aspectRatio?: string,
+  model?: Model,
 ): Promise<GeminiResponse> {
   const content: any[] = [{ type: "text", text: prompt }];
   if (imageUrl) {
     content.push({ type: "image_url", image_url: { url: imageUrl } });
   }
+
+  const modelToUse = model || "gemini-2.5-flash-image-preview";
+
   const body: any = {
-    model: "google/gemini-2.5-flash-image-preview",
+    model: `google/${modelToUse}`,
     messages: [
       {
         role: "user",
@@ -157,6 +164,10 @@ export async function generateImage(
 }
 
 export const createGeminiClient = (env: Env) => ({
-  generateImage: (prompt: string, imageUrl?: string, aspectRatio?: string) =>
-    generateImage(env, prompt, imageUrl, aspectRatio),
+  generateImage: (
+    prompt: string,
+    imageUrl?: string,
+    aspectRatio?: string,
+    model?: Model,
+  ) => generateImage(env, prompt, imageUrl, aspectRatio, model),
 });
