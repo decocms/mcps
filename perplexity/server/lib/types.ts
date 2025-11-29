@@ -16,7 +16,8 @@ export const PerplexityModels = [
   "sonar-reasoning",
 ] as const;
 
-export type PerplexityModel = (typeof PerplexityModels)[number];
+export const PerplexityModelSchema = z.enum(PerplexityModels);
+export type PerplexityModel = z.infer<typeof PerplexityModelSchema>;
 
 // Web search options
 export interface WebSearchOptions {

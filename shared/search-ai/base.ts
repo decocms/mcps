@@ -116,25 +116,26 @@ export function createSearchAITools<
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
+  // Create schemas once, outside of tool functions
+  const askInputSchema =
+    options.askTool.inputSchema ??
+    (options.metadata.models
+      ? createAskInputSchema(options.metadata.models)
+      : AskInputSchema);
+
   /**
    * ASK tool - Simple question/answer
    */
 
   const ask = (env: TEnv) => {
-    const inputSchema =
-      options.askTool.inputSchema ??
-      (options.metadata.models
-        ? createAskInputSchema(options.metadata.models)
-        : AskInputSchema);
-
-    type AskInputType = z.infer<typeof inputSchema>;
+    type AskInputType = z.infer<typeof askInputSchema>;
 
     return createPrivateTool({
       id: "ASK",
       description:
         options.metadata.description ||
         `Ask a question to ${options.metadata.provider} and get web-backed answers`,
-      inputSchema,
+      inputSchema: askInputSchema,
       outputSchema: SearchAIOutputSchema,
       execute: async ({ context }: { context: AskInputType }) => {
         const doExecute = async (): Promise<SearchAIOutput> => {
@@ -203,24 +204,25 @@ export function createSearchAITools<
     });
   };
 
+  // Create chat schema once, outside of tool function
+  const chatInputSchema =
+    options.chatTool.inputSchema ??
+    (options.metadata.models
+      ? createChatInputSchema(options.metadata.models)
+      : ChatInputSchema);
+
   /**
    * CHAT tool - Multi-turn conversation
    */
   const chat = (env: TEnv) => {
-    const inputSchema =
-      options.chatTool.inputSchema ??
-      (options.metadata.models
-        ? createChatInputSchema(options.metadata.models)
-        : ChatInputSchema);
-
-    type ChatInputType = z.infer<typeof inputSchema>;
+    type ChatInputType = z.infer<typeof chatInputSchema>;
 
     return createPrivateTool({
       id: "CHAT",
       description:
         `Have a multi-turn conversation with ${options.metadata.provider}. ` +
         `This allows you to provide message history for more contextual responses.`,
-      inputSchema,
+      inputSchema: chatInputSchema,
       outputSchema: SearchAIOutputSchema,
       execute: async ({ context }: { context: ChatInputType }) => {
         const doExecute = async (): Promise<SearchAIOutput> => {

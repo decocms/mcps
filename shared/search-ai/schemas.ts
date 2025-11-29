@@ -66,9 +66,28 @@ export type AskInput = z.infer<typeof AskInputSchema>;
 export const createAskInputSchema = <T extends string>(
   models: readonly T[],
 ) => {
-  return AskInputSchema.omit({ model: true }).extend({
-    model: z.enum(models as [T, ...T[]]),
-  });
+  return z
+    .object({
+      prompt: z.string().describe("The question or prompt to ask the AI"),
+      model: z.enum(models as [T, ...T[]]).describe("The AI model to use"),
+      max_tokens: z
+        .number()
+        .optional()
+        .describe("Maximum number of tokens in the response"),
+      temperature: z
+        .number()
+        .min(0)
+        .max(2)
+        .optional()
+        .describe("Controls randomness (0-2). Lower is more focused"),
+      top_p: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Controls diversity via nucleus sampling (0-1)"),
+    })
+    .merge(SearchOptionsSchema);
 };
 
 // Schema for multi-turn chat
@@ -103,9 +122,31 @@ export type ChatInput = z.infer<typeof ChatInputSchema>;
 export const createChatInputSchema = <T extends string>(
   models: readonly T[],
 ) => {
-  return ChatInputSchema.omit({ model: true }).extend({
-    model: z.enum(models as [T, ...T[]]),
-  });
+  return z
+    .object({
+      messages: z
+        .array(MessageSchema)
+        .min(1)
+        .describe("Array of conversation messages"),
+      model: z.enum(models as [T, ...T[]]).describe("The AI model to use"),
+      max_tokens: z
+        .number()
+        .optional()
+        .describe("Maximum number of tokens in the response"),
+      temperature: z
+        .number()
+        .min(0)
+        .max(2)
+        .optional()
+        .describe("Controls randomness (0-2). Lower is more focused"),
+      top_p: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Controls diversity via nucleus sampling (0-1)"),
+    })
+    .merge(SearchOptionsSchema);
 };
 
 // Output schema for search AI responses

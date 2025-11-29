@@ -7,6 +7,7 @@ import type { Env } from "../main";
 import { createPerplexityClient } from "../lib/perplexity-client";
 import {
   PerplexityModels,
+  PerplexityModelSchema,
   type PerplexityModel,
   type Message,
 } from "../lib/types";
@@ -23,7 +24,7 @@ function getPerplexityClient(env: Env) {
 async function executePerplexityRequest({
   client,
   messages,
-  model = "sonar",
+  model,
   max_tokens,
   temperature = 0.2,
   top_p = 0.9,
@@ -45,9 +46,13 @@ async function executePerplexityRequest({
   search_recency_filter?: string;
   search_context_size?: "low" | "medium" | "high" | "maximum";
 }): Promise<SearchAICallbackOutput> {
+  // Parse and validate model with default fallback
+  const modelToUse = model ?? "sonar";
+  const parsedModel: PerplexityModel = PerplexityModelSchema.parse(modelToUse);
+
   try {
     const response = await client.chatCompletion({
-      model,
+      model: parsedModel,
       messages,
       max_tokens,
       temperature,
@@ -64,7 +69,7 @@ async function executePerplexityRequest({
 
     return {
       answer,
-      model: response.model,
+      model: parsedModel,
       finish_reason: response.choices[0]?.finish_reason,
       usage: {
         prompt_tokens: response.usage.prompt_tokens,
