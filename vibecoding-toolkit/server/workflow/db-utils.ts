@@ -1,5 +1,5 @@
 import type { Env } from "../main.ts";
-import { sleep } from "./retry.ts";
+import { sleep } from "../lib/retry.ts";
 
 /**
  * Configuration for database retry behavior

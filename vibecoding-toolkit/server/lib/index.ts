@@ -39,7 +39,7 @@ export {
   withDbRetry,
   markExecutionCompleted,
   type DbRetryConfig,
-} from "./db-utils.ts";
+} from "../workflow/db-utils.ts";
 
 // Orphan recovery utilities (for serverless cron jobs)
 export {
