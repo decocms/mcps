@@ -191,7 +191,9 @@ export async function markExecutionFailed(
     });
   });
 
-  console.log(`[DB] Marked execution ${executionId} as failed: ${errorMessage}`);
+  console.log(
+    `[DB] Marked execution ${executionId} as failed: ${errorMessage}`,
+  );
 }
 
 /**
@@ -303,8 +305,11 @@ export async function trackStepError(
       params: [executionId, stepId],
     });
 
-    const row = existing.result[0]?.results?.[0] as { errors?: string } | undefined;
-    let errors: Array<{ message: string; timestamp: string; attempt: number }> = [];
+    const row = existing.result[0]?.results?.[0] as
+      | { errors?: string }
+      | undefined;
+    let errors: Array<{ message: string; timestamp: string; attempt: number }> =
+      [];
 
     if (row?.errors) {
       try {
@@ -430,7 +435,8 @@ export async function incrementRetries(
     });
   });
 
-  const row = result.result[0]?.results?.[0] as { retry_count: number } | undefined;
+  const row = result.result[0]?.results?.[0] as
+    | { retry_count: number }
+    | undefined;
   return row?.retry_count ?? 0;
 }
-

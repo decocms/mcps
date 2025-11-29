@@ -1,14 +1,14 @@
-const ts = require('typescript');
+const ts = require("typescript");
 
 function convertTsToJs(tsCode) {
   const result = ts.transpileModule(tsCode, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2015,
       module: ts.ModuleKind.ESNext,
-      removeComments: false
-    }
+      removeComments: false,
+    },
   });
-  
+
   return result.outputText;
 }
 

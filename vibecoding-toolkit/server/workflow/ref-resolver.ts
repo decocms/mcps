@@ -101,11 +101,13 @@ export function getValueByPath(obj: unknown, path: string): unknown {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    
+
     if (current === null || current === undefined) {
       // Better error context: show which part of the path failed
       const traversedPath = keys.slice(0, i).join(".");
-      console.warn(`[REF] Null/undefined at path "${traversedPath}" while accessing "${key}"`);
+      console.warn(
+        `[REF] Null/undefined at path "${traversedPath}" while accessing "${key}"`,
+      );
       return undefined;
     }
 
@@ -117,7 +119,9 @@ export function getValueByPath(obj: unknown, path: string): unknown {
     } else {
       // Trying to access property on primitive
       const traversedPath = keys.slice(0, i).join(".");
-      console.warn(`[REF] Cannot access "${key}" on primitive value at "${traversedPath}"`);
+      console.warn(
+        `[REF] Cannot access "${key}" on primitive value at "${traversedPath}"`,
+      );
       return undefined;
     }
   }
@@ -135,19 +139,30 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
     switch (parsed.type) {
       case "item": {
         if (ctx.item === undefined) {
-          return { value: undefined, error: "@item used outside of forEach loop" };
+          return {
+            value: undefined,
+            error: "@item used outside of forEach loop",
+          };
         }
         // Support @item.path for accessing properties on the current item
-        const value = parsed.path ? getValueByPath(ctx.item, parsed.path) : ctx.item;
+        const value = parsed.path
+          ? getValueByPath(ctx.item, parsed.path)
+          : ctx.item;
         if (value === undefined && parsed.path) {
-          return { value: undefined, error: `Path not found on item: @item.${parsed.path}` };
+          return {
+            value: undefined,
+            error: `Path not found on item: @item.${parsed.path}`,
+          };
         }
         return { value };
       }
 
       case "index": {
         if (ctx.index === undefined) {
-          return { value: undefined, error: "@index used outside of forEach loop" };
+          return {
+            value: undefined,
+            error: "@index used outside of forEach loop",
+          };
         }
         return { value: ctx.index };
       }
@@ -155,18 +170,27 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
       case "input": {
         const value = getValueByPath(ctx.workflowInput, parsed.path || "");
         if (value === undefined) {
-          return { value: undefined, error: `Input path not found: @input.${parsed.path}` };
+          return {
+            value: undefined,
+            error: `Input path not found: @input.${parsed.path}`,
+          };
         }
         return { value };
       }
 
       case "output": {
         if (ctx.output === undefined) {
-          return { value: undefined, error: "@output used before workflow completion" };
+          return {
+            value: undefined,
+            error: "@output used before workflow completion",
+          };
         }
         const value = getValueByPath(ctx.output, parsed.path || "");
         if (value === undefined) {
-          return { value: undefined, error: `Output path not found: @output.${parsed.path}` };
+          return {
+            value: undefined,
+            error: `Output path not found: @output.${parsed.path}`,
+          };
         }
         return { value };
       }
@@ -211,7 +235,8 @@ export interface ResolveResult {
 /**
  * Regex to match @refs in strings for interpolation
  */
-const AT_REF_PATTERN = /@([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
+const AT_REF_PATTERN =
+  /@([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
 
 /**
  * Resolve all @refs in an input object
@@ -315,4 +340,3 @@ export function extractRefs(input: unknown): string[] {
   extract(input);
   return refs;
 }
-

@@ -14,7 +14,11 @@
  * @see docs/SCHEDULER_ARCHITECTURE.md Section 5.2
  */
 
-import type { RunnableScheduler, ScheduleOptions, TickResult } from "./interface.ts";
+import type {
+  RunnableScheduler,
+  ScheduleOptions,
+  TickResult,
+} from "./interface.ts";
 
 /**
  * Database adapter interface for polling scheduler.
@@ -249,7 +253,9 @@ export class PollingScheduler implements RunnableScheduler {
       }
 
       if (verbose) {
-        console.log(`[POLLING] Tick complete: ${processed} processed, ${errors} errors`);
+        console.log(
+          `[POLLING] Tick complete: ${processed} processed, ${errors} errors`,
+        );
       }
 
       return { processed, errors: errors > 0 ? errors : undefined };
@@ -263,7 +269,10 @@ export class PollingScheduler implements RunnableScheduler {
    * Schedule an execution.
    * Creates a record in the database that will be picked up by the polling loop.
    */
-  async schedule(executionId: string, options?: ScheduleOptions): Promise<void> {
+  async schedule(
+    executionId: string,
+    options?: ScheduleOptions,
+  ): Promise<void> {
     await this.db.createExecution(executionId, {
       scheduledFor: options?.runAt,
     });
@@ -284,7 +293,9 @@ export class PollingScheduler implements RunnableScheduler {
   async cancel?(executionId: string): Promise<void> {
     // Note: Cancellation should be implemented in the database adapter
     // by setting the execution status to 'cancelled'
-    console.log(`[POLLING] Cancel requested for ${executionId} (implement in db adapter)`);
+    console.log(
+      `[POLLING] Cancel requested for ${executionId} (implement in db adapter)`,
+    );
   }
 
   /**
@@ -321,7 +332,10 @@ export class PollingScheduler implements RunnableScheduler {
       .finally(() => {
         // Schedule next poll
         if (this.running) {
-          this.pollTimeoutId = setTimeout(() => this.poll(), this.currentIntervalMs);
+          this.pollTimeoutId = setTimeout(
+            () => this.poll(),
+            this.currentIntervalMs,
+          );
         }
       });
   }
@@ -340,4 +354,3 @@ export function createPollingScheduler(
 ): PollingScheduler {
   return new PollingScheduler(db, config);
 }
-

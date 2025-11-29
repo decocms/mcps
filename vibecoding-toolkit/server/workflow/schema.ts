@@ -97,7 +97,10 @@ export const StepSchema = z.object({
   /**
    * Variable name for current item in forEach loop
    */
-  as: z.string().default("item").describe("Variable name for current loop item"),
+  as: z
+    .string()
+    .default("item")
+    .describe("Variable name for current loop item"),
 
   /**
    * Safety limit for forEach iterations
@@ -155,8 +158,14 @@ export const TriggerSchema = z.object({
 
   // === Execution config for triggered workflow ===
 
-  workflow_timeout_ms: z.number().optional().describe("Timeout for triggered workflow"),
-  max_retries: z.number().optional().describe("Max retries for triggered workflow"),
+  workflow_timeout_ms: z
+    .number()
+    .optional()
+    .describe("Timeout for triggered workflow"),
+  max_retries: z
+    .number()
+    .optional()
+    .describe("Max retries for triggered workflow"),
 });
 
 export type Trigger = z.infer<typeof TriggerSchema>;
@@ -188,7 +197,10 @@ export const WorkflowSchema = z.object({
   /**
    * Triggers to fire when execution completes successfully
    */
-  triggers: z.array(TriggerSchema).optional().describe("Workflows to trigger on completion"),
+  triggers: z
+    .array(TriggerSchema)
+    .optional()
+    .describe("Workflows to trigger on completion"),
 
   /**
    * Computed schemas from transform steps (set at creation time)
@@ -276,7 +288,12 @@ export type ExecutionState = z.infer<typeof ExecutionStateSchema>;
  * Validation Error - Error during workflow validation
  */
 export const ValidationErrorSchema = z.object({
-  type: z.enum(["missing_ref", "type_mismatch", "missing_schema", "invalid_typescript"]),
+  type: z.enum([
+    "missing_ref",
+    "type_mismatch",
+    "missing_schema",
+    "invalid_typescript",
+  ]),
   step: z.string(),
   field: z.string(),
   ref: z.string().optional(),
@@ -302,7 +319,9 @@ export function validateStepType(step: Step): boolean {
 /**
  * Get the step type
  */
-export function getStepType(step: Step): "tool" | "transform" | "sleep" | "invalid" {
+export function getStepType(
+  step: Step,
+): "tool" | "transform" | "sleep" | "invalid" {
   if (step.tool) return "tool";
   if (step.transform) return "transform";
   if (step.sleep) return "sleep";

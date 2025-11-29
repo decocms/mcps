@@ -19,8 +19,15 @@
  */
 
 import type { Env } from "./main.ts";
-import { type QueueMessage, QueueMessageSchema } from "./collections/workflow.ts";
-import { calculateBackoff, DEFAULT_RETRY_CONFIG, isRetryableError } from "./lib/retry.ts";
+import {
+  type QueueMessage,
+  QueueMessageSchema,
+} from "./collections/workflow.ts";
+import {
+  calculateBackoff,
+  DEFAULT_RETRY_CONFIG,
+  isRetryableError,
+} from "./lib/retry.ts";
 
 /**
  * Queue handler configuration
@@ -118,7 +125,7 @@ async function callExecutionTool(
   }
 
   try {
-    const data = await response.json() as ExecutionResult;
+    const data = (await response.json()) as ExecutionResult;
     return data;
   } catch (parseError) {
     return {
@@ -149,7 +156,12 @@ async function processMessage(
   env: Env,
   config: Required<QueueHandlerConfig>,
 ): Promise<void> {
-  const { executionId, retryCount = 0, enqueuedAt, authorization } = message.body;
+  const {
+    executionId,
+    retryCount = 0,
+    enqueuedAt,
+    authorization,
+  } = message.body;
 
   try {
     // 1. Check if message is stale
@@ -169,9 +181,8 @@ async function processMessage(
     // Retry messages (retryCount > 0) are THEMSELVES safety guards - if they
     // crash, orphan recovery will handle it. This prevents infinite safety
     // guard loops for completed executions.
-    const shouldScheduleSafetyGuard = 
-      config.enableSafetyGuard && 
-      retryCount === 0;
+    const shouldScheduleSafetyGuard =
+      config.enableSafetyGuard && retryCount === 0;
 
     if (shouldScheduleSafetyGuard) {
       const safetyMessage: QueueMessage = {
@@ -194,7 +205,12 @@ async function processMessage(
 
     // 3. Execute workflow via HTTP call to MCP tool
     // The tool handles all DB operations (status updates, retry tracking)
-    const result = await callExecutionTool(env, executionId, authorization, retryCount);
+    const result = await callExecutionTool(
+      env,
+      executionId,
+      authorization,
+      retryCount,
+    );
 
     // 4. Handle success - just ack, tool already updated DB
     if (result.success) {
@@ -224,7 +240,8 @@ async function processMessage(
       }
 
       // Fallback: manual retry if safety guard disabled
-      const delaySeconds = result.retryDelaySeconds ?? calculateBackoff(retryCount);
+      const delaySeconds =
+        result.retryDelaySeconds ?? calculateBackoff(retryCount);
 
       if (config.verbose) {
         console.log(

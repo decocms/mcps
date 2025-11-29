@@ -17,7 +17,12 @@ import { validateWorkflow } from "./validator.ts";
 import { executeWorkflow } from "./executor.ts";
 import { createExecution } from "../lib/execution-db.ts";
 import type { QueueMessage } from "../collections/workflow.ts";
-import { ensureTable, buildWhereClause, buildOrderByClause, ensureCollectionsTables } from "../lib/postgres.ts";
+import {
+  ensureTable,
+  buildWhereClause,
+  buildOrderByClause,
+  ensureCollectionsTables,
+} from "../lib/postgres.ts";
 import { runFullRecovery } from "../lib/orphan-recovery.ts";
 import {
   CollectionDeleteInputSchema,
@@ -53,7 +58,11 @@ function transformDbRowToWorkflow(row: unknown): WorkflowDb {
     id: r.id as string,
     name: r.name as string,
     description: r.description as string | undefined,
-    steps: r.steps ? (typeof r.steps === "string" ? JSON.parse(r.steps) : r.steps) : [],
+    steps: r.steps
+      ? typeof r.steps === "string"
+        ? JSON.parse(r.steps)
+        : r.steps
+      : [],
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
@@ -104,16 +113,18 @@ export const createListTool = (env: Env) =>
         params,
       });
       const totalCount = parseInt(
-        (countResult.result[0]?.results?.[0] as { count: string })?.count || "0",
+        (countResult.result[0]?.results?.[0] as { count: string })?.count ||
+          "0",
         10,
       );
 
       return {
-        items: itemsResult.result[0]?.results?.map((item: Record<string, unknown>) =>
-          transformDbRowToWorkflow(item),
+        items: itemsResult.result[0]?.results?.map(
+          (item: Record<string, unknown>) => transformDbRowToWorkflow(item),
         ),
         totalCount,
-        hasMore: offset + (itemsResult.result[0]?.results?.length || 0) < totalCount,
+        hasMore:
+          offset + (itemsResult.result[0]?.results?.length || 0) < totalCount,
       };
     },
   });
@@ -137,7 +148,9 @@ export const createGetTool = (env: Env) =>
       const item = result.result[0]?.results?.[0] || null;
 
       return {
-        item: item ? transformDbRowToWorkflow(item as Record<string, unknown>) : null,
+        item: item
+          ? transformDbRowToWorkflow(item as Record<string, unknown>)
+          : null,
       };
     },
   });
@@ -234,7 +247,9 @@ export const createInsertTool = (env: Env) =>
 
         return {
           success: true,
-          item: transformDbRowToWorkflow(result.result[0]?.results?.[0] as Record<string, unknown>),
+          item: transformDbRowToWorkflow(
+            result.result[0]?.results?.[0] as Record<string, unknown>,
+          ),
         };
       } catch (error) {
         return {
@@ -320,7 +335,9 @@ export const createUpdateTool = (env: Env) =>
       }
 
       return {
-        item: transformDbRowToWorkflow(result.result[0]?.results?.[0] as Record<string, unknown>),
+        item: transformDbRowToWorkflow(
+          result.result[0]?.results?.[0] as Record<string, unknown>,
+        ),
       };
     },
   });
@@ -358,7 +375,10 @@ export const executeWorkflowTool = (env: Env) =>
     description: "Execute a workflow with durable execution guarantees",
     inputSchema: z.object({
       executionId: z.string().describe("The workflow execution ID to process"),
-      retryCount: z.number().default(0).describe("Current retry count (managed by queue)"),
+      retryCount: z
+        .number()
+        .default(0)
+        .describe("Current retry count (managed by queue)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -439,20 +459,23 @@ export const createAndQueueExecutionTool = (env: Env) =>
     description: "Create a workflow execution and queue it for processing",
     inputSchema: z.object({
       workflowId: z.string().describe("The workflow ID to execute"),
-      inputs: z.record(z.unknown()).optional().describe("Input data for the workflow"),
+      inputs: z
+        .record(z.unknown())
+        .optional()
+        .describe("Input data for the workflow"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       executionId: z.string(),
     }),
     execute: async ({ context }) => {
-      console.log("🚀 ~ execute: ~ context:", context)
+      console.log("🚀 ~ execute: ~ context:", context);
       const execution = await createExecution(env, {
         workflow_id: context.workflowId,
         status: "pending",
         inputs: context.inputs,
       });
-      console.log("🚀 ~ execute: ~ execution:", execution)
+      console.log("🚀 ~ execute: ~ execution:", execution);
 
       const message: QueueMessage = {
         executionId: execution.id,
@@ -488,10 +511,16 @@ export const transformPreviewTool = (_env: Env) =>
         .optional(),
     }),
     execute: async ({ context }) => {
-      const { executeTransform, extractSchemas } = await import("./transform-executor.ts");
+      const { executeTransform, extractSchemas } = await import(
+        "./transform-executor.ts"
+      );
 
       const schemas = extractSchemas(context.code);
-      const result = await executeTransform(context.code, context.input, "preview");
+      const result = await executeTransform(
+        context.code,
+        context.input,
+        "preview",
+      );
 
       return {
         success: result.success,
@@ -506,12 +535,27 @@ export const transformPreviewTool = (_env: Env) =>
 export const recoverOrphansTool = (env: Env) =>
   createPrivateTool({
     id: "RECOVER_ORPHAN_EXECUTIONS",
-    description: "Recover orphaned and stuck workflow executions. Finds executions that got stuck due to worker crashes or network issues and re-queues them. Use force=true to recover immediately without waiting for lock expiry (useful for dev/testing when you know all workers are dead).",
+    description:
+      "Recover orphaned and stuck workflow executions. Finds executions that got stuck due to worker crashes or network issues and re-queues them. Use force=true to recover immediately without waiting for lock expiry (useful for dev/testing when you know all workers are dead).",
     inputSchema: z.object({
-      limit: z.number().default(100).describe("Maximum number of executions to recover"),
-      lockExpiryBufferMs: z.number().default(60000).describe("How long a lock must be expired before recovery (ms)"),
-      maxAgeMs: z.number().default(24 * 60 * 60 * 1000).describe("Maximum age of executions to recover (ms)"),
-      force: z.boolean().default(false).describe("Force recovery even if locks haven't expired. USE WITH CAUTION: may cause duplicate execution if workers are still running."),
+      limit: z
+        .number()
+        .default(100)
+        .describe("Maximum number of executions to recover"),
+      lockExpiryBufferMs: z
+        .number()
+        .default(60000)
+        .describe("How long a lock must be expired before recovery (ms)"),
+      maxAgeMs: z
+        .number()
+        .default(24 * 60 * 60 * 1000)
+        .describe("Maximum age of executions to recover (ms)"),
+      force: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Force recovery even if locks haven't expired. USE WITH CAUTION: may cause duplicate execution if workers are still running.",
+        ),
     }),
     outputSchema: z.object({
       orphans: z.object({

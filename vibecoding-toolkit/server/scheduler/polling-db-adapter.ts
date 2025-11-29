@@ -8,7 +8,10 @@
  */
 
 import type { Env } from "../main.ts";
-import type { PollingDatabaseAdapter, PendingExecution } from "./polling-scheduler.ts";
+import type {
+  PollingDatabaseAdapter,
+  PendingExecution,
+} from "./polling-scheduler.ts";
 import { executeWorkflow } from "../workflow/executor.ts";
 import { ensureTable } from "../lib/postgres.ts";
 
@@ -168,7 +171,9 @@ export function createPollingDbAdapter(
  * PostgreSQL-specific optimizations for the polling database adapter.
  * Uses FOR UPDATE SKIP LOCKED for better concurrency.
  */
-export function createPostgresPollingDbAdapter(env: Env): PollingDatabaseAdapter {
+export function createPostgresPollingDbAdapter(
+  env: Env,
+): PollingDatabaseAdapter {
   return {
     async findPendingExecutions(options) {
       await ensureTable(env, "workflow_executions");
@@ -265,4 +270,3 @@ export function createPostgresPollingDbAdapter(env: Env): PollingDatabaseAdapter
     },
   };
 }
-

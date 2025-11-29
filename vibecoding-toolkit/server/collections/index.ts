@@ -10,7 +10,7 @@ import {
 
 /**
  * Collection queries for database table creation.
- * 
+ *
  * Note: Only 'agents' and 'workflows' are true collections with MCP tools.
  * 'workflow_executions' and 'execution_step_results' are internal engine tables
  * managed by direct database functions in lib/execution-db.ts.

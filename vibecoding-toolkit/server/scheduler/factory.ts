@@ -123,4 +123,3 @@ export function createPollingSchedulerFromAdapter(
 ): PollingScheduler {
   return new PollingScheduler(dbAdapter, config);
 }
-

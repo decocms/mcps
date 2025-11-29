@@ -98,7 +98,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
 export default {
   ...runtime,
-  
+
   /**
    * Queue handler for workflow execution.
    * Processes workflow messages from Cloudflare Queues.
@@ -121,46 +121,55 @@ export default {
    */
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     console.log(`[CRON] Running orphan recovery (cron: ${event.cron})`);
-    
+
     try {
       // Call the recovery tool via internal fetch
       // The runtime handler will process this as an MCP tool call
       const request = new Request(
-        `${env.DECO_APP_ENTRYPOINT || 'http://localhost:8787'}/mcp/call-tool/RECOVER_ORPHAN_EXECUTIONS`,
+        `${env.DECO_APP_ENTRYPOINT || "http://localhost:8787"}/mcp/call-tool/RECOVER_ORPHAN_EXECUTIONS`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'X-Deco-MCP-Client': 'true',
+            "Content-Type": "application/json",
+            "X-Deco-MCP-Client": "true",
             // Cron jobs run without user auth - use internal service call
-            'X-Deco-Internal-Cron': 'true',
+            "X-Deco-Internal-Cron": "true",
           },
           body: JSON.stringify({
             limit: 100,
             lockExpiryBufferMs: 60000,
             maxAgeMs: 24 * 60 * 60 * 1000,
           }),
-        }
+        },
       );
 
       // Use waitUntil to ensure the request completes even if handler returns early
       ctx.waitUntil(
         (async () => {
           try {
-            const response = await runtime.fetch!(request as any, env, ctx as any);
+            const response = await runtime.fetch!(
+              request as any,
+              env,
+              ctx as any,
+            );
             if (!response.ok) {
-              console.error(`[CRON] Recovery failed: ${response.status} ${response.statusText}`);
+              console.error(
+                `[CRON] Recovery failed: ${response.status} ${response.statusText}`,
+              );
               return;
             }
             const result = await response.json();
-            console.log(`[CRON] Recovery complete:`, JSON.stringify(result, null, 2));
+            console.log(
+              `[CRON] Recovery complete:`,
+              JSON.stringify(result, null, 2),
+            );
           } catch (error) {
-            console.error('[CRON] Recovery error:', error);
+            console.error("[CRON] Recovery error:", error);
           }
-        })()
+        })(),
       );
     } catch (error) {
-      console.error('[CRON] Failed to initiate recovery:', error);
+      console.error("[CRON] Failed to initiate recovery:", error);
     }
   },
 };

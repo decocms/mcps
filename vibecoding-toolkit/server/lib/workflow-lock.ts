@@ -61,12 +61,7 @@ export async function acquireLock(
           AND status IN ('pending', 'running')
         RETURNING id
       `,
-      params: [
-        now.toISOString(),
-        lockUntil.toISOString(),
-        lockId,
-        executionId,
-      ],
+      params: [now.toISOString(), lockUntil.toISOString(), lockId, executionId],
     });
 
     const acquired = (result.result[0]?.results?.length ?? 0) > 0;
@@ -230,7 +225,10 @@ export async function getLockStatus(
       lockId: row.lock_id,
     };
   } catch (error) {
-    console.error(`[LOCK] Error checking lock status for ${executionId}:`, error);
+    console.error(
+      `[LOCK] Error checking lock status for ${executionId}:`,
+      error,
+    );
     return { isLocked: false };
   }
 }
@@ -254,7 +252,9 @@ export async function withLock<T>(
   const lock = await acquireLock(env, executionId, config);
 
   if (!lock.acquired || !lock.lockId) {
-    throw new Error(`LOCKED: Could not acquire lock for execution ${executionId}`);
+    throw new Error(
+      `LOCKED: Could not acquire lock for execution ${executionId}`,
+    );
   }
 
   try {

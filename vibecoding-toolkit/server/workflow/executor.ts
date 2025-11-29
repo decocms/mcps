@@ -132,10 +132,7 @@ async function executeToolStep(
 /**
  * Execute a sleep step
  */
-async function executeSleepStep(
-  step: Step,
-  ctx: RefContext,
-): Promise<void> {
+async function executeSleepStep(step: Step, ctx: RefContext): Promise<void> {
   if (!step.sleep) throw new Error("Sleep step missing sleep configuration");
 
   let sleepMs = step.sleep.ms || 0;
@@ -177,7 +174,11 @@ async function executeSingleStep(
     }
 
     case "transform": {
-      const result = await executeTransform(step.transform!, resolvedInput, step.name);
+      const result = await executeTransform(
+        step.transform!,
+        resolvedInput,
+        step.name,
+      );
       if (!result.success) {
         return { output: undefined, error: result.error };
       }
@@ -190,7 +191,10 @@ async function executeSingleStep(
     }
 
     default:
-      return { output: undefined, error: `Unknown step type for step: ${step.name}` };
+      return {
+        output: undefined,
+        error: `Unknown step type for step: ${step.name}`,
+      };
   }
 }
 
@@ -250,7 +254,8 @@ async function executeStepWithForEach(
     if (arrayError || !Array.isArray(arrayValue)) {
       return {
         status: "failed",
-        error: arrayError || `forEach ref must resolve to an array: ${step.forEach}`,
+        error:
+          arrayError || `forEach ref must resolve to an array: ${step.forEach}`,
         startedAt,
         completedAt: Date.now(),
       };
@@ -281,7 +286,10 @@ async function executeStepWithForEach(
       );
 
       if (iterErrors?.length) {
-        console.warn(`[STEP ${step.name}] Iteration ${i} ref warnings:`, iterErrors);
+        console.warn(
+          `[STEP ${step.name}] Iteration ${i} ref warnings:`,
+          iterErrors,
+        );
       }
 
       try {
@@ -344,10 +352,12 @@ async function getCheckpointedStepResult(
   verbose: boolean = false,
 ): Promise<StepExecutionResult | null> {
   const existing = await getStepResult(env, executionId, stepName);
-  
+
   if (existing?.status === "completed" && existing.output !== undefined) {
     if (verbose) {
-      console.log(`[STEP ${stepName}] Replaying cached output (deterministic replay)`);
+      console.log(
+        `[STEP ${stepName}] Replaying cached output (deterministic replay)`,
+      );
     }
     return {
       status: "completed",
@@ -356,17 +366,17 @@ async function getCheckpointedStepResult(
       completedAt: existing.completed_at_epoch_ms ?? undefined,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Execute a step with checkpointing and contention handling.
- * 
+ *
  * Uses UNIQUE constraint to detect duplicate execution:
  * - If we win the race (created step record) → execute the step
  * - If we lose the race (conflict) → use existing result, DON'T execute
- * 
+ *
  * @see https://www.dbos.dev/blog/scaleable-decentralized-workflows
  */
 async function executeStepWithCheckpoint(
@@ -378,11 +388,16 @@ async function executeStepWithCheckpoint(
   verbose: boolean = false,
 ): Promise<StepExecutionResult> {
   // 1. Check for cached result (DBOS pattern: deterministic replay)
-  const cached = await getCheckpointedStepResult(env, executionId, step.name, verbose);
+  const cached = await getCheckpointedStepResult(
+    env,
+    executionId,
+    step.name,
+    verbose,
+  );
   if (cached) {
     return cached;
   }
-  
+
   // 2. Try to create step record - this detects contention
   const { result: stepRecord, created } = await createStepResult(env, {
     execution_id: executionId,
@@ -391,13 +406,13 @@ async function executeStepWithCheckpoint(
     status: "running",
     started_at_epoch_ms: Date.now(),
   });
-  
+
   // 3. If we lost the race, another worker is handling this step
   if (!created) {
     if (verbose) {
       console.log(`[STEP ${step.name}] Lost race, another worker is executing`);
     }
-    
+
     // If already completed, use that result
     if (stepRecord.status === "completed" && stepRecord.output !== undefined) {
       return {
@@ -407,7 +422,7 @@ async function executeStepWithCheckpoint(
         completedAt: stepRecord.completed_at_epoch_ms ?? undefined,
       };
     }
-    
+
     // If failed, propagate the failure
     if (stepRecord.status === "failed") {
       return {
@@ -417,14 +432,16 @@ async function executeStepWithCheckpoint(
         completedAt: stepRecord.completed_at_epoch_ms ?? undefined,
       };
     }
-    
+
     // Still running on another worker - throw to trigger retry later
-    throw new Error(`CONTENTION: Step ${step.name} is being executed by another worker`);
+    throw new Error(
+      `CONTENTION: Step ${step.name} is being executed by another worker`,
+    );
   }
-  
+
   // 4. We won the race - execute the step
   const result = await executeStepWithForEach(env, step, ctx);
-  
+
   // 5. Persist result (only if not already completed by another worker)
   await updateStepResult(env, executionId, step.name, {
     status: result.status === "completed" ? "completed" : "failed",
@@ -432,7 +449,7 @@ async function executeStepWithCheckpoint(
     error: result.error,
     completed_at_epoch_ms: result.completedAt,
   });
-  
+
   return result;
 }
 
@@ -453,8 +470,15 @@ async function executePhase(
 
   // Execute all steps in parallel with checkpointing
   const results = await Promise.allSettled(
-    phase.map((step) => 
-      executeStepWithCheckpoint(env, step, ctx, executionId, phaseIndex, verbose)
+    phase.map((step) =>
+      executeStepWithCheckpoint(
+        env,
+        step,
+        ctx,
+        executionId,
+        phaseIndex,
+        verbose,
+      ),
     ),
   );
 
@@ -541,9 +565,9 @@ async function fireTriggers(
         }
 
         const executionIds: string[] = [];
-        
+
         // Safety check: empty array
-        if (arrayValue.length === 0) { 
+        if (arrayValue.length === 0) {
           results.push({
             triggerId,
             status: "triggered",
@@ -572,7 +596,10 @@ async function fireTriggers(
             index: j,
           };
 
-          const { resolved: inputs } = resolveAllRefs(trigger.inputs, triggerCtx);
+          const { resolved: inputs } = resolveAllRefs(
+            trigger.inputs,
+            triggerCtx,
+          );
 
           // Create and queue execution
           const message: QueueMessage = {
@@ -673,8 +700,10 @@ export async function executeWorkflow(
   retryCount: number = 0,
   config: ExecutorConfig = {},
 ): Promise<WorkflowExecutionResult> {
-  const { lockDurationMs = DEFAULT_CONFIG.lockDurationMs, verbose = DEFAULT_CONFIG.verbose } =
-    config;
+  const {
+    lockDurationMs = DEFAULT_CONFIG.lockDurationMs,
+    verbose = DEFAULT_CONFIG.verbose,
+  } = config;
 
   let lockId: string | undefined;
   const startTime = Date.now();
@@ -695,14 +724,18 @@ export async function executeWorkflow(
 
     if (!["pending", "running"].includes(preCheckExecution.status)) {
       if (verbose) {
-        console.log(`[WORKFLOW] Execution ${executionId} is already ${preCheckExecution.status}, skipping`);
+        console.log(
+          `[WORKFLOW] Execution ${executionId} is already ${preCheckExecution.status}, skipping`,
+        );
       }
       // Return success for completed/failed/cancelled - no retry needed
       return { success: true, output: preCheckExecution.output };
     }
 
     // 2. Acquire lock (only for pending/running executions)
-    const lock = await acquireLock(env, executionId, { durationMs: lockDurationMs });
+    const lock = await acquireLock(env, executionId, {
+      durationMs: lockDurationMs,
+    });
     if (!lock.acquired || !lock.lockId) {
       return {
         success: false,
@@ -721,7 +754,9 @@ export async function executeWorkflow(
 
     if (!["pending", "running"].includes(execution.status)) {
       if (verbose) {
-        console.log(`[WORKFLOW] Execution ${executionId} is ${execution.status}, skipping`);
+        console.log(
+          `[WORKFLOW] Execution ${executionId} is ${execution.status}, skipping`,
+        );
       }
       return { success: true, output: execution.output };
     }
@@ -736,9 +771,11 @@ export async function executeWorkflow(
     }
 
     // Parse steps - expect 2D array format or convert from old format
-    let parsedSteps = workflow.steps 
-  ? (typeof workflow.steps === "string" ? JSON.parse(workflow.steps) : workflow.steps)
-  : { phases: [], triggers: [] };
+    let parsedSteps = workflow.steps
+      ? typeof workflow.steps === "string"
+        ? JSON.parse(workflow.steps)
+        : workflow.steps
+      : { phases: [], triggers: [] };
 
     // Handle stored format with phases/triggers wrapper
     // Capture triggers BEFORE overwriting parsedSteps with phases
@@ -761,8 +798,13 @@ export async function executeWorkflow(
     }
 
     // Convert flat array to 2D if needed (backwards compatibility)
-    if (workflowData.steps.length > 0 && !Array.isArray(workflowData.steps[0])) {
-      workflowData.steps = (workflowData.steps as unknown as Step[]).map((step) => [step]);
+    if (
+      workflowData.steps.length > 0 &&
+      !Array.isArray(workflowData.steps[0])
+    ) {
+      workflowData.steps = (workflowData.steps as unknown as Step[]).map(
+        (step) => [step],
+      );
     }
 
     // 4. Parse inputs
@@ -781,18 +823,23 @@ export async function executeWorkflow(
 
     // 6. Build initial context and load any existing step outputs (for crash recovery)
     const stepOutputs = new Map<string, unknown>();
-    
+
     // Load existing step results for crash recovery (deterministic replay)
     const existingStepResults = await getStepResults(env, executionId);
     for (const stepResult of existingStepResults) {
-      if (stepResult.status === "completed" && stepResult.output !== undefined) {
+      if (
+        stepResult.status === "completed" &&
+        stepResult.output !== undefined
+      ) {
         stepOutputs.set(stepResult.step_id, stepResult.output);
         if (verbose) {
-          console.log(`[WORKFLOW] Loaded cached output for step: ${stepResult.step_id}`);
+          console.log(
+            `[WORKFLOW] Loaded cached output for step: ${stepResult.step_id}`,
+          );
         }
       }
     }
-    
+
     const ctx: RefContext = {
       stepOutputs,
       workflowInput,
@@ -801,14 +848,27 @@ export async function executeWorkflow(
     // 7. Execute phases sequentially
     let lastOutput: unknown;
 
-    for (let phaseIndex = 0; phaseIndex < workflowData.steps.length; phaseIndex++) {
+    for (
+      let phaseIndex = 0;
+      phaseIndex < workflowData.steps.length;
+      phaseIndex++
+    ) {
       const phase = workflowData.steps[phaseIndex];
 
       if (verbose) {
-        console.log(`[WORKFLOW] Executing phase ${phaseIndex} with ${phase.length} steps`);
+        console.log(
+          `[WORKFLOW] Executing phase ${phaseIndex} with ${phase.length} steps`,
+        );
       }
 
-      const phaseResult = await executePhase(env, phase, phaseIndex, ctx, executionId, verbose);
+      const phaseResult = await executePhase(
+        env,
+        phase,
+        phaseIndex,
+        ctx,
+        executionId,
+        verbose,
+      );
 
       // Check for failures
       const failures = Object.entries(phaseResult.steps).filter(
@@ -858,15 +918,26 @@ export async function executeWorkflow(
     // 9. Fire triggers
     let triggerResults: WorkflowExecutionResult["triggerResults"];
     if (verbose) {
-      console.log(`[WORKFLOW] Triggers to fire: ${workflowData.triggers?.length || 0}`, workflowData.triggers);
+      console.log(
+        `[WORKFLOW] Triggers to fire: ${workflowData.triggers?.length || 0}`,
+        workflowData.triggers,
+      );
     }
     if (workflowData.triggers && workflowData.triggers.length > 0) {
       // Update context with final output
       ctx.output = lastOutput;
       if (verbose) {
-        console.log(`[WORKFLOW] Firing ${workflowData.triggers.length} triggers with output:`, lastOutput);
+        console.log(
+          `[WORKFLOW] Firing ${workflowData.triggers.length} triggers with output:`,
+          lastOutput,
+        );
       }
-      triggerResults = await fireTriggers(env, workflowData.triggers, ctx, executionId);
+      triggerResults = await fireTriggers(
+        env,
+        workflowData.triggers,
+        ctx,
+        executionId,
+      );
       if (verbose) {
         console.log(`[WORKFLOW] Trigger results:`, triggerResults);
       }
@@ -882,7 +953,9 @@ export async function executeWorkflow(
     });
 
     if (verbose) {
-      console.log(`[WORKFLOW] Execution ${executionId} completed in ${Date.now() - startTime}ms`);
+      console.log(
+        `[WORKFLOW] Execution ${executionId} completed in ${Date.now() - startTime}ms`,
+      );
     }
 
     return {

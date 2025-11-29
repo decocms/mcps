@@ -30,7 +30,7 @@ function transformDbRowToExecution(
     try {
       return JSON.parse(value as string);
     } catch (error) {
-      console.error('[DB] Failed to parse JSON:', error);
+      console.error("[DB] Failed to parse JSON:", error);
       return undefined;
     }
   };
@@ -41,7 +41,12 @@ function transformDbRowToExecution(
     inputs: safeJsonParse(row.inputs),
     workflow_id: row.workflow_id as string,
     id: row.id as string,
-    status: row.status as "pending" | "running" | "completed" | "failed" | "cancelled",
+    status: row.status as
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled",
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     created_by: row.created_by ? (row.created_by as string) : undefined,
@@ -68,7 +73,9 @@ export async function getExecution(
     params: [id],
   });
 
-  const row = result.result[0]?.results?.[0] as Record<string, unknown> | undefined;
+  const row = result.result[0]?.results?.[0] as
+    | Record<string, unknown>
+    | undefined;
   return row ? transformDbRowToExecution(row) : null;
 }
 
@@ -257,7 +264,11 @@ export async function listExecutions(
     limit?: number;
     offset?: number;
   } = {},
-): Promise<{ items: WorkflowExecution[]; totalCount: number; hasMore: boolean }> {
+): Promise<{
+  items: WorkflowExecution[];
+  totalCount: number;
+  hasMore: boolean;
+}> {
   await ensureTable(env, "workflow_executions");
 
   const { workflowId, status, limit = 50, offset = 0 } = options;
@@ -274,7 +285,9 @@ export async function listExecutions(
     params.push(status);
   }
 
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -318,12 +331,15 @@ function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
 ): ExecutionStepResult {
   // Safe JSON parsing helper
-  const safeJsonParse = (value: unknown, defaultValue: unknown = undefined): unknown => {
+  const safeJsonParse = (
+    value: unknown,
+    defaultValue: unknown = undefined,
+  ): unknown => {
     if (!value) return defaultValue;
     try {
       return JSON.parse(value as string);
     } catch (error) {
-      console.error('[DB] Failed to parse JSON:', error);
+      console.error("[DB] Failed to parse JSON:", error);
       return defaultValue;
     }
   };
@@ -332,7 +348,11 @@ function transformDbRowToStepResult(
     ...row,
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
-    errors: safeJsonParse(row.errors, []) as Array<{ message: string; timestamp: string; attempt: number }>,
+    errors: safeJsonParse(row.errors, []) as Array<{
+      message: string;
+      timestamp: string;
+      attempt: number;
+    }>,
     attempt_count: (row.attempt_count ?? 1) as number,
   };
 
@@ -373,14 +393,16 @@ export async function getStepResult(
     params: [executionId, stepId],
   });
 
-  const row = result.result[0]?.results?.[0] as Record<string, unknown> | undefined;
+  const row = result.result[0]?.results?.[0] as
+    | Record<string, unknown>
+    | undefined;
   return row ? transformDbRowToStepResult(row) : null;
 }
 
 /**
  * Result of attempting to create a step result.
  * Used for detecting duplicate execution (contention handling).
- * 
+ *
  * @see https://www.dbos.dev/blog/scaleable-decentralized-workflows
  */
 export interface CreateStepResultOutcome {
@@ -392,11 +414,11 @@ export interface CreateStepResultOutcome {
 
 /**
  * Create a new step result, or detect if another worker already created it.
- * 
+ *
  * Uses UNIQUE constraint to detect race conditions:
  * - If we create the record, we won the race → execute the step
  * - If UNIQUE conflict, we lost the race → DON'T execute, use existing result
- * 
+ *
  * @returns CreateStepResultOutcome with created=false if we lost the race
  */
 export async function createStepResult(
@@ -441,7 +463,9 @@ export async function createStepResult(
   // If we got a row back, we won the race (created it)
   if (result.result[0]?.results?.length) {
     return {
-      result: transformDbRowToStepResult(result.result[0].results[0] as Record<string, unknown>),
+      result: transformDbRowToStepResult(
+        result.result[0].results[0] as Record<string, unknown>,
+      ),
       created: true,
     };
   }
@@ -449,7 +473,9 @@ export async function createStepResult(
   // Conflict - fetch existing row (we lost the race)
   const existing = await getStepResult(env, data.execution_id, data.step_id);
   if (!existing) {
-    throw new Error(`Failed to create or find step result for ${data.execution_id}/${data.step_id}`);
+    throw new Error(
+      `Failed to create or find step result for ${data.execution_id}/${data.step_id}`,
+    );
   }
 
   return {
@@ -527,7 +553,8 @@ export async function updateStepResult(
 
   if (!setClauses.length) {
     const existing = await getStepResult(env, executionId, stepId);
-    if (!existing) throw new Error(`Step result not found: ${executionId}/${stepId}`);
+    if (!existing)
+      throw new Error(`Step result not found: ${executionId}/${stepId}`);
     return existing;
   }
 
@@ -555,4 +582,3 @@ export async function updateStepResult(
     result.result[0]?.results?.[0] as Record<string, unknown>,
   );
 }
-

@@ -118,7 +118,9 @@ export function extractSchemas(code: string): {
 
   return {
     input: inputMatch ? parseInterfaceBody(inputMatch[1]) : { type: "object" },
-    output: outputMatch ? parseInterfaceBody(outputMatch[1]) : { type: "object" },
+    output: outputMatch
+      ? parseInterfaceBody(outputMatch[1])
+      : { type: "object" },
   };
 }
 
@@ -196,7 +198,9 @@ export async function executeTransform(
     return {
       success: true,
       output,
-      logs: guestConsole.logs.map((log) => (typeof log === "string" ? log : JSON.stringify(log))),
+      logs: guestConsole.logs.map((log) =>
+        typeof log === "string" ? log : JSON.stringify(log),
+      ),
     };
   } catch (error) {
     return {
@@ -219,7 +223,11 @@ export async function executeTransform(
 export async function validateTransformCode(
   code: string,
   stepName: string,
-): Promise<{ valid: boolean; error?: string; schemas?: ReturnType<typeof extractSchemas> }> {
+): Promise<{
+  valid: boolean;
+  error?: string;
+  schemas?: ReturnType<typeof extractSchemas>;
+}> {
   let ctx: any;
   let runtime: any;
 
@@ -279,4 +287,3 @@ export async function validateTransformCode(
     }
   }
 }
-

@@ -75,7 +75,8 @@ export class QueueScheduler implements WorkflowScheduler {
       executionId,
       retryCount: 0,
       enqueuedAt: Date.now(),
-      authorization: options?.authorization ?? this.config.defaultAuthorization ?? "",
+      authorization:
+        options?.authorization ?? this.config.defaultAuthorization ?? "",
     };
 
     await this.queue.send(
@@ -112,4 +113,3 @@ export function createQueueScheduler(
 ): QueueScheduler {
   return new QueueScheduler(queue, config);
 }
-

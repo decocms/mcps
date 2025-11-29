@@ -107,9 +107,9 @@ export async function recoverOrphanedExecutions(
   // Find orphaned executions
   // When force=true, recover running executions regardless of lock status
   // When force=false, only recover if lock has expired (locked_until < bufferTime)
-  const lockCondition = force 
-    ? "AND locked_until IS NOT NULL"  // Any lock (force recovery)
-    : "AND locked_until IS NOT NULL AND locked_until < $1";  // Expired lock only
+  const lockCondition = force
+    ? "AND locked_until IS NOT NULL" // Any lock (force recovery)
+    : "AND locked_until IS NOT NULL AND locked_until < $1"; // Expired lock only
 
   const orphanQuery = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -122,13 +122,15 @@ export async function recoverOrphanedExecutions(
       ORDER BY created_at ASC
       LIMIT ${force ? "$2" : "$3"}
     `,
-    params: force 
+    params: force
       ? [oldestAllowed.toISOString(), limit]
       : [bufferTime.toISOString(), oldestAllowed.toISOString(), limit],
   });
 
   if (verbose && force) {
-    console.log("[RECOVERY] Force mode: recovering all running executions regardless of lock status");
+    console.log(
+      "[RECOVERY] Force mode: recovering all running executions regardless of lock status",
+    );
   }
 
   const orphans = (orphanQuery.result[0]?.results || []) as Array<{
@@ -203,7 +205,10 @@ export async function recoverOrphanedExecutions(
       result.failed++;
       result.failedIds.push(orphan.id);
 
-      console.error(`[RECOVERY] Failed to recover execution ${orphan.id}:`, error);
+      console.error(
+        `[RECOVERY] Failed to recover execution ${orphan.id}:`,
+        error,
+      );
     }
   }
 
@@ -239,12 +244,14 @@ export async function recoverPendingExecutions(
   const oldestAllowed = new Date(now.getTime() - maxAgeMs);
   // Only recover if pending for at least 5 minutes (might be in queue)
   // When force=true, skip this threshold
-  const stuckThreshold = force 
-    ? now  // Recover immediately
+  const stuckThreshold = force
+    ? now // Recover immediately
     : new Date(now.getTime() - 5 * 60 * 1000);
 
   if (verbose && force) {
-    console.log("[RECOVERY] Force mode: recovering all pending executions immediately");
+    console.log(
+      "[RECOVERY] Force mode: recovering all pending executions immediately",
+    );
   }
 
   const pendingQuery = await env.DATABASE.DATABASES_RUN_SQL({
@@ -360,4 +367,3 @@ export async function runFullRecovery(
     },
   };
 }
-

@@ -136,9 +136,7 @@ function validateStepRefs(
 /**
  * Validate a transform step's TypeScript code
  */
-async function validateTransformStep(
-  step: Step,
-): Promise<{
+async function validateTransformStep(step: Step): Promise<{
   error: ValidationError | null;
   schema?: { input: Record<string, unknown>; output: Record<string, unknown> };
 }> {
@@ -240,7 +238,9 @@ function validateTriggerRefs(
  *
  * Returns validation errors and extracted schemas for caching.
  */
-export async function validateWorkflow(workflow: Workflow): Promise<ValidationResult> {
+export async function validateWorkflow(
+  workflow: Workflow,
+): Promise<ValidationResult> {
   const errors: ValidationError[] = [];
   const schemas: Record<
     string,
@@ -288,7 +288,11 @@ export async function validateWorkflow(workflow: Workflow): Promise<ValidationRe
       }
 
       // Validate forEach maxIterations
-      if (step.forEach && step.maxIterations !== undefined && step.maxIterations <= 0) {
+      if (
+        step.forEach &&
+        step.maxIterations !== undefined &&
+        step.maxIterations <= 0
+      ) {
         errors.push({
           type: "invalid_typescript",
           step: step.name,
