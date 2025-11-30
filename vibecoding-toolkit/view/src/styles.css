@@ -1,138 +1,321 @@
-@import "tailwindcss";
+@import "@decocms/ui/styles/global.css";
 
-@plugin "tailwindcss-animate";
-
-@custom-variant dark (&:is(.dark *));
-
-body {
-  @apply m-0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
-
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.871 0.006 286.286);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.871 0.006 286.286);
-}
-
-.dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.442 0.017 285.786);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
+/* include the ui package */
+@source "@decocms/ui/styles/global.css";
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  .tiptap p.is-editor-empty:first-child::before {
+    color: var(--muted-foreground);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  * {
+    .prose {
+      @apply text-foreground/80 leading-relaxed whitespace-pre-wrap break-words;
+      overflow-wrap: anywhere;
+    }
+
+    /* Paragraphs and text */
+    .prose p {
+      @apply mb-4 leading-relaxed;
+    }
+
+    .prose strong {
+      @apply font-semibold text-foreground;
+    }
+
+    .prose em {
+      @apply italic;
+    }
+
+    /* Headings - hierarchy with medium weights */
+    .prose h1 {
+      @apply text-3xl font-semibold text-foreground mb-3 mt-8 leading-tight;
+    }
+
+    .prose h2 {
+      @apply text-2xl font-semibold text-foreground mb-3 mt-8 leading-tight;
+    }
+
+    .prose h3 {
+      @apply text-xl font-medium text-foreground mb-2 mt-5;
+    }
+
+    .prose h4 {
+      @apply text-lg text-foreground mb-2 mt-4;
+    }
+
+    .prose h5 {
+      @apply text-base text-foreground mb-2 mt-3;
+    }
+
+    .prose h6 {
+      @apply text-base mb-2 mt-3;
+    }
+
+    /* First heading removes top margin */
+    .prose > h1:first-child,
+    .prose > h2:first-child,
+    .prose > h3:first-child,
+    .prose > h4:first-child,
+    .prose > h5:first-child,
+    .prose > h6:first-child {
+      @apply mt-0;
+    }
+
+    /* Links */
+    .prose a {
+      @apply text-blue-500 hover:underline underline-offset-2 transition-colors cursor-pointer;
+    }
+
+    /* Lists */
+    .prose ul {
+      @apply list-disc pl-6 mb-4;
+    }
+
+    .prose ol {
+      @apply list-decimal pl-6 mb-4;
+    }
+
+    .prose li {
+      @apply leading-relaxed mb-1;
+    }
+
+    .prose li > p {
+      @apply mb-0;
+    }
+
+    .prose li > ul,
+    .prose li > ol {
+      @apply mt-2 mb-1;
+    }
+
+    /* Task Lists */
+    .prose ul[data-type="taskList"] {
+      @apply list-none pl-0;
+    }
+
+    .prose ul[data-type="taskList"] > li {
+      @apply flex items-start gap-2 mb-2;
+    }
+
+    .prose ul[data-type="taskList"] > li > label {
+      @apply flex items-center shrink-0 cursor-pointer;
+    }
+
+    .prose ul[data-type="taskList"] > li > label > input[type="checkbox"] {
+      @apply appearance-none size-4 shrink-0 rounded-[4px] border border-foreground 
+        bg-background shadow-sm transition-all cursor-pointer
+        checked:bg-primary checked:border-primary checked:text-primary-foreground
+        focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50
+        disabled:cursor-not-allowed disabled:opacity-50;
+
+      /* Checkmark using background image */
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 75%;
+    }
+
+    .prose
+      ul[data-type="taskList"]
+      > li
+      > label
+      > input[type="checkbox"]:checked {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    .prose ul[data-type="taskList"] > li > label > span {
+      @apply hidden;
+    }
+
+    .prose ul[data-type="taskList"] > li > div {
+      @apply flex-1 flex items-center min-h-[1rem];
+    }
+
+    .prose ul[data-type="taskList"] > li > div > p {
+      @apply mb-0 leading-4;
+    }
+
+    .prose ul[data-type="taskList"] ul[data-type="taskList"],
+    .prose ul[data-type="taskList"] ol {
+      @apply mt-2;
+    }
+
+    /* Code blocks - matching inline code styling */
+    .prose pre {
+      @apply my-4 rounded-lg overflow-hidden border border-border bg-muted;
+      tab-size: 2;
+    }
+
+    .prose pre code {
+      @apply block p-6 text-sm leading-relaxed font-mono whitespace-pre overflow-x-auto bg-transparent text-violet-600;
+      font-family:
+        "CommitMono", "Fira Code", "Consolas", "Monaco", "Andale Mono",
+        monospace;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+
+    /* Inline code */
+    .prose code {
+      @apply px-1.5 py-0.5 rounded text-sm font-mono bg-muted/80 text-violet-600 border-0;
+      font-family:
+        "CommitMono", "Fira Code", "Consolas", "Monaco", "Andale Mono",
+        monospace;
+    }
+
+    /* Pre tag hover behavior for long lines */
+    .prose pre:hover {
+      @apply overflow-x-auto;
+    }
+
+    /* Blockquotes */
+    .prose blockquote {
+      @apply border-l-2 border-foreground pl-4 pr-4 py-3 my-4 italic;
+    }
+
+    .prose blockquote > *:first-child {
+      @apply mt-0;
+    }
+
+    .prose blockquote > *:last-child {
+      @apply mb-0;
+    }
+
+    /* Horizontal rules */
+    .prose hr {
+      @apply my-8 border-border;
+    }
+
+    /* Tables */
+    .prose table {
+      @apply w-full my-4 border-collapse overflow-hidden rounded-lg;
+    }
+
+    .prose thead {
+      @apply bg-muted;
+    }
+
+    .prose th {
+      @apply px-4 py-2 text-left font-semibold border-b border-border;
+    }
+
+    .prose td {
+      @apply px-4 py-2 border-b border-border;
+    }
+
+    .prose tr:last-child td {
+      @apply border-b-0;
+    }
+
+    /* Images */
+    .prose img {
+      @apply rounded-lg my-4;
+    }
+
+    /* Comments (tiptap specific) */
+    .prose span[data-type="comment"] {
+      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20
+        whitespace-pre-wrap px-1 leading-normal block break-words pl-6 relative
+        before:content-["//"] before:absolute before:left-1 before:top-1
+        text-muted-foreground italic before:text-muted-foreground
+        before:opacity-60 before:text-xs/tight before:font-mono my-1;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  /* Markdown size variants - forces all children to inherit size and scaled spacing */
+  .markdown-xs {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .markdown-xs * {
+    font-size: inherit !important;
+  }
+  .markdown-xs ul,
+  .markdown-xs ol {
+    @apply my-2 space-y-0.5;
+  }
+  .markdown-xs p {
+    @apply my-1.5;
+  }
+
+  .markdown-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .markdown-sm * {
+    font-size: inherit !important;
+  }
+  .markdown-sm ul,
+  .markdown-sm ol {
+    @apply my-2 space-y-1;
+  }
+  .markdown-sm p {
+    @apply my-2;
+  }
+
+  .markdown-base {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .markdown-base * {
+    font-size: inherit !important;
+  }
+  .markdown-base ul,
+  .markdown-base ol {
+    @apply my-4 space-y-2;
+  }
+  .markdown-base p {
+    @apply my-4;
+  }
+
+  .markdown-lg {
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+  .markdown-lg * {
+    font-size: inherit !important;
+  }
+  .markdown-lg ul,
+  .markdown-lg ol {
+    @apply my-4 space-y-2;
+  }
+  .markdown-lg p {
+    @apply my-4;
+
+    /* Keyboard shortcuts styling */
+    kbd {
+      @apply inline-flex items-center justify-center border border-border 
+      rounded-md bg-transparent text-muted-foreground font-normal select-none;
+      font-family:
+        "SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .animate-shimmer {
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    .text-shimmer {
+      @apply bg-gradient-to-r from-foreground via-foreground/50 to-foreground;
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
   }
 }

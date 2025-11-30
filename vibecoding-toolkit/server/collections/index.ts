@@ -6,6 +6,8 @@ import {
   workflowExecutionTableIndexesQuery,
   executionStepResultsTableIdempotentQuery,
   executionStepResultsTableIndexesQuery,
+  workflowEventsTableIdempotentQuery,
+  workflowEventsTableIndexesQuery,
 } from "./workflow";
 import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
 
@@ -13,8 +15,8 @@ import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
  * Collection queries for database table creation.
  *
  * Note: Only 'agents' and 'workflows' are true collections with MCP tools.
- * 'workflow_executions' and 'execution_step_results' are internal engine tables
- * managed by direct database functions in lib/execution-db.ts.
+ * 'workflow_executions', 'execution_step_results', and 'workflow_events'
+ * are internal engine tables managed by direct database functions.
  */
 const collectionsQueries = {
   // agents: {
@@ -33,6 +35,10 @@ const collectionsQueries = {
   execution_step_results: {
     idempotent: executionStepResultsTableIdempotentQuery,
     indexes: executionStepResultsTableIndexesQuery,
+  },
+  workflow_events: {
+    idempotent: workflowEventsTableIdempotentQuery,
+    indexes: workflowEventsTableIndexesQuery,
   },
   tools: {
     idempotent: toolsTableIdempotentQuery,

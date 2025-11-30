@@ -36,12 +36,44 @@ export const SleepActionSchema = z.union([
 ]);
 
 /**
+ * Wait For Signal Action Schema
+ *
+ * Blocks workflow execution until an external signal is received.
+ * Perfect for human-in-the-loop patterns like approvals, reviews, or manual steps.
+ *
+ * The step will:
+ * 1. Record itself as "waiting" status
+ * 2. Release the execution lock (allows other work to proceed)
+ * 3. Wait until a matching signal is received
+ * 4. Resume with the signal payload as output
+ *
+ * Signals can be sent via:
+ * - sendSignal() function (internal API)
+ * - External webhook (future)
+ * - UI interaction (future)
+ */
+export const WaitForSignalActionSchema = z.object({
+  signalName: z
+    .string()
+    .describe("Name of the signal to wait for (must be unique per execution)"),
+  timeoutMs: z
+    .number()
+    .optional()
+    .describe("Maximum time to wait in milliseconds (default: no timeout)"),
+  description: z
+    .string()
+    .optional()
+    .describe("Human-readable description of what this signal is waiting for"),
+});
+
+/**
  * Step Schema - Unified schema for all step types
  *
  * Step types:
  * - tool: Call external service via MCP (non-deterministic, checkpointed)
  * - transform: Pure TypeScript data transformation (deterministic, replayable)
  * - sleep: Wait for time
+ * - waitForSignal: Block until external signal (human-in-the-loop)
  */
 export const StepSchema = z.object({
   name: z.string().min(1).describe("Unique step name within workflow"),
@@ -53,6 +85,9 @@ export const StepSchema = z.object({
       "Pure TypeScript data transformation (deterministic, replayable)",
     ),
     SleepActionSchema.describe("Wait for time"),
+    WaitForSignalActionSchema.describe(
+      "Wait for external signal (human-in-the-loop)",
+    ),
   ]),
   input: z
     .record(z.unknown())
@@ -60,11 +95,6 @@ export const StepSchema = z.object({
     .describe(
       "Input object with @ref resolution. Example: { 'user_id': '@input.user_id', 'product_id': '@input.product_id' }",
     ),
-  forEach: z
-    .string()
-    .optional()
-    .describe("@ref to array - repeat step for each item"),
-  maxIterations: z.number().default(100).describe("Maximum forEach iterations"),
   retry: z
     .object({
       maxAttempts: z.number().default(3).describe("Maximum retry attempts"),
@@ -93,24 +123,16 @@ export const TriggerSchema = z.object({
   workflowId: z.string().describe("Target workflow ID to trigger"),
 
   /**
-   * Inputs for the new execution (uses @refs like step inputs)
+   * Input for the new execution (uses @refs like step inputs)
    * Maps output data to workflow input fields.
    *
    * If any @ref doesn't resolve (property missing), this trigger is SKIPPED.
    */
-  inputs: z
+  input: z
     .record(z.unknown())
-    .describe("Input mapping with @refs from current workflow output"),
-
-  /**
-   * For array values: trigger one execution per item.
-   * The @ref path to iterate over.
-   * When set, @item and @index are available in inputs.
-   */
-  forEach: z
-    .string()
-    .optional()
-    .describe("@ref to array - trigger one execution per item"),
+    .describe(
+      "Input mapping with @refs from current workflow output. Example: { 'user_id': '@stepName.output.user_id' }",
+    ),
 });
 
 export type Trigger = z.infer<typeof TriggerSchema>;
@@ -180,19 +202,13 @@ const workflowTableIndexesQuery = `
  * - pending: Created but not started
  * - running: Currently executing
  * - completed: Successfully finished
- * - failed: Permanently failed (max retries exceeded or non-retryable error)
  * - cancelled: Manually cancelled
  */
-const WorkflowExecutionStatusSchema = z.enum([
-  "pending",
-  "running",
-  "completed",
-  "failed",
-  "cancelled",
-]);
 
-type WorkflowExecutionStatus = z.infer<typeof WorkflowExecutionStatusSchema>;
-
+const WorkflowExecutionStatusEnum = z
+  .enum(["pending", "running", "completed", "cancelled"])
+  .default("pending");
+type WorkflowExecutionStatus = z.infer<typeof WorkflowExecutionStatusEnum>;
 /**
  * Workflow Execution Schema
  *
@@ -201,10 +217,9 @@ type WorkflowExecutionStatus = z.infer<typeof WorkflowExecutionStatusSchema>;
 const WorkflowExecutionSchema = z.object({
   id: z.string(),
   workflow_id: z.string(),
-  status: WorkflowExecutionStatusSchema,
-  inputs: z.record(z.unknown()).optional(),
-  output: z.record(z.unknown()).optional(),
-  // Parent execution (for triggered workflows)
+  status: WorkflowExecutionStatusEnum,
+  input: z.record(z.unknown()).optional(),
+  output: z.unknown().optional(),
   parent_execution_id: z
     .string()
     .nullish()
@@ -248,7 +263,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions (
   id TEXT PRIMARY KEY,
   workflow_id TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
-  inputs TEXT,
+  input TEXT,
   output TEXT,
   parent_execution_id TEXT,
   
@@ -293,32 +308,11 @@ const ExecutionStepResultSchema = BaseCollectionEntitySchema.extend({
   execution_id: z.string(),
   step_id: z.string(),
 
-  // Status
-  status: z
-    .enum(["pending", "running", "completed", "failed"])
-    .default("pending"),
-
-  // Input/Output
   input: z.record(z.unknown()).nullish(),
   output: z.unknown().nullish(), // Can be object or array (forEach steps produce arrays)
   error: z.string().nullish(),
-
-  // Timing
   started_at_epoch_ms: z.number().nullish(),
   completed_at_epoch_ms: z.number().nullish(),
-
-  // Retry tracking
-  attempt_count: z.number().default(1),
-  last_error: z.string().nullish(),
-  errors: z
-    .array(
-      z.object({
-        message: z.string(),
-        timestamp: z.string(),
-        attempt: z.number(),
-      }),
-    )
-    .default([]),
 }).omit({
   title: true,
   id: true,
@@ -333,20 +327,10 @@ const executionStepResultsTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS execution_step_results (
   execution_id TEXT NOT NULL,
   step_id TEXT NOT NULL,
-  
-  status TEXT NOT NULL DEFAULT 'pending',
-  input TEXT,
-  output TEXT,
-  error TEXT,
-  
   started_at_epoch_ms INTEGER,
   completed_at_epoch_ms INTEGER,
-  
-  attempt_count INTEGER DEFAULT 1,
-  last_error TEXT,
-  errors TEXT DEFAULT '[]',
-  
-  
+  output TEXT,
+  error TEXT,
   PRIMARY KEY (execution_id, step_id),
   FOREIGN KEY (execution_id) REFERENCES workflow_executions(id)
 )
@@ -354,10 +338,147 @@ CREATE TABLE IF NOT EXISTS execution_step_results (
 
 const executionStepResultsTableIndexesQuery = `
   CREATE INDEX IF NOT EXISTS idx_step_results_execution ON execution_step_results(execution_id);
-  CREATE INDEX IF NOT EXISTS idx_step_results_status ON execution_step_results(status);
   CREATE INDEX IF NOT EXISTS idx_step_results_started ON execution_step_results(started_at_epoch_ms DESC);
   CREATE INDEX IF NOT EXISTS idx_step_results_completed ON execution_step_results(completed_at_epoch_ms DESC);
 `;
+
+// ============================================================================
+// Workflow Events Schema
+// ============================================================================
+
+/**
+ * Event Type Enum
+ *
+ * Event types for the unified events table:
+ * - signal: External signal (human-in-the-loop)
+ * - timer: Durable sleep wake-up
+ * - message: Inter-workflow communication (send/recv)
+ * - output: Published value (setEvent/getEvent)
+ * - step_started: Observability - step began
+ * - step_completed: Observability - step finished
+ * - workflow_started: Workflow began execution
+ * - workflow_completed: Workflow finished
+ */
+export const EventTypeEnum = z.enum([
+  "signal",
+  "timer",
+  "message",
+  "output",
+  "step_started",
+  "step_completed",
+  "workflow_started",
+  "workflow_completed",
+]);
+
+export type EventType = z.infer<typeof EventTypeEnum>;
+
+/**
+ * Workflow Event Schema
+ *
+ * Unified events table for signals, timers, messages, and observability.
+ * Inspired by DBOS send/recv patterns and deco-cx/durable visible_at.
+ */
+export const WorkflowEventSchema = z.object({
+  id: z.string(),
+  execution_id: z.string(),
+  type: EventTypeEnum,
+  name: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? undefined),
+  payload: z.unknown().optional(),
+  created_at: z.number(),
+  visible_at: z
+    .number()
+    .nullish()
+    .transform((val) => val ?? undefined),
+  consumed_at: z
+    .number()
+    .nullish()
+    .transform((val) => val ?? undefined),
+  source_execution_id: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? undefined),
+});
+
+export type WorkflowEvent = z.infer<typeof WorkflowEventSchema>;
+
+const workflowEventsTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS workflow_events (
+  id TEXT PRIMARY KEY,
+  execution_id TEXT NOT NULL,
+  
+  -- Event classification
+  type TEXT NOT NULL CHECK(type IN (
+    'signal',
+    'timer',
+    'message',
+    'output',
+    'step_started',
+    'step_completed',
+    'workflow_started',
+    'workflow_completed'
+  )),
+  
+  -- Event data
+  name TEXT,
+  payload TEXT,
+  
+  -- Timing
+  created_at INTEGER NOT NULL,
+  visible_at INTEGER,
+  consumed_at INTEGER,
+  
+  -- Inter-workflow messaging
+  source_execution_id TEXT,
+  
+  FOREIGN KEY (execution_id) REFERENCES workflow_executions(id)
+)
+`;
+
+const workflowEventsTableIndexesQuery = `
+  -- For efficient pending event queries
+  CREATE INDEX IF NOT EXISTS idx_events_pending 
+    ON workflow_events(execution_id, type, consumed_at, visible_at) 
+    WHERE consumed_at IS NULL;
+  
+  -- For lookups by name (signals, timers)
+  CREATE INDEX IF NOT EXISTS idx_events_by_name 
+    ON workflow_events(execution_id, type, name) 
+    WHERE consumed_at IS NULL;
+  
+  -- For output events (setEvent/getEvent)
+  CREATE INDEX IF NOT EXISTS idx_events_output 
+    ON workflow_events(execution_id, name) 
+    WHERE type = 'output';
+  
+  -- Unique constraint for setEvent/getEvent (upsert pattern)
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_events_output_unique 
+    ON workflow_events(execution_id, type, name) 
+    WHERE type = 'output';
+  
+  -- For inter-workflow message lookup
+  CREATE INDEX IF NOT EXISTS idx_events_source 
+    ON workflow_events(source_execution_id) 
+    WHERE source_execution_id IS NOT NULL;
+  
+  -- For event streaming (chronological order)
+  CREATE INDEX IF NOT EXISTS idx_events_created 
+    ON workflow_events(execution_id, created_at);
+`;
+
+/**
+ * Transform database row to WorkflowEvent
+ */
+function transformDbRowToEvent(row: Record<string, unknown>): WorkflowEvent {
+  const transformed = {
+    ...row,
+    payload: row.payload ? JSON.parse(row.payload as string) : undefined,
+  };
+
+  return WorkflowEventSchema.parse(transformed);
+}
 
 // ============================================================================
 // Queue Message Schema
@@ -389,7 +510,7 @@ function transformDbRowToExecution(
 ): WorkflowExecution {
   const transformed = {
     ...row,
-    inputs: row.inputs ? JSON.parse(row.inputs as string) : undefined,
+    input: row.input ? JSON.parse(row.input as string) : undefined,
     output: row.output ? JSON.parse(row.output as string) : undefined,
     retry_count: row.retry_count ?? 0,
     max_retries: row.max_retries ?? 10,
@@ -427,7 +548,7 @@ export {
   workflowTableIndexesQuery,
 
   // Workflow Execution
-  WorkflowExecutionStatusSchema,
+  WorkflowExecutionStatusEnum,
   WorkflowExecutionSchema,
   workflowExecutionTableIdempotentQuery,
   workflowExecutionTableIndexesQuery,
@@ -439,13 +560,18 @@ export {
   executionStepResultsTableIndexesQuery,
   transformDbRowToStepResult,
 
+  // Workflow Events (EventTypeEnum, WorkflowEventSchema already inline exported)
+  workflowEventsTableIdempotentQuery,
+  workflowEventsTableIndexesQuery,
+  transformDbRowToEvent,
+
   // Queue
   QueueMessageSchema,
 };
 
 export type {
-  WorkflowExecutionStatus,
   WorkflowExecution,
   ExecutionStepResult,
   QueueMessage,
+  WorkflowExecutionStatus,
 };

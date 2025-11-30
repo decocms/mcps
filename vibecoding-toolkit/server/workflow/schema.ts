@@ -1,22 +1,12 @@
-// ============================================================================
-// Execution Schemas
-// ============================================================================
-
 import {
   SleepActionSchema,
   CodeActionSchema,
   ToolCallActionSchema,
+  WaitForSignalActionSchema,
   type Step,
 } from "../collections/workflow.ts";
 import { z } from "zod";
 
-// ============================================================================
-// Validation Schemas
-// ============================================================================
-
-/**
- * Validation Error - Error during workflow validation
- */
 export const ValidationErrorSchema = z.object({
   type: z.enum([
     "missing_ref",
@@ -34,28 +24,31 @@ export const ValidationErrorSchema = z.object({
 
 export type ValidationError = z.infer<typeof ValidationErrorSchema>;
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
 export type ToolCallAction = z.infer<typeof ToolCallActionSchema>;
 export type CodeAction = z.infer<typeof CodeActionSchema>;
 export type SleepAction = z.infer<typeof SleepActionSchema>;
+export type WaitForSignalAction = z.infer<typeof WaitForSignalActionSchema>;
 
-/**
- * Get the step type
- */
 export function getStepType(step: Step): {
-  type: "tool" | "code" | "sleep" | "invalid";
-  action: ToolCallAction | CodeAction | SleepAction;
+  type: "tool" | "code" | "sleep" | "waitForSignal";
+  action: ToolCallAction | CodeAction | SleepAction | WaitForSignalAction;
 } {
   const isToolAction = ToolCallActionSchema.safeParse(step.action).success;
   const isCodeAction = CodeActionSchema.safeParse(step.action).success;
   const isSleepAction = SleepActionSchema.safeParse(step.action).success;
+  const isWaitForSignalAction = WaitForSignalActionSchema.safeParse(
+    step.action,
+  ).success;
+
   if (isToolAction)
     return { type: "tool", action: step.action as ToolCallAction };
   if (isCodeAction) return { type: "code", action: step.action as CodeAction };
   if (isSleepAction)
     return { type: "sleep", action: step.action as SleepAction };
+  if (isWaitForSignalAction)
+    return {
+      type: "waitForSignal",
+      action: step.action as WaitForSignalAction,
+    };
   throw new Error(`Unknown step type for step: ${step.name}`);
 }

@@ -1,4 +1,4 @@
-import { client } from "./rpc-logged";
+import { client } from "./rpc";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { FailedToFetchUserError } from "@/components/logged-provider";
 
@@ -56,6 +56,51 @@ export const useOptionalUser = () => {
           },
         },
       ),
+    retry: false,
+  });
+};
+
+export const useWorkflow = (id: string) => {
+  return useSuspenseQuery({
+    queryKey: ["workflow", id],
+    queryFn: () => client.COLLECTION_WORKFLOW_GET({ id }),
+    retry: false,
+  });
+};
+
+export type Integration = NonNullable<
+  Awaited<ReturnType<typeof client.STORE_LIST_INTEGRATIONS>>
+>["items"][number];
+export const useIntegrations = ({ query }: { query: string }) => {
+  return useSuspenseQuery({
+    queryKey: ["integrations", query],
+    queryFn: () =>
+      client.STORE_LIST_INTEGRATIONS({
+        query,
+      }),
+    retry: false,
+  });
+};
+
+export type Tool = NonNullable<
+  Awaited<ReturnType<typeof client.STORE_LIST_INTEGRATION_TOOLS>>
+>["items"][number];
+export const useIntegrationTools = ({
+  integrationId,
+}: {
+  integrationId: string;
+}) => {
+  return useSuspenseQuery({
+    queryKey: ["integration-tools", integrationId],
+    queryFn: () => client.STORE_LIST_INTEGRATION_TOOLS({ integrationId }),
+    retry: false,
+  });
+};
+
+export const useWorkflows = () => {
+  return useSuspenseQuery({
+    queryKey: ["workflows"],
+    queryFn: () => client.COLLECTION_WORKFLOW_LIST({ limit: 10 }),
     retry: false,
   });
 };

@@ -26,11 +26,25 @@ name = "DATABASE"
 type = "mcp"
 integration_name = "@deco/database"
 
-[[queues.producers]]
-binding = "WORKFLOW_QUEUE"
-queue = "queue"
+[[deco.bindings]]
+name = "OPENROUTER"
+type = "mcp"
+integration_name = "@deco/openrouter"
 
-[[queues.consumers]]
-queue = "queue"
-max_batch_size = 1
-max_batch_timeout = 1
+# QStash Configuration (secrets set via wrangler secret)
+# Run: wrangler secret put QSTASH_TOKEN
+# Run: wrangler secret put QSTASH_CURRENT_SIGNING_KEY
+# Run: wrangler secret put QSTASH_NEXT_SIGNING_KEY
+
+# Legacy Cloudflare Queues (commented out, replaced by QStash)
+# [[queues.producers]]
+# binding = "WORKFLOW_QUEUE"
+# queue = "queue"
+#
+# [[queues.consumers]]
+# queue = "queue"
+# max_batch_size = 1
+# max_batch_timeout = 1
+
+[env.dev.triggers]
+crons = ["* * * * *"]

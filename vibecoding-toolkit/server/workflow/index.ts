@@ -41,7 +41,7 @@
  *   triggers: [
  *     {
  *       workflowId: "downstream-workflow",
- *       inputs: { data: "@output.combined" }
+ *       input: { data: "@output.combined" }
  *     }
  *   ]
  * };
@@ -75,14 +75,71 @@ export {
   type CodeResult,
 } from "./transform-executor.ts";
 
+// Workflow types
+export type {
+  StepExecutionResult,
+  WorkflowExecutionResult,
+  ExecutorConfig,
+  TriggerResult,
+  StreamingStepResult,
+} from "./types.ts";
+
+export { isStreamingResult } from "./types.ts";
+
 // Workflow executor exports
+export { executeWorkflow } from "./executor.ts";
+
+// Workflow errors
 export {
-  executeWorkflow,
-  type StepExecutionResult,
-  type PhaseExecutionResult,
-  type WorkflowExecutionResult,
-  type ExecutorConfig,
-} from "./executor.ts";
+  WorkflowCancelledError,
+  StepContentionError,
+  ExecutionNotFoundError,
+  MaxRetriesExceededError,
+  DurableSleepError,
+  WaitingForSignalError,
+} from "./errors.ts";
+
+// Step executors (for testing/extension)
+export {
+  executeStep,
+  executeToolStep,
+  executeSleepStep,
+  executeWaitForSignalStep,
+} from "./step-executors.ts";
+
+// Connection utilities
+export { createProxyConnection } from "./connection.ts";
 
 // Validation exports
 export { validateWorkflow, type ValidationResult } from "./validator.ts";
+
+// Events API exports
+export {
+  // Core event functions
+  addEvent,
+  getPendingEvents,
+  consumeEvent,
+  getAllEventsAfter,
+  // Signal API
+  sendSignal,
+  waitForSignal,
+  // Timer API
+  scheduleTimer,
+  checkTimer,
+  // Inter-workflow messaging
+  sendMessage,
+  receiveMessage,
+  // Published events
+  setEvent,
+  getEvent,
+  // Observability
+  recordStepStarted,
+  recordStepCompleted,
+  recordWorkflowStarted,
+  recordWorkflowCompleted,
+  // Wake execution
+  wakeExecution,
+  // Types
+  type EventType,
+  type WorkflowEvent,
+} from "./events.ts";

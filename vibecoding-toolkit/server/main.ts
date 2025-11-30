@@ -5,17 +5,18 @@
  * Built on Cloudflare Workers, it serves:
  * - MCP server at /mcp
  * - React application views at /
- * - Workflow queue handler for durable execution
+ * - Workflow webhook handler for QStash-based durable execution
  * - Cron-based orphan recovery for stuck workflows
  *
  * ## Scheduler Architecture
  *
- * The toolkit uses a pluggable scheduler architecture for workflow execution:
- * - **Serverless (Cloudflare Workers)**: QueueScheduler with cron-based recovery
- * - **Traditional Servers (Node.js)**: PollingScheduler with adaptive intervals
+ * The toolkit uses QStash for workflow scheduling:
+ * - **Publishing**: QStash Client publishes messages with delays
+ * - **Receiving**: Webhook endpoint verifies signatures and processes messages
+ * - **Retries**: QStash handles retries automatically
  *
  * @see docs/SCHEDULER_ARCHITECTURE.md for full design
- * @see server/scheduler/ for scheduler implementations
+ * @see server/lib/scheduler.ts for scheduler implementations
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
@@ -26,12 +27,13 @@ import {
 
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
-import { MessageBatch, Queue } from "@cloudflare/workers-types";
-import { handleWorkflowQueue } from "./queue-handler.ts";
+import { MessageBatch } from "@cloudflare/workers-types";
+import { handleWorkflowQueue, handleQStashWebhook } from "./queue-handler.ts";
 import { QueueMessage } from "./collections/workflow.ts";
-
-// Re-export scheduler module for external use
-export * from "./scheduler/index.ts";
+import {
+  createQStashReceiver,
+  verifyQStashSignature,
+} from "./lib/scheduler.ts";
 
 // Re-export library utilities
 export * from "./lib/index.ts";
@@ -54,7 +56,12 @@ export type Env = DefaultEnv &
         params: any[];
       }) => Promise<{ rows: any[]; rowCount: number }>;
     };
-    WORKFLOW_QUEUE: Queue<any>;
+    /** QStash token for publishing messages */
+    QSTASH_TOKEN: string;
+    /** QStash signing key for verifying incoming webhooks */
+    QSTASH_CURRENT_SIGNING_KEY: string;
+    /** QStash next signing key (for key rotation) */
+    QSTASH_NEXT_SIGNING_KEY: string;
   };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
@@ -93,97 +100,93 @@ const runtime = withRuntime<Env, typeof StateSchema>({
    * If you wanted to add custom api routes that dont make sense to be a tool,
    * you can add them on this handler.
    */
-  fetch: (req, env) => env.ASSETS.fetch(req),
+  fetch: (req, env) => {
+    const url = new URL(req.url);
+
+    // Handle QStash webhook for workflow execution
+    if (url.pathname === "/api/workflow-webhook") {
+      return handleWorkflowWebhook(req, env);
+    }
+
+    return env.ASSETS.fetch(req);
+  },
 });
+
+/**
+ * Handle incoming QStash webhook for workflow execution
+ *
+ * This endpoint receives messages from QStash, verifies the signature,
+ * and processes the workflow execution.
+ */
+async function handleWorkflowWebhook(
+  req: Request,
+  env: Env,
+): Promise<Response> {
+  // Only accept POST requests
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  const signature = req.headers.get("Upstash-Signature");
+  if (!signature) {
+    console.warn("[WEBHOOK] Missing Upstash-Signature header");
+    return new Response("Missing signature", { status: 401 });
+  }
+
+  const body = await req.text();
+
+  // Verify the QStash signature
+  const receiver = createQStashReceiver({
+    currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
+    nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
+  });
+
+  const isValid = await verifyQStashSignature(receiver, signature, body);
+  if (!isValid) {
+    console.warn("[WEBHOOK] Invalid QStash signature");
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  // Process the workflow message
+  try {
+    const result = await handleQStashWebhook(body, env);
+
+    if (result.success) {
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } else {
+      // Return 500 to trigger QStash retry for retryable errors
+      return new Response(JSON.stringify(result), {
+        status: result.retryable ? 500 : 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  } catch (error) {
+    console.error("[WEBHOOK] Unexpected error:", error);
+    // Return 500 to trigger QStash retry
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+}
 
 export default {
   ...runtime,
 
   /**
-   * Queue handler for workflow execution.
-   * Processes workflow messages from Cloudflare Queues.
+   * Queue handler for workflow execution (legacy Cloudflare Queues).
+   * Kept for backward compatibility during migration.
    */
   async queue(batch: MessageBatch<QueueMessage>, env: Env) {
     await handleWorkflowQueue(batch, env);
   },
-
-  /**
-   * Scheduled handler for orphan recovery.
-   * Runs on a cron schedule to recover stuck workflows.
-   *
-   * Uses internal HTTP call to the MCP tool endpoint. Since cron handlers
-   * run with the worker's bindings, we can construct a request and route it
-   * through the runtime.
-   *
-   * To enable cron, add to wrangler.toml:
-   *   [triggers]
-   *   crons = ["*\/5 * * * *"]  (every 5 minutes)
-   */
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    console.log(`[CRON] Running orphan recovery (cron: ${event.cron})`);
-
-    try {
-      // Call the recovery tool via internal fetch
-      // The runtime handler will process this as an MCP tool call
-      const request = new Request(
-        `${env.DECO_APP_ENTRYPOINT || "http://localhost:8787"}/mcp/call-tool/RECOVER_ORPHAN_EXECUTIONS`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Deco-MCP-Client": "true",
-            // Cron jobs run without user auth - use internal service call
-            "X-Deco-Internal-Cron": "true",
-          },
-          body: JSON.stringify({
-            limit: 100,
-            lockExpiryBufferMs: 60000,
-            maxAgeMs: 24 * 60 * 60 * 1000,
-          }),
-        },
-      );
-
-      // Use waitUntil to ensure the request completes even if handler returns early
-      ctx.waitUntil(
-        (async () => {
-          try {
-            const response = await runtime.fetch!(
-              request as any,
-              env,
-              ctx as any,
-            );
-            if (!response.ok) {
-              console.error(
-                `[CRON] Recovery failed: ${response.status} ${response.statusText}`,
-              );
-              return;
-            }
-            const result = await response.json();
-            console.log(
-              `[CRON] Recovery complete:`,
-              JSON.stringify(result, null, 2),
-            );
-          } catch (error) {
-            console.error("[CRON] Recovery error:", error);
-          }
-        })(),
-      );
-    } catch (error) {
-      console.error("[CRON] Failed to initiate recovery:", error);
-    }
-  },
 };
-
-/**
- * Type definitions for Cloudflare scheduled events
- */
-interface ScheduledEvent {
-  cron: string;
-  type: "scheduled";
-  scheduledTime: number;
-}
-
-interface ExecutionContext {
-  waitUntil(promise: Promise<unknown>): void;
-  passThroughOnException(): void;
-}

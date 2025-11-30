@@ -46,20 +46,11 @@ export function isAtRef(value: unknown): value is `@${string}` {
  * Parse an @ref string into its components
  */
 export function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input" | "item" | "index" | "output";
+  type: "step" | "input" | "output";
   stepName?: string;
   path?: string;
 } {
   const refStr = ref.substring(1); // Remove @ prefix
-
-  // Special refs - @item and @item.path
-  if (refStr === "item" || refStr.startsWith("item.")) {
-    const path = refStr.startsWith("item.") ? refStr.substring(5) : "";
-    return { type: "item", path };
-  }
-  if (refStr === "index") {
-    return { type: "index" };
-  }
 
   // Input reference: @input.path.to.value
   if (refStr.startsWith("input")) {
@@ -137,36 +128,6 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
     const parsed = parseAtRef(ref);
 
     switch (parsed.type) {
-      case "item": {
-        if (ctx.item === undefined) {
-          return {
-            value: undefined,
-            error: "@item used outside of forEach loop",
-          };
-        }
-        // Support @item.path for accessing properties on the current item
-        const value = parsed.path
-          ? getValueByPath(ctx.item, parsed.path)
-          : ctx.item;
-        if (value === undefined && parsed.path) {
-          return {
-            value: undefined,
-            error: `Path not found on item: @item.${parsed.path}`,
-          };
-        }
-        return { value };
-      }
-
-      case "index": {
-        if (ctx.index === undefined) {
-          return {
-            value: undefined,
-            error: "@index used outside of forEach loop",
-          };
-        }
-        return { value: ctx.index };
-      }
-
       case "input": {
         const value = getValueByPath(ctx.workflowInput, parsed.path || "");
         if (value === undefined) {

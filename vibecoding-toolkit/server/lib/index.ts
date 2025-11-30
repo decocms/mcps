@@ -1,31 +1,11 @@
-/**
- * Library Index
- *
- * Re-exports all library utilities for convenient importing.
- *
- * Usage:
- * ```typescript
- * import { acquireLock, releaseLock, withRetry, trackExecutionError } from "./lib";
- * ```
- */
-
-// Workflow locking utilities
 export {
-  acquireLock,
   releaseLock,
-  extendLock,
-  getLockStatus,
-  withLock,
   type LockResult,
   type LockConfig,
 } from "./workflow-lock.ts";
 
-// Retry utilities
 export {
   calculateBackoff,
-  calculateStepBackoff,
-  isRetryableError,
-  sleep,
   DEFAULT_RETRY_CONFIG,
   DEFAULT_STEP_RETRY_CONFIG,
   type RetryConfig,
@@ -33,19 +13,46 @@ export {
   type RetryDecision,
 } from "./retry.ts";
 
-// Database utilities
 export {
-  isRetryableDbError,
-  withDbRetry,
-  markExecutionCompleted,
-  type DbRetryConfig,
-} from "../workflow/db-utils.ts";
+  cancelExecution,
+  checkIfCancelled,
+  resumeExecution,
+  getExecution,
+  createExecution,
+  updateExecution,
+  listExecutions,
+  getStepResults,
+  getStepResult,
+  createStepResult,
+  updateStepResult,
+  type CreateStepResultOutcome,
+} from "./execution-db.ts";
 
-// Orphan recovery utilities (for serverless cron jobs)
 export {
-  recoverOrphanedExecutions,
-  recoverPendingExecutions,
-  runFullRecovery,
-  type RecoveryConfig,
-  type RecoveryResult,
-} from "./orphan-recovery.ts";
+  WorkflowCancelledError,
+  StepContentionError,
+  ExecutionNotFoundError,
+  MaxRetriesExceededError,
+  DurableSleepError,
+  WaitingForSignalError,
+} from "../workflow/errors.ts";
+
+export {
+  sendSignal,
+  getSignals,
+  consumeSignal,
+  type WorkflowSignal,
+} from "../workflow/signals.ts";
+
+export {
+  createScheduler,
+  createQStashScheduler,
+  CloudflareQueueScheduler,
+  QStashScheduler,
+  createQStashReceiver,
+  verifyQStashSignature,
+  type Scheduler,
+  type ScheduleOptions,
+  type QStashSchedulerOptions,
+  type QStashReceiverOptions,
+} from "./scheduler.ts";

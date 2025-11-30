@@ -3,6 +3,13 @@
  *
  * These are internal engine functions, not exposed as collection tools.
  * They provide direct database access for the workflow execution engine.
+ *
+ * Follows DBOS patterns for durable workflow execution:
+ * - Checkpoint-based step results
+ * - Cancellation support with checkIfCancelled
+ * - Atomic state transitions
+ *
+ * @see https://github.com/dbos-inc/dbos-transact-ts
  */
 
 import type { Env } from "../main.ts";
@@ -11,12 +18,20 @@ import {
   ExecutionStepResultSchema,
   type WorkflowExecution,
   type ExecutionStepResult,
+  WorkflowExecutionStatus,
 } from "../collections/workflow.ts";
-import { ensureTable } from "./postgres.ts";
+import { WorkflowCancelledError } from "../workflow/errors.ts";
+import type { Scheduler } from "./scheduler.ts";
 
-// ============================================================================
-// Workflow Execution Functions
-// ============================================================================
+const safeJsonParse = (value: unknown): unknown => {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value as string);
+  } catch (error) {
+    console.error("[DB] Failed to parse JSON:", error);
+    return undefined;
+  }
+};
 
 /**
  * Transform database row to WorkflowExecution
@@ -24,35 +39,10 @@ import { ensureTable } from "./postgres.ts";
 function transformDbRowToExecution(
   row: Record<string, unknown> = {},
 ): WorkflowExecution {
-  // Safe JSON parsing helper
-  const safeJsonParse = (value: unknown): unknown => {
-    if (!value) return undefined;
-    try {
-      return JSON.parse(value as string);
-    } catch (error) {
-      console.error("[DB] Failed to parse JSON:", error);
-      return undefined;
-    }
-  };
-
   const transformed = {
     ...row,
     output: safeJsonParse(row.output),
-    inputs: safeJsonParse(row.inputs),
-    workflow_id: row.workflow_id as string,
-    id: row.id as string,
-    status: row.status as
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled",
-    created_at: row.created_at as string,
-    updated_at: row.updated_at as string,
-    created_by: row.created_by ? (row.created_by as string) : undefined,
-    retry_count: row.retry_count ?? 0,
-    max_retries: row.max_retries ?? 10,
-    started_at_epoch_ms: row.started_at_epoch_ms ?? undefined,
+    input: safeJsonParse(row.input),
   };
 
   return WorkflowExecutionSchema.parse(transformed);
@@ -65,8 +55,6 @@ export async function getExecution(
   env: Env,
   id: string,
 ): Promise<WorkflowExecution | null> {
-  await ensureTable(env, "workflow_executions");
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: "SELECT * FROM workflow_executions WHERE id = $1 LIMIT 1",
     params: [id],
@@ -85,12 +73,9 @@ export async function createExecution(
   env: Env,
   data: {
     workflow_id: string;
-    status?: "pending" | "running" | "completed" | "failed" | "cancelled";
-    inputs?: Record<string, unknown>;
+    input?: Record<string, unknown>;
   },
 ): Promise<WorkflowExecution> {
-  await ensureTable(env, "workflow_executions");
-
   const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
   const now = new Date().getTime();
   const id = crypto.randomUUID();
@@ -99,7 +84,7 @@ export async function createExecution(
     sql: `
       INSERT INTO workflow_executions (
         id, workflow_id, status, created_at, updated_at, created_by,
-        inputs, retry_count, max_retries
+        input, retry_count, max_retries
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9
       )
@@ -108,11 +93,11 @@ export async function createExecution(
     params: [
       id,
       data.workflow_id,
-      data.status || "pending",
+      "pending",
       now,
       now,
       user?.id || null,
-      JSON.stringify(data.inputs || {}),
+      JSON.stringify(data.input || {}),
       0,
       10,
     ],
@@ -130,10 +115,10 @@ export async function updateExecution(
   env: Env,
   id: string,
   data: Partial<{
-    status: "pending" | "running" | "completed" | "failed" | "cancelled";
-    output: Record<string, unknown>;
+    status: WorkflowExecutionStatus;
+    output: unknown;
     error: string;
-    inputs: Record<string, unknown>;
+    input: Record<string, unknown>;
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
     retry_count: number;
@@ -165,9 +150,9 @@ export async function updateExecution(
     setClauses.push(`error = $${paramIndex++}`);
     params.push(data.error);
   }
-  if (data.inputs !== undefined) {
-    setClauses.push(`inputs = $${paramIndex++}`);
-    params.push(JSON.stringify(data.inputs));
+  if (data.input !== undefined) {
+    setClauses.push(`input = $${paramIndex++}`);
+    params.push(JSON.stringify(data.input));
   }
   if (data.started_at_epoch_ms !== undefined) {
     setClauses.push(`started_at_epoch_ms = $${paramIndex++}`);
@@ -216,6 +201,146 @@ export async function updateExecution(
 }
 
 /**
+ * Cancel a workflow execution.
+ *
+ * Sets status to 'cancelled' and prevents further execution unless the execution is resumed.
+ * Does NOT stop currently running steps - they will complete but
+ * subsequent steps won't start. The executor checks cancellation
+ * at step boundaries via checkIfCancelled().
+ *
+ * @param env - Environment with database access
+ * @param executionId - The execution ID to cancel
+ * @returns The updated execution or null if not found
+ */
+export async function cancelExecution(
+  env: Env,
+  executionId: string,
+): Promise<WorkflowExecution | null> {
+  const now = Date.now();
+
+  // Only cancel if currently pending or running
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `
+      UPDATE workflow_executions
+      SET 
+        status = 'cancelled',
+        updated_at = $1,
+        completed_at_epoch_ms = $1,
+        error = $2
+      WHERE id = $3 AND status IN ('pending', 'running')
+      RETURNING *
+    `,
+    params: [now, "Execution cancelled by user", executionId],
+  });
+
+  const row = result.result[0]?.results?.[0] as
+    | Record<string, unknown>
+    | undefined;
+
+  if (!row) {
+    // Check if execution exists but wasn't in cancellable state
+    const existing = await getExecution(env, executionId);
+    if (existing) {
+      console.warn(
+        `[CANCEL] Execution ${executionId} is ${existing.status}, cannot cancel`,
+      );
+      return existing;
+    }
+    return null;
+  }
+
+  console.log(`[CANCEL] Cancelled execution ${executionId}`);
+  return transformDbRowToExecution(row);
+}
+
+/**
+ * Check if an execution has been cancelled and throw if so.
+ *
+ * @param env - Environment with database access
+ * @param executionId - The execution ID to check
+ * @throws WorkflowCancelledError if the execution is cancelled
+ */
+export async function checkIfCancelled(
+  env: Env,
+  executionId: string,
+): Promise<void> {
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: "SELECT status FROM workflow_executions WHERE id = $1",
+    params: [executionId],
+  });
+
+  const row = result.result[0]?.results?.[0] as
+    | { status: WorkflowExecutionStatus }
+    | undefined;
+
+  if (row?.status === "cancelled") {
+    throw new WorkflowCancelledError(executionId, "Execution was cancelled");
+  }
+}
+
+/**
+ * Resume a cancelled execution.
+ *
+ * Sets status back to 'pending' so it can be re-queued.
+ *
+ * @param env - Environment with database access
+ * @param scheduler - Scheduler for re-queuing
+ * @param executionId - The execution ID to resume
+ * @param options - Optional settings
+ * @returns The updated execution or null if not found/resumable
+ */
+export async function resumeExecution(
+  env: Env,
+  scheduler: Scheduler,
+  executionId: string,
+  options?: {
+    /** Reset retry count to 0 (default: true) */
+    resetRetries?: boolean;
+    /** Whether to re-queue after resuming (default: true) */
+    requeue?: boolean;
+  },
+): Promise<WorkflowExecution | null> {
+  const now = Date.now();
+  const resetRetries = options?.resetRetries ?? true;
+  const requeue = options?.requeue ?? true;
+
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `
+      UPDATE workflow_executions
+      SET 
+        status = 'pending',
+        updated_at = $1,
+        completed_at_epoch_ms = NULL,
+        error = NULL,
+        locked_until_epoch_ms = NULL,
+        lock_id = NULL
+        ${resetRetries ? ", retry_count = 0" : ""}
+      WHERE id = $2 AND status = 'cancelled'
+      RETURNING *
+    `,
+    params: [now, executionId],
+  });
+
+  const row = result.result[0]?.results?.[0] as
+    | Record<string, unknown>
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  console.log(`[RESUME] Resumed execution ${executionId}`);
+
+  if (requeue) {
+    await scheduler.schedule(executionId, {
+      authorization: env.DECO_REQUEST_CONTEXT.token,
+    });
+  }
+
+  return transformDbRowToExecution(row);
+}
+
+/**
  * List workflow executions with filtering
  */
 export async function listExecutions(
@@ -231,8 +356,6 @@ export async function listExecutions(
   totalCount: number;
   hasMore: boolean;
 }> {
-  await ensureTable(env, "workflow_executions");
-
   const { workflowId, status, limit = 50, offset = 0 } = options;
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -282,40 +405,16 @@ export async function listExecutions(
   };
 }
 
-// ============================================================================
-// Execution Step Result Functions
-// ============================================================================
-
 /**
  * Transform database row to ExecutionStepResult
  */
 function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
 ): ExecutionStepResult {
-  // Safe JSON parsing helper
-  const safeJsonParse = (
-    value: unknown,
-    defaultValue: unknown = undefined,
-  ): unknown => {
-    if (!value) return defaultValue;
-    try {
-      return JSON.parse(value as string);
-    } catch (error) {
-      console.error("[DB] Failed to parse JSON:", error);
-      return defaultValue;
-    }
-  };
-
   const transformed = {
     ...row,
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
-    errors: safeJsonParse(row.errors, []) as Array<{
-      message: string;
-      timestamp: string;
-      attempt: number;
-    }>,
-    attempt_count: (row.attempt_count ?? 1) as number,
   };
 
   return ExecutionStepResultSchema.parse(transformed);
@@ -328,8 +427,6 @@ export async function getStepResults(
   env: Env,
   executionId: string,
 ): Promise<ExecutionStepResult[]> {
-  await ensureTable(env, "execution_step_results");
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `SELECT * FROM execution_step_results WHERE execution_id = $1`,
     params: [executionId],
@@ -348,8 +445,6 @@ export async function getStepResult(
   executionId: string,
   stepId: string,
 ): Promise<ExecutionStepResult | null> {
-  await ensureTable(env, "execution_step_results");
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `SELECT * FROM execution_step_results WHERE execution_id = $1 AND step_id = $2`,
     params: [executionId, stepId],
@@ -361,12 +456,6 @@ export async function getStepResult(
   return row ? transformDbRowToStepResult(row) : null;
 }
 
-/**
- * Result of attempting to create a step result.
- * Used for detecting duplicate execution (contention handling).
- *
- * @see https://www.dbos.dev/blog/scaleable-decentralized-workflows
- */
 export interface CreateStepResultOutcome {
   /** The step result (either newly created or existing) */
   result: ExecutionStepResult;
@@ -388,35 +477,29 @@ export async function createStepResult(
   data: {
     execution_id: string;
     step_id: string;
-    status?: "pending" | "running" | "completed" | "failed";
-    input?: Record<string, unknown>;
     started_at_epoch_ms?: number;
   },
 ): Promise<CreateStepResultOutcome> {
-  await ensureTable(env, "execution_step_results");
-
   const startedAt = data.started_at_epoch_ms ?? Date.now();
-  const status = data.status || "running";
+
+  console.log("🚀 ~ createStepResult ~ data:", JSON.stringify(data, null, 2));
 
   // Try to INSERT - if UNIQUE conflict, RETURNING gives nothing
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       INSERT INTO execution_step_results
-      (execution_id, step_id, status, input, started_at_epoch_ms, attempt_count, errors)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (execution_id, step_id, started_at_epoch_ms)
+      VALUES ($1, $2, $3)
       ON CONFLICT (execution_id, step_id) DO NOTHING
       RETURNING *
     `,
-    params: [
-      data.execution_id,
-      data.step_id,
-      status,
-      data.input ? JSON.stringify(data.input) : null,
-      startedAt,
-      1,
-      "[]",
-    ],
+    params: [data.execution_id, data.step_id, startedAt],
   });
+
+  console.log(
+    "🚀 ~ createStepResult ~ result:",
+    JSON.stringify(result, null, 2),
+  );
 
   // If we got a row back, we won the race (created it)
   if (result.result[0]?.results?.length) {
@@ -450,31 +533,16 @@ export async function updateStepResult(
   executionId: string,
   stepId: string,
   data: Partial<{
-    status: "pending" | "running" | "completed" | "failed";
-    input: Record<string, unknown>;
-    output: unknown; // Can be object or array (forEach steps produce arrays)
+    output: unknown;
     error: string;
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
-    attempt_count: number;
-    last_error: string;
-    errors: Array<{ message: string; timestamp: string; attempt: number }>;
   }>,
 ): Promise<ExecutionStepResult> {
-  await ensureTable(env, "execution_step_results");
-
   const setClauses: string[] = [];
   const params: unknown[] = [];
   let paramIndex = 1;
 
-  if (data.status !== undefined) {
-    setClauses.push(`status = $${paramIndex++}`);
-    params.push(data.status);
-  }
-  if (data.input !== undefined) {
-    setClauses.push(`input = $${paramIndex++}`);
-    params.push(JSON.stringify(data.input));
-  }
   if (data.output !== undefined) {
     setClauses.push(`output = $${paramIndex++}`);
     params.push(JSON.stringify(data.output));
@@ -491,18 +559,6 @@ export async function updateStepResult(
     setClauses.push(`completed_at_epoch_ms = $${paramIndex++}`);
     params.push(data.completed_at_epoch_ms);
   }
-  if (data.attempt_count !== undefined) {
-    setClauses.push(`attempt_count = $${paramIndex++}`);
-    params.push(data.attempt_count);
-  }
-  if (data.last_error !== undefined) {
-    setClauses.push(`last_error = $${paramIndex++}`);
-    params.push(data.last_error);
-  }
-  if (data.errors !== undefined) {
-    setClauses.push(`errors = $${paramIndex++}`);
-    params.push(JSON.stringify(data.errors));
-  }
 
   if (!setClauses.length) {
     const existing = await getStepResult(env, executionId, stepId);
@@ -513,12 +569,12 @@ export async function updateStepResult(
 
   params.push(executionId, stepId);
 
-  // Don't overwrite a completed step (contention safety)
+  // Don't overwrite a completed step
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE execution_step_results
       SET ${setClauses.join(", ")}
-      WHERE execution_id = $${paramIndex++} AND step_id = $${paramIndex} AND status != 'completed'
+      WHERE execution_id = $${paramIndex++} AND step_id = $${paramIndex} AND completed_at_epoch_ms IS NULL
       RETURNING *
     `,
     params,

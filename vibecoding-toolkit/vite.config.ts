@@ -35,6 +35,11 @@ export default defineConfig({
   assetsInclude: ["**/*.wasm"],
 
   optimizeDeps: {
+    include: [
+      "use-sync-external-store",
+      "use-sync-external-store/shim",
+      "use-sync-external-store/shim/with-selector",
+    ],
     exclude: [
       "@jitl/quickjs-wasmfile-release-sync",
       "quickjs-emscripten-core",

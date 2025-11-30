@@ -52,11 +52,6 @@ function validateStepRefs(
   // Get all @refs used in this step
   const refs = extractRefs(step.input || {});
 
-  // Also check forEach ref
-  if (step.forEach) {
-    refs.push(step.forEach);
-  }
-
   for (const ref of refs) {
     const parsed = parseAtRef(ref as `@${string}`);
 
@@ -90,20 +85,6 @@ function validateStepRefs(
 
       case "input":
         // Input refs are always valid at this stage (validated at execution time)
-        break;
-
-      case "item":
-      case "index":
-        // Only valid if step has forEach
-        if (!step.forEach) {
-          errors.push({
-            type: "missing_ref",
-            step: step.name,
-            field: "input",
-            ref,
-            message: `@${parsed.type} used but step has no forEach`,
-          });
-        }
         break;
 
       case "output":
@@ -155,13 +136,6 @@ async function validateCodeStep(step: Step): Promise<{
   };
 }
 
-// ============================================================================
-// Trigger Validators
-// ============================================================================
-
-/**
- * Validate @refs in trigger inputs
- */
 function validateTriggerRefs(
   trigger: Trigger,
   triggerIndex: number,
@@ -170,12 +144,7 @@ function validateTriggerRefs(
   const errors: ValidationError[] = [];
   const triggerId = `trigger-${triggerIndex}`;
 
-  const refs = extractRefs(trigger.inputs);
-
-  // Also check forEach ref
-  if (trigger.forEach) {
-    refs.push(trigger.forEach);
-  }
+  const refs = extractRefs(trigger.input);
 
   for (const ref of refs) {
     const parsed = parseAtRef(ref as `@${string}`);
@@ -191,7 +160,7 @@ function validateTriggerRefs(
           errors.push({
             type: "missing_ref",
             step: triggerId,
-            field: "inputs",
+            field: "input",
             ref,
             message: `Step '${stepName}' not found in workflow`,
           });
@@ -200,20 +169,6 @@ function validateTriggerRefs(
       }
 
       case "input":
-        // Valid - can reference workflow input
-        break;
-
-      case "item":
-      case "index":
-        if (!trigger.forEach) {
-          errors.push({
-            type: "missing_ref",
-            step: triggerId,
-            field: "inputs",
-            ref,
-            message: `@${parsed.type} used but trigger has no forEach`,
-          });
-        }
         break;
     }
   }
@@ -221,15 +176,6 @@ function validateTriggerRefs(
   return errors;
 }
 
-// ============================================================================
-// Main Validator
-// ============================================================================
-
-/**
- * Validate a workflow definition
- *
- * Returns validation errors and extracted schemas for caching.
- */
 export async function validateWorkflow(
   workflow: Workflow,
 ): Promise<ValidationResult> {
@@ -239,58 +185,36 @@ export async function validateWorkflow(
     { input: Record<string, unknown>; output: Record<string, unknown> }
   > = {};
 
-  // Track all step names for uniqueness check
   const stepNames = new Set<string>();
   const duplicateNames = new Set<string>();
 
-  // Build available steps map as we go
   const availableSteps = new Map<string, number>();
 
-  // Validate phases
   for (let phaseIndex = 0; phaseIndex < workflow.steps.length; phaseIndex++) {
     const phase = workflow.steps[phaseIndex];
 
     for (const step of phase) {
-      // Check for duplicate names
       if (stepNames.has(step.name)) {
         duplicateNames.add(step.name);
       }
       stepNames.add(step.name);
 
-      // Validate @refs
       const refErrors = validateStepRefs(step, availableSteps);
       errors.push(...refErrors);
       const stepType = getStepType(step);
 
-      // Validate transform steps
       if (stepType.type === "code") {
         const { error, schema } = await validateCodeStep(step);
         if (error) errors.push(error);
         if (schema) schemas[step.name] = schema;
       }
-
-      // Validate forEach maxIterations
-      if (
-        step.forEach &&
-        step.maxIterations !== undefined &&
-        step.maxIterations <= 0
-      ) {
-        errors.push({
-          type: "invalid_typescript",
-          step: step.name,
-          field: "maxIterations",
-          message: "maxIterations must be positive",
-        });
-      }
     }
 
-    // After validating phase, add its steps to available map
     for (const step of phase) {
       availableSteps.set(step.name, phaseIndex);
     }
   }
 
-  // Report duplicate names
   for (const name of duplicateNames) {
     errors.push({
       type: "invalid_typescript",
@@ -300,7 +224,6 @@ export async function validateWorkflow(
     });
   }
 
-  // Validate triggers
   if (workflow.triggers) {
     for (let i = 0; i < workflow.triggers.length; i++) {
       const trigger = workflow.triggers[i];

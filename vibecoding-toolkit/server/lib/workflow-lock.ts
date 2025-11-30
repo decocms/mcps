@@ -1,24 +1,16 @@
-/**
- * Workflow Execution Locking
- *
- * Implements optimistic locking for workflow executions to prevent
- * concurrent execution of the same workflow. Uses timestamp-based
- * locking that works across SQLite, MySQL, and PostgreSQL.
- *
- * @see docs/WORKFLOW_EXECUTION_DESIGN.md Section 4.3
- */
-
 import type { Env } from "../main.ts";
 
 export interface LockResult {
-  acquired: boolean;
-  lockId?: string;
+  lockedExecution: {
+    id: string;
+    lockId: string;
+    workflowId: string;
+    input: Record<string, unknown>;
+    maxRetries: number;
+  };
 }
-
 export interface LockConfig {
-  /** Lock duration in milliseconds. Default: 5 minutes */
   durationMs?: number;
-  /** Whether to log lock operations. Default: true */
   verbose?: boolean;
 }
 
@@ -36,12 +28,12 @@ const DEFAULT_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
  * @param config - Lock configuration options
  * @returns LockResult with acquired status and lockId if successful
  */
-export async function acquireLock(
+export async function lockWorkflowExecution(
   env: Env,
   executionId: string,
   config: LockConfig = {},
 ): Promise<LockResult> {
-  const { durationMs = DEFAULT_LOCK_DURATION_MS, verbose = true } = config;
+  const { durationMs = DEFAULT_LOCK_DURATION_MS } = config;
 
   const lockId = crypto.randomUUID();
   const now = Date.now();
@@ -59,34 +51,52 @@ export async function acquireLock(
         WHERE id = $4 
           AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $5)
           AND status IN ('pending', 'running')
+        RETURNING id, lock_id, workflow_id, input, max_retries
       `,
       params: [lockUntil, lockId, now, executionId, now],
     });
 
     // Check if WE got the lock (our lockId is now in the row)
     const check = await env.DATABASE.DATABASES_RUN_SQL({
-      sql: "SELECT lock_id FROM workflow_executions WHERE id = $1",
+      sql: "SELECT * FROM workflow_executions WHERE id = $1",
       params: [executionId],
     });
 
     const row = check.result[0]?.results?.[0] as
-      | { lock_id: string | null }
+      | {
+          id: string;
+          lock_id: string | null;
+          workflow_id: string;
+          input: Record<string, unknown>;
+          max_retries: number;
+        }
       | undefined;
     const acquired = row?.lock_id === lockId;
 
-    if (verbose) {
-      console.log(
-        `[LOCK] ${acquired ? "Acquired" : "Failed to acquire"} lock for ${executionId}`,
-      );
+    if (!acquired) {
+      throw new Error(`Could not acquire lock for execution ${executionId}`);
+    }
+
+    if (!row?.workflow_id) {
+      throw new Error(`Workflow not found for execution ${executionId}`);
+    }
+
+    if (!row.lock_id) {
+      throw new Error(`Lock not found for execution ${executionId}`);
     }
 
     return {
-      acquired,
-      lockId: acquired ? lockId : undefined,
+      lockedExecution: {
+        id: row.id,
+        lockId: row.lock_id,
+        workflowId: row.workflow_id,
+        input: row.input ?? {},
+        maxRetries: row.max_retries ?? 10,
+      },
     };
   } catch (error) {
     console.error(`[LOCK] Error acquiring lock for ${executionId}:`, error);
-    return { acquired: false };
+    throw error;
   }
 }
 /**
@@ -131,140 +141,5 @@ export async function releaseLock(
   } catch (error) {
     console.error(`[LOCK] Error releasing lock for ${executionId}:`, error);
     return false;
-  }
-}
-
-/**
- * Extend an existing lock (refresh timeout).
- * Useful for long-running steps that need more time.
- *
- * @param env - Environment with database access
- * @param executionId - The workflow execution ID
- * @param lockId - The current lock ID
- * @param additionalMs - Additional milliseconds to extend the lock
- * @returns true if the lock was extended, false otherwise
- */
-export async function extendLock(
-  env: Env,
-  executionId: string,
-  lockId: string,
-  additionalMs: number = DEFAULT_LOCK_DURATION_MS,
-): Promise<boolean> {
-  const newLockUntil = new Date(Date.now() + additionalMs);
-
-  try {
-    const result = await env.DATABASE.DATABASES_RUN_SQL({
-      sql: `
-        UPDATE workflow_executions 
-        SET locked_until_epoch_ms = $1, updated_at = $2
-        WHERE id = $3 AND lock_id = $4
-        RETURNING id
-      `,
-      params: [
-        newLockUntil.getTime(),
-        new Date().getTime(),
-        executionId,
-        lockId,
-      ],
-    });
-
-    const extended = (result.result[0]?.results?.length ?? 0) > 0;
-
-    if (extended) {
-      console.log(`[LOCK] Extended lock for ${executionId}`);
-    }
-
-    return extended;
-  } catch (error) {
-    console.error(`[LOCK] Error extending lock for ${executionId}:`, error);
-    return false;
-  }
-}
-
-/**
- * Check if an execution is currently locked.
- * Useful for diagnostics and UI.
- *
- * @param env - Environment with database access
- * @param executionId - The workflow execution ID
- * @returns Lock status information
- */
-export async function getLockStatus(
-  env: Env,
-  executionId: string,
-): Promise<{
-  isLocked: boolean;
-  lockedUntil?: number;
-  lockId?: string;
-}> {
-  try {
-    const result = await env.DATABASE.DATABASES_RUN_SQL({
-      sql: `
-        SELECT locked_until_epoch_ms, lock_id 
-        FROM workflow_executions 
-        WHERE id = $1
-      `,
-      params: [executionId],
-    });
-
-    const row = result.result[0]?.results?.[0] as
-      | {
-          locked_until_epoch_ms?: number;
-          lock_id?: string;
-        }
-      | undefined;
-
-    if (!row) {
-      return { isLocked: false };
-    }
-
-    const now = new Date();
-    const lockedUntil = row.locked_until_epoch_ms
-      ? new Date(row.locked_until_epoch_ms)
-      : null;
-    const isLocked = lockedUntil !== null && lockedUntil > now;
-
-    return {
-      isLocked,
-      lockedUntil: row.locked_until_epoch_ms,
-      lockId: row.lock_id,
-    };
-  } catch (error) {
-    console.error(
-      `[LOCK] Error checking lock status for ${executionId}:`,
-      error,
-    );
-    return { isLocked: false };
-  }
-}
-
-/**
- * Wrapper that executes a function while holding a lock.
- * Automatically acquires lock before execution and releases after.
- *
- * @param env - Environment with database access
- * @param executionId - The workflow execution ID
- * @param fn - Function to execute while holding the lock
- * @param config - Lock configuration options
- * @returns Result of the function or throws if lock couldn't be acquired
- */
-export async function withLock<T>(
-  env: Env,
-  executionId: string,
-  fn: (lockId: string) => Promise<T>,
-  config: LockConfig = {},
-): Promise<T> {
-  const lock = await acquireLock(env, executionId, config);
-
-  if (!lock.acquired || !lock.lockId) {
-    throw new Error(
-      `LOCKED: Could not acquire lock for execution ${executionId}`,
-    );
-  }
-
-  try {
-    return await fn(lock.lockId);
-  } finally {
-    await releaseLock(env, executionId, lock.lockId);
   }
 }

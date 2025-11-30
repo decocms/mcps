@@ -16,15 +16,11 @@ import {
   callFunction,
   installConsole,
   type QuickJSHandle,
+  type SandboxRuntime,
+  SandboxContext,
 } from "@deco/cf-sandbox";
 import { transform } from "sucrase";
 
-/**
- * Transpile TypeScript to JavaScript using sucrase.
- *
- * Sucrase is a fast, lightweight TypeScript transformer that works in edge
- * environments (Cloudflare Workers) where the full TypeScript compiler doesn't.
- */
 export function transpileTypeScript(code: string): string {
   const result = transform(code, {
     transforms: ["typescript"],
@@ -34,12 +30,6 @@ export function transpileTypeScript(code: string): string {
   return result.code;
 }
 
-/**
- * Extract Input and Output interface schemas from TypeScript code
- *
- * This is a simplified parser - in production you'd use the TypeScript compiler API
- * to properly parse and convert interfaces to JSON Schema.
- */
 export function extractSchemas(code: string): {
   input: Record<string, unknown>;
   output: Record<string, unknown>;
@@ -124,50 +114,40 @@ export function extractSchemas(code: string): {
   };
 }
 
-/**
- * Transform execution result
- */
 export interface CodeResult {
   success: boolean;
   output?: unknown;
   error?: string;
   logs?: string[];
 }
-
-/**
- * Execute a code step in the QuickJS sandbox
- *
- * @param code - TypeScript code with Input/Output interfaces
- * @param input - Input data (already resolved @refs)
- * @param stepName - Step name for logging
- */
 export async function executeCode(
   code: string,
   input: unknown,
   stepName: string,
 ): Promise<CodeResult> {
-  let ctx: any;
-  let runtime: any;
+  let ctx: SandboxContext | undefined;
+
+  console.log(`[SANDBOX] Starting executeCode for '${stepName}'`);
 
   try {
-    // 1. Transpile TypeScript to JavaScript
+    console.log(`[SANDBOX] Transpiling TypeScript for '${stepName}'`);
     const jsCode = transpileTypeScript(code);
+    console.log(`[SANDBOX] Transpiled OK, creating runtime for '${stepName}'`);
 
-    // 2. Create sandbox runtime (unique ID to avoid cache corruption)
-    runtime = await createSandboxRuntime(
+    const runtime = await createSandboxRuntime(
       `transform-${stepName}-${Date.now()}`,
       {
         memoryLimitBytes: 64 * 1024 * 1024, // 64MB
         stackSizeBytes: 1 << 20, // 1MB
       },
     );
+    console.log(`[SANDBOX] Runtime created for '${stepName}'`);
 
     ctx = runtime.newContext({ interruptAfterMs: 10000 }); // 10s timeout
+    console.log(`[SANDBOX] Context created for '${stepName}'`);
 
-    // 3. Install console for logging
     const guestConsole = installConsole(ctx);
 
-    // 4. Evaluate the module
     const result = ctx.evalCode(jsCode, "transform.js", {
       strict: true,
       strip: true,
@@ -183,7 +163,6 @@ export async function executeCode(
       exportsHandle = ctx.unwrapResult(result);
     }
 
-    // 5. Get the default export
     const defaultHandle = ctx.getProp(exportsHandle, "default");
 
     if (ctx.typeof(defaultHandle) !== "function") {
@@ -193,28 +172,25 @@ export async function executeCode(
       };
     }
 
-    // 6. Call the function with input
     const callHandle = await callFunction(ctx, defaultHandle, undefined, input);
     const unwrappedResult = ctx.unwrapResult(callHandle);
     const output = ctx.dump(unwrappedResult);
+    const logs = guestConsole.logs.map((log) =>
+      typeof log === "string" ? log : JSON.stringify(log),
+    );
 
     return {
       success: true,
       output,
-      logs: guestConsole.logs.map((log) =>
-        typeof log === "string" ? log : JSON.stringify(log),
-      ),
+      logs,
     };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: err instanceof Error ? err.message : String(err),
     };
   } finally {
-    // Only dispose context, runtime is cached and reused
-    if (ctx) {
-      ctx.dispose();
-    }
+    ctx?.dispose();
   }
 }
 
@@ -229,17 +205,14 @@ export async function validateCode(
   error?: string;
   schemas?: ReturnType<typeof extractSchemas>;
 }> {
-  let ctx: any;
-  let runtime: any;
+  let ctx: SandboxContext | undefined;
+  let runtime: SandboxRuntime;
 
   try {
-    // 1. Extract schemas
     const schemas = extractSchemas(code);
 
-    // 2. Transpile TypeScript to JavaScript
     const jsCode = transpileTypeScript(code);
 
-    // 3. Create sandbox runtime for validation
     runtime = await createSandboxRuntime(`validate-${stepName}-${Date.now()}`, {
       memoryLimitBytes: 32 * 1024 * 1024,
       stackSizeBytes: 512 * 1024,
@@ -247,7 +220,6 @@ export async function validateCode(
 
     ctx = runtime.newContext({ interruptAfterMs: 5000 });
 
-    // 4. Try to evaluate the code
     const result = ctx.evalCode(jsCode, "validate.js", {
       strict: true,
       strip: true,
@@ -263,7 +235,6 @@ export async function validateCode(
       exportsHandle = ctx.unwrapResult(result);
     }
 
-    // 5. Check for default export
     const defaultHandle = ctx.getProp(exportsHandle, "default");
 
     if (ctx.typeof(defaultHandle) !== "function") {
@@ -280,9 +251,6 @@ export async function validateCode(
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {
-    // Only dispose context, runtime is cached and reused
-    if (ctx) {
-      ctx.dispose();
-    }
+    ctx?.dispose();
   }
 }

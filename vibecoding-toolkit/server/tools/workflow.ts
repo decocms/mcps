@@ -13,11 +13,7 @@ import {
   createCollectionUpdateOutputSchema,
 } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";
-import {
-  buildOrderByClause,
-  buildWhereClause,
-  ensureCollectionsTables,
-} from "../lib/postgres.ts";
+import { buildOrderByClause, buildWhereClause } from "../lib/postgres.ts";
 import { z } from "zod";
 import {
   StepSchema,
@@ -38,6 +34,11 @@ function transformDbRowToWorkflow(row: unknown): Workflow {
         ? JSON.parse(r.steps)
         : r.steps
       : [],
+    triggers: r.triggers
+      ? typeof r.triggers === "string"
+        ? JSON.parse(r.triggers)
+        : r.triggers
+      : [],
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
@@ -52,8 +53,6 @@ export const createListTool = (env: Env) =>
     inputSchema: CollectionListInputSchema,
     outputSchema: createCollectionListOutputSchema(WorkflowSchema),
     execute: async ({ context }) => {
-      await ensureCollectionsTables(env);
-
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       let whereClause = "";
@@ -188,9 +187,9 @@ export const createInsertTool = (env: Env) =>
           sql: `
               INSERT INTO workflows (
                 id, title, created_at, updated_at, created_by, updated_by,
-                description, steps
+                description, steps, triggers
               ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8
+                $1, $2, $3, $4, $5, $6, $7, $8, $9
               )
               RETURNING *
             `,
@@ -204,8 +203,8 @@ export const createInsertTool = (env: Env) =>
             workflow.description || undefined,
             JSON.stringify({
               phases: workflow.steps,
-              triggers: workflow.triggers,
-            }),
+            }) || "{}",
+            JSON.stringify(workflow.triggers || []) || "{}",
           ],
         });
 
