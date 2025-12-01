@@ -55,7 +55,6 @@ export const soraTools = createVideoGeneratorTools<
         inputReferenceUrl,
       );
 
-      // Poll until complete (10 minutes max, poll every 10 seconds)
       const videoResponse = await client.pollVideoUntilComplete(
         createResponse.id,
         OPERATION_MAX_WAIT_MS,
