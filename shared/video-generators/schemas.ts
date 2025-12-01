@@ -19,6 +19,7 @@ export const GenerateVideoInputSchema = z.object({
   prompt: z
     .string()
     .describe("The text prompt describing the video to generate"),
+  model: z.string().describe("Model identifier to use for video generation"),
   baseImageUrl: z
     .string()
     .nullable()
@@ -50,6 +51,14 @@ export const GenerateVideoInputSchema = z.object({
     .describe("Control person generation in video"),
   negativePrompt: z.string().optional().describe("What to avoid in generation"),
 });
+
+export const createGenerateVideoInputSchema = <T extends string>(
+  models: readonly T[],
+) => {
+  return GenerateVideoInputSchema.extend({
+    model: z.enum(models as [T, ...T[]]),
+  });
+};
 
 export const GenerateVideoOutputSchema = z.object({
   video: z.string().optional().describe("URL of the generated video"),
@@ -103,7 +112,16 @@ export type ListVideosOutput = z.infer<typeof ListVideosOutputSchema>;
 export const ExtendVideoInputSchema = z.object({
   videoId: z.string().describe("ID of the video to extend/remix"),
   prompt: z.string().describe("New prompt to guide the video extension"),
+  model: z.string().describe("Model identifier to use for video extension"),
 });
+
+export const createExtendVideoInputSchema = <T extends string>(
+  models: readonly T[],
+) => {
+  return ExtendVideoInputSchema.extend({
+    model: z.enum(models as [T, ...T[]]),
+  });
+};
 
 export const ExtendVideoOutputSchema = z.object({
   video: z.string().optional().describe("URL of the extended video"),

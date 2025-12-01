@@ -1,5 +1,5 @@
 import type { Env } from "server/main";
-import { createSoraClient } from "./utils/sora";
+import { createSoraClient, SoraModels, type SoraModel } from "./utils/sora";
 import { createVideoGeneratorTools } from "@decocms/mcps-shared/video-generators";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 import {
@@ -30,17 +30,22 @@ function mapDuration(duration?: number): string {
 
 export const soraTools = createVideoGeneratorTools<
   Env,
-  ReturnType<typeof createSoraClient>
+  ReturnType<typeof createSoraClient>,
+  SoraModel
 >({
   metadata: {
     provider: "Sora 2",
     description: "Generate videos using OpenAI Sora 2",
+    models: SoraModels.options,
   },
   getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
   getClient: (env) => createSoraClient(env),
 
   generateTool: {
     execute: async ({ client, input }) => {
+      const modelToUse = input.model ?? "sora-2";
+      const parsedModel: SoraModel = SoraModels.parse(modelToUse);
+
       const size = mapAspectRatioToSize(input.aspectRatio);
 
       const seconds = mapDuration(input.duration);
@@ -49,7 +54,7 @@ export const soraTools = createVideoGeneratorTools<
 
       const createResponse = await client.createVideo(
         input.prompt,
-        "sora-2",
+        parsedModel,
         seconds,
         size,
         inputReferenceUrl,
@@ -117,9 +122,14 @@ export const soraTools = createVideoGeneratorTools<
 
   extendTool: {
     execute: async ({ client, input }) => {
+      // Parse and validate model with default fallback
+      const modelToUse = input.model ?? "sora-2";
+      const parsedModel: SoraModel = SoraModels.parse(modelToUse);
+
       const remixResponse = await client.remixVideo(
         input.videoId,
         input.prompt,
+        parsedModel,
       );
 
       // Poll until complete
