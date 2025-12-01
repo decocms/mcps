@@ -16,6 +16,8 @@ import {
   ListVideosOutputSchema,
   ExtendVideoInputSchema,
   ExtendVideoOutputSchema,
+  createGenerateVideoInputSchema,
+  createExtendVideoInputSchema,
 } from "./schemas";
 import type {
   GenerateVideoInput,
@@ -96,6 +98,7 @@ export interface VideoGeneratorEnv {
 export interface GenerateToolConfig<
   TEnv extends VideoGeneratorEnv,
   TClient = unknown,
+  TModel extends string = string,
 > {
   execute: ({
     env,
@@ -103,7 +106,7 @@ export interface GenerateToolConfig<
     client,
   }: {
     env: TEnv;
-    input: GenerateVideoInput;
+    input: GenerateVideoInput & { model: TModel };
     client: TClient;
   }) => Promise<GenerateVideoCallbackOutput>;
   getContract: (env: TEnv) => {
@@ -140,6 +143,7 @@ export interface ListToolConfig<
 export interface ExtendToolConfig<
   TEnv extends VideoGeneratorEnv,
   TClient = unknown,
+  TModel extends string = string,
 > {
   execute: ({
     env,
@@ -147,7 +151,7 @@ export interface ExtendToolConfig<
     client,
   }: {
     env: TEnv;
-    input: ExtendVideoInput;
+    input: ExtendVideoInput & { model: TModel };
     client: TClient;
   }) => Promise<ExtendVideoCallbackOutput>;
   getContract?: (env: TEnv) => {
@@ -159,16 +163,18 @@ export interface ExtendToolConfig<
 export interface CreateVideoGeneratorOptions<
   TEnv extends VideoGeneratorEnv,
   TClient = unknown,
+  TModel extends string = string,
 > {
   metadata: {
     provider: string;
     description?: string;
+    models?: readonly TModel[];
   };
   getStorage: (env: TEnv) => VideoGeneratorStorage;
   getClient?: (env: TEnv) => TClient;
-  generateTool: GenerateToolConfig<TEnv, TClient>;
+  generateTool: GenerateToolConfig<TEnv, TClient, TModel>;
   listTool?: ListToolConfig<TEnv, TClient>;
-  extendTool?: ExtendToolConfig<TEnv, TClient>;
+  extendTool?: ExtendToolConfig<TEnv, TClient, TModel>;
 }
 
 const MAX_VIDEO_GEN_RETRIES = 3;
@@ -177,16 +183,26 @@ const MAX_VIDEO_GEN_TIMEOUT_MS = 360_000; // 6 minutes for video generation
 export function createVideoGeneratorTools<
   TEnv extends VideoGeneratorEnv,
   TClient = unknown,
->(options: CreateVideoGeneratorOptions<TEnv, TClient>) {
+  TModel extends string = string,
+>(options: CreateVideoGeneratorOptions<TEnv, TClient, TModel>) {
+  // Create schemas once, outside of tool functions
+  const generateVideoInputSchema = options.metadata.models
+    ? createGenerateVideoInputSchema(options.metadata.models)
+    : GenerateVideoInputSchema;
+
+  const extendVideoInputSchema = options.metadata.models
+    ? createExtendVideoInputSchema(options.metadata.models)
+    : ExtendVideoInputSchema;
+
   const generateVideo = (env: TEnv) =>
     createPrivateTool({
       id: "GENERATE_VIDEO",
       description:
         options.metadata.description ||
         `Generate videos using ${options.metadata.provider}`,
-      inputSchema: GenerateVideoInputSchema,
+      inputSchema: generateVideoInputSchema,
       outputSchema: GenerateVideoOutputSchema,
-      execute: async ({ context }: { context: GenerateVideoInput }) => {
+      execute: async ({ context }) => {
         const doExecute = async () => {
           const contract = options.generateTool.getContract(env);
 
@@ -202,7 +218,7 @@ export function createVideoGeneratorTools<
           const client = options.getClient?.(env) as TClient;
           const result = await options.generateTool.execute({
             env,
-            input: context,
+            input: context as GenerateVideoInput & { model: TModel },
             client,
           });
 
@@ -277,9 +293,9 @@ export function createVideoGeneratorTools<
         createPrivateTool({
           id: "EXTEND_VIDEO",
           description: `Extend or remix an existing video using ${options.metadata.provider}. Creates a new video based on an existing one with a new prompt.`,
-          inputSchema: ExtendVideoInputSchema,
+          inputSchema: extendVideoInputSchema,
           outputSchema: ExtendVideoOutputSchema,
-          execute: async ({ context }: { context: ExtendVideoInput }) => {
+          execute: async ({ context }) => {
             const doExecute = async () => {
               const contractConfig = options.extendTool!.getContract?.(env);
 
@@ -302,7 +318,7 @@ export function createVideoGeneratorTools<
               const client = options.getClient?.(env) as TClient;
               const result = await options.extendTool!.execute({
                 env,
-                input: context,
+                input: context as ExtendVideoInput & { model: TModel },
                 client,
               });
 
