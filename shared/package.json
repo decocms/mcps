@@ -5,7 +5,6 @@
     "type": "module",
     "description": "Shared dependencies for Deco CMS MCPs",
     "exports": {
-        "./vite-plugin": "./deco-vite-plugin.ts",
         "./tools/user": "./tools/user.ts",
         "./tools/file-management": "./tools/file-management/index.ts",
         "./tools": "./tools/index.ts",
