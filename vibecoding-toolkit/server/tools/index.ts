@@ -5,18 +5,7 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { userTools } from "@decocms/mcps-shared/tools/user";
 import { agentTools } from "./agent.ts";
-import { mcpBindingTools } from "./mcp-binding.ts";
 
 // Export all tools from all domains
-export const tools = [
-  ...userTools,
-  ...agentTools,
-  // MCP Binding - implements MCP_CONFIGURATION
-  ...mcpBindingTools,
-];
-
-// Re-export domain-specific tools for direct access if needed
-export { userTools } from "@decocms/mcps-shared/tools/user";
-export { mcpBindingTools } from "./mcp-binding.ts";
+export const tools = [...agentTools];
