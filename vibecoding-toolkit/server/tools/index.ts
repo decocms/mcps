@@ -7,9 +7,16 @@
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
 import { agentTools } from "./agent.ts";
+import { mcpBindingTools } from "./mcp-binding.ts";
 
 // Export all tools from all domains
-export const tools = [...userTools, ...agentTools];
+export const tools = [
+  ...userTools,
+  ...agentTools,
+  // MCP Binding - implements MCP_CONFIGURATION
+  ...mcpBindingTools,
+];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
+export { mcpBindingTools } from "./mcp-binding.ts";
