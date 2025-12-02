@@ -17,7 +17,7 @@ import {
  */
 export const createTextToSpeechTool = (env: Env) =>
   createTool({
-    id: "TEXT_TO_SPEECH",
+    id: "text_to_speech",
     description:
       "Converte texto em áudio usando Google Cloud Text-to-Speech. Retorna áudio em base64 que pode ser salvo como arquivo MP3 ou outro formato especificado.",
     inputSchema: z.object({

@@ -13,7 +13,7 @@ import { DEFAULT_LANGUAGE, SUPPORTED_SPEECH_MODELS } from "../constants.ts";
  */
 export const createSpeechToTextTool = (env: Env) =>
   createTool({
-    id: "SPEECH_TO_TEXT",
+    id: "speech_to_text",
     description:
       "Converte áudio em texto usando Google Cloud Speech-to-Text. Suporta múltiplos formatos de áudio e idiomas. Retorna a transcrição com nível de confiança.",
     inputSchema: z.object({

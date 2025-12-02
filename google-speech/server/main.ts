@@ -86,7 +86,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
    * If you wanted to add custom api routes that dont make sense to be a tool,
    * you can add them on this handler.
    */
-  fetch: (req, env) => env.ASSETS.fetch(req),
+  fetch: (req, env) => {
+    if (env.ASSETS?.fetch) {
+      return env.ASSETS.fetch(req);
+    }
+    return new Response("Not Found", { status: 404 });
+  },
 });
 
 export default runtime;
