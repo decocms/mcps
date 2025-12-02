@@ -2,7 +2,7 @@
 name = "vibecoding-toolkit"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_flags = ["nodejs_compat"]
 scope = "deco"
 
 [assets]
@@ -19,4 +19,4 @@ local = false
 [[deco.bindings]]
 name = "DATABASE"
 type = "mcp"
-integration_name = "@deco/database"
+app_name = "@deco/database"
