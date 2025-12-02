@@ -8,16 +8,10 @@
  */
 
 import type { Env } from "../main.ts";
-import {
-  type EventType,
-  type WorkflowEvent,
-  transformDbRowToEvent,
-} from "../collections/workflow.ts";
+import { transformDbRowToEvent } from "../collections/workflow.ts";
 import { ensureTable } from "../lib/postgres.ts";
-import { createQStashScheduler, type Scheduler } from "../lib/scheduler.ts";
-
-// Re-export types for convenience
-export type { EventType, WorkflowEvent };
+import { createQStashScheduler, type Scheduler } from "./scheduler.ts";
+import { WorkflowEvent, type EventType } from "@decocms/bindings/workflow";
 
 // ============================================================================
 // Core Event Functions

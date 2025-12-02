@@ -10,7 +10,7 @@
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
 
-import { getStepType, ValidationError } from "./schema.ts";
+import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 import { validateCode } from "./transform-executor.ts";
 import {
@@ -18,15 +18,33 @@ import {
   Step,
   Trigger,
   Workflow,
-} from "../collections/workflow.ts";
+} from "@decocms/bindings/workflow";
+import { getStepType } from "./step-executors.ts";
 
 // ============================================================================
 // Validation Result
 // ============================================================================
 
+export const ValidationErrorSchema = z.object({
+  type: z.enum([
+    "missing_ref",
+    "type_mismatch",
+    "missing_schema",
+    "invalid_typescript",
+  ]),
+  step: z.string(),
+  field: z.string(),
+  ref: z.string().optional(),
+  expected: z.record(z.unknown()).optional(),
+  actual: z.record(z.unknown()).optional(),
+  message: z.string(),
+});
+
+export type ValidationError = z.infer<typeof ValidationErrorSchema>;
+
 export interface ValidationResult {
   valid: boolean;
-  errors: ValidationError[];
+  errors: unknown[];
   schemas?: Record<
     string,
     {
@@ -203,7 +221,7 @@ export async function validateWorkflow(
       errors.push(...refErrors);
       const stepType = getStepType(step);
 
-      if (stepType.type === "code") {
+      if (stepType === "code") {
         const { error, schema } = await validateCodeStep(step);
         if (error) errors.push(error);
         if (schema) schemas[step.name] = schema;

@@ -8,7 +8,6 @@
  */
 
 import type { Env } from "../main.ts";
-import { type Step, type Trigger } from "../collections/workflow.ts";
 import type { RefContext } from "./ref-resolver.ts";
 import type {
   ExecutorConfig,
@@ -17,7 +16,6 @@ import type {
   WorkflowExecutionResult,
 } from "./types.ts";
 import { canResolveAllRefs, resolveAllRefs } from "./ref-resolver.ts";
-import { getStepType } from "./schema.ts";
 import { executeStep } from "./step-executors.ts";
 import {
   checkIfCancelled,
@@ -27,13 +25,14 @@ import {
   updateExecution,
   updateStepResult,
 } from "../lib/execution-db.ts";
-import { lockWorkflowExecution, releaseLock } from "../lib/workflow-lock.ts";
+import { lockWorkflowExecution, releaseLock } from "./lock.ts";
 import {
   DurableSleepError,
   WaitingForSignalError,
   WorkflowCancelledError,
 } from "./errors.ts";
-import type { Scheduler } from "../lib/scheduler.ts";
+import type { Scheduler } from "./scheduler.ts";
+import type { Step, Trigger } from "@decocms/bindings/workflow";
 
 // Re-export for backwards compatibility
 export type { ExecutorConfig, StepExecutionResult, WorkflowExecutionResult };
@@ -89,7 +88,7 @@ async function executeStepWithCheckpoint(
         };
       }
       // Allow waitForSignal steps to be picked up by multiple workers
-      if (getStepType(step).type !== "waitForSignal") {
+      if ("signalName" in step.action && step.action.signalName) {
         throw new Error(
           `CONTENTION: Step ${step.name} is being executed by another worker`,
         );
@@ -264,7 +263,7 @@ async function enqueueTrigger(
   });
 
   await scheduler.schedule(executionId, {
-    authorization: env.DECO_REQUEST_CONTEXT.token,
+    authorization: env.MESH_REQUEST_CONTEXT.token,
   });
 
   return executionId;

@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { Env } from "../main.ts";
 import z from "zod";
 import Fuse from "fuse.js";

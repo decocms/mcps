@@ -14,7 +14,7 @@ import {
   CollectionGetInputSchema,
   createCollectionGetOutputSchema,
 } from "@decocms/bindings/collections";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { ensureAgentsTable, getPostgres } from "../lib/postgres.ts";
 import type { Env } from "../main.ts";

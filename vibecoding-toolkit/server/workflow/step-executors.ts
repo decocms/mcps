@@ -6,7 +6,7 @@
  */
 
 import type { Env } from "../main.ts";
-import type { Step } from "../collections/workflow.ts";
+import type { CodeAction, Step } from "@decocms/bindings/workflow";
 import type { RefContext } from "./ref-resolver.ts";
 import type {
   SleepStepResult,
@@ -19,8 +19,7 @@ import {
   SleepActionSchema,
   ToolCallActionSchema,
   WaitForSignalActionSchema,
-} from "../collections/workflow.ts";
-import { CodeAction, getStepType } from "./schema.ts";
+} from "@decocms/bindings/workflow";
 import { executeCode } from "./transform-executor.ts";
 import { consumeSignal, getSignals } from "./signals.ts";
 import { createProxyConnection } from "./connection.ts";
@@ -71,8 +70,8 @@ export async function executeToolStep(
   let result: unknown;
 
   const connection = createProxyConnection(connectionId, {
-    workspace: env.DECO_WORKSPACE,
-    token: env.DECO_REQUEST_CONTEXT.token,
+    workspace: env.DECO_CHAT_WORKSPACE as string,
+    token: env.MESH_REQUEST_CONTEXT.token,
   });
 
   result = await env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
@@ -218,6 +217,14 @@ export async function executeWaitForSignalStep(
   );
 }
 
+export function getStepType(step: Step): "tool" | "code" | "sleep" | "signal" {
+  if ("toolName" in step.action) return "tool";
+  if ("code" in step.action) return "code";
+  if ("sleepUntil" in step.action || "sleepMs" in step.action) return "sleep";
+  if ("signalName" in step.action) return "signal";
+  throw new Error("Unknown step type");
+}
+
 /**
  * Execute a step based on its type
  */
@@ -229,13 +236,11 @@ export async function executeStep(
   executionId: string,
   existingStepResult: { started_at_epoch_ms?: number | null; output?: unknown },
 ): Promise<StepExecutionResult> {
-  const stepType = getStepType(step);
+  const stepType = getStepType(step) as "tool" | "code" | "sleep" | "signal";
   const startedAt = Date.now();
-  console.log(
-    `[STEP] Executing step '${step.name}' of type '${stepType.type}'`,
-  );
+  console.log(`[STEP] Executing step '${step.name}' of type '${stepType}'`);
 
-  switch (stepType.type) {
+  switch (stepType) {
     case "tool": {
       const result = await executeToolStep(env, step, resolvedInput);
       return {
@@ -251,7 +256,7 @@ export async function executeStep(
       console.log(`[STEP] About to executeCode for '${step.name}'`);
       try {
         const result = await executeCode(
-          (stepType.action as CodeAction).code,
+          (step.action as CodeAction).code,
           resolvedInput,
           step.name,
         );
@@ -287,7 +292,7 @@ export async function executeStep(
       };
     }
 
-    case "waitForSignal": {
+    case "signal": {
       const result = await executeWaitForSignalStep(
         env,
         step,

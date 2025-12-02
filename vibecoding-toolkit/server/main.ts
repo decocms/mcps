@@ -19,21 +19,17 @@
  * @see server/lib/scheduler.ts for scheduler implementations
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import {
-  type Env as DecoEnv,
-  Scopes,
-  StateSchema,
-} from "../shared/deco.gen.ts";
+import { type Env as DecoEnv, Scopes } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-import { views } from "./views.ts";
 import { MessageBatch } from "@cloudflare/workers-types";
 import { handleWorkflowQueue, handleQStashWebhook } from "./queue-handler.ts";
 import { QueueMessage } from "./collections/workflow.ts";
 import {
   createQStashReceiver,
   verifyQStashSignature,
-} from "./lib/scheduler.ts";
+} from "./workflow/scheduler.ts";
+import { ExtendedStateSchema } from "./tools/mcp-binding.ts";
 
 // Re-export library utilities
 export * from "./lib/index.ts";
@@ -64,7 +60,7 @@ export type Env = DefaultEnv &
     QSTASH_NEXT_SIGNING_KEY: string;
   };
 
-const runtime = withRuntime<Env, typeof StateSchema>({
+const runtime = withRuntime<Env, typeof ExtendedStateSchema>({
   oauth: {
     /**
      * These scopes define the asking permissions of your
@@ -91,9 +87,9 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * fields to the state schema, like asking for an API Key
      * for connecting to a third-party service.
      */
-    state: StateSchema,
+    state: ExtendedStateSchema,
   },
-  views,
+  views: [],
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.

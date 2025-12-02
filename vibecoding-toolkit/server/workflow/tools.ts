@@ -1,13 +1,13 @@
 import z from "zod";
 import type { Env } from "../main.ts";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { executeWorkflow } from "./executor.ts";
 import {
   cancelExecution,
   createExecution,
   getExecution,
 } from "../lib/execution-db.ts";
-import { createQStashScheduler } from "../lib/scheduler.ts";
+import { createQStashScheduler } from "./scheduler.ts";
 import { sendSignal } from "./signals.ts";
 
 /**
@@ -112,7 +112,7 @@ export const createAndQueueExecutionTool = (env: Env) =>
 
       const scheduler = createQStashScheduler(env);
       await scheduler.schedule(execution.id, {
-        authorization: env.DECO_REQUEST_CONTEXT.token,
+        authorization: env.MESH_REQUEST_CONTEXT.token,
       });
 
       return { success: true, executionId: execution.id };

@@ -2,7 +2,7 @@ export {
   releaseLock,
   type LockResult,
   type LockConfig,
-} from "./workflow-lock.ts";
+} from "../workflow/lock.ts";
 
 export {
   calculateBackoff,
@@ -55,4 +55,4 @@ export {
   type ScheduleOptions,
   type QStashSchedulerOptions,
   type QStashReceiverOptions,
-} from "./scheduler.ts";
+} from "../workflow/scheduler.ts";

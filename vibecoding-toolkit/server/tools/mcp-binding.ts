@@ -13,7 +13,7 @@ import {
   MCP_BINDING,
   McpConfigurationOutputSchema,
 } from "@decocms/bindings/mcp";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { Env } from "../main.ts";

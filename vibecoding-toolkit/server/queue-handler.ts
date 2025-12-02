@@ -15,7 +15,7 @@ import {
 } from "./collections/workflow.ts";
 import type { WorkflowExecutionResult } from "./workflow/types.ts";
 import { calculateBackoff, DEFAULT_RETRY_CONFIG } from "./workflow/retry.ts";
-import { createQStashScheduler, type Scheduler } from "./lib/scheduler.ts";
+import { createQStashScheduler, type Scheduler } from "./workflow/scheduler.ts";
 
 const MAX_MESSAGE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
