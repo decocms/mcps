@@ -5,20 +5,11 @@
  * application at /.
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
-import { z } from "zod";
+import { type Env as DecoEnv } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
-
-// Extend the state schema with PostgreSQL connection string
-const ExtendedStateSchema = StateSchema.extend({
-  postgresConnectionString: z
-    .string()
-    .describe(
-      "PostgreSQL connection string (e.g., postgres://user:password@host:port/database)",
-    ),
-});
+import { ExtendedStateSchema } from "./tools/mcp-binding.ts";
 
 /**
  * This Env type is the main context object that is passed to
