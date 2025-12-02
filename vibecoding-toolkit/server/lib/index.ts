@@ -11,7 +11,7 @@ export {
   type RetryConfig,
   type StepRetryConfig,
   type RetryDecision,
-} from "./retry.ts";
+} from "../workflow/retry.ts";
 
 export {
   cancelExecution,

@@ -19,10 +19,10 @@ import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
  * are internal engine tables managed by direct database functions.
  */
 const collectionsQueries = {
-  // agents: {
-  //   idempotent: agentTableIdempotentQuery,
-  //   indexes: agentTableIndexesQuery,
-  // },
+  agents: {
+    idempotent: agentTableIdempotentQuery,
+    indexes: agentTableIndexesQuery,
+  },
   workflows: {
     idempotent: workflowTableIdempotentQuery,
     indexes: workflowTableIndexesQuery,

@@ -12,16 +12,16 @@
  * @see https://github.com/dbos-inc/dbos-transact-ts
  */
 
-import type { Env } from "../main.ts";
 import {
+  WorkflowExecution,
   WorkflowExecutionSchema,
-  ExecutionStepResultSchema,
-  type WorkflowExecution,
-  type ExecutionStepResult,
   WorkflowExecutionStatus,
-} from "../collections/workflow.ts";
+  WorkflowExecutionStepResult,
+  WorkflowExecutionStepResultSchema,
+} from "@decocms/bindings/workflow";
+import type { Env } from "../main.ts";
 import { WorkflowCancelledError } from "../workflow/errors.ts";
-import type { Scheduler } from "./scheduler.ts";
+import { Scheduler } from "server/workflow/scheduler.ts";
 
 const safeJsonParse = (value: unknown): unknown => {
   if (!value) return undefined;
@@ -410,14 +410,14 @@ export async function listExecutions(
  */
 function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
-): ExecutionStepResult {
+): WorkflowExecutionStepResult {
   const transformed = {
     ...row,
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
   };
 
-  return ExecutionStepResultSchema.parse(transformed);
+  return WorkflowExecutionStepResultSchema.parse(transformed);
 }
 
 /**
@@ -426,7 +426,7 @@ function transformDbRowToStepResult(
 export async function getStepResults(
   env: Env,
   executionId: string,
-): Promise<ExecutionStepResult[]> {
+): Promise<WorkflowExecutionStepResult[]> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `SELECT * FROM execution_step_results WHERE execution_id = $1`,
     params: [executionId],
@@ -444,7 +444,7 @@ export async function getStepResult(
   env: Env,
   executionId: string,
   stepId: string,
-): Promise<ExecutionStepResult | null> {
+): Promise<WorkflowExecutionStepResult | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `SELECT * FROM execution_step_results WHERE execution_id = $1 AND step_id = $2`,
     params: [executionId, stepId],
@@ -458,7 +458,7 @@ export async function getStepResult(
 
 export interface CreateStepResultOutcome {
   /** The step result (either newly created or existing) */
-  result: ExecutionStepResult;
+  result: WorkflowExecutionStepResult;
   /** Whether we won the race (created) or lost (conflict with existing) */
   created: boolean;
 }
@@ -538,7 +538,7 @@ export async function updateStepResult(
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
   }>,
-): Promise<ExecutionStepResult> {
+): Promise<WorkflowExecutionStepResult> {
   const setClauses: string[] = [];
   const params: unknown[] = [];
   let paramIndex = 1;

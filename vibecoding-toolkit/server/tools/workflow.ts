@@ -3,15 +3,7 @@
 // ============================================================================
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
-import {
-  CollectionDeleteInputSchema,
-  CollectionGetInputSchema,
-  CollectionListInputSchema,
-  createCollectionGetOutputSchema,
-  createCollectionListOutputSchema,
-  createCollectionUpdateInputSchema,
-  createCollectionUpdateOutputSchema,
-} from "@decocms/bindings/collections";
+import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";
 import {
   buildOrderByClause,
@@ -19,13 +11,54 @@ import {
   ensureCollectionsTables,
 } from "../lib/postgres.ts";
 import { z } from "zod";
-import {
-  StepSchema,
-  TriggerSchema,
-  Workflow,
-  WorkflowSchema,
-} from "../collections/workflow.ts";
 import { validateWorkflow } from "../workflow/validator.ts";
+import {
+  Workflow,
+  WORKFLOWS_BINDING,
+  WorkflowSchema,
+} from "@decocms/bindings/workflow";
+
+const LIST_BINDING = WORKFLOWS_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_LIST",
+);
+const GET_BINDING = WORKFLOWS_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_GET",
+);
+const CREATE_BINDING = WORKFLOWS_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_CREATE",
+);
+const UPDATE_BINDING = WORKFLOWS_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_UPDATE",
+);
+const DELETE_BINDING = WORKFLOWS_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_DELETE",
+);
+
+if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_LIST binding not found or missing schemas",
+  );
+}
+if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_GET binding not found or missing schemas",
+  );
+}
+if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_CREATE binding not found or missing schemas",
+  );
+}
+if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_UPDATE binding not found or missing schemas",
+  );
+}
+if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_DELETE binding not found or missing schemas",
+  );
+}
 
 function transformDbRowToWorkflow(row: unknown): Workflow {
   const r = row as Record<string, unknown>;
@@ -54,9 +87,13 @@ export const createListTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_LIST",
     description: "List workflows with filtering, sorting, and pagination",
-    inputSchema: CollectionListInputSchema,
+    inputSchema: LIST_BINDING.inputSchema,
     outputSchema: createCollectionListOutputSchema(WorkflowSchema),
-    execute: async ({ context }) => {
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof LIST_BINDING.inputSchema>;
+    }) => {
       try {
         await ensureCollectionsTables(env);
       } catch (error) {
@@ -112,10 +149,14 @@ export const createListTool = (env: Env) =>
 export const createGetTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_GET",
-    description: "Get a single workflow by ID",
-    inputSchema: CollectionGetInputSchema,
-    outputSchema: createCollectionGetOutputSchema(WorkflowSchema),
-    execute: async ({ context }) => {
+    description: "Get a single agent by ID",
+    inputSchema: GET_BINDING.inputSchema,
+    outputSchema: GET_BINDING.outputSchema,
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof GET_BINDING.inputSchema>;
+    }) => {
       const { id } = context;
 
       const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -137,28 +178,8 @@ export const createInsertTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_INSERT",
     description: "Create a new workflow with validation",
-    inputSchema: z.object({
-      data: z.object({
-        title: z.string().min(1),
-        description: z.string().optional(),
-        steps: z.array(z.array(StepSchema)),
-        triggers: z.array(TriggerSchema).optional(),
-      }),
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      item: WorkflowSchema.optional(),
-      errors: z
-        .array(
-          z.object({
-            type: z.string(),
-            step: z.string(),
-            field: z.string(),
-            message: z.string(),
-          }),
-        )
-        .optional(),
-    }),
+    inputSchema: CREATE_BINDING.inputSchema,
+    outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {
         const { data } = context;
@@ -182,15 +203,7 @@ export const createInsertTool = (env: Env) =>
         const validation = await validateWorkflow(workflow);
 
         if (!validation.valid) {
-          return {
-            success: false,
-            errors: validation.errors.map((e) => ({
-              type: e.type,
-              step: e.step,
-              field: e.field,
-              message: e.message,
-            })),
-          };
+          throw new Error("Invalid workflow");
         }
 
         const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -218,41 +231,23 @@ export const createInsertTool = (env: Env) =>
           ],
         });
 
+        const item = result.result[0]?.results?.[0] as Record<string, unknown>;
+
         return {
-          success: true,
-          item: transformDbRowToWorkflow(
-            result.result[0]?.results?.[0] as Record<string, unknown>,
-          ),
+          item: transformDbRowToWorkflow(item),
         };
       } catch (error) {
-        return {
-          success: false,
-          errors: [
-            {
-              type: "internal",
-              step: "",
-              field: "",
-              message: error instanceof Error ? error.message : String(error),
-            },
-          ],
-        };
+        console.error("Error creating workflow:", error);
+        throw error;
       }
     },
   });
-
 export const createUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_UPDATE",
     description: "Update an existing workflow",
-    inputSchema: createCollectionUpdateInputSchema(
-      z.object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        steps: z.array(z.array(StepSchema)).optional(),
-        triggers: z.array(TriggerSchema).optional(),
-      }),
-    ),
-    outputSchema: createCollectionUpdateOutputSchema(WorkflowSchema),
+    inputSchema: UPDATE_BINDING.inputSchema,
+    outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       const user = await env.SELF.GET_USER({});
       const now = new Date().toISOString();
@@ -317,7 +312,7 @@ export const createDeleteTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_DELETE",
     description: "Delete a workflow by ID",
-    inputSchema: CollectionDeleteInputSchema,
+    inputSchema: DELETE_BINDING.inputSchema,
     outputSchema: z.object({
       success: z.boolean(),
       id: z.string(),
