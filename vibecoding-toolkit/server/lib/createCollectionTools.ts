@@ -59,7 +59,7 @@ export function createCollectionTools<
   getDb: (env: Env) => Promise<any>,
 ) {
   const toolName = (operation: string) =>
-    `DECO_COLLECTION_${collectionName.toUpperCase()}_${operation}`;
+    `COLLECTION_${collectionName.toUpperCase()}_${operation}`;
 
   // Helper to build where conditions from expression
   const buildWhereCondition = (
