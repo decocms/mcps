@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@deco/cf-sandbox": "workspace:*",
-    "@decocms/bindings": "^0.2.4",
+    "@decocms/bindings": "/Users/pedrofranca/Documents/dev/decocms/admin/packages/bindings",
     "@decocms/runtime": "0.24.0",
     "@decocms/ui": "/Users/pedrofranca/Documents/dev/decocms/admin/packages/ui",
     "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",

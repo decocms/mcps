@@ -215,7 +215,9 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
 
 export const createDefaultStep = (name: string): Step => ({
   name,
-  action: { code: "// Transform code here\nreturn input;" },
+  action: {
+    code: "interface Input { items: string[] }\ninterface Output { names: string[] }\nexport default (input: Input): Output => ({ names: input.items.map(i => i.toUpperCase()) })",
+  },
 });
 
 export const createDefaultPhase = (): Phase => [];

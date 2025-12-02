@@ -13,7 +13,11 @@ import {
   createCollectionUpdateOutputSchema,
 } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";
-import { buildOrderByClause, buildWhereClause } from "../lib/postgres.ts";
+import {
+  buildOrderByClause,
+  buildWhereClause,
+  ensureCollectionsTables,
+} from "../lib/postgres.ts";
 import { z } from "zod";
 import {
   StepSchema,
@@ -53,6 +57,12 @@ export const createListTool = (env: Env) =>
     inputSchema: CollectionListInputSchema,
     outputSchema: createCollectionListOutputSchema(WorkflowSchema),
     execute: async ({ context }) => {
+      try {
+        await ensureCollectionsTables(env);
+      } catch (error) {
+        console.error("Error ensuring collections tables:", error);
+        throw error;
+      }
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       let whereClause = "";
