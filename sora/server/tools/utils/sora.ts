@@ -9,7 +9,8 @@ import {
   pollUntilComplete,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 
-export const models = z.enum(["sora-2"]);
+export const SoraModels = z.enum(["sora-2"]);
+export type SoraModel = z.infer<typeof SoraModels>;
 
 export const VideoResponseSchema = z.object({
   id: z.string(),
@@ -145,9 +146,11 @@ export async function remixVideo(
   env: Env,
   videoId: string,
   prompt: string,
+  model: string = "sora-2",
 ): Promise<VideoResponse> {
   const body = {
     prompt,
+    model,
   };
 
   const data = await makeOpenAIRequest(
@@ -270,8 +273,8 @@ export const createSoraClient = (env: Env) => ({
     size?: string,
     inputReferenceUrl?: string,
   ) => createVideo(env, prompt, model, seconds, size, inputReferenceUrl),
-  remixVideo: (videoId: string, prompt: string) =>
-    remixVideo(env, videoId, prompt),
+  remixVideo: (videoId: string, prompt: string, model?: string) =>
+    remixVideo(env, videoId, prompt, model),
   listVideos: (limit?: number, after?: string) => listVideos(env, limit, after),
   retrieveVideo: (videoId: string) => retrieveVideo(env, videoId),
   retrieveVideoContent: (videoId: string) => retrieveVideoContent(env, videoId),

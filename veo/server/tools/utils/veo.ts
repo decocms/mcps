@@ -9,7 +9,6 @@ import {
   fetchImageAsBase64,
 } from "@decocms/mcps-shared/tools/utils/api-client";
 
-// Veo 3 model variants
 export const VeoModels = z.enum([
   "veo-3.1-generate-preview",
   "veo-3.1-fast-generate-preview",

@@ -1,5 +1,5 @@
 import type { Env } from "server/main";
-import { createVeoClient } from "./utils/veo";
+import { createVeoClient, VeoModels, type VeoModel } from "./utils/veo";
 import { createVideoGeneratorTools } from "@decocms/mcps-shared/video-generators";
 import { adaptFileSystemBindingToObjectStorage } from "@decocms/mcps-shared/storage";
 import {
@@ -9,37 +9,37 @@ import {
 
 export const veoTools = createVideoGeneratorTools<
   Env,
-  ReturnType<typeof createVeoClient>
+  ReturnType<typeof createVeoClient>,
+  VeoModel
 >({
   metadata: {
     provider: "Veo",
     description: "Generate videos using Veo",
+    models: VeoModels.options,
   },
   getStorage: (env) => adaptFileSystemBindingToObjectStorage(env.FILE_SYSTEM),
   getClient: (env) => createVeoClient(env),
 
   generateTool: {
     execute: async ({ client, input }) => {
-      // Veo only supports 16:9 and 9:16, default to 16:9 for other ratios
+      const modelToUse = input.model ?? "veo-3.1-generate-preview";
+      const parsedModel: VeoModel = VeoModels.parse(modelToUse);
+
       const veoAspectRatio =
         input.aspectRatio === "16:9" || input.aspectRatio === "9:16"
           ? input.aspectRatio
           : "16:9";
 
       // Start video generation
-      const operation = await client.generateVideo(
-        input.prompt,
-        "veo-3.1-generate-preview",
-        {
-          aspectRatio: veoAspectRatio,
-          durationSeconds: input.duration,
-          referenceImages: input.referenceImages,
-          firstFrameImageUrl: input.firstFrameUrl,
-          lastFrameImageUrl: input.lastFrameUrl,
-          personGeneration: input.personGeneration,
-          negativePrompt: input.negativePrompt,
-        },
-      );
+      const operation = await client.generateVideo(input.prompt, parsedModel, {
+        aspectRatio: veoAspectRatio,
+        durationSeconds: input.duration,
+        referenceImages: input.referenceImages,
+        firstFrameImageUrl: input.firstFrameUrl,
+        lastFrameImageUrl: input.lastFrameUrl,
+        personGeneration: input.personGeneration,
+        negativePrompt: input.negativePrompt,
+      });
 
       // Poll until complete (6 minutes max, poll every 10 seconds)
       const completed = await client.pollOperationUntilComplete(
@@ -84,10 +84,14 @@ export const veoTools = createVideoGeneratorTools<
   },
   extendTool: {
     execute: async ({ client, input }) => {
+      // Parse and validate model with default fallback
+      const modelToUse = input.model ?? "veo-3.1-generate-preview";
+      const parsedModel: VeoModel = VeoModels.parse(modelToUse);
+
       const operation = await client.extendVideo(
         input.videoId,
         input.prompt,
-        "veo-3.1-generate-preview",
+        parsedModel,
       );
 
       // Poll until complete (6 minutes max, poll every 10 seconds)

@@ -120,6 +120,7 @@ try {
     "PINECONE_INDEX",
     "APIFY_TOKEN",
     "REPLICATE_API_TOKEN",
+    "PERPLEXITY_API_KEY",
   ];
 
   const autoEnvArgs: string[] = [];
