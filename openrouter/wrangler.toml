@@ -12,7 +12,7 @@ local = false
 
 [deco.integration]
 description = "OpenRouter App Connection for LLM uses."
-icon = "https://openrouter.ai/favicon.ico"
+icon = "https://assets.decocache.com/decocms/b2e2f64f-6025-45f7-9e8c-3b3ebdd073d8/openrouter_logojpg.jpg"
 friendlyName = "OpenRouter"
 
 [[deco.bindings]]
