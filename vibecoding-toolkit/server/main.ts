@@ -53,6 +53,23 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 		state: StateSchema,
 	},
 	tools,
+	cors: {
+		origin: (origin) => {
+			// Allow localhost and configured origins
+			if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+				return origin;
+			}
+			// TODO: Configure allowed origins from environment
+			return origin;
+		},
+		credentials: true,
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
+	},
 });
 
-export default runtime;
+export default {
+	fetch: (req: Request) => {
+		return runtime.fetch(req, { ...process.env });
+	},
+};

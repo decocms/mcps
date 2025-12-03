@@ -19,7 +19,10 @@ export async function runSQL<T = unknown>(
 	sql: string,
 	params: unknown[] = [],
 ): Promise<T[]> {
-	const response = await env.DATABASE.DATABASES_RUN_SQL({ sql, params });
+	const response = await env.DATABASE.DATABASES_RUN_SQL({
+		sql,
+		params,
+	});
 	return (response.result[0]?.results ?? []) as T[];
 }
 
@@ -40,7 +43,7 @@ export async function ensureAgentsTable(env: Env) {
 				updated_by TEXT,
 				description TEXT NOT NULL,
 				instructions TEXT NOT NULL,
-				tool_set JSONB NOT NULL DEFAULT '{}'::jsonb,
+				tool_set JSONB NOT NULL DEFAULT '{}',
 				avatar TEXT NOT NULL DEFAULT ''
 			)
 		`,

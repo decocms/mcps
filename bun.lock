@@ -380,7 +380,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@decocms/bindings": "1.0.1-alpha.11",
-        "@decocms/runtime": "1.0.0-alpha.12",
+        "@decocms/runtime": "1.0.0-alpha.16",
         "@radix-ui/react-collapsible": "^1.1.12",
         "@radix-ui/react-popover": "^1.1.15",
         "@radix-ui/react-slot": "^1.2.3",
@@ -3200,7 +3200,7 @@
 
     "vibecoding-toolkit/@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.11", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5", "zod-to-json-schema": "3.25.0" } }, "sha512-KcWUSCRphxwEJIzt1zPANf/DNUkg1EvzeEteP/st4zsFEAjDXTTtXt8vrNTTpHQuY01GH1R62oX3PsRnVOuBrw=="],
 
-    "vibecoding-toolkit/@decocms/runtime": ["@decocms/runtime@1.0.0-alpha.12", "", { "dependencies": { "@ai-sdk/provider": "^2.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5", "@decocms/bindings": "1.0.1-alpha.11", "@modelcontextprotocol/sdk": "1.20.2", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5", "zod-to-json-schema": "3.25.0" } }, "sha512-vSRKe1/LCJqhlTdxQRAE49MlLXX9+hLipWI9wANIO4UBgeWM4Bz2bsFlvLdaT9PON2Mj42afbQmkGdLIVz65YA=="],
+    "vibecoding-toolkit/@decocms/runtime": ["@decocms/runtime@1.0.0-alpha.16", "", { "dependencies": { "@ai-sdk/provider": "^2.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5", "@decocms/bindings": "1.0.1-alpha.11", "@modelcontextprotocol/sdk": "1.20.2", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5", "zod-to-json-schema": "3.25.0" } }, "sha512-QBls0AMU0xHllXE1oFjC71LyMPpeuv11DNxxwq/4q1km46wF0wsXMPgDWXyjwqLWGZuDfHFlZFP5SCcPABMuUw=="],
 
     "vibecoding-toolkit/@vitejs/plugin-react": ["@vitejs/plugin-react@5.1.1", "", { "dependencies": { "@babel/core": "^7.28.5", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.47", "@types/babel__core": "^7.20.5", "react-refresh": "^0.18.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-WQfkSw0QbQ5aJ2CHYw23ZGkqnRwqKHD/KYsMeTkZzPT4Jcf0DcBxBtwMJxnu6E7oxw5+JC6ZAiePgh28uJ1HBA=="],
 

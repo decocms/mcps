@@ -327,19 +327,20 @@ export const createInsertTool = (env: Env) =>
 				`
 				INSERT INTO agents (
 					id, title, created_at, updated_at, created_by, updated_by,
-					description, instructions, tool_set
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+					description, instructions, tool_set, avatar
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`,
 				[
 					id,
 					data.title,
 					now,
 					now,
-					user?.id || null,
-					user?.id || null,
+					user?.id || "unknown",
+					user?.id || "unknown",
 					data.description,
 					data.instructions,
 					JSON.stringify(data.tool_set || {}),
+					data.avatar,
 				],
 			);
 
@@ -380,13 +381,14 @@ export const createUpdateTool = (env: Env) =>
 			await ensureAgentsTable(env);
 
 			const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
+
 			const now = new Date().toISOString();
 
 			const { id, data } = context;
 
 			// Build SET clause dynamically based on provided fields
 			const setClauses: string[] = ["updated_at = ?", "updated_by = ?"];
-			const params: unknown[] = [now, user?.id || null];
+			const params: unknown[] = [now, user?.id || "unknown"];
 
 			if (data.title !== undefined) {
 				setClauses.push("title = ?");
@@ -428,6 +430,7 @@ export const createUpdateTool = (env: Env) =>
 			return {
 				item: {
 					...updatedItem,
+					updated_by: updatedItem.updated_by || "unknown",
 					tool_set: updatedItem.tool_set || {},
 				} as z.infer<typeof AgentSchema>,
 			};
