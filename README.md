@@ -136,4 +136,3 @@ Just create a new directory with a `package.json` - that's it! The workflows wil
 
 No manual workflow configuration needed! 🎉
 
-
