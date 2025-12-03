@@ -16,7 +16,8 @@
     "lint": "oxlint",
     "check": "bun run --filter=* check",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
-    "prepare": "sh scripts/setup-hooks.sh"
+    "prepare": "sh scripts/setup-hooks.sh",
+    "build": "bun run --filter=vibecoding-toolkit build && mv ./vibecoding-toolkit/dist ./dist"
   },
   "workspaces": [
     "apify",
