@@ -12,7 +12,8 @@
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build:client": "bun --bun vite build",
-    "build": "bun run build:server && bun run build:client"
+    "build": "bun run build:server && bun run build:client",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
     "@decocms/bindings": "1.0.1-alpha.11",
@@ -44,7 +45,7 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.2.0",
-    "deco-cli": "^0.26.0",
+    "deco-cli": "^0.28.0",
     "typescript": "^5.7.2",
     "vite": "7.2.0"
   },
