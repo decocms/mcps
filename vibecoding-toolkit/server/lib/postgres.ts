@@ -15,25 +15,25 @@ import type { Env } from "../main.ts";
  * @returns The query results as an array of rows
  */
 export async function runSQL<T = unknown>(
-	env: Env,
-	sql: string,
-	params: unknown[] = [],
+  env: Env,
+  sql: string,
+  params: unknown[] = [],
 ): Promise<T[]> {
-	const response = await env.DATABASE.DATABASES_RUN_SQL({
-		sql,
-		params,
-	});
-	return (response.result[0]?.results ?? []) as T[];
+  const response = await env.DATABASE.DATABASES_RUN_SQL({
+    sql,
+    params,
+  });
+  return (response.result[0]?.results ?? []) as T[];
 }
 
 /**
  * Ensure the agents table exists, creating it if necessary
  */
 export async function ensureAgentsTable(env: Env) {
-	try {
-		await runSQL(
-			env,
-			`
+  try {
+    await runSQL(
+      env,
+      `
 			CREATE TABLE IF NOT EXISTS agents (
 				id TEXT PRIMARY KEY,
 				title TEXT NOT NULL,
@@ -47,31 +47,31 @@ export async function ensureAgentsTable(env: Env) {
 				avatar TEXT NOT NULL DEFAULT ''
 			)
 		`,
-		);
+    );
 
-		// Add avatar column if it doesn't exist (migration for existing tables)
-		await runSQL(
-			env,
-			`ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT ''`,
-		);
+    // Add avatar column if it doesn't exist (migration for existing tables)
+    await runSQL(
+      env,
+      `ALTER TABLE agents ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT ''`,
+    );
 
-		// Create indexes for better query performance
-		await runSQL(
-			env,
-			`CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at DESC)`,
-		);
+    // Create indexes for better query performance
+    await runSQL(
+      env,
+      `CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at DESC)`,
+    );
 
-		await runSQL(
-			env,
-			`CREATE INDEX IF NOT EXISTS idx_agents_updated_at ON agents(updated_at DESC)`,
-		);
+    await runSQL(
+      env,
+      `CREATE INDEX IF NOT EXISTS idx_agents_updated_at ON agents(updated_at DESC)`,
+    );
 
-		await runSQL(
-			env,
-			`CREATE INDEX IF NOT EXISTS idx_agents_title ON agents(title)`,
-		);
-	} catch (error) {
-		console.error("Error ensuring agents table exists:", error);
-		throw error;
-	}
+    await runSQL(
+      env,
+      `CREATE INDEX IF NOT EXISTS idx_agents_title ON agents(title)`,
+    );
+  } catch (error) {
+    console.error("Error ensuring agents table exists:", error);
+    throw error;
+  }
 }
