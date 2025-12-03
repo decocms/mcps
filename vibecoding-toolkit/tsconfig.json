@@ -2,10 +2,13 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -15,25 +18,32 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "allowJs": true,
-
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./view/src/*"],
-      "shared/*": ["./shared/*"],
-      "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"]
+      "@/*": [
+        "./view/src/*"
+      ],
+      "shared/*": [
+        "./shared/*"
+      ],
+      "server/*": [
+        "./server/*"
+      ],
+      "worker/*": [
+        "./worker/*"
+      ],
     },
-
     /* Types */
-    "types": ["vite/client", "@cloudflare/workers-types"]
+    "types": [
+      "vite/client",
+    ]
   },
   "include": [
     "view",

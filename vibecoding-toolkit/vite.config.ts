@@ -1,10 +1,9 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import deco from "@decocms/mcps-shared/vite-plugin";
-
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
+import { defineConfig } from "vite";
 
 const VITE_SERVER_ENVIRONMENT_NAME = "server";
 
@@ -31,9 +30,7 @@ export default defineConfig({
         ),
     },
   },
-
   assetsInclude: ["**/*.wasm"],
-
   optimizeDeps: {
     include: [
       "use-sync-external-store",
@@ -45,21 +42,21 @@ export default defineConfig({
       "quickjs-emscripten-core",
       "@deco/cf-sandbox",
     ],
-    // Don't scan these packages
     entries: ["!packages/cf-sandbox/**"],
   },
-
   ssr: {
-    // Don't externalize workspace packages during SSR
     noExternal: ["@deco/cf-sandbox"],
   },
-
   define: {
+    // Ensure proper module definitions for Cloudflare Workers context
     "process.env.NODE_ENV": JSON.stringify(
       process.env.NODE_ENV || "development",
     ),
     global: "globalThis",
+    // '__filename': '""',
+    // '__dirname': '""',
   },
 
+  // Clear cache more aggressively
   cacheDir: "node_modules/.vite",
 });

@@ -16,7 +16,7 @@ import {
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { ensureAgentsTable, getPostgres } from "../lib/postgres.ts";
+import { ensureAgentsTable } from "../lib/postgres.ts";
 import type { Env } from "../main.ts";
 
 // ============================================================================
@@ -97,7 +97,7 @@ const STANDARD_AGENT: z.infer<typeof AgentSchema> = {
 // ============================================================================
 
 /**
- * Build SQL WHERE clause from filter expression
+ * Build SQL WHERE clause from filter expression using ? placeholders
  */
 function buildWhereClause(
   whereExpr: WhereExpression | undefined,
@@ -116,35 +116,36 @@ function buildWhereClause(
     const fieldPath = whereExpr.field;
     if (!fieldPath) return { clause: "", params };
     const fieldName = fieldPath[fieldPath.length - 1];
-    const paramIndex = params.length + 1;
 
     switch (whereExpr.operator) {
       case "eq":
         params.push(whereExpr.value);
-        return { clause: `${fieldName} = $${paramIndex}`, params };
+        return { clause: `${fieldName} = ?`, params };
       case "gt":
         params.push(whereExpr.value);
-        return { clause: `${fieldName} > $${paramIndex}`, params };
+        return { clause: `${fieldName} > ?`, params };
       case "gte":
         params.push(whereExpr.value);
-        return { clause: `${fieldName} >= $${paramIndex}`, params };
+        return { clause: `${fieldName} >= ?`, params };
       case "lt":
         params.push(whereExpr.value);
-        return { clause: `${fieldName} < $${paramIndex}`, params };
+        return { clause: `${fieldName} < ?`, params };
       case "lte":
         params.push(whereExpr.value);
-        return { clause: `${fieldName} <= $${paramIndex}`, params };
+        return { clause: `${fieldName} <= ?`, params };
       case "in": {
         const values = Array.isArray(whereExpr.value)
           ? whereExpr.value
           : [whereExpr.value];
-        params.push(values);
-        return { clause: `${fieldName} = ANY($${paramIndex})`, params };
+        // Create placeholders for each value in the IN clause
+        const placeholders = values.map(() => "?").join(", ");
+        params.push(...values);
+        return { clause: `${fieldName} IN (${placeholders})`, params };
       }
       case "like":
       case "contains":
         params.push(`%${whereExpr.value}%`);
-        return { clause: `${fieldName} ILIKE $${paramIndex}`, params };
+        return { clause: `${fieldName} LIKE ?`, params };
       default:
         throw new Error(`Unsupported operator: ${whereExpr.operator}`);
     }
@@ -207,13 +208,9 @@ export const createListTool = (env: Env) =>
     description: "List agents with filtering, sorting, and pagination",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof LIST_BINDING.inputSchema>;
-    }) => {
-      // If POSTGRES is not available, return only the standard agent
-      if (!env.POSTGRES) {
+    execute: async ({ context }) => {
+      // If DATABASE is not available, return only the standard agent
+      if (!env.DATABASE) {
         return {
           items: [STANDARD_AGENT],
           totalCount: 1,
@@ -222,7 +219,6 @@ export const createListTool = (env: Env) =>
       }
 
       await ensureAgentsTable(env);
-      const sql = getPostgres(env);
 
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
@@ -240,24 +236,31 @@ export const createListTool = (env: Env) =>
 
       // Query items with pagination
       const query = `
-        SELECT * FROM agents
-        ${whereClause}
-        ${orderByClause}
-        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-      `;
+				SELECT * FROM agents
+				${whereClause}
+				${orderByClause}
+				LIMIT ? OFFSET ?
+			`;
 
-      const items = await sql.unsafe(query, [...params, limit, offset]);
+      const items = await runSQL(env, query, [...params, limit, offset]);
 
       // Get total count
       const countQuery = `SELECT COUNT(*) as count FROM agents ${whereClause}`;
-      const countResult = await sql.unsafe(countQuery, params);
-      const totalCount = parseInt(countResult[0]?.count || "0", 10);
+      const countResult = await runSQL<{ count: string | number }>(
+        env,
+        countQuery,
+        params,
+      );
+      const totalCount = parseInt(String(countResult[0]?.count || "0"), 10);
 
       return {
-        items: items.map((item: any) => ({
-          ...item,
-          tool_set: item.tool_set || {},
-        })),
+        items: items.map((item) => {
+          const record = item as Record<string, unknown>;
+          return {
+            ...record,
+            tool_set: record.tool_set || {},
+          } as z.infer<typeof AgentSchema>;
+        }),
         totalCount,
         hasMore: offset + items.length < totalCount,
       };
@@ -275,21 +278,22 @@ export const createGetTool = (env: Env) =>
     outputSchema: createCollectionGetOutputSchema(AgentSchema),
     execute: async ({ context }) => {
       await ensureAgentsTable(env);
-      const sql = getPostgres(env);
 
       const { id } = context;
 
-      const result = await sql`
-        SELECT * FROM agents WHERE id = ${id} LIMIT 1
-      `;
+      const result = await runSQL(
+        env,
+        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        [id],
+      );
 
       const item = result[0] || null;
 
       return {
         item: item
           ? ({
-              ...item,
-              tool_set: item.tool_set || {},
+              ...(item as Record<string, unknown>),
+              tool_set: (item as Record<string, unknown>).tool_set || {},
             } as z.infer<typeof AgentSchema>)
           : null,
       };
@@ -311,36 +315,49 @@ export const createInsertTool = (env: Env) =>
       context: z.infer<typeof CREATE_BINDING.inputSchema>;
     }) => {
       await ensureAgentsTable(env);
-      const sql = getPostgres(env);
 
-      const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
+      const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
 
       const { data } = context;
 
-      const result = await sql`
-        INSERT INTO agents (
-          id, title, created_at, updated_at, created_by, updated_by,
-          description, instructions, tool_set
-        ) VALUES (
-          ${id},
-          ${data.title},
-          ${now},
-          ${now},
-          ${user?.id || null},
-          ${user?.id || null},
-          ${data.description},
-          ${data.instructions},
-          ${JSON.stringify(data.tool_set || {})}
-        )
-        RETURNING *
-      `;
+      await runSQL(
+        env,
+        `
+				INSERT INTO agents (
+					id, title, created_at, updated_at, created_by, updated_by,
+					description, instructions, tool_set
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`,
+        [
+          id,
+          data.title,
+          now,
+          now,
+          user?.id || null,
+          user?.id || null,
+          data.description,
+          data.instructions,
+          JSON.stringify(data.tool_set || {}),
+        ],
+      );
+
+      const result = await runSQL<Record<string, unknown>>(
+        env,
+        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        [id],
+      );
+
+      const insertedItem = result[0];
+      if (!insertedItem) {
+        throw new Error(`Failed to insert agent`);
+      }
 
       return {
         item: {
-          ...result[0],
-          tool_set: result[0].tool_set || {},
+          ...insertedItem,
+          tool_set: insertedItem.tool_set || {},
         } as z.infer<typeof AgentSchema>,
       };
     },
@@ -361,45 +378,57 @@ export const createUpdateTool = (env: Env) =>
       context: z.infer<typeof UPDATE_BINDING.inputSchema>;
     }) => {
       await ensureAgentsTable(env);
-      const sql = getPostgres(env);
 
-      const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
+      const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
 
       const { id, data } = context;
 
       // Build SET clause dynamically based on provided fields
-      const updates: any = {
-        updated_at: now,
-        updated_by: user?.id || null,
-      };
+      const setClauses: string[] = ["updated_at = ?", "updated_by = ?"];
+      const params: unknown[] = [now, user?.id || null];
 
-      if (data.title !== undefined) updates.title = data.title;
+      if (data.title !== undefined) {
+        setClauses.push("title = ?");
+        params.push(data.title);
+      }
       if (data.description !== undefined) {
-        updates.description = data.description;
+        setClauses.push("description = ?");
+        params.push(data.description);
       }
       if (data.instructions !== undefined) {
-        updates.instructions = data.instructions;
+        setClauses.push("instructions = ?");
+        params.push(data.instructions);
       }
       if (data.tool_set !== undefined) {
-        updates.tool_set = JSON.stringify(data.tool_set);
+        setClauses.push("tool_set = ?");
+        params.push(JSON.stringify(data.tool_set));
       }
 
-      const result = await sql`
-        UPDATE agents
-        SET ${sql(updates)}
-        WHERE id = ${id}
-        RETURNING *
-      `;
+      // Add id for WHERE clause
+      params.push(id);
 
-      if (result.length === 0) {
+      await runSQL(
+        env,
+        `UPDATE agents SET ${setClauses.join(", ")} WHERE id = ?`,
+        params,
+      );
+
+      const result = await runSQL<Record<string, unknown>>(
+        env,
+        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        [id],
+      );
+
+      const updatedItem = result[0];
+      if (!updatedItem) {
         throw new Error(`Agent with id ${id} not found`);
       }
 
       return {
         item: {
-          ...result[0],
-          tool_set: result[0].tool_set || {},
+          ...updatedItem,
+          tool_set: updatedItem.tool_set || {},
         } as z.infer<typeof AgentSchema>,
       };
     },
@@ -424,13 +453,22 @@ export const createDeleteTool = (env: Env) =>
       context: z.infer<typeof DELETE_BINDING.inputSchema>;
     }) => {
       await ensureAgentsTable(env);
-      const sql = getPostgres(env);
 
       const { id } = context;
 
-      await sql`
-        DELETE FROM agents WHERE id = ${id}
-      `;
+      // Get the agent before deleting
+      const existing = await runSQL<Record<string, unknown>>(
+        env,
+        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        [id],
+      );
+
+      const agent = existing[0];
+      if (!agent) {
+        throw new Error(`Agent with id ${id} not found`);
+      }
+
+      await runSQL(env, `DELETE FROM agents WHERE id = ?`, [id]);
 
       return {
         item: {

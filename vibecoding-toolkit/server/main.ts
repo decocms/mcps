@@ -19,7 +19,7 @@
  * @see server/lib/scheduler.ts for scheduler implementations
  */
 import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type Env as DecoEnv, Scopes } from "../shared/deco.gen.ts";
+import { type Env as DecoEnv } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
 import { MessageBatch } from "@cloudflare/workers-types";
@@ -29,7 +29,6 @@ import {
   createQStashReceiver,
   verifyQStashSignature,
 } from "./workflow/scheduler.ts";
-import { ExtendedStateSchema } from "./tools/mcp-binding.ts";
 
 // Re-export library utilities
 export * from "./lib/index.ts";
@@ -60,36 +59,7 @@ export type Env = DefaultEnv &
     QSTASH_NEXT_SIGNING_KEY: string;
   };
 
-const runtime = withRuntime<Env, typeof ExtendedStateSchema>({
-  oauth: {
-    /**
-     * These scopes define the asking permissions of your
-     * app when a user is installing it. When a user
-     * authorizes your app for using AI_GENERATE, you will
-     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
-     * and utilize the user's own AI Gateway, without having to
-     * deploy your own, setup any API keys, etc.
-     */
-    scopes: Object.values(Scopes).flatMap((scope) => Object.values(scope)),
-    /**
-     * The state schema of your Application defines what
-     * your installed App state will look like. When a user
-     * is installing your App, they will have to fill in
-     * a form with the fields defined in the state schema.
-     *
-     * This is powerful for building multi-tenant apps,
-     * where you can have multiple users and projects
-     * sharing different configurations on the same app.
-     *
-     * When you define a binding dependency on another app,
-     * it will automatically be linked to your StateSchema on
-     * type generation. You can also `.extend` it to add more
-     * fields to the state schema, like asking for an API Key
-     * for connecting to a third-party service.
-     */
-    state: ExtendedStateSchema,
-  },
-  views: [],
+const runtime = withRuntime<Env>({
   tools,
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.
