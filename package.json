@@ -35,7 +35,6 @@
     "template-minimal",
     "template-with-view",
     "veo",
-    "packages/*",
     "whisper",
     "vibecoding-toolkit"
   ],

@@ -18,13 +18,7 @@
  * @see docs/SCHEDULER_ARCHITECTURE.md for full design
  * @see server/lib/scheduler.ts for scheduler implementations
  */
-import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type Env as DecoEnv } from "../shared/deco.gen.ts";
-
-import { tools } from "./tools/index.ts";
-import { MessageBatch } from "@cloudflare/workers-types";
-import { handleWorkflowQueue, handleQStashWebhook } from "./queue-handler.ts";
-import { QueueMessage } from "./collections/workflow.ts";
+import { handleQStashWebhook } from "./queue-handler.ts";
 import {
   createQStashReceiver,
   verifyQStashSignature,
@@ -32,6 +26,14 @@ import {
 
 // Re-export library utilities
 export * from "./lib/index.ts";
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import {
+  type Env as DecoEnv,
+  Scopes,
+  StateSchema,
+} from "../shared/deco.gen.ts";
+
+import { tools } from "./tools/index.ts";
 
 /**
  * This Env type is the main context object that is passed to
@@ -40,43 +42,6 @@ export * from "./lib/index.ts";
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-    POSTGRES: {
-      RUN_SQL: (params: {
-        query: string;
-        params: any[];
-      }) => Promise<{ rows: any[]; rowCount: number }>;
-    };
-    /** QStash token for publishing messages */
-    QSTASH_TOKEN: string;
-    /** QStash signing key for verifying incoming webhooks */
-    QSTASH_CURRENT_SIGNING_KEY: string;
-    /** QStash next signing key (for key rotation) */
-    QSTASH_NEXT_SIGNING_KEY: string;
-  };
-
-const runtime = withRuntime<Env>({
-  tools,
-  /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
-   */
-  fetch: (req, env) => {
-    const url = new URL(req.url);
-
-    // Handle QStash webhook for workflow execution
-    if (url.pathname === "/api/workflow-webhook") {
-      return handleWorkflowWebhook(req, env);
-    }
-
-    return env.ASSETS.fetch(req);
-  },
-});
 
 /**
  * Handle incoming QStash webhook for workflow execution
@@ -144,15 +109,71 @@ async function handleWorkflowWebhook(
     );
   }
 }
+export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
+
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    /**
+     * These scopes define the asking permissions of your
+     * app when a user is installing it. When a user
+     * authorizes your app for using AI_GENERATE, you will
+     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
+     * and utilize the user's own AI Gateway, without having to
+     * deploy your own, setup any API keys, etc.
+     */
+    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
+    /**
+     * The state schema of your Application defines what
+     * your installed App state will look like. When a user
+     * is installing your App, they will have to fill in
+     * a form with the fields defined in the state schema.
+     *
+     * This is powerful for building multi-tenant apps,
+     * where you can have multiple users and projects
+     * sharing different configurations on the same app.
+     *
+     * When you define a binding dependency on another app,
+     * it will automatically be linked to your StateSchema on
+     * type generation. You can also `.extend` it to add more
+     * fields to the state schema, like asking for an API Key
+     * for connecting to a third-party service.
+     */
+    state: StateSchema,
+  },
+  tools,
+  bindings: [
+    {
+      type: "mcp",
+      name: "DATABASE",
+      app_name: "@deco/database",
+    },
+  ],
+  cors: {
+    origin: (origin) => {
+      // Allow localhost and configured origins
+      if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        return origin;
+      }
+      // TODO: Configure allowed origins from environment
+      return origin;
+    },
+    credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
+  },
+});
 
 export default {
-  ...runtime,
+  fetch: (req: Request) => {
+    const url = new URL(req.url);
 
-  /**
-   * Queue handler for workflow execution (legacy Cloudflare Queues).
-   * Kept for backward compatibility during migration.
-   */
-  async queue(batch: MessageBatch<QueueMessage>, env: Env) {
-    await handleWorkflowQueue(batch, env);
+    // Handle QStash webhook for workflow execution
+    if (url.pathname === "/api/workflow-webhook") {
+      return handleWorkflowWebhook(req, { ...process.env });
+    }
+    if (url.pathname === "/_healthcheck") {
+      return new Response("OK", { status: 200 });
+    }
+    return runtime.fetch(req, { ...process.env });
   },
 };
