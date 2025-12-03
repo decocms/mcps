@@ -134,5 +134,6 @@ Just create a new directory with a `package.json` - that's it! The workflows wil
 2. Monitor it for changes
 3. Deploy it when changes are pushed
 
-No manual workflow configuration needed! 🎉
+No manual workflow configuration needed! �
+�
 
