@@ -40,7 +40,6 @@
     "vibecoding-toolkit"
   ],
   "dependencies": {
-    "@types/node": "^24.10.0",
-    "use-sync-external-store": "^1.6.0"
+    "@types/node": "^24.10.0"
   }
 }

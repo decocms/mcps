@@ -73,7 +73,7 @@ export {
   extractSchemas,
   validateCode,
   type CodeResult,
-} from "./transform-executor.ts";
+} from "./code-step.ts";
 
 // Workflow types
 export type {
@@ -105,7 +105,7 @@ export {
   executeToolStep,
   executeSleepStep,
   executeWaitForSignalStep,
-} from "./step-executors.ts";
+} from "./step-executor.ts";
 
 // Connection utilities
 export { createProxyConnection } from "./connection.ts";

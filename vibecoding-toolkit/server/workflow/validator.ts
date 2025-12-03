@@ -12,14 +12,14 @@
 
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateCode } from "./transform-executor.ts";
+import { validateCode } from "./code-step.ts";
 import {
   CodeActionSchema,
   Step,
   Trigger,
   Workflow,
 } from "@decocms/bindings/workflow";
-import { getStepType } from "./step-executors.ts";
+import { getStepType } from "./step-executor.ts";
 
 // ============================================================================
 // Validation Result

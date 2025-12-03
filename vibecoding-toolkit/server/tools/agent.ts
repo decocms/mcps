@@ -16,7 +16,7 @@ import {
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { ensureAgentsTable } from "../lib/postgres.ts";
+import { ensureAgentsTable, runSQL } from "../lib/postgres.ts";
 import type { Env } from "../main.ts";
 
 // ============================================================================

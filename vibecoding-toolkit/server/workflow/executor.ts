@@ -16,7 +16,7 @@ import type {
   WorkflowExecutionResult,
 } from "./types.ts";
 import { canResolveAllRefs, resolveAllRefs } from "./ref-resolver.ts";
-import { executeStep } from "./step-executors.ts";
+import { executeStep } from "./step-executor.ts";
 import {
   checkIfCancelled,
   createStepResult,
@@ -268,10 +268,6 @@ async function enqueueTrigger(
 
   return executionId;
 }
-
-// =============================================================================
-// Main Executor
-// =============================================================================
 
 export async function executeWorkflow(
   env: Env,
