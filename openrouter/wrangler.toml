@@ -10,6 +10,11 @@ workspace = "deco"
 enable_workflows = false
 local = false
 
+[deco.integration]
+description = "OpenRouter App Connection for LLM uses."
+icon = "https://openrouter.ai/favicon.ico"
+friendlyName = "OpenRouter"
+
 [[deco.bindings]]
 type = "contract"
 name = "OPENROUTER_CONTRACT"
