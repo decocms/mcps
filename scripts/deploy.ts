@@ -80,15 +80,17 @@ try {
   console.log("📦 Installing dependencies...");
   await $`bun install`;
 
-  // Build
-  console.log("🔨 Building...");
-  await $`bun run build`;
+  // Build (only needed for traditional deploy, not registry publish)
+  if (!useRegistryPublish) {
+    console.log("🔨 Building...");
+    await $`bun run build`;
 
-  // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
-  const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
-  if (existsSync(wranglerJsonPath)) {
-    console.log("🧹 Removing wrangler.json from build output...");
-    await $`rm ${wranglerJsonPath}`;
+    // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
+    const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
+    if (existsSync(wranglerJsonPath)) {
+      console.log("🧹 Removing wrangler.json from build output...");
+      await $`rm ${wranglerJsonPath}`;
+    }
   }
 
   // Deploy
