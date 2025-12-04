@@ -3,18 +3,18 @@
  * Send a non-streaming chat completion request
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../../main.ts";
-import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import { AUTO_ROUTER_MODEL, DEFAULT_TEMPERATURE } from "../../constants.ts";
-import { calculateChatCost, validateChatParams } from "./utils.ts";
-import type { ChatMessage } from "../../lib/types.ts";
 import {
   settleMicroDollarsContract,
   toMicroDollarUnits,
 } from "../../lib/chat-contract.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
+import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import type { ChatMessage } from "../../lib/types.ts";
+import type { Env } from "../../main.ts";
+import { calculateChatCost, validateChatParams } from "./utils.ts";
 
 const ContentPartSchema = z.discriminatedUnion("type", [
   z
@@ -269,7 +269,9 @@ export const createChatCompletionTool = (env: Env) =>
       const content = choice.message?.content ?? "";
 
       // Calculate cost if usage info is available
-      let estimatedCost;
+      let estimatedCost:
+        | { prompt: number; completion: number; total: number }
+        | undefined;
       let contractMicroUnits: number | undefined;
       if (response.usage) {
         // Try to get actual model pricing

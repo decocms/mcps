@@ -3,12 +3,12 @@
  * Compare multiple models side-by-side to help choose the best one
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../../main.ts";
-import { OpenRouterClient } from "../../lib/openrouter-client.ts";
-import { compareModels } from "./utils.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
+import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import type { Env } from "../../main.ts";
+import { compareModels } from "./utils.ts";
 
 export const createCompareModelsTool = (env: Env) =>
   createPrivateTool({

@@ -9,23 +9,27 @@
  * - LLM_DO_GENERATE: Generates complete non-streaming responses
  */
 
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
+} from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_BINDING,
-  ModelCollectionEntitySchema,
+  type ModelCollectionEntitySchema,
 } from "@decocms/bindings/llm";
 import { streamToResponse } from "@decocms/runtime/bindings";
 import {
   createPrivateTool,
   createStreamableTool,
-} from "@decocms/runtime/mastra";
+} from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { z } from "zod";
+import type { CONTRACT_SETTLEInput } from "shared/deco.gen.ts";
+import type { z } from "zod";
 import { getOpenRouterApiKey } from "../lib/env.ts";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
 import { getBaseUrl } from "./models/utils.ts";
 import { WELL_KNOWN_MODEL_IDS } from "./models/well-known.ts";
-import { LanguageModelV2StreamPart } from "@ai-sdk/provider";
 
 // ============================================================================
 // Constants
@@ -213,7 +217,9 @@ function applyWhereFilter(
   if (whereAny.operator === "or" && whereAny.conditions) {
     const results = new Set<ListedModel>();
     for (const condition of whereAny.conditions) {
-      applyWhereFilter(models, condition).forEach((m) => results.add(m));
+      applyWhereFilter(models, condition).forEach((m) => {
+        results.add(m);
+      });
     }
     return Array.from(results);
   }
@@ -508,7 +514,7 @@ export const createLLMStreamTool = (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
       const client = new OpenRouterClient({ apiKey });
@@ -530,62 +536,77 @@ export const createLLMStreamTool = (env: Env) =>
         maxCompletionTokens * costPerCompletionToken;
       const amountMicroDollars = amountUsd * 1000000;
 
-      const { transactionId } =
-        await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "micro-dollar",
-              amount: amountMicroDollars,
-            },
-          ],
-        });
+      let settle: (
+        input: Omit<CONTRACT_SETTLEInput, "transactionId">,
+      ) => Promise<void> = (_: Omit<CONTRACT_SETTLEInput, "transactionId">) => {
+        return Promise.resolve();
+      };
+
+      if (env.OPENROUTER_CONTRACT) {
+        const { transactionId } =
+          await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "micro-dollar",
+                amount: amountMicroDollars,
+              },
+            ],
+          });
+        settle = async (input: Omit<CONTRACT_SETTLEInput, "transactionId">) => {
+          await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
+            transactionId,
+            ...input,
+          });
+        };
+      }
 
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
-      const callResponse = await model.doStream(callOptions as any);
+      const callResponse = await model.doStream(
+        callOptions as LanguageModelV2CallOptions,
+      );
       const [usage, stream] = getUsageFromStream(callResponse.stream);
       const response = streamToResponse(stream);
 
       // Settle contract after stream completes
-      const ctx = runtimeContext?.get("ctx") as
-        | { waitUntil?: (p: Promise<unknown>) => void }
-        | undefined;
-      const split = env.DECO_WORKSPACE.split("/");
-      const workspace = split[split.length - 1];
+      const { waitUntil } =
+        "waitUntil" in runtimeContext
+          ? (runtimeContext as { waitUntil?: (p: Promise<unknown>) => void })
+          : {
+              waitUntil: async (p: Promise<unknown>) => {
+                await p;
+              },
+            };
 
-      if (ctx?.waitUntil) {
-        ctx.waitUntil(
-          // TODO: If there's an error, don't we charge the user?
-          usage
-            .then(async ({ usage }) => {
-              try {
-                const estimatedCost = calculateChatCost(
-                  usage.inputTokens ?? 0,
-                  usage.outputTokens ?? 0,
-                  modelInfo.pricing,
-                );
-                const costMicroDollars = estimatedCost.total * 1_000_000;
-                await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
-                  transactionId,
-                  vendorId: workspace,
-                  clauses: [
-                    {
-                      clauseId: "micro-dollar",
-                      amount: costMicroDollars,
-                    },
-                  ],
-                });
-              } catch (error) {
-                console.warn("Could not settle contract:", error);
-              }
-            })
-            .catch((error) => {
+      waitUntil?.(
+        usage
+          .then(async ({ usage }) => {
+            try {
+              const estimatedCost = calculateChatCost(
+                usage.inputTokens ?? 0,
+                usage.outputTokens ?? 0,
+                modelInfo.pricing,
+              );
+              const costMicroDollars = estimatedCost.total * 1_000_000;
+              await settle({
+                vendorId: env.WALLET_VENDOR_ID,
+                clauses: [
+                  {
+                    clauseId: "micro-dollar",
+                    amount: costMicroDollars,
+                  },
+                ],
+              });
+            } catch (error) {
               console.warn("Could not settle contract:", error);
-            }),
-        );
-      }
+            }
+          })
+          .catch((error) => {
+            console.warn("Could not settle contract:", error);
+          }),
+      );
 
       // Return the data stream response
       return response;
@@ -608,7 +629,7 @@ export const createLLMGenerateTool = (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
       const client = new OpenRouterClient({ apiKey });
@@ -630,27 +651,42 @@ export const createLLMGenerateTool = (env: Env) =>
         maxCompletionTokens * costPerCompletionToken;
       const amountMicroDollars = amountUsd * 1000000;
 
-      // Pre-authorize contract before making the API call
-      const { transactionId } =
-        await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "micro-dollar",
-              amount: amountMicroDollars,
-            },
-          ],
-        });
+      let settle: (
+        input: Omit<CONTRACT_SETTLEInput, "transactionId">,
+      ) => Promise<void> = (_: Omit<CONTRACT_SETTLEInput, "transactionId">) => {
+        return Promise.resolve();
+      };
+
+      if (env.OPENROUTER_CONTRACT) {
+        // Pre-authorize contract before making the API call
+
+        const { transactionId } =
+          await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
+            clauses: [
+              {
+                clauseId: "micro-dollar",
+                amount: amountMicroDollars,
+              },
+            ],
+          });
+        settle = async (input: Omit<CONTRACT_SETTLEInput, "transactionId">) => {
+          await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
+            transactionId,
+            ...input,
+          });
+        };
+      }
 
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
       // Use doGenerate directly (consistent with doStream pattern)
-      const result = await model.doGenerate(callOptions as any);
+      const result = await model.doGenerate(
+        callOptions as LanguageModelV2CallOptions,
+      );
 
       // Settle contract with actual usage
-      const split = env.DECO_WORKSPACE.split("/");
-      const workspace = split[split.length - 1];
 
       try {
         const estimatedCost = calculateChatCost(
@@ -659,9 +695,8 @@ export const createLLMGenerateTool = (env: Env) =>
           modelInfo.pricing,
         );
         const costMicroDollars = estimatedCost.total * 1_000_000;
-        await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
-          transactionId,
-          vendorId: workspace,
+        await settle({
+          vendorId: env.WALLET_VENDOR_ID,
           clauses: [
             {
               clauseId: "micro-dollar",

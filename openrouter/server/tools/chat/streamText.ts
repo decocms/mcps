@@ -1,13 +1,14 @@
-import { createStreamableTool } from "@decocms/runtime/mastra";
+import { createStreamableTool } from "@decocms/runtime/tools";
+import type { CONTRACT_SETTLEInput } from "shared/deco.gen.ts";
 import { z } from "zod";
+import type { ChatCompletionParams } from "../../../server/lib/types.ts";
 import {
   OPENROUTER_BASE_URL,
   OPENROUTER_CHAT_ENDPOINT,
 } from "../../constants.ts";
 import { getOpenRouterApiKey } from "../../lib/env.ts";
-import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
-import { ChatCompletionParams } from "../../../server/lib/types.ts";
+import type { Env } from "../../main.ts";
 
 export const streamText = (env: Env) =>
   createStreamableTool({
@@ -20,7 +21,7 @@ export const streamText = (env: Env) =>
       .passthrough(),
     execute: async ({ context, runtimeContext }) => {
       try {
-        env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+        env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
         const apiKey = getOpenRouterApiKey(env);
         const openRouterUrl = `${OPENROUTER_BASE_URL}${OPENROUTER_CHAT_ENDPOINT}`;
@@ -56,16 +57,28 @@ export const streamText = (env: Env) =>
           maxCompletionTokens * constPerCompletionToken;
         const amountMicroDollars = amountUsd * 1000000;
 
-        const { transactionId } =
-          await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: "micro-dollar",
-                amount: amountMicroDollars,
-              },
-            ],
-          });
-
+        let settle = async (_: Omit<CONTRACT_SETTLEInput, "transactionId">) => {
+          return Promise.resolve();
+        };
+        if (env.OPENROUTER_CONTRACT) {
+          const { transactionId } =
+            await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
+              clauses: [
+                {
+                  clauseId: "micro-dollar",
+                  amount: amountMicroDollars,
+                },
+              ],
+            });
+          settle = async (
+            input: Omit<CONTRACT_SETTLEInput, "transactionId">,
+          ) => {
+            await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
+              transactionId,
+              ...input,
+            });
+          };
+        }
         const response = await fetch(openRouterUrl, {
           method: "POST",
           body: JSON.stringify(params),
@@ -76,7 +89,7 @@ export const streamText = (env: Env) =>
           throw new Error("No response body received");
         }
 
-        let usage = {
+        const usage = {
           promptTokens: 0,
           completionTokens: 0,
           totalTokens: 0,
@@ -84,8 +97,7 @@ export const streamText = (env: Env) =>
           reasoningTokens: 0,
           cost: 0,
         };
-        let fullResponse = "";
-        let metadata = {
+        const metadata = {
           model: "",
           provider: "",
         };
@@ -138,14 +150,6 @@ export const streamText = (env: Env) =>
                         value.usage.completion_tokens_details.reasoning_tokens;
                     }
                   }
-
-                  const choice = value.choices?.[0];
-                  if (choice) {
-                    const content = choice.delta?.content || choice.text;
-                    if (content) {
-                      fullResponse += content;
-                    }
-                  }
                 } catch (e) {
                   console.error("Failed to parse SSE data:", e);
                 }
@@ -160,28 +164,31 @@ export const streamText = (env: Env) =>
           },
         });
 
-        const ctx = runtimeContext.get("ctx") as {
-          waitUntil?: (p: Promise<any>) => void;
-        };
-        const split = env.DECO_WORKSPACE.split("/");
-        const workspace = split[split.length - 1];
-        if (ctx?.waitUntil) {
-          ctx.waitUntil(
-            streamComplete.then(async () => {
-              const costMicroDollars = usage.cost * 1000000;
-              await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
-                transactionId,
-                vendorId: workspace,
-                clauses: [
-                  {
-                    clauseId: "micro-dollar",
-                    amount: costMicroDollars,
-                  },
-                ],
-              });
-            }),
-          );
-        }
+        const { waitUntil } =
+          "waitUntil" in runtimeContext
+            ? (runtimeContext as {
+                waitUntil?: (p: Promise<unknown>) => void;
+              })
+            : {
+                waitUntil: async (p: Promise<unknown>) => {
+                  await p;
+                },
+              };
+
+        waitUntil?.(
+          streamComplete.then(async () => {
+            const costMicroDollars = usage.cost * 1000000;
+            await settle({
+              vendorId: env.WALLET_VENDOR_ID,
+              clauses: [
+                {
+                  clauseId: "micro-dollar",
+                  amount: costMicroDollars,
+                },
+              ],
+            });
+          }),
+        );
 
         return new Response(response.body.pipeThrough(processStream), {
           headers: response.headers,
