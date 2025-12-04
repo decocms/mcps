@@ -11,7 +11,7 @@ import {
   Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
-
+import { ensureAgentsTable } from "./lib/postgres.ts";
 import { tools } from "./tools/index.ts";
 
 /**
@@ -25,6 +25,9 @@ export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
+    onChange: async (env) => {
+      await ensureAgentsTable(env);
+    },
     /**
      * These scopes define the asking permissions of your
      * app when a user is installing it. When a user

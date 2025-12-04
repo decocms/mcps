@@ -16,7 +16,7 @@ import {
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
-import { ensureAgentsTable, runSQL } from "../lib/postgres.ts";
+import { runSQL } from "../lib/postgres.ts";
 import type { Env } from "../main.ts";
 
 // ============================================================================
@@ -218,8 +218,6 @@ export const createListTool = (env: Env) =>
         };
       }
 
-      await ensureAgentsTable(env);
-
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       // Build WHERE clause
@@ -277,8 +275,6 @@ export const createGetTool = (env: Env) =>
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(AgentSchema),
     execute: async ({ context }) => {
-      await ensureAgentsTable(env);
-
       const { id } = context;
 
       const result = await runSQL(
@@ -314,8 +310,6 @@ export const createInsertTool = (env: Env) =>
     }: {
       context: z.infer<typeof CREATE_BINDING.inputSchema>;
     }) => {
-      await ensureAgentsTable(env);
-
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
@@ -378,8 +372,6 @@ export const createUpdateTool = (env: Env) =>
     }: {
       context: z.infer<typeof UPDATE_BINDING.inputSchema>;
     }) => {
-      await ensureAgentsTable(env);
-
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
 
       const now = new Date().toISOString();
@@ -451,8 +443,6 @@ export const createDeleteTool = (env: Env) =>
     }: {
       context: z.infer<typeof DELETE_BINDING.inputSchema>;
     }) => {
-      await ensureAgentsTable(env);
-
       const { id } = context;
 
       // Get the agent before deleting
