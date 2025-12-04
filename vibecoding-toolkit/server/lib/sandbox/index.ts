@@ -3,7 +3,7 @@ import {
   Intrinsics,
   type QuickJSContext,
   QuickJSRuntime,
-} from "quickjs-emscripten-core";
+} from "quickjs-emscripten";
 import { getQuickJS } from "./quickjs.ts";
 
 // Export utilities
@@ -29,9 +29,9 @@ export type {
   QuickJSHandle,
   QuickJSRuntime,
   QuickJSWASMModule,
-} from "quickjs-emscripten-core";
+} from "quickjs-emscripten";
 
-export { Scope } from "quickjs-emscripten-core";
+export { Scope } from "quickjs-emscripten";
 
 /**
  * Creates a timing function that measures execution time and logs the result.

@@ -1,4 +1,4 @@
-import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
+import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten";
 import { toQuickJS } from "../utils/to-quickjs.ts";
 
 export interface FetchBuiltin {

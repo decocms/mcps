@@ -18,7 +18,7 @@ import {
   type QuickJSHandle,
   type SandboxRuntime,
   SandboxContext,
-} from "@deco/cf-sandbox";
+} from "../lib/sandbox/index.ts";
 import { transform } from "sucrase";
 
 export function transpileTypeScript(code: string): string {

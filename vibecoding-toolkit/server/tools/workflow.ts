@@ -5,11 +5,6 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";
-import {
-  buildOrderByClause,
-  buildWhereClause,
-  ensureCollectionsTables,
-} from "../lib/postgres.ts";
 import { z } from "zod";
 import { validateWorkflow } from "../workflow/validator.ts";
 import {
@@ -17,6 +12,7 @@ import {
   WORKFLOWS_BINDING,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
+import { buildOrderByClause, buildWhereClause } from "./agent.ts";
 
 const LIST_BINDING = WORKFLOWS_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
@@ -94,12 +90,6 @@ export const createListTool = (env: Env) =>
     }: {
       context: z.infer<typeof LIST_BINDING.inputSchema>;
     }) => {
-      try {
-        await ensureCollectionsTables(env);
-      } catch (error) {
-        console.error("Error ensuring collections tables:", error);
-        throw error;
-      }
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       let whereClause = "";
@@ -146,6 +136,20 @@ export const createListTool = (env: Env) =>
     },
   });
 
+export async function getWorkflow(
+  env: Env,
+  id: string,
+): Promise<Workflow | null> {
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: "SELECT * FROM workflows WHERE id = $1 LIMIT 1",
+    params: [id] as any[],
+  });
+  const item = result.result[0]?.results?.[0] || null;
+  return item
+    ? transformDbRowToWorkflow(item as Record<string, unknown>)
+    : null;
+}
+
 export const createGetTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_GET",
@@ -159,17 +163,9 @@ export const createGetTool = (env: Env) =>
     }) => {
       const { id } = context;
 
-      const result = await env.DATABASE.DATABASES_RUN_SQL({
-        sql: "SELECT * FROM workflows WHERE id = $1 LIMIT 1",
-        params: [id] as any[],
-      });
-
-      const item = result.result[0]?.results?.[0] || null;
-
+      const workflow = await getWorkflow(env, id);
       return {
-        item: item
-          ? transformDbRowToWorkflow(item as Record<string, unknown>)
-          : null,
+        item: workflow,
       };
     },
   });
@@ -183,7 +179,7 @@ export const createInsertTool = (env: Env) =>
     execute: async ({ context }) => {
       try {
         const { data } = context;
-        const user = await env.SELF.GET_USER({});
+        const user = await env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
         const now = new Date().toISOString();
 
         // Build workflow object for validation
@@ -249,7 +245,7 @@ export const createUpdateTool = (env: Env) =>
     inputSchema: UPDATE_BINDING.inputSchema,
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      const user = await env.SELF.GET_USER({});
+      const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
       const now = new Date().toISOString();
 
       const { id, data } = context;

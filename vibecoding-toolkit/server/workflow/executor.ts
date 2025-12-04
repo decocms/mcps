@@ -16,7 +16,6 @@ import type {
   WorkflowExecutionResult,
 } from "./types.ts";
 import { canResolveAllRefs, resolveAllRefs } from "./ref-resolver.ts";
-import { executeStep } from "./step-executor.ts";
 import {
   checkIfCancelled,
   createStepResult,
@@ -33,6 +32,8 @@ import {
 } from "./errors.ts";
 import type { Scheduler } from "./scheduler.ts";
 import type { Step, Trigger } from "@decocms/bindings/workflow";
+import { StepExecutor } from "./step-executor.ts";
+import { getWorkflow } from "server/tools/workflow.ts";
 
 // Re-export for backwards compatibility
 export type { ExecutorConfig, StepExecutionResult, WorkflowExecutionResult };
@@ -56,7 +57,7 @@ async function executeStepWithCheckpoint(
     if (verbose) console.log(`[${step.name}] Replaying cached output`);
     return {
       output: existing.output,
-      startedAt: existing.started_at_epoch_ms || Date.now(),
+      startedAt: new Date(existing.created_at).getTime() || Date.now(),
       completedAt: existing.completed_at_epoch_ms ?? undefined,
     };
   }
@@ -76,14 +77,14 @@ async function executeStepWithCheckpoint(
       if (!!result.completed_at_epoch_ms && !!result.output) {
         return {
           output: result.output,
-          startedAt: result.started_at_epoch_ms || Date.now(),
+          startedAt: new Date(result.created_at).getTime() || Date.now(),
           completedAt: result.completed_at_epoch_ms ?? undefined,
         };
       }
       if (!!result.completed_at_epoch_ms && !!result.error) {
         return {
           error: result.error || "Step failed on another worker",
-          startedAt: result.started_at_epoch_ms || Date.now(),
+          startedAt: new Date(result.created_at).getTime() || Date.now(),
           completedAt: result.completed_at_epoch_ms ?? undefined,
         };
       }
@@ -112,8 +113,8 @@ async function executeStepWithCheckpoint(
       );
     }
 
-    const result = await executeStep(
-      env,
+    const stepExecutor = new StepExecutor(env);
+    const result = await stepExecutor.executeStep(
       step,
       resolvedInput as Record<string, unknown>,
       ctx,
@@ -286,9 +287,7 @@ export async function executeWorkflow(
     });
     lockId = lockedExecution.lockId;
     // Load workflow definition
-    const { item: workflow } = await env.SELF.COLLECTION_WORKFLOW_GET({
-      id: lockedExecution.workflowId,
-    });
+    const workflow = await getWorkflow(env, lockedExecution.workflowId);
     if (!workflow) {
       throw new Error(`Workflow ${lockedExecution.workflowId} not found`);
     }

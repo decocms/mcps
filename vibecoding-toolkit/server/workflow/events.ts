@@ -9,7 +9,6 @@
 
 import type { Env } from "../main.ts";
 import { transformDbRowToEvent } from "../collections/workflow.ts";
-import { ensureTable } from "../lib/postgres.ts";
 import { createQStashScheduler, type Scheduler } from "./scheduler.ts";
 import { WorkflowEvent, type EventType } from "@decocms/bindings/workflow";
 
@@ -24,10 +23,8 @@ export async function addEvent(
   env: Env,
   event: Omit<WorkflowEvent, "id" | "created_at"> & { created_at?: number },
 ): Promise<WorkflowEvent> {
-  await ensureTable(env, "workflow_events");
-
   const id = crypto.randomUUID();
-  const created_at = event.created_at ?? Date.now();
+  const created_at = event.created_at ?? new Date().toISOString();
 
   await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -58,8 +55,6 @@ export async function getPendingEvents(
   executionId: string,
   type?: EventType,
 ): Promise<WorkflowEvent[]> {
-  await ensureTable(env, "workflow_events");
-
   const now = Date.now();
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -88,8 +83,6 @@ export async function consumeEvent(
   type: EventType,
   name?: string,
 ): Promise<WorkflowEvent | null> {
-  await ensureTable(env, "workflow_events");
-
   const now = Date.now();
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -125,8 +118,6 @@ export async function getAllEventsAfter(
   executionId: string,
   afterTimestamp: number,
 ): Promise<WorkflowEvent[]> {
-  await ensureTable(env, "workflow_events");
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       SELECT * FROM workflow_events
@@ -172,6 +163,8 @@ export async function sendSignal(
     execution_id: executionId,
     type: "signal",
     name: signalName,
+    title: signalName,
+    updated_at: new Date().toISOString(),
     payload,
     visible_at: Date.now(), // Immediately visible
   });
@@ -222,6 +215,9 @@ export async function scheduleTimer(
     type: "timer",
     name: stepName,
     payload: { wakeAt: wakeAtEpochMs },
+
+    title: stepName,
+    updated_at: new Date().toISOString(),
     visible_at: wakeAtEpochMs, // Not visible until wake time
   });
 }
@@ -263,6 +259,8 @@ export async function sendMessage(
     type: "message",
     name: topic,
     payload,
+    title: topic,
+    updated_at: new Date().toISOString(),
     source_execution_id: sourceExecutionId,
     visible_at: Date.now(),
   });
@@ -303,8 +301,6 @@ export async function setEvent(
   key: string,
   value: unknown,
 ): Promise<void> {
-  await ensureTable(env, "workflow_events");
-
   const now = Date.now();
   const id = crypto.randomUUID();
 
@@ -330,8 +326,6 @@ export async function getEvent(
   executionId: string,
   key: string,
 ): Promise<unknown | null> {
-  await ensureTable(env, "workflow_events");
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       SELECT payload FROM workflow_events 
@@ -361,6 +355,8 @@ export async function recordStepStarted(
     execution_id: executionId,
     type: "step_started",
     name: stepName,
+    title: stepName,
+    updated_at: new Date().toISOString(),
     payload: input ? { input } : undefined,
     visible_at: Date.now(),
   });
@@ -380,6 +376,8 @@ export async function recordStepCompleted(
     execution_id: executionId,
     type: "step_completed",
     name: stepName,
+    title: stepName,
+    updated_at: new Date().toISOString(),
     payload: { output, error },
     visible_at: Date.now(),
   });
@@ -398,6 +396,8 @@ export async function recordWorkflowStarted(
     execution_id: executionId,
     type: "workflow_started",
     name: workflowId,
+    title: workflowId,
+    updated_at: new Date().toISOString(),
     payload: input ? { input } : undefined,
     visible_at: Date.now(),
   });
@@ -417,6 +417,8 @@ export async function recordWorkflowCompleted(
     execution_id: executionId,
     type: "workflow_completed",
     name: workflowId,
+    title: workflowId,
+    updated_at: new Date().toISOString(),
     payload: { output, error },
     visible_at: Date.now(),
   });
@@ -450,7 +452,7 @@ export async function wakeExecution(
   // Use QStash scheduler for workflow execution
   const scheduler = options?.scheduler ?? createQStashScheduler(env);
   const authorization =
-    options?.authorization ?? env.DECO_REQUEST_CONTEXT?.token;
+    options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
 
   if (!authorization) {
     console.warn(`[WAKE] No authorization token for execution ${executionId}`);

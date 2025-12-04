@@ -1,4 +1,4 @@
-import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
+import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten";
 import { inspect } from "./error-handling.ts";
 
 export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {

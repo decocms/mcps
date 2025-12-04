@@ -1,4 +1,4 @@
-import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
+import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten";
 import type { Log } from "../types.ts";
 
 export interface ConsoleBuiltin {
