@@ -76,7 +76,7 @@ export async function createExecution(
     input?: Record<string, unknown>;
   },
 ): Promise<WorkflowExecution> {
-  const user = env.DECO_CHAT_REQUEST_CONTEXT?.ensureAuthenticated?.();
+  const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = new Date().getTime();
   const id = crypto.randomUUID();
 
@@ -333,7 +333,7 @@ export async function resumeExecution(
 
   if (requeue) {
     await scheduler.schedule(executionId, {
-      authorization: env.DECO_REQUEST_CONTEXT.token,
+      authorization: env.MESH_REQUEST_CONTEXT?.token,
     });
   }
 

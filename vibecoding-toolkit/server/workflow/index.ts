@@ -50,9 +50,6 @@
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md for full documentation
  */
 
-// Schema exports
-export { getStepType } from "./schema.ts";
-
 // @ref resolution exports
 export {
   type RefContext,
@@ -99,15 +96,6 @@ export {
   WaitingForSignalError,
 } from "./errors.ts";
 
-// Step executors (for testing/extension)
-export {
-  executeStep,
-  executeToolStep,
-  executeSleepStep,
-  executeWaitForSignalStep,
-} from "./step-executor.ts";
-
-// Connection utilities
 export { createProxyConnection } from "./connection.ts";
 
 // Validation exports
@@ -119,27 +107,8 @@ export {
   addEvent,
   getPendingEvents,
   consumeEvent,
-  getAllEventsAfter,
-  // Signal API
   sendSignal,
-  waitForSignal,
-  // Timer API
   scheduleTimer,
   checkTimer,
-  // Inter-workflow messaging
-  sendMessage,
-  receiveMessage,
-  // Published events
-  setEvent,
-  getEvent,
-  // Observability
-  recordStepStarted,
-  recordStepCompleted,
-  recordWorkflowStarted,
-  recordWorkflowCompleted,
-  // Wake execution
   wakeExecution,
-  // Types
-  type EventType,
-  type WorkflowEvent,
 } from "./events.ts";

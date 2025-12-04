@@ -2058,17 +2058,9 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
 };
 
 export const StateSchema = z.object({
-  INTEGRATIONS: z.object({
-    value: z.string(),
-    __type: z.literal("@deco/integrations").default("@deco/integrations"),
-  }),
   DATABASE: z.object({
     value: z.string(),
     __type: z.literal("@deco/database").default("@deco/database"),
-  }),
-  OPENROUTER: z.object({
-    value: z.string(),
-    __type: z.literal("@deco/openrouter").default("@deco/openrouter"),
   }),
 });
 

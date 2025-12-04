@@ -8,7 +8,6 @@
  * Uses the Scheduler abstraction for all re-queuing operations.
  */
 
-import type { Env } from "./main.ts";
 import {
   type QueueMessage,
   QueueMessageSchema,
@@ -24,22 +23,19 @@ const MAX_MESSAGE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 // ============================================================================
 
 async function callExecutionTool(
-  env: Env,
+  baseUrl: string,
   executionId: string,
   authorization: string,
 ): Promise<WorkflowExecutionResult> {
-  const response = await fetch(
-    `${env.DECO_APP_ENTRYPOINT}/mcp/call-tool/EXECUTE_WORKFLOW`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authorization}`,
-        "Content-Type": "application/json",
-        "X-Deco-MCP-Client": "true",
-      },
-      body: JSON.stringify({ executionId }),
+  const response = await fetch(`${baseUrl}/mcp/call-tool/EXECUTE_WORKFLOW`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authorization}`,
+      "Content-Type": "application/json",
+      "X-Deco-MCP-Client": "true",
     },
-  );
+    body: JSON.stringify({ executionId }),
+  });
 
   if (!response.ok) {
     return {
@@ -134,7 +130,10 @@ export interface QStashWebhookResult {
  */
 export async function handleQStashWebhook(
   body: string,
-  env: Env,
+  config: {
+    qstashToken: string;
+    baseUrl: string;
+  },
 ): Promise<QStashWebhookResult> {
   console.log(`[QSTASH] Processing webhook message`);
 
@@ -174,10 +173,17 @@ export async function handleQStashWebhook(
   }
 
   // Execute the workflow
-  const result = await callExecutionTool(env, executionId, authorization);
+  const result = await callExecutionTool(
+    config.baseUrl,
+    executionId,
+    authorization,
+  );
 
   // Create QStash scheduler for any re-scheduling needs
-  const scheduler = createQStashScheduler(env);
+  const scheduler = createQStashScheduler({
+    qstashToken: config.qstashToken,
+    baseUrl: config.baseUrl,
+  });
 
   // Handle the result
   const { needsRetry } = await handleExecutionResult(
@@ -198,84 +204,4 @@ export async function handleQStashWebhook(
   }
 
   return { success: true };
-}
-
-// ============================================================================
-// Cloudflare Queue Handler (Legacy)
-// ============================================================================
-
-async function processMessage(
-  message: Message<QueueMessage>,
-  env: Env,
-  scheduler: Scheduler,
-): Promise<void> {
-  const {
-    executionId,
-    retryCount = 0,
-    enqueuedAt,
-    authorization,
-  } = message.body;
-
-  if (Date.now() - enqueuedAt > MAX_MESSAGE_AGE_MS) {
-    console.warn(`[QUEUE] Dropping stale message: ${executionId}`);
-    message.ack();
-    return;
-  }
-
-  const result = await callExecutionTool(env, executionId, authorization);
-
-  await handleExecutionResult(
-    result,
-    executionId,
-    authorization,
-    retryCount,
-    scheduler,
-  );
-
-  message.ack();
-}
-
-/**
- * Main queue handler entry point (Legacy Cloudflare Queues)
- *
- * Kept for backward compatibility during migration to QStash.
- */
-export async function handleWorkflowQueue(
-  batch: MessageBatch<QueueMessage>,
-  env: Env,
-): Promise<void> {
-  console.log(
-    `[QUEUE] Processing ${batch.messages.length} messages (CF Queue)`,
-  );
-
-  // Use QStash scheduler (or CF Queue if available for backward compat)
-  const scheduler = createQStashScheduler(env);
-
-  for (const message of batch.messages) {
-    const parsed = QueueMessageSchema.safeParse(message.body);
-
-    if (!parsed.success) {
-      console.error(`[QUEUE] Invalid message:`, parsed.error);
-      message.ack();
-      continue;
-    }
-
-    try {
-      await processMessage(
-        {
-          body: parsed.data,
-          id: message.id,
-          timestamp: message.timestamp,
-          attempts: message.attempts,
-          ack: () => message.ack(),
-          retry: (opts) => message.retry(opts),
-        },
-        env,
-        scheduler,
-      );
-    } catch (error) {
-      console.error(`[QUEUE] Unexpected error:`, error);
-      message.retry({ delaySeconds: 60 });
-    }
-  }
 }

@@ -21,66 +21,6 @@ export interface ScheduleOptions {
   authorization: string;
   retryCount?: number;
 }
-
-export class CloudflareQueueScheduler implements Scheduler {
-  // CF Queue max delay is 15 minutes (900 seconds)
-  private readonly MAX_DELAY_SECONDS = 15 * 60;
-
-  constructor(private queue: Queue<QueueMessage>) {}
-
-  async schedule(executionId: string, options: ScheduleOptions): Promise<void> {
-    await this.queue.send({
-      executionId,
-      retryCount: options.retryCount ?? 0,
-      enqueuedAt: Date.now(),
-      authorization: options.authorization,
-    });
-  }
-
-  async scheduleAfter(
-    executionId: string,
-    delayMs: number,
-    options: ScheduleOptions,
-  ): Promise<void> {
-    // Cap at CF Queue max, the workflow will re-schedule if more time needed
-    const delaySeconds = Math.min(
-      Math.max(0, Math.ceil(delayMs / 1000)),
-      this.MAX_DELAY_SECONDS,
-    );
-
-    if (delaySeconds === 0) {
-      return this.schedule(executionId, options);
-    }
-
-    await this.queue.send(
-      {
-        executionId,
-        retryCount: options.retryCount ?? 0,
-        enqueuedAt: Date.now(),
-        authorization: options.authorization,
-      },
-      { delaySeconds },
-    );
-  }
-
-  async scheduleAt(
-    executionId: string,
-    wakeAtEpochMs: number,
-    options: ScheduleOptions,
-  ): Promise<void> {
-    const delayMs = Math.max(0, wakeAtEpochMs - Date.now());
-    return this.scheduleAfter(executionId, delayMs, options);
-  }
-}
-
-export function createScheduler(queue: Queue<QueueMessage>): Scheduler {
-  return new CloudflareQueueScheduler(queue);
-}
-
-// ============================================================================
-// QStash Scheduler
-// ============================================================================
-
 export interface QStashSchedulerOptions {
   /** QStash API token for authentication */
   token: string;
@@ -230,27 +170,23 @@ export async function verifyQStashSignature(
 // Factory Functions
 // ============================================================================
 
-export interface CreateQStashSchedulerEnv {
-  QSTASH_TOKEN: string;
-  DECO_APP_ENTRYPOINT: string;
-}
-
 /**
  * Create a QStash scheduler from environment variables
  */
-export function createQStashScheduler(
-  env: CreateQStashSchedulerEnv,
-): Scheduler {
+export function createQStashScheduler(config: {
+  qstashToken: string;
+  baseUrl: string;
+}): Scheduler {
   /**
    * Import a fetch polyfill only if you are using node prior to v18.
    * This is not necessary for nextjs, deno or cloudflare workers.
    */
 
   // The webhook endpoint that QStash will call
-  const destinationUrl = `${env.DECO_APP_ENTRYPOINT}/api/workflow-webhook`;
+  const destinationUrl = `${config.baseUrl}/api/workflow-webhook`;
 
   return new QStashScheduler({
-    token: env.QSTASH_TOKEN,
+    token: config.qstashToken,
     destinationUrl,
   });
 }

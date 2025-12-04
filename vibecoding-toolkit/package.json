@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@decocms/bindings": "1.0.1-alpha.12",
-    "@decocms/runtime": "1.0.0-alpha.17",
+    "@decocms/runtime": "1.0.0-alpha.22",
     "@decocms/ui": "/Users/pedrofranca/Documents/dev/decocms/admin/packages/ui",
     "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
     "@monaco-editor/react": "^4.7.0",

@@ -1,7 +1,3 @@
-// ============================================================================
-// CRUD Tools
-// ============================================================================
-
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";

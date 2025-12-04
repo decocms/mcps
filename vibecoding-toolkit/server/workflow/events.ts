@@ -12,10 +12,6 @@ import { transformDbRowToEvent } from "../collections/workflow.ts";
 import { createQStashScheduler, type Scheduler } from "./scheduler.ts";
 import { WorkflowEvent, type EventType } from "@decocms/bindings/workflow";
 
-// ============================================================================
-// Core Event Functions
-// ============================================================================
-
 /**
  * Add an event to the workflow events table
  */
@@ -111,33 +107,6 @@ export async function consumeEvent(
 }
 
 /**
- * Get all events after a timestamp (for streaming)
- */
-export async function getAllEventsAfter(
-  env: Env,
-  executionId: string,
-  afterTimestamp: number,
-): Promise<WorkflowEvent[]> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      SELECT * FROM workflow_events
-      WHERE execution_id = $1 AND created_at > $2
-      ORDER BY created_at ASC
-      LIMIT 100
-    `,
-    params: [executionId, afterTimestamp],
-  });
-
-  return ((result.result[0]?.results || []) as Record<string, unknown>[]).map(
-    transformDbRowToEvent,
-  );
-}
-
-// ============================================================================
-// Signal API (Human-in-the-Loop)
-// ============================================================================
-
-/**
  * Send a signal to a workflow execution.
  *
  * Signals are used for human-in-the-loop patterns:
@@ -181,24 +150,6 @@ export async function sendSignal(
 }
 
 /**
- * Wait for a signal (called from step executor)
- *
- * Returns the signal event if available, null otherwise.
- * The step should throw WaitingForSignalError if null.
- */
-export async function waitForSignal(
-  env: Env,
-  executionId: string,
-  signalName: string,
-): Promise<WorkflowEvent | null> {
-  return consumeEvent(env, executionId, "signal", signalName);
-}
-
-// ============================================================================
-// Timer API (Durable Sleep)
-// ============================================================================
-
-/**
  * Schedule a timer event for durable sleep.
  *
  * The timer won't be visible until wakeAtEpochMs, allowing
@@ -233,201 +184,6 @@ export async function checkTimer(
   return consumeEvent(env, executionId, "timer", stepName);
 }
 
-// ============================================================================
-// Inter-Workflow Messaging (DBOS-style send/recv)
-// ============================================================================
-
-/**
- * Send a message to another workflow execution.
- *
- * This enables the DBOS-style send/recv pattern for
- * workflow coordination and fan-out/fan-in.
- */
-export async function sendMessage(
-  env: Env,
-  sourceExecutionId: string,
-  targetExecutionId: string,
-  topic: string,
-  payload?: unknown,
-  options?: {
-    authorization?: string;
-    scheduler?: Scheduler;
-  },
-): Promise<WorkflowEvent> {
-  const event = await addEvent(env, {
-    execution_id: targetExecutionId,
-    type: "message",
-    name: topic,
-    payload,
-    title: topic,
-    updated_at: new Date().toISOString(),
-    source_execution_id: sourceExecutionId,
-    visible_at: Date.now(),
-  });
-
-  // Wake the target execution
-  await wakeExecution(env, targetExecutionId, options);
-
-  return event;
-}
-
-/**
- * Receive a message (poll for one).
- *
- * Returns null if no message is available.
- * The workflow should yield and retry later.
- */
-export async function receiveMessage(
-  env: Env,
-  executionId: string,
-  topic: string,
-): Promise<WorkflowEvent | null> {
-  return consumeEvent(env, executionId, "message", topic);
-}
-
-// ============================================================================
-// Published Events (setEvent/getEvent)
-// ============================================================================
-
-/**
- * Publish an output event (for external observers).
- *
- * This is an upsert - updates the value if key already exists.
- * Useful for exposing workflow state to external systems.
- */
-export async function setEvent(
-  env: Env,
-  executionId: string,
-  key: string,
-  value: unknown,
-): Promise<void> {
-  const now = Date.now();
-  const id = crypto.randomUUID();
-
-  await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      INSERT INTO workflow_events (id, execution_id, type, name, payload, created_at, visible_at)
-      VALUES ($1, $2, 'output', $3, $4, $5, $5)
-      ON CONFLICT (execution_id, type, name) WHERE type = 'output'
-      DO UPDATE SET payload = $4, created_at = $5
-    `,
-    params: [id, executionId, key, JSON.stringify(value), now],
-  });
-}
-
-/**
- * Get a published event value.
- *
- * Returns null if the key doesn't exist yet.
- * External systems can poll this or the workflow can wait.
- */
-export async function getEvent(
-  env: Env,
-  executionId: string,
-  key: string,
-): Promise<unknown | null> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      SELECT payload FROM workflow_events 
-      WHERE execution_id = $1 AND type = 'output' AND name = $2
-    `,
-    params: [executionId, key],
-  });
-
-  const row = result.result[0]?.results?.[0] as { payload: string } | undefined;
-  return row ? JSON.parse(row.payload) : null;
-}
-
-// ============================================================================
-// Observability Events
-// ============================================================================
-
-/**
- * Record a step started event
- */
-export async function recordStepStarted(
-  env: Env,
-  executionId: string,
-  stepName: string,
-  input?: unknown,
-): Promise<WorkflowEvent> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "step_started",
-    name: stepName,
-    title: stepName,
-    updated_at: new Date().toISOString(),
-    payload: input ? { input } : undefined,
-    visible_at: Date.now(),
-  });
-}
-
-/**
- * Record a step completed event
- */
-export async function recordStepCompleted(
-  env: Env,
-  executionId: string,
-  stepName: string,
-  output?: unknown,
-  error?: string,
-): Promise<WorkflowEvent> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "step_completed",
-    name: stepName,
-    title: stepName,
-    updated_at: new Date().toISOString(),
-    payload: { output, error },
-    visible_at: Date.now(),
-  });
-}
-
-/**
- * Record workflow started event
- */
-export async function recordWorkflowStarted(
-  env: Env,
-  executionId: string,
-  workflowId: string,
-  input?: unknown,
-): Promise<WorkflowEvent> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "workflow_started",
-    name: workflowId,
-    title: workflowId,
-    updated_at: new Date().toISOString(),
-    payload: input ? { input } : undefined,
-    visible_at: Date.now(),
-  });
-}
-
-/**
- * Record workflow completed event
- */
-export async function recordWorkflowCompleted(
-  env: Env,
-  executionId: string,
-  workflowId: string,
-  output?: unknown,
-  error?: string,
-): Promise<WorkflowEvent> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "workflow_completed",
-    name: workflowId,
-    title: workflowId,
-    updated_at: new Date().toISOString(),
-    payload: { output, error },
-    visible_at: Date.now(),
-  });
-}
-
-// ============================================================================
-// Wake Execution Helper
-// ============================================================================
-
 /**
  * Wake an execution for processing.
  *
@@ -450,7 +206,12 @@ export async function wakeExecution(
   });
 
   // Use QStash scheduler for workflow execution
-  const scheduler = options?.scheduler ?? createQStashScheduler(env);
+  const scheduler =
+    options?.scheduler ??
+    createQStashScheduler({
+      qstashToken: process.env.QSTASH_TOKEN as string,
+      baseUrl: env.BASE_URL,
+    });
   const authorization =
     options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
 

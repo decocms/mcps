@@ -34,6 +34,7 @@ import {
 } from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
+import z from "zod";
 
 /**
  * This Env type is the main context object that is passed to
@@ -49,10 +50,23 @@ import { tools } from "./tools/index.ts";
  * This endpoint receives messages from QStash, verifies the signature,
  * and processes the workflow execution.
  */
-async function handleWorkflowWebhook(
-  req: Request,
-  env: Env,
-): Promise<Response> {
+async function handleWorkflowWebhook(req: Request): Promise<Response> {
+  const vars = {
+    qstashCurrentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+    qstashNextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
+    qstashToken: process.env.QSTASH_TOKEN,
+  };
+  const baseUrl = new URL(req.url).href;
+
+  if (!vars.qstashCurrentSigningKey)
+    return new Response("QStash current signing key is not set", {
+      status: 500,
+    });
+  if (!vars.qstashNextSigningKey)
+    return new Response("QStash next signing key is not set", { status: 500 });
+  if (!vars.qstashToken)
+    return new Response("QStash token is not set", { status: 500 });
+
   // Only accept POST requests
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -68,8 +82,8 @@ async function handleWorkflowWebhook(
 
   // Verify the QStash signature
   const receiver = createQStashReceiver({
-    currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-    nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
+    currentSigningKey: vars.qstashCurrentSigningKey,
+    nextSigningKey: vars.qstashNextSigningKey,
   });
 
   const isValid = await verifyQStashSignature(receiver, signature, body);
@@ -80,7 +94,10 @@ async function handleWorkflowWebhook(
 
   // Process the workflow message
   try {
-    const result = await handleQStashWebhook(body, env);
+    const result = await handleQStashWebhook(body, {
+      qstashToken: vars.qstashToken,
+      baseUrl,
+    });
 
     if (result.success) {
       return new Response(JSON.stringify(result), {
@@ -109,7 +126,10 @@ async function handleWorkflowWebhook(
     );
   }
 }
-export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
+export type Env = DefaultEnv<typeof StateSchema> &
+  DecoEnv & {
+    BASE_URL: string;
+  };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
@@ -138,7 +158,14 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * fields to the state schema, like asking for an API Key
      * for connecting to a third-party service.
      */
-    state: StateSchema,
+    state: StateSchema.extend({
+      qstashNextSigningKey: z
+        .string()
+        .describe("The next signing key for QStash"),
+      qstashCurrentSigningKey: z
+        .string()
+        .describe("The current signing key for QStash"),
+    }),
   },
   tools,
   bindings: [
@@ -149,7 +176,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     },
   ],
   cors: {
-    origin: (origin) => {
+    origin: (origin: string) => {
       // Allow localhost and configured origins
       if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
         return origin;
@@ -169,11 +196,11 @@ export default {
 
     // Handle QStash webhook for workflow execution
     if (url.pathname === "/api/workflow-webhook") {
-      return handleWorkflowWebhook(req, { ...process.env });
+      return handleWorkflowWebhook(req);
     }
     if (url.pathname === "/_healthcheck") {
       return new Response("OK", { status: 200 });
     }
-    return runtime.fetch(req, { ...process.env });
+    return runtime.fetch(req, { ...process.env, BASE_URL: url.href }, {});
   },
 };
