@@ -8,50 +8,68 @@
  * with built-in fallback mechanisms, cost optimization, and provider routing.
  */
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
-import { z } from "zod";
-import {
-  StateSchema as BaseStateSchema,
-  type Env as DecoEnv,
-  Scopes,
-} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-/**
- * State Schema defines the configuration users provide during installation
- */
-export const StateSchema = BaseStateSchema.partial({ OPENROUTER_CONTRACT: true }).extend({
-	OPENROUTER_API_KEY: z.string().optional(),
-});
 
 /**
  * Environment type combining Deco bindings and Cloudflare Workers context
  */
-export type Env = DefaultEnv<typeof StateSchema> &
-	DecoEnv & {
-		ASSETS: {
-			fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-		};
-		OPENROUTER_API_KEY: string;
-		WALLET_VENDOR_ID: string;
-		state: z.infer<typeof StateSchema>;
-	};
+export type Env = DefaultEnv;
 
-const runtime = withRuntime<Env, typeof StateSchema>({
-	configuration: {
-		scopes: [
-			Scopes.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE,
-			Scopes.OPENROUTER_CONTRACT.CONTRACT_SETTLE,
-		],
-		state: StateSchema,
+const runtime = withRuntime<Env>({
+	oauth: {
+		mode: "PKCE",
+		// Used in protected resource metadata to point to the auth server
+		authorizationServer: "https://openrouter.ai",
+
+		// Generates the URL to redirect users to for authorization
+		authorizationUrl: (callbackUrl) => {
+			const url = new URL("https://openrouter.ai/auth");
+			url.searchParams.set("callback_url", callbackUrl);
+			// Optional: Add PKCE code challenge for extra security
+			// url.searchParams.set("code_challenge", codeChallenge);
+			// url.searchParams.set("code_challenge_method", "S256");
+			return url.toString();
+		},
+
+		// Exchanges the authorization code for an API key
+		exchangeCode: async ({ code, code_verifier, code_challenge_method }) => {
+			const response = await fetch("https://openrouter.ai/api/v1/auth/keys", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					code,
+					code_verifier,
+					code_challenge_method,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error(`OpenRouter auth failed: ${response.status}`);
+			}
+
+			const { key } = (await response.json()) as { key: string };
+
+			// Map OpenRouter's response to OAuth token format
+			return {
+				access_token: key,
+				token_type: "Bearer",
+			};
+		},
 	},
 	tools,
-
-	/**
-	 * Custom fetch handler for API routes and assets
-	 * Handles streaming endpoints and other custom routes
-	 */
-	fetch: async (req: Request, env: Env) => {
-		return env.ASSETS.fetch(req);
+	cors: {
+		origin: (origin) => {
+			// Allow localhost and configured origins
+			if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+				return origin;
+			}
+			// TODO: Configure allowed origins from environment
+			return origin;
+		},
+		credentials: true,
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
 	},
 });
 
