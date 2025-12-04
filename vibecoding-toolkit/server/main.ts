@@ -25,14 +25,13 @@ import {
 } from "./workflow/scheduler.ts";
 
 // Re-export library utilities
-export * from "./lib/index.ts";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
-
+import { ensureAgentsTable } from "./lib/postgres.ts";
 import { tools } from "./tools/index.ts";
 import z from "zod";
 
@@ -133,6 +132,9 @@ export type Env = DefaultEnv<typeof StateSchema> &
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
+    onChange: async (env) => {
+      await ensureAgentsTable(env);
+    },
     /**
      * These scopes define the asking permissions of your
      * app when a user is installing it. When a user
@@ -201,6 +203,10 @@ export default {
     if (url.pathname === "/_healthcheck") {
       return new Response("OK", { status: 200 });
     }
-    return runtime.fetch(req, { ...process.env, BASE_URL: url.href }, {});
+    return runtime.fetch(
+      req,
+      { ...process.env, BASE_URL: url.href } as Env,
+      {},
+    );
   },
 };
