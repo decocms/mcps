@@ -302,9 +302,9 @@ function calculateChatCost(
   const promptPrice = parseFloat(pricing.prompt) || 0;
   const completionPrice = parseFloat(pricing.completion) || 0;
 
-  // Prices are per 1M tokens
-  const promptCost = (promptTokens / 1_000_000) * promptPrice;
-  const completionCost = (completionTokens / 1_000_000) * completionPrice;
+  // Prices are per 1M tokens, but promptPrice is already on the right unit scale
+  const promptCost = promptTokens * promptPrice;
+  const completionCost = completionTokens * completionPrice;
 
   return {
     prompt: promptCost,
@@ -566,7 +566,7 @@ export const createLLMStreamTool = (env: Env) =>
                   usage.outputTokens ?? 0,
                   modelInfo.pricing,
                 );
-                const costMicroDollars = estimatedCost.total * 1000000;
+                const costMicroDollars = estimatedCost.total * 1_000_000;
                 await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
                   transactionId,
                   vendorId: workspace,
@@ -658,7 +658,7 @@ export const createLLMGenerateTool = (env: Env) =>
           result.usage?.outputTokens ?? 0,
           modelInfo.pricing,
         );
-        const costMicroDollars = estimatedCost.total * 1000000;
+        const costMicroDollars = estimatedCost.total * 1_000_000;
         await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
           transactionId,
           vendorId: workspace,
