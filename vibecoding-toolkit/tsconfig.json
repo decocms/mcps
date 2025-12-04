@@ -42,6 +42,7 @@
     },
     /* Types */
     "types": [
+      "@types/node",
       "vite/client",
     ]
   },

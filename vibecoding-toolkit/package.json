@@ -5,10 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev --vite",
+    "dev": "bun run server/main.ts",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build:client": "bun --bun vite build",
