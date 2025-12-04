@@ -6,11 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "PORT=5002 bun run server/main.ts",
-    "configure": "deco configure",
-    "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "bun run build && rm -f dist/server/wrangler.json && deco deploy ./dist/server",
-    "check": "tsc --noEmit",
-    "build": "bun --bun vite build"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",
