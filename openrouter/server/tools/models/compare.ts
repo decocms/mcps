@@ -10,7 +10,7 @@ import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import type { Env } from "../../main.ts";
 import { compareModels } from "./utils.ts";
 
-export const createCompareModelsTool = (_: Env) =>
+export const createCompareModelsTool = (env: Env) =>
   createPrivateTool({
     id: "COMPARE_MODELS",
     description:
@@ -48,10 +48,10 @@ export const createCompareModelsTool = (_: Env) =>
         .optional()
         .describe("Automated recommendation based on comparison"),
     }),
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const { modelIds, criteria } = context;
       const client = new OpenRouterClient({
-        apiKey: getOpenRouterApiKey(runtimeContext),
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all models

@@ -10,7 +10,7 @@ import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import type { Env } from "../../main.ts";
 import { recommendModelsForTask } from "./utils.ts";
 
-export const createRecommendModelTool = (_env: Env) =>
+export const createRecommendModelTool = (env: Env) =>
   createPrivateTool({
     id: "RECOMMEND_MODEL",
     description:
@@ -88,10 +88,10 @@ export const createRecommendModelTool = (_env: Env) =>
         )
         .describe("Top recommended models ordered by score"),
     }),
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const { taskDescription, requirements = {} } = context;
       const client = new OpenRouterClient({
-        apiKey: getOpenRouterApiKey(runtimeContext),
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all available models

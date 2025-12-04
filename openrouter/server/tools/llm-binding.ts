@@ -314,10 +314,10 @@ export const createListLLMTool = (env: Env) =>
       "Returns comprehensive information about each model including capabilities, pricing, and limits.",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
-    execute: async ({ runtimeContext, context }) => {
+    execute: async ({ context }) => {
       const { where, orderBy, limit = 50, offset = 0 } = context;
       const client = new OpenRouterClient({
-        apiKey: getOpenRouterApiKey(runtimeContext),
+        apiKey: getOpenRouterApiKey(env),
       });
 
       // Fetch all models
@@ -366,10 +366,10 @@ export const createGetLLMTool = (env: Env) =>
       "pricing, capabilities, context length, and provider information.",
     inputSchema: GET_BINDING.inputSchema,
     outputSchema: GET_BINDING.outputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const { id } = context;
       const client = new OpenRouterClient({
-        apiKey: getOpenRouterApiKey(runtimeContext),
+        apiKey: getOpenRouterApiKey(env),
       });
 
       try {
@@ -391,7 +391,7 @@ export const createGetLLMTool = (env: Env) =>
 /**
  * LLM_METADATA - Returns metadata about a specific model's capabilities
  */
-export const createLLMMetadataTool = (_: Env) =>
+export const createLLMMetadataTool = (env: Env) =>
   createPrivateTool({
     id: "LLM_METADATA",
     description:
@@ -399,10 +399,10 @@ export const createLLMMetadataTool = (_: Env) =>
       "for different media types (images, files, etc.).",
     inputSchema: METADATA_BINDING.inputSchema,
     outputSchema: METADATA_BINDING.outputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const { modelId } = context;
       const client = new OpenRouterClient({
-        apiKey: getOpenRouterApiKey(runtimeContext),
+        apiKey: getOpenRouterApiKey(env),
       });
 
       try {
@@ -477,14 +477,14 @@ export const createLLMStreamTool = (env: Env) =>
       "Stream a language model response in real-time using OpenRouter. " +
       "Returns a streaming response for interactive chat experiences.",
     inputSchema: STREAM_BINDING.inputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const {
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const apiKey = getOpenRouterApiKey(runtimeContext);
+      const apiKey = getOpenRouterApiKey(env);
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
@@ -511,14 +511,14 @@ export const createLLMGenerateTool = (env: Env) =>
       "Returns the full response with usage statistics and cost information.",
     inputSchema: GENERATE_BINDING.inputSchema,
     outputSchema: GENERATE_BINDING.outputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const {
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const apiKey = getOpenRouterApiKey(runtimeContext);
+      const apiKey = getOpenRouterApiKey(env);
 
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });

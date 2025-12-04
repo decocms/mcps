@@ -1,10 +1,9 @@
-import type { AppContext } from "@decocms/runtime/tools";
+import type { Env } from "server/main";
 
-export const getOpenRouterApiKey = (appCtx: AppContext) => {
-  const authorization = appCtx.req?.headers.get("Authorization");
+export const getOpenRouterApiKey = (env: Env) => {
+  const authorization = env.MESH_REQUEST_CONTEXT.authorization;
   if (!authorization) {
     throw new Error("Authorization header is required");
   }
-  const token = authorization.split(" ")[1];
-  return token;
+  return authorization;
 };
