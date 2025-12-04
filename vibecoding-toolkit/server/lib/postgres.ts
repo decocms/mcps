@@ -30,7 +30,6 @@ export async function runSQL<T = unknown>(
  * Ensure the agents table exists, creating it if necessary
  */
 export async function ensureAgentsTable(env: Env) {
-  console.log("token", env.MESH_REQUEST_CONTEXT.token);
   try {
     await runSQL(
       env,
