@@ -41,6 +41,20 @@ if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
     "COLLECTION_WORKFLOW_CREATE binding not found or missing schemas",
   );
 }
+
+// Create a relaxed input schema that accepts any string for date fields
+// The original binding schema uses z.string().datetime() which is too strict
+// We override created_at and updated_at to accept any string since they're server-generated anyway
+const originalDataSchema = (
+  CREATE_BINDING.inputSchema as unknown as z.ZodObject<any>
+).shape.data as z.ZodObject<any>;
+const relaxedDataSchema = originalDataSchema.extend({
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+});
+const CREATE_INPUT_SCHEMA = z.object({
+  data: relaxedDataSchema,
+});
 if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
   throw new Error(
     "COLLECTION_WORKFLOW_UPDATE binding not found or missing schemas",
@@ -54,15 +68,24 @@ if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
 
 function transformDbRowToWorkflow(row: unknown): Workflow {
   const r = row as Record<string, unknown>;
+
+  // Parse steps - handle both old { phases: [...] } format and new direct array format
+  let steps: unknown = [];
+  if (r.steps) {
+    const parsed = typeof r.steps === "string" ? JSON.parse(r.steps) : r.steps;
+    // Handle legacy { phases: [...] } format
+    if (parsed && typeof parsed === "object" && "phases" in parsed) {
+      steps = (parsed as { phases: unknown }).phases;
+    } else {
+      steps = parsed;
+    }
+  }
+
   return {
     id: r.id as string,
     title: r.title as string,
     description: r.description as string | undefined,
-    steps: r.steps
-      ? typeof r.steps === "string"
-        ? JSON.parse(r.steps)
-        : r.steps
-      : [],
+    steps: steps as Workflow["steps"],
     triggers: r.triggers
       ? typeof r.triggers === "string"
         ? JSON.parse(r.triggers)
@@ -102,7 +125,7 @@ export const createListTool = (env: Env) =>
           SELECT * FROM workflows
           ${whereClause}
           ${orderByClause}
-          LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+          LIMIT ? OFFSET ?
         `;
 
       const itemsResult: any = await env.DATABASE.DATABASES_RUN_SQL({
@@ -137,8 +160,8 @@ export async function getWorkflow(
   id: string,
 ): Promise<Workflow | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflows WHERE id = $1 LIMIT 1",
-    params: [id] as any[],
+    sql: "SELECT * FROM workflows WHERE id = ? LIMIT 1",
+    params: [id],
   });
   const item = result.result[0]?.results?.[0] || null;
   return item
@@ -170,7 +193,7 @@ export const createInsertTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_INSERT",
     description: "Create a new workflow with validation",
-    inputSchema: CREATE_BINDING.inputSchema,
+    inputSchema: CREATE_INPUT_SCHEMA,
     outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {
@@ -204,7 +227,7 @@ export const createInsertTool = (env: Env) =>
                 id, title, created_at, updated_at, created_by, updated_by,
                 description, steps, triggers
               ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9
+                ?, ?, ?, ?, ?, ?, ?, ?, ?
               )
               RETURNING *
             `,
@@ -213,12 +236,10 @@ export const createInsertTool = (env: Env) =>
             workflow.title,
             now,
             now,
-            user?.id || undefined,
-            user?.id || undefined,
-            workflow.description || undefined,
-            JSON.stringify({
-              phases: workflow.steps,
-            }) || "{}",
+            user?.id || null,
+            user?.id || null,
+            workflow.description || null,
+            JSON.stringify(workflow.steps || []),
             JSON.stringify(workflow.triggers || []) || "{}",
           ],
         });
@@ -248,30 +269,28 @@ export const createUpdateTool = (env: Env) =>
 
       const setClauses: string[] = [];
       const params: any[] = [];
-      let paramIndex = 1;
 
-      setClauses.push(`updated_at = $${paramIndex++}`);
+      setClauses.push(`updated_at = ?`);
       params.push(now);
 
-      setClauses.push(`updated_by = $${paramIndex++}`);
-      params.push(user?.id || undefined);
+      setClauses.push(`updated_by = ?`);
+      params.push(user?.id || null);
 
       if (data.title !== undefined) {
-        setClauses.push(`title = $${paramIndex++}`);
+        setClauses.push(`title = ?`);
         params.push(data.title);
       }
       if (data.description !== undefined) {
-        setClauses.push(`description = $${paramIndex++}`);
+        setClauses.push(`description = ?`);
         params.push(data.description);
       }
       if (data.steps !== undefined) {
-        setClauses.push(`steps = $${paramIndex++}`);
-        params.push(
-          JSON.stringify({
-            phases: data.steps,
-            triggers: data.triggers,
-          }),
-        );
+        setClauses.push(`steps = ?`);
+        params.push(JSON.stringify(data.steps || []));
+      }
+      if (data.triggers !== undefined) {
+        setClauses.push(`triggers = ?`);
+        params.push(JSON.stringify(data.triggers || []));
       }
 
       params.push(id);
@@ -279,7 +298,7 @@ export const createUpdateTool = (env: Env) =>
       const sql = `
           UPDATE workflows
           SET ${setClauses.join(", ")}
-          WHERE id = $${paramIndex}
+          WHERE id = ?
           RETURNING *
         `;
 
@@ -313,7 +332,7 @@ export const createDeleteTool = (env: Env) =>
       const { id } = context;
 
       await env.DATABASE.DATABASES_RUN_SQL({
-        sql: "DELETE FROM workflows WHERE id = $1",
+        sql: "DELETE FROM workflows WHERE id = ?",
         params: [id],
       });
 

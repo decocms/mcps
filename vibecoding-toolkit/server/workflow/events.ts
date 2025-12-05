@@ -9,8 +9,8 @@
 
 import type { Env } from "../main.ts";
 import { transformDbRowToEvent } from "../collections/workflow.ts";
-import { createQStashScheduler, type Scheduler } from "./scheduler.ts";
-import { WorkflowEvent, type EventType } from "@decocms/bindings/workflow";
+import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
+import { Scheduler } from "./scheduler.ts";
 
 /**
  * Add an event to the workflow events table
@@ -26,7 +26,7 @@ export async function addEvent(
     sql: `
       INSERT INTO workflow_events 
       (id, execution_id, type, name, payload, created_at, visible_at, source_execution_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     params: [
       id,
@@ -56,10 +56,10 @@ export async function getPendingEvents(
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       SELECT * FROM workflow_events
-      WHERE execution_id = $1 
+      WHERE execution_id = ? 
         AND consumed_at IS NULL
-        AND (visible_at IS NULL OR visible_at <= $2)
-        ${type ? "AND type = $3" : ""}
+        AND (visible_at IS NULL OR visible_at <= ?)
+        ${type ? "AND type = ?" : ""}
       ORDER BY visible_at ASC NULLS FIRST, created_at ASC
     `,
     params: type ? [executionId, now, type] : [executionId, now],
@@ -84,20 +84,22 @@ export async function consumeEvent(
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_events
-      SET consumed_at = $1
+      SET consumed_at = ?
       WHERE id = (
         SELECT id FROM workflow_events
-        WHERE execution_id = $2 
-          AND type = $3 
-          ${name ? "AND name = $4" : ""}
+        WHERE execution_id = ? 
+          AND type = ? 
+          ${name ? "AND name = ?" : ""}
           AND consumed_at IS NULL
-          AND (visible_at IS NULL OR visible_at <= $1)
+          AND (visible_at IS NULL OR visible_at <= ?)
         ORDER BY visible_at ASC NULLS FIRST, created_at ASC
         LIMIT 1
       )
       RETURNING *
     `,
-    params: name ? [now, executionId, type, name] : [now, executionId, type],
+    params: name
+      ? [now, executionId, type, name, now]
+      : [now, executionId, type, now],
   });
 
   const row = result.result[0]?.results?.[0] as
@@ -201,24 +203,14 @@ export async function wakeExecution(
 ): Promise<void> {
   // Update timestamp (for polling schedulers)
   await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `UPDATE workflow_executions SET updated_at = $1 WHERE id = $2`,
+    sql: `UPDATE workflow_executions SET updated_at = ? WHERE id = ?`,
     params: [Date.now(), executionId],
   });
 
   // Use QStash scheduler for workflow execution
-  const scheduler =
-    options?.scheduler ??
-    createQStashScheduler({
-      qstashToken: process.env.QSTASH_TOKEN as string,
-      baseUrl: env.BASE_URL,
-    });
+  const scheduler = options?.scheduler ?? ({} as Scheduler); // TODO: Implement scheduler
   const authorization =
     options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
-
-  if (!authorization) {
-    console.warn(`[WAKE] No authorization token for execution ${executionId}`);
-    return;
-  }
 
   if (options?.delayMs) {
     await scheduler.scheduleAfter(executionId, options.delayMs, {

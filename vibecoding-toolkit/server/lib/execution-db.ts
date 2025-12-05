@@ -21,7 +21,6 @@ import {
 } from "@decocms/bindings/workflow";
 import type { Env } from "../main.ts";
 import { WorkflowCancelledError } from "../workflow/errors.ts";
-import { Scheduler } from "server/workflow/scheduler.ts";
 
 const safeJsonParse = (value: unknown): unknown => {
   if (!value) return undefined;
@@ -56,7 +55,7 @@ export async function getExecution(
   id: string,
 ): Promise<WorkflowExecution | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflow_executions WHERE id = $1 LIMIT 1",
+    sql: "SELECT * FROM workflow_executions WHERE id = ? LIMIT 1",
     params: [id],
   });
 
@@ -86,7 +85,7 @@ export async function createExecution(
         id, workflow_id, status, created_at, updated_at, created_by,
         input, retry_count, max_retries
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9
+        ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
       RETURNING *
     `,
@@ -131,51 +130,50 @@ export async function updateExecution(
 
   const setClauses: string[] = [];
   const params: unknown[] = [];
-  let paramIndex = 1;
 
   // Always update these fields
-  setClauses.push(`updated_at = $${paramIndex++}`);
+  setClauses.push(`updated_at = ?`);
   params.push(now);
 
   // Conditionally update other fields
   if (data.status !== undefined) {
-    setClauses.push(`status = $${paramIndex++}`);
+    setClauses.push(`status = ?`);
     params.push(data.status);
   }
   if (data.output !== undefined) {
-    setClauses.push(`output = $${paramIndex++}`);
+    setClauses.push(`output = ?`);
     params.push(JSON.stringify(data.output));
   }
   if (data.error !== undefined) {
-    setClauses.push(`error = $${paramIndex++}`);
+    setClauses.push(`error = ?`);
     params.push(data.error);
   }
   if (data.input !== undefined) {
-    setClauses.push(`input = $${paramIndex++}`);
+    setClauses.push(`input = ?`);
     params.push(JSON.stringify(data.input));
   }
   if (data.started_at_epoch_ms !== undefined) {
-    setClauses.push(`started_at_epoch_ms = $${paramIndex++}`);
+    setClauses.push(`started_at_epoch_ms = ?`);
     params.push(data.started_at_epoch_ms);
   }
   if (data.completed_at_epoch_ms !== undefined) {
-    setClauses.push(`completed_at_epoch_ms = $${paramIndex++}`);
+    setClauses.push(`completed_at_epoch_ms = ?`);
     params.push(data.completed_at_epoch_ms);
   }
   if (data.retry_count !== undefined) {
-    setClauses.push(`retry_count = $${paramIndex++}`);
+    setClauses.push(`retry_count = ?`);
     params.push(data.retry_count);
   }
   if (data.max_retries !== undefined) {
-    setClauses.push(`max_retries = $${paramIndex++}`);
+    setClauses.push(`max_retries = ?`);
     params.push(data.max_retries);
   }
   if (data.locked_until_epoch_ms !== undefined) {
-    setClauses.push(`locked_until_epoch_ms = $${paramIndex++}`);
+    setClauses.push(`locked_until_epoch_ms = ?`);
     params.push(data.locked_until_epoch_ms);
   }
   if (data.lock_id !== undefined) {
-    setClauses.push(`lock_id = $${paramIndex++}`);
+    setClauses.push(`lock_id = ?`);
     params.push(data.lock_id);
   }
 
@@ -185,7 +183,7 @@ export async function updateExecution(
     sql: `
       UPDATE workflow_executions
       SET ${setClauses.join(", ")}
-      WHERE id = $${paramIndex}
+      WHERE id = ?
       RETURNING *
     `,
     params,
@@ -224,13 +222,13 @@ export async function cancelExecution(
       UPDATE workflow_executions
       SET 
         status = 'cancelled',
-        updated_at = $1,
-        completed_at_epoch_ms = $1,
-        error = $2
-      WHERE id = $3 AND status IN ('pending', 'running')
+        updated_at = ?,
+        completed_at_epoch_ms = ?,
+        error = ?
+      WHERE id = ? AND status IN ('pending', 'running')
       RETURNING *
     `,
-    params: [now, "Execution cancelled by user", executionId],
+    params: [now, now, "Execution cancelled by user", executionId],
   });
 
   const row = result.result[0]?.results?.[0] as
@@ -265,7 +263,7 @@ export async function checkIfCancelled(
   executionId: string,
 ): Promise<void> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT status FROM workflow_executions WHERE id = $1",
+    sql: "SELECT status FROM workflow_executions WHERE id = ?",
     params: [executionId],
   });
 
@@ -291,31 +289,27 @@ export async function checkIfCancelled(
  */
 export async function resumeExecution(
   env: Env,
-  scheduler: Scheduler,
   executionId: string,
   options?: {
     /** Reset retry count to 0 (default: true) */
     resetRetries?: boolean;
-    /** Whether to re-queue after resuming (default: true) */
-    requeue?: boolean;
   },
 ): Promise<WorkflowExecution | null> {
   const now = Date.now();
   const resetRetries = options?.resetRetries ?? true;
-  const requeue = options?.requeue ?? true;
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions
       SET 
         status = 'pending',
-        updated_at = $1,
+        updated_at = ?,
         completed_at_epoch_ms = NULL,
         error = NULL,
         locked_until_epoch_ms = NULL,
         lock_id = NULL
         ${resetRetries ? ", retry_count = 0" : ""}
-      WHERE id = $2 AND status = 'cancelled'
+      WHERE id = ? AND status = 'cancelled'
       RETURNING *
     `,
     params: [now, executionId],
@@ -327,14 +321,6 @@ export async function resumeExecution(
 
   if (!row) {
     return null;
-  }
-
-  console.log(`[RESUME] Resumed execution ${executionId}`);
-
-  if (requeue) {
-    await scheduler.schedule(executionId, {
-      authorization: env.MESH_REQUEST_CONTEXT?.token,
-    });
   }
 
   return transformDbRowToExecution(row);
@@ -359,14 +345,13 @@ export async function listExecutions(
   const { workflowId, status, limit = 50, offset = 0 } = options;
   const conditions: string[] = [];
   const params: unknown[] = [];
-  let paramIndex = 1;
 
   if (workflowId) {
-    conditions.push(`workflow_id = $${paramIndex++}`);
+    conditions.push(`workflow_id = ?`);
     params.push(workflowId);
   }
   if (status) {
-    conditions.push(`status = $${paramIndex++}`);
+    conditions.push(`status = ?`);
     params.push(status);
   }
 
@@ -379,7 +364,7 @@ export async function listExecutions(
       SELECT * FROM workflow_executions
       ${whereClause}
       ORDER BY created_at DESC
-      LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+      LIMIT ? OFFSET ?
     `,
     params: [...params, limit, offset],
   });
@@ -428,7 +413,7 @@ export async function getStepResults(
   executionId: string,
 ): Promise<WorkflowExecutionStepResult[]> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM execution_step_results WHERE execution_id = $1`,
+    sql: `SELECT * FROM execution_step_results WHERE execution_id = ?`,
     params: [executionId],
   });
 
@@ -446,7 +431,7 @@ export async function getStepResult(
   stepId: string,
 ): Promise<WorkflowExecutionStepResult | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM execution_step_results WHERE execution_id = $1 AND step_id = $2`,
+    sql: `SELECT * FROM execution_step_results WHERE execution_id = ? AND step_id = ?`,
     params: [executionId, stepId],
   });
 
@@ -489,7 +474,7 @@ export async function createStepResult(
     sql: `
       INSERT INTO execution_step_results
       (execution_id, step_id, started_at_epoch_ms)
-      VALUES ($1, $2, $3)
+      VALUES (?, ?, ?)
       ON CONFLICT (execution_id, step_id) DO NOTHING
       RETURNING *
     `,
@@ -541,22 +526,21 @@ export async function updateStepResult(
 ): Promise<WorkflowExecutionStepResult> {
   const setClauses: string[] = [];
   const params: unknown[] = [];
-  let paramIndex = 1;
 
   if (data.output !== undefined) {
-    setClauses.push(`output = $${paramIndex++}`);
+    setClauses.push(`output = ?`);
     params.push(JSON.stringify(data.output));
   }
   if (data.error !== undefined) {
-    setClauses.push(`error = $${paramIndex++}`);
+    setClauses.push(`error = ?`);
     params.push(data.error);
   }
   if (data.started_at_epoch_ms !== undefined) {
-    setClauses.push(`started_at_epoch_ms = $${paramIndex++}`);
+    setClauses.push(`started_at_epoch_ms = ?`);
     params.push(data.started_at_epoch_ms);
   }
   if (data.completed_at_epoch_ms !== undefined) {
-    setClauses.push(`completed_at_epoch_ms = $${paramIndex++}`);
+    setClauses.push(`completed_at_epoch_ms = ?`);
     params.push(data.completed_at_epoch_ms);
   }
 
@@ -574,7 +558,7 @@ export async function updateStepResult(
     sql: `
       UPDATE execution_step_results
       SET ${setClauses.join(", ")}
-      WHERE execution_id = $${paramIndex++} AND step_id = $${paramIndex} AND completed_at_epoch_ms IS NULL
+      WHERE execution_id = ? AND step_id = ? AND completed_at_epoch_ms IS NULL
       RETURNING *
     `,
     params,

@@ -7,7 +7,6 @@ import {
   createExecution,
   getExecution,
 } from "../lib/execution-db.ts";
-import { createQStashScheduler } from "./scheduler.ts";
 import { sendSignal } from "./signals.ts";
 
 /**
@@ -82,8 +81,7 @@ export const executeWorkflowTool = (env: Env) =>
         };
       }
 
-      const scheduler = createQStashScheduler(env);
-      return await executeWorkflow(env, scheduler, executionId);
+      return await executeWorkflow(env, executionId);
     },
   });
 
@@ -109,11 +107,6 @@ export const createAndQueueExecutionTool = (env: Env) =>
         input: context.input,
       });
       console.log("🚀 ~ execute: ~ execution:", execution);
-
-      const scheduler = createQStashScheduler(env);
-      await scheduler.schedule(execution.id, {
-        authorization: env.MESH_REQUEST_CONTEXT.token,
-      });
 
       return { success: true, executionId: execution.id };
     },
@@ -269,11 +262,9 @@ export const resumeExecutionTool = (env: Env) =>
 
       // Import dynamically to avoid circular dependency
       const { resumeExecution } = await import("../lib/execution-db.ts");
-      const scheduler = createQStashScheduler(env);
 
-      const result = await resumeExecution(env, scheduler, executionId, {
+      const result = await resumeExecution(env, executionId, {
         resetRetries,
-        requeue,
       });
 
       if (!result) {
@@ -333,7 +324,7 @@ export const sendSignalTool = (env: Env) =>
       const signal = await sendSignal(env, executionId, {
         name: signalName,
         payload,
-        authorization: env.DECO_REQUEST_CONTEXT?.token,
+        authorization: env.MESH_REQUEST_CONTEXT?.token,
       });
 
       return {

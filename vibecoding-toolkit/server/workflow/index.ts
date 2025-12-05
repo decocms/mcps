@@ -1,9 +1,12 @@
 /**
- * Workflow Engine - Phase-Based Workflow System
+ * Workflow Engine - Auto-Parallel Workflow System
  *
- * This module implements the workflow schema design from WORKFLOW_SCHEMA_DESIGN.md:
+ * This module implements the workflow schema design:
  *
- * - Phase-based parallelism: Steps within phases run in parallel, phases run sequentially
+ * - Auto-parallelization: Steps are automatically grouped by @ref dependencies
+ *   - Steps with no step dependencies run in parallel (level 0)
+ *   - Steps depending on level N run at level N+1
+ *   - No manual phase configuration needed!
  * - Unified step schema: tool, transform, sleep steps in one schema
  * - Pure transform execution: TypeScript in QuickJS sandbox (deterministic)
  * - ForEach loops: Iterate over arrays in steps and triggers
@@ -12,42 +15,24 @@
  *
  * @example
  * ```typescript
- * // Create a workflow with parallel processing
+ * // Steps are automatically parallelized based on dependencies
  * const workflow = {
- *   name: "parallel-pipeline",
+ *   name: "data-pipeline",
  *   steps: [
- *     // Phase 0: Single step
- *     [{ name: "fetch", tool: { connectionId: "api", toolName: "get-data" } }],
+ *     // These two run in parallel (no dependencies)
+ *     { name: "fetchA", action: { connectionId: "api", toolName: "get-a" } },
+ *     { name: "fetchB", action: { connectionId: "api", toolName: "get-b" } },
  *
- *     // Phase 1: Parallel processing
- *     [
- *       { name: "processA", tool: { ... }, input: { data: "@fetch.output.items" } },
- *       { name: "processB", tool: { ... }, input: { data: "@fetch.output.items" } },
- *     ],
- *
- *     // Phase 2: Transform (pure TypeScript)
- *     [{
- *       name: "combine",
- *       transform: `
- *         interface Input { a: number[]; b: number[]; }
- *         interface Output { combined: number[]; }
- *         export default (input: Input): Output => ({
- *           combined: [...input.a, ...input.b]
- *         });
- *       `,
- *       input: { a: "@processA.output", b: "@processB.output" }
- *     }]
- *   ],
- *   triggers: [
+ *     // This waits for both fetchA and fetchB, then runs
  *     {
- *       workflowId: "downstream-workflow",
- *       input: { data: "@output.combined" }
+ *       name: "combine",
+ *       action: { code: `...` },
+ *       input: { a: "@fetchA.output", b: "@fetchB.output" }
  *     }
  *   ]
  * };
+ * // Execution: [fetchA, fetchB] -> [combine]
  * ```
- *
- * @see docs/WORKFLOW_SCHEMA_DESIGN.md for full documentation
  */
 
 // @ref resolution exports

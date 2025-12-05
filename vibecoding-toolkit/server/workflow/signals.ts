@@ -75,8 +75,8 @@ export async function consumeSignal(
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_events
-      SET consumed_at = $1
-      WHERE id = $2 AND consumed_at IS NULL
+      SET consumed_at = ?
+      WHERE id = ? AND consumed_at IS NULL
       RETURNING id
     `,
     params: [now, signalId],

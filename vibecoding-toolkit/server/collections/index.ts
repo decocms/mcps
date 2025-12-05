@@ -10,6 +10,7 @@ import {
   workflowEventsTableIndexesQuery,
 } from "./workflow";
 import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
+import { Env } from "server/main";
 
 /**
  * Collection queries for database table creation.
@@ -46,4 +47,13 @@ const collectionsQueries = {
   },
 };
 
-export { collectionsQueries };
+async function ensureCollections(env: Env) {
+  for (const collection of Object.values(collectionsQueries)) {
+    await env.DATABASE.DATABASES_RUN_SQL({
+      sql: collection.idempotent,
+      params: [],
+    });
+  }
+}
+
+export { collectionsQueries, ensureCollections };

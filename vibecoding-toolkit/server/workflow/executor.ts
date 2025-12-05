@@ -1,8 +1,11 @@
 /**
  * Workflow Executor
  *
- * Orchestrates workflow execution with phase-based parallelism.
- * Steps within phases run in parallel, phases run sequentially.
+ * Orchestrates workflow execution with automatic parallelization.
+ * Steps are analyzed for @ref dependencies and grouped into levels:
+ * - Steps with no step dependencies run first (level 0)
+ * - Steps depending on level N run at level N+1
+ * - Steps at the same level run in parallel
  *
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
@@ -15,7 +18,12 @@ import type {
   TriggerResult,
   WorkflowExecutionResult,
 } from "./types.ts";
-import { canResolveAllRefs, resolveAllRefs } from "./ref-resolver.ts";
+import {
+  canResolveAllRefs,
+  resolveAllRefs,
+  extractRefs,
+  parseAtRef,
+} from "./ref-resolver.ts";
 import {
   checkIfCancelled,
   createStepResult,
@@ -30,7 +38,6 @@ import {
   WaitingForSignalError,
   WorkflowCancelledError,
 } from "./errors.ts";
-import type { Scheduler } from "./scheduler.ts";
 import type { Step, Trigger } from "@decocms/bindings/workflow";
 import { StepExecutor } from "./step-executor.ts";
 import { getWorkflow } from "server/tools/workflow.ts";
@@ -40,6 +47,98 @@ export type { ExecutorConfig, StepExecutionResult, WorkflowExecutionResult };
 export { WaitingForSignalError };
 
 const DEFAULT_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Analyze step dependencies from @refs and group steps into parallel execution levels.
+ * Steps with no dependencies on other steps run first (level 0).
+ * Steps that depend on level N steps run at level N+1.
+ * Steps at the same level can run in parallel.
+ */
+function groupStepsByDependencies(steps: Step[], verbose: boolean): Step[][] {
+  if (steps.length === 0) return [];
+
+  // Build a map of step name -> step
+  const stepMap = new Map<string, Step>();
+  for (const step of steps) {
+    stepMap.set(step.name, step);
+  }
+
+  // For each step, find which other steps it depends on
+  const dependencies = new Map<string, Set<string>>();
+  for (const step of steps) {
+    const deps = new Set<string>();
+    const refs = extractRefs(step.input || {});
+
+    for (const ref of refs) {
+      if (!ref.startsWith("@")) continue;
+      const parsed = parseAtRef(ref as `@${string}`);
+
+      // Only track step dependencies (not @input, @output, etc.)
+      if (
+        parsed.type === "step" &&
+        parsed.stepName &&
+        stepMap.has(parsed.stepName)
+      ) {
+        deps.add(parsed.stepName);
+      }
+    }
+
+    dependencies.set(step.name, deps);
+  }
+
+  // Topological sort with level tracking
+  const levels: Step[][] = [];
+  const assigned = new Set<string>();
+
+  while (assigned.size < steps.length) {
+    // Find all steps whose dependencies are satisfied
+    const currentLevel: Step[] = [];
+
+    for (const step of steps) {
+      if (assigned.has(step.name)) continue;
+
+      const deps = dependencies.get(step.name) || new Set();
+      const allDepsSatisfied = [...deps].every((dep) => assigned.has(dep));
+
+      if (allDepsSatisfied) {
+        currentLevel.push(step);
+      }
+    }
+
+    if (currentLevel.length === 0) {
+      // Circular dependency detected - fall back to sequential execution
+      console.warn(
+        "[WORKFLOW] Circular dependency detected, falling back to sequential execution",
+      );
+      const remaining = steps.filter((s) => !assigned.has(s.name));
+      for (const step of remaining) {
+        levels.push([step]);
+        assigned.add(step.name);
+      }
+      break;
+    }
+
+    // Add this level
+    levels.push(currentLevel);
+    for (const step of currentLevel) {
+      assigned.add(step.name);
+    }
+  }
+
+  if (verbose) {
+    console.log(
+      `[WORKFLOW] Dependency analysis: ${levels.length} execution levels`,
+    );
+    levels.forEach((level, i) => {
+      const stepNames = level.map((s) => s.name).join(", ");
+      console.log(
+        `  Level ${i}: [${stepNames}]${level.length > 1 ? " (parallel)" : ""}`,
+      );
+    });
+  }
+
+  return levels;
+}
 
 async function executeStepWithCheckpoint(
   env: Env,
@@ -200,7 +299,6 @@ async function executePhase(
 
 async function fireTriggers(
   env: Env,
-  scheduler: Scheduler,
   triggers: Trigger[],
   ctx: RefContext,
   parentExecutionId: string,
@@ -217,13 +315,7 @@ async function fireTriggers(
         continue;
       }
 
-      const execId = await enqueueTrigger(
-        env,
-        scheduler,
-        trigger,
-        ctx,
-        parentExecutionId,
-      );
+      const execId = await enqueueTrigger(env, trigger, ctx, parentExecutionId);
       results.push({
         triggerId,
         status: "triggered",
@@ -243,7 +335,6 @@ async function fireTriggers(
 
 async function enqueueTrigger(
   env: Env,
-  scheduler: Scheduler,
   trigger: Trigger,
   ctx: RefContext,
   parentExecutionId: string,
@@ -253,18 +344,15 @@ async function enqueueTrigger(
 
   await env.DATABASE.DATABASES_RUN_SQL({
     sql: `INSERT INTO workflow_executions (id, workflow_id, status, created_at, updated_at, input, parent_execution_id)
-          VALUES ($1, $2, 'pending', $3, $3, $4, $5)`,
+          VALUES (?, ?, 'pending', ?, ?, ?, ?)`,
     params: [
       executionId,
       trigger.workflowId,
       Date.now(),
+      Date.now(),
       JSON.stringify(input),
       parentExecutionId,
     ],
-  });
-
-  await scheduler.schedule(executionId, {
-    authorization: env.MESH_REQUEST_CONTEXT.token,
   });
 
   return executionId;
@@ -272,7 +360,6 @@ async function enqueueTrigger(
 
 export async function executeWorkflow(
   env: Env,
-  scheduler: Scheduler,
   executionId: string,
   config: ExecutorConfig = {},
 ): Promise<WorkflowExecutionResult> {
@@ -296,10 +383,23 @@ export async function executeWorkflow(
       ? typeof workflow.steps === "string"
         ? JSON.parse(workflow.steps)
         : workflow.steps
-      : { phases: [], triggers: [] };
+      : [];
 
-    const phases: Step[][] = parsedSteps.phases || parsedSteps;
-    const triggers: Trigger[] = parsedSteps.triggers || workflow.triggers || [];
+    // Handle both legacy { phases: [...] } format and new flat array format
+    let steps: Step[];
+    if (Array.isArray(parsedSteps)) {
+      // New format: flat array of steps
+      steps = parsedSteps;
+    } else if (parsedSteps.phases) {
+      // Legacy format: flatten phases into sequential steps
+      steps = parsedSteps.phases.flat();
+    } else {
+      steps = [];
+    }
+
+    // Automatically group steps into parallel execution levels based on @ref dependencies
+    const phases: Step[][] = groupStepsByDependencies(steps, verbose);
+    const triggers: Trigger[] = workflow.triggers || [];
     const workflowInput =
       typeof lockedExecution.input === "string"
         ? JSON.parse(lockedExecution.input)
@@ -376,13 +476,7 @@ export async function executeWorkflow(
           ? stepOutputs.get(completedSteps[completedSteps.length - 1])
           : undefined;
       ctx.output = lastStepOutput;
-      triggerResults = await fireTriggers(
-        env,
-        scheduler,
-        triggers,
-        ctx,
-        executionId,
-      );
+      triggerResults = await fireTriggers(env, triggers, ctx, executionId);
     }
 
     // Build smart output for the execution record

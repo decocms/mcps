@@ -87,15 +87,15 @@ function validateStepRefs(
           continue;
         }
 
-        // Check if step exists in previous phases
-        const stepPhase = availableSteps.get(stepName);
-        if (stepPhase === undefined) {
+        // Check if step exists in previous steps
+        const stepIndex = availableSteps.get(stepName);
+        if (stepIndex === undefined) {
           errors.push({
             type: "missing_ref",
             step: step.name,
             field: "input",
             ref,
-            message: `Step '${stepName}' not found in previous phases. Available: ${Array.from(availableSteps.keys()).join(", ") || "none"}`,
+            message: `Step '${stepName}' not found in previous steps. Available: ${Array.from(availableSteps.keys()).join(", ") || "none"}`,
           });
         }
         break;
@@ -208,29 +208,29 @@ export async function validateWorkflow(
 
   const availableSteps = new Map<string, number>();
 
-  for (let phaseIndex = 0; phaseIndex < workflow.steps.length; phaseIndex++) {
-    const phase = workflow.steps[phaseIndex];
+  // Steps is now a flat array (no phases)
+  const steps = workflow.steps || [];
 
-    for (const step of phase) {
-      if (stepNames.has(step.name)) {
-        duplicateNames.add(step.name);
-      }
-      stepNames.add(step.name);
+  for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+    const step = steps[stepIndex];
 
-      const refErrors = validateStepRefs(step, availableSteps);
-      errors.push(...refErrors);
-      const stepType = getStepType(step);
+    if (stepNames.has(step.name)) {
+      duplicateNames.add(step.name);
+    }
+    stepNames.add(step.name);
 
-      if (stepType === "code") {
-        const { error, schema } = await validateCodeStep(step);
-        if (error) errors.push(error);
-        if (schema) schemas[step.name] = schema;
-      }
+    const refErrors = validateStepRefs(step, availableSteps);
+    errors.push(...refErrors);
+    const stepType = getStepType(step);
+
+    if (stepType === "code") {
+      const { error, schema } = await validateCodeStep(step);
+      if (error) errors.push(error);
+      if (schema) schemas[step.name] = schema;
     }
 
-    for (const step of phase) {
-      availableSteps.set(step.name, phaseIndex);
-    }
+    // Make this step available for subsequent steps to reference
+    availableSteps.set(step.name, stepIndex);
   }
 
   for (const name of duplicateNames) {

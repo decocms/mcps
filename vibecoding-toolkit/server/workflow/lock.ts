@@ -45,11 +45,11 @@ export async function lockWorkflowExecution(
       sql: `
         UPDATE workflow_executions 
         SET 
-          locked_until_epoch_ms = $1, 
-          lock_id = $2,
-          updated_at = $3
-        WHERE id = $4 
-          AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < $5)
+          locked_until_epoch_ms = ?, 
+          lock_id = ?,
+          updated_at = ?
+        WHERE id = ? 
+          AND (locked_until_epoch_ms IS NULL OR locked_until_epoch_ms < ?)
           AND status IN ('pending', 'running')
         RETURNING id, lock_id, workflow_id, input, max_retries
       `,
@@ -58,7 +58,7 @@ export async function lockWorkflowExecution(
 
     // Check if WE got the lock (our lockId is now in the row)
     const check = await env.DATABASE.DATABASES_RUN_SQL({
-      sql: "SELECT * FROM workflow_executions WHERE id = $1",
+      sql: "SELECT * FROM workflow_executions WHERE id = ?",
       params: [executionId],
     });
 
@@ -120,8 +120,8 @@ export async function releaseLock(
         SET 
           locked_until_epoch_ms = NULL, 
           lock_id = NULL,
-          updated_at = $1
-        WHERE id = $2 AND lock_id = $3
+          updated_at = ?
+        WHERE id = ? AND lock_id = ?
         RETURNING id
       `,
       params: [new Date().getTime(), executionId, lockId],
