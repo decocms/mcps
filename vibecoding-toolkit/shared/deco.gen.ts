@@ -2067,76 +2067,6 @@ export const StateSchema = z.object({
 export interface Env {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-  INTEGRATIONS: Mcp<{
-    /**
-     * Get the schema for a marketplace app
-     */
-    DECO_GET_APP_SCHEMA: (
-      input: DECO_GET_APP_SCHEMAInput,
-    ) => Promise<DECO_GET_APP_SCHEMAOutput>;
-    /**
-     * Install an integration. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool. Also, after installing, enable the integration using the INTEGRATION_ENABLE tool.
-     */
-    DECO_INTEGRATION_INSTALL: (
-      input: DECO_INTEGRATION_INSTALLInput,
-    ) => Promise<DECO_INTEGRATION_INSTALLOutput>;
-    /**
-     * Start the OAuth flow for an integration
-     */
-    DECO_INTEGRATION_OAUTH_START: (
-      input: DECO_INTEGRATION_OAUTH_STARTInput,
-    ) => Promise<DECO_INTEGRATION_OAUTH_STARTOutput>;
-    /**
-     * Search for integrations in both marketplace and installed.
-     * If no query is provided, it will return all installed integrations. For better results, try searching for the service name, i.e. GoogleSheets, GoogleCalendar, Notion, etc.
-     * It's always handy to search for installed integrations with no query, since all integrations will be returned. Also, some integrations are handy agents that may help you with common tasks.
-     */
-    DECO_INTEGRATIONS_SEARCH: (
-      input: DECO_INTEGRATIONS_SEARCHInput,
-    ) => Promise<DECO_INTEGRATIONS_SEARCHOutput>;
-    /**
-     * Call a tool from an integration. If you have the integration ID (from INTEGRATIONS_LIST or INTEGRATIONS_GET), prefer using 'id' over 'connection'. The ID ensures you're calling the correct configured integration. Use 'connection' only when you need to call a tool from a new or unconfigured integration.
-     */
-    INTEGRATIONS_CALL_TOOL: (
-      input: INTEGRATIONS_CALL_TOOLInput,
-    ) => Promise<INTEGRATIONS_CALL_TOOLOutput>;
-    /**
-     * Create a new integration
-     */
-    INTEGRATIONS_CREATE: (
-      input: INTEGRATIONS_CREATEInput,
-    ) => Promise<INTEGRATIONS_CREATEOutput>;
-    /**
-     * Delete an integration by id
-     */
-    INTEGRATIONS_DELETE: (
-      input: INTEGRATIONS_DELETEInput,
-    ) => Promise<INTEGRATIONS_DELETEOutput>;
-    /**
-     * Get an integration by id with tools
-     */
-    INTEGRATIONS_GET: (
-      input: INTEGRATIONS_GETInput,
-    ) => Promise<INTEGRATIONS_GETOutput>;
-    /**
-     * Get the API key for an integration
-     */
-    INTEGRATIONS_GET_API_KEY: (
-      input: INTEGRATIONS_GET_API_KEYInput,
-    ) => Promise<INTEGRATIONS_GET_API_KEYOutput>;
-    /**
-     * List all integrations with their tools
-     */
-    INTEGRATIONS_LIST: (
-      input: INTEGRATIONS_LISTInput,
-    ) => Promise<INTEGRATIONS_LISTOutput>;
-    /**
-     * Update an existing integration
-     */
-    INTEGRATIONS_UPDATE: (
-      input: INTEGRATIONS_UPDATEInput,
-    ) => Promise<INTEGRATIONS_UPDATEOutput>;
-  }>;
   DATABASE: Mcp<{
     /**
      * Run a SQL query against the workspace database
@@ -2163,68 +2093,6 @@ export interface Env {
       input: DECO_CHAT_VIEWS_LISTInput,
     ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
   }>;
-  OPENROUTER: Mcp<{
-    /**
-     * Get detailed information about a specific OpenRouter model including pricing, capabilities, context length, and provider information.
-     */
-    COLLECTION_LLM_GET: (
-      input: COLLECTION_LLM_GETInput,
-    ) => Promise<COLLECTION_LLM_GETOutput>;
-    /**
-     * List all available models from OpenRouter with filtering and pagination support. Returns comprehensive information about each model including capabilities, pricing, and limits.
-     */
-    COLLECTION_LLM_LIST: (
-      input: COLLECTION_LLM_LISTInput,
-    ) => Promise<COLLECTION_LLM_LISTOutput>;
-    /**
-     * Compare multiple OpenRouter models side-by-side to help choose the best model for a specific use case. Compares pricing (prompt and completion costs), context length, capabilities (modality), and performance characteristics. Returns a detailed comparison table and an automatic recommendation. Useful when deciding between multiple models for a task.
-     */
-    COMPARE_MODELS: (
-      input: COMPARE_MODELSInput,
-    ) => Promise<COMPARE_MODELSOutput>;
-    /**
-     * OAuth for Deco Chat
-     */
-    DECO_CHAT_OAUTH_START: (
-      input: DECO_CHAT_OAUTH_STARTInput,
-    ) => Promise<DECO_CHAT_OAUTH_STARTOutput>;
-    /**
-     * Validate the state of the OAuth flow
-     */
-    DECO_CHAT_STATE_VALIDATION: (
-      input: DECO_CHAT_STATE_VALIDATIONInput,
-    ) => Promise<DECO_CHAT_STATE_VALIDATIONOutput>;
-    /**
-     * List views exposed by this MCP
-     */
-    DECO_CHAT_VIEWS_LIST: (
-      input: DECO_CHAT_VIEWS_LISTInput,
-    ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
-    /**
-     * Get the current logged in user
-     */
-    GET_USER: (input: GET_USERInput) => Promise<GET_USEROutput>;
-    /**
-     * Generate a complete language model response using OpenRouter (non-streaming). Returns the full response with usage statistics and cost information.
-     */
-    LLM_DO_GENERATE: (
-      input: LLM_DO_GENERATEInput,
-    ) => Promise<LLM_DO_GENERATEOutput>;
-    /**
-     * Stream a language model response in real-time using OpenRouter. Returns a streaming response for interactive chat experiences.
-     */
-    LLM_DO_STREAM: (input: LLM_DO_STREAMInput) => Promise<LLM_DO_STREAMOutput>;
-    /**
-     * Get metadata about a specific model's capabilities including supported URL patterns for different media types (images, files, etc.).
-     */
-    LLM_METADATA: (input: LLM_METADATAInput) => Promise<LLM_METADATAOutput>;
-    /**
-     * Get intelligent model recommendations based on your task description and requirements. The system analyzes your task (e.g., 'code generation', 'creative writing', 'data analysis') and suggests the most suitable models considering cost, quality, context length, and capabilities. Each recommendation includes detailed reasoning explaining why the model is suitable. Perfect for discovering the right model when you're not sure which to use.
-     */
-    RECOMMEND_MODEL: (
-      input: RECOMMEND_MODELInput,
-    ) => Promise<RECOMMEND_MODELOutput>;
-  }>;
 }
 
 export const Scopes = {
@@ -2233,31 +2101,5 @@ export const Scopes = {
     DATABASES_RECOVERY: "DATABASE::DATABASES_RECOVERY",
     DATABASES_RUN_SQL: "DATABASE::DATABASES_RUN_SQL",
     DECO_CHAT_VIEWS_LIST: "DATABASE::DECO_CHAT_VIEWS_LIST",
-  },
-  INTEGRATIONS: {
-    DECO_GET_APP_SCHEMA: "INTEGRATIONS::DECO_GET_APP_SCHEMA",
-    DECO_INTEGRATION_INSTALL: "INTEGRATIONS::DECO_INTEGRATION_INSTALL",
-    DECO_INTEGRATION_OAUTH_START: "INTEGRATIONS::DECO_INTEGRATION_OAUTH_START",
-    DECO_INTEGRATIONS_SEARCH: "INTEGRATIONS::DECO_INTEGRATIONS_SEARCH",
-    INTEGRATIONS_CALL_TOOL: "INTEGRATIONS::INTEGRATIONS_CALL_TOOL",
-    INTEGRATIONS_CREATE: "INTEGRATIONS::INTEGRATIONS_CREATE",
-    INTEGRATIONS_DELETE: "INTEGRATIONS::INTEGRATIONS_DELETE",
-    INTEGRATIONS_GET: "INTEGRATIONS::INTEGRATIONS_GET",
-    INTEGRATIONS_GET_API_KEY: "INTEGRATIONS::INTEGRATIONS_GET_API_KEY",
-    INTEGRATIONS_LIST: "INTEGRATIONS::INTEGRATIONS_LIST",
-    INTEGRATIONS_UPDATE: "INTEGRATIONS::INTEGRATIONS_UPDATE",
-  },
-  OPENROUTER: {
-    COLLECTION_LLM_GET: "OPENROUTER::COLLECTION_LLM_GET",
-    COLLECTION_LLM_LIST: "OPENROUTER::COLLECTION_LLM_LIST",
-    COMPARE_MODELS: "OPENROUTER::COMPARE_MODELS",
-    DECO_CHAT_OAUTH_START: "OPENROUTER::DECO_CHAT_OAUTH_START",
-    DECO_CHAT_STATE_VALIDATION: "OPENROUTER::DECO_CHAT_STATE_VALIDATION",
-    DECO_CHAT_VIEWS_LIST: "OPENROUTER::DECO_CHAT_VIEWS_LIST",
-    GET_USER: "OPENROUTER::GET_USER",
-    LLM_DO_GENERATE: "OPENROUTER::LLM_DO_GENERATE",
-    LLM_DO_STREAM: "OPENROUTER::LLM_DO_STREAM",
-    LLM_METADATA: "OPENROUTER::LLM_METADATA",
-    RECOMMEND_MODEL: "OPENROUTER::RECOMMEND_MODEL",
   },
 };

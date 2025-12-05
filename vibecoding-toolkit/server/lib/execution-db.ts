@@ -23,13 +23,53 @@ import type { Env } from "../main.ts";
 import { WorkflowCancelledError } from "../workflow/errors.ts";
 
 const safeJsonParse = (value: unknown): unknown => {
-  if (!value) return undefined;
-  try {
-    return JSON.parse(value as string);
-  } catch (error) {
-    console.error("[DB] Failed to parse JSON:", error);
-    return undefined;
+  if (value === null || value === undefined) return undefined;
+  // PostgreSQL JSONB returns already-parsed values:
+  // - Objects/arrays come back as objects
+  // - Strings/numbers/booleans come back as primitives
+  // So we only need to parse if it's a string that looks like JSON object/array
+  if (typeof value === "object") return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    // Only try to parse if it looks like a JSON object or array
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        return JSON.parse(value);
+      } catch {
+        // Not valid JSON, return as-is
+        return value;
+      }
+    }
+    // Plain string - return as-is (already unwrapped from JSONB)
+    return value;
   }
+  // Numbers, booleans - return as-is
+  return value;
+};
+
+/**
+ * Convert epoch milliseconds to ISO datetime string
+ * Handles number, bigint, and string representations (DB drivers may return bigint as string)
+ */
+const epochMsToIsoString = (epochMs: unknown): string => {
+  if (epochMs === null || epochMs === undefined) {
+    return new Date().toISOString();
+  }
+  const num =
+    typeof epochMs === "string" ? parseInt(epochMs, 10) : Number(epochMs);
+  if (isNaN(num)) {
+    return new Date().toISOString();
+  }
+  return new Date(num).toISOString();
+};
+
+/**
+ * Convert bigint/string to number (for epoch_ms fields that schema expects as number)
+ */
+const toNumberOrNull = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === "string" ? parseInt(value, 10) : Number(value);
+  return isNaN(num) ? null : num;
 };
 
 /**
@@ -40,8 +80,19 @@ function transformDbRowToExecution(
 ): WorkflowExecution {
   const transformed = {
     ...row,
+    // BaseCollectionEntitySchema expects title but workflow_executions doesn't have one
+    title: row.title ?? `Execution ${row.id}`,
+    // Convert epoch ms to ISO datetime strings (for base schema)
+    created_at: epochMsToIsoString(row.created_at),
+    updated_at: epochMsToIsoString(row.updated_at),
+    // Convert epoch ms fields to numbers (schema expects number, not string)
+    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
+    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
+    locked_until_epoch_ms: toNumberOrNull(row.locked_until_epoch_ms),
+    // Parse JSONB fields
     output: safeJsonParse(row.output),
     input: safeJsonParse(row.input),
+    error: safeJsonParse(row.error),
   };
 
   return WorkflowExecutionSchema.parse(transformed);
@@ -146,7 +197,8 @@ export async function updateExecution(
   }
   if (data.error !== undefined) {
     setClauses.push(`error = ?`);
-    params.push(data.error);
+    // error column is JSONB, so serialize it
+    params.push(JSON.stringify(data.error));
   }
   if (data.input !== undefined) {
     setClauses.push(`input = ?`);
@@ -228,7 +280,13 @@ export async function cancelExecution(
       WHERE id = ? AND status IN ('pending', 'running')
       RETURNING *
     `,
-    params: [now, now, "Execution cancelled by user", executionId],
+    // error column is JSONB, so serialize it
+    params: [
+      now,
+      now,
+      JSON.stringify("Execution cancelled by user"),
+      executionId,
+    ],
   });
 
   const row = result.result[0]?.results?.[0] as
@@ -396,10 +454,25 @@ export async function listExecutions(
 function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
 ): WorkflowExecutionStepResult {
+  const startedAt = epochMsToIsoString(row.started_at_epoch_ms);
+  const completedAt = row.completed_at_epoch_ms
+    ? epochMsToIsoString(row.completed_at_epoch_ms)
+    : startedAt;
+
   const transformed = {
     ...row,
+    // Synthesize required BaseCollectionEntity fields
+    id: row.id ?? `${row.execution_id}/${row.step_id}`,
+    title: row.title ?? `Step ${row.step_id}`,
+    created_at: startedAt,
+    updated_at: completedAt,
+    // Convert epoch ms fields to numbers (schema expects number, not string)
+    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
+    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
+    // Parse JSONB fields
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
+    error: safeJsonParse(row.error),
   };
 
   return WorkflowExecutionStepResultSchema.parse(transformed);
@@ -533,7 +606,8 @@ export async function updateStepResult(
   }
   if (data.error !== undefined) {
     setClauses.push(`error = ?`);
-    params.push(data.error);
+    // error column is JSONB, so serialize it
+    params.push(JSON.stringify(data.error));
   }
   if (data.started_at_epoch_ms !== undefined) {
     setClauses.push(`started_at_epoch_ms = ?`);

@@ -22,9 +22,10 @@ import {
 } from "@decocms/bindings/workflow";
 import { executeCode } from "./code-step.ts";
 import { consumeSignal, getSignals } from "./signals.ts";
-import { createProxyConnection } from "./connection.ts";
 import { DurableSleepError, WaitingForSignalError } from "./errors.ts";
 import { checkTimer, scheduleTimer } from "./events.ts";
+import { proxyConnectionForId } from "@decocms/runtime";
+import { MCPClient } from "@decocms/bindings/client";
 
 export class StepExecutor {
   private env: Env;
@@ -48,29 +49,24 @@ export class StepExecutor {
       connectionId,
       input: JSON.stringify(input, null, 2),
     });
-    let result: unknown;
 
-    const connection = createProxyConnection(connectionId, {
-      workspace: this.env.DECO_CHAT_WORKSPACE as string,
+    if (!this.env.MESH_URL) {
+      throw new Error("MESH_URL is not set");
+    }
+
+    const mcpConnection = proxyConnectionForId(connectionId, {
+      meshUrl: this.env.MESH_URL,
       token: this.env.MESH_REQUEST_CONTEXT.token,
+      connectionId,
+      callerApp: this.env.MESH_APP_NAME,
     });
 
-    result = await this.env.INTEGRATIONS.INTEGRATIONS_CALL_TOOL({
-      connection: connection as any,
-      params: { name: toolName, arguments: input },
-    });
+    // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
+    const client = MCPClient.forConnection(mcpConnection);
 
-    const structuredContent =
-      typeof result === "object" &&
-      result !== null &&
-      "structuredContent" in result
-        ? result.structuredContent
-        : undefined;
-    const content =
-      typeof result === "object" && result !== null && "content" in result
-        ? result.content
-        : undefined;
-    const output = structuredContent ?? content ?? result;
+    const result = await client.toolCall(toolName, input);
+
+    const output = result;
 
     return {
       status: "completed",

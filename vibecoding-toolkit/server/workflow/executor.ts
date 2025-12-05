@@ -41,6 +41,15 @@ import {
 import type { Step, Trigger } from "@decocms/bindings/workflow";
 import { StepExecutor } from "./step-executor.ts";
 import { getWorkflow } from "server/tools/workflow.ts";
+import {
+  hasForEach,
+  hasParallelGroup,
+  resolveForEachItems,
+  executeWithMode,
+  createIterationContext,
+  parseStepConfig,
+  type ParallelMode,
+} from "./control-flow.ts";
 
 // Re-export for backwards compatibility
 export type { ExecutorConfig, StepExecutionResult, WorkflowExecutionResult };
@@ -240,6 +249,106 @@ async function executeStepWithCheckpoint(
 }
 
 // =============================================================================
+// ForEach Execution
+// =============================================================================
+
+/**
+ * Execute a step with forEach config, running iterations according to the mode
+ */
+async function executeForEachStep(
+  env: Env,
+  step: Step,
+  ctx: RefContext,
+  executionId: string,
+  verbose: boolean,
+): Promise<StepExecutionResult> {
+  const forEachData = resolveForEachItems(step, ctx);
+  if (!forEachData) {
+    throw new Error(`Failed to resolve forEach items for step ${step.name}`);
+  }
+
+  const { items, config } = forEachData;
+  const mode = config.mode || "sequential";
+
+  if (verbose) {
+    console.log(`[${step.name}] forEach: ${items.length} items, mode: ${mode}`);
+  }
+
+  // Execute each iteration
+  const forEachResult = await executeWithMode(
+    items.map((item, index) => ({ item, index })),
+    async (item, index) => {
+      // Create iteration context with @item and @index
+      const iterCtx = createIterationContext(ctx, item, index);
+
+      // Create a virtual step for this iteration
+      const iterStep: Step = {
+        ...step,
+        name: `${step.name}[${index}]`,
+      };
+
+      // Execute the step with iteration context
+      const result = await executeStepWithCheckpoint(
+        env,
+        iterStep,
+        iterCtx,
+        executionId,
+        verbose,
+      );
+
+      return result;
+    },
+    mode,
+    config.maxConcurrency,
+  );
+
+  // Aggregate results based on mode
+  if (mode === "race" && forEachResult.winner !== undefined) {
+    // For race, return the winning result
+    const winnerResult = forEachResult.results.find(
+      (r) => r.index === forEachResult.winner,
+    );
+    return {
+      output: {
+        mode: "race",
+        winner: forEachResult.winner,
+        item: winnerResult?.item,
+        value: winnerResult?.value?.output,
+      },
+      startedAt: Date.now(),
+      completedAt: Date.now(),
+    };
+  }
+
+  // For other modes, return all results
+  const outputs = forEachResult.results.map((r) => ({
+    index: r.index,
+    item: r.item,
+    status: r.status,
+    output: r.status === "fulfilled" ? r.value?.output : undefined,
+    error: r.status === "rejected" ? r.reason : undefined,
+  }));
+
+  const hasFailures = outputs.some((o) => o.status === "rejected");
+
+  return {
+    output: {
+      mode,
+      count: items.length,
+      results: outputs,
+      fulfilled: outputs.filter((o) => o.status === "fulfilled").length,
+      rejected: outputs.filter((o) => o.status === "rejected").length,
+    },
+    error:
+      hasFailures && mode !== "allSettled"
+        ? `${outputs.filter((o) => o.status === "rejected").length} iterations failed`
+        : undefined,
+    startedAt: Date.now(),
+    completedAt: Date.now(),
+  };
+}
+
+// =============================================================================
 // Phase Execution
 // =============================================================================
 
@@ -250,16 +359,219 @@ async function executePhase(
   executionId: string,
   verbose: boolean,
 ): Promise<Record<string, StepExecutionResult>> {
-  const results = await Promise.allSettled(
-    phase.map((step) =>
-      executeStepWithCheckpoint(env, step, ctx, executionId, verbose),
-    ),
-  );
+  // Execute a single step, routing to forEach handler when needed
+  const executeStep = (step: Step) => {
+    if (hasForEach(step)) {
+      return executeForEachStep(env, step, ctx, executionId, verbose);
+    }
+    return executeStepWithCheckpoint(env, step, ctx, executionId, verbose);
+  };
+
+  // Group steps by parallel config
+  const regularSteps: Step[] = [];
+  const parallelGroups = new Map<
+    string,
+    { steps: Step[]; mode: ParallelMode }
+  >();
+
+  for (const step of phase) {
+    if (hasParallelGroup(step)) {
+      const config = parseStepConfig(step)!;
+      const groupId = config.parallel!.group;
+      const mode = config.parallel!.mode || "all";
+
+      if (!parallelGroups.has(groupId)) {
+        parallelGroups.set(groupId, { steps: [], mode });
+      }
+      parallelGroups.get(groupId)!.steps.push(step);
+    } else {
+      regularSteps.push(step);
+    }
+  }
 
   const stepResults: Record<string, StepExecutionResult> = {};
 
-  for (let i = 0; i < phase.length; i++) {
-    const step = phase[i];
+  // Execute regular steps with Promise.all (default behavior)
+  if (regularSteps.length > 0) {
+    const results = await Promise.allSettled(regularSteps.map(executeStep));
+    processStepResults(regularSteps, results, stepResults, env, executionId);
+  }
+
+  // Execute parallel groups with their specified mode
+  for (const [groupId, { steps, mode }] of parallelGroups) {
+    if (verbose) {
+      console.log(
+        `[WORKFLOW] Executing parallel group '${groupId}' with mode: ${mode}`,
+      );
+    }
+
+    const groupResult = await executeParallelGroup(
+      steps,
+      executeStep,
+      mode,
+      groupId,
+    );
+
+    // Store group result under a special key for the group
+    stepResults[`@group:${groupId}`] = groupResult.groupResult;
+
+    // Also store individual step results
+    for (const [stepName, result] of Object.entries(groupResult.stepResults)) {
+      stepResults[stepName] = result;
+    }
+  }
+
+  return stepResults;
+}
+
+/**
+ * Execute a parallel group with the specified mode (all, race, allSettled)
+ */
+async function executeParallelGroup(
+  steps: Step[],
+  executeStep: (step: Step) => Promise<StepExecutionResult>,
+  mode: ParallelMode,
+  _groupId: string,
+): Promise<{
+  groupResult: StepExecutionResult;
+  stepResults: Record<string, StepExecutionResult>;
+}> {
+  const stepResults: Record<string, StepExecutionResult> = {};
+
+  switch (mode) {
+    case "race": {
+      // First to complete wins
+      const racePromises = steps.map(async (step) => {
+        const result = await executeStep(step);
+        return { step, result };
+      });
+
+      const winner = await Promise.race(racePromises);
+      stepResults[winner.step.name] = winner.result;
+
+      return {
+        groupResult: {
+          output: {
+            mode: "race",
+            winner: winner.step.name,
+            value: winner.result.output,
+          },
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+        },
+        stepResults,
+      };
+    }
+
+    case "allSettled": {
+      // Wait for all, collect successes and failures
+      const results = await Promise.allSettled(steps.map(executeStep));
+
+      const settled: Array<{
+        step: string;
+        status: "fulfilled" | "rejected";
+        value?: unknown;
+        reason?: string;
+      }> = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const result = results[i];
+
+        if (result.status === "fulfilled") {
+          stepResults[step.name] = result.value;
+          settled.push({
+            step: step.name,
+            status: "fulfilled",
+            value: result.value.output,
+          });
+        } else {
+          const error = result.reason?.message || String(result.reason);
+          stepResults[step.name] = {
+            error,
+            startedAt: Date.now(),
+            completedAt: Date.now(),
+          };
+          settled.push({
+            step: step.name,
+            status: "rejected",
+            reason: error,
+          });
+        }
+      }
+
+      return {
+        groupResult: {
+          output: {
+            mode: "allSettled",
+            results: settled,
+            fulfilled: settled.filter((s) => s.status === "fulfilled").length,
+            rejected: settled.filter((s) => s.status === "rejected").length,
+          },
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+        },
+        stepResults,
+      };
+    }
+
+    case "all":
+    default: {
+      // Default Promise.all behavior - fail fast
+      const results = await Promise.allSettled(steps.map(executeStep));
+
+      let hasError = false;
+      let firstError: string | undefined;
+
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const result = results[i];
+
+        if (result.status === "fulfilled") {
+          stepResults[step.name] = result.value;
+        } else {
+          const error = result.reason?.message || String(result.reason);
+          stepResults[step.name] = {
+            error,
+            startedAt: Date.now(),
+            completedAt: Date.now(),
+          };
+          if (!hasError) {
+            hasError = true;
+            firstError = error;
+          }
+        }
+      }
+
+      return {
+        groupResult: {
+          output: Object.fromEntries(
+            Object.entries(stepResults)
+              .filter(([, r]) => !r.error)
+              .map(([name, r]) => [name, r.output]),
+          ),
+          error: firstError,
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+        },
+        stepResults,
+      };
+    }
+  }
+}
+
+/**
+ * Process step results and update the database
+ */
+async function processStepResults(
+  steps: Step[],
+  results: PromiseSettledResult<StepExecutionResult>[],
+  stepResults: Record<string, StepExecutionResult>,
+  env: Env,
+  executionId: string,
+): Promise<void> {
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
     const result = results[i];
 
     if (result.status === "fulfilled") {
@@ -293,8 +605,6 @@ async function executePhase(
       console.error(`[${step.name}] Failed to update step result: ${err}`);
     }
   }
-
-  return stepResults;
 }
 
 async function fireTriggers(

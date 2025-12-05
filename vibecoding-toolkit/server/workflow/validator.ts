@@ -64,11 +64,15 @@ export interface ValidationResult {
 function validateStepRefs(
   step: Step,
   availableSteps: Map<string, number>,
+  availableGroups: Set<string>,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Get all @refs used in this step
   const refs = extractRefs(step.input || {});
+
+  // Check if this step has forEach config (allows @item and @index)
+  const hasForEach = !!(step as any).config?.forEach;
 
   for (const ref of refs) {
     const parsed = parseAtRef(ref as `@${string}`);
@@ -103,6 +107,33 @@ function validateStepRefs(
 
       case "input":
         // Input refs are always valid at this stage (validated at execution time)
+        break;
+
+      case "item":
+      case "index":
+        // @item and @index are valid only in steps with forEach config
+        if (!hasForEach) {
+          errors.push({
+            type: "missing_ref",
+            step: step.name,
+            field: "input",
+            ref,
+            message: `${ref} is only valid in steps with forEach config`,
+          });
+        }
+        break;
+
+      case "group":
+        // @group:xxx refs are valid if the group was defined in a previous step
+        if (parsed.groupId && !availableGroups.has(parsed.groupId)) {
+          errors.push({
+            type: "missing_ref",
+            step: step.name,
+            field: "input",
+            ref,
+            message: `Group '${parsed.groupId}' not found in previous steps`,
+          });
+        }
         break;
 
       case "output":
@@ -207,6 +238,7 @@ export async function validateWorkflow(
   const duplicateNames = new Set<string>();
 
   const availableSteps = new Map<string, number>();
+  const availableGroups = new Set<string>();
 
   // Steps is now a flat array (no phases)
   const steps = workflow.steps || [];
@@ -219,7 +251,7 @@ export async function validateWorkflow(
     }
     stepNames.add(step.name);
 
-    const refErrors = validateStepRefs(step, availableSteps);
+    const refErrors = validateStepRefs(step, availableSteps, availableGroups);
     errors.push(...refErrors);
     const stepType = getStepType(step);
 
@@ -231,6 +263,12 @@ export async function validateWorkflow(
 
     // Make this step available for subsequent steps to reference
     availableSteps.set(step.name, stepIndex);
+
+    // Track parallel groups
+    const parallelConfig = (step as any).config?.parallel;
+    if (parallelConfig?.group) {
+      availableGroups.add(parallelConfig.group);
+    }
   }
 
   for (const name of duplicateNames) {

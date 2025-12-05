@@ -46,11 +46,23 @@ export function isAtRef(value: unknown): value is `@${string}` {
  * Parse an @ref string into its components
  */
 export function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input" | "output";
+  type: "step" | "input" | "output" | "item" | "index" | "group";
   stepName?: string;
+  groupId?: string;
   path?: string;
 } {
   const refStr = ref.substring(1); // Remove @ prefix
+
+  // ForEach item reference: @item or @item.path
+  if (refStr === "item" || refStr.startsWith("item.")) {
+    const path = refStr.length > 4 ? refStr.substring(5) : ""; // Remove 'item.' or 'item'
+    return { type: "item", path };
+  }
+
+  // ForEach index reference: @index
+  if (refStr === "index") {
+    return { type: "index" };
+  }
 
   // Input reference: @input.path.to.value
   if (refStr.startsWith("input")) {
@@ -62,6 +74,15 @@ export function parseAtRef(ref: `@${string}`): {
   if (refStr.startsWith("output")) {
     const path = refStr.length > 6 ? refStr.substring(7) : ""; // Remove 'output.' or 'output'
     return { type: "output", path };
+  }
+
+  // Parallel group reference: @group:groupId.path
+  if (refStr.startsWith("group:")) {
+    const rest = refStr.substring(6); // Remove 'group:'
+    const parts = rest.split(".");
+    const groupId = parts[0];
+    const path = parts.slice(1).join(".");
+    return { type: "group", groupId, path };
   }
 
   // Step reference: @stepName.output.path or @stepName.path
@@ -171,6 +192,41 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
             error: `Path not found in step output: @${parsed.stepName}.${parsed.path}`,
           };
         }
+        return { value };
+      }
+
+      case "item": {
+        if (ctx.item === undefined) {
+          return {
+            value: undefined,
+            error: `@item used outside of forEach context`,
+          };
+        }
+        const value = getValueByPath(ctx.item, parsed.path || "");
+        return { value };
+      }
+
+      case "index": {
+        if (ctx.index === undefined) {
+          return {
+            value: undefined,
+            error: `@index used outside of forEach context`,
+          };
+        }
+        return { value: ctx.index };
+      }
+
+      case "group": {
+        // Group results are stored as @group:groupId in stepOutputs
+        const groupKey = `@group:${parsed.groupId}`;
+        const groupOutput = ctx.stepOutputs.get(groupKey);
+        if (groupOutput === undefined) {
+          return {
+            value: undefined,
+            error: `Group not found or not completed: ${parsed.groupId}`,
+          };
+        }
+        const value = getValueByPath(groupOutput, parsed.path || "");
         return { value };
       }
 

@@ -88,7 +88,8 @@ export const executeWorkflowTool = (env: Env) =>
 export const createAndQueueExecutionTool = (env: Env) =>
   createPrivateTool({
     id: "CREATE_AND_QUEUE_EXECUTION",
-    description: "Create a workflow execution and queue it for processing",
+    description:
+      "Create a workflow execution and immediately start processing it (serverless mode)",
     inputSchema: z.object({
       workflowId: z.string().describe("The workflow ID to execute"),
       input: z
@@ -96,19 +97,55 @@ export const createAndQueueExecutionTool = (env: Env) =>
         .optional()
         .describe("Input data for the workflow"),
     }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      executionId: z.string(),
-    }),
+    outputSchema: z.discriminatedUnion("status", [
+      z.object({
+        status: z.literal("completed"),
+        executionId: z.string(),
+        output: z.unknown().optional(),
+      }),
+      z.object({
+        status: z.literal("failed"),
+        executionId: z.string(),
+        error: z.string(),
+        retryable: z.boolean(),
+      }),
+      z.object({
+        status: z.literal("sleeping"),
+        executionId: z.string(),
+        wakeAtEpochMs: z.number(),
+        stepName: z.string(),
+      }),
+      z.object({
+        status: z.literal("waiting_for_signal"),
+        executionId: z.string(),
+        signalName: z.string(),
+        stepName: z.string(),
+        timeoutAtEpochMs: z.number().optional(),
+      }),
+      z.object({
+        status: z.literal("cancelled"),
+        executionId: z.string(),
+      }),
+    ]),
     execute: async ({ context }) => {
-      console.log("🚀 ~ execute: ~ context:", context);
+      console.log("🚀 ~ CREATE_AND_QUEUE_EXECUTION ~ context:", context);
+
+      // 1. Create the execution record
       const execution = await createExecution(env, {
         workflow_id: context.workflowId,
         input: context.input,
       });
-      console.log("🚀 ~ execute: ~ execution:", execution);
+      console.log("🚀 ~ Created execution:", execution.id);
 
-      return { success: true, executionId: execution.id };
+      // 2. Immediately execute it (serverless - no queue, no locks needed)
+      const result = await executeWorkflow(env, execution.id);
+      console.log("🚀 ~ Execution result:", result);
+
+      // 3. Return combined result with execution ID
+      return {
+        ...result,
+        executionId: execution.id,
+      };
     },
   });
 

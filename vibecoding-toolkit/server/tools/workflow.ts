@@ -43,8 +43,7 @@ if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
 }
 
 // Create a relaxed input schema that accepts any string for date fields
-// The original binding schema uses z.string().datetime() which is too strict
-// We override created_at and updated_at to accept any string since they're server-generated anyway
+// The binding now has the correct flat array schema for steps with forEach/parallel config
 const originalDataSchema = (
   CREATE_BINDING.inputSchema as unknown as z.ZodObject<any>
 ).shape.data as z.ZodObject<any>;
@@ -221,30 +220,45 @@ export const createInsertTool = (env: Env) =>
           throw new Error("Invalid workflow");
         }
 
-        const result = await env.DATABASE.DATABASES_RUN_SQL({
-          sql: `
-              INSERT INTO workflows (
-                id, title, created_at, updated_at, created_by, updated_by,
-                description, steps, triggers
-              ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?
-              )
-              RETURNING *
-            `,
-          params: [
-            workflow.id,
-            workflow.title,
-            now,
-            now,
-            user?.id || null,
-            user?.id || null,
-            workflow.description || null,
-            JSON.stringify(workflow.steps || []),
-            JSON.stringify(workflow.triggers || []) || "{}",
-          ],
+        // Serialize steps and triggers to JSON strings for database storage
+        const stepsJson = JSON.stringify(workflow.steps || []);
+        const triggersJson = JSON.stringify(workflow.triggers || []);
+
+        console.log("[WORKFLOW INSERT] ID:", workflow.id);
+        console.log(
+          "[WORKFLOW INSERT] Steps count:",
+          workflow.steps?.length || 0,
+        );
+
+        // Insert - use inline JSON values since the driver doesn't properly parameterize
+        // We need to build the SQL with properly escaped values
+        const escapeForSql = (val: unknown): string => {
+          if (val === null || val === undefined) return "NULL";
+          if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
+          if (typeof val === "number") return String(val);
+          return `'${String(val).replace(/'/g, "''")}'`;
+        };
+
+        const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps, triggers) VALUES (${escapeForSql(workflow.id)}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(now)}, ${escapeForSql(user?.id || null)}, ${escapeForSql(user?.id || null)}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(stepsJson)}, ${escapeForSql(triggersJson)})`;
+
+        await env.DATABASE.DATABASES_RUN_SQL({
+          sql,
+          params: [],
         });
 
-        const item = result.result[0]?.results?.[0] as Record<string, unknown>;
+        // Fetch the inserted row
+        const selectResult = await env.DATABASE.DATABASES_RUN_SQL({
+          sql: `SELECT * FROM workflows WHERE id = ?`,
+          params: [workflow.id],
+        });
+
+        const item = selectResult.result[0]?.results?.[0] as Record<
+          string,
+          unknown
+        >;
+        if (!item) {
+          throw new Error("Failed to insert workflow");
+        }
 
         return {
           item: transformDbRowToWorkflow(item),
