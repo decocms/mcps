@@ -312,9 +312,10 @@ export const createInsertTool = (env: Env) =>
     }) => {
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
-      const id = crypto.randomUUID();
 
       const { data } = context;
+
+      const id = data.id ?? crypto.randomUUID();
 
       await runSQL(
         env,
@@ -323,18 +324,20 @@ export const createInsertTool = (env: Env) =>
 					id, title, created_at, updated_at, created_by, updated_by,
 					description, instructions, tool_set, avatar
 				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				ON CONFLICT (id) DO NOTHING
 			`,
         [
           id,
-          data.title,
+          data.title ?? "",
           now,
           now,
           user?.id || "unknown",
           user?.id || "unknown",
-          data.description,
-          data.instructions,
+          data.description ?? "",
+          data.instructions ?? "",
           JSON.stringify(data.tool_set || {}),
-          data.avatar,
+          data.avatar ??
+            "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
         ],
       );
 
