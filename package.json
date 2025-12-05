@@ -17,7 +17,7 @@
     "check": "bun run --filter=* check",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
     "prepare": "sh scripts/setup-hooks.sh",
-    "build": "bun run --filter=vibecoding-toolkit build && mv ./vibecoding-toolkit/dist ./dist"
+    "build": "bun run ./scripts/build-mcp.ts"
   },
   "workspaces": [
     "apify",
