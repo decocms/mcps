@@ -7,7 +7,7 @@ import {
   createExecution,
   getExecution,
 } from "../lib/execution-db.ts";
-import { sendSignal } from "./signals.ts";
+import { sendSignal } from "./events/signals.ts";
 
 /**
  * Output schema for workflow execution results.

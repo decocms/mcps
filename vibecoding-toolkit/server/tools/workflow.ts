@@ -188,80 +188,89 @@ export const createGetTool = (env: Env) =>
     },
   });
 
+const DEFAULT_WORKFLOW: Workflow = {
+  id: crypto.randomUUID(),
+  title: "New Workflow",
+  description: "A new workflow",
+  steps: [
+    {
+      name: "Step 1",
+      action: {
+        connectionId: "conn_XcOBkBl6gIO-nkuZZ0eQl",
+        toolName: "COLLECTION_REGISTRY_APP_LIST",
+      },
+    },
+  ],
+  triggers: [],
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+export async function insertWorkflow(env: Env, data?: Workflow) {
+  try {
+    const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
+    const now = new Date().toISOString();
+
+    const workflow = {
+      ...DEFAULT_WORKFLOW,
+      ...data,
+    };
+
+    await validateWorkflow(workflow);
+
+    const stepsJson = JSON.stringify(workflow.steps || []);
+    const triggersJson = JSON.stringify(workflow.triggers || []);
+    const escapeForSql = (val: unknown): string => {
+      if (val === null || val === undefined) return "NULL";
+      if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
+      if (typeof val === "number") return String(val);
+      return `'${String(val).replace(/'/g, "''")}'`;
+    };
+    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps, triggers) VALUES (${escapeForSql(
+      workflow.id,
+    )}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(
+      now,
+    )}, ${escapeForSql(user?.id || null)}, ${escapeForSql(
+      user?.id || null,
+    )}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(
+      stepsJson,
+    )}, ${escapeForSql(triggersJson)})`;
+
+    await env.DATABASE.DATABASES_RUN_SQL({
+      sql,
+      params: [],
+    });
+
+    return {
+      item: workflow,
+    };
+  } catch (error) {
+    console.error("Error creating workflow:", error);
+    throw error;
+  }
+}
+
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_INSERT",
     description: "Create a new workflow with validation",
-    inputSchema: CREATE_INPUT_SCHEMA,
+    inputSchema: CREATE_BINDING.inputSchema,
     outputSchema: CREATE_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({
+      context,
+    }: {
+      context: z.infer<typeof CREATE_BINDING.inputSchema>;
+    }) => {
       try {
         const { data } = context;
-        const user = await env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
-        const now = new Date().toISOString();
-
-        // Build workflow object for validation
-        const workflow: Workflow = {
+        const workflow = {
+          ...DEFAULT_WORKFLOW,
+          ...data,
           id: crypto.randomUUID(),
-          title: data.title,
-          description: data.description,
-          steps: data.steps,
-          triggers: data.triggers,
-          created_at: now,
-          updated_at: now,
-          created_by: user?.id || undefined,
-          updated_by: user?.id || undefined,
         };
-
-        // Validate
-        const validation = await validateWorkflow(workflow);
-
-        if (!validation.valid) {
-          throw new Error("Invalid workflow");
-        }
-
-        // Serialize steps and triggers to JSON strings for database storage
-        const stepsJson = JSON.stringify(workflow.steps || []);
-        const triggersJson = JSON.stringify(workflow.triggers || []);
-
-        console.log("[WORKFLOW INSERT] ID:", workflow.id);
-        console.log(
-          "[WORKFLOW INSERT] Steps count:",
-          workflow.steps?.length || 0,
-        );
-
-        // Insert - use inline JSON values since the driver doesn't properly parameterize
-        // We need to build the SQL with properly escaped values
-        const escapeForSql = (val: unknown): string => {
-          if (val === null || val === undefined) return "NULL";
-          if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
-          if (typeof val === "number") return String(val);
-          return `'${String(val).replace(/'/g, "''")}'`;
-        };
-
-        const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps, triggers) VALUES (${escapeForSql(workflow.id)}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(now)}, ${escapeForSql(user?.id || null)}, ${escapeForSql(user?.id || null)}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(stepsJson)}, ${escapeForSql(triggersJson)})`;
-
-        await env.DATABASE.DATABASES_RUN_SQL({
-          sql,
-          params: [],
-        });
-
-        // Fetch the inserted row
-        const selectResult = await env.DATABASE.DATABASES_RUN_SQL({
-          sql: `SELECT * FROM workflows WHERE id = ?`,
-          params: [workflow.id],
-        });
-
-        const item = selectResult.result[0]?.results?.[0] as Record<
-          string,
-          unknown
-        >;
-        if (!item) {
-          throw new Error("Failed to insert workflow");
-        }
-
+        await insertWorkflow(env, workflow);
         return {
-          item: transformDbRowToWorkflow(item),
+          item: workflow,
         };
       } catch (error) {
         console.error("Error creating workflow:", error);

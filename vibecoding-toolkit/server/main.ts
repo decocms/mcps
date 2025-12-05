@@ -6,6 +6,7 @@ import {
 } from "../shared/deco.gen.ts";
 import { tools } from "./tools/index.ts";
 import { ensureCollections } from "./collections/index.ts";
+import { insertWorkflow } from "./tools/workflow.ts";
 
 export type Env = DefaultEnv<typeof StateSchema> &
   DecoEnv & {
@@ -24,6 +25,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       console.log("onChange", env);
       try {
         await ensureCollections(env);
+        await insertWorkflow(env);
       } catch (error) {
         console.error("error ensuring collections", error);
       }

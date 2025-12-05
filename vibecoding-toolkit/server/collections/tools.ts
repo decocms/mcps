@@ -3,12 +3,12 @@ const toolsTableIdempotentQuery = `
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
-    input_schema TEXT NOT NULL DEFAULT '{}',
-    output_schema TEXT NOT NULL DEFAULT '{}',
+    input_schema JSONB NOT NULL DEFAULT '{}',
+    output_schema JSONB NOT NULL DEFAULT '{}',
     execute TEXT NOT NULL DEFAULT '',
-    dependencies TEXT NOT NULL DEFAULT '{}',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    dependencies JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by TEXT,
     updated_by TEXT
   )

@@ -7,10 +7,10 @@
  * @see docs/EVENTS_AND_STREAMING.md
  */
 
-import type { Env } from "../main.ts";
-import { transformDbRowToEvent } from "../collections/workflow.ts";
+import type { Env } from "../../main.ts";
+import { transformDbRowToEvent } from "../../collections/workflow.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
-import { Scheduler } from "./scheduler.ts";
+import { Scheduler } from "../scheduler.ts";
 
 /**
  * Add an event to the workflow events table

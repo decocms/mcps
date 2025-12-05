@@ -12,18 +12,14 @@
 
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateCode } from "./code-step.ts";
+import { validateCode } from "./steps/code-step.ts";
 import {
   CodeActionSchema,
   Step,
   Trigger,
   Workflow,
 } from "@decocms/bindings/workflow";
-import { getStepType } from "./step-executor.ts";
-
-// ============================================================================
-// Validation Result
-// ============================================================================
+import { getStepType } from "./steps/step-executor.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([
@@ -53,10 +49,6 @@ export interface ValidationResult {
     }
   >;
 }
-
-// ============================================================================
-// Step Validators
-// ============================================================================
 
 /**
  * Validate @refs in a step's input
@@ -225,9 +217,7 @@ function validateTriggerRefs(
   return errors;
 }
 
-export async function validateWorkflow(
-  workflow: Workflow,
-): Promise<ValidationResult> {
+export async function validateWorkflow(workflow: Workflow): Promise<void> {
   const errors: ValidationError[] = [];
   const schemas: Record<
     string,
@@ -288,9 +278,7 @@ export async function validateWorkflow(
     }
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-    schemas: Object.keys(schemas).length > 0 ? schemas : undefined,
-  };
+  if (errors.length > 0) {
+    throw new Error(JSON.stringify(errors, null, 2));
+  }
 }

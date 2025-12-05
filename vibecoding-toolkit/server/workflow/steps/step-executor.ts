@@ -5,25 +5,25 @@
  * Each function is pure and focused on a single step type.
  */
 
-import type { Env } from "../main.ts";
+import type { Env } from "../../main.ts";
 import type { CodeAction, Step } from "@decocms/bindings/workflow";
-import type { RefContext } from "./ref-resolver.ts";
+import type { RefContext } from "../ref-resolver.ts";
 import type {
   SleepStepResult,
   StepExecutionResult,
   ToolStepResult,
   WaitForSignalStepResult,
-} from "./types.ts";
-import { isAtRef, resolveRef } from "./ref-resolver.ts";
+} from "../types.ts";
+import { isAtRef, resolveRef } from "../ref-resolver.ts";
 import {
   SleepActionSchema,
   ToolCallActionSchema,
   WaitForSignalActionSchema,
 } from "@decocms/bindings/workflow";
 import { executeCode } from "./code-step.ts";
-import { consumeSignal, getSignals } from "./signals.ts";
-import { DurableSleepError, WaitingForSignalError } from "./errors.ts";
-import { checkTimer, scheduleTimer } from "./events.ts";
+import { consumeSignal, getSignals } from "../events/signals.ts";
+import { DurableSleepError, WaitingForSignalError } from "../errors.ts";
+import { checkTimer, scheduleTimer } from "../events/events.ts";
 import { proxyConnectionForId } from "@decocms/runtime";
 import { MCPClient } from "@decocms/bindings/client";
 
@@ -50,12 +50,12 @@ export class StepExecutor {
       input: JSON.stringify(input, null, 2),
     });
 
-    if (!this.env.MESH_URL) {
+    if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
       throw new Error("MESH_URL is not set");
     }
 
     const mcpConnection = proxyConnectionForId(connectionId, {
-      meshUrl: this.env.MESH_URL,
+      meshUrl: this.env.MESH_REQUEST_CONTEXT.meshUrl,
       token: this.env.MESH_REQUEST_CONTEXT.token,
       connectionId,
       callerApp: this.env.MESH_APP_NAME,
@@ -64,7 +64,23 @@ export class StepExecutor {
     // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
     const client = MCPClient.forConnection(mcpConnection);
 
-    const result = await client.toolCall(toolName, input);
+    // The MCPClient proxy creates methods named after each tool, so we access dynamically
+    const toolFn = (
+      client as Record<
+        string,
+        (args: Record<string, unknown>) => Promise<unknown>
+      >
+    )[toolName];
+    if (!toolFn) {
+      throw new Error(
+        `Tool '${toolName}' not found on connection '${connectionId}'`,
+      );
+    }
+    const result = await toolFn(input);
+
+    console.log({
+      result,
+    });
 
     const output = result;
 
@@ -215,6 +231,9 @@ export class StepExecutor {
     switch (stepType) {
       case "tool": {
         const result = await this.executeToolStep(step, resolvedInput);
+        console.log({
+          result,
+        });
         return {
           output: result.output,
           error: result.error,

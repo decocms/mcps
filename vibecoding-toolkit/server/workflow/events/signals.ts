@@ -5,13 +5,10 @@
  * This module provides a convenient API for signal operations.
  */
 
-import type { Env } from "../main.ts";
-import { type Scheduler } from "../lib/scheduler.ts";
-import {
-  sendSignal as sendEventSignal,
-  getPendingEvents,
-  type WorkflowEvent,
-} from "./events.ts";
+import { WorkflowEvent } from "@decocms/bindings/workflow";
+import type { Env } from "../../main.ts";
+import { sendSignal as sendEventSignal, getPendingEvents } from "./events.ts";
+import { Scheduler } from "../scheduler.ts";
 
 /**
  * WorkflowSignal type with signal_name for backwards compatibility
@@ -59,7 +56,7 @@ export async function getSignals(
   return events.map(
     (e): WorkflowSignal => ({
       ...e,
-      signal_name: e.name,
+      signal_name: e.name ?? undefined,
     }),
   );
 }
