@@ -20,7 +20,6 @@ import {
   WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
 import type { Env } from "../main.ts";
-import { WorkflowCancelledError } from "../workflow/errors.ts";
 
 const safeJsonParse = (value: unknown): unknown => {
   if (value === null || value === undefined) return undefined;
@@ -78,6 +77,8 @@ const toNumberOrNull = (value: unknown): number | null => {
 function transformDbRowToExecution(
   row: Record<string, unknown> = {},
 ): WorkflowExecution {
+  const parsedError = safeJsonParse(row.error);
+  console.log("🚀 ~ transformDbRowToExecution ~ parsedError:", parsedError);
   const transformed = {
     ...row,
     // BaseCollectionEntitySchema expects title but workflow_executions doesn't have one
@@ -92,8 +93,10 @@ function transformDbRowToExecution(
     // Parse JSONB fields
     output: safeJsonParse(row.output),
     input: safeJsonParse(row.input),
-    error: safeJsonParse(row.error),
+    error: Array.isArray(parsedError) ? parsedError.join("; ") : parsedError,
   };
+
+  console.log("🚀 ~ transformDbRowToExecution ~ transformed:", transformed);
 
   return WorkflowExecutionSchema.parse(transformed);
 }
@@ -186,22 +189,23 @@ export async function updateExecution(
   setClauses.push(`updated_at = ?`);
   params.push(now);
 
+  console.log("🚀 ~ updateExecution ~ data:", data);
+
   // Conditionally update other fields
   if (data.status !== undefined) {
     setClauses.push(`status = ?`);
     params.push(data.status);
   }
   if (data.output !== undefined) {
-    setClauses.push(`output = ?`);
+    setClauses.push(`output = ?::jsonb`);
     params.push(JSON.stringify(data.output));
   }
   if (data.error !== undefined) {
-    setClauses.push(`error = ?`);
-    // error column is JSONB, so serialize it
+    setClauses.push(`error = ?::jsonb`);
     params.push(JSON.stringify(data.error));
   }
   if (data.input !== undefined) {
-    setClauses.push(`input = ?`);
+    setClauses.push(`input = ?::jsonb`);
     params.push(JSON.stringify(data.input));
   }
   if (data.started_at_epoch_ms !== undefined) {
@@ -231,6 +235,16 @@ export async function updateExecution(
 
   params.push(id);
 
+  console.log("🚀 ~ updateExecution ~ setClauses:", setClauses);
+  const sql = `
+    UPDATE workflow_executions
+    SET ${setClauses.join(", ")}
+    WHERE id = ?
+    RETURNING *
+  `;
+  console.log("🚀 ~ updateExecution ~ sql:", sql);
+  console.log("🚀 ~ updateExecution ~ params:", params);
+
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions
@@ -240,6 +254,8 @@ export async function updateExecution(
     `,
     params,
   });
+
+  console.log("🚀 ~ updateExecution ~ result:", result);
 
   if (!result.result[0]?.results?.length) {
     throw new Error(`Workflow execution with id ${id} not found`);
@@ -307,31 +323,6 @@ export async function cancelExecution(
 
   console.log(`[CANCEL] Cancelled execution ${executionId}`);
   return transformDbRowToExecution(row);
-}
-
-/**
- * Check if an execution has been cancelled and throw if so.
- *
- * @param env - Environment with database access
- * @param executionId - The execution ID to check
- * @throws WorkflowCancelledError if the execution is cancelled
- */
-export async function checkIfCancelled(
-  env: Env,
-  executionId: string,
-): Promise<void> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT status FROM workflow_executions WHERE id = ?",
-    params: [executionId],
-  });
-
-  const row = result.result[0]?.results?.[0] as
-    | { status: WorkflowExecutionStatus }
-    | undefined;
-
-  if (row?.status === "cancelled") {
-    throw new WorkflowCancelledError(executionId, "Execution was cancelled");
-  }
 }
 
 /**
@@ -441,6 +432,7 @@ export async function listExecutions(
     transformDbRowToExecution(row as Record<string, unknown>),
   );
 
+  console.log("🚀 ~ listExecutions ~ items:", items);
   return {
     items,
     totalCount,
@@ -475,6 +467,8 @@ function transformDbRowToStepResult(
     error: safeJsonParse(row.error),
   };
 
+  console.log("🚀 ~ transformDbRowToStepResult ~ transformed:", transformed);
+
   return WorkflowExecutionStepResultSchema.parse(transformed);
 }
 
@@ -483,12 +477,17 @@ function transformDbRowToStepResult(
  */
 export async function getStepResults(
   env: Env,
-  executionId: string,
+  executionId?: string,
 ): Promise<WorkflowExecutionStepResult[]> {
+  console.log("🚀 ~ getStepResults ~ executionId:", executionId);
+  const whereClause = executionId ? `WHERE execution_id = ?` : "";
+  const params = executionId ? [executionId] : [];
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM execution_step_results WHERE execution_id = ?`,
-    params: [executionId],
+    sql: `SELECT * FROM execution_step_results ${whereClause}`,
+    params,
   });
+
+  console.log("🚀 ~ getStepResults ~ result:", result);
 
   return (result.result[0]?.results || []).map((row: unknown) =>
     transformDbRowToStepResult(row as Record<string, unknown>),
@@ -540,7 +539,7 @@ export async function createStepResult(
 ): Promise<CreateStepResultOutcome> {
   const startedAt = data.started_at_epoch_ms ?? Date.now();
 
-  console.log("🚀 ~ createStepResult ~ data:", JSON.stringify(data, null, 2));
+  console.log("🚀 ~ createStepResult ~ data:", data);
 
   // Try to INSERT - if UNIQUE conflict, RETURNING gives nothing
   const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -554,10 +553,7 @@ export async function createStepResult(
     params: [data.execution_id, data.step_id, startedAt],
   });
 
-  console.log(
-    "🚀 ~ createStepResult ~ result:",
-    JSON.stringify(result, null, 2),
-  );
+  console.log("🚀 ~ createStepResult ~ result:", result);
 
   // If we got a row back, we won the race (created it)
   if (result.result[0]?.results?.length) {
@@ -597,16 +593,19 @@ export async function updateStepResult(
     completed_at_epoch_ms: number;
   }>,
 ): Promise<WorkflowExecutionStepResult> {
+  console.log("🚀 ~ updateStepResult ~ executionId:", executionId);
+  console.log("🚀 ~ updateStepResult ~ stepId:", stepId);
+  console.log("🚀 ~ updateStepResult ~ data:", data);
+
   const setClauses: string[] = [];
   const params: unknown[] = [];
 
   if (data.output !== undefined) {
-    setClauses.push(`output = ?`);
+    setClauses.push(`output = ?::jsonb`); // Add ::jsonb cast
     params.push(JSON.stringify(data.output));
   }
   if (data.error !== undefined) {
-    setClauses.push(`error = ?`);
-    // error column is JSONB, so serialize it
+    setClauses.push(`error = ?::jsonb`); // Add ::jsonb cast
     params.push(JSON.stringify(data.error));
   }
   if (data.started_at_epoch_ms !== undefined) {
@@ -627,16 +626,26 @@ export async function updateStepResult(
 
   params.push(executionId, stepId);
 
+  console.log("🚀 ~ updateStepResult ~ setClauses:", setClauses);
+  console.log(
+    "🚀 ~ updateStepResult ~ params:",
+    params.map((p: any) => p?.toString().slice(0, 1000)),
+  );
+
+  const sql = `
+    UPDATE execution_step_results
+    SET ${setClauses.join(", ")}
+    WHERE execution_id = ? AND step_id = ? AND completed_at_epoch_ms IS NULL
+    RETURNING *
+  `;
+
   // Don't overwrite a completed step
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      UPDATE execution_step_results
-      SET ${setClauses.join(", ")}
-      WHERE execution_id = ? AND step_id = ? AND completed_at_epoch_ms IS NULL
-      RETURNING *
-    `,
+    sql,
     params,
   });
+
+  console.log("🚀 ~ updateStepResult ~ result:", result);
 
   // If no rows updated, the step was already completed (we lost the race)
   if (!result.result[0]?.results?.length) {

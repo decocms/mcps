@@ -17,6 +17,7 @@ import { getStepResults, updateExecution } from "../lib/execution-db.ts";
 import { lockWorkflowExecution, releaseLock } from "./lock.ts";
 import type { Step, Trigger } from "@decocms/bindings/workflow";
 import { getWorkflow } from "server/tools/workflow.ts";
+import { StepExecutor } from "./steps/step-executor.ts";
 
 interface TriggerResult {
   triggerId: string;
@@ -88,7 +89,6 @@ async function enqueueTrigger(
 const DEFAULT_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export async function executeWorkflow(env: Env, executionId: string) {
   let lockId: string | undefined;
-  const startTime = Date.now();
 
   try {
     // Acquire lock
@@ -108,17 +108,7 @@ export async function executeWorkflow(env: Env, executionId: string) {
         : workflow.steps
       : [];
 
-    // Handle both legacy { phases: [...] } format and new flat array format
-    let steps: Step[];
-    if (Array.isArray(parsedSteps)) {
-      // New format: flat array of steps
-      steps = parsedSteps;
-    } else if (parsedSteps.phases) {
-      // Legacy format: flatten phases into sequential steps
-      steps = parsedSteps.phases.flat();
-    } else {
-      steps = [];
-    }
+    const steps = parsedSteps as Step[];
 
     const triggers: Trigger[] = workflow.triggers || [];
     const workflowInput =
@@ -137,6 +127,28 @@ export async function executeWorkflow(env: Env, executionId: string) {
     const ctx: RefContext = { stepOutputs, workflowInput };
     let lastOutput: unknown;
     const completedSteps: string[] = [];
+
+    const stepExecutor = new StepExecutor(env);
+    for (const step of steps) {
+      const resolvedInput = resolveAllRefs(step.input, ctx).resolved as Record<
+        string,
+        unknown
+      >;
+      const result = await stepExecutor.executeStep(
+        step,
+        resolvedInput,
+        ctx,
+        executionId,
+        {
+          started_at_epoch_ms: Date.now(),
+        },
+      );
+      if (!result.id) {
+        throw new Error(`Step result id is required`);
+      }
+      stepOutputs.set(result.id, result.output);
+      completedSteps.push(result.id);
+    }
 
     // Fire triggers - use the full step output (not excluded) for ref resolution
     let triggerResults: TriggerResult[] | undefined;

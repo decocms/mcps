@@ -2062,6 +2062,10 @@ export const StateSchema = z.object({
     value: z.string(),
     __type: z.literal("@deco/database").default("@deco/database"),
   }),
+  AUTH: z.object({
+    value: z.string(),
+    __type: z.literal("@deco/auth").default("@deco/auth"),
+  }),
 });
 
 export interface Env {
@@ -2096,6 +2100,9 @@ export interface Env {
 }
 
 export const Scopes = {
+  AUTH: {
+    CALL_TOOL: "AUTH::CALL_TOOL",
+  },
   DATABASE: {
     DATABASES_GET_META: "DATABASE::DATABASES_GET_META",
     DATABASES_RECOVERY: "DATABASE::DATABASES_RECOVERY",

@@ -20,6 +20,7 @@ import {
   SandboxContext,
 } from "../../lib/sandbox/index.ts";
 import { transform } from "sucrase";
+import { StepResult } from "./step-executor.ts";
 
 export function transpileTypeScript(code: string): string {
   const result = transform(code, {
@@ -114,17 +115,11 @@ export function extractSchemas(code: string): {
   };
 }
 
-export interface CodeResult {
-  success: boolean;
-  output?: unknown;
-  error?: string;
-  logs?: string[];
-}
 export async function executeCode(
   code: string,
   input: unknown,
   stepName: string,
-): Promise<CodeResult> {
+): Promise<StepResult> {
   let ctx: SandboxContext | undefined;
 
   console.log(`[SANDBOX] Starting executeCode for '${stepName}'`);
@@ -167,8 +162,9 @@ export async function executeCode(
 
     if (ctx.typeof(defaultHandle) !== "function") {
       return {
-        success: false,
+        status: "error",
         error: "Transform must export a default function",
+        startedAt: Date.now(),
       };
     }
 
@@ -180,13 +176,14 @@ export async function executeCode(
     );
 
     return {
-      success: true,
+      status: "success",
       output,
-      logs,
+      startedAt: Date.now(),
     };
   } catch (err) {
     return {
-      success: false,
+      status: "error",
+      startedAt: Date.now(),
       error: err instanceof Error ? err.message : String(err),
     };
   } finally {

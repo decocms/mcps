@@ -1,15 +1,5 @@
-import { agentTableIdempotentQuery, agentTableIndexesQuery } from "./agent";
-import {
-  workflowTableIdempotentQuery,
-  workflowTableIndexesQuery,
-  workflowExecutionTableIdempotentQuery,
-  workflowExecutionTableIndexesQuery,
-  executionStepResultsTableIdempotentQuery,
-  executionStepResultsTableIndexesQuery,
-  workflowEventsTableIdempotentQuery,
-  workflowEventsTableIndexesQuery,
-} from "./workflow";
-import { toolsTableIdempotentQuery, toolsTableIndexesQuery } from "./tools";
+import { runSQL } from "server/lib/postgres";
+import { postgresQueries } from "./pg/workflow";
 import { Env } from "server/main";
 
 /**
@@ -20,39 +10,36 @@ import { Env } from "server/main";
  * are internal engine tables managed by direct database functions.
  */
 const collectionsQueries = {
-  agents: {
-    idempotent: agentTableIdempotentQuery,
-    indexes: agentTableIndexesQuery,
-  },
   workflows: {
-    idempotent: workflowTableIdempotentQuery,
-    indexes: workflowTableIndexesQuery,
+    idempotent: postgresQueries.workflowTableIdempotentQuery,
+    indexes: postgresQueries.workflowTableIndexesQuery,
   },
   // Internal engine tables (not collections, no MCP tools)
   workflow_executions: {
-    idempotent: workflowExecutionTableIdempotentQuery,
-    indexes: workflowExecutionTableIndexesQuery,
+    idempotent: postgresQueries.workflowExecutionTableIdempotentQuery,
+    indexes: postgresQueries.workflowExecutionTableIndexesQuery,
   },
   execution_step_results: {
-    idempotent: executionStepResultsTableIdempotentQuery,
-    indexes: executionStepResultsTableIndexesQuery,
+    idempotent: postgresQueries.executionStepResultsTableIdempotentQuery,
+    indexes: postgresQueries.executionStepResultsTableIndexesQuery,
   },
   workflow_events: {
-    idempotent: workflowEventsTableIdempotentQuery,
-    indexes: workflowEventsTableIndexesQuery,
-  },
-  tools: {
-    idempotent: toolsTableIdempotentQuery,
-    indexes: toolsTableIndexesQuery,
+    idempotent: postgresQueries.workflowEventsTableIdempotentQuery,
+    indexes: postgresQueries.workflowEventsTableIndexesQuery,
   },
 };
 
 async function ensureCollections(env: Env) {
   for (const collection of Object.values(collectionsQueries)) {
-    await env.DATABASE.DATABASES_RUN_SQL({
-      sql: collection.idempotent,
-      params: [],
-    });
+    try {
+      await runSQL(env, collection.idempotent);
+    } catch (error) {
+      console.error(
+        `Error ensuring collection ${collection.idempotent}`,
+        error,
+      );
+      throw error;
+    }
   }
 }
 

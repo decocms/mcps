@@ -6,128 +6,46 @@ import {
   cancelExecution,
   createExecution,
   getExecution,
+  resumeExecution,
 } from "../lib/execution-db.ts";
 import { sendSignal } from "./events/signals.ts";
+import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
-/**
- * Output schema for workflow execution results.
- * Uses discriminated union for clear, type-safe result handling.
- */
-const WorkflowExecutionResultSchema = z.discriminatedUnion("status", [
-  z.object({
-    status: z.literal("completed"),
-    output: z.unknown().optional(),
-    triggerResults: z
-      .array(
-        z.object({
-          triggerId: z.string(),
-          status: z.enum(["triggered", "skipped", "failed"]),
-          executionIds: z.array(z.string()).optional(),
-          error: z.string().optional(),
-        }),
-      )
-      .optional(),
-  }),
-  z.object({
-    status: z.literal("failed"),
-    error: z.string(),
-    retryable: z.boolean(),
-    retryDelaySeconds: z.number().optional(),
-  }),
-  z.object({
-    status: z.literal("sleeping"),
-    wakeAtEpochMs: z.number(),
-    stepName: z.string(),
-  }),
-  z.object({
-    status: z.literal("waiting_for_signal"),
-    signalName: z.string(),
-    stepName: z.string(),
-    timeoutAtEpochMs: z.number().optional(),
-  }),
-  z.object({
-    status: z.literal("cancelled"),
-  }),
-]);
+const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
+
+if (!START_BINDING?.inputSchema || !START_BINDING?.outputSchema) {
+  throw new Error("WORKFLOW_START binding not found or missing schemas");
+}
 
 export const executeWorkflowTool = (env: Env) =>
   createPrivateTool({
     id: "EXECUTE_WORKFLOW",
-    description:
-      "Runs a workflow execution. This will acquire a lock on the execution and execute the workflow.",
+    description: "Execute a workflow",
     inputSchema: z.object({
       executionId: z.string().describe("The execution ID to execute"),
     }),
-    outputSchema: WorkflowExecutionResultSchema,
+    outputSchema: z.object({
+      success: z.boolean(),
+      result: z.unknown(),
+    }),
     execute: async ({ context }) => {
       const { executionId } = context;
-      const execution = await getExecution(env, executionId);
-      if (!execution) {
-        return {
-          status: "failed" as const,
-          error: `Execution ${executionId} not found`,
-          retryable: false,
-        };
-      }
-
-      if (execution.status === "cancelled") {
-        return { status: "cancelled" as const };
-      }
-
-      if (execution.status === "completed") {
-        return {
-          status: "completed" as const,
-          output: execution.output,
-        };
-      }
-
-      return await executeWorkflow(env, executionId);
+      const result = await executeWorkflow(env, executionId);
+      return {
+        success: true,
+        result,
+      };
     },
   });
 
 export const createAndQueueExecutionTool = (env: Env) =>
   createPrivateTool({
-    id: "CREATE_AND_QUEUE_EXECUTION",
+    id: START_BINDING?.name,
     description:
       "Create a workflow execution and immediately start processing it (serverless mode)",
-    inputSchema: z.object({
-      workflowId: z.string().describe("The workflow ID to execute"),
-      input: z
-        .record(z.unknown())
-        .optional()
-        .describe("Input data for the workflow"),
-    }),
-    outputSchema: z.discriminatedUnion("status", [
-      z.object({
-        status: z.literal("completed"),
-        executionId: z.string(),
-        output: z.unknown().optional(),
-      }),
-      z.object({
-        status: z.literal("failed"),
-        executionId: z.string(),
-        error: z.string(),
-        retryable: z.boolean(),
-      }),
-      z.object({
-        status: z.literal("sleeping"),
-        executionId: z.string(),
-        wakeAtEpochMs: z.number(),
-        stepName: z.string(),
-      }),
-      z.object({
-        status: z.literal("waiting_for_signal"),
-        executionId: z.string(),
-        signalName: z.string(),
-        stepName: z.string(),
-        timeoutAtEpochMs: z.number().optional(),
-      }),
-      z.object({
-        status: z.literal("cancelled"),
-        executionId: z.string(),
-      }),
-    ]),
-    execute: async ({ context }) => {
+    inputSchema: START_BINDING.inputSchema,
+    outputSchema: START_BINDING.outputSchema,
+    execute: async ({ context, runtimeContext }) => {
       console.log("🚀 ~ CREATE_AND_QUEUE_EXECUTION ~ context:", context);
 
       // 1. Create the execution record
@@ -138,12 +56,19 @@ export const createAndQueueExecutionTool = (env: Env) =>
       console.log("🚀 ~ Created execution:", execution.id);
 
       // 2. Immediately execute it (serverless - no queue, no locks needed)
-      const result = await executeWorkflow(env, execution.id);
-      console.log("🚀 ~ Execution result:", result);
+      executeWorkflowTool(env)
+        .execute({
+          context: {
+            executionId: execution.id,
+          },
+          runtimeContext,
+        })
+        .catch((error) => {
+          console.error("🚀 ~ Error executing workflow:", error);
+          throw error;
+        });
 
-      // 3. Return combined result with execution ID
       return {
-        ...result,
         executionId: execution.id,
       };
     },
@@ -297,9 +222,6 @@ export const resumeExecutionTool = (env: Env) =>
         };
       }
 
-      // Import dynamically to avoid circular dependency
-      const { resumeExecution } = await import("../lib/execution-db.ts");
-
       const result = await resumeExecution(env, executionId, {
         resetRetries,
       });
@@ -373,9 +295,9 @@ export const sendSignalTool = (env: Env) =>
   });
 
 export const workflowTools = [
-  executeWorkflowTool,
   createAndQueueExecutionTool,
   cancelExecutionTool,
   resumeExecutionTool,
   sendSignalTool,
+  executeWorkflowTool,
 ];

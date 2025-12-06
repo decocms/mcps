@@ -5,24 +5,24 @@ import { z } from "zod";
 import { validateWorkflow } from "../workflow/validator.ts";
 import {
   Workflow,
-  WORKFLOWS_BINDING,
+  WORKFLOW_BINDING,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
 import { buildOrderByClause, buildWhereClause } from "./agent.ts";
 
-const LIST_BINDING = WORKFLOWS_BINDING.find(
+const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
 );
-const GET_BINDING = WORKFLOWS_BINDING.find(
+const GET_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_GET",
 );
-const CREATE_BINDING = WORKFLOWS_BINDING.find(
+const CREATE_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_CREATE",
 );
-const UPDATE_BINDING = WORKFLOWS_BINDING.find(
+const UPDATE_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_UPDATE",
 );
-const DELETE_BINDING = WORKFLOWS_BINDING.find(
+const DELETE_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_DELETE",
 );
 
@@ -42,18 +42,6 @@ if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
   );
 }
 
-// Create a relaxed input schema that accepts any string for date fields
-// The binding now has the correct flat array schema for steps with forEach/parallel config
-const originalDataSchema = (
-  CREATE_BINDING.inputSchema as unknown as z.ZodObject<any>
-).shape.data as z.ZodObject<any>;
-const relaxedDataSchema = originalDataSchema.extend({
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-});
-const CREATE_INPUT_SCHEMA = z.object({
-  data: relaxedDataSchema,
-});
 if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
   throw new Error(
     "COLLECTION_WORKFLOW_UPDATE binding not found or missing schemas",
@@ -196,8 +184,24 @@ const DEFAULT_WORKFLOW: Workflow = {
     {
       name: "Step 1",
       action: {
-        connectionId: "conn_XcOBkBl6gIO-nkuZZ0eQl",
-        toolName: "COLLECTION_REGISTRY_APP_LIST",
+        connectionId: "conn_XXrfo-eDysOYg3G5daZ2R",
+        toolName: "LLM_DO_GENERATE",
+      },
+      input: {
+        modelId: "anthropic/claude-3.5-haiku",
+        callOptions: {
+          prompt: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Hello, world!",
+                },
+              ],
+            },
+          ],
+        },
       },
     },
   ],

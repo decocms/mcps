@@ -8,12 +8,6 @@
 import type { Env } from "../../main.ts";
 import type { CodeAction, Step } from "@decocms/bindings/workflow";
 import type { RefContext } from "../ref-resolver.ts";
-import type {
-  SleepStepResult,
-  StepExecutionResult,
-  ToolStepResult,
-  WaitForSignalStepResult,
-} from "../types.ts";
 import { isAtRef, resolveRef } from "../ref-resolver.ts";
 import {
   SleepActionSchema,
@@ -24,8 +18,17 @@ import { executeCode } from "./code-step.ts";
 import { consumeSignal, getSignals } from "../events/signals.ts";
 import { DurableSleepError, WaitingForSignalError } from "../errors.ts";
 import { checkTimer, scheduleTimer } from "../events/events.ts";
-import { proxyConnectionForId } from "@decocms/runtime";
-import { MCPClient } from "@decocms/bindings/client";
+import { createStepResult, updateStepResult } from "server/lib/execution-db.ts";
+
+export interface StepResult {
+  id?: string;
+  status: "success" | "error";
+  output?: unknown;
+  error?: string;
+  startedAt: number;
+  completedAt?: number;
+  excludeFromWorkflowOutput?: boolean;
+}
 
 export class StepExecutor {
   private env: Env;
@@ -37,7 +40,7 @@ export class StepExecutor {
   private async executeToolStep(
     step: Step,
     input: Record<string, unknown>,
-  ): Promise<ToolStepResult> {
+  ): Promise<StepResult> {
     const parsed = ToolCallActionSchema.safeParse(step.action);
     if (!parsed.success) {
       throw new Error("Tool step missing tool configuration");
@@ -47,49 +50,27 @@ export class StepExecutor {
     console.log({
       toolName,
       connectionId,
-      input: JSON.stringify(input, null, 2),
+      input,
     });
 
     if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
       throw new Error("MESH_URL is not set");
     }
 
-    const mcpConnection = proxyConnectionForId(connectionId, {
-      meshUrl: this.env.MESH_REQUEST_CONTEXT.meshUrl,
-      token: this.env.MESH_REQUEST_CONTEXT.token,
-      connectionId,
-      callerApp: this.env.MESH_APP_NAME,
+    const response = await this.env.AUTH.CALL_TOOL({
+      connection: connectionId,
+      tool: toolName,
+      arguments: input,
     });
 
-    // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
-    const client = MCPClient.forConnection(mcpConnection);
-
-    // The MCPClient proxy creates methods named after each tool, so we access dynamically
-    const toolFn = (
-      client as Record<
-        string,
-        (args: Record<string, unknown>) => Promise<unknown>
-      >
-    )[toolName];
-    if (!toolFn) {
-      throw new Error(
-        `Tool '${toolName}' not found on connection '${connectionId}'`,
-      );
-    }
-    const result = await toolFn(input);
-
-    console.log({
-      result,
-    });
-
-    const output = result;
+    const result = response.response;
 
     return {
-      status: "completed",
-      output,
+      status: "success",
+      output: result,
       startedAt: Date.now(),
       completedAt: Date.now(),
-      excludeFromWorkflowOutput: isLargeOutput(output),
+      excludeFromWorkflowOutput: isLargeOutput(result),
     };
   }
 
@@ -105,7 +86,7 @@ export class StepExecutor {
     ctx: RefContext,
     executionId: string,
     existingStepResult?: { started_at_epoch_ms?: number | null },
-  ): Promise<SleepStepResult> {
+  ): Promise<StepResult> {
     const parsed = SleepActionSchema.safeParse(step.action);
     if (!parsed.success) {
       throw new Error("Sleep step missing sleep configuration");
@@ -119,8 +100,12 @@ export class StepExecutor {
       const wakeAt =
         (timer.payload as { wakeAt: number })?.wakeAt || Date.now();
       return {
-        slept: true,
-        sleepDurationMs: wakeAt - startedAt,
+        status: "success",
+        output: {
+          sleepDurationMs: wakeAt - startedAt,
+        },
+        startedAt,
+        completedAt: Date.now(),
       };
     }
 
@@ -147,8 +132,12 @@ export class StepExecutor {
     // Ready to wake?
     if (remainingMs <= 0) {
       return {
-        slept: true,
-        sleepDurationMs: wakeAtEpochMs - startedAt,
+        status: "success",
+        output: {
+          sleepDurationMs: wakeAtEpochMs - startedAt,
+        },
+        startedAt,
+        completedAt: Date.now(),
       };
     }
 
@@ -156,8 +145,12 @@ export class StepExecutor {
     if (remainingMs <= 25000) {
       await new Promise((resolve) => setTimeout(resolve, remainingMs));
       return {
-        slept: true,
-        sleepDurationMs: wakeAtEpochMs - startedAt,
+        status: "success",
+        output: {
+          sleepDurationMs: wakeAtEpochMs - startedAt,
+        },
+        startedAt,
+        completedAt: Date.now(),
       };
     }
 
@@ -173,7 +166,7 @@ export class StepExecutor {
     step: Step,
     executionId: string,
     existingStepResult?: { started_at_epoch_ms?: number | null },
-  ): Promise<WaitForSignalStepResult> {
+  ): Promise<StepResult> {
     const parsed = WaitForSignalActionSchema.safeParse(step.action);
     if (!parsed.success) {
       throw new Error("waitForSignal step missing configuration");
@@ -195,10 +188,14 @@ export class StepExecutor {
         `[SIGNAL] Step '${step.name}' received signal '${signalName}'`,
       );
       return {
-        signalName: matching.signal_name,
-        payload: matching.payload,
-        receivedAt: matching.created_at,
-        waitDurationMs: Date.now() - waitStartedAt,
+        status: "success",
+        output: {
+          signalName: matching.signal_name,
+          payload: matching.payload,
+          receivedAt: matching.created_at,
+          waitDurationMs: Date.now() - waitStartedAt,
+        },
+        startedAt: waitStartedAt,
       };
     }
 
@@ -223,82 +220,79 @@ export class StepExecutor {
       started_at_epoch_ms?: number | null;
       output?: unknown;
     },
-  ): Promise<StepExecutionResult> {
+  ): Promise<StepResult> {
     const stepType = getStepType(step) as "tool" | "code" | "sleep" | "signal";
-    const startedAt = Date.now();
     console.log(`[STEP] Executing step '${step.name}' of type '${stepType}'`);
+    await createStepResult(this.env, {
+      execution_id: executionId,
+      step_id: step.name,
+      started_at_epoch_ms: Date.now(),
+    });
+    let result: StepResult;
 
     switch (stepType) {
       case "tool": {
-        const result = await this.executeToolStep(step, resolvedInput);
-        console.log({
-          result,
-        });
-        return {
-          output: result.output,
-          error: result.error,
-          startedAt,
-          completedAt: Date.now(),
-          excludeFromWorkflowOutput: result.excludeFromWorkflowOutput,
-        };
+        result = await this.executeToolStep(step, resolvedInput);
+        break;
       }
 
       case "code": {
         console.log(`[STEP] About to executeCode for '${step.name}'`);
         try {
-          const result = await executeCode(
+          result = await executeCode(
             (step.action as CodeAction).code,
             resolvedInput,
             step.name,
           );
-          console.log(
-            `[STEP] executeCode result for '${step.name}':`,
-            result.success ? "success" : `error: ${result.error}`,
-          );
-          return {
-            output: result.output,
-            error: result.error,
-            startedAt,
-            completedAt: Date.now(),
-          };
         } catch (err) {
           console.error(`[STEP] executeCode THREW for '${step.name}':`, err);
           throw err;
         }
+        break;
       }
 
       case "sleep": {
-        const result = await this.executeSleepStep(
+        result = await this.executeSleepStep(
           step,
           ctx,
           executionId,
           existingStepResult,
         );
-        return {
-          output: result,
-          error: result.slept ? undefined : "Sleep step failed",
-          startedAt,
-          completedAt: result.slept ? Date.now() : undefined,
-        };
+        break;
       }
 
       case "signal": {
-        const result = await this.executeWaitForSignalStep(
+        result = await this.executeWaitForSignalStep(
           step,
           executionId,
           existingStepResult,
         );
         // Return full result so refs like @step.output.payload work even if payload is null
-        return {
-          output: result,
-          startedAt,
-          completedAt: Date.now(),
-        };
+        break;
       }
 
       default:
         throw new Error(`Unknown step type for step: ${step.name}`);
     }
+
+    console.log("🚀 ~ StepExecutor ~ executeStep ~ result:", result);
+
+    const { id: updatedStepResult } = await updateStepResult(
+      this.env,
+      executionId,
+      step.name,
+      {
+        output: result.output,
+        error: result.error,
+        started_at_epoch_ms: result.startedAt,
+        completed_at_epoch_ms: Date.now(),
+      },
+    );
+
+    return {
+      ...result,
+      id: updatedStepResult,
+    };
   }
 }
 

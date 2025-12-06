@@ -17,6 +17,13 @@ export type Env = DefaultEnv<typeof StateSchema> &
         params: unknown[];
       }) => Promise<{ result: { results: unknown[] }[] }>;
     };
+    AUTH: {
+      CALL_TOOL: (params: {
+        connection: string;
+        tool: string;
+        arguments: Record<string, unknown>;
+      }) => Promise<{ response: unknown }>;
+    };
   };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
@@ -40,7 +47,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
+    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL, Scopes.AUTH.CALL_TOOL],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -66,6 +73,11 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       name: "DATABASE",
       app_name: "@deco/database",
     },
+    {
+      type: "mcp",
+      name: "AUTH",
+      app_name: "@deco/auth",
+    },
   ],
   cors: {
     origin: (origin: string) => {
@@ -89,6 +101,7 @@ export default {
     if (url.pathname === "/_healthcheck") {
       return new Response("OK", { status: 200 });
     }
+
     return runtime.fetch(
       req,
       { ...process.env, BASE_URL: url.href } as Env,
