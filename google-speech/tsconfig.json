@@ -32,7 +32,7 @@
     },
 
     /* Types */
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@types/node", "vite/client"]
   },
   "include": [
     "server",

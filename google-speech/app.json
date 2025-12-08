@@ -1,0 +1,12 @@
+{
+  "scopeName": "deco-team",
+  "name": "google-speech",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-speech.decocache.com/mcp"
+  },
+  "description": "MCP server para conversão bidirecional entre texto e voz usando Google Cloud APIs",
+  "icon": "https://assets.decocache.com/mcp/google-speech/app.png",
+  "unlisted": false
+}
+

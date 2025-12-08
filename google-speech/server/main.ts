@@ -1,10 +1,9 @@
 /**
  * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * your MCP server at /mcp.
+ * MCP server. Serves your MCP server at /mcp.
  */
 import { z } from "zod";
-import { DefaultEnv, withRuntime } from "@decocms/runtime";
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
@@ -43,21 +42,15 @@ export const StateSchema = BaseStateSchema.extend({
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-    state: z.infer<typeof StateSchema>;
-  };
+export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
 
 const runtime = withRuntime<Env, typeof StateSchema>({
-  oauth: {
+  configuration: {
     /**
      * These scopes define the asking permissions of your
      * app when a user is installing it. When a user
      * authorizes your app for using AI_GENERATE, you will
-     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
+     * now be able to use `env.AI_GATEWAY.AI_GATEWAY`
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
@@ -81,17 +74,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools,
-  /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
-   */
-  fetch: (req, env) => {
-    if (env.ASSETS?.fetch) {
-      return env.ASSETS.fetch(req);
-    }
-    return new Response("Not Found", { status: 404 });
-  },
 });
 
 export default runtime;

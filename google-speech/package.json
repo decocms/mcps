@@ -1,34 +1,34 @@
 {
   "name": "google-speech",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
+  "description": "MCP server para conversão bidirecional entre texto e voz usando Google Cloud APIs",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev --vite",
+    "dev": "bun run --hot server/main.ts",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
-    "build": "bun --bun vite build"
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco-team -y",
+    "dev:tunnel": "deco link -p 3000 -- bun run dev"
   },
   "dependencies": {
-    "@decocms/runtime": "0.25.1",
+    "@decocms/bindings": "1.0.1-alpha.17",
+    "@decocms/runtime": "1.0.0-alpha.31",
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.13.4",
-    "@cloudflare/workers-types": "^4.20251014.0",
-    "@decocms/mcps-shared": "1.0.0",
-    "@mastra/core": "^0.24.0",
-    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@decocms/vite-plugin": "1.0.0-alpha.1",
+    "@modelcontextprotocol/sdk": "1.20.2",
     "@types/mime-db": "^1.43.6",
-    "deco-cli": "^0.26.0",
-    "typescript": "^5.7.2",
-    "vite": "7.2.0",
-    "wrangler": "^4.28.0"
+    "@types/node": "^22.0.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=22.0.0"
   }
 }
+

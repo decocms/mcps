@@ -2,6 +2,7 @@
  * Google Cloud Speech APIs Client
  * Handles Text-to-Speech and Speech-to-Text API calls
  */
+import { Buffer } from "node:buffer";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -71,7 +72,9 @@ async function makeTextToSpeechRequest(
   env: Env,
   body: unknown,
 ): Promise<SynthesizeSpeechResponse> {
-  const apiKey = env.state.apiKey;
+  console.log("env.state", env.state);
+  const apiKey = (env.state as any).GOOGLE_API_KEY;
+  console.log("apiKey", apiKey);
   if (!apiKey) {
     throw new Error("Google Cloud API Key is not configured");
   }
@@ -100,7 +103,7 @@ async function makeSpeechToTextRequest(
   env: Env,
   body: unknown,
 ): Promise<RecognizeSpeechResponse> {
-  const apiKey = env.state.apiKey;
+  const apiKey = (env.state as any).GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error("Google Cloud API Key is not configured");
   }
@@ -157,7 +160,7 @@ export async function synthesizeSpeech(
     },
   };
 
-  return makeTextToSpeechRequest(env, body);
+  return await makeTextToSpeechRequest(env, body);
 }
 
 /**
