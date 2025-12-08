@@ -80,7 +80,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       app_name: "@deco/auth",
     },
   ],
-
 });
 
 export default runtime;
