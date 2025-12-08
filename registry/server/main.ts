@@ -1,18 +1,30 @@
 /**
  * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * both your MCP server at /mcp and your views as a react
- * application at /.
+ * MCP server. This is a Bun app that serves
+ * your MCP server at /mcp.
  */
 
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
-  Scopes,
-  StateSchema,
+  StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
-import { ensureAgentsTable } from "./lib/postgres.ts";
+import { z } from "zod";
 import { tools } from "./tools/index.ts";
+
+/**
+ * StateSchema with MCP Registry configuration.
+ * Users can customize the registry URL when installing the MCP.
+ */
+export const StateSchema = BaseStateSchema.extend({
+  registryUrl: z
+    .string()
+    .url()
+    .optional()
+    .describe(
+      "URL do registry de MCP servers (padrão: https://registry.modelcontextprotocol.io/v0.1/servers)",
+    ),
+});
 
 /**
  * This Env type is the main context object that is passed to
@@ -25,9 +37,6 @@ export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
-    onChange: async (env) => {
-      await ensureAgentsTable(env);
-    },
     /**
      * These scopes define the asking permissions of your
      * app when a user is installing it. When a user
@@ -36,7 +45,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
+    scopes: [],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -55,14 +64,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     state: StateSchema,
   },
-  tools,
-  bindings: [
-    {
-      type: "mcp",
-      name: "DATABASE",
-      app_name: "@deco/database",
-    },
-  ],
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
+  bindings: [],
   cors: {
     origin: (origin) => {
       // Allow localhost and configured origins
@@ -78,7 +81,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
 });
 
-export default {
+const server = {
   fetch: (req: Request) => {
     if (new URL(req.url).pathname === "/_healthcheck") {
       return new Response("OK", { status: 200 });
@@ -86,3 +89,5 @@ export default {
     return runtime.fetch(req, { ...process.env } as Env, {});
   },
 };
+
+export default server;

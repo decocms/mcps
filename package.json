@@ -30,14 +30,15 @@
     "perplexity",
     "pinecone",
     "readonly-sql",
+    "registry",
     "replicate",
     "shared",
     "sora",
     "template-minimal",
     "template-with-view",
     "veo",
-    "whisper",
-    "vibecoding-toolkit"
+    "vibecoding-toolkit",
+    "whisper"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
