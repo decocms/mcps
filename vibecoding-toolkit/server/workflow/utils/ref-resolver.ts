@@ -285,7 +285,11 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
             errors.push({ ref: match, error: result.error });
             return match; // Keep original if resolution fails
           }
-          return String(result.value ?? "");
+          // Fix: JSON.stringify objects instead of String()
+          const val = result.value;
+          if (val === null || val === undefined) return "";
+          if (typeof val === "object") return JSON.stringify(val);
+          return String(val);
         }
         return match;
       });

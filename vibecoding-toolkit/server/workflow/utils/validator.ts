@@ -12,14 +12,14 @@
 
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateCode } from "./steps/code-step.ts";
+import { validateCode } from "../steps/code-step.ts";
 import {
   CodeActionSchema,
   Step,
   Trigger,
   Workflow,
 } from "@decocms/bindings/workflow";
-import { getStepType } from "./steps/step-executor.ts";
+import { getStepType } from "../steps/step-executor.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([

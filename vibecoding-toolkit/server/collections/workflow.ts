@@ -19,11 +19,17 @@ interface WorkflowQueries {
   executionStepResultsTableIndexesQuery: string;
   workflowEventsTableIdempotentQuery: string;
   workflowEventsTableIndexesQuery: string;
+  stepStreamChunksTableIdempotentQuery: string;
+  stepStreamChunksTableIndexesQuery: string;
 }
 
 function transformDbRowToEvent(row: Record<string, unknown>): WorkflowEvent {
   const transformed = {
     ...row,
+    created_at: epochMsToIsoString(Number(row.created_at)),
+    title: row.title ?? `Event ${row.id}`,
+    updated_at: epochMsToIsoString(Number(row.updated_at ?? Date.now())),
+    visible_at: Number(row.visible_at),
     payload: row.payload
       ? typeof row.payload === "string"
         ? JSON.parse(row.payload)

@@ -10,7 +10,10 @@
 import type { Env } from "../../main.ts";
 import { transformDbRowToEvent } from "../../collections/workflow.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
-import { Scheduler } from "../scheduler.ts";
+import { ScheduleOptions, Scheduler } from "../scheduler.ts";
+import { executeWorkflowTool } from "../tools.ts";
+import { DefaultEnv } from "@decocms/runtime";
+import { AppContext } from "@decocms/runtime/tools";
 
 /**
  * Add an event to the workflow events table
@@ -20,7 +23,7 @@ export async function addEvent(
   event: Omit<WorkflowEvent, "id" | "created_at"> & { created_at?: number },
 ): Promise<WorkflowEvent> {
   const id = crypto.randomUUID();
-  const created_at = event.created_at ?? new Date().toISOString();
+  const created_at = event.created_at ?? Date.now();
 
   await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -40,7 +43,11 @@ export async function addEvent(
     ],
   });
 
-  return { ...event, id, created_at } as WorkflowEvent;
+  return {
+    ...event,
+    id,
+    created_at: new Date(created_at).toISOString(),
+  } as WorkflowEvent;
 }
 
 /**
@@ -128,6 +135,7 @@ export async function sendSignal(
     authorization?: string;
     /** Optional scheduler (will be created from env if not provided) */
     scheduler?: Scheduler;
+    runtimeContext?: unknown;
   },
 ): Promise<WorkflowEvent> {
   const event = await addEvent(env, {
@@ -144,6 +152,7 @@ export async function sendSignal(
   if (options?.wakeExecution !== false) {
     await wakeExecution(env, executionId, {
       authorization: options?.authorization,
+      runtimeContext: options?.runtimeContext,
       scheduler: options?.scheduler,
     });
   }
@@ -199,6 +208,7 @@ export async function wakeExecution(
     delayMs?: number;
     authorization?: string;
     scheduler?: Scheduler;
+    runtimeContext?: unknown;
   },
 ): Promise<void> {
   // Update timestamp (for polling schedulers)
@@ -207,8 +217,25 @@ export async function wakeExecution(
     params: [Date.now(), executionId],
   });
 
-  // Use QStash scheduler for workflow execution
-  const scheduler = options?.scheduler ?? ({} as Scheduler); // TODO: Implement scheduler
+  const scheduler =
+    options?.scheduler ??
+    ({
+      schedule: async (executionId: string, options: ScheduleOptions) => {
+        executeWorkflowTool(env)
+          .execute({
+            context: {
+              executionId,
+            },
+            runtimeContext: options?.runtimeContext as unknown as AppContext<
+              DefaultEnv<any>
+            >,
+          })
+          .catch((error) => {
+            console.error("🚀 ~ Error executing workflow:", error);
+            throw error;
+          });
+      },
+    } as Scheduler); // TODO: Implement scheduler
   const authorization =
     options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
 

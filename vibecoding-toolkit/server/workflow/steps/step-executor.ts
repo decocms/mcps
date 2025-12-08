@@ -7,8 +7,8 @@
 
 import type { Env } from "../../main.ts";
 import type { CodeAction, Step } from "@decocms/bindings/workflow";
-import type { RefContext } from "../ref-resolver.ts";
-import { isAtRef, resolveRef } from "../ref-resolver.ts";
+import type { RefContext } from "../../workflow/utils/ref-resolver.ts";
+import { isAtRef, resolveRef } from "../../workflow/utils/ref-resolver.ts";
 import {
   SleepActionSchema,
   ToolCallActionSchema,
@@ -16,9 +16,16 @@ import {
 } from "@decocms/bindings/workflow";
 import { executeCode } from "./code-step.ts";
 import { consumeSignal, getSignals } from "../events/signals.ts";
-import { DurableSleepError, WaitingForSignalError } from "../errors.ts";
+import {
+  DurableSleepError,
+  WaitingForSignalError,
+} from "../../workflow/utils/errors.ts";
 import { checkTimer, scheduleTimer } from "../events/events.ts";
-import { createStepResult, updateStepResult } from "server/lib/execution-db.ts";
+import {
+  createStepResult,
+  updateStepResult,
+  writeStreamChunk,
+} from "../../lib/execution-db.ts";
 
 export interface StepResult {
   id?: string;
@@ -30,6 +37,32 @@ export interface StepResult {
   excludeFromWorkflowOutput?: boolean;
 }
 
+export function responseToStream(response: Response): ReadableStream<unknown> {
+  if (!response.body) {
+    throw new Error("Response body is null");
+  }
+
+  return response.body.pipeThrough(new TextDecoderStream()).pipeThrough(
+    new TransformStream<string, unknown>({
+      transform(chunk, controller) {
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const parsed = JSON.parse(line) as unknown;
+              controller.enqueue(parsed);
+            } catch (error) {
+              console.error("Failed to parse stream chunk:", error);
+              throw error;
+            }
+          }
+        }
+      },
+    }),
+  );
+}
+
 export class StepExecutor {
   private env: Env;
 
@@ -37,9 +70,16 @@ export class StepExecutor {
     this.env = env;
   }
 
+  /**
+   * Execute a tool step with live streaming to the database.
+   *
+   * Streams each chunk to step_stream_chunks table for real-time visibility,
+   * then saves the final accumulated result to step_results when complete.
+   */
   private async executeToolStep(
     step: Step,
     input: Record<string, unknown>,
+    executionId: string,
   ): Promise<StepResult> {
     const parsed = ToolCallActionSchema.safeParse(step.action);
     if (!parsed.success) {
@@ -47,30 +87,74 @@ export class StepExecutor {
     }
 
     const { connectionId, toolName } = parsed.data;
-    console.log({
-      toolName,
-      connectionId,
-      input,
-    });
+    console.log("[TOOL STEP]", { toolName, connectionId, input });
 
     if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
       throw new Error("MESH_URL is not set");
     }
 
-    const response = await this.env.AUTH.CALL_TOOL({
-      connection: connectionId,
-      tool: toolName,
-      arguments: input,
-    });
+    const startedAt = Date.now();
 
-    const result = response.response;
+    const response = await fetch(
+      `${this.env.MESH_REQUEST_CONTEXT.meshUrl}/mcp/${connectionId}/stream/${toolName}`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.env.MESH_REQUEST_CONTEXT.token}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Tool call failed: ${response.status} - ${errorText}`);
+    }
+
+    const stream = responseToStream(response);
+    const reader = stream.getReader();
+
+    const chunks: unknown[] = [];
+    let chunkIndex = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        await writeStreamChunk(
+          this.env,
+          executionId,
+          step.name,
+          chunkIndex,
+          value,
+        );
+
+        chunks.push(value);
+        chunkIndex++;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    console.log(
+      `[TOOL STEP] Completed ${step.name} with ${chunks.length} chunks`,
+    );
+
+    // Determine final output - single chunk or array of chunks
+    const output = chunks.length === 1 ? chunks[0] : chunks;
+
+    // Clean up stream chunks after step completes (optional - keep for debugging)
+    // await deleteStreamChunks(this.env, executionId, step.name);
 
     return {
       status: "success",
-      output: result,
-      startedAt: Date.now(),
+      output,
+      startedAt,
       completedAt: Date.now(),
-      excludeFromWorkflowOutput: isLargeOutput(result),
+      excludeFromWorkflowOutput: isLargeOutput(output),
     };
   }
 
@@ -167,6 +251,15 @@ export class StepExecutor {
     executionId: string,
     existingStepResult?: { started_at_epoch_ms?: number | null },
   ): Promise<StepResult> {
+    console.log("🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ step:", step);
+    console.log(
+      "🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ executionId:",
+      executionId,
+    );
+    console.log(
+      "🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ existingStepResult:",
+      existingStepResult,
+    );
     const parsed = WaitForSignalActionSchema.safeParse(step.action);
     if (!parsed.success) {
       throw new Error("waitForSignal step missing configuration");
@@ -184,9 +277,6 @@ export class StepExecutor {
 
     if (matching?.signal_name) {
       await consumeSignal(this.env, matching.id);
-      console.log(
-        `[SIGNAL] Step '${step.name}' received signal '${signalName}'`,
-      );
       return {
         status: "success",
         output: {
@@ -232,7 +322,7 @@ export class StepExecutor {
 
     switch (stepType) {
       case "tool": {
-        result = await this.executeToolStep(step, resolvedInput);
+        result = await this.executeToolStep(step, resolvedInput, executionId);
         break;
       }
 

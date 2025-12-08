@@ -78,7 +78,6 @@ function transformDbRowToExecution(
   row: Record<string, unknown> = {},
 ): WorkflowExecution {
   const parsedError = safeJsonParse(row.error);
-  console.log("🚀 ~ transformDbRowToExecution ~ parsedError:", parsedError);
   const transformed = {
     ...row,
     // BaseCollectionEntitySchema expects title but workflow_executions doesn't have one
@@ -95,8 +94,6 @@ function transformDbRowToExecution(
     input: safeJsonParse(row.input),
     error: Array.isArray(parsedError) ? parsedError.join("; ") : parsedError,
   };
-
-  console.log("🚀 ~ transformDbRowToExecution ~ transformed:", transformed);
 
   return WorkflowExecutionSchema.parse(transformed);
 }
@@ -189,8 +186,6 @@ export async function updateExecution(
   setClauses.push(`updated_at = ?`);
   params.push(now);
 
-  console.log("🚀 ~ updateExecution ~ data:", data);
-
   // Conditionally update other fields
   if (data.status !== undefined) {
     setClauses.push(`status = ?`);
@@ -235,16 +230,6 @@ export async function updateExecution(
 
   params.push(id);
 
-  console.log("🚀 ~ updateExecution ~ setClauses:", setClauses);
-  const sql = `
-    UPDATE workflow_executions
-    SET ${setClauses.join(", ")}
-    WHERE id = ?
-    RETURNING *
-  `;
-  console.log("🚀 ~ updateExecution ~ sql:", sql);
-  console.log("🚀 ~ updateExecution ~ params:", params);
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions
@@ -254,8 +239,6 @@ export async function updateExecution(
     `,
     params,
   });
-
-  console.log("🚀 ~ updateExecution ~ result:", result);
 
   if (!result.result[0]?.results?.length) {
     throw new Error(`Workflow execution with id ${id} not found`);
@@ -321,7 +304,6 @@ export async function cancelExecution(
     return null;
   }
 
-  console.log(`[CANCEL] Cancelled execution ${executionId}`);
   return transformDbRowToExecution(row);
 }
 
@@ -432,7 +414,6 @@ export async function listExecutions(
     transformDbRowToExecution(row as Record<string, unknown>),
   );
 
-  console.log("🚀 ~ listExecutions ~ items:", items);
   return {
     items,
     totalCount,
@@ -467,8 +448,6 @@ function transformDbRowToStepResult(
     error: safeJsonParse(row.error),
   };
 
-  console.log("🚀 ~ transformDbRowToStepResult ~ transformed:", transformed);
-
   return WorkflowExecutionStepResultSchema.parse(transformed);
 }
 
@@ -479,15 +458,12 @@ export async function getStepResults(
   env: Env,
   executionId?: string,
 ): Promise<WorkflowExecutionStepResult[]> {
-  console.log("🚀 ~ getStepResults ~ executionId:", executionId);
   const whereClause = executionId ? `WHERE execution_id = ?` : "";
   const params = executionId ? [executionId] : [];
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `SELECT * FROM execution_step_results ${whereClause}`,
     params,
   });
-
-  console.log("🚀 ~ getStepResults ~ result:", result);
 
   return (result.result[0]?.results || []).map((row: unknown) =>
     transformDbRowToStepResult(row as Record<string, unknown>),
@@ -539,8 +515,6 @@ export async function createStepResult(
 ): Promise<CreateStepResultOutcome> {
   const startedAt = data.started_at_epoch_ms ?? Date.now();
 
-  console.log("🚀 ~ createStepResult ~ data:", data);
-
   // Try to INSERT - if UNIQUE conflict, RETURNING gives nothing
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -552,8 +526,6 @@ export async function createStepResult(
     `,
     params: [data.execution_id, data.step_id, startedAt],
   });
-
-  console.log("🚀 ~ createStepResult ~ result:", result);
 
   // If we got a row back, we won the race (created it)
   if (result.result[0]?.results?.length) {
@@ -593,10 +565,6 @@ export async function updateStepResult(
     completed_at_epoch_ms: number;
   }>,
 ): Promise<WorkflowExecutionStepResult> {
-  console.log("🚀 ~ updateStepResult ~ executionId:", executionId);
-  console.log("🚀 ~ updateStepResult ~ stepId:", stepId);
-  console.log("🚀 ~ updateStepResult ~ data:", data);
-
   const setClauses: string[] = [];
   const params: unknown[] = [];
 
@@ -626,12 +594,6 @@ export async function updateStepResult(
 
   params.push(executionId, stepId);
 
-  console.log("🚀 ~ updateStepResult ~ setClauses:", setClauses);
-  console.log(
-    "🚀 ~ updateStepResult ~ params:",
-    params.map((p: any) => p?.toString().slice(0, 1000)),
-  );
-
   const sql = `
     UPDATE execution_step_results
     SET ${setClauses.join(", ")}
@@ -645,8 +607,6 @@ export async function updateStepResult(
     params,
   });
 
-  console.log("🚀 ~ updateStepResult ~ result:", result);
-
   // If no rows updated, the step was already completed (we lost the race)
   if (!result.result[0]?.results?.length) {
     const existing = await getStepResult(env, executionId, stepId);
@@ -657,4 +617,122 @@ export async function updateStepResult(
   return transformDbRowToStepResult(
     result.result[0]?.results?.[0] as Record<string, unknown>,
   );
+}
+
+// ============================================================================
+// Stream Chunks - Live streaming from tool calls
+// ============================================================================
+
+export interface StreamChunk {
+  id: string;
+  execution_id: string;
+  step_id: string;
+  chunk_index: number;
+  chunk_data: unknown;
+  created_at: number;
+}
+
+/**
+ * Write a stream chunk to the database for live streaming visibility.
+ * Uses UPSERT to handle duplicate writes (idempotent).
+ */
+export async function writeStreamChunk(
+  env: Env,
+  executionId: string,
+  stepId: string,
+  chunkIndex: number,
+  chunkData: unknown,
+): Promise<void> {
+  const id = `${executionId}/${stepId}/${chunkIndex}`;
+  const now = Date.now();
+
+  await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `
+      INSERT INTO step_stream_chunks (id, execution_id, step_id, chunk_index, chunk_data, created_at)
+      VALUES (?, ?, ?, ?, ?::jsonb, ?)
+      ON CONFLICT (execution_id, step_id, chunk_index) DO NOTHING
+    `,
+    params: [
+      id,
+      executionId,
+      stepId,
+      chunkIndex,
+      JSON.stringify(chunkData),
+      now,
+    ],
+  });
+}
+
+/**
+ * Get stream chunks for an execution that are newer than the last seen indices.
+ * Returns chunks ordered by creation time.
+ */
+export async function getStreamChunks(
+  env: Env,
+  executionId: string,
+  lastSeenIndices: Record<string, number> = {},
+): Promise<StreamChunk[]> {
+  const params: unknown[] = [executionId];
+
+  // For each step we've seen, only get chunks with index > lastSeen
+  // For steps we haven't seen, get all chunks
+  const stepConditions = Object.entries(lastSeenIndices).map(
+    ([stepId, lastIndex], idx) => {
+      params.push(stepId, lastIndex);
+      return `(step_id = $${idx * 2 + 2} AND chunk_index > $${idx * 2 + 3})`;
+    },
+  );
+
+  // Also get chunks for steps we haven't seen yet
+  const seenStepIds = Object.keys(lastSeenIndices);
+  let whereClause = "execution_id = $1";
+
+  if (seenStepIds.length > 0) {
+    // Get chunks for known steps (only new ones) OR chunks for unknown steps
+    const seenList = seenStepIds.map((s) => `'${s}'`).join(",");
+    whereClause += ` AND ((${stepConditions.join(" OR ")}) OR step_id NOT IN (${seenList}))`;
+  }
+
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `
+      SELECT id, execution_id, step_id, chunk_index, chunk_data, created_at
+      FROM step_stream_chunks
+      WHERE ${whereClause}
+      ORDER BY created_at ASC, chunk_index ASC
+    `,
+    params,
+  });
+
+  return (result.result[0]?.results || []).map((row: unknown) => {
+    const r = row as Record<string, unknown>;
+    return {
+      id: r.id as string,
+      execution_id: r.execution_id as string,
+      step_id: r.step_id as string,
+      chunk_index: Number(r.chunk_index),
+      chunk_data: safeJsonParse(r.chunk_data),
+      created_at: Number(r.created_at),
+    };
+  });
+}
+
+/**
+ * Delete stream chunks for a specific step (cleanup after step completes).
+ */
+export async function deleteStreamChunks(
+  env: Env,
+  executionId: string,
+  stepId?: string,
+): Promise<void> {
+  if (stepId) {
+    await env.DATABASE.DATABASES_RUN_SQL({
+      sql: `DELETE FROM step_stream_chunks WHERE execution_id = ? AND step_id = ?`,
+      params: [executionId, stepId],
+    });
+  } else {
+    await env.DATABASE.DATABASES_RUN_SQL({
+      sql: `DELETE FROM step_stream_chunks WHERE execution_id = ?`,
+      params: [executionId],
+    });
+  }
 }

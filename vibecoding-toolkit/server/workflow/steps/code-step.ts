@@ -175,6 +175,10 @@ export async function executeCode(
       typeof log === "string" ? log : JSON.stringify(log),
     );
 
+    console.log("Code step output:", {
+      logs,
+    });
+
     return {
       status: "success",
       output,

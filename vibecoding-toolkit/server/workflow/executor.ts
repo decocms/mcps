@@ -11,13 +11,33 @@
  */
 
 import type { Env } from "../main.ts";
-import type { RefContext } from "./ref-resolver.ts";
-import { canResolveAllRefs, resolveAllRefs } from "./ref-resolver.ts";
+import type { RefContext } from "./utils/ref-resolver.ts";
+import {
+  canResolveAllRefs,
+  resolveAllRefs,
+  resolveRef,
+} from "./utils/ref-resolver.ts";
 import { getStepResults, updateExecution } from "../lib/execution-db.ts";
 import { lockWorkflowExecution, releaseLock } from "./lock.ts";
 import type { Step, Trigger } from "@decocms/bindings/workflow";
 import { getWorkflow } from "server/tools/workflow.ts";
-import { StepExecutor } from "./steps/step-executor.ts";
+import { StepExecutor, StepResult } from "./steps/step-executor.ts";
+
+function parseForEachItems(value: unknown): unknown[] {
+  // Already an array
+  if (Array.isArray(value)) return value;
+
+  // LLM output format: { content: [{ text: "..." }] }
+  if (typeof value === "object" && value !== null && "content" in value) {
+    const text = (value as { content: { text: string }[] }).content?.[0]?.text;
+    if (text) {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  }
+
+  throw new Error(`forEach items must resolve to an array`);
+}
 
 interface TriggerResult {
   triggerId: string;
@@ -25,6 +45,7 @@ interface TriggerResult {
   executionIds?: string[];
   error?: string;
 }
+
 async function fireTriggers(
   env: Env,
   triggers: Trigger[],
@@ -86,6 +107,62 @@ async function enqueueTrigger(
   return executionId;
 }
 
+async function executeForEach(
+  step: Step,
+  ctx: RefContext,
+  stepExecutor: StepExecutor,
+  executionId: string,
+): Promise<{ outputs: unknown[]; stepIds: string[] }> {
+  const config = step.config!.forEach!;
+  const items = parseForEachItems(
+    resolveRef(config.items as `@${string}`, ctx).value,
+  );
+
+  const mode = config.mode ?? "sequential";
+  const concurrency = config.maxConcurrency ?? items.length;
+
+  const executeItem = async (item: unknown, index: number) => {
+    const itemCtx: RefContext = { ...ctx, item, index };
+    const input = resolveAllRefs(step.input, itemCtx).resolved as Record<
+      string,
+      unknown
+    >;
+    return stepExecutor.executeStep(
+      { ...step, name: `${step.name}[${index}]` },
+      input,
+      itemCtx,
+      executionId,
+      { started_at_epoch_ms: Date.now() },
+    );
+  };
+
+  if (mode === "sequential") {
+    const results = [];
+    for (let i = 0; i < items.length; i++) {
+      results.push(await executeItem(items[i], i));
+    }
+    return {
+      outputs: results.map((r) => r.output),
+      stepIds: results.map((r) => r.id!),
+    };
+  }
+
+  // Parallel with concurrency limit
+  const results: StepResult[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map((item, j) => executeItem(item, i + j)),
+    );
+    results.push(...batchResults);
+  }
+
+  return {
+    outputs: results.map((r) => r.output),
+    stepIds: results.map((r) => r.id!),
+  };
+}
+
 const DEFAULT_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export async function executeWorkflow(env: Env, executionId: string) {
   let lockId: string | undefined;
@@ -130,24 +207,33 @@ export async function executeWorkflow(env: Env, executionId: string) {
 
     const stepExecutor = new StepExecutor(env);
     for (const step of steps) {
-      const resolvedInput = resolveAllRefs(step.input, ctx).resolved as Record<
-        string,
-        unknown
-      >;
-      const result = await stepExecutor.executeStep(
-        step,
-        resolvedInput,
-        ctx,
-        executionId,
-        {
-          started_at_epoch_ms: Date.now(),
-        },
-      );
-      if (!result.id) {
-        throw new Error(`Step result id is required`);
+      if (step.config?.forEach) {
+        const { outputs, stepIds } = await executeForEach(
+          step,
+          ctx,
+          stepExecutor,
+          executionId,
+        );
+        stepOutputs.set(step.name, outputs);
+        completedSteps.push(...stepIds);
+      } else {
+        const input = resolveAllRefs(step.input, ctx).resolved as Record<
+          string,
+          unknown
+        >;
+        const result = await stepExecutor.executeStep(
+          step,
+          input,
+          ctx,
+          executionId,
+          {
+            started_at_epoch_ms: Date.now(),
+          },
+        );
+        if (!result.id) throw new Error(`Step result id is required`);
+        stepOutputs.set(step.name, result.output);
+        completedSteps.push(result.id);
       }
-      stepOutputs.set(result.id, result.output);
-      completedSteps.push(result.id);
     }
 
     // Fire triggers - use the full step output (not excluded) for ref resolution

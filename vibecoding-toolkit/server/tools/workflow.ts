@@ -2,7 +2,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../main.ts";
 import { z } from "zod";
-import { validateWorkflow } from "../workflow/validator.ts";
+import { validateWorkflow } from "../workflow/utils/validator.ts";
 import {
   Workflow,
   WORKFLOW_BINDING,
@@ -176,15 +176,15 @@ export const createGetTool = (env: Env) =>
     },
   });
 
-const DEFAULT_WORKFLOW: Workflow = {
-  id: crypto.randomUUID(),
-  title: "New Workflow",
-  description: "A new workflow",
+const createDefaultWorkflow = (id?: string): Workflow => ({
+  id: id || crypto.randomUUID(),
+  title: "Default Workflow",
+  description: "The default workflow for the toolkit",
   steps: [
     {
       name: "Step 1",
       action: {
-        connectionId: "conn_XXrfo-eDysOYg3G5daZ2R",
+        connectionId: "conn_XXrfo-eDysOYg3G5daZ2R", // TODO @franca: this should be a binding
         toolName: "LLM_DO_GENERATE",
       },
       input: {
@@ -208,7 +208,22 @@ const DEFAULT_WORKFLOW: Workflow = {
   triggers: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-};
+});
+export async function insertDefaultWorkflowIfNotExists(env: Env) {
+  try {
+    const result = await env.DATABASE.DATABASES_RUN_SQL({
+      sql: "SELECT * FROM workflows WHERE id = ? LIMIT 1",
+      params: [createDefaultWorkflow("default").id],
+    });
+    if ((result.result[0]?.results as unknown[])?.length > 0) {
+      return;
+    }
+    await insertWorkflow(env, createDefaultWorkflow("default"));
+  } catch (error) {
+    console.error("Error inserting default workflow:", error);
+    throw error;
+  }
+}
 
 export async function insertWorkflow(env: Env, data?: Workflow) {
   try {
@@ -216,7 +231,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
     const now = new Date().toISOString();
 
     const workflow = {
-      ...DEFAULT_WORKFLOW,
+      ...createDefaultWorkflow(),
       ...data,
     };
 
@@ -265,21 +280,12 @@ export const createInsertTool = (env: Env) =>
     }: {
       context: z.infer<typeof CREATE_BINDING.inputSchema>;
     }) => {
-      try {
-        const { data } = context;
-        const workflow = {
-          ...DEFAULT_WORKFLOW,
-          ...data,
-          id: crypto.randomUUID(),
-        };
-        await insertWorkflow(env, workflow);
-        return {
-          item: workflow,
-        };
-      } catch (error) {
-        console.error("Error creating workflow:", error);
-        throw error;
-      }
+      const { data } = context;
+      const workflow = {
+        ...createDefaultWorkflow(),
+        ...data,
+      };
+      return await insertWorkflow(env, workflow);
     },
   });
 export const createUpdateTool = (env: Env) =>

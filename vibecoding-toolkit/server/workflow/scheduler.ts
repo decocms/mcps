@@ -16,5 +16,6 @@ export interface Scheduler {
 
 export interface ScheduleOptions {
   authorization: string;
+  runtimeContext?: unknown;
   retryCount?: number;
 }

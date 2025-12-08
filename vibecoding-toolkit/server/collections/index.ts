@@ -27,6 +27,10 @@ const collectionsQueries = {
     idempotent: postgresQueries.workflowEventsTableIdempotentQuery,
     indexes: postgresQueries.workflowEventsTableIndexesQuery,
   },
+  step_stream_chunks: {
+    idempotent: postgresQueries.stepStreamChunksTableIdempotentQuery,
+    indexes: postgresQueries.stepStreamChunksTableIndexesQuery,
+  },
 };
 
 async function ensureCollections(env: Env) {
@@ -43,4 +47,14 @@ async function ensureCollections(env: Env) {
   }
 }
 
-export { collectionsQueries, ensureCollections };
+async function ensureIndexes(env: Env) {
+  for (const collection of Object.values(collectionsQueries)) {
+    try {
+      await runSQL(env, collection.indexes);
+    } catch (error) {
+      console.error(`Error ensuring indexes ${collection.indexes}`, error);
+    }
+  }
+}
+
+export { collectionsQueries, ensureCollections, ensureIndexes };

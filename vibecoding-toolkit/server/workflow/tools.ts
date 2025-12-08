@@ -269,7 +269,7 @@ export const sendSignalTool = (env: Env) =>
       signalId: z.string().optional(),
       message: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
       const { executionId, signalName, payload } = context;
 
       const execution = await getExecution(env, executionId);
@@ -284,6 +284,7 @@ export const sendSignalTool = (env: Env) =>
         name: signalName,
         payload,
         authorization: env.MESH_REQUEST_CONTEXT?.token,
+        runtimeContext,
       });
 
       return {
