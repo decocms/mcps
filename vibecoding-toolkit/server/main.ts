@@ -80,33 +80,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       app_name: "@deco/auth",
     },
   ],
-  cors: {
-    origin: (origin: string) => {
-      // Allow localhost and configured origins
-      if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-        return origin;
-      }
-      // TODO: Configure allowed origins from environment
-      return origin;
-    },
-    credentials: true,
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
-  },
+
 });
 
-export default {
-  fetch: (req: Request) => {
-    const url = new URL(req.url);
-
-    if (url.pathname === "/_healthcheck") {
-      return new Response("OK", { status: 200 });
-    }
-
-    return runtime.fetch(
-      req,
-      { ...process.env, BASE_URL: url.href } as Env,
-      {},
-    );
-  },
-};
+export default runtime;

@@ -4,6 +4,7 @@ First-party MCPs maintained by the decocms team.
 
 ## Getting Started
 
+
 After cloning the repository, install dependencies:
 
 ```bash
@@ -135,4 +136,3 @@ Just create a new directory with a `package.json` - that's it! The workflows wil
 3. Deploy it when changes are pushed
 
 No manual workflow configuration needed! 
-

@@ -3,13 +3,12 @@
  * Get AI model recommendations based on task requirements
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
+import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
-import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import type { Env } from "../../main.ts";
 import { recommendModelsForTask } from "./utils.ts";
-import type { TaskRequirements } from "../../lib/types.ts";
-import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 export const createRecommendModelTool = (env: Env) =>
   createPrivateTool({
@@ -89,11 +88,7 @@ export const createRecommendModelTool = (env: Env) =>
         )
         .describe("Top recommended models ordered by score"),
     }),
-    execute: async ({
-      context,
-    }: {
-      context: { taskDescription: string; requirements?: TaskRequirements };
-    }) => {
+    execute: async ({ context }) => {
       const { taskDescription, requirements = {} } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
