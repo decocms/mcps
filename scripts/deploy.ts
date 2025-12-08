@@ -59,8 +59,13 @@ if (!existsSync(packageJsonPath)) {
   process.exit(1);
 }
 
+// Check if app.json exists to determine deployment method
+const appJsonPath = join(mcpPath, "app.json");
+const useRegistryPublish = existsSync(appJsonPath);
+
 console.log(`\n🚀 Deploying MCP: ${mcpName}`);
 console.log(`📁 Path: ${mcpPath}`);
+console.log(`🔧 Method: ${useRegistryPublish ? "Registry Publish" : "Deploy"}`);
 console.log(`🔧 Mode: ${isPreview ? "Preview" : "Production"}\n`);
 
 try {
@@ -75,15 +80,17 @@ try {
   console.log("📦 Installing dependencies...");
   await $`bun install`;
 
-  // Build
-  console.log("🔨 Building...");
-  await $`bun run build`;
+  // Build (only needed for traditional deploy, not registry publish)
+  if (!useRegistryPublish) {
+    console.log("🔨 Building...");
+    await $`bun run build`;
 
-  // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
-  const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
-  if (existsSync(wranglerJsonPath)) {
-    console.log("🧹 Removing wrangler.json from build output...");
-    await $`rm ${wranglerJsonPath}`;
+    // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
+    const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
+    if (existsSync(wranglerJsonPath)) {
+      console.log("🧹 Removing wrangler.json from build output...");
+      await $`rm ${wranglerJsonPath}`;
+    }
   }
 
   // Deploy
@@ -95,72 +102,92 @@ try {
     process.exit(1);
   }
 
-  console.log(`🚀 Deploying to ${isPreview ? "preview" : "production"}...`);
+  if (useRegistryPublish) {
+    // Registry publish path (when app.json exists)
+    console.log(`📦 Publishing to registry...`);
 
-  // Build deploy command with env variables
-  const baseCmd = isPreview
-    ? [
-        "deco",
-        "deploy",
-        "-y",
-        "--public",
-        "--no-promote",
-        "./dist/server",
-        "-t",
-        deployToken,
-      ]
-    : ["deco", "deploy", "-y", "--public", "./dist/server", "-t", deployToken];
+    await $`${["deco", "registry", "publish", "-f", "app.json", "-w", "/shared/deco", "-t", deployToken, "-y"]}`;
 
-  const envVarsToPass = [
-    "OPENAI_API_KEY",
-    "GOOGLE_GENAI_API_KEY",
-    "NANOBANANA_API_KEY",
-    "OPENROUTER_API_KEY",
-    "PINECONE_TOKEN",
-    "PINECONE_INDEX",
-    "APIFY_TOKEN",
-    "REPLICATE_API_TOKEN",
-  ];
-
-  const autoEnvArgs: string[] = [];
-  for (const envVar of envVarsToPass) {
-    if (process.env[envVar]) {
-      autoEnvArgs.push(`${envVar}=${process.env[envVar]}`);
-    }
-  }
-
-  for (const envVar of envArgs) {
-    baseCmd.push("--env", envVar);
-  }
-
-  for (const envVar of autoEnvArgs) {
-    baseCmd.push("--env", envVar);
-  }
-
-  const totalEnvVars = envArgs.length + autoEnvArgs.length;
-  if (totalEnvVars > 0) {
-    console.log(
-      `🔐 Setting ${totalEnvVars} environment variable(s) (${autoEnvArgs.length} auto-detected)`,
-    );
-  }
-
-  const result = await $`${baseCmd}`.quiet();
-
-  // Try to extract preview URL from output if in preview mode
-  if (isPreview) {
-    const output = result.stdout.toString();
-    const urlMatch = output.match(/https:\/\/[^\s]+/);
-    if (urlMatch) {
-      const previewUrl = urlMatch[0];
-      console.log(`\n✅ Preview deployed successfully!`);
-      console.log(`🔗 Preview URL: ${previewUrl}`);
-
-      // Output for GitHub Actions to capture
-      console.log(`\n::set-output name=preview_url::${previewUrl}`);
-      console.log(`::set-output name=mcp_name::${mcpName}`);
-    }
+    console.log(`\n✅ Published successfully to registry!`);
   } else {
-    console.log(`\n✅ Deployed successfully to production!`);
+    // Traditional deploy path (when app.json doesn't exist)
+
+    console.log(`🚀 Deploying to ${isPreview ? "preview" : "production"}...`);
+
+    // Build deploy command with env variables
+    const baseCmd = isPreview
+      ? [
+          "deco",
+          "deploy",
+          "-y",
+          "--public",
+          "--no-promote",
+          "./dist/server",
+          "-t",
+          deployToken,
+        ]
+      : [
+          "deco",
+          "deploy",
+          "-y",
+          "--public",
+          "./dist/server",
+          "-t",
+          deployToken,
+        ];
+
+    const envVarsToPass = [
+      "OPENAI_API_KEY",
+      "GOOGLE_GENAI_API_KEY",
+      "NANOBANANA_API_KEY",
+      "OPENROUTER_API_KEY",
+      "PINECONE_TOKEN",
+      "PINECONE_INDEX",
+      "APIFY_TOKEN",
+      "REPLICATE_API_TOKEN",
+      "PERPLEXITY_API_KEY",
+    ];
+
+    const autoEnvArgs: string[] = [];
+    for (const envVar of envVarsToPass) {
+      if (process.env[envVar]) {
+        autoEnvArgs.push(`${envVar}=${process.env[envVar]}`);
+      }
+    }
+
+    for (const envVar of envArgs) {
+      baseCmd.push("--env", envVar);
+    }
+
+    for (const envVar of autoEnvArgs) {
+      baseCmd.push("--env", envVar);
+    }
+
+    const totalEnvVars = envArgs.length + autoEnvArgs.length;
+    if (totalEnvVars > 0) {
+      console.log(
+        `🔐 Setting ${totalEnvVars} environment variable(s) (${autoEnvArgs.length} auto-detected)`,
+      );
+    }
+
+    const result = await $`${baseCmd}`.quiet();
+
+    // Try to extract preview URL from output if in preview mode
+    if (isPreview) {
+      const output = result.stdout.toString();
+      const urlMatch = output.match(/https:\/\/[^\s]+/);
+      if (urlMatch) {
+        const previewUrl = urlMatch[0];
+        console.log(`\n✅ Preview deployed successfully!`);
+        console.log(`🔗 Preview URL: ${previewUrl}`);
+
+        // Output for GitHub Actions to capture
+        console.log(`\n::set-output name=preview_url::${previewUrl}`);
+        console.log(`::set-output name=mcp_name::${mcpName}`);
+      }
+    } else {
+      console.log(`\n✅ Deployed successfully to production!`);
+    }
   }
 
   process.exit(0);

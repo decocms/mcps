@@ -7,60 +7,57 @@
  * OpenRouter offers a unified API for accessing hundreds of AI models
  * with built-in fallback mechanisms, cost optimization, and provider routing.
  */
-import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import {
-  type Env as DecoEnv,
-  Scopes,
-  StateSchema as BaseStateSchema,
-} from "../shared/deco.gen.ts";
-import { z } from "zod";
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 
 import { tools } from "./tools/index.ts";
-import { handleCustomRoutes } from "./routes/index.ts";
-
-/**
- * State Schema defines the configuration users provide during installation
- */
-export const StateSchema = BaseStateSchema;
 
 /**
  * Environment type combining Deco bindings and Cloudflare Workers context
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-    OPENROUTER_API_KEY: string;
-    state: z.infer<typeof StateSchema>;
-  };
+export type Env = DefaultEnv;
 
-const runtime = withRuntime<Env, typeof StateSchema>({
+const runtime = withRuntime<Env>({
   oauth: {
-    scopes: [
-      Scopes.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE,
-      Scopes.OPENROUTER_CONTRACT.CONTRACT_SETTLE,
-    ],
-    state: StateSchema,
+    mode: "PKCE",
+    // Used in protected resource metadata to point to the auth server
+    authorizationServer: "https://openrouter.ai",
+
+    // Generates the URL to redirect users to for authorization
+    authorizationUrl: (callbackUrl) => {
+      const url = new URL("https://openrouter.ai/auth");
+      url.searchParams.set("callback_url", callbackUrl);
+      // Optional: Add PKCE code challenge for extra security
+      // url.searchParams.set("code_challenge", codeChallenge);
+      // url.searchParams.set("code_challenge_method", "S256");
+      return url.toString();
+    },
+
+    // Exchanges the authorization code for an API key
+    exchangeCode: async ({ code, code_verifier, code_challenge_method }) => {
+      const response = await fetch("https://openrouter.ai/api/v1/auth/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          code_verifier,
+          code_challenge_method,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenRouter auth failed: ${response.status}`);
+      }
+
+      const { key } = (await response.json()) as { key: string };
+
+      // Map OpenRouter's response to OAuth token format
+      return {
+        access_token: key,
+        token_type: "Bearer",
+      };
+    },
   },
   tools,
-
-  /**
-   * Custom fetch handler for API routes and assets
-   * Handles streaming endpoints and other custom routes
-   */
-  fetch: async (req: Request, env: Env) => {
-    const url = new URL(req.url);
-
-    // Handle custom API routes (streaming, etc.)
-    if (url.pathname.startsWith("/api/")) {
-      const response = await handleCustomRoutes(req, env);
-      if (response) return response;
-    }
-
-    // Fallback to assets
-    return env.ASSETS.fetch(req);
-  },
 });
 
 export default runtime;

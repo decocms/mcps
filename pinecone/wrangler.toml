@@ -12,7 +12,7 @@ local = false
 
 [deco.integration]
 description = "Pinecone vector database for storing and querying embeddings. Perform semantic search, similarity matching, and manage vector data at scale."
-icon = "https://www.pinecone.io/images/pinecone-logo.svg"
+icon = "https://www.pinecone.io/favicon.ico"
 friendlyName = "Pinecone"
 
 [[deco.bindings]]

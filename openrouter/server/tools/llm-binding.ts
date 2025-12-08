@@ -9,23 +9,26 @@
  * - LLM_DO_GENERATE: Generates complete non-streaming responses
  */
 
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
+} from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_BINDING,
-  ModelCollectionEntitySchema,
+  type ModelCollectionEntitySchema,
 } from "@decocms/bindings/llm";
 import { streamToResponse } from "@decocms/runtime/bindings";
 import {
   createPrivateTool,
   createStreamableTool,
-} from "@decocms/runtime/mastra";
+} from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { z } from "zod";
-import { getOpenRouterApiKey } from "../lib/env.ts";
+import { getOpenRouterApiKey } from "server/lib/env.ts";
+import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
 import { getBaseUrl } from "./models/utils.ts";
 import { WELL_KNOWN_MODEL_IDS } from "./models/well-known.ts";
-import { LanguageModelV2StreamPart } from "@ai-sdk/provider";
 
 // ============================================================================
 // Constants
@@ -35,6 +38,26 @@ import { LanguageModelV2StreamPart } from "@ai-sdk/provider";
  * All models are served through OpenRouter, so the provider is always "openrouter"
  */
 const OPENROUTER_PROVIDER = "openrouter" as const;
+
+/**
+ * Default logo for providers without a specific logo
+ */
+const DEFAULT_LOGO =
+  "https://assets.decocache.com/decocms/bc2ca488-2bae-4aac-8d3e-ead262dad764/agent.png";
+
+/**
+ * Provider logo mapping - maps provider names to their logo URLs
+ */
+const PROVIDER_LOGOS: Record<string, string> = {
+  openai:
+    "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+  anthropic:
+    "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
+  google:
+    "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
+  "x-ai":
+    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+};
 
 // ============================================================================
 // Types
@@ -124,6 +147,12 @@ function extractCapabilities(model: ListedModel): string[] {
   return capabilities;
 }
 
+function extractProviderLogo(modelId: string): string {
+  // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
+  const provider = modelId.split("/")[0] || "";
+  return PROVIDER_LOGOS[provider] ?? DEFAULT_LOGO;
+}
+
 function transformToLLMEntity(
   model: ListedModel,
   _baseUrl: string,
@@ -133,6 +162,7 @@ function transformToLLMEntity(
   const outputCost = toNumberOrNull(model.pricing.completion);
   const contextWindow = model.context_length || 0;
   const maxOutputTokens = extractOutputLimit(model) || 0;
+  const logo = extractProviderLogo(model.id);
 
   return {
     id: model.id,
@@ -143,7 +173,7 @@ function transformToLLMEntity(
     updated_at: now,
     created_by: undefined,
     updated_by: undefined,
-    logo: null,
+    logo,
     description: model.description ?? null,
     capabilities: extractCapabilities(model),
     provider: OPENROUTER_PROVIDER,
@@ -186,7 +216,9 @@ function applyWhereFilter(
   if (whereAny.operator === "or" && whereAny.conditions) {
     const results = new Set<ListedModel>();
     for (const condition of whereAny.conditions) {
-      applyWhereFilter(models, condition).forEach((m) => results.add(m));
+      applyWhereFilter(models, condition).forEach((m) => {
+        results.add(m);
+      });
     }
     return Array.from(results);
   }
@@ -267,25 +299,6 @@ function sortModelsByWellKnown(models: ListedModel[]): ListedModel[] {
   return [...wellKnownModels, ...remainingModels];
 }
 
-function calculateChatCost(
-  promptTokens: number,
-  completionTokens: number,
-  pricing: { prompt: string; completion: string },
-): { prompt: number; completion: number; total: number } {
-  const promptPrice = parseFloat(pricing.prompt) || 0;
-  const completionPrice = parseFloat(pricing.completion) || 0;
-
-  // Prices are per 1M tokens
-  const promptCost = (promptTokens / 1_000_000) * promptPrice;
-  const completionCost = (completionTokens / 1_000_000) * completionPrice;
-
-  return {
-    prompt: promptCost,
-    completion: completionCost,
-    total: promptCost + completionCost,
-  };
-}
-
 // ============================================================================
 // Tool Implementations
 // ============================================================================
@@ -301,11 +314,7 @@ export const createListLLMTool = (env: Env) =>
       "Returns comprehensive information about each model including capabilities, pricing, and limits.",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof LIST_BINDING.inputSchema>;
-    }) => {
+    execute: async ({ context }) => {
       const { where, orderBy, limit = 50, offset = 0 } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -357,11 +366,7 @@ export const createGetLLMTool = (env: Env) =>
       "pricing, capabilities, context length, and provider information.",
     inputSchema: GET_BINDING.inputSchema,
     outputSchema: GET_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof GET_BINDING.inputSchema>;
-    }) => {
+    execute: async ({ context }) => {
       const { id } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -394,11 +399,7 @@ export const createLLMMetadataTool = (env: Env) =>
       "for different media types (images, files, etc.).",
     inputSchema: METADATA_BINDING.inputSchema,
     outputSchema: METADATA_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof METADATA_BINDING.inputSchema>;
-    }) => {
+    execute: async ({ context }) => {
       const { modelId } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -476,89 +477,23 @@ export const createLLMStreamTool = (env: Env) =>
       "Stream a language model response in real-time using OpenRouter. " +
       "Returns a streaming response for interactive chat experiences.",
     inputSchema: STREAM_BINDING.inputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const {
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
-      const client = new OpenRouterClient({ apiKey });
-      const modelInfo = await client.getModel(modelId);
-
-      // Calculate max cost for authorization
-      const maxContextLength = Math.min(
-        JSON.stringify(callOptions.prompt).length,
-        modelInfo.context_length,
-      );
-      const maxCompletionTokens =
-        callOptions.maxOutputTokens ??
-        modelInfo.top_provider?.max_completion_tokens ??
-        1000000;
-      const costPerCompletionToken = parseFloat(modelInfo.pricing.completion);
-      const costPerPromptToken = parseFloat(modelInfo.pricing.prompt);
-      const amountUsd =
-        maxContextLength * costPerPromptToken +
-        maxCompletionTokens * costPerCompletionToken;
-      const amountMicroDollars = amountUsd * 1000000;
-
-      const { transactionId } =
-        await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "micro-dollar",
-              amount: amountMicroDollars,
-            },
-          ],
-        });
-
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
-      const callResponse = await model.doStream(callOptions as any);
-      const [usage, stream] = getUsageFromStream(callResponse.stream);
+      const callResponse = await model.doStream(
+        callOptions as LanguageModelV2CallOptions,
+      );
+      const [_, stream] = getUsageFromStream(callResponse.stream);
       const response = streamToResponse(stream);
-
-      // Settle contract after stream completes
-      const ctx = runtimeContext?.get("ctx") as
-        | { waitUntil?: (p: Promise<unknown>) => void }
-        | undefined;
-      const split = env.DECO_WORKSPACE.split("/");
-      const workspace = split[split.length - 1];
-
-      if (ctx?.waitUntil) {
-        ctx.waitUntil(
-          // TODO: If there's an error, don't we charge the user?
-          usage
-            .then(async ({ usage }) => {
-              try {
-                const estimatedCost = calculateChatCost(
-                  usage.inputTokens ?? 0,
-                  usage.outputTokens ?? 0,
-                  modelInfo.pricing,
-                );
-                const costMicroDollars = estimatedCost.total * 1000000;
-                await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
-                  transactionId,
-                  vendorId: workspace,
-                  clauses: [
-                    {
-                      clauseId: "micro-dollar",
-                      amount: costMicroDollars,
-                    },
-                  ],
-                });
-              } catch (error) {
-                console.warn("Could not settle contract:", error);
-              }
-            })
-            .catch((error) => {
-              console.warn("Could not settle contract:", error);
-            }),
-        );
-      }
 
       // Return the data stream response
       return response;
@@ -581,70 +516,18 @@ export const createLLMGenerateTool = (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
-      const client = new OpenRouterClient({ apiKey });
-      const modelInfo = await client.getModel(modelId);
-
-      // Calculate max cost for authorization (same pattern as stream)
-      const maxContextLength = Math.min(
-        JSON.stringify(callOptions.prompt).length,
-        modelInfo.context_length,
-      );
-      const maxCompletionTokens =
-        callOptions.maxOutputTokens ??
-        modelInfo.top_provider?.max_completion_tokens ??
-        1000000;
-      const costPerCompletionToken = parseFloat(modelInfo.pricing.completion);
-      const costPerPromptToken = parseFloat(modelInfo.pricing.prompt);
-      const amountUsd =
-        maxContextLength * costPerPromptToken +
-        maxCompletionTokens * costPerCompletionToken;
-      const amountMicroDollars = amountUsd * 1000000;
-
-      // Pre-authorize contract before making the API call
-      const { transactionId } =
-        await env.OPENROUTER_CONTRACT.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "micro-dollar",
-              amount: amountMicroDollars,
-            },
-          ],
-        });
 
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
       // Use doGenerate directly (consistent with doStream pattern)
-      const result = await model.doGenerate(callOptions as any);
-
-      // Settle contract with actual usage
-      const split = env.DECO_WORKSPACE.split("/");
-      const workspace = split[split.length - 1];
-
-      try {
-        const estimatedCost = calculateChatCost(
-          result.usage?.inputTokens ?? 0,
-          result.usage?.outputTokens ?? 0,
-          modelInfo.pricing,
-        );
-        const costMicroDollars = estimatedCost.total * 1000000;
-        await env.OPENROUTER_CONTRACT.CONTRACT_SETTLE({
-          transactionId,
-          vendorId: workspace,
-          clauses: [
-            {
-              clauseId: "micro-dollar",
-              amount: costMicroDollars,
-            },
-          ],
-        });
-      } catch (error) {
-        console.warn("Could not settle contract:", error);
-      }
+      const result = await model.doGenerate(
+        callOptions as LanguageModelV2CallOptions,
+      );
 
       return result as unknown as z.infer<typeof GENERATE_BINDING.outputSchema>;
     },
