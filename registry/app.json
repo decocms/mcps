@@ -1,9 +1,9 @@
 {
   "scopeName": "deco",
-  "name": "registry",
+  "name": "registrys",
   "connection": {
     "type": "HTTP",
-    "url": "https://registry-mcp.decocache.com/mcp"
+    "url": "https://mcp-registry.decocache.com/mcp"
   },
   "description": "MCP Registry Server for discovering and managing MCP servers",
   "icon": "https://assets.decocache.com/mcp/registry-icon.png",
