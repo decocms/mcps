@@ -30,6 +30,7 @@
     "perplexity",
     "pinecone",
     "readonly-sql",
+    "registry",
     "replicate",
     "shared",
     "sora",

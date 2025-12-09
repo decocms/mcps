@@ -1,0 +1,35 @@
+{
+  "name": "registry",
+  "version": "1.0.0",
+  "description": "MCP Registry Server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run server/main.ts",
+    "dev:tunnel": "deco link -p 3000 -- bun run dev",
+    "dev:client": "bun --bun vite dev",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w deco-team -y"
+  },
+  "dependencies": {
+    "@decocms/bindings": "1.0.1-alpha.11",
+    "@decocms/runtime": "1.0.0-alpha.22",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@decocms/vite-plugin": "1.0.0-alpha.1",
+    "@modelcontextprotocol/sdk": "1.20.2",
+    "@types/mime-db": "^1.43.6",
+    "@types/node": "^22.0.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2",
+    "vite": "7.2.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
