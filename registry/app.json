@@ -1,5 +1,5 @@
 {
-  "scopeName": "deco-team",
+  "scopeName": "deco",
   "name": "registry",
   "connection": {
     "type": "HTTP",
