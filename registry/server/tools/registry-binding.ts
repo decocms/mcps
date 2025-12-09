@@ -113,7 +113,7 @@ const GetOutputSchema = ServerDataSchema;
  */
 export const createListRegistryTool = (env: Env) =>
   createTool({
-    id: "COLLECTION_REGISTRY_LIST",
+    id: "COLLECTION_REGISTRY_APP_LIST",
     description:
       "Lists all MCP servers available in the registry with support for filtering, sorting, and pagination",
     inputSchema: ListInputSchema,
@@ -187,7 +187,7 @@ export const createListRegistryTool = (env: Env) =>
  */
 export const createGetRegistryTool = (env: Env) =>
   createTool({
-    id: "COLLECTION_REGISTRY_GET",
+    id: "COLLECTION_REGISTRY_APP_GET",
     description:
       "Gets a specific MCP server from the registry by ID (format: 'name' or 'name:version')",
     inputSchema: GetInputSchema,
