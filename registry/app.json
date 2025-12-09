@@ -1,6 +1,7 @@
 {
   "scopeName": "deco",
   "name": "registrys",
+  "friendlyName": "Registry",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-registry.decocache.com/mcp"
