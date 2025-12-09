@@ -1,8 +1,8 @@
 /**
- * Mapeadores de dados do Registry
+ * Registry Data Mappers
  *
- * Converte a resposta da API oficial do MCP Registry para o formato
- * esperado pelo binding COLLECTION
+ * Converts the official MCP Registry API response to the format
+ * expected by the COLLECTION binding
  */
 
 import type { RegistryServer } from "./registry-client.ts";
@@ -27,7 +27,7 @@ export interface MappedRegistryServer {
 }
 
 /**
- * Mapeia um servidor da API oficial para o formato do binding
+ * Maps a server from the official API to the binding format
  */
 export function mapServer(server: RegistryServer): MappedRegistryServer {
   const meta = server._meta["io.modelcontextprotocol.registry/official"];
@@ -49,7 +49,7 @@ export function mapServer(server: RegistryServer): MappedRegistryServer {
 }
 
 /**
- * Aplica filtros WHERE a uma lista de servidores mapeados
+ * Applies WHERE filters to a list of mapped servers
  */
 export function applyWhereFilter(
   servers: MappedRegistryServer[],
@@ -90,7 +90,7 @@ export function applyWhereFilter(
 }
 
 /**
- * Aplica ordenação a uma lista de servidores mapeados
+ * Applies sorting to a list of mapped servers
  */
 export function applySortOrder(
   servers: MappedRegistryServer[],
@@ -121,7 +121,7 @@ export function applySortOrder(
 }
 
 /**
- * Aplica paginação a uma lista de servidores mapeados
+ * Applies pagination to a list of mapped servers
  */
 export function applyPagination(
   servers: MappedRegistryServer[],

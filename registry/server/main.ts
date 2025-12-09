@@ -22,7 +22,7 @@ export const StateSchema = BaseStateSchema.extend({
     .url()
     .optional()
     .describe(
-      "URL do registry de MCP servers (padrão: https://registry.modelcontextprotocol.io/v0.1/servers)",
+      "MCP registry servers URL (default: https://registry.modelcontextprotocol.io/v0.1/servers)",
     ),
 });
 

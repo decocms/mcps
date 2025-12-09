@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run server/main.ts",
+    "dev:tunnel": "deco link -p 3000 -- bun run dev",
+    "dev:client": "bun --bun vite dev",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "check": "tsc --noEmit",

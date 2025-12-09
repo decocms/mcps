@@ -1,11 +1,11 @@
 /**
  * Registry Binding Implementation
  *
- * Implementa os tools COLLECTION_REGISTRY_LIST e COLLECTION_REGISTRY_GET
- * para acessar o Model Context Protocol Registry
+ * Implements COLLECTION_REGISTRY_LIST and COLLECTION_REGISTRY_GET tools
+ * to access the Model Context Protocol Registry
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { StateSchema } from "../main.ts";
@@ -26,14 +26,14 @@ import {
 // ============================================================================
 
 /**
- * Schema para um servidor do registry
+ * Schema for a registry server
  */
 const RegistryServerSchema = z.object({
-  id: z.string().describe("Identificador único (name:version)"),
-  name: z.string().describe("Nome do servidor (ex: ai.exa/exa)"),
-  version: z.string().describe("Versão do servidor"),
-  description: z.string().describe("Descrição do servidor"),
-  schema: z.string().describe("URL do schema JSON Schema"),
+  id: z.string().describe("Unique identifier (name:version)"),
+  name: z.string().describe("Server name (e.g., ai.exa/exa)"),
+  version: z.string().describe("Server version"),
+  description: z.string().describe("Server description"),
+  schema: z.string().describe("JSON Schema URL"),
   repository: z
     .object({
       url: z.string().optional(),
@@ -41,13 +41,13 @@ const RegistryServerSchema = z.object({
       subfolder: z.string().optional(),
     })
     .optional()
-    .describe("Informações do repositório"),
-  packages: z.array(z.unknown()).optional().describe("Pacotes disponíveis"),
-  remotes: z.array(z.unknown()).optional().describe("Remotes disponíveis"),
-  isLatest: z.boolean().describe("Se é a versão mais recente"),
-  publishedAt: z.string().describe("Data de publicação"),
-  updatedAt: z.string().describe("Data de atualização"),
-  status: z.string().optional().describe("Status do servidor"),
+    .describe("Repository information"),
+  packages: z.array(z.unknown()).optional().describe("Available packages"),
+  remotes: z.array(z.unknown()).optional().describe("Available remotes"),
+  isLatest: z.boolean().describe("Whether this is the latest version"),
+  publishedAt: z.string().describe("Publication date"),
+  updatedAt: z.string().describe("Last update date"),
+  status: z.string().optional().describe("Server status"),
 });
 
 /**
@@ -68,7 +68,7 @@ const ListInputSchema = z
     offset: z.number().optional(),
     cursor: z.string().optional(),
   })
-  .describe("Contexto de filtragem, ordenação e paginação");
+  .describe("Filtering, sorting, and pagination context");
 
 /**
  * Output schema para LIST
@@ -85,7 +85,7 @@ const ListOutputSchema = z.object({
 const GetInputSchema = z.object({
   id: z
     .string()
-    .describe("ID do servidor (format: 'ai.exa/exa' ou 'ai.exa/exa:3.1.1')"),
+    .describe("Server ID (format: 'ai.exa/exa' or 'ai.exa/exa:3.1.1')"),
 });
 
 /**
@@ -98,13 +98,13 @@ const GetOutputSchema = RegistryServerSchema;
 // ============================================================================
 
 /**
- * COLLECTION_REGISTRY_LIST - Lista todos os servidores do registry
+ * COLLECTION_REGISTRY_LIST - Lists all servers from the registry
  */
 export const createListRegistryTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_LIST",
     description:
-      "Lista todos os servidores MCP disponíveis no registry com suporte a filtragem, ordenação e paginação",
+      "Lists all MCP servers available in the registry with support for filtering, sorting, and pagination",
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({ context }: { context: any }) => {
@@ -112,18 +112,18 @@ export const createListRegistryTool = (env: Env) =>
         typeof ListInputSchema
       >;
       try {
-        // Obter URL do registry da configuração
+        // Get registry URL from configuration
         const registryUrl =
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Buscar todos os servidores do registry
+        // Fetch all servers from registry
         const servers = await listAllServers(registryUrl);
 
-        // Mapear para o formato esperado
+        // Map to expected format
         let mappedServers = servers.map(mapServer);
 
-        // Aplicar filtros
+        // Apply filters
         if (where) {
           mappedServers = applyWhereFilter(
             mappedServers,
@@ -131,12 +131,12 @@ export const createListRegistryTool = (env: Env) =>
           );
         }
 
-        // Aplicar ordenação
+        // Apply sorting
         if (orderBy) {
           mappedServers = applySortOrder(mappedServers, orderBy);
         }
 
-        // Aplicar paginação
+        // Apply pagination
         const finalLimit = limit || 50;
         const finalOffset = offset || 0;
         const paginatedServers = applyPagination(
@@ -148,54 +148,52 @@ export const createListRegistryTool = (env: Env) =>
         return {
           servers: paginatedServers,
           total: mappedServers.length,
-          nextCursor: undefined, // Por simplicidade, usar offset/limit em vez de cursor
+          nextCursor: undefined, // For simplicity, use offset/limit instead of cursor
         };
       } catch (error) {
-        console.error("Erro ao listar servidores do registry:", error);
         throw new Error(
-          `Erro ao listar servidores: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+          `Error listing servers: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     },
   });
 
 /**
- * COLLECTION_REGISTRY_GET - Obtém um servidor específico do registry
+ * COLLECTION_REGISTRY_GET - Gets a specific server from the registry
  */
 export const createGetRegistryTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_GET",
     description:
-      "Obtém um servidor MCP específico do registry por ID (format: 'name' ou 'name:version')",
+      "Gets a specific MCP server from the registry by ID (format: 'name' or 'name:version')",
     inputSchema: GetInputSchema,
     outputSchema: GetOutputSchema,
     execute: async ({ context }: { context: any }) => {
       const id = context?.id;
       try {
         if (!id) {
-          throw new Error(`ID do servidor não fornecido`);
+          throw new Error("Server ID not provided");
         }
-        // Parse do ID
+        // Parse ID
         const { name, version } = parseServerId(id);
 
-        // Obter URL do registry da configuração
+        // Get registry URL from configuration
         const registryUrl =
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Buscar servidor específico
+        // Fetch specific server
         const server = await getServer(name, version, registryUrl);
 
         if (!server) {
-          throw new Error(`Servidor não encontrado: ${id}`);
+          throw new Error(`Server not found: ${id}`);
         }
 
-        // Mapear para o formato esperado
+        // Map to expected format
         return mapServer(server);
       } catch (error) {
-        console.error("Erro ao obter servidor do registry:", error);
         throw new Error(
-          `Erro ao obter servidor: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+          `Error getting server: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     },

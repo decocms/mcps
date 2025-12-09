@@ -1,7 +1,7 @@
 /**
  * MCP Registry Client
  *
- * Cliente HTTP para buscar dados da API oficial do Model Context Protocol Registry
+ * HTTP client to fetch data from the official Model Context Protocol Registry API
  */
 
 export interface RegistryServer {
@@ -41,7 +41,7 @@ const DEFAULT_REGISTRY_URL =
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 /**
- * Fetch lista de servidores do registry com suporte a paginação via cursor
+ * Fetches list of servers from registry with cursor-based pagination support
  */
 export async function listServers(
   registryUrl?: string,
@@ -75,9 +75,9 @@ export async function listServers(
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        throw new Error("Timeout de requisição ao registry (30s)");
+        throw new Error("Request timeout to registry (30s)");
       }
-      throw new Error(`Erro ao buscar dados do registry: ${error.message}`);
+      throw new Error(`Error fetching registry data: ${error.message}`);
     }
     throw error;
   } finally {
@@ -86,7 +86,7 @@ export async function listServers(
 }
 
 /**
- * Fetch todos os servidores paginando através do cursor
+ * Fetches all servers by paginating through cursors
  */
 export async function listAllServers(
   registryUrl?: string,
@@ -106,7 +106,6 @@ export async function listAllServers(
       cursor = response.metadata.nextCursor;
     }
   } catch (error) {
-    console.error("Erro ao listar todos os servidores:", error);
     throw error;
   }
 
@@ -114,11 +113,11 @@ export async function listAllServers(
 }
 
 /**
- * Busca um servidor específico por nome e versão opcional
+ * Fetches a specific server by name and optional version
  *
- * @param name - Nome do servidor (ex: "ai.exa/exa")
- * @param version - Versão específica (ex: "3.1.1"). Se não fornecido, retorna a mais recente
- * @param registryUrl - URL customizada do registry (opcional)
+ * @param name - Server name (e.g., "ai.exa/exa")
+ * @param version - Specific version (e.g., "3.1.1"). If not provided, returns the latest
+ * @param registryUrl - Custom registry URL (optional)
  */
 export async function getServer(
   name: string,
@@ -128,26 +127,25 @@ export async function getServer(
   try {
     const servers = await listAllServers(registryUrl);
 
-    // Filtrar por nome
+    // Filter by name
     const matchingServers = servers.filter((s) => s.server.name === name);
 
     if (matchingServers.length === 0) {
       return null;
     }
 
-    // Se versão foi especificada, buscar exatamente
+    // If version was specified, find exact match
     if (version) {
       return matchingServers.find((s) => s.server.version === version) || null;
     }
 
-    // Caso contrário, retornar a mais recente (isLatest: true)
+    // Otherwise, return the latest (isLatest: true)
     const latest = matchingServers.find(
       (s) => s._meta["io.modelcontextprotocol.registry/official"]?.isLatest,
     );
 
     return latest || matchingServers[0];
   } catch (error) {
-    console.error(`Erro ao buscar servidor ${name}:`, error);
     throw error;
   }
 }
