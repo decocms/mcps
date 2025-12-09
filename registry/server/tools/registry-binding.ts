@@ -26,9 +26,9 @@ import {
 // ============================================================================
 
 /**
- * Schema for a registry server
+ * Schema for a registry server (inner server object)
  */
-const RegistryServerSchema = z.object({
+const ServerDataSchema = z.object({
   id: z.string().describe("Unique identifier (name:version)"),
   name: z.string().describe("Server name (e.g., ai.exa/exa)"),
   version: z.string().describe("Server version"),
@@ -48,6 +48,17 @@ const RegistryServerSchema = z.object({
   publishedAt: z.string().describe("Publication date"),
   updatedAt: z.string().describe("Last update date"),
   status: z.string().optional().describe("Server status"),
+});
+
+/**
+ * Schema for a collection item (wrapper with metadata)
+ */
+const RegistryServerSchema = z.object({
+  id: z.string().describe("Unique item identifier (UUID)"),
+  title: z.string().describe("Server name/title"),
+  created_at: z.string().describe("Creation timestamp"),
+  updated_at: z.string().describe("Last update timestamp"),
+  server: ServerDataSchema.describe("Server data"),
 });
 
 /**
@@ -74,9 +85,9 @@ const ListInputSchema = z
  * Output schema para LIST
  */
 const ListOutputSchema = z.object({
-  servers: z.array(RegistryServerSchema),
-  nextCursor: z.string().optional(),
-  total: z.number(),
+  items: z.array(RegistryServerSchema),
+  totalCount: z.number(),
+  hasMore: z.boolean(),
 });
 
 /**
@@ -91,7 +102,7 @@ const GetInputSchema = z.object({
 /**
  * Output schema para GET
  */
-const GetOutputSchema = RegistryServerSchema;
+const GetOutputSchema = ServerDataSchema;
 
 // ============================================================================
 // Tool Implementations
@@ -145,10 +156,23 @@ export const createListRegistryTool = (env: Env) =>
           finalOffset,
         );
 
+        // Transform to collection item format with wrapper
+        const items = paginatedServers.map((server) => ({
+          id: crypto.randomUUID(),
+          title: server.name,
+          created_at: server.publishedAt,
+          updated_at: server.updatedAt,
+          server,
+        }));
+
+        // Calculate if there are more items
+        const hasMore =
+          finalOffset + paginatedServers.length < mappedServers.length;
+
         return {
-          servers: paginatedServers,
-          total: mappedServers.length,
-          nextCursor: undefined, // For simplicity, use offset/limit instead of cursor
+          items,
+          totalCount: mappedServers.length,
+          hasMore,
         };
       } catch (error) {
         throw new Error(
