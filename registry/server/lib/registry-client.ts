@@ -115,7 +115,9 @@ export async function listAllServers(
       cursor = response.metadata.nextCursor;
     }
   } catch (error) {
-    throw error;
+    throw new Error(
+      `Error fetching all servers from registry: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
   return servers;
@@ -155,7 +157,9 @@ export async function getServer(
 
     return latest || matchingServers[0];
   } catch (error) {
-    throw error;
+    throw new Error(
+      `Error fetching server ${name}${version ? `:${version}` : ""}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
