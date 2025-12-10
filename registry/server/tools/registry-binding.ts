@@ -36,12 +36,6 @@ const RegistryServerSchema = z.object({
  */
 const ListInputSchema = z
   .object({
-    cursor: z
-      .string()
-      .optional()
-      .describe(
-        "Pagination cursor for fetching next page of results (e.g., 'server-cursor-123')",
-      ),
     limit: z
       .number()
       .int()
@@ -49,6 +43,12 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .default(0)
+      .describe("Starting position for pagination (default: 0)"),
     search: z
       .string()
       .optional()
@@ -76,7 +76,6 @@ const ListInputSchema = z
         }),
       )
       .optional(),
-    offset: z.number().optional(),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -87,6 +86,12 @@ const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
   totalCount: z.number(),
   hasMore: z.boolean(),
+  nextOffset: z
+    .number()
+    .optional()
+    .describe(
+      "Offset for fetching next page (if hasMore is true, use this for next request)",
+    ),
 });
 
 /**
@@ -121,16 +126,8 @@ export const createListRegistryTool = (env: Env) =>
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({ context }: { context: any }) => {
-      const {
-        where,
-        orderBy,
-        limit,
-        offset,
-        _cursor, // TODO: Implement cursor-based pagination
-        search,
-        updated_since,
-        version,
-      } = context as z.infer<typeof ListInputSchema>;
+      const { where, orderBy, limit, offset, search, updated_since, version } =
+        context as z.infer<typeof ListInputSchema>;
       try {
         // Get registry URL from configuration
         const registryUrl =
@@ -304,6 +301,9 @@ export const createListRegistryTool = (env: Env) =>
           items,
           totalCount: servers.length,
           hasMore,
+          nextOffset: hasMore
+            ? finalOffset + paginatedServers.length
+            : undefined,
         };
       } catch (error) {
         throw new Error(
