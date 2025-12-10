@@ -320,9 +320,6 @@ export const createListRegistryTool = (env: Env) =>
           totalCount: servers.length,
           hasMore,
           nextCursor,
-          nextOffset: hasMore
-            ? finalOffset + paginatedServers.length
-            : undefined,
         };
       } catch (error) {
         throw new Error(
