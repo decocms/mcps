@@ -126,7 +126,7 @@ export const createListRegistryTool = (env: Env) =>
         orderBy,
         limit,
         offset,
-        cursor,
+        _cursor, // TODO: Implement cursor-based pagination
         search,
         updated_since,
         version,
