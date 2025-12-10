@@ -9,6 +9,7 @@ export interface RegistryServer {
     $schema: string;
     name: string;
     description: string;
+    title?: string;
     repository?: {
       url?: string;
       source?: string;
@@ -17,8 +18,16 @@ export interface RegistryServer {
     version: string;
     packages?: Array<any>;
     remotes?: Array<any>;
+    icons?: Array<{
+      src: string;
+      mimeType?: string;
+      theme?: string;
+    }>;
+    websiteUrl?: string;
+    [key: string]: any; // Allow any other fields that might come from API
   };
   _meta: {
+    [key: string]: any; // Allow any meta structure from different sources
     "io.modelcontextprotocol.registry/official"?: {
       status: string;
       publishedAt: string;
