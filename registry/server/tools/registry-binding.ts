@@ -14,51 +14,21 @@ import {
   getServer,
   parseServerId,
 } from "../lib/registry-client.ts";
-import {
-  mapServer,
-  applyWhereFilter,
-  applySortOrder,
-  applyPagination,
-} from "../lib/mappers.ts";
 
 // ============================================================================
 // Schema Definitions
 // ============================================================================
 
 /**
- * Schema for a registry server (inner server object)
- */
-const ServerDataSchema = z.object({
-  id: z.string().describe("Unique identifier (name:version)"),
-  name: z.string().describe("Server name (e.g., ai.exa/exa)"),
-  version: z.string().describe("Server version"),
-  description: z.string().describe("Server description"),
-  schema: z.string().describe("JSON Schema URL"),
-  repository: z
-    .object({
-      url: z.string().optional(),
-      source: z.string().optional(),
-      subfolder: z.string().optional(),
-    })
-    .optional()
-    .describe("Repository information"),
-  packages: z.array(z.unknown()).optional().describe("Available packages"),
-  remotes: z.array(z.unknown()).optional().describe("Available remotes"),
-  isLatest: z.boolean().describe("Whether this is the latest version"),
-  publishedAt: z.string().describe("Publication date"),
-  updatedAt: z.string().describe("Last update date"),
-  status: z.string().optional().describe("Server status"),
-});
-
-/**
- * Schema for a collection item (wrapper with metadata)
+ * Schema for a collection item - original API data with 4 additional fields
  */
 const RegistryServerSchema = z.object({
   id: z.string().describe("Unique item identifier (UUID)"),
   title: z.string().describe("Server name/title"),
   created_at: z.string().describe("Creation timestamp"),
   updated_at: z.string().describe("Last update timestamp"),
-  server: ServerDataSchema.describe("Server data"),
+  server: z.any().describe("Original server data from API"),
+  _meta: z.any().describe("Original metadata from API"),
 });
 
 /**
@@ -100,9 +70,12 @@ const GetInputSchema = z.object({
 });
 
 /**
- * Output schema para GET
+ * Output schema para GET - returns original API format
  */
-const GetOutputSchema = ServerDataSchema;
+const GetOutputSchema = z.object({
+  server: z.any(),
+  _meta: z.any(),
+});
 
 // ============================================================================
 // Tool Implementations
@@ -129,49 +102,116 @@ export const createListRegistryTool = (env: Env) =>
           undefined;
 
         // Fetch all servers from registry
-        const servers = await listAllServers(registryUrl);
+        let servers = await listAllServers(registryUrl);
 
-        // Map to expected format
-        let mappedServers = servers.map(mapServer);
+        // Helper to extract value from meta generically (works with any meta structure)
+        const getMetaValue = (meta: any, key: string): any => {
+          if (!meta || typeof meta !== "object") return undefined;
+          const metaKeys = Object.keys(meta);
+          for (const metaKey of metaKeys) {
+            const metaObj = meta[metaKey];
+            if (metaObj && typeof metaObj === "object" && metaObj[key]) {
+              return metaObj[key];
+            }
+          }
+          return undefined;
+        };
 
-        // Apply filters
+        // Apply filters (if needed - basic implementation)
         if (where) {
-          mappedServers = applyWhereFilter(
-            mappedServers,
-            where as Record<string, unknown>,
-          );
+          servers = servers.filter((server) => {
+            for (const [key, value] of Object.entries(where)) {
+              // Simple filtering on server.name for now
+              if (key === "name" && server.server.name !== value) {
+                return false;
+              }
+            }
+            return true;
+          });
         }
 
-        // Apply sorting
-        if (orderBy) {
-          mappedServers = applySortOrder(mappedServers, orderBy);
+        // Apply sorting (if needed - basic implementation)
+        if (orderBy && orderBy.length > 0) {
+          const order = orderBy[0];
+          const field = order.field[0];
+          const direction = order.direction === "desc" ? -1 : 1;
+
+          servers.sort((a, b) => {
+            let aVal: any;
+            let bVal: any;
+
+            if (field === "name") {
+              aVal = a.server.name;
+              bVal = b.server.name;
+            } else if (field === "publishedAt" || field === "created_at") {
+              aVal =
+                getMetaValue(a._meta, "publishedAt") ||
+                getMetaValue(a._meta, "createdAt");
+              bVal =
+                getMetaValue(b._meta, "publishedAt") ||
+                getMetaValue(b._meta, "createdAt");
+            } else if (field === "updatedAt" || field === "updated_at") {
+              aVal = getMetaValue(a._meta, "updatedAt");
+              bVal = getMetaValue(b._meta, "updatedAt");
+            } else {
+              return 0;
+            }
+
+            if (aVal === bVal) return 0;
+            if (aVal < bVal) return -1 * direction;
+            return 1 * direction;
+          });
         }
 
         // Apply pagination
         const finalLimit = limit || 50;
         const finalOffset = offset || 0;
-        const paginatedServers = applyPagination(
-          mappedServers,
-          finalLimit,
+        const paginatedServers = servers.slice(
           finalOffset,
+          finalOffset + finalLimit,
         );
 
-        // Transform to collection item format with wrapper
-        const items = paginatedServers.map((server) => ({
-          id: crypto.randomUUID(),
-          title: server.name,
-          created_at: server.publishedAt,
-          updated_at: server.updatedAt,
-          server,
-        }));
+        // Add 4 fields at root, keep original server and _meta unchanged
+        const items = paginatedServers.map((server) => {
+          // Extract dates from _meta generically (works with any meta structure)
+          const created_at =
+            getMetaValue(server._meta, "publishedAt") ||
+            getMetaValue(server._meta, "createdAt") ||
+            new Date().toISOString();
+          const updated_at =
+            getMetaValue(server._meta, "updatedAt") || new Date().toISOString();
+
+          return {
+            id: crypto.randomUUID(),
+            title: server.server.name,
+            created_at,
+            updated_at,
+            server: server.server,
+            _meta: server._meta,
+          };
+        });
 
         // Calculate if there are more items
-        const hasMore =
-          finalOffset + paginatedServers.length < mappedServers.length;
+        const hasMore = finalOffset + paginatedServers.length < servers.length;
+
+        // Debug: Log the first item to verify structure
+        if (items.length > 0) {
+          console.log(
+            "DEBUG: FIRST ITEM BEFORE RETURN:",
+            JSON.stringify(items[0], null, 2),
+          );
+          console.log(
+            "DEBUG: SERVER OBJECT KEYS:",
+            Object.keys(items[0].server),
+          );
+          console.log("DEBUG: HAS ICONS?", !!items[0].server.icons);
+          console.log("DEBUG: HAS TITLE IN SERVER?", !!items[0].server.title);
+          console.log("DEBUG: HAS WEBSITEURL?", !!items[0].server.websiteUrl);
+        }
 
         return {
           items,
-          totalCount: mappedServers.length,
+          totalCount: servers.length,
           hasMore,
         };
       } catch (error) {
@@ -213,8 +253,11 @@ export const createGetRegistryTool = (env: Env) =>
           throw new Error(`Server not found: ${id}`);
         }
 
-        // Map to expected format
-        return mapServer(server);
+        // Return original API format
+        return {
+          server: server.server,
+          _meta: server._meta,
+        };
       } catch (error) {
         throw new Error(
           `Error getting server: ${error instanceof Error ? error.message : "Unknown error"}`,
