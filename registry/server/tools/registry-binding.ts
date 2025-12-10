@@ -194,6 +194,21 @@ export const createListRegistryTool = (env: Env) =>
         // Calculate if there are more items
         const hasMore = finalOffset + paginatedServers.length < servers.length;
 
+        // Debug: Log the first item to verify structure
+        if (items.length > 0) {
+          console.log(
+            "DEBUG: FIRST ITEM BEFORE RETURN:",
+            JSON.stringify(items[0], null, 2),
+          );
+          console.log(
+            "DEBUG: SERVER OBJECT KEYS:",
+            Object.keys(items[0].server),
+          );
+          console.log("DEBUG: HAS ICONS?", !!items[0].server.icons);
+          console.log("DEBUG: HAS TITLE IN SERVER?", !!items[0].server.title);
+          console.log("DEBUG: HAS WEBSITEURL?", !!items[0].server.websiteUrl);
+        }
+
         return {
           items,
           totalCount: servers.length,
