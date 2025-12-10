@@ -36,6 +36,37 @@ const RegistryServerSchema = z.object({
  */
 const ListInputSchema = z
   .object({
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(30)
+      .describe("Number of items per page (default: 30)"),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .default(0)
+      .describe("Starting position for pagination (default: 0)"),
+    search: z
+      .string()
+      .optional()
+      .describe(
+        "Search servers by name using substring match (e.g., 'filesystem')",
+      ),
+    updated_since: z
+      .string()
+      .optional()
+      .describe(
+        "Filter servers updated since timestamp (RFC3339 datetime, e.g., '2025-08-07T13:15:04.280Z')",
+      ),
+    version: z
+      .string()
+      .default("latest")
+      .describe(
+        "Filter by version ('latest' for latest version, or exact version like '1.2.3')",
+      ),
     where: z.record(z.unknown()).optional(),
     orderBy: z
       .array(
@@ -45,9 +76,6 @@ const ListInputSchema = z
         }),
       )
       .optional(),
-    limit: z.number().optional(),
-    offset: z.number().optional(),
-    cursor: z.string().optional(),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -58,6 +86,12 @@ const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
   totalCount: z.number(),
   hasMore: z.boolean(),
+  nextOffset: z
+    .number()
+    .optional()
+    .describe(
+      "Offset for fetching next page (if hasMore is true, use this for next request)",
+    ),
 });
 
 /**
@@ -92,9 +126,8 @@ export const createListRegistryTool = (env: Env) =>
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({ context }: { context: any }) => {
-      const { where, orderBy, limit, offset } = context as z.infer<
-        typeof ListInputSchema
-      >;
+      const { where, orderBy, limit, offset, search, updated_since, version } =
+        context as z.infer<typeof ListInputSchema>;
       try {
         // Get registry URL from configuration
         const registryUrl =
@@ -127,6 +160,61 @@ export const createListRegistryTool = (env: Env) =>
               }
             }
             return true;
+          });
+        }
+
+        // Apply search filter (substring match on server name)
+        if (search) {
+          const searchLower = search.toLowerCase();
+          servers = servers.filter((server) =>
+            server.server.name.toLowerCase().includes(searchLower),
+          );
+        }
+
+        // Apply version filter
+        if (version && version !== "latest") {
+          servers = servers.filter(
+            (server) => server.server.version === version,
+          );
+        } else if (version === "latest") {
+          // Keep only latest versions (one per name)
+          const latestByName = new Map<string, (typeof servers)[0]>();
+          for (const server of servers) {
+            const name = server.server.name;
+            const current = latestByName.get(name);
+            if (!current) {
+              latestByName.set(name, server);
+            } else {
+              // Keep the one marked as latest, or the most recently updated
+              const currentIsLatest = getMetaValue(current._meta, "isLatest");
+              const serverIsLatest = getMetaValue(server._meta, "isLatest");
+
+              if (serverIsLatest && !currentIsLatest) {
+                latestByName.set(name, server);
+              } else if (!serverIsLatest && !currentIsLatest) {
+                // Compare by updatedAt timestamp
+                const currentUpdated = getMetaValue(current._meta, "updatedAt");
+                const serverUpdated = getMetaValue(server._meta, "updatedAt");
+                if (
+                  serverUpdated &&
+                  new Date(serverUpdated) >
+                    new Date(currentUpdated || "1970-01-01")
+                ) {
+                  latestByName.set(name, server);
+                }
+              }
+            }
+          }
+          servers = Array.from(latestByName.values());
+        }
+
+        // Apply updated_since filter (RFC3339 timestamp)
+        if (updated_since) {
+          const sinceDatetime = new Date(updated_since);
+          servers = servers.filter((server) => {
+            const updatedAt = getMetaValue(server._meta, "updatedAt");
+            if (!updatedAt) return true; // Include if no updatedAt info
+            return new Date(updatedAt) >= sinceDatetime;
           });
         }
 
@@ -164,7 +252,7 @@ export const createListRegistryTool = (env: Env) =>
         }
 
         // Apply pagination
-        const finalLimit = limit || 50;
+        const finalLimit = limit;
         const finalOffset = offset || 0;
         const paginatedServers = servers.slice(
           finalOffset,
@@ -213,6 +301,9 @@ export const createListRegistryTool = (env: Env) =>
           items,
           totalCount: servers.length,
           hasMore,
+          nextOffset: hasMore
+            ? finalOffset + paginatedServers.length
+            : undefined,
         };
       } catch (error) {
         throw new Error(
