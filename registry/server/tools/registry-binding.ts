@@ -36,6 +36,12 @@ const RegistryServerSchema = z.object({
  */
 const ListInputSchema = z
   .object({
+    cursor: z
+      .string()
+      .optional()
+      .describe(
+        "Pagination cursor for fetching next page (e.g., 'ai.exa/exa:3.1.3')",
+      ),
     limit: z
       .number()
       .int()
@@ -43,12 +49,6 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
-    offset: z
-      .number()
-      .int()
-      .min(0)
-      .default(0)
-      .describe("Starting position for pagination (default: 0)"),
     search: z
       .string()
       .optional()
@@ -76,6 +76,7 @@ const ListInputSchema = z
         }),
       )
       .optional(),
+    offset: z.number().optional(),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -86,11 +87,11 @@ const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
   totalCount: z.number(),
   hasMore: z.boolean(),
-  nextOffset: z
-    .number()
+  nextCursor: z
+    .string()
     .optional()
     .describe(
-      "Offset for fetching next page (if hasMore is true, use this for next request)",
+      "Cursor for fetching next page (use in next request if hasMore is true)",
     ),
 });
 
@@ -126,8 +127,16 @@ export const createListRegistryTool = (env: Env) =>
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({ context }: { context: any }) => {
-      const { where, orderBy, limit, offset, search, updated_since, version } =
-        context as z.infer<typeof ListInputSchema>;
+      const {
+        where,
+        orderBy,
+        limit,
+        offset,
+        cursor,
+        search,
+        updated_since,
+        version,
+      } = context as z.infer<typeof ListInputSchema>;
       try {
         // Get registry URL from configuration
         const registryUrl =
@@ -251,12 +260,32 @@ export const createListRegistryTool = (env: Env) =>
           });
         }
 
-        // Apply pagination
+        // Apply pagination with cursor support
+        let startIndex = 0;
+
+        if (cursor) {
+          // Find the position after the cursor item
+          const [cursorName, cursorVersion] = cursor.split(":");
+          startIndex = servers.findIndex(
+            (s) =>
+              s.server.name === cursorName &&
+              s.server.version === cursorVersion,
+          );
+          // Start after the cursor item
+          if (startIndex !== -1) {
+            startIndex += 1;
+          } else {
+            startIndex = 0; // If cursor not found, start from beginning
+          }
+        } else if (offset !== undefined) {
+          // Fall back to offset if no cursor
+          startIndex = offset;
+        }
+
         const finalLimit = limit;
-        const finalOffset = offset || 0;
         const paginatedServers = servers.slice(
-          finalOffset,
-          finalOffset + finalLimit,
+          startIndex,
+          startIndex + finalLimit,
         );
 
         // Add 4 fields at root, keep original server and _meta unchanged
@@ -279,16 +308,18 @@ export const createListRegistryTool = (env: Env) =>
           };
         });
 
-        // Calculate if there are more items
-        const hasMore = finalOffset + paginatedServers.length < servers.length;
+        // Calculate if there are more items and generate nextCursor
+        const hasMore = startIndex + paginatedServers.length < servers.length;
+        const nextCursor =
+          hasMore && paginatedServers.length > 0
+            ? `${paginatedServers[paginatedServers.length - 1].server.name}:${paginatedServers[paginatedServers.length - 1].server.version}`
+            : undefined;
 
         return {
           items,
           totalCount: servers.length,
           hasMore,
-          nextOffset: hasMore
-            ? finalOffset + paginatedServers.length
-            : undefined,
+          nextCursor,
         };
       } catch (error) {
         throw new Error(
