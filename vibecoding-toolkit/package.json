@@ -14,8 +14,8 @@
     "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
-    "@decocms/bindings": "file:../../admin/packages/bindings",
-    "@decocms/runtime": "file:../../admin/packages/runtime",
+    "@decocms/bindings": "file:../../mesh/packages/bindings",
+    "@decocms/runtime": "file:../../mesh/packages/runtime",
     "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
@@ -29,6 +29,7 @@
     "clsx": "^2.1.1",
     "fuse.js": "^7.1.0",
     "i": "^0.3.7",
+    "json-schema-to-typescript-lite": "^15.0.0",
     "jsonschema": "^1.5.0",
     "lucide-react": "^0.554.0",
     "next-themes": "^0.4.6",

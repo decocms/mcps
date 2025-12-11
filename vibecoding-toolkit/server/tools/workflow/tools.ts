@@ -1,14 +1,14 @@
 import z from "zod";
-import type { Env } from "../main.ts";
+import type { Env } from "../../main.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
-import { executeWorkflow } from "./executor.ts";
 import {
   cancelExecution,
   createExecution,
   getExecution,
+  processEnqueuedExecutions,
   resumeExecution,
-} from "../lib/execution-db.ts";
-import { sendSignal } from "./events/signals.ts";
+} from "../../lib/execution-db.ts";
+import { sendSignal } from "../../workflow/events/signals.ts";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
 const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
@@ -16,27 +16,6 @@ const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
 if (!START_BINDING?.inputSchema || !START_BINDING?.outputSchema) {
   throw new Error("WORKFLOW_START binding not found or missing schemas");
 }
-
-export const executeWorkflowTool = (env: Env) =>
-  createPrivateTool({
-    id: "EXECUTE_WORKFLOW",
-    description: "Execute a workflow",
-    inputSchema: z.object({
-      executionId: z.string().describe("The execution ID to execute"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      result: z.unknown(),
-    }),
-    execute: async ({ context }) => {
-      const { executionId } = context;
-      const result = await executeWorkflow(env, executionId);
-      return {
-        success: true,
-        result,
-      };
-    },
-  });
 
 export const createAndQueueExecutionTool = (env: Env) =>
   createPrivateTool({
@@ -46,31 +25,31 @@ export const createAndQueueExecutionTool = (env: Env) =>
     inputSchema: START_BINDING.inputSchema,
     outputSchema: START_BINDING.outputSchema,
     execute: async ({ context, runtimeContext }) => {
-      console.log("🚀 ~ CREATE_AND_QUEUE_EXECUTION ~ context:", context);
-
-      // 1. Create the execution record
-      const execution = await createExecution(env, {
-        workflow_id: context.workflowId,
-        input: context.input,
-      });
-      console.log("🚀 ~ Created execution:", execution.id);
-
-      // 2. Immediately execute it (serverless - no queue, no locks needed)
-      executeWorkflowTool(env)
-        .execute({
-          context: {
-            executionId: execution.id,
-          },
-          runtimeContext,
-        })
-        .catch((error) => {
-          console.error("🚀 ~ Error executing workflow:", error);
-          throw error;
+      try {
+        const execution = await createExecution(env, {
+          workflow_id: context.workflowId,
+          input: context.input,
         });
 
-      return {
-        executionId: execution.id,
-      };
+        processEnqueuedExecutionsTool(env)
+          .execute({
+            context: {
+              executionId: execution.id,
+            },
+            runtimeContext,
+          })
+          .catch((error) => {
+            console.error("🚀 ~ Error executing workflow:", error);
+            throw error;
+          });
+
+        return {
+          executionId: execution.id,
+        };
+      } catch (error) {
+        console.error("🚀 ~ Error creating and queueing execution:", error);
+        throw error;
+      }
     },
   });
 
@@ -92,54 +71,11 @@ export const cancelExecutionTool = (env: Env) =>
           "not_found",
         ])
         .describe("Result of the cancellation attempt"),
-      execution: z
-        .object({
-          id: z.string(),
-          status: z.string(),
-          workflow_id: z.string(),
-        })
-        .optional(),
+      executionId: z.string().optional(),
       message: z.string().optional(),
     }),
     execute: async ({ context }) => {
       const { executionId } = context;
-
-      // Get current state first
-      const existing = await getExecution(env, executionId);
-
-      if (!existing) {
-        return {
-          success: false,
-          status: "not_found" as const,
-          message: `Execution ${executionId} not found`,
-        };
-      }
-
-      if (existing.status === "cancelled") {
-        return {
-          success: true,
-          status: "already_cancelled" as const,
-          execution: {
-            id: existing.id,
-            status: existing.status,
-            workflow_id: existing.workflow_id,
-          },
-          message: "Execution was already cancelled",
-        };
-      }
-
-      if (!["pending", "running"].includes(existing.status)) {
-        return {
-          success: false,
-          status: "not_cancellable" as const,
-          execution: {
-            id: existing.id,
-            status: existing.status,
-            workflow_id: existing.workflow_id,
-          },
-          message: `Cannot cancel execution in '${existing.status}' status`,
-        };
-      }
 
       const result = await cancelExecution(env, executionId);
 
@@ -154,11 +90,7 @@ export const cancelExecutionTool = (env: Env) =>
       return {
         success: true,
         status: "cancelled" as const,
-        execution: {
-          id: result.id,
-          status: result.status,
-          workflow_id: result.workflow_id,
-        },
+        executionId: result!,
         message: "Execution cancelled successfully",
       };
     },
@@ -177,10 +109,6 @@ export const resumeExecutionTool = (env: Env) =>
         .describe(
           "Whether to immediately re-queue the execution for processing",
         ),
-      resetRetries: z
-        .boolean()
-        .default(true)
-        .describe("Whether to reset the retry count to 0"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -197,7 +125,7 @@ export const resumeExecutionTool = (env: Env) =>
       message: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { executionId, requeue = true, resetRetries = true } = context;
+      const { executionId, requeue = true } = context;
 
       const existing = await getExecution(env, executionId);
 
@@ -222,9 +150,7 @@ export const resumeExecutionTool = (env: Env) =>
         };
       }
 
-      const result = await resumeExecution(env, executionId, {
-        resetRetries,
-      });
+      const result = await resumeExecution(env, executionId);
 
       if (!result) {
         return {
@@ -269,7 +195,7 @@ export const sendSignalTool = (env: Env) =>
       signalId: z.string().optional(),
       message: z.string().optional(),
     }),
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       const { executionId, signalName, payload } = context;
 
       const execution = await getExecution(env, executionId);
@@ -284,7 +210,6 @@ export const sendSignalTool = (env: Env) =>
         name: signalName,
         payload,
         authorization: env.MESH_REQUEST_CONTEXT?.token,
-        runtimeContext,
       });
 
       return {
@@ -295,10 +220,30 @@ export const sendSignalTool = (env: Env) =>
     },
   });
 
+export const processEnqueuedExecutionsTool = (env: Env) =>
+  createPrivateTool({
+    id: "PROCESS_ENQUEUED_EXECUTIONS",
+    description: "Process enqueued workflow executions",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      success: z.boolean(),
+      ids: z.array(z.string()),
+    }),
+    execute: async () => {
+      try {
+        const ids = await processEnqueuedExecutions(env);
+        return { success: true, ids };
+      } catch (error) {
+        console.error("🚀 ~ Error processing enqueued executions:", error);
+        return { success: false, ids: [] };
+      }
+    },
+  });
+
 export const workflowTools = [
   createAndQueueExecutionTool,
   cancelExecutionTool,
   resumeExecutionTool,
   sendSignalTool,
-  executeWorkflowTool,
+  processEnqueuedExecutionsTool,
 ];

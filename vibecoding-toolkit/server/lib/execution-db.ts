@@ -20,6 +20,7 @@ import {
   WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
 import type { Env } from "../main.ts";
+import { executeWorkflow } from "server/workflow/executor.ts";
 
 const safeJsonParse = (value: unknown): unknown => {
   if (value === null || value === undefined) return undefined;
@@ -73,29 +74,30 @@ const toNumberOrNull = (value: unknown): number | null => {
 
 /**
  * Transform database row to WorkflowExecution
+ * Note: runtime_context is preserved for background execution auth
  */
 function transformDbRowToExecution(
   row: Record<string, unknown> = {},
-): WorkflowExecution {
-  const parsedError = safeJsonParse(row.error);
+): WorkflowExecution & { runtime_context?: unknown } {
   const transformed = {
     ...row,
     // BaseCollectionEntitySchema expects title but workflow_executions doesn't have one
     title: row.title ?? `Execution ${row.id}`,
     // Convert epoch ms to ISO datetime strings (for base schema)
+    start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
+    timeout_ms: toNumberOrNull(row.timeout_ms),
+    deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
+    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
     created_at: epochMsToIsoString(row.created_at),
     updated_at: epochMsToIsoString(row.updated_at),
-    // Convert epoch ms fields to numbers (schema expects number, not string)
-    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
-    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
-    locked_until_epoch_ms: toNumberOrNull(row.locked_until_epoch_ms),
-    // Parse JSONB fields
-    output: safeJsonParse(row.output),
     input: safeJsonParse(row.input),
-    error: Array.isArray(parsedError) ? parsedError.join("; ") : parsedError,
+    // Preserve runtime_context for background execution (not in schema but needed)
+    runtime_context: safeJsonParse(row.runtime_context),
   };
 
-  return WorkflowExecutionSchema.parse(transformed);
+  const parsed = WorkflowExecutionSchema.parse(transformed);
+  // Attach runtime_context back after schema validation (schema strips unknown fields)
+  return { ...parsed, runtime_context: transformed.runtime_context };
 }
 
 /**
@@ -124,32 +126,46 @@ export async function createExecution(
   data: {
     workflow_id: string;
     input?: Record<string, unknown>;
+    timeout_ms?: number;
+    start_at_epoch_ms?: number;
   },
 ): Promise<WorkflowExecution> {
   const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = new Date().getTime();
   const id = crypto.randomUUID();
 
+  // Store the runtime context for background execution
+  // This allows cron-triggered workflows to use the original user's auth
+  const runtimeContext = env.MESH_REQUEST_CONTEXT
+    ? {
+        token: env.MESH_REQUEST_CONTEXT.token,
+        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl,
+        connectionId: env.MESH_REQUEST_CONTEXT.connectionId,
+        authorization: env.MESH_REQUEST_CONTEXT.authorization,
+      }
+    : null;
+
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       INSERT INTO workflow_executions (
         id, workflow_id, status, created_at, updated_at, created_by,
-        input, retry_count, max_retries
+        input, timeout_ms, start_at_epoch_ms, runtime_context
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb
       )
       RETURNING *
     `,
     params: [
       id,
       data.workflow_id,
-      "pending",
+      "enqueued",
       now,
       now,
       user?.id || null,
       JSON.stringify(data.input || {}),
-      0,
-      10,
+      data.timeout_ms ?? 0,
+      data.start_at_epoch_ms ?? now,
+      runtimeContext ? JSON.stringify(runtimeContext) : null,
     ],
   });
 
@@ -171,10 +187,7 @@ export async function updateExecution(
     input: Record<string, unknown>;
     started_at_epoch_ms: number;
     completed_at_epoch_ms: number;
-    retry_count: number;
-    max_retries: number;
-    locked_until_epoch_ms: number;
-    lock_id: string;
+    deadline_at_epoch_ms: number;
   }>,
 ): Promise<WorkflowExecution> {
   const now = new Date().getTime();
@@ -211,21 +224,9 @@ export async function updateExecution(
     setClauses.push(`completed_at_epoch_ms = ?`);
     params.push(data.completed_at_epoch_ms);
   }
-  if (data.retry_count !== undefined) {
-    setClauses.push(`retry_count = ?`);
-    params.push(data.retry_count);
-  }
-  if (data.max_retries !== undefined) {
-    setClauses.push(`max_retries = ?`);
-    params.push(data.max_retries);
-  }
-  if (data.locked_until_epoch_ms !== undefined) {
-    setClauses.push(`locked_until_epoch_ms = ?`);
-    params.push(data.locked_until_epoch_ms);
-  }
-  if (data.lock_id !== undefined) {
-    setClauses.push(`lock_id = ?`);
-    params.push(data.lock_id);
+  if (data.deadline_at_epoch_ms !== undefined) {
+    setClauses.push(`deadline_at_epoch_ms = ?`);
+    params.push(data.deadline_at_epoch_ms);
   }
 
   params.push(id);
@@ -264,47 +265,31 @@ export async function updateExecution(
 export async function cancelExecution(
   env: Env,
   executionId: string,
-): Promise<WorkflowExecution | null> {
+): Promise<string | null> {
   const now = Date.now();
 
-  // Only cancel if currently pending or running
+  // Only cancel if currently enqueued or running
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions
       SET 
         status = 'cancelled',
-        updated_at = ?,
-        completed_at_epoch_ms = ?,
-        error = ?
-      WHERE id = ? AND status IN ('pending', 'running')
-      RETURNING *
+        updated_at = ?
+      WHERE id = ? AND status IN ('enqueued', 'running')
+      RETURNING id
     `,
     // error column is JSONB, so serialize it
-    params: [
-      now,
-      now,
-      JSON.stringify("Execution cancelled by user"),
-      executionId,
-    ],
+    params: [now, executionId],
   });
 
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
+  const id = result.result[0]?.results?.[0] as string | undefined;
 
-  if (!row) {
+  if (!id) {
     // Check if execution exists but wasn't in cancellable state
-    const existing = await getExecution(env, executionId);
-    if (existing) {
-      console.warn(
-        `[CANCEL] Execution ${executionId} is ${existing.status}, cannot cancel`,
-      );
-      return existing;
-    }
     return null;
   }
 
-  return transformDbRowToExecution(row);
+  return id;
 }
 
 /**
@@ -321,25 +306,16 @@ export async function cancelExecution(
 export async function resumeExecution(
   env: Env,
   executionId: string,
-  options?: {
-    /** Reset retry count to 0 (default: true) */
-    resetRetries?: boolean;
-  },
 ): Promise<WorkflowExecution | null> {
   const now = Date.now();
-  const resetRetries = options?.resetRetries ?? true;
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions
       SET 
-        status = 'pending',
+        status = 'enqueued',
         updated_at = ?,
         completed_at_epoch_ms = NULL,
-        error = NULL,
-        locked_until_epoch_ms = NULL,
-        lock_id = NULL
-        ${resetRetries ? ", retry_count = 0" : ""}
       WHERE id = ? AND status = 'cancelled'
       RETURNING *
     `,
@@ -422,6 +398,40 @@ export async function listExecutions(
 }
 
 /**
+ * List workflow executions with filtering
+ */
+export async function processEnqueuedExecutions(env: Env): Promise<string[]> {
+  console.log(
+    "🚀 ~ processEnqueuedExecutions ~ processing enqueued executions",
+  );
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `
+      UPDATE workflow_executions SET status = 'running' WHERE status = 'enqueued' AND start_at_epoch_ms <= ? RETURNING id
+    `,
+    params: [Date.now()],
+  });
+  const ids =
+    result.result[0]?.results?.map(
+      (row: unknown) => (row as { id: string }).id,
+    ) || [];
+
+  for (const id of ids) {
+    console.log("🚀 ~ processEnqueuedExecutions ~ executing workflow:", id);
+    executeWorkflow(env, id).catch((error: Error) => {
+      console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
+    });
+  }
+
+  console.log("🚀 ~ processEnqueuedExecutions ~ ids:", ids);
+
+  return (
+    result.result[0]?.results?.map(
+      (row: unknown) => (row as { id: string }).id,
+    ) || []
+  );
+}
+
+/**
  * Transform database row to ExecutionStepResult
  */
 function transformDbRowToStepResult(
@@ -436,7 +446,7 @@ function transformDbRowToStepResult(
     ...row,
     // Synthesize required BaseCollectionEntity fields
     id: row.id ?? `${row.execution_id}/${row.step_id}`,
-    title: row.title ?? `Step ${row.step_id}`,
+    title: row.title ?? `Step_${row.step_id}`,
     created_at: startedAt,
     updated_at: completedAt,
     // Convert epoch ms fields to numbers (schema expects number, not string)

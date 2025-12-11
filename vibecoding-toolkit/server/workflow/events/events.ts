@@ -10,10 +10,8 @@
 import type { Env } from "../../main.ts";
 import { transformDbRowToEvent } from "../../collections/workflow.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
-import { ScheduleOptions, Scheduler } from "../scheduler.ts";
-import { executeWorkflowTool } from "../tools.ts";
-import { DefaultEnv } from "@decocms/runtime";
-import { AppContext } from "@decocms/runtime/tools";
+import { Scheduler } from "../scheduler.ts";
+import { wakeExecution } from "../events.ts";
 
 /**
  * Add an event to the workflow events table
@@ -135,7 +133,6 @@ export async function sendSignal(
     authorization?: string;
     /** Optional scheduler (will be created from env if not provided) */
     scheduler?: Scheduler;
-    runtimeContext?: unknown;
   },
 ): Promise<WorkflowEvent> {
   const event = await addEvent(env, {
@@ -152,7 +149,6 @@ export async function sendSignal(
   if (options?.wakeExecution !== false) {
     await wakeExecution(env, executionId, {
       authorization: options?.authorization,
-      runtimeContext: options?.runtimeContext,
       scheduler: options?.scheduler,
     });
   }
@@ -193,57 +189,4 @@ export async function checkTimer(
   stepName: string,
 ): Promise<WorkflowEvent | null> {
   return consumeEvent(env, executionId, "timer", stepName);
-}
-
-/**
- * Wake an execution for processing.
- *
- * Uses the queue if available, otherwise just updates timestamp
- * for polling-based schedulers.
- */
-export async function wakeExecution(
-  env: Env,
-  executionId: string,
-  options?: {
-    delayMs?: number;
-    authorization?: string;
-    scheduler?: Scheduler;
-    runtimeContext?: unknown;
-  },
-): Promise<void> {
-  // Update timestamp (for polling schedulers)
-  await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `UPDATE workflow_executions SET updated_at = ? WHERE id = ?`,
-    params: [Date.now(), executionId],
-  });
-
-  const scheduler =
-    options?.scheduler ??
-    ({
-      schedule: async (executionId: string, options: ScheduleOptions) => {
-        executeWorkflowTool(env)
-          .execute({
-            context: {
-              executionId,
-            },
-            runtimeContext: options?.runtimeContext as unknown as AppContext<
-              DefaultEnv<any>
-            >,
-          })
-          .catch((error) => {
-            console.error("🚀 ~ Error executing workflow:", error);
-            throw error;
-          });
-      },
-    } as Scheduler); // TODO: Implement scheduler
-  const authorization =
-    options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
-
-  if (options?.delayMs) {
-    await scheduler.scheduleAfter(executionId, options.delayMs, {
-      authorization,
-    });
-  } else {
-    await scheduler.schedule(executionId, { authorization });
-  }
 }

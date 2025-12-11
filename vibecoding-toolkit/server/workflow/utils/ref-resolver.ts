@@ -2,7 +2,7 @@
  * @ref Resolution for Workflow v3
  *
  * Resolves references in step inputs:
- * - @stepName.output.path - Output from previous step
+ * - @stepName.path - Output from previous step
  * - @input.path - Workflow input
  * - @item - Current item in forEach loop
  * - @index - Current index in forEach loop
@@ -46,7 +46,7 @@ export function isAtRef(value: unknown): value is `@${string}` {
  * Parse an @ref string into its components
  */
 export function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input" | "output" | "item" | "index" | "group";
+  type: "step" | "input" | "output" | "item";
   stepName?: string;
   groupId?: string;
   path?: string;
@@ -59,46 +59,21 @@ export function parseAtRef(ref: `@${string}`): {
     return { type: "item", path };
   }
 
-  // ForEach index reference: @index
-  if (refStr === "index") {
-    return { type: "index" };
-  }
-
   // Input reference: @input.path.to.value
   if (refStr.startsWith("input")) {
     const path = refStr.length > 5 ? refStr.substring(6) : ""; // Remove 'input.' or 'input'
     return { type: "input", path };
   }
 
-  // Output reference (for triggers): @output.path.to.value
-  if (refStr.startsWith("output")) {
-    const path = refStr.length > 6 ? refStr.substring(7) : ""; // Remove 'output.' or 'output'
-    return { type: "output", path };
-  }
-
-  // Parallel group reference: @group:groupId.path
-  if (refStr.startsWith("group:")) {
-    const rest = refStr.substring(6); // Remove 'group:'
-    const parts = rest.split(".");
-    const groupId = parts[0];
-    const path = parts.slice(1).join(".");
-    return { type: "group", groupId, path };
-  }
-
-  // Step reference: @stepName.output.path or @stepName.path
+  // Step output reference: @stepName.path
   const parts = refStr.split(".");
   const stepName = parts[0];
-
-  // Remove 'output' from path if present (it's implicit)
-  let pathParts = parts.slice(1);
-  if (pathParts[0] === "output") {
-    pathParts = pathParts.slice(1);
-  }
+  const path = parts.slice(1).join(".");
 
   return {
     type: "step",
     stepName,
-    path: pathParts.join("."),
+    path,
   };
 }
 
@@ -160,23 +135,6 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
         return { value };
       }
 
-      case "output": {
-        if (ctx.output === undefined) {
-          return {
-            value: undefined,
-            error: "@output used before workflow completion",
-          };
-        }
-        const value = getValueByPath(ctx.output, parsed.path || "");
-        if (value === undefined) {
-          return {
-            value: undefined,
-            error: `Output path not found: @output.${parsed.path}`,
-          };
-        }
-        return { value };
-      }
-
       case "step": {
         const stepOutput = ctx.stepOutputs.get(parsed.stepName || "");
         if (stepOutput === undefined) {
@@ -206,30 +164,6 @@ export function resolveRef(ref: `@${string}`, ctx: RefContext): RefResolution {
         return { value };
       }
 
-      case "index": {
-        if (ctx.index === undefined) {
-          return {
-            value: undefined,
-            error: `@index used outside of forEach context`,
-          };
-        }
-        return { value: ctx.index };
-      }
-
-      case "group": {
-        // Group results are stored as @group:groupId in stepOutputs
-        const groupKey = `@group:${parsed.groupId}`;
-        const groupOutput = ctx.stepOutputs.get(groupKey);
-        if (groupOutput === undefined) {
-          return {
-            value: undefined,
-            error: `Group not found or not completed: ${parsed.groupId}`,
-          };
-        }
-        const value = getValueByPath(groupOutput, parsed.path || "");
-        return { value };
-      }
-
       default:
         return { value: undefined, error: `Unknown reference type: ${ref}` };
     }
@@ -256,6 +190,19 @@ const AT_REF_PATTERN =
   /@([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
 
 /**
+ * Regex to match a COMPLETE @ref (entire string is one reference)
+ */
+const SINGLE_AT_REF_PATTERN =
+  /^@([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)$/;
+
+/**
+ * Check if a value is a COMPLETE @ref string (the entire value is one reference)
+ */
+function isSingleAtRef(value: unknown): value is `@${string}` {
+  return typeof value === "string" && SINGLE_AT_REF_PATTERN.test(value);
+}
+
+/**
  * Resolve all @refs in an input object
  *
  * Handles:
@@ -265,10 +212,12 @@ const AT_REF_PATTERN =
  */
 export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   const errors: Array<{ ref: string; error: string }> = [];
-
+  console.log("🚀 ~ resolveAllRefs ~ input:", input);
+  console.log("🚀 ~ resolveAllRefs ~ ctx:", ctx);
   function resolveValue(value: unknown): unknown {
-    // If it's a string that IS an @ref (entire value)
-    if (isAtRef(value)) {
+    // If it's a string that IS an @ref (entire value is ONE reference)
+    if (isSingleAtRef(value)) {
+      // <-- Changed from isAtRef to isSingleAtRef
       const result = resolveRef(value, ctx);
       if (result.error) {
         errors.push({ ref: value, error: result.error });
@@ -278,9 +227,12 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
 
     // If it's a string that CONTAINS @refs, interpolate them
     if (typeof value === "string" && value.includes("@")) {
+      console.log("🚀 ~ resolveAllRefs ~ value:", value);
       return value.replace(AT_REF_PATTERN, (match) => {
+        console.log("🚀 ~ resolveAllRefs ~ match:", match);
         if (isAtRef(match as `@${string}`)) {
           const result = resolveRef(match as `@${string}`, ctx);
+          console.log("🚀 ~ resolveAllRefs ~ result:", result);
           if (result.error) {
             errors.push({ ref: match, error: result.error });
             return match; // Keep original if resolution fails
@@ -291,21 +243,29 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
           if (typeof val === "object") return JSON.stringify(val);
           return String(val);
         }
+        console.log("🚀 ~ resolveAllRefs ~ match not at ref:", match);
         return match;
       });
     }
 
     // If it's an array, resolve each element
     if (Array.isArray(value)) {
-      return value.map((v) => resolveValue(v));
+      return value.map((v) => {
+        console.log("🚀 ~ resolveAllRefs ~ v:", v);
+        const resolved = resolveValue(v);
+        console.log("🚀 ~ resolveAllRefs ~ resolved:", resolved);
+        return resolved;
+      });
     }
 
     // If it's an object, resolve each property
     if (value !== null && typeof value === "object") {
+      console.log("🚀 ~ resolveAllRefs ~ value is object:", value);
       const resolvedObj: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(value)) {
         resolvedObj[key] = resolveValue(val);
       }
+      console.log("🚀 ~ resolveAllRefs ~ resolvedObj:", resolvedObj);
       return resolvedObj;
     }
 
@@ -314,6 +274,8 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   }
 
   const resolved = resolveValue(input);
+  console.log("🚀 ~ resolveAllRefs ~ resolved:", resolved);
+  console.log("🚀 ~ resolveAllRefs ~ errors:", errors);
   return { resolved, errors: errors.length > 0 ? errors : undefined };
 }
 

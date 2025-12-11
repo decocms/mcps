@@ -1,12 +1,12 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
-import { Env } from "../main.ts";
+import { Env } from "../../main.ts";
 import { z } from "zod";
 import {
   WORKFLOW_BINDING,
   WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
-import { getStepResults } from "../lib/execution-db.ts";
+import { getStepResults } from "../../lib/execution-db.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_EXECUTION_STEP_RESULTS_LIST",
@@ -33,8 +33,6 @@ export const createListTool = (env: Env) =>
       context: z.infer<typeof LIST_BINDING.inputSchema>;
     }) => {
       const { where } = context;
-      console.log("🚀 ~ context:", context);
-
       const hasExecutionId =
         where?.operator === "eq" &&
         where?.field?.includes("execution_id") &&

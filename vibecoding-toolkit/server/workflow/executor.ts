@@ -17,11 +17,20 @@ import {
   resolveAllRefs,
   resolveRef,
 } from "./utils/ref-resolver.ts";
-import { getStepResults, updateExecution } from "../lib/execution-db.ts";
-import { lockWorkflowExecution, releaseLock } from "./lock.ts";
+import {
+  getExecution,
+  getStepResults,
+  updateExecution,
+} from "../lib/execution-db.ts";
 import type { Step, Trigger } from "@decocms/bindings/workflow";
-import { getWorkflow } from "server/tools/workflow.ts";
-import { StepExecutor, StepResult } from "./steps/step-executor.ts";
+import { getWorkflow } from "server/tools/workflow/workflow.ts";
+import { StepExecutor } from "./steps/step-executor.ts";
+import { groupStepsByLevel, validateNoCycles } from "./utils/dag.ts";
+import {
+  DurableSleepError,
+  WaitingForSignalError,
+  WorkflowCancelledError,
+} from "./utils/errors.ts";
 
 function parseForEachItems(value: unknown): unknown[] {
   // Already an array
@@ -113,13 +122,15 @@ async function executeForEach(
   stepExecutor: StepExecutor,
   executionId: string,
 ): Promise<{ outputs: unknown[]; stepIds: string[] }> {
-  const config = step.config!.forEach!;
+  const config = step.config!.loop!.for!;
+
   const items = parseForEachItems(
     resolveRef(config.items as `@${string}`, ctx).value,
   );
 
-  const mode = config.mode ?? "sequential";
-  const concurrency = config.maxConcurrency ?? items.length;
+  const limit = step.config!.loop!.limit ?? items.length;
+
+  console.log({ step, items, limit });
 
   const executeItem = async (item: unknown, index: number) => {
     const itemCtx: RefContext = { ...ctx, item, index };
@@ -136,47 +147,49 @@ async function executeForEach(
     );
   };
 
-  if (mode === "sequential") {
-    const results = [];
-    for (let i = 0; i < items.length; i++) {
-      results.push(await executeItem(items[i], i));
-    }
-    return {
-      outputs: results.map((r) => r.output),
-      stepIds: results.map((r) => r.id!),
-    };
+  const results = [];
+  for (let i = 0; i < limit; i++) {
+    results.push(await executeItem(items[i], i));
   }
-
-  // Parallel with concurrency limit
-  const results: StepResult[] = [];
-  for (let i = 0; i < items.length; i += concurrency) {
-    const batch = items.slice(i, i + concurrency);
-    const batchResults = await Promise.all(
-      batch.map((item, j) => executeItem(item, i + j)),
-    );
-    results.push(...batchResults);
-  }
-
   return {
     outputs: results.map((r) => r.output),
     stepIds: results.map((r) => r.id!),
   };
 }
 
-const DEFAULT_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export async function executeWorkflow(env: Env, executionId: string) {
-  let lockId: string | undefined;
-
   try {
-    // Acquire lock
-    const { lockedExecution } = await lockWorkflowExecution(env, executionId, {
-      durationMs: DEFAULT_LOCK_DURATION_MS,
-    });
-    lockId = lockedExecution.lockId;
+    const execution = await getExecution(env, executionId);
+
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    // Restore the runtime context from when the execution was created
+    // This allows cron-triggered executions to use the original user's auth
+    const runtimeContext = (
+      execution as unknown as {
+        runtime_context?: {
+          token?: string;
+          meshUrl?: string;
+          connectionId?: string;
+          authorization?: string;
+        };
+      }
+    ).runtime_context;
+
+    if (runtimeContext?.token && env.MESH_REQUEST_CONTEXT) {
+      env.MESH_REQUEST_CONTEXT.token = runtimeContext.token;
+      env.MESH_REQUEST_CONTEXT.meshUrl =
+        runtimeContext.meshUrl ?? "http://localhost:8002";
+      env.MESH_REQUEST_CONTEXT.connectionId = runtimeContext.connectionId;
+      env.MESH_REQUEST_CONTEXT.authorization = runtimeContext.authorization;
+    }
+
     // Load workflow definition
-    const workflow = await getWorkflow(env, lockedExecution.workflowId);
+    const workflow = await getWorkflow(env, execution.workflow_id);
     if (!workflow) {
-      throw new Error(`Workflow ${lockedExecution.workflowId} not found`);
+      throw new Error(`Workflow ${executionId} not found`);
     }
 
     const parsedSteps = workflow.steps
@@ -189,9 +202,9 @@ export async function executeWorkflow(env: Env, executionId: string) {
 
     const triggers: Trigger[] = workflow.triggers || [];
     const workflowInput =
-      typeof lockedExecution.input === "string"
-        ? JSON.parse(lockedExecution.input)
-        : lockedExecution.input || {};
+      typeof execution.input === "string"
+        ? JSON.parse(execution.input)
+        : execution.input || {};
 
     // Build context from cached results
     const stepOutputs = new Map<string, unknown>();
@@ -205,34 +218,79 @@ export async function executeWorkflow(env: Env, executionId: string) {
     let lastOutput: unknown;
     const completedSteps: string[] = [];
 
+    // Track steps that were already completed from cached results
+    const alreadyCompletedStepNames = new Set(stepOutputs.keys());
+
     const stepExecutor = new StepExecutor(env);
-    for (const step of steps) {
-      if (step.config?.forEach) {
-        const { outputs, stepIds } = await executeForEach(
-          step,
-          ctx,
-          stepExecutor,
-          executionId,
-        );
-        stepOutputs.set(step.name, outputs);
-        completedSteps.push(...stepIds);
-      } else {
-        const input = resolveAllRefs(step.input, ctx).resolved as Record<
-          string,
-          unknown
-        >;
-        const result = await stepExecutor.executeStep(
-          step,
-          input,
-          ctx,
-          executionId,
-          {
-            started_at_epoch_ms: Date.now(),
-          },
-        );
-        if (!result.id) throw new Error(`Step result id is required`);
-        stepOutputs.set(step.name, result.output);
-        completedSteps.push(result.id);
+
+    // Validate no cycles before execution
+    const validation = validateNoCycles(steps);
+    if (!validation.isValid) {
+      throw new Error(validation.error);
+    }
+
+    // Group steps by execution level for parallel execution
+    const stepsByLevel = groupStepsByLevel(steps);
+
+    // Execute each level - steps within a level run in parallel
+    for (const levelSteps of stepsByLevel) {
+      // Filter out steps that have already been executed
+      const pendingSteps = levelSteps.filter(
+        (step) => !alreadyCompletedStepNames.has(step.name),
+      );
+
+      // Track already-completed steps from this level
+      for (const step of levelSteps) {
+        if (alreadyCompletedStepNames.has(step.name)) {
+          completedSteps.push(step.name);
+        }
+      }
+
+      // Skip execution if all steps in this level are already done
+      if (pendingSteps.length === 0) {
+        continue;
+      }
+
+      // Execute all pending steps in this level in parallel
+      const levelResults = await Promise.all(
+        pendingSteps.map(async (step) => {
+          if (step.config?.loop?.for) {
+            const { outputs, stepIds } = await executeForEach(
+              step,
+              ctx,
+              stepExecutor,
+              executionId,
+            );
+            return { step, outputs, stepIds, isForEach: true };
+          } else {
+            const input = resolveAllRefs(step.input, ctx).resolved as Record<
+              string,
+              unknown
+            >;
+            const result = await stepExecutor.executeStep(
+              step,
+              input,
+              ctx,
+              executionId,
+              {
+                started_at_epoch_ms: Date.now(),
+              },
+            );
+            if (!result.id) throw new Error(`Step result id is required`);
+            return { step, result, isForEach: false };
+          }
+        }),
+      );
+
+      // Update context with results from this level (needed for next level)
+      for (const levelResult of levelResults) {
+        if (levelResult.isForEach) {
+          stepOutputs.set(levelResult.step.name, levelResult.outputs);
+          completedSteps.push(...levelResult.stepIds!);
+        } else {
+          stepOutputs.set(levelResult.step.name, levelResult.result!.output);
+          completedSteps.push(levelResult.result!.id!);
+        }
       }
     }
 
@@ -261,16 +319,42 @@ export async function executeWorkflow(env: Env, executionId: string) {
           };
 
     // Mark completed
-    await updateExecution(env, lockedExecution.id, {
-      status: "completed",
+    await updateExecution(env, executionId, {
+      status: "success",
       output: workflowOutput,
       completed_at_epoch_ms: Date.now(),
-      retry_count: 0,
     });
-    return { status: "completed", output: workflowOutput, triggerResults };
+    return { status: "success", output: workflowOutput, triggerResults };
   } catch (err) {
+    if (err instanceof WaitingForSignalError) {
+      await updateExecution(env, executionId, {
+        status: "enqueued",
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return { status: "waiting_for_signal", message: err.message };
+    }
+    if (err instanceof WorkflowCancelledError) {
+      await updateExecution(env, executionId, {
+        status: "cancelled",
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return { status: "cancelled", error: err.message };
+    }
+    if (err instanceof DurableSleepError) {
+      await updateExecution(env, executionId, {
+        status: "enqueued",
+      });
+      return { status: "durable_sleep", message: err.message };
+    }
     console.error(`[WORKFLOW] Error executing workflow: ${err}`);
-  } finally {
-    if (lockId) await releaseLock(env, executionId, lockId);
+    await updateExecution(env, executionId, {
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+      completed_at_epoch_ms: Date.now(),
+    });
+    return {
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }

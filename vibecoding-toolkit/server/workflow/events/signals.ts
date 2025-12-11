@@ -29,7 +29,6 @@ export async function sendSignal(
     resumeExecution?: boolean;
     authorization?: string;
     scheduler?: Scheduler;
-    runtimeContext?: unknown;
   },
 ): Promise<WorkflowSignal> {
   return sendEventSignal(
@@ -41,7 +40,6 @@ export async function sendSignal(
       wakeExecution: options?.resumeExecution ?? true,
       authorization: options?.authorization,
       scheduler: options?.scheduler,
-      runtimeContext: options?.runtimeContext,
     },
   );
 }

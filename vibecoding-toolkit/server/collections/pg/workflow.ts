@@ -27,27 +27,26 @@ const postgresWorkflowTableIndexesQuery = `
 const postgresWorkflowExecutionTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS workflow_executions (
   id TEXT PRIMARY KEY,
-  workflow_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',
+  workflow_id TEXT,
+  status TEXT,
   input JSONB,
   output JSONB,
-  parent_execution_id TEXT,
   
-  created_at BIGINT NOT NULL,
-  updated_at BIGINT NOT NULL,
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM now())*1000)::bigint,
+  updated_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM now())*1000)::bigint,
+  start_at_epoch_ms BIGINT,
   started_at_epoch_ms BIGINT,
   completed_at_epoch_ms BIGINT,
-  
-  locked_until_epoch_ms BIGINT,
-  lock_id TEXT,
-  
-  retry_count INTEGER DEFAULT 0,
-  max_retries INTEGER DEFAULT 10,
+
+  timeout_ms BIGINT,
+  deadline_at_epoch_ms BIGINT,
   error JSONB,
   
   created_by TEXT,
-  FOREIGN KEY (workflow_id) REFERENCES workflows(id),
-  FOREIGN KEY (parent_execution_id) REFERENCES workflow_executions(id)
+  
+  -- Stores the mesh runtime context (token, meshUrl, connectionId) for background execution
+  -- This allows cron-triggered executions to use the original user's auth context
+  runtime_context JSONB
 )
 `;
 
@@ -55,10 +54,7 @@ const postgresWorkflowExecutionTableIndexesQuery = `
   CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_id ON workflow_executions(workflow_id);
   CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions(status);
   CREATE INDEX IF NOT EXISTS idx_workflow_executions_created_at ON workflow_executions(created_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_updated_at ON workflow_executions(updated_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_parent ON workflow_executions(parent_execution_id) WHERE parent_execution_id IS NOT NULL;
-  CREATE INDEX IF NOT EXISTS idx_executions_lock ON workflow_executions (status, locked_until_epoch_ms) WHERE status IN ('pending', 'running');
-  CREATE INDEX IF NOT EXISTS idx_executions_recovery ON workflow_executions (status, retry_count) WHERE status = 'running';
+  CREATE INDEX IF NOT EXISTS idx_workflow_executions_start_at ON workflow_executions(start_at_epoch_ms);
 `;
 
 const postgresExecutionStepResultsTableIdempotentQuery = `

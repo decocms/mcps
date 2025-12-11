@@ -6,7 +6,9 @@ import {
 } from "../shared/deco.gen.ts";
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./collections/index.ts";
-import { insertDefaultWorkflowIfNotExists } from "./tools/workflow.ts";
+import { insertDefaultWorkflowIfNotExists } from "./tools/workflow/workflow.ts";
+import { ensureCronScheduler } from "./lib/cron-scheduler.ts";
+import { processEnqueuedExecutions } from "./lib/execution-db.ts";
 
 export type Env = DefaultEnv<typeof StateSchema> &
   DecoEnv & {
@@ -29,16 +31,19 @@ export type Env = DefaultEnv<typeof StateSchema> &
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     onChange: async (env) => {
-      console.log("onChange", env);
       try {
         await ensureCollections(env);
         await ensureIndexes(env);
         await insertDefaultWorkflowIfNotExists(env);
+
+        // Set up pg_cron job to process enqueued workflows
+        // Use host.docker.internal for Docker to reach the host machine
+        const baseUrl = env.BASE_URL || "http://host.docker.internal:3000";
+        const processEndpoint = `${baseUrl}/api/process-workflows`;
+        await ensureCronScheduler(env, processEndpoint);
       } catch (error) {
         console.error("error ensuring collections", error);
       }
-
-      console.log("collections ensured");
     },
     /**
      * These scopes define the asking permissions of your
@@ -74,12 +79,46 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       name: "DATABASE",
       app_name: "@deco/database",
     },
-    {
-      type: "mcp",
-      name: "AUTH",
-      app_name: "@deco/auth",
-    },
   ],
+  /**
+   * Custom HTTP routes handler.
+   * Handles /api/process-workflows for pg_cron to trigger workflow processing.
+   */
+  fetch: async (req: Request, env: Env) => {
+    const url = new URL(req.url);
+    // pg_cron calls this endpoint to process enqueued workflows
+    if (url.pathname === "/api/process-workflows" && req.method === "POST") {
+      try {
+        const processedIds = await processEnqueuedExecutions(env);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            processed: processedIds.length,
+            ids: processedIds,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      } catch (error) {
+        console.error("[CRON] Error processing workflows:", error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    // Fall through for other requests (return 404 or handle assets if available)
+    return new Response("Not found", { status: 404 });
+  },
 });
 
 export default runtime;

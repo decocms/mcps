@@ -2062,10 +2062,6 @@ export const StateSchema = z.object({
     value: z.string(),
     __type: z.literal("@deco/database").default("@deco/database"),
   }),
-  AUTH: z.object({
-    value: z.string(),
-    __type: z.literal("@deco/auth").default("@deco/auth"),
-  }),
 });
 
 export interface Env {

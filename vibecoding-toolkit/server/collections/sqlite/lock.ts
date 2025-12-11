@@ -1,4 +1,4 @@
-import type { Env } from "../main.ts";
+import type { Env } from "../../main.ts";
 
 export interface LockResult {
   lockedExecution: {

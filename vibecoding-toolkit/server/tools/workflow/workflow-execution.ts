@@ -3,11 +3,12 @@ import {
   createStreamableTool,
 } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
-import { Env } from "../main.ts";
+import { Env } from "../../main.ts";
 import { z } from "zod";
 import {
   WORKFLOW_BINDING,
   WorkflowExecutionSchema,
+  WorkflowExecutionStatus,
   WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
 import {
@@ -15,7 +16,8 @@ import {
   getExecution,
   listExecutions,
   getStreamChunks,
-} from "../lib/execution-db.ts";
+} from "../../lib/execution-db.ts";
+import { getWorkflow } from "./workflow.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -70,7 +72,6 @@ const streamableGetTool = (env: Env) =>
       const { id } = context;
 
       const initialExecution = await getExecution(env, id);
-      console.log("initialExecution", initialExecution);
       if (!initialExecution) {
         const errorStream = new ReadableStream({
           start(controller) {
@@ -87,6 +88,11 @@ const streamableGetTool = (env: Env) =>
             "Cache-Control": "no-cache",
           },
         });
+      }
+
+      const workflow = await getWorkflow(env, initialExecution.workflow_id);
+      if (!workflow) {
+        throw new Error(`Workflow not found: ${initialExecution.workflow_id}`);
       }
 
       let lastStepCount = -1;
@@ -179,19 +185,12 @@ const streamableGetTool = (env: Env) =>
               }
 
               // Check for terminal states (including "pending" with no lock - waiting for signal)
-              const terminalStatuses = [
-                "completed",
-                "failed",
-                "cancelled",
+              const terminalStatuses: WorkflowExecutionStatus[] = [
+                "success",
                 "error",
+                "cancelled",
               ];
 
-              console.log({ status, execution });
-
-              // Also treat as terminal if execution is pending but unlocked (waiting for signal)
-              const isWaitingForSignal =
-                status === "pending" && !execution.lock_id;
-              console.log({ isWaitingForSignal });
               if (terminalStatuses.includes(status)) {
                 if (isStreamActive) {
                   console.log("closing stream");
@@ -202,7 +201,7 @@ const streamableGetTool = (env: Env) =>
                 return;
               }
 
-              console.log("scheduling next poll");
+              // console.log("scheduling next poll");
               // Schedule next poll only if stream is still active
               if (isStreamActive) {
                 pollTimeoutId = setTimeout(() => {

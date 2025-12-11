@@ -19,10 +19,12 @@ import { consumeSignal, getSignals } from "../events/signals.ts";
 import {
   DurableSleepError,
   WaitingForSignalError,
+  WorkflowCancelledError,
 } from "../../workflow/utils/errors.ts";
 import { checkTimer, scheduleTimer } from "../events/events.ts";
 import {
   createStepResult,
+  getExecution,
   updateStepResult,
   writeStreamChunk,
 } from "../../lib/execution-db.ts";
@@ -76,86 +78,138 @@ export class StepExecutor {
    * Streams each chunk to step_stream_chunks table for real-time visibility,
    * then saves the final accumulated result to step_results when complete.
    */
-  private async executeToolStep(
+  private async executeStreamableToolStep(
     step: Step,
     input: Record<string, unknown>,
     executionId: string,
+    signal?: AbortSignal,
   ): Promise<StepResult> {
-    const parsed = ToolCallActionSchema.safeParse(step.action);
-    if (!parsed.success) {
-      throw new Error("Tool step missing tool configuration");
-    }
-
-    const { connectionId, toolName } = parsed.data;
-    console.log("[TOOL STEP]", { toolName, connectionId, input });
-
-    if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
-      throw new Error("MESH_URL is not set");
-    }
-
     const startedAt = Date.now();
-
-    const response = await fetch(
-      `${this.env.MESH_REQUEST_CONTEXT.meshUrl}/mcp/${connectionId}/stream/${toolName}`,
-      {
-        method: "POST",
-        body: JSON.stringify(input),
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.env.MESH_REQUEST_CONTEXT.token}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Tool call failed: ${response.status} - ${errorText}`);
-    }
-
-    const stream = responseToStream(response);
-    const reader = stream.getReader();
-
-    const chunks: unknown[] = [];
-    let chunkIndex = 0;
-
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        await writeStreamChunk(
-          this.env,
-          executionId,
-          step.name,
-          chunkIndex,
-          value,
-        );
-
-        chunks.push(value);
-        chunkIndex++;
+      const parsed = ToolCallActionSchema.safeParse(step.action);
+      if (!parsed.success) {
+        throw new Error("Tool step missing tool configuration");
       }
-    } finally {
-      reader.releaseLock();
+
+      const { connectionId, toolName } = parsed.data;
+
+      if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
+        throw new Error("MESH_URL is not set");
+      }
+
+      const response = await fetch(
+        `${this.env.MESH_REQUEST_CONTEXT.meshUrl}/mcp/${connectionId}/stream/${toolName}`,
+        {
+          method: "POST",
+          body: JSON.stringify(input),
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.env.MESH_REQUEST_CONTEXT.token}`,
+          },
+          signal,
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          status: "error",
+          error: errorText,
+          startedAt,
+        };
+      }
+
+      const stream = responseToStream(response);
+      const reader = stream.getReader();
+
+      const chunks: unknown[] = [];
+      let chunkIndex = 0;
+
+      try {
+        while (true) {
+          if (signal?.aborted) {
+            throw new Error("Step execution aborted");
+          }
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          await writeStreamChunk(
+            this.env,
+            executionId,
+            step.name,
+            chunkIndex,
+            value,
+          );
+
+          chunks.push(value);
+          chunkIndex++;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Determine final output - single chunk or array of chunks
+      const output = chunks.length === 1 ? chunks[0] : chunks;
+
+      // Clean up stream chunks after step completes (optional - keep for debugging)
+      // await deleteStreamChunks(this.env, executionId, step.name);
+
+      return {
+        status: "success",
+        output,
+        startedAt,
+        completedAt: Date.now(),
+        excludeFromWorkflowOutput: isLargeOutput(output),
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        error: error instanceof Error ? error.message : String(error),
+        startedAt,
+      };
     }
+  }
 
-    console.log(
-      `[TOOL STEP] Completed ${step.name} with ${chunks.length} chunks`,
-    );
+  private async executeToolStep(
+    step: Step,
+    input: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const startedAt = Date.now();
+    try {
+      const parsed = ToolCallActionSchema.safeParse(step.action);
+      if (!parsed.success) {
+        throw new Error("Tool step missing tool configuration");
+      }
 
-    // Determine final output - single chunk or array of chunks
-    const output = chunks.length === 1 ? chunks[0] : chunks;
+      const { connectionId, toolName } = parsed.data;
 
-    // Clean up stream chunks after step completes (optional - keep for debugging)
-    // await deleteStreamChunks(this.env, executionId, step.name);
+      if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
+        throw new Error("MESH_URL is not set");
+      }
 
-    return {
-      status: "success",
-      output,
-      startedAt,
-      completedAt: Date.now(),
-      excludeFromWorkflowOutput: isLargeOutput(output),
-    };
+      const { response } = await this.env.AUTH.CALL_TOOL({
+        connection: connectionId,
+        tool: toolName,
+        arguments: input,
+      });
+
+      console.log("🚀 ~ executeToolStep ~ response:", response);
+
+      return {
+        status: "success",
+        output: response,
+        startedAt,
+        completedAt: Date.now(),
+        excludeFromWorkflowOutput: isLargeOutput(response),
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        error: error instanceof Error ? error.message : String(error),
+        startedAt,
+      };
+    }
   }
 
   /**
@@ -251,15 +305,6 @@ export class StepExecutor {
     executionId: string,
     existingStepResult?: { started_at_epoch_ms?: number | null },
   ): Promise<StepResult> {
-    console.log("🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ step:", step);
-    console.log(
-      "🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ executionId:",
-      executionId,
-    );
-    console.log(
-      "🚀 ~ StepExecutor ~ executeWaitForSignalStep ~ existingStepResult:",
-      existingStepResult,
-    );
     const parsed = WaitForSignalActionSchema.safeParse(step.action);
     if (!parsed.success) {
       throw new Error("waitForSignal step missing configuration");
@@ -274,9 +319,11 @@ export class StepExecutor {
 
     const signals = await getSignals(this.env, executionId);
     const matching = signals.find((s) => s.signal_name === signalName);
-
     if (matching?.signal_name) {
-      await consumeSignal(this.env, matching.id);
+      const consumed = await consumeSignal(this.env, matching.id);
+      if (!consumed) {
+        throw new Error(`Signal '${signalName}' not consumed`);
+      }
       return {
         status: "success",
         output: {
@@ -311,61 +358,87 @@ export class StepExecutor {
       output?: unknown;
     },
   ): Promise<StepResult> {
+    const execution = await getExecution(this.env, executionId);
+    if (execution?.status === "cancelled") {
+      throw new WorkflowCancelledError(executionId);
+    }
+
+    console.log("🚀 ~ executeStep ~ step:", step);
+    console.log("🚀 ~ executeStep ~ resolvedInput:", resolvedInput);
+    console.log("🚀 ~ executeStep ~ executionId:", executionId);
+
     const stepType = getStepType(step) as "tool" | "code" | "sleep" | "signal";
-    console.log(`[STEP] Executing step '${step.name}' of type '${stepType}'`);
     await createStepResult(this.env, {
       execution_id: executionId,
       step_id: step.name,
       started_at_epoch_ms: Date.now(),
     });
-    let result: StepResult;
 
-    switch (stepType) {
-      case "tool": {
-        result = await this.executeToolStep(step, resolvedInput, executionId);
-        break;
-      }
+    // Extract retry and timeout config
+    const maxAttempts = step.config?.maxAttempts ?? 1;
+    const backoffMs = step.config?.backoffMs ?? 1000;
+    const timeoutMs = step.config?.timeoutMs;
 
-      case "code": {
-        console.log(`[STEP] About to executeCode for '${step.name}'`);
-        try {
-          result = await executeCode(
-            (step.action as CodeAction).code,
-            resolvedInput,
-            step.name,
-          );
-        } catch (err) {
-          console.error(`[STEP] executeCode THREW for '${step.name}':`, err);
-          throw err;
-        }
-        break;
-      }
+    let lastError: Error | null = null;
+    let result: StepResult | null = null;
 
-      case "sleep": {
-        result = await this.executeSleepStep(
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        result = await this.executeStepWithTimeout(
           step,
+          stepType,
+          resolvedInput,
           ctx,
           executionId,
           existingStepResult,
+          timeoutMs,
         );
-        break;
+
+        // Success - break out of retry loop
+        if (result.status === "success") {
+          break;
+        }
+
+        // Step returned error status - treat as retryable
+        lastError = new Error(result.error || "Unknown step error");
+      } catch (err) {
+        // Re-throw non-retryable errors immediately
+        if (
+          err instanceof DurableSleepError ||
+          err instanceof WaitingForSignalError ||
+          err instanceof WorkflowCancelledError
+        ) {
+          throw err;
+        }
+
+        lastError = err instanceof Error ? err : new Error(String(err));
       }
 
-      case "signal": {
-        result = await this.executeWaitForSignalStep(
-          step,
-          executionId,
-          existingStepResult,
+      // If we have more attempts, wait with exponential backoff
+      if (attempt < maxAttempts) {
+        const delay = backoffMs * Math.pow(2, attempt - 1);
+        console.log(
+          `[STEP] Step '${step.name}' failed (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms...`,
         );
-        // Return full result so refs like @step.output.payload work even if payload is null
-        break;
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
-
-      default:
-        throw new Error(`Unknown step type for step: ${step.name}`);
     }
 
-    console.log("🚀 ~ StepExecutor ~ executeStep ~ result:", result);
+    // All attempts exhausted
+    if (!result || result.status === "error") {
+      const errorMessage =
+        lastError?.message || result?.error || "Unknown error";
+
+      await updateStepResult(this.env, executionId, step.name, {
+        error: errorMessage,
+        started_at_epoch_ms:
+          existingStepResult?.started_at_epoch_ms ?? Date.now(),
+      });
+
+      throw new Error(
+        `Step '${step.name}' failed after ${maxAttempts} attempt(s): ${errorMessage}`,
+      );
+    }
 
     const { id: updatedStepResult } = await updateStepResult(
       this.env,
@@ -375,7 +448,8 @@ export class StepExecutor {
         output: result.output,
         error: result.error,
         started_at_epoch_ms: result.startedAt,
-        completed_at_epoch_ms: Date.now(),
+        completed_at_epoch_ms:
+          result.status === "success" ? Date.now() : undefined,
       },
     );
 
@@ -383,6 +457,120 @@ export class StepExecutor {
       ...result,
       id: updatedStepResult,
     };
+  }
+
+  /**
+   * Execute step with optional timeout
+   */
+  private async executeStepWithTimeout(
+    step: Step,
+    stepType: "tool" | "code" | "sleep" | "signal",
+    resolvedInput: Record<string, unknown>,
+    ctx: RefContext,
+    executionId: string,
+    existingStepResult: {
+      started_at_epoch_ms?: number | null;
+      output?: unknown;
+    },
+    timeoutMs?: number,
+  ): Promise<StepResult> {
+    console.log("🚀 ~ executeStepWithTimeout ~ stepType:", stepType);
+    // No timeout - execute directly
+    if (timeoutMs === undefined || timeoutMs === null || timeoutMs <= 0) {
+      console.log("🚀 ~ executeStepWithTimeout ~ executing step directly");
+      return this.executeStepCore(
+        step,
+        stepType,
+        resolvedInput,
+        ctx,
+        executionId,
+        existingStepResult,
+      );
+    }
+
+    // Create abort controller for cancellable execution
+    const abortController = new AbortController();
+
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, timeoutMs);
+
+    try {
+      console.log("🚀 ~ executeStepWithTimeout ~ executing step with timeout");
+      const result = await this.executeStepCore(
+        step,
+        stepType,
+        resolvedInput,
+        ctx,
+        executionId,
+        existingStepResult,
+      );
+      clearTimeout(timeoutId);
+      return result;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (abortController.signal.aborted) {
+        throw new Error(`Step '${step.name}' timed out after ${timeoutMs}ms`);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Core step execution logic (extracted from original executeStep)
+   */
+  /**
+   * Core step execution logic
+   */
+  private async executeStepCore(
+    step: Step,
+    stepType: "tool" | "code" | "sleep" | "signal",
+    resolvedInput: Record<string, unknown>,
+    ctx: RefContext,
+    executionId: string,
+    existingStepResult: {
+      started_at_epoch_ms?: number | null;
+      output?: unknown;
+    },
+  ): Promise<StepResult> {
+    switch (stepType) {
+      case "tool": {
+        return await this.executeToolStep(step, resolvedInput);
+      }
+
+      case "code": {
+        try {
+          return await executeCode(
+            (step.action as CodeAction).code,
+            resolvedInput,
+            step.name,
+          );
+        } catch (err) {
+          console.error(`[STEP] executeCode THREW for '${step.name}':`, err);
+          throw err;
+        }
+      }
+
+      case "sleep": {
+        return await this.executeSleepStep(
+          step,
+          ctx,
+          executionId,
+          existingStepResult,
+        );
+      }
+
+      case "signal": {
+        return await this.executeWaitForSignalStep(
+          step,
+          executionId,
+          existingStepResult,
+        );
+      }
+
+      default:
+        throw new Error(`Unknown step type for step: ${step.name}`);
+    }
   }
 }
 
@@ -412,9 +600,10 @@ function isLargeOutput(output: unknown): boolean {
 }
 
 export function getStepType(step: Step): "tool" | "code" | "sleep" | "signal" {
+  console.log("🚀 ~ getStepType ~ step:", step);
   if ("toolName" in step.action) return "tool";
   if ("code" in step.action) return "code";
   if ("sleepUntil" in step.action || "sleepMs" in step.action) return "sleep";
   if ("signalName" in step.action) return "signal";
-  throw new Error("Unknown step type");
+  throw new Error(`Unknown step type for step: ${step.name}`);
 }
