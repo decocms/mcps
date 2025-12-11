@@ -11,6 +11,7 @@ import { StateSchema } from "../main.ts";
 import {
   listServers,
   getServer,
+  getServerVersions,
   parseServerId,
 } from "../lib/registry-client.ts";
 
@@ -195,6 +196,69 @@ export const createGetRegistryTool = (env: Env) =>
       } catch (error) {
         throw new Error(
           `Error getting server: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+    },
+  });
+
+/**
+ * COLLECTION_REGISTRY_APP_VERSIONS - Lists all versions of a specific server
+ */
+export const createVersionsRegistryTool = (env: Env) =>
+  createTool({
+    id: "COLLECTION_REGISTRY_APP_VERSIONS",
+    description:
+      "Lists all available versions of a specific MCP server from the registry",
+    inputSchema: z.object({
+      name: z
+        .string()
+        .describe(
+          "Server name to list versions for (e.g., 'ai.exa/exa' or 'com.example/my-server')",
+        ),
+    }),
+    outputSchema: z.object({
+      versions: z
+        .array(RegistryServerSchema)
+        .describe("Array of all available versions for the server"),
+      count: z.number().describe("Total number of versions available"),
+    }),
+    execute: async ({ context }: { context: any }) => {
+      const name = context?.name;
+      try {
+        if (!name) {
+          throw new Error("Server name not provided");
+        }
+
+        // Get registry URL from configuration
+        const registryUrl =
+          (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
+          undefined;
+
+        // Fetch all versions
+        const serverVersions = await getServerVersions(name, registryUrl);
+
+        // Map servers to output format with ID
+        const versions = serverVersions.map((server) => {
+          const officialMeta =
+            server._meta["io.modelcontextprotocol.registry/official"];
+
+          return {
+            id: crypto.randomUUID(),
+            title: server.server.name,
+            created_at: officialMeta?.publishedAt || new Date().toISOString(),
+            updated_at: officialMeta?.updatedAt || new Date().toISOString(),
+            server: server.server,
+            _meta: server._meta,
+          };
+        });
+
+        return {
+          versions,
+          count: versions.length,
+        };
+      } catch (error) {
+        throw new Error(
+          `Error listing server versions: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     },

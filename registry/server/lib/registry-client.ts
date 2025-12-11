@@ -121,6 +121,55 @@ export async function listServers(
 }
 
 /**
+ * Fetches all versions of a specific server directly from the API
+ *
+ * @param name - Server name (e.g., "ai.exa/exa")
+ * @param registryUrl - Custom registry URL (optional)
+ */
+export async function getServerVersions(
+  name: string,
+  registryUrl?: string,
+): Promise<RegistryServer[]> {
+  const baseUrl =
+    registryUrl || "https://registry.modelcontextprotocol.io/v0.1";
+  const url = `${baseUrl}/servers/${encodeURIComponent(name)}/versions`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error(
+        `Registry API returned status ${response.status}: ${response.statusText}`,
+      );
+    }
+
+    const data = (await response.json()) as RegistryServer[];
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error("Request timeout to registry (30s)");
+      }
+      throw new Error(`Error fetching server versions: ${error.message}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * Fetches a specific server by name and optional version
  *
  * @param name - Server name (e.g., "ai.exa/exa")
@@ -133,32 +182,23 @@ export async function getServer(
   registryUrl?: string,
 ): Promise<RegistryServer | null> {
   try {
-    const response = await listServers({
-      registryUrl,
-      search: name,
-      limit: 100, // Fetch enough to find all versions of this server
-    });
+    const versions = await getServerVersions(name, registryUrl);
 
-    // Filter by exact name match
-    const matchingServers = response.servers.filter(
-      (s) => s.server.name === name,
-    );
-
-    if (matchingServers.length === 0) {
+    if (versions.length === 0) {
       return null;
     }
 
     // If version was specified, find exact match
     if (version) {
-      return matchingServers.find((s) => s.server.version === version) || null;
+      return versions.find((s) => s.server.version === version) || null;
     }
 
     // Otherwise, return the latest (isLatest: true)
-    const latest = matchingServers.find(
+    const latest = versions.find(
       (s) => s._meta["io.modelcontextprotocol.registry/official"]?.isLatest,
     );
 
-    return latest || matchingServers[0];
+    return latest || versions[0];
   } catch (error) {
     throw new Error(
       `Error fetching server ${name}${version ? `:${version}` : ""}: ${error instanceof Error ? error.message : String(error)}`,
