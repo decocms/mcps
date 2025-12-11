@@ -154,8 +154,11 @@ export async function getServerVersions(
       );
     }
 
-    const data = (await response.json()) as RegistryServer[];
-    return data;
+    const data = (await response.json()) as {
+      servers: RegistryServer[];
+      metadata: { count: number };
+    };
+    return data.servers;
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
