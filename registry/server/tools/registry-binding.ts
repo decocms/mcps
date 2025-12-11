@@ -2,7 +2,6 @@
  * Registry Binding Implementation
  *
  * Implements COLLECTION_REGISTRY_LIST and COLLECTION_REGISTRY_GET tools
- * to access the Model Context Protocol Registry
  */
 
 import { createTool } from "@decocms/runtime/tools";
