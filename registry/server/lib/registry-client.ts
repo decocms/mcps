@@ -50,16 +50,42 @@ const DEFAULT_REGISTRY_URL =
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 /**
+ * Options for fetching servers from registry
+ */
+export interface ListServersOptions {
+  registryUrl?: string;
+  cursor?: string;
+  limit?: number;
+  search?: string;
+  version?: string;
+}
+
+/**
  * Fetches list of servers from registry with cursor-based pagination support
  */
 export async function listServers(
-  registryUrl?: string,
-  cursor?: string,
+  options: ListServersOptions | string = {},
+  cursorLegacy?: string,
 ): Promise<RegistryResponse> {
-  const url = new URL(registryUrl || DEFAULT_REGISTRY_URL);
+  // Support legacy usage: listServers(registryUrl, cursor)
+  const opts =
+    typeof options === "string"
+      ? { registryUrl: options, cursor: cursorLegacy }
+      : options;
 
-  if (cursor) {
-    url.searchParams.append("cursor", cursor);
+  const url = new URL(opts.registryUrl || DEFAULT_REGISTRY_URL);
+
+  if (opts.cursor) {
+    url.searchParams.append("cursor", opts.cursor);
+  }
+  if (opts.limit) {
+    url.searchParams.append("limit", String(opts.limit));
+  }
+  if (opts.search) {
+    url.searchParams.append("search", opts.search);
+  }
+  if (opts.version) {
+    url.searchParams.append("version", opts.version);
   }
 
   const controller = new AbortController();
@@ -95,35 +121,6 @@ export async function listServers(
 }
 
 /**
- * Fetches all servers by paginating through cursors
- */
-export async function listAllServers(
-  registryUrl?: string,
-): Promise<RegistryServer[]> {
-  const servers: RegistryServer[] = [];
-  let cursor: string | undefined;
-
-  try {
-    while (true) {
-      const response = await listServers(registryUrl, cursor);
-      servers.push(...response.servers);
-
-      if (!response.metadata?.nextCursor) {
-        break;
-      }
-
-      cursor = response.metadata.nextCursor;
-    }
-  } catch (error) {
-    throw new Error(
-      `Error fetching all servers from registry: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-
-  return servers;
-}
-
-/**
  * Fetches a specific server by name and optional version
  *
  * @param name - Server name (e.g., "ai.exa/exa")
@@ -136,10 +133,16 @@ export async function getServer(
   registryUrl?: string,
 ): Promise<RegistryServer | null> {
   try {
-    const servers = await listAllServers(registryUrl);
+    const response = await listServers({
+      registryUrl,
+      search: name,
+      limit: 100, // Fetch enough to find all versions of this server
+    });
 
-    // Filter by name
-    const matchingServers = servers.filter((s) => s.server.name === name);
+    // Filter by exact name match
+    const matchingServers = response.servers.filter(
+      (s) => s.server.name === name,
+    );
 
     if (matchingServers.length === 0) {
       return null;
