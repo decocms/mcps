@@ -56,7 +56,10 @@ const ListInputSchema = z
     version: z
       .string()
       .optional()
-      .describe("Filter by specific version (e.g., '1.0.0' or 'latest')"),
+      .default("latest")
+      .describe(
+        "Filter by specific version (e.g., '1.0.0' or 'latest', default: 'latest')",
+      ),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -111,7 +114,7 @@ export const createListRegistryTool = (env: Env) =>
         limit = 30,
         cursor,
         search,
-        version,
+        version = "latest",
       } = context as z.infer<typeof ListInputSchema>;
       try {
         // Get registry URL from configuration
