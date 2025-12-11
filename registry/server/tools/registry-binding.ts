@@ -42,7 +42,7 @@ const ListInputSchema = z
       .describe(
         "Pagination cursor for fetching next page (e.g., 'ai.exa/exa:3.1.3')",
       ),
-    limit: z
+    limit: z.coerce
       .number()
       .int()
       .min(1)
