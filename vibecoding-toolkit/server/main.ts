@@ -42,7 +42,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
         // Set up pg_cron job to process enqueued workflows
         // Use host.docker.internal for Docker to reach the host machine
-        const baseUrl = env.MESH_URL || "http://host.docker.internal:3000";
+        const baseUrl = env.MESH_REQUEST_CONTEXT.meshUrl;
         const processEndpoint = `${baseUrl}/api/scheduler?connectionId=${env.MESH_REQUEST_CONTEXT?.connectionId}&sub=${env.MESH_REQUEST_CONTEXT?.ensureAuthenticated()?.id}&scopes=PROCESS_ENQUEUED_EXECUTIONS&toolName=PROCESS_ENQUEUED_EXECUTIONS`;
         await ensureCronScheduler(env, processEndpoint);
       } catch (error) {
