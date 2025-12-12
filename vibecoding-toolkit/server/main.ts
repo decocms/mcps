@@ -11,6 +11,7 @@ import {
   ensureCronExtensions,
   ensureCronScheduler,
 } from "./lib/cron-scheduler.ts";
+import { ensureAgentsTable } from "./lib/postgres.ts";
 
 export type Env = DefaultEnv<typeof StateSchema> &
   DecoEnv & {
@@ -33,6 +34,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     onChange: async (env) => {
       try {
+        await ensureAgentsTable(env);
         await ensureCollections(env);
         await ensureIndexes(env);
         await insertDefaultWorkflowIfNotExists(env);

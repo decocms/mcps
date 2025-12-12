@@ -315,7 +315,7 @@ export async function resumeExecution(
       SET 
         status = 'enqueued',
         updated_at = ?,
-        completed_at_epoch_ms = NULL,
+        completed_at_epoch_ms = NULL
       WHERE id = ? AND status = 'cancelled'
       RETURNING *
     `,
