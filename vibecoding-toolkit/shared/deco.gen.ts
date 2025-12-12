@@ -19,7 +19,7 @@ export type DATABASES_GET_METAInput = {};
 export type Number = number;
 
 export interface DATABASES_GET_METAOutput {
-	bytes?: Number;
+  bytes?: Number;
 }
 
 /* eslint-disable */
@@ -35,7 +35,7 @@ export interface DATABASES_GET_METAOutput {
 export type String = string;
 
 export interface DATABASES_RECOVERYInput {
-	date: String;
+  date: String;
 }
 
 /* eslint-disable */
@@ -48,7 +48,7 @@ export interface DATABASES_RECOVERYInput {
 export type Boolean = boolean;
 
 export interface DATABASES_RECOVERYOutput {
-	success: Boolean;
+  success: Boolean;
 }
 
 /* eslint-disable */
@@ -68,8 +68,8 @@ export type String_1 = string;
 export type Array = unknown[];
 
 export interface DATABASES_RUN_SQLInput {
-	sql: String_1;
-	params?: Array;
+  sql: String_1;
+  params?: Array;
 }
 
 /* eslint-disable */
@@ -94,27 +94,27 @@ export type Boolean_3 = boolean;
 export type Array_1 = Object[];
 
 export interface DATABASES_RUN_SQLOutput {
-	result: Array_1;
+  result: Array_1;
 }
 export interface Object {
-	meta?: Object_1;
-	results?: Array_2;
-	success?: Boolean_3;
+  meta?: Object_1;
+  results?: Array_2;
+  success?: Boolean_3;
 }
 export interface Object_1 {
-	changed_db?: Boolean_1;
-	changes?: Number_1;
-	duration?: Number_2;
-	last_row_id?: Number_3;
-	rows_read?: Number_4;
-	rows_written?: Number_5;
-	served_by_primary?: Boolean_2;
-	served_by_region?: String_2;
-	size_after?: Number_6;
-	timings?: Object_2;
+  changed_db?: Boolean_1;
+  changes?: Number_1;
+  duration?: Number_2;
+  last_row_id?: Number_3;
+  rows_read?: Number_4;
+  rows_written?: Number_5;
+  served_by_primary?: Boolean_2;
+  served_by_region?: String_2;
+  size_after?: Number_6;
+  timings?: Object_2;
 }
 export interface Object_2 {
-	sql_duration_ms?: Number_7;
+  sql_duration_ms?: Number_7;
 }
 
 /* eslint-disable */
@@ -148,83 +148,83 @@ export type String_13 = "none" | "open" | "autoPin";
 export type Array_3 = Object_3[];
 
 export interface DECO_CHAT_VIEWS_LISTOutput {
-	views: Array_3;
+  views: Array_3;
 }
 export interface Object_3 {
-	id?: String_3;
-	name?: String_4;
-	title: String_5;
-	description?: String_6;
-	icon: String_7;
-	url?: String_8;
-	mimeTypePattern?: String_9;
-	resourceName?: String_10;
-	tools?: Array_4;
-	prompt?: String_12;
-	installBehavior?: String_13;
+  id?: String_3;
+  name?: String_4;
+  title: String_5;
+  description?: String_6;
+  icon: String_7;
+  url?: String_8;
+  mimeTypePattern?: String_9;
+  resourceName?: String_10;
+  tools?: Array_4;
+  prompt?: String_12;
+  installBehavior?: String_13;
 }
 
 import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
-	[K in keyof T]: ((
-		input: Parameters<T[K]>[0],
-	) => Promise<Awaited<ReturnType<T[K]>>>) & {
-		asTool: () => Promise<{
-			inputSchema: z.ZodType<Parameters<T[K]>[0]>;
-			outputSchema?: z.ZodType<Awaited<ReturnType<T[K]>>>;
-			description: string;
-			id: string;
-			execute: (
-				input: Parameters<T[K]>[0],
-			) => Promise<Awaited<ReturnType<T[K]>>>;
-		}>;
-	};
+  [K in keyof T]: ((
+    input: Parameters<T[K]>[0],
+  ) => Promise<Awaited<ReturnType<T[K]>>>) & {
+    asTool: () => Promise<{
+      inputSchema: z.ZodType<Parameters<T[K]>[0]>;
+      outputSchema?: z.ZodType<Awaited<ReturnType<T[K]>>>;
+      description: string;
+      id: string;
+      execute: (
+        input: Parameters<T[K]>[0],
+      ) => Promise<Awaited<ReturnType<T[K]>>>;
+    }>;
+  };
 };
 
 export const StateSchema = z.object({
-	DATABASE: z.object({
-		value: z.string(),
-		__type: z.literal("@deco/postgres").default("@deco/postgres"),
-	}),
+  DATABASE: z.object({
+    value: z.string(),
+    __type: z.literal("@deco/postgres").default("@deco/postgres"),
+  }),
 });
 
 export interface Env {
-	DECO_CHAT_WORKSPACE: string;
-	DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-	DATABASE: Mcp<{
-		/**
-		 * Run a SQL query against the workspace database
-		 */
-		DATABASES_GET_META: (
-			input: DATABASES_GET_METAInput,
-		) => Promise<DATABASES_GET_METAOutput>;
-		/**
-		 * Run a SQL query against the workspace database
-		 */
-		DATABASES_RECOVERY: (
-			input: DATABASES_RECOVERYInput,
-		) => Promise<DATABASES_RECOVERYOutput>;
-		/**
-		 * Run a SQL query against the workspace database
-		 */
-		DATABASES_RUN_SQL: (
-			input: DATABASES_RUN_SQLInput,
-		) => Promise<DATABASES_RUN_SQLOutput>;
-		/**
-		 * List views exposed by this MCP
-		 */
-		DECO_CHAT_VIEWS_LIST: (
-			input: DECO_CHAT_VIEWS_LISTInput,
-		) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
-	}>;
+  DECO_CHAT_WORKSPACE: string;
+  DECO_CHAT_API_JWT_PUBLIC_KEY: string;
+  DATABASE: Mcp<{
+    /**
+     * Run a SQL query against the workspace database
+     */
+    DATABASES_GET_META: (
+      input: DATABASES_GET_METAInput,
+    ) => Promise<DATABASES_GET_METAOutput>;
+    /**
+     * Run a SQL query against the workspace database
+     */
+    DATABASES_RECOVERY: (
+      input: DATABASES_RECOVERYInput,
+    ) => Promise<DATABASES_RECOVERYOutput>;
+    /**
+     * Run a SQL query against the workspace database
+     */
+    DATABASES_RUN_SQL: (
+      input: DATABASES_RUN_SQLInput,
+    ) => Promise<DATABASES_RUN_SQLOutput>;
+    /**
+     * List views exposed by this MCP
+     */
+    DECO_CHAT_VIEWS_LIST: (
+      input: DECO_CHAT_VIEWS_LISTInput,
+    ) => Promise<DECO_CHAT_VIEWS_LISTOutput>;
+  }>;
 }
 
 export const Scopes = {
-	DATABASE: {
-		DATABASES_GET_META: "DATABASE::DATABASES_GET_META",
-		DATABASES_RECOVERY: "DATABASE::DATABASES_RECOVERY",
-		DATABASES_RUN_SQL: "DATABASE::DATABASES_RUN_SQL",
-		DECO_CHAT_VIEWS_LIST: "DATABASE::DECO_CHAT_VIEWS_LIST",
-	},
+  DATABASE: {
+    DATABASES_GET_META: "DATABASE::DATABASES_GET_META",
+    DATABASES_RECOVERY: "DATABASE::DATABASES_RECOVERY",
+    DATABASES_RUN_SQL: "DATABASE::DATABASES_RUN_SQL",
+    DECO_CHAT_VIEWS_LIST: "DATABASE::DECO_CHAT_VIEWS_LIST",
+  },
 };
