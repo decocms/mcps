@@ -209,7 +209,6 @@ export const sendSignalTool = (env: Env) =>
       const signal = await sendSignal(env, executionId, {
         name: signalName,
         payload,
-        authorization: env.MESH_REQUEST_CONTEXT?.token,
       });
 
       return {

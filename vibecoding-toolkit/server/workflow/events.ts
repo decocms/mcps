@@ -10,7 +10,6 @@
 import type { Env } from "../main.ts";
 import { transformDbRowToEvent } from "../collections/workflow.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
-import { Scheduler } from "./scheduler.ts";
 
 /**
  * Add an event to the workflow events table
@@ -121,14 +120,6 @@ export async function sendSignal(
   executionId: string,
   signalName: string,
   payload?: unknown,
-  options?: {
-    /** Re-queue execution after sending signal (default: true) */
-    wakeExecution?: boolean;
-    /** Authorization token for re-queuing */
-    authorization?: string;
-    /** Optional scheduler (will be created from env if not provided) */
-    scheduler?: Scheduler;
-  },
 ): Promise<WorkflowEvent> {
   const event = await addEvent(env, {
     execution_id: executionId,
@@ -139,14 +130,6 @@ export async function sendSignal(
     payload,
     visible_at: Date.now(), // Immediately visible
   });
-
-  // Wake up the execution if requested
-  if (options?.wakeExecution !== false) {
-    await wakeExecution(env, executionId, {
-      authorization: options?.authorization,
-      scheduler: options?.scheduler,
-    });
-  }
 
   return event;
 }
@@ -184,39 +167,4 @@ export async function checkTimer(
   stepName: string,
 ): Promise<WorkflowEvent | null> {
   return consumeEvent(env, executionId, "timer", stepName);
-}
-
-/**
- * Wake an execution for processing.
- *
- * Uses the queue if available, otherwise just updates timestamp
- * for polling-based schedulers.
- */
-export async function wakeExecution(
-  env: Env,
-  executionId: string,
-  options?: {
-    delayMs?: number;
-    authorization?: string;
-    scheduler?: Scheduler;
-  },
-): Promise<void> {
-  // Update timestamp (for polling schedulers)
-  await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `UPDATE workflow_executions SET updated_at = ? WHERE id = ?`,
-    params: [Date.now(), executionId],
-  });
-
-  // Use QStash scheduler for workflow execution
-  const scheduler = options?.scheduler ?? ({} as Scheduler); // TODO: Implement scheduler
-  const authorization =
-    options?.authorization ?? env.MESH_REQUEST_CONTEXT?.token;
-
-  if (options?.delayMs) {
-    await scheduler.scheduleAfter(executionId, options.delayMs, {
-      authorization,
-    });
-  } else {
-    await scheduler.schedule(executionId, { authorization });
-  }
 }

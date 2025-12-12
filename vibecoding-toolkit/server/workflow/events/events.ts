@@ -10,8 +10,6 @@
 import type { Env } from "../../main.ts";
 import { transformDbRowToEvent } from "../../collections/workflow.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
-import { Scheduler } from "../scheduler.ts";
-import { wakeExecution } from "../events.ts";
 
 /**
  * Add an event to the workflow events table
@@ -126,14 +124,6 @@ export async function sendSignal(
   executionId: string,
   signalName: string,
   payload?: unknown,
-  options?: {
-    /** Re-queue execution after sending signal (default: true) */
-    wakeExecution?: boolean;
-    /** Authorization token for re-queuing */
-    authorization?: string;
-    /** Optional scheduler (will be created from env if not provided) */
-    scheduler?: Scheduler;
-  },
 ): Promise<WorkflowEvent> {
   const event = await addEvent(env, {
     execution_id: executionId,
@@ -144,14 +134,6 @@ export async function sendSignal(
     payload,
     visible_at: Date.now(), // Immediately visible
   });
-
-  // Wake up the execution if requested
-  if (options?.wakeExecution !== false) {
-    await wakeExecution(env, executionId, {
-      authorization: options?.authorization,
-      scheduler: options?.scheduler,
-    });
-  }
 
   return event;
 }

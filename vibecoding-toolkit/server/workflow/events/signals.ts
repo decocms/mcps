@@ -8,7 +8,6 @@
 import { WorkflowEvent } from "@decocms/bindings/workflow";
 import type { Env } from "../../main.ts";
 import { sendSignal as sendEventSignal, getPendingEvents } from "./events.ts";
-import { Scheduler } from "../scheduler.ts";
 
 /**
  * WorkflowSignal type with signal_name for backwards compatibility
@@ -26,9 +25,6 @@ export async function sendSignal(
   options?: {
     name?: string;
     payload?: unknown;
-    resumeExecution?: boolean;
-    authorization?: string;
-    scheduler?: Scheduler;
   },
 ): Promise<WorkflowSignal> {
   return sendEventSignal(
@@ -36,11 +32,6 @@ export async function sendSignal(
     executionId,
     options?.name ?? "",
     options?.payload,
-    {
-      wakeExecution: options?.resumeExecution ?? true,
-      authorization: options?.authorization,
-      scheduler: options?.scheduler,
-    },
   );
 }
 
