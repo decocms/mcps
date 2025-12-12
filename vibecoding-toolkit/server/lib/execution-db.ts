@@ -401,9 +401,6 @@ export async function listExecutions(
  * List workflow executions with filtering
  */
 export async function processEnqueuedExecutions(env: Env): Promise<string[]> {
-  console.log(
-    "🚀 ~ processEnqueuedExecutions ~ processing enqueued executions",
-  );
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_executions SET status = 'running' WHERE status = 'enqueued' AND start_at_epoch_ms <= ? RETURNING id
@@ -416,13 +413,10 @@ export async function processEnqueuedExecutions(env: Env): Promise<string[]> {
     ) || [];
 
   for (const id of ids) {
-    console.log("🚀 ~ processEnqueuedExecutions ~ executing workflow:", id);
     executeWorkflow(env, id).catch((error: Error) => {
       console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
     });
   }
-
-  console.log("🚀 ~ processEnqueuedExecutions ~ ids:", ids);
 
   return (
     result.result[0]?.results?.map(

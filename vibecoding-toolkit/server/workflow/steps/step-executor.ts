@@ -26,7 +26,6 @@ import {
   createStepResult,
   getExecution,
   updateStepResult,
-  writeStreamChunk,
 } from "../../lib/execution-db.ts";
 
 export interface StepResult {
@@ -39,136 +38,11 @@ export interface StepResult {
   excludeFromWorkflowOutput?: boolean;
 }
 
-export function responseToStream(response: Response): ReadableStream<unknown> {
-  if (!response.body) {
-    throw new Error("Response body is null");
-  }
-
-  return response.body.pipeThrough(new TextDecoderStream()).pipeThrough(
-    new TransformStream<string, unknown>({
-      transform(chunk, controller) {
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const parsed = JSON.parse(line) as unknown;
-              controller.enqueue(parsed);
-            } catch (error) {
-              console.error("Failed to parse stream chunk:", error);
-              throw error;
-            }
-          }
-        }
-      },
-    }),
-  );
-}
-
 export class StepExecutor {
   private env: Env;
 
   constructor(env: Env) {
     this.env = env;
-  }
-
-  /**
-   * Execute a tool step with live streaming to the database.
-   *
-   * Streams each chunk to step_stream_chunks table for real-time visibility,
-   * then saves the final accumulated result to step_results when complete.
-   */
-  private async executeStreamableToolStep(
-    step: Step,
-    input: Record<string, unknown>,
-    executionId: string,
-    signal?: AbortSignal,
-  ): Promise<StepResult> {
-    const startedAt = Date.now();
-    try {
-      const parsed = ToolCallActionSchema.safeParse(step.action);
-      if (!parsed.success) {
-        throw new Error("Tool step missing tool configuration");
-      }
-
-      const { connectionId, toolName } = parsed.data;
-
-      if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
-        throw new Error("MESH_URL is not set");
-      }
-
-      const response = await fetch(
-        `${this.env.MESH_REQUEST_CONTEXT.meshUrl}/mcp/${connectionId}/stream/${toolName}`,
-        {
-          method: "POST",
-          body: JSON.stringify(input),
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.env.MESH_REQUEST_CONTEXT.token}`,
-          },
-          signal,
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          status: "error",
-          error: errorText,
-          startedAt,
-        };
-      }
-
-      const stream = responseToStream(response);
-      const reader = stream.getReader();
-
-      const chunks: unknown[] = [];
-      let chunkIndex = 0;
-
-      try {
-        while (true) {
-          if (signal?.aborted) {
-            throw new Error("Step execution aborted");
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          await writeStreamChunk(
-            this.env,
-            executionId,
-            step.name,
-            chunkIndex,
-            value,
-          );
-
-          chunks.push(value);
-          chunkIndex++;
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      // Determine final output - single chunk or array of chunks
-      const output = chunks.length === 1 ? chunks[0] : chunks;
-
-      // Clean up stream chunks after step completes (optional - keep for debugging)
-      // await deleteStreamChunks(this.env, executionId, step.name);
-
-      return {
-        status: "success",
-        output,
-        startedAt,
-        completedAt: Date.now(),
-        excludeFromWorkflowOutput: isLargeOutput(output),
-      };
-    } catch (error) {
-      return {
-        status: "error",
-        error: error instanceof Error ? error.message : String(error),
-        startedAt,
-      };
-    }
   }
 
   private async executeToolStep(
@@ -188,20 +62,18 @@ export class StepExecutor {
         throw new Error("MESH_URL is not set");
       }
 
-      const { response } = await this.env.AUTH.CALL_TOOL({
-        connection: connectionId,
-        tool: toolName,
+      const { result } = await this.env.CONNECTION.CONNECTION_CALL_TOOL({
+        connectionId,
+        toolName,
         arguments: input,
       });
 
-      console.log("🚀 ~ executeToolStep ~ response:", response);
-
       return {
         status: "success",
-        output: response,
+        output: result,
         startedAt,
         completedAt: Date.now(),
-        excludeFromWorkflowOutput: isLargeOutput(response),
+        excludeFromWorkflowOutput: isLargeOutput(result),
       };
     } catch (error) {
       return {

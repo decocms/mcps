@@ -12,6 +12,24 @@ import type { Env } from "../main.ts";
 const CRON_JOB_NAME = "process-enqueued-workflows";
 
 /**
+ * Ensures pg_cron and pg_net extensions are installed.
+ * This creates the cron and net schemas with all required tables/functions.
+ */
+export async function ensureCronExtensions(env: Env): Promise<void> {
+  // Create pg_cron extension (creates cron schema)
+  await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `CREATE EXTENSION IF NOT EXISTS pg_cron`,
+    params: [],
+  });
+
+  // Create pg_net extension (creates net schema with http_post, http_get, etc.)
+  await env.DATABASE.DATABASES_RUN_SQL({
+    sql: `CREATE EXTENSION IF NOT EXISTS pg_net`,
+    params: [],
+  });
+}
+
+/**
  * Ensures the cron job exists to periodically call the workflow processing endpoint.
  *
  * Uses pg_cron to schedule and pg_net to make HTTP POST requests.
@@ -26,17 +44,7 @@ export async function ensureCronScheduler(
   endpointUrl: string,
   schedule = "10 seconds", // pg_cron interval syntax: '[1-59] seconds' for sub-minute scheduling
 ): Promise<void> {
-  // Extract auth token from the current request context
-  // This token is needed for the cron HTTP request to authenticate
-  const meshToken = env.MESH_REQUEST_CONTEXT?.token;
-
-  if (!meshToken) {
-    console.warn(
-      "[CRON] No MESH_REQUEST_CONTEXT.token available - cron requests may fail to authenticate",
-    );
-  }
-
-  const httpCommand = buildHttpCommand(endpointUrl, meshToken);
+  const httpCommand = buildHttpCommand(endpointUrl);
 
   // First, check if the job already exists
   const existingJob = await env.DATABASE.DATABASES_RUN_SQL({
@@ -56,18 +64,12 @@ export async function ensureCronScheduler(
       )`,
       params: [CRON_JOB_NAME, schedule, httpCommand],
     });
-    console.log(
-      `[CRON] Updated cron job '${CRON_JOB_NAME}' with schedule: ${schedule}`,
-    );
   } else {
     // Create new job
     await env.DATABASE.DATABASES_RUN_SQL({
       sql: `SELECT cron.schedule(?, ?, ?)`,
       params: [CRON_JOB_NAME, schedule, httpCommand],
     });
-    console.log(
-      `[CRON] Created cron job '${CRON_JOB_NAME}' with schedule: ${schedule}`,
-    );
   }
 }
 
@@ -75,15 +77,11 @@ export async function ensureCronScheduler(
  * Builds the SQL command that uses pg_net to make an HTTP POST request.
  * Includes x-mesh-token header for authentication so the runtime can set up bindings.
  */
-function buildHttpCommand(endpointUrl: string, meshToken?: string): string {
+function buildHttpCommand(endpointUrl: string): string {
   // Build headers JSON - include x-mesh-token if available for multi-tenant auth
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-
-  if (meshToken) {
-    headers["x-mesh-token"] = meshToken;
-  }
 
   // Escape any single quotes in the headers JSON for SQL
   const headersJson = JSON.stringify(headers).replace(/'/g, "''");
@@ -103,7 +101,6 @@ export async function removeCronScheduler(env: Env): Promise<void> {
     sql: `SELECT cron.unschedule(?)`,
     params: [CRON_JOB_NAME],
   });
-  console.log(`[CRON] Removed cron job '${CRON_JOB_NAME}'`);
 }
 
 /**

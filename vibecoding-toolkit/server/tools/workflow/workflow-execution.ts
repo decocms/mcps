@@ -1,23 +1,12 @@
-import {
-  createPrivateTool,
-  createStreamableTool,
-} from "@decocms/runtime/tools";
-import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { Env } from "../../main.ts";
 import { z } from "zod";
-import {
-  WORKFLOW_BINDING,
-  WorkflowExecutionSchema,
-  WorkflowExecutionStatus,
-  WorkflowExecutionStepResultSchema,
-} from "@decocms/bindings/workflow";
+import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 import {
   getStepResults,
   getExecution,
   listExecutions,
-  getStreamChunks,
 } from "../../lib/execution-db.ts";
-import { getWorkflow } from "./workflow.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -39,229 +28,144 @@ if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
   );
 }
 
-// Schema for stream chunks
-const StreamChunkSchema = z.object({
-  id: z.string(),
-  execution_id: z.string(),
-  step_id: z.string(),
-  chunk_index: z.number(),
-  chunk_data: z.unknown(),
-  created_at: z.number(),
-});
+const MAX_OUTPUT_SIZE_BYTES = 100_000;
 
-// Extended schema that includes step_results and stream_chunks
-const WorkflowExecutionWithStepResultsSchema = WorkflowExecutionSchema.extend({
-  step_results: z.array(WorkflowExecutionStepResultSchema).optional(),
-  stream_chunks: z.array(StreamChunkSchema).optional(),
-});
+function getByteSize(value: unknown): number {
+  return new TextEncoder().encode(JSON.stringify(value)).length;
+}
 
-/**
- * Streamable tool that polls for workflow execution updates.
- * Emits updates when:
- * - New step results are added
- * - Execution status changes
- * - Execution completes (then closes the stream)
- */
-const streamableGetTool = (env: Env) =>
-  createStreamableTool({
-    id: "STREAM_WORKFLOW_EXECUTION_GET",
-    description:
-      "Stream a workflow execution by ID with live step result updates",
-    inputSchema: GET_BINDING.inputSchema,
-    execute: async ({ context }) => {
-      const { id } = context;
+function truncateLargeOutput(
+  output: unknown,
+  budgetBytes: number = MAX_OUTPUT_SIZE_BYTES,
+): unknown {
+  const currentSize = getByteSize(output);
 
-      const initialExecution = await getExecution(env, id);
-      if (!initialExecution) {
-        const errorStream = new ReadableStream({
-          start(controller) {
-            controller.enqueue(
-              JSON.stringify({ error: "Execution not found", item: null }) +
-                "\n",
-            );
-            controller.close();
-          },
-        });
-        return new Response(errorStream, {
-          headers: {
-            "Content-Type": "application/x-ndjson",
-            "Cache-Control": "no-cache",
-          },
-        });
-      }
+  // Already under budget
+  if (currentSize <= budgetBytes) {
+    return output;
+  }
 
-      const workflow = await getWorkflow(env, initialExecution.workflow_id);
-      if (!workflow) {
-        throw new Error(`Workflow not found: ${initialExecution.workflow_id}`);
-      }
+  // Handle strings - truncate to fit budget
+  if (typeof output === "string") {
+    const overhead = 2; // quotes in JSON
+    const targetBytes = Math.max(0, budgetBytes - overhead - 15); // room for "[TRUNCATED]"
+    return "[TRUNCATED]" + truncateStringToBytes(output, targetBytes);
+  }
 
-      let lastStepCount = -1;
-      let lastStatus = "";
-      let lastChunkIndices: Record<string, number> = {};
+  // Handle arrays - truncate items if too many
+  if (Array.isArray(output)) {
+    if (output.length === 0) return output;
 
-      // Add cleanup tracking
-      let isStreamActive = true;
-      let pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    // Estimate per-item budget (rough, accounts for commas/brackets)
+    const overhead = 2; // []
+    const availableBudget = budgetBytes - overhead;
 
-      console.log("streamableGetTool", { id });
-      console.log("initialExecution", initialExecution);
+    // Binary search for how many items we can keep
+    let kept = findMaxItems(output, availableBudget);
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          const POLL_INTERVAL_MS = 1000;
-          const MAX_POLL_DURATION_MS = 5 * 60 * 1000;
-          const startTime = Date.now();
-
-          const poll = async (): Promise<void> => {
-            // Check if stream is still active before doing anything
-            if (!isStreamActive) {
-              return;
-            }
-
-            try {
-              if (Date.now() - startTime > MAX_POLL_DURATION_MS) {
-                controller.enqueue(
-                  JSON.stringify({
-                    error: "Stream timeout - max duration exceeded",
-                  }) + "\n",
-                );
-                controller.close();
-                isStreamActive = false;
-                return;
-              }
-
-              const execution = await getExecution(env, id);
-              if (!execution) {
-                controller.enqueue(
-                  JSON.stringify({
-                    error: "Execution no longer exists",
-                    item: null,
-                  }) + "\n",
-                );
-                controller.close();
-                isStreamActive = false;
-                return;
-              }
-
-              const stepResults = await getStepResults(env, id);
-              const stepCount = stepResults.length;
-              const status = execution.status;
-
-              const newChunks = await getStreamChunks(
-                env,
-                id,
-                lastChunkIndices,
-              );
-
-              const hasChanges =
-                stepCount !== lastStepCount ||
-                status !== lastStatus ||
-                newChunks.length > 0;
-
-              if (hasChanges) {
-                lastStepCount = stepCount;
-                lastStatus = status;
-
-                for (const chunk of newChunks) {
-                  const currentMax = lastChunkIndices[chunk.step_id] ?? -1;
-                  if (chunk.chunk_index > currentMax) {
-                    lastChunkIndices[chunk.step_id] = chunk.chunk_index;
-                  }
-                }
-
-                // Only enqueue if stream is still active
-                if (isStreamActive) {
-                  controller.enqueue(
-                    JSON.stringify({
-                      item: {
-                        ...execution,
-                        step_results: stepResults,
-                        stream_chunks:
-                          newChunks.length > 0 ? newChunks : undefined,
-                      },
-                    }) + "\n",
-                  );
-                }
-              }
-
-              // Check for terminal states (including "pending" with no lock - waiting for signal)
-              const terminalStatuses: WorkflowExecutionStatus[] = [
-                "success",
-                "error",
-                "cancelled",
-              ];
-
-              if (terminalStatuses.includes(status)) {
-                if (isStreamActive) {
-                  console.log("closing stream");
-                  controller.close();
-                  isStreamActive = false;
-                }
-                console.log("returning from poll");
-                return;
-              }
-
-              // console.log("scheduling next poll");
-              // Schedule next poll only if stream is still active
-              if (isStreamActive) {
-                pollTimeoutId = setTimeout(() => {
-                  poll().catch((err) => {
-                    console.error("Poll error:", err);
-                    if (isStreamActive) {
-                      try {
-                        controller.error(err);
-                      } catch {
-                        // Controller might already be closed
-                      }
-                      isStreamActive = false;
-                    }
-                  });
-                }, POLL_INTERVAL_MS);
-              }
-            } catch (err) {
-              console.error("Stream error:", err);
-              if (isStreamActive) {
-                try {
-                  controller.error(err);
-                } catch {
-                  // Controller might already be closed
-                }
-                isStreamActive = false;
-              }
-            }
-          };
-
-          await poll();
-        },
-
-        // Add cancel handler for when client disconnects
-        cancel() {
-          isStreamActive = false;
-          if (pollTimeoutId) {
-            clearTimeout(pollTimeoutId);
-            pollTimeoutId = null;
-          }
-        },
+    if (kept < output.length) {
+      const truncatedArray = output.slice(0, kept).map((item) => {
+        const itemBudget = Math.floor(availableBudget / kept);
+        return truncateLargeOutput(item, itemBudget);
       });
 
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "application/x-ndjson",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        },
-      });
-    },
-  });
+      // Add truncation marker
+      truncatedArray.push(`[... ${output.length - kept} more items truncated]`);
+      return truncatedArray;
+    }
+
+    // All items fit, but still over budget - truncate each item
+    const itemBudget = Math.floor(availableBudget / output.length);
+    return output.map((item) => truncateLargeOutput(item, itemBudget));
+  }
+
+  // Handle objects - distribute budget across properties
+  if (typeof output === "object" && output !== null) {
+    const entries = Object.entries(output);
+    if (entries.length === 0) return output;
+
+    const overhead = 2; // {}
+    const availableBudget = budgetBytes - overhead;
+
+    // First pass: measure each property
+    const measured = entries.map(([key, value]) => ({
+      key,
+      value,
+      size: getByteSize({ [key]: value }),
+    }));
+
+    const totalSize = measured.reduce((sum, m) => sum + m.size, 0);
+
+    // Distribute budget proportionally (larger props get more budget)
+    const result: Record<string, unknown> = {};
+    for (const { key, value, size } of measured) {
+      const propBudget = Math.floor((size / totalSize) * availableBudget);
+      const keyOverhead = getByteSize(key) + 3; // "key":
+      result[key] = truncateLargeOutput(
+        value,
+        Math.max(50, propBudget - keyOverhead),
+      );
+    }
+    const finalSize = getByteSize(result);
+
+    if (finalSize > budgetBytes) {
+      // Fallback: just stringify and cut
+      const str = JSON.stringify(result);
+      return {
+        _truncated: true,
+        _originalSize: finalSize,
+        _preview: str.slice(0, budgetBytes - 100) + "...",
+      };
+    }
+
+    return result;
+  }
+
+  return output;
+}
+
+function findMaxItems(arr: unknown[], budgetBytes: number): number {
+  // Quick estimate: try to fit as many items as possible
+  let size = 2; // []
+  let count = 0;
+
+  for (const item of arr) {
+    const itemSize = getByteSize(item) + 1; // +1 for comma
+    if (size + itemSize > budgetBytes) break;
+    size += itemSize;
+    count++;
+  }
+
+  return Math.max(1, count); // Keep at least 1 item
+}
+
+function truncateStringToBytes(str: string, maxBytes: number): string {
+  if (maxBytes <= 0) return "";
+
+  const encoder = new TextEncoder();
+  if (encoder.encode(str).length <= maxBytes) return str;
+
+  // Binary search for cut point
+  let low = 0,
+    high = str.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (encoder.encode(str.slice(0, mid)).length <= maxBytes) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return str.slice(0, low);
+}
 
 export const createGetTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_EXECUTION_GET",
+    id: "COLLECTION_WORKFLOW_EXECUTION_GET",
     description: "Get a single workflow execution by ID with step results",
     inputSchema: GET_BINDING.inputSchema,
-    outputSchema: z.object({
-      item: WorkflowExecutionWithStepResultsSchema.nullable(),
-    }),
+    outputSchema: GET_BINDING.outputSchema,
     execute: async ({
       context,
     }: {
@@ -277,12 +181,18 @@ export const createGetTool = (env: Env) =>
 
       // Join step results
       const stepResults = await getStepResults(env, id);
-      console.log("🚀 ~ stepResults:", stepResults);
+      const perStepBudget = Math.floor(
+        MAX_OUTPUT_SIZE_BYTES / stepResults.length,
+      );
+      const truncatedStepResults = stepResults.map((sr) => ({
+        ...sr,
+        output: truncateLargeOutput(sr.output, perStepBudget),
+      }));
 
       return {
         item: {
           ...execution,
-          step_results: stepResults,
+          step_results: truncatedStepResults,
         },
       };
     },
@@ -290,11 +200,11 @@ export const createGetTool = (env: Env) =>
 
 export const createListTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_EXECUTION_LIST",
+    id: "COLLECTION_WORKFLOW_EXECUTION_LIST",
     description:
       "List workflow executions with filtering, sorting, and pagination",
     inputSchema: LIST_BINDING.inputSchema,
-    outputSchema: createCollectionListOutputSchema(WorkflowExecutionSchema),
+    outputSchema: LIST_BINDING.outputSchema,
     execute: async ({
       context,
     }: {
@@ -315,8 +225,4 @@ export const createListTool = (env: Env) =>
     },
   });
 
-export const workflowExecutionCollectionTools = [
-  createListTool,
-  createGetTool,
-  streamableGetTool,
-];
+export const workflowExecutionCollectionTools = [createListTool, createGetTool];

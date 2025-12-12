@@ -5,14 +5,11 @@ import { z } from "zod";
 import { validateWorkflow } from "../../workflow/utils/validator.ts";
 import {
   createDefaultWorkflow,
-  Step,
-  ToolCallAction,
   Workflow,
   WORKFLOW_BINDING,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
 import { buildOrderByClause, buildWhereClause } from "../agent.ts";
-import { compile } from "json-schema-to-typescript-lite";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
@@ -352,86 +349,10 @@ export const createDeleteTool = (env: Env) =>
     },
   });
 
-function isToolStep(step: Step): step is Step & { action: ToolCallAction } {
-  return "connectionId" in step.action && "toolName" in step.action;
-}
-
-async function getStepSchema(env: Env, step: Step) {
-  console.log("🚀 ~ getStepSchema ~ step:", step);
-  if (isToolStep(step)) {
-    console.log("🚀 ~ getStepSchema ~ step is tool step:", step);
-    const { response } = await env.AUTH.CALL_TOOL({
-      connection: step.action.connectionId,
-      tool: step.action.toolName,
-      arguments: {},
-    });
-    console.log("🚀 ~ getStepSchema ~ response:", response);
-    return (
-      response as { tools: { name: string; outputSchema: unknown }[] }
-    ).tools.find((t) => t.name === step.action.toolName)?.outputSchema;
-  }
-  throw new Error(`Step ${step.name} is not a tool step`);
-}
-
-const createGetStepSchemaTool = (env: Env) =>
-  createPrivateTool({
-    id: "WORKFLOW_GET_STEP_SCHEMA",
-    description: "Get the schema for a step",
-    inputSchema: z.object({
-      stepName: z.string(),
-      workflowId: z.string(),
-    }),
-    outputSchema: z.object({
-      schema: z.record(z.unknown()),
-    }),
-    execute: async ({ context }) => {
-      const { stepName, workflowId } = context;
-      const workflow = await getWorkflow(env, workflowId);
-      console.log("🚀 ~ workflow:", workflow);
-      if (!workflow) {
-        throw new Error(`Workflow with id ${workflowId} not found`);
-      }
-      const step = workflow.steps.find((s) => s.name === stepName);
-      console.log("🚀 ~ step:", step);
-      if (!step) {
-        throw new Error(
-          `Step with name ${stepName} not found in workflow ${workflowId}`,
-        );
-      }
-      const schema = await getStepSchema(env, step);
-      try {
-        const ts = await compile(schema as Record<string, unknown>, "Output", {
-          additionalProperties: false,
-          declareExternallyReferenced: false,
-        });
-        console.log("🚀 ~ ts:", ts);
-        const cleanTs = ts
-          .replace(/\/\*\*[\s\S]*?\*\/\s*/g, "") // Remove JSDoc comments
-          .replace(/^export\s+/gm, "") // Remove 'export' keyword
-          .trim();
-        console.log("🚀 ~ ts:", cleanTs);
-        return {
-          schema: {
-            typescript: cleanTs,
-          },
-        };
-      } catch (error) {
-        console.error("Error compiling schema:", error);
-      }
-      console.log("🚀 ~ schema:", schema);
-      return {
-        schema: {
-          typescript: "Error compiling schema",
-        },
-      };
-    },
-  });
-
 export const workflowCollectionTools = [
   createListTool,
   createGetTool,
   createInsertTool,
   createUpdateTool,
   createDeleteTool,
-  createGetStepSchemaTool,
 ];

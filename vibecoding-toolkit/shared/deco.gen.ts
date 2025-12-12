@@ -2062,6 +2062,9 @@ export const StateSchema = z.object({
     value: z.string(),
     __type: z.literal("@deco/database").default("@deco/database"),
   }),
+  CONNECTION: z.object({
+    value: z.string(),
+  }),
 });
 
 export interface Env {
@@ -2096,13 +2099,13 @@ export interface Env {
 }
 
 export const Scopes = {
-  AUTH: {
-    CALL_TOOL: "AUTH::CALL_TOOL",
-  },
   DATABASE: {
     DATABASES_GET_META: "DATABASE::DATABASES_GET_META",
     DATABASES_RECOVERY: "DATABASE::DATABASES_RECOVERY",
     DATABASES_RUN_SQL: "DATABASE::DATABASES_RUN_SQL",
     DECO_CHAT_VIEWS_LIST: "DATABASE::DECO_CHAT_VIEWS_LIST",
+  },
+  CONNECTION: {
+    CONNECTION_CALL_TOOL: "CONNECTION::CONNECTION_CALL_TOOL",
   },
 };

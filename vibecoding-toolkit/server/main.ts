@@ -7,24 +7,25 @@ import {
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./collections/index.ts";
 import { insertDefaultWorkflowIfNotExists } from "./tools/workflow/workflow.ts";
-import { ensureCronScheduler } from "./lib/cron-scheduler.ts";
-import { processEnqueuedExecutions } from "./lib/execution-db.ts";
+import {
+  ensureCronExtensions,
+  ensureCronScheduler,
+} from "./lib/cron-scheduler.ts";
 
 export type Env = DefaultEnv<typeof StateSchema> &
   DecoEnv & {
-    BASE_URL: string;
     DATABASE: {
       DATABASES_RUN_SQL: (params: {
         sql: string;
         params: unknown[];
       }) => Promise<{ result: { results: unknown[] }[] }>;
     };
-    AUTH: {
-      CALL_TOOL: (params: {
-        connection: string;
-        tool: string;
+    CONNECTION: {
+      CONNECTION_CALL_TOOL: (params: {
+        connectionId: string;
+        toolName: string;
         arguments: Record<string, unknown>;
-      }) => Promise<{ response: unknown }>;
+      }) => Promise<{ result: unknown }>;
     };
   };
 
@@ -36,13 +37,16 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         await ensureIndexes(env);
         await insertDefaultWorkflowIfNotExists(env);
 
+        // Ensure pg_cron and pg_net extensions are installed
+        await ensureCronExtensions(env);
+
         // Set up pg_cron job to process enqueued workflows
         // Use host.docker.internal for Docker to reach the host machine
-        const baseUrl = env.BASE_URL || "http://host.docker.internal:3000";
-        const processEndpoint = `${baseUrl}/api/process-workflows`;
+        const baseUrl = env.MESH_URL || "http://host.docker.internal:3000";
+        const processEndpoint = `${baseUrl}/api/scheduler?connectionId=${env.MESH_REQUEST_CONTEXT?.connectionId}&sub=${env.MESH_REQUEST_CONTEXT?.ensureAuthenticated()?.id}&scopes=PROCESS_ENQUEUED_EXECUTIONS&toolName=PROCESS_ENQUEUED_EXECUTIONS`;
         await ensureCronScheduler(env, processEndpoint);
       } catch (error) {
-        console.error("error ensuring collections", error);
+        console.error("error changing configuration", error);
       }
     },
     /**
@@ -53,7 +57,10 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL, Scopes.AUTH.CALL_TOOL],
+    scopes: [
+      Scopes.DATABASE.DATABASES_RUN_SQL,
+      Scopes.CONNECTION.CONNECTION_CALL_TOOL,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -79,46 +86,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       name: "DATABASE",
       app_name: "@deco/database",
     },
+    {
+      type: "mcp",
+      name: "CONNECTION",
+      app_name: "@deco/tools",
+    },
   ],
-  /**
-   * Custom HTTP routes handler.
-   * Handles /api/process-workflows for pg_cron to trigger workflow processing.
-   */
-  fetch: async (req: Request, env: Env) => {
-    const url = new URL(req.url);
-    // pg_cron calls this endpoint to process enqueued workflows
-    if (url.pathname === "/api/process-workflows" && req.method === "POST") {
-      try {
-        const processedIds = await processEnqueuedExecutions(env);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            processed: processedIds.length,
-            ids: processedIds,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      } catch (error) {
-        console.error("[CRON] Error processing workflows:", error);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
-          }),
-          {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-    }
-
-    // Fall through for other requests (return 404 or handle assets if available)
-    return new Response("Not found", { status: 404 });
-  },
 });
 
 export default runtime;
