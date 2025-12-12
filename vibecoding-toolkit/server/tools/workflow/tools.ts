@@ -8,7 +8,7 @@ import {
   processEnqueuedExecutions,
   resumeExecution,
 } from "../../lib/execution-db.ts";
-import { sendSignal } from "../../workflow/events/signals.ts";
+import { sendSignal } from "../../workflow/events/events.ts";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
 const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
@@ -206,10 +206,7 @@ export const sendSignalTool = (env: Env) =>
         };
       }
 
-      const signal = await sendSignal(env, executionId, {
-        name: signalName,
-        payload,
-      });
+      const signal = await sendSignal(env, executionId, signalName, payload);
 
       return {
         success: true,

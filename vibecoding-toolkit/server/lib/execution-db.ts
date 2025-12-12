@@ -1,104 +1,24 @@
 /**
- * Direct Database Functions for Workflow Executions and Step Results
+ * Workflow Execution Database Operations
  *
- * These are internal engine functions, not exposed as collection tools.
- * They provide direct database access for the workflow execution engine.
- *
- * Follows DBOS patterns for durable workflow execution:
- * - Checkpoint-based step results
- * - Cancellation support with checkIfCancelled
- * - Atomic state transitions
+ * Internal engine functions for workflow execution persistence.
+ * Uses DBOS patterns: checkpoint-based results, cancellation support.
  *
  * @see https://github.com/dbos-inc/dbos-transact-ts
  */
 
 import {
   WorkflowExecution,
-  WorkflowExecutionSchema,
   WorkflowExecutionStatus,
   WorkflowExecutionStepResult,
-  WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
 import type { Env } from "../main.ts";
 import { executeWorkflow } from "server/workflow/executor.ts";
-
-const safeJsonParse = (value: unknown): unknown => {
-  if (value === null || value === undefined) return undefined;
-  // PostgreSQL JSONB returns already-parsed values:
-  // - Objects/arrays come back as objects
-  // - Strings/numbers/booleans come back as primitives
-  // So we only need to parse if it's a string that looks like JSON object/array
-  if (typeof value === "object") return value;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    // Only try to parse if it looks like a JSON object or array
-    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-      try {
-        return JSON.parse(value);
-      } catch {
-        // Not valid JSON, return as-is
-        return value;
-      }
-    }
-    // Plain string - return as-is (already unwrapped from JSONB)
-    return value;
-  }
-  // Numbers, booleans - return as-is
-  return value;
-};
-
-/**
- * Convert epoch milliseconds to ISO datetime string
- * Handles number, bigint, and string representations (DB drivers may return bigint as string)
- */
-const epochMsToIsoString = (epochMs: unknown): string => {
-  if (epochMs === null || epochMs === undefined) {
-    return new Date().toISOString();
-  }
-  const num =
-    typeof epochMs === "string" ? parseInt(epochMs, 10) : Number(epochMs);
-  if (isNaN(num)) {
-    return new Date().toISOString();
-  }
-  return new Date(num).toISOString();
-};
-
-/**
- * Convert bigint/string to number (for epoch_ms fields that schema expects as number)
- */
-const toNumberOrNull = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  const num = typeof value === "string" ? parseInt(value, 10) : Number(value);
-  return isNaN(num) ? null : num;
-};
-
-/**
- * Transform database row to WorkflowExecution
- * Note: runtime_context is preserved for background execution auth
- */
-function transformDbRowToExecution(
-  row: Record<string, unknown> = {},
-): WorkflowExecution & { runtime_context?: unknown } {
-  const transformed = {
-    ...row,
-    // BaseCollectionEntitySchema expects title but workflow_executions doesn't have one
-    title: row.title ?? `Execution ${row.id}`,
-    // Convert epoch ms to ISO datetime strings (for base schema)
-    start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
-    timeout_ms: toNumberOrNull(row.timeout_ms),
-    deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
-    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
-    created_at: epochMsToIsoString(row.created_at),
-    updated_at: epochMsToIsoString(row.updated_at),
-    input: safeJsonParse(row.input),
-    // Preserve runtime_context for background execution (not in schema but needed)
-    runtime_context: safeJsonParse(row.runtime_context),
-  };
-
-  const parsed = WorkflowExecutionSchema.parse(transformed);
-  // Attach runtime_context back after schema validation (schema strips unknown fields)
-  return { ...parsed, runtime_context: transformed.runtime_context };
-}
+import {
+  transformDbRowToExecution,
+  transformDbRowToStepResult,
+  safeJsonParse,
+} from "../collections/workflow.ts";
 
 /**
  * Get a workflow execution by ID
@@ -425,39 +345,10 @@ export async function processEnqueuedExecutions(env: Env): Promise<string[]> {
   );
 }
 
-/**
- * Transform database row to ExecutionStepResult
- */
-function transformDbRowToStepResult(
-  row: Record<string, unknown> = {},
-): WorkflowExecutionStepResult {
-  const startedAt = epochMsToIsoString(row.started_at_epoch_ms);
-  const completedAt = row.completed_at_epoch_ms
-    ? epochMsToIsoString(row.completed_at_epoch_ms)
-    : startedAt;
+// ============================================================================
+// Step Results
+// ============================================================================
 
-  const transformed = {
-    ...row,
-    // Synthesize required BaseCollectionEntity fields
-    id: row.id ?? `${row.execution_id}/${row.step_id}`,
-    title: row.title ?? `Step_${row.step_id}`,
-    created_at: startedAt,
-    updated_at: completedAt,
-    // Convert epoch ms fields to numbers (schema expects number, not string)
-    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
-    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
-    // Parse JSONB fields
-    input: safeJsonParse(row.input),
-    output: safeJsonParse(row.output),
-    error: safeJsonParse(row.error),
-  };
-
-  return WorkflowExecutionStepResultSchema.parse(transformed);
-}
-
-/**
- * Get all step results for an execution
- */
 export async function getStepResults(
   env: Env,
   executionId?: string,
@@ -624,7 +515,7 @@ export async function updateStepResult(
 }
 
 // ============================================================================
-// Stream Chunks - Live streaming from tool calls
+// Stream Chunks
 // ============================================================================
 
 export interface StreamChunk {
@@ -636,10 +527,6 @@ export interface StreamChunk {
   created_at: number;
 }
 
-/**
- * Write a stream chunk to the database for live streaming visibility.
- * Uses UPSERT to handle duplicate writes (idempotent).
- */
 export async function writeStreamChunk(
   env: Env,
   executionId: string,
@@ -647,39 +534,26 @@ export async function writeStreamChunk(
   chunkIndex: number,
   chunkData: unknown,
 ): Promise<void> {
-  const id = `${executionId}/${stepId}/${chunkIndex}`;
-  const now = Date.now();
-
   await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      INSERT INTO step_stream_chunks (id, execution_id, step_id, chunk_index, chunk_data, created_at)
-      VALUES (?, ?, ?, ?, ?::jsonb, ?)
-      ON CONFLICT (execution_id, step_id, chunk_index) DO NOTHING
-    `,
+    sql: `INSERT INTO step_stream_chunks (id, execution_id, step_id, chunk_index, chunk_data, created_at)
+          VALUES (?, ?, ?, ?, ?::jsonb, ?) ON CONFLICT (execution_id, step_id, chunk_index) DO NOTHING`,
     params: [
-      id,
+      `${executionId}/${stepId}/${chunkIndex}`,
       executionId,
       stepId,
       chunkIndex,
       JSON.stringify(chunkData),
-      now,
+      Date.now(),
     ],
   });
 }
 
-/**
- * Get stream chunks for an execution that are newer than the last seen indices.
- * Returns chunks ordered by creation time.
- */
 export async function getStreamChunks(
   env: Env,
   executionId: string,
   lastSeenIndices: Record<string, number> = {},
 ): Promise<StreamChunk[]> {
   const params: unknown[] = [executionId];
-
-  // For each step we've seen, only get chunks with index > lastSeen
-  // For steps we haven't seen, get all chunks
   const stepConditions = Object.entries(lastSeenIndices).map(
     ([stepId, lastIndex], idx) => {
       params.push(stepId, lastIndex);
@@ -687,23 +561,15 @@ export async function getStreamChunks(
     },
   );
 
-  // Also get chunks for steps we haven't seen yet
   const seenStepIds = Object.keys(lastSeenIndices);
   let whereClause = "execution_id = $1";
-
   if (seenStepIds.length > 0) {
-    // Get chunks for known steps (only new ones) OR chunks for unknown steps
     const seenList = seenStepIds.map((s) => `'${s}'`).join(",");
     whereClause += ` AND ((${stepConditions.join(" OR ")}) OR step_id NOT IN (${seenList}))`;
   }
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      SELECT id, execution_id, step_id, chunk_index, chunk_data, created_at
-      FROM step_stream_chunks
-      WHERE ${whereClause}
-      ORDER BY created_at ASC, chunk_index ASC
-    `,
+    sql: `SELECT * FROM step_stream_chunks WHERE ${whereClause} ORDER BY created_at ASC, chunk_index ASC`,
     params,
   });
 
@@ -720,23 +586,16 @@ export async function getStreamChunks(
   });
 }
 
-/**
- * Delete stream chunks for a specific step (cleanup after step completes).
- */
 export async function deleteStreamChunks(
   env: Env,
   executionId: string,
   stepId?: string,
 ): Promise<void> {
-  if (stepId) {
-    await env.DATABASE.DATABASES_RUN_SQL({
-      sql: `DELETE FROM step_stream_chunks WHERE execution_id = ? AND step_id = ?`,
-      params: [executionId, stepId],
-    });
-  } else {
-    await env.DATABASE.DATABASES_RUN_SQL({
-      sql: `DELETE FROM step_stream_chunks WHERE execution_id = ?`,
-      params: [executionId],
-    });
-  }
+  const sql = stepId
+    ? `DELETE FROM step_stream_chunks WHERE execution_id = ? AND step_id = ?`
+    : `DELETE FROM step_stream_chunks WHERE execution_id = ?`;
+  await env.DATABASE.DATABASES_RUN_SQL({
+    sql,
+    params: stepId ? [executionId, stepId] : [executionId],
+  });
 }

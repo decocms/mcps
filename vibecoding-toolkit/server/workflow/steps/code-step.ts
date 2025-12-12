@@ -16,7 +16,6 @@ import {
   callFunction,
   installConsole,
   type QuickJSHandle,
-  type SandboxRuntime,
   SandboxContext,
 } from "../../lib/sandbox/index.ts";
 import { transform } from "sucrase";
@@ -122,26 +121,18 @@ export async function executeCode(
 ): Promise<StepResult> {
   let ctx: SandboxContext | undefined;
 
-  console.log(`[SANDBOX] Starting executeCode for '${stepName}'`);
-
   try {
-    console.log(`[SANDBOX] Transpiling TypeScript for '${stepName}'`);
     const jsCode = transpileTypeScript(code);
-    console.log(`[SANDBOX] Transpiled OK, creating runtime for '${stepName}'`);
-
     const runtime = await createSandboxRuntime(
       `transform-${stepName}-${Date.now()}`,
       {
-        memoryLimitBytes: 64 * 1024 * 1024, // 64MB
-        stackSizeBytes: 1 << 20, // 1MB
+        memoryLimitBytes: 64 * 1024 * 1024,
+        stackSizeBytes: 1 << 20,
       },
     );
-    console.log(`[SANDBOX] Runtime created for '${stepName}'`);
 
-    ctx = runtime.newContext({ interruptAfterMs: 10000 }); // 10s timeout
-    console.log(`[SANDBOX] Context created for '${stepName}'`);
-
-    const guestConsole = installConsole(ctx);
+    ctx = runtime.newContext({ interruptAfterMs: 10000 });
+    installConsole(ctx);
 
     const result = ctx.evalCode(jsCode, "transform.js", {
       strict: true,
@@ -159,7 +150,6 @@ export async function executeCode(
     }
 
     const defaultHandle = ctx.getProp(exportsHandle, "default");
-
     if (ctx.typeof(defaultHandle) !== "function") {
       return {
         status: "error",
@@ -169,19 +159,9 @@ export async function executeCode(
     }
 
     const callHandle = await callFunction(ctx, defaultHandle, undefined, input);
-    const unwrappedResult = ctx.unwrapResult(callHandle);
-    const output = ctx.dump(unwrappedResult);
-    const logs = guestConsole.logs.map((log) =>
-      typeof log === "string" ? log : JSON.stringify(log),
-    );
-
-    console.log("Code step output:", {
-      logs,
-    });
-
     return {
       status: "success",
-      output,
+      output: ctx.dump(ctx.unwrapResult(callHandle)),
       startedAt: Date.now(),
     };
   } catch (err) {
@@ -195,9 +175,6 @@ export async function executeCode(
   }
 }
 
-/**
- * Validate transform code without executing it
- */
 export async function validateCode(
   code: string,
   stepName: string,
@@ -207,20 +184,19 @@ export async function validateCode(
   schemas?: ReturnType<typeof extractSchemas>;
 }> {
   let ctx: SandboxContext | undefined;
-  let runtime: SandboxRuntime;
 
   try {
     const schemas = extractSchemas(code);
-
     const jsCode = transpileTypeScript(code);
-
-    runtime = await createSandboxRuntime(`validate-${stepName}-${Date.now()}`, {
-      memoryLimitBytes: 32 * 1024 * 1024,
-      stackSizeBytes: 512 * 1024,
-    });
+    const runtime = await createSandboxRuntime(
+      `validate-${stepName}-${Date.now()}`,
+      {
+        memoryLimitBytes: 32 * 1024 * 1024,
+        stackSizeBytes: 512 * 1024,
+      },
+    );
 
     ctx = runtime.newContext({ interruptAfterMs: 5000 });
-
     const result = ctx.evalCode(jsCode, "validate.js", {
       strict: true,
       strip: true,
@@ -237,14 +213,12 @@ export async function validateCode(
     }
 
     const defaultHandle = ctx.getProp(exportsHandle, "default");
-
     if (ctx.typeof(defaultHandle) !== "function") {
       return {
         valid: false,
         error: "Transform must export a default function",
       };
     }
-
     return { valid: true, schemas };
   } catch (error) {
     return {

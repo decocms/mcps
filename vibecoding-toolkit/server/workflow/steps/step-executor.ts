@@ -15,13 +15,17 @@ import {
   WaitForSignalActionSchema,
 } from "@decocms/bindings/workflow";
 import { executeCode } from "./code-step.ts";
-import { consumeSignal, getSignals } from "../events/signals.ts";
+import {
+  consumeSignal,
+  getSignals,
+  checkTimer,
+  scheduleTimer,
+} from "../events/events.ts";
 import {
   DurableSleepError,
   WaitingForSignalError,
   WorkflowCancelledError,
-} from "../../workflow/utils/errors.ts";
-import { checkTimer, scheduleTimer } from "../events/events.ts";
+} from "../utils/errors.ts";
 import {
   createStepResult,
   getExecution,
@@ -378,12 +382,6 @@ export class StepExecutor {
     }
   }
 
-  /**
-   * Core step execution logic (extracted from original executeStep)
-   */
-  /**
-   * Core step execution logic
-   */
   private async executeStepCore(
     step: Step,
     stepType: "tool" | "code" | "sleep" | "signal",
@@ -436,29 +434,16 @@ export class StepExecutor {
   }
 }
 
-/**
- * Check if output is "large" and should be excluded from workflow output.
- * Large outputs stay in step_results for querying, not in workflow_executions.
- */
+/** Check if output is "large" and should be excluded from workflow output */
 function isLargeOutput(output: unknown): boolean {
   if (output === null || output === undefined) return false;
-
-  // Heuristic: if it's a string > 10KB, it's large
   if (typeof output === "string" && output.length > 10_000) return true;
-
-  // Heuristic: if it's an array > 100 items, it's large
   if (Array.isArray(output) && output.length > 100) return true;
-
-  // Heuristic: JSON size > 50KB is large
   try {
-    const json = JSON.stringify(output);
-    if (json.length > 50_000) return true;
+    return JSON.stringify(output).length > 50_000;
   } catch {
-    // If it can't be serialized, treat as large
     return true;
   }
-
-  return false;
 }
 
 export function getStepType(step: Step): "tool" | "code" | "sleep" | "signal" {

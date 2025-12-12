@@ -1,3 +1,10 @@
+/**
+ * Workflow DB Transformers
+ *
+ * Single source of truth for database row transformations.
+ * All workflow-related DB operations should import from here.
+ */
+
 import {
   WorkflowEvent,
   WorkflowEventSchema,
@@ -8,76 +15,28 @@ import {
 } from "@decocms/bindings/workflow";
 import z from "zod";
 
-type WorkflowDialect = "sqlite" | "postgres";
+// ============================================================================
+// Utility Helpers
+// ============================================================================
 
-interface WorkflowQueries {
-  workflowTableIdempotentQuery: string;
-  workflowTableIndexesQuery: string;
-  workflowExecutionTableIdempotentQuery: string;
-  workflowExecutionTableIndexesQuery: string;
-  executionStepResultsTableIdempotentQuery: string;
-  executionStepResultsTableIndexesQuery: string;
-  workflowEventsTableIdempotentQuery: string;
-  workflowEventsTableIndexesQuery: string;
-  stepStreamChunksTableIdempotentQuery: string;
-  stepStreamChunksTableIndexesQuery: string;
-}
-
-function transformDbRowToEvent(row: Record<string, unknown>): WorkflowEvent {
-  const transformed = {
-    ...row,
-    created_at: epochMsToIsoString(Number(row.created_at)),
-    title: row.title ?? `Event ${row.id}`,
-    updated_at: epochMsToIsoString(Number(row.updated_at ?? Date.now())),
-    visible_at: Number(row.visible_at),
-    payload: row.payload
-      ? typeof row.payload === "string"
-        ? JSON.parse(row.payload)
-        : row.payload
-      : undefined,
-  };
-
-  return WorkflowEventSchema.parse(transformed);
-}
-
-const QueueMessageSchema = z.object({
-  executionId: z.string(),
-  retryCount: z.number().default(0),
-  enqueuedAt: z.number(), // epoch ms
-  authorization: z.string(),
-});
-
-type QueueMessage = z.infer<typeof QueueMessageSchema>;
-
-/**
- * Convert epoch milliseconds to ISO datetime string
- * Handles number, bigint, and string representations (DB drivers may return bigint as string)
- */
-const epochMsToIsoString = (epochMs: unknown): string => {
-  if (epochMs === null || epochMs === undefined) {
+/** Convert epoch ms to ISO string. Handles number, bigint, string. */
+export const epochMsToIsoString = (epochMs: unknown): string => {
+  if (epochMs === null || epochMs === undefined)
     return new Date().toISOString();
-  }
   const num =
     typeof epochMs === "string" ? parseInt(epochMs, 10) : Number(epochMs);
-  if (isNaN(num)) {
-    return new Date().toISOString();
-  }
-  return new Date(num).toISOString();
+  return isNaN(num) ? new Date().toISOString() : new Date(num).toISOString();
 };
 
-/**
- * Convert bigint/string to number (for epoch_ms fields that schema expects as number)
- */
-const toNumberOrNull = (value: unknown): number | null => {
+/** Convert bigint/string to number or null */
+export const toNumberOrNull = (value: unknown): number | null => {
   if (value === null || value === undefined) return null;
   const num = typeof value === "string" ? parseInt(value, 10) : Number(value);
   return isNaN(num) ? null : num;
 };
 
-/**
- * Safely parse JSON
- */
-const safeJsonParse = (value: unknown): unknown => {
+/** Safely parse JSON - handles JSONB already-parsed values */
+export const safeJsonParse = (value: unknown): unknown => {
   if (value === null || value === undefined) return undefined;
   if (typeof value === "object") return value;
   if (typeof value === "string") {
@@ -94,42 +53,43 @@ const safeJsonParse = (value: unknown): unknown => {
   return value;
 };
 
-/**
- * Transform database row to WorkflowExecution schema
- */
-function transformDbRowToExecution(
-  row: Record<string, unknown>,
-): WorkflowExecution {
+// ============================================================================
+// Row Transformers
+// ============================================================================
+
+/** Transform DB row to WorkflowExecution (with optional runtime_context) */
+export function transformDbRowToExecution(
+  row: Record<string, unknown> = {},
+): WorkflowExecution & { runtime_context?: unknown } {
   const transformed = {
     ...row,
     title: row.title ?? `Execution ${row.id}`,
+    start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
+    timeout_ms: toNumberOrNull(row.timeout_ms),
+    deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
+    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
     created_at: epochMsToIsoString(row.created_at),
     updated_at: epochMsToIsoString(row.updated_at),
-    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
-    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
-    locked_until_epoch_ms: toNumberOrNull(row.locked_until_epoch_ms),
     input: safeJsonParse(row.input),
-    output: safeJsonParse(row.output),
-    error: safeJsonParse(row.error),
-    retry_count: row.retry_count ?? 0,
-    max_retries: row.max_retries ?? 10,
+    runtime_context: safeJsonParse(row.runtime_context),
   };
-
-  return WorkflowExecutionSchema.parse(transformed);
+  const parsed = WorkflowExecutionSchema.parse(transformed);
+  return { ...parsed, runtime_context: transformed.runtime_context };
 }
 
-function transformDbRowToStepResult(
-  row: Record<string, unknown>,
+/** Transform DB row to WorkflowExecutionStepResult */
+export function transformDbRowToStepResult(
+  row: Record<string, unknown> = {},
 ): WorkflowExecutionStepResult {
   const startedAt = epochMsToIsoString(row.started_at_epoch_ms);
   const completedAt = row.completed_at_epoch_ms
     ? epochMsToIsoString(row.completed_at_epoch_ms)
     : startedAt;
 
-  const transformed = {
+  return WorkflowExecutionStepResultSchema.parse({
     ...row,
     id: row.id ?? `${row.execution_id}/${row.step_id}`,
-    title: row.title ?? `Step ${row.step_id}`,
+    title: row.title ?? `Step_${row.step_id}`,
     created_at: startedAt,
     updated_at: completedAt,
     started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
@@ -137,17 +97,53 @@ function transformDbRowToStepResult(
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
     error: safeJsonParse(row.error),
-  };
-
-  return WorkflowExecutionStepResultSchema.parse(transformed);
+  });
 }
 
-export {
-  type QueueMessage,
-  QueueMessageSchema,
-  transformDbRowToEvent,
-  transformDbRowToExecution,
-  transformDbRowToStepResult,
-  type WorkflowDialect,
-  type WorkflowQueries,
-};
+/** Transform DB row to WorkflowEvent */
+export function transformDbRowToEvent(
+  row: Record<string, unknown>,
+): WorkflowEvent {
+  return WorkflowEventSchema.parse({
+    ...row,
+    created_at: epochMsToIsoString(Number(row.created_at)),
+    title: row.title ?? `Event ${row.id}`,
+    updated_at: epochMsToIsoString(Number(row.updated_at ?? Date.now())),
+    visible_at: Number(row.visible_at),
+    payload: row.payload
+      ? typeof row.payload === "string"
+        ? JSON.parse(row.payload)
+        : row.payload
+      : undefined,
+  });
+}
+
+// ============================================================================
+// Schema Types
+// ============================================================================
+
+export const QueueMessageSchema = z.object({
+  executionId: z.string(),
+  retryCount: z.number().default(0),
+  enqueuedAt: z.number(),
+  authorization: z.string(),
+});
+
+export type QueueMessage = z.infer<typeof QueueMessageSchema>;
+
+// ============================================================================
+// SQL Query Types (for dialect-specific implementations)
+// ============================================================================
+
+export interface WorkflowQueries {
+  workflowTableIdempotentQuery: string;
+  workflowTableIndexesQuery: string;
+  workflowExecutionTableIdempotentQuery: string;
+  workflowExecutionTableIndexesQuery: string;
+  executionStepResultsTableIdempotentQuery: string;
+  executionStepResultsTableIndexesQuery: string;
+  workflowEventsTableIdempotentQuery: string;
+  workflowEventsTableIndexesQuery: string;
+  stepStreamChunksTableIdempotentQuery: string;
+  stepStreamChunksTableIndexesQuery: string;
+}
