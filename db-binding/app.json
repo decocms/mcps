@@ -1,6 +1,6 @@
 {
-  "scopeName": "deco",
   "name": "postgres",
+  "scopeName": "deco",
   "connection": {
     "type": "BINDING"
   },
