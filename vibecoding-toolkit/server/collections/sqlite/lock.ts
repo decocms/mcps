@@ -129,14 +129,6 @@ export async function releaseLock(
 
     const released = (result.result[0]?.results?.length ?? 0) > 0;
 
-    if (released) {
-      console.log(`[LOCK] Released lock for ${executionId}`);
-    } else {
-      console.warn(
-        `[LOCK] Lock mismatch or already released for ${executionId}`,
-      );
-    }
-
     return released;
   } catch (error) {
     console.error(`[LOCK] Error releasing lock for ${executionId}:`, error);

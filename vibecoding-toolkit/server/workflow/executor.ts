@@ -130,8 +130,6 @@ async function executeForEach(
 
   const limit = step.config!.loop!.limit ?? items.length;
 
-  console.log({ step, items, limit });
-
   const executeItem = async (item: unknown, index: number) => {
     const itemCtx: RefContext = { ...ctx, item, index };
     const input = resolveAllRefs(step.input, itemCtx).resolved as Record<

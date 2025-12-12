@@ -235,10 +235,6 @@ export class StepExecutor {
       throw new WorkflowCancelledError(executionId);
     }
 
-    console.log("🚀 ~ executeStep ~ step:", step);
-    console.log("🚀 ~ executeStep ~ resolvedInput:", resolvedInput);
-    console.log("🚀 ~ executeStep ~ executionId:", executionId);
-
     const stepType = getStepType(step) as "tool" | "code" | "sleep" | "signal";
     await createStepResult(this.env, {
       execution_id: executionId,
@@ -289,9 +285,6 @@ export class StepExecutor {
       // If we have more attempts, wait with exponential backoff
       if (attempt < maxAttempts) {
         const delay = backoffMs * Math.pow(2, attempt - 1);
-        console.log(
-          `[STEP] Step '${step.name}' failed (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms...`,
-        );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -346,10 +339,8 @@ export class StepExecutor {
     },
     timeoutMs?: number,
   ): Promise<StepResult> {
-    console.log("🚀 ~ executeStepWithTimeout ~ stepType:", stepType);
     // No timeout - execute directly
     if (timeoutMs === undefined || timeoutMs === null || timeoutMs <= 0) {
-      console.log("🚀 ~ executeStepWithTimeout ~ executing step directly");
       return this.executeStepCore(
         step,
         stepType,
@@ -368,7 +359,6 @@ export class StepExecutor {
     }, timeoutMs);
 
     try {
-      console.log("🚀 ~ executeStepWithTimeout ~ executing step with timeout");
       const result = await this.executeStepCore(
         step,
         stepType,
@@ -472,7 +462,6 @@ function isLargeOutput(output: unknown): boolean {
 }
 
 export function getStepType(step: Step): "tool" | "code" | "sleep" | "signal" {
-  console.log("🚀 ~ getStepType ~ step:", step);
   if ("toolName" in step.action) return "tool";
   if ("code" in step.action) return "code";
   if ("sleepUntil" in step.action || "sleepMs" in step.action) return "sleep";

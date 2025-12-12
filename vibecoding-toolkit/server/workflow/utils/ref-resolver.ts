@@ -212,8 +212,6 @@ function isSingleAtRef(value: unknown): value is `@${string}` {
  */
 export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   const errors: Array<{ ref: string; error: string }> = [];
-  console.log("🚀 ~ resolveAllRefs ~ input:", input);
-  console.log("🚀 ~ resolveAllRefs ~ ctx:", ctx);
   function resolveValue(value: unknown): unknown {
     // If it's a string that IS an @ref (entire value is ONE reference)
     if (isSingleAtRef(value)) {
@@ -227,12 +225,9 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
 
     // If it's a string that CONTAINS @refs, interpolate them
     if (typeof value === "string" && value.includes("@")) {
-      console.log("🚀 ~ resolveAllRefs ~ value:", value);
       return value.replace(AT_REF_PATTERN, (match) => {
-        console.log("🚀 ~ resolveAllRefs ~ match:", match);
         if (isAtRef(match as `@${string}`)) {
           const result = resolveRef(match as `@${string}`, ctx);
-          console.log("🚀 ~ resolveAllRefs ~ result:", result);
           if (result.error) {
             errors.push({ ref: match, error: result.error });
             return match; // Keep original if resolution fails
@@ -243,7 +238,6 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
           if (typeof val === "object") return JSON.stringify(val);
           return String(val);
         }
-        console.log("🚀 ~ resolveAllRefs ~ match not at ref:", match);
         return match;
       });
     }
@@ -251,21 +245,17 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
     // If it's an array, resolve each element
     if (Array.isArray(value)) {
       return value.map((v) => {
-        console.log("🚀 ~ resolveAllRefs ~ v:", v);
         const resolved = resolveValue(v);
-        console.log("🚀 ~ resolveAllRefs ~ resolved:", resolved);
         return resolved;
       });
     }
 
     // If it's an object, resolve each property
     if (value !== null && typeof value === "object") {
-      console.log("🚀 ~ resolveAllRefs ~ value is object:", value);
       const resolvedObj: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(value)) {
         resolvedObj[key] = resolveValue(val);
       }
-      console.log("🚀 ~ resolveAllRefs ~ resolvedObj:", resolvedObj);
       return resolvedObj;
     }
 
@@ -274,8 +264,6 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   }
 
   const resolved = resolveValue(input);
-  console.log("🚀 ~ resolveAllRefs ~ resolved:", resolved);
-  console.log("🚀 ~ resolveAllRefs ~ errors:", errors);
   return { resolved, errors: errors.length > 0 ? errors : undefined };
 }
 
