@@ -53,11 +53,6 @@ if (!existsSync(mcpPath)) {
 }
 
 // Verify package.json exists
-const packageJsonPath = join(mcpPath, "package.json");
-if (!existsSync(packageJsonPath)) {
-  console.error(`❌ Error: No package.json found in ${mcpName}`);
-  process.exit(1);
-}
 
 // Check if app.json exists to determine deployment method
 const appJsonPath = join(mcpPath, "app.json");
@@ -68,6 +63,11 @@ console.log(`📁 Path: ${mcpPath}`);
 console.log(`🔧 Method: ${useRegistryPublish ? "Registry Publish" : "Deploy"}`);
 console.log(`🔧 Mode: ${isPreview ? "Preview" : "Production"}\n`);
 
+const packageJsonPath = join(mcpPath, "package.json");
+if (!existsSync(packageJsonPath) && !useRegistryPublish) {
+  console.error(`❌ Error: No package.json found in ${mcpName}`);
+  process.exit(1);
+}
 try {
   // Install workspace dependencies first (from root)
   console.log("📦 Installing workspace dependencies...");
