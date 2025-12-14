@@ -1,11 +1,13 @@
-/**
- * Central export point for all tools organized by domain.
- *
- * This file aggregates all tools from different domains into a single
- * export, making it easy to import all tools in main.ts while keeping
- * the domain separation.
- */
 import { agentTools } from "./agent.ts";
+import { workflowTools } from "./workflow/tools.ts";
+import { workflowCollectionTools } from "./workflow/workflow.ts";
+import { workflowExecutionCollectionTools } from "./workflow/workflow-execution.ts";
+import { workflowExecutionStepResultsTools } from "./workflow/workflow-execution-step-results.ts";
 
-// Export all tools from all domains
-export const tools = [...agentTools];
+export const tools = [
+  ...agentTools,
+  ...workflowTools,
+  ...workflowCollectionTools,
+  ...workflowExecutionCollectionTools,
+  ...workflowExecutionStepResultsTools,
+];

@@ -1,32 +1,55 @@
-/**
- * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * both your MCP server at /mcp and your views as a react
- * application at /.
- */
-
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
   Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
-import { ensureAgentsTable } from "./lib/postgres.ts";
 import { tools } from "./tools/index.ts";
+import { ensureCollections, ensureIndexes } from "./collections/index.ts";
+import { insertDefaultWorkflowIfNotExists } from "./tools/workflow/workflow.ts";
+import {
+  ensureCronExtensions,
+  ensureCronScheduler,
+} from "./lib/cron-scheduler.ts";
+import { ensureAgentsTable } from "./lib/postgres.ts";
 
-/**
- * This Env type is the main context object that is passed to
- * all of your Application.
- *
- * It includes all of the generated types from your
- * Deco bindings, along with the default ones.
- */
-export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
+export type Env = DefaultEnv<typeof StateSchema> &
+  DecoEnv & {
+    DATABASE: {
+      DATABASES_RUN_SQL: (params: {
+        sql: string;
+        params: unknown[];
+      }) => Promise<{ result: { results: unknown[] }[] }>;
+    };
+    CONNECTION: {
+      CONNECTION_CALL_TOOL: (params: {
+        connectionId: string;
+        toolName: string;
+        arguments: Record<string, unknown>;
+      }) => Promise<{ result: unknown }>;
+    };
+  };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     onChange: async (env) => {
-      await ensureAgentsTable(env);
+      try {
+        await ensureAgentsTable(env);
+        await ensureCollections(env);
+        await ensureIndexes(env);
+        await insertDefaultWorkflowIfNotExists(env);
+
+        // Ensure pg_cron and pg_net extensions are installed
+        await ensureCronExtensions(env);
+
+        // Set up pg_cron job to process enqueued workflows
+        // Use host.docker.internal for Docker to reach the host machine
+        const baseUrl = env.MESH_REQUEST_CONTEXT.meshUrl;
+        const processEndpoint = `${baseUrl}/api/scheduler?connectionId=${env.MESH_REQUEST_CONTEXT?.connectionId}&sub=${env.MESH_REQUEST_CONTEXT?.ensureAuthenticated()?.id}&scopes=PROCESS_ENQUEUED_EXECUTIONS&toolName=PROCESS_ENQUEUED_EXECUTIONS`;
+        await ensureCronScheduler(env, processEndpoint);
+      } catch (error) {
+        console.error("error changing configuration", error);
+      }
     },
     /**
      * These scopes define the asking permissions of your
@@ -36,7 +59,10 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
+    scopes: [
+      Scopes.DATABASE.DATABASES_RUN_SQL,
+      Scopes.CONNECTION.CONNECTION_CALL_TOOL,
+    ],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -61,6 +87,11 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       type: "mcp",
       name: "DATABASE",
       app_name: "@deco/postgres",
+    },
+    {
+      type: "mcp",
+      name: "CONNECTION",
+      app_name: "@deco/tools",
     },
   ],
 });

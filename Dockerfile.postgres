@@ -1,0 +1,31 @@
+FROM postgres:18
+
+# Install dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        postgresql-server-dev-18 \
+        git \
+        ca-certificates \
+        libcurl4-openssl-dev \
+        libicu-dev \
+        pkg-config
+
+# Install pg_cron
+RUN git clone https://github.com/citusdata/pg_cron.git /tmp/pg_cron \
+    && cd /tmp/pg_cron \
+    && make \
+    && make install \
+    && rm -rf /tmp/pg_cron
+
+# Install pg_net
+RUN git clone --depth 1 https://github.com/supabase/pg_net.git /tmp/pg_net \
+    && cd /tmp/pg_net \
+    && make \
+    && make install \
+    && rm -rf /tmp/pg_net
+
+# Cleanup
+RUN apt-get remove -y build-essential postgresql-server-dev-18 git pkg-config \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*

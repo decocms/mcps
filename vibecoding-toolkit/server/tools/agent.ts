@@ -99,7 +99,7 @@ const STANDARD_AGENT: z.infer<typeof AgentSchema> = {
 /**
  * Build SQL WHERE clause from filter expression using ? placeholders
  */
-function buildWhereClause(
+export function buildWhereClause(
   whereExpr: WhereExpression | undefined,
   params: unknown[] = [],
 ): { clause: string; params: unknown[] } {
@@ -177,7 +177,7 @@ function buildWhereClause(
 /**
  * Build SQL ORDER BY clause from sort expression
  */
-function buildOrderByClause(
+export function buildOrderByClause(
   orderByExpr: OrderByExpression | undefined,
 ): string {
   if (!orderByExpr || orderByExpr.length === 0) {
