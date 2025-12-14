@@ -13,12 +13,7 @@
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 import { validateCode } from "../steps/code-step.ts";
-import {
-  CodeActionSchema,
-  Step,
-  Trigger,
-  Workflow,
-} from "@decocms/bindings/workflow";
+import { CodeActionSchema, Step, Workflow } from "@decocms/bindings/workflow";
 import { getStepType } from "../steps/step-executor.ts";
 
 export const ValidationErrorSchema = z.object({
@@ -111,17 +106,6 @@ function validateStepRefs(
           });
         }
         break;
-
-      case "output":
-        // Only valid in triggers (not step inputs)
-        errors.push({
-          type: "missing_ref",
-          step: step.name,
-          field: "input",
-          ref,
-          message: `@output is only valid in triggers, not step inputs`,
-        });
-        break;
     }
   }
 
@@ -159,46 +143,6 @@ async function validateCodeStep(step: Step): Promise<{
     error: null,
     schema: result.schemas,
   };
-}
-
-function validateTriggerRefs(
-  trigger: Trigger,
-  triggerIndex: number,
-  allStepNames: Set<string>,
-): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const triggerId = `trigger-${triggerIndex}`;
-
-  const refs = extractRefs(trigger.input);
-
-  for (const ref of refs) {
-    const parsed = parseAtRef(ref as `@${string}`);
-
-    switch (parsed.type) {
-      case "output":
-        // Valid in triggers
-        break;
-
-      case "step": {
-        const stepName = parsed.stepName;
-        if (!stepName || !allStepNames.has(stepName)) {
-          errors.push({
-            type: "missing_ref",
-            step: triggerId,
-            field: "input",
-            ref,
-            message: `Step '${stepName}' not found in workflow`,
-          });
-        }
-        break;
-      }
-
-      case "input":
-        break;
-    }
-  }
-
-  return errors;
 }
 
 export async function validateWorkflow(workflow: Workflow): Promise<void> {
@@ -245,14 +189,6 @@ export async function validateWorkflow(workflow: Workflow): Promise<void> {
       field: "name",
       message: `Duplicate step name: ${name}`,
     });
-  }
-
-  if (workflow.triggers) {
-    for (let i = 0; i < workflow.triggers.length; i++) {
-      const trigger = workflow.triggers[i];
-      const triggerErrors = validateTriggerRefs(trigger, i, stepNames);
-      errors.push(...triggerErrors);
-    }
   }
 
   if (errors.length > 0) {

@@ -28,7 +28,7 @@ if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
   );
 }
 
-const MAX_OUTPUT_SIZE_BYTES = 100_000;
+const MAX_OUTPUT_SIZE_BYTES = 500_000;
 
 function getByteSize(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).length;

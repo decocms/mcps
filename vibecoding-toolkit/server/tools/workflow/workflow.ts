@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createPrivateTool, createTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../../main.ts";
 import { z } from "zod";
@@ -74,11 +74,6 @@ function transformDbRowToWorkflow(row: unknown): Workflow {
     title: r.title as string,
     description: r.description as string | undefined,
     steps: steps as Workflow["steps"],
-    triggers: r.triggers
-      ? typeof r.triggers === "string"
-        ? JSON.parse(r.triggers)
-        : r.triggers
-      : [],
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
@@ -177,6 +172,39 @@ export const createGetTool = (env: Env) =>
     },
   });
 
+export const createSuggestStepTool = (_env: Env) =>
+  createTool({
+    id: "COLLECTION_WORKFLOW_SUGGEST_STEP",
+    description: "Suggest a step for a workflow",
+    inputSchema: z.object({
+      purpose: z.string(),
+    }),
+    outputSchema: z.object({
+      step: z.object({
+        name: z.string(),
+        description: z.string(),
+        action: z.object({
+          type: z.string(),
+          configuration: z.record(z.unknown()),
+        }),
+        input: z.record(z.unknown()),
+      }),
+    }),
+    execute: async () => {
+      return {
+        step: {
+          name: "suggest_step",
+          description: "Suggest a step for a workflow",
+          action: {
+            type: "tool",
+            configuration: {},
+          },
+          input: {},
+        },
+      };
+    },
+  });
+
 export async function insertDefaultWorkflowIfNotExists(env: Env) {
   try {
     const result = await env.DATABASE.DATABASES_RUN_SQL({
@@ -211,14 +239,13 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
         name: s.name.trim().replaceAll(/\s+/g, "_"),
       })) || [],
     );
-    const triggersJson = JSON.stringify(workflow.triggers || []);
     const escapeForSql = (val: unknown): string => {
       if (val === null || val === undefined) return "NULL";
       if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
       if (typeof val === "number") return String(val);
       return `'${String(val).replace(/'/g, "''")}'`;
     };
-    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps, triggers) VALUES (${escapeForSql(
+    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps) VALUES (${escapeForSql(
       workflow.id,
     )}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(
       now,
@@ -226,7 +253,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
       user?.id || null,
     )}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(
       stepsJson,
-    )}, ${escapeForSql(triggersJson)})`;
+    )})`;
 
     await env.DATABASE.DATABASES_RUN_SQL({
       sql,
@@ -244,7 +271,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
 
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_WORKFLOW_INSERT",
+    id: CREATE_BINDING.name,
     description: "Create a new workflow with validation",
     inputSchema: CREATE_BINDING.inputSchema,
     outputSchema: CREATE_BINDING.outputSchema,
@@ -271,6 +298,8 @@ export const createUpdateTool = (env: Env) =>
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
       const now = new Date().toISOString();
 
+      console.log({ steps: context.data.steps });
+
       const { id, data } = context;
 
       const setClauses: string[] = [];
@@ -293,10 +322,6 @@ export const createUpdateTool = (env: Env) =>
       if (data.steps !== undefined) {
         setClauses.push(`steps = ?`);
         params.push(JSON.stringify(data.steps || []));
-      }
-      if (data.triggers !== undefined) {
-        setClauses.push(`triggers = ?`);
-        params.push(JSON.stringify(data.triggers || []));
       }
 
       params.push(id);
@@ -355,4 +380,5 @@ export const workflowCollectionTools = [
   createInsertTool,
   createUpdateTool,
   createDeleteTool,
+  createSuggestStepTool,
 ];

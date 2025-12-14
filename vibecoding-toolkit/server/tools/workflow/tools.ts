@@ -29,6 +29,8 @@ export const createAndQueueExecutionTool = (env: Env) =>
         const execution = await createExecution(env, {
           workflow_id: context.workflowId,
           input: context.input,
+          start_at_epoch_ms: context.startAtEpochMs,
+          timeout_ms: context.timeoutMs,
         });
 
         processEnqueuedExecutionsTool(env)
@@ -228,6 +230,9 @@ export const processEnqueuedExecutionsTool = (env: Env) =>
     execute: async () => {
       try {
         const ids = await processEnqueuedExecutions(env);
+        console.log(
+          `[PROCESS_ENQUEUED_EXECUTIONS] ids: ${JSON.stringify(ids)}`,
+        );
         return { success: true, ids };
       } catch (error) {
         console.error("🚀 ~ Error processing enqueued executions:", error);

@@ -10,7 +10,6 @@ const postgresWorkflowTableIdempotentQuery = `
     title TEXT NOT NULL,
     description TEXT,
     steps JSONB NOT NULL DEFAULT '{}',
-    triggers JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by TEXT,
@@ -42,11 +41,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions (
   deadline_at_epoch_ms BIGINT,
   error JSONB,
   
-  created_by TEXT,
-  
-  -- Stores the mesh runtime context (token, meshUrl, connectionId) for background execution
-  -- This allows cron-triggered executions to use the original user's auth context
-  runtime_context JSONB
+  created_by TEXT
 )
 `;
 

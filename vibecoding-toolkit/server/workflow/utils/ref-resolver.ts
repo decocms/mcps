@@ -6,7 +6,6 @@
  * - @input.path - Workflow input
  * - @item - Current item in forEach loop
  * - @index - Current index in forEach loop
- * - @output.path - Final workflow output (in triggers)
  *
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
@@ -23,8 +22,6 @@ export interface RefContext {
   item?: unknown;
   /** Current index in forEach loop (if applicable) */
   index?: number;
-  /** Final workflow output (for trigger resolution) */
-  output?: unknown;
 }
 
 /**
@@ -46,7 +43,7 @@ export function isAtRef(value: unknown): value is `@${string}` {
  * Parse an @ref string into its components
  */
 export function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input" | "output" | "item";
+  type: "step" | "input" | "item";
   stepName?: string;
   groupId?: string;
   path?: string;
@@ -265,17 +262,6 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
 
   const resolved = resolveValue(input);
   return { resolved, errors: errors.length > 0 ? errors : undefined };
-}
-
-/**
- * Check if any @refs in an object would fail to resolve
- *
- * Used for trigger conditional logic - if any @ref can't resolve,
- * the trigger is skipped.
- */
-export function canResolveAllRefs(input: unknown, ctx: RefContext): boolean {
-  const { errors } = resolveAllRefs(input, ctx);
-  return !errors || errors.length === 0;
 }
 
 /**

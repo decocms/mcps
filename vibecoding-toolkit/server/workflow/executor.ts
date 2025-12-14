@@ -4,17 +4,13 @@
 
 import type { Env } from "../main.ts";
 import type { RefContext } from "./utils/ref-resolver.ts";
-import {
-  canResolveAllRefs,
-  resolveAllRefs,
-  resolveRef,
-} from "./utils/ref-resolver.ts";
+import { resolveAllRefs, resolveRef } from "./utils/ref-resolver.ts";
 import {
   getExecution,
   getStepResults,
   updateExecution,
 } from "../lib/execution-db.ts";
-import type { Step, Trigger } from "@decocms/bindings/workflow";
+import type { Step } from "@decocms/bindings/workflow";
 import { getWorkflow } from "server/tools/workflow/workflow.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
 import { groupStepsByLevel, validateNoCycles } from "./utils/dag.ts";
@@ -36,54 +32,6 @@ function parseForEachItems(value: unknown): unknown[] {
   throw new Error(`forEach items must resolve to an array`);
 }
 
-interface TriggerResult {
-  triggerId: string;
-  status: "triggered" | "skipped" | "failed";
-  executionIds?: string[];
-  error?: string;
-}
-
-async function fireTriggers(
-  env: Env,
-  triggers: Trigger[],
-  ctx: RefContext,
-  parentExecutionId: string,
-): Promise<TriggerResult[]> {
-  return Promise.all(
-    triggers.map(async (trigger, i) => {
-      const triggerId = `trigger-${i}`;
-      try {
-        if (!canResolveAllRefs(trigger.input, ctx))
-          return { triggerId, status: "skipped" as const };
-        const { resolved: input } = resolveAllRefs(trigger.input, ctx);
-        const executionId = crypto.randomUUID();
-        await env.DATABASE.DATABASES_RUN_SQL({
-          sql: `INSERT INTO workflow_executions (id, workflow_id, status, created_at, updated_at, input, parent_execution_id) VALUES (?, ?, 'pending', ?, ?, ?, ?)`,
-          params: [
-            executionId,
-            trigger.workflowId,
-            Date.now(),
-            Date.now(),
-            JSON.stringify(input),
-            parentExecutionId,
-          ],
-        });
-        return {
-          triggerId,
-          status: "triggered" as const,
-          executionIds: [executionId],
-        };
-      } catch (err) {
-        return {
-          triggerId,
-          status: "failed" as const,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-    }),
-  );
-}
-
 async function executeForEach(
   step: Step,
   ctx: RefContext,
@@ -94,6 +42,7 @@ async function executeForEach(
   const items = parseForEachItems(
     resolveRef(config.items as `@${string}`, ctx).value,
   );
+  console.log(`[EXECUTOR] items: ${JSON.stringify(items)}`);
   const limit = step.config!.loop!.limit ?? items.length;
 
   const results = [];
@@ -133,7 +82,7 @@ function restoreRuntimeContext(env: Env, execution: unknown) {
   if (runtimeContext?.token && env.MESH_REQUEST_CONTEXT) {
     Object.assign(env.MESH_REQUEST_CONTEXT, {
       token: runtimeContext.token,
-      meshUrl: runtimeContext.meshUrl ?? "http://localhost:8002",
+      meshUrl: runtimeContext.meshUrl,
       connectionId: runtimeContext.connectionId,
       authorization: runtimeContext.authorization,
     });
@@ -188,7 +137,6 @@ export async function executeWorkflow(env: Env, executionId: string) {
         ? JSON.parse(workflow.steps)
         : workflow.steps || []
     ) as Step[];
-    const triggers: Trigger[] = workflow.triggers || [];
     const workflowInput =
       typeof execution.input === "string"
         ? JSON.parse(execution.input)
@@ -220,6 +168,7 @@ export async function executeWorkflow(env: Env, executionId: string) {
       const results = await Promise.all(
         pending.map(async (step) => {
           if (step.config?.loop?.for) {
+            console.log(`[EXECUTOR] executing forEach step: ${step.name}`);
             const { outputs, stepIds } = await executeForEach(
               step,
               ctx,
@@ -255,15 +204,6 @@ export async function executeWorkflow(env: Env, executionId: string) {
       }
     }
 
-    // Fire triggers
-    let triggerResults: TriggerResult[] | undefined;
-    if (triggers.length) {
-      ctx.output = completedSteps.length
-        ? stepOutputs.get(completedSteps[completedSteps.length - 1])
-        : undefined;
-      triggerResults = await fireTriggers(env, triggers, ctx, executionId);
-    }
-
     const output = {
       _summary: true,
       completedSteps,
@@ -275,7 +215,7 @@ export async function executeWorkflow(env: Env, executionId: string) {
       output,
       completed_at_epoch_ms: Date.now(),
     });
-    return { status: "success", output, triggerResults };
+    return { status: "success", output };
   } catch (err) {
     return handleExecutionError(env, executionId, err);
   }

@@ -39,7 +39,6 @@ export interface StepResult {
   error?: string;
   startedAt: number;
   completedAt?: number;
-  excludeFromWorkflowOutput?: boolean;
 }
 
 export class StepExecutor {
@@ -66,18 +65,43 @@ export class StepExecutor {
         throw new Error("MESH_URL is not set");
       }
 
-      const { result } = await this.env.CONNECTION.CONNECTION_CALL_TOOL({
+      const { result } = (await this.env.CONNECTION.CONNECTION_CALL_TOOL({
         connectionId,
         toolName,
         arguments: input,
-      });
+      })) as {
+        result: {
+          structuredContent?: Record<string, unknown>;
+          isError?: boolean;
+          content?: unknown;
+          _meta?: unknown;
+        };
+      };
+
+      const content = result.structuredContent
+        ? result.structuredContent
+        : Array.isArray(result.content) && typeof result.content !== "object"
+          ? (Object.fromEntries(
+              Array.from(result.content).map((item: unknown) => [
+                (item as { text: string }).text,
+                item,
+              ]),
+            ) as Record<string, string>)
+          : result.content
+            ? {
+                content: result.content,
+              }
+            : {};
 
       return {
         status: "success",
-        output: result,
+        output: {
+          ...content,
+          isError: result.isError,
+          _meta: result._meta,
+        },
         startedAt,
         completedAt: Date.now(),
-        excludeFromWorkflowOutput: isLargeOutput(result),
       };
     } catch (error) {
       return {
@@ -431,18 +455,6 @@ export class StepExecutor {
       default:
         throw new Error(`Unknown step type for step: ${step.name}`);
     }
-  }
-}
-
-/** Check if output is "large" and should be excluded from workflow output */
-function isLargeOutput(output: unknown): boolean {
-  if (output === null || output === undefined) return false;
-  if (typeof output === "string" && output.length > 10_000) return true;
-  if (Array.isArray(output) && output.length > 100) return true;
-  try {
-    return JSON.stringify(output).length > 50_000;
-  } catch {
-    return true;
   }
 }
 

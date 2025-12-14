@@ -54,24 +54,13 @@ export async function createExecution(
   const now = new Date().getTime();
   const id = crypto.randomUUID();
 
-  // Store the runtime context for background execution
-  // This allows cron-triggered workflows to use the original user's auth
-  const runtimeContext = env.MESH_REQUEST_CONTEXT
-    ? {
-        token: env.MESH_REQUEST_CONTEXT.token,
-        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl,
-        connectionId: env.MESH_REQUEST_CONTEXT.connectionId,
-        authorization: env.MESH_REQUEST_CONTEXT.authorization,
-      }
-    : null;
-
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       INSERT INTO workflow_executions (
         id, workflow_id, status, created_at, updated_at, created_by,
-        input, timeout_ms, start_at_epoch_ms, runtime_context
+        input, timeout_ms, start_at_epoch_ms
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb
+        ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
       RETURNING *
     `,
@@ -85,7 +74,6 @@ export async function createExecution(
       JSON.stringify(data.input || {}),
       data.timeout_ms ?? 0,
       data.start_at_epoch_ms ?? now,
-      runtimeContext ? JSON.stringify(runtimeContext) : null,
     ],
   });
 
