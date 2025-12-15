@@ -13,6 +13,7 @@ import {
   getServer,
   getServerVersions,
   parseServerId,
+  formatServerId,
 } from "../lib/registry-client.ts";
 
 // ============================================================================
@@ -137,7 +138,7 @@ export const createListRegistryTool = (env: Env) =>
             server._meta["io.modelcontextprotocol.registry/official"];
 
           return {
-            id: crypto.randomUUID(),
+            id: formatServerId(server.server.name, server.server.version),
             title: server.server.name,
             created_at: officialMeta?.publishedAt || new Date().toISOString(),
             updated_at: officialMeta?.updatedAt || new Date().toISOString(),
