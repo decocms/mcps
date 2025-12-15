@@ -105,7 +105,7 @@ const GetOutputSchema = z.object({
  */
 export const createListRegistryTool = (env: Env) =>
   createTool({
-    id: "t",
+    id: "COLLECTION_REGISTRY_APP_LIST",
     description:
       "Lists MCP servers available in the registry with support for pagination, search, and version filtering",
     inputSchema: ListInputSchema,
