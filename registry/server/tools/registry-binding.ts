@@ -13,6 +13,7 @@ import {
   getServer,
   getServerVersions,
   parseServerId,
+  formatServerId,
 } from "../lib/registry-client.ts";
 
 // ============================================================================
@@ -104,7 +105,7 @@ const GetOutputSchema = z.object({
  */
 export const createListRegistryTool = (env: Env) =>
   createTool({
-    id: "COLLECTION_REGISTRY_APP_LIST",
+    id: "t",
     description:
       "Lists MCP servers available in the registry with support for pagination, search, and version filtering",
     inputSchema: ListInputSchema,
@@ -137,7 +138,7 @@ export const createListRegistryTool = (env: Env) =>
             server._meta["io.modelcontextprotocol.registry/official"];
 
           return {
-            id: crypto.randomUUID(),
+            id: formatServerId(server.server.name, server.server.version),
             title: server.server.name,
             created_at: officialMeta?.publishedAt || new Date().toISOString(),
             updated_at: officialMeta?.updatedAt || new Date().toISOString(),

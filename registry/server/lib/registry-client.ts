@@ -209,13 +209,23 @@ export async function getServer(
   }
 }
 
+const separator = "@";
+
 /**
  * Parse um ID no formato "name" ou "name:version"
  */
 export function parseServerId(id: string): { name: string; version?: string } {
-  const parts = id.split(":");
+  const parts = id.split(separator);
+
+  const version = parts[parts.length - 1];
+  const name = parts.slice(0, -1).join(separator);
+
   return {
-    name: parts[0],
-    version: parts[1],
+    name,
+    version,
   };
+}
+
+export function formatServerId(name: string, version: string): string {
+  return `${name}${separator}${version}`;
 }
