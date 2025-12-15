@@ -217,6 +217,13 @@ const separator = "@";
 export function parseServerId(id: string): { name: string; version?: string } {
   const parts = id.split(separator);
 
+  if (parts.length === 1) {
+    return {
+      name: parts[0],
+      version: undefined,
+    };
+  }
+
   const version = parts[parts.length - 1];
   const name = parts.slice(0, -1).join(separator);
 
