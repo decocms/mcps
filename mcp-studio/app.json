@@ -1,6 +1,7 @@
 {
   "scopeName": "deco",
   "name": "mcp-studio",
+  "friendlyName": "MCP Studio",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-vibemcp.decocache.com/mcp"
