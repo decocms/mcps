@@ -1,0 +1,11 @@
+{
+  "scopeName": "oimoi",
+  "name": "whatsapp",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://4e4f1068e80c.ngrok-free.app/mcp"
+  },
+  "description": "OpenRouter App Connection for LLM uses.",
+  "icon": "https://assets.decocache.com/decocms/b2e2f64f-6025-45f7-9e8c-3b3ebdd073d8/whatsapp_logojpg.jpg",
+  "unlisted": true
+}
