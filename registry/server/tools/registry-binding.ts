@@ -69,8 +69,6 @@ const ListInputSchema = z
  */
 const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
-  totalCount: z.number(),
-  hasMore: z.boolean(),
   nextCursor: z
     .string()
     .optional()
@@ -149,8 +147,6 @@ export const createListRegistryTool = (env: Env) =>
 
         return {
           items,
-          totalCount: response.metadata.count,
-          hasMore: !!response.metadata.nextCursor,
           nextCursor: response.metadata.nextCursor,
         };
       } catch (error) {
