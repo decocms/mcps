@@ -1,11 +1,11 @@
 {
   "scopeName": "deco",
-  "name": "vibecoding-toolkit",
+  "name": "mcp-studio",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-vibemcp.decocache.com/mcp"
   },
-  "description": "App vibecoding-toolkit by deco workers for workspace /shared/deco",
+  "description": "An app that allows you to create and manage MCPs",
   "icon": "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
   "unlisted": false
 }
