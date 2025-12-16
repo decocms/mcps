@@ -1,167 +1,76 @@
 {
   "scopeName": "deco",
-  "name": "event-bus",
+  "name": "event-subscriber",
   "connection": {
     "type": "BINDING"
   },
-  "description": "Event Bus Binding for MCPs. Provides publish/subscribe functionality following CloudEvents v1.0 specification.",
+  "description": "Event Subscriber Binding for MCPs. Implements ON_EVENTS to receive CloudEvents from the MCP Mesh event bus. Supports batch and per-event result handling.",
   "icon": "https://assets.decocache.com/mcp/10ce1dc3-1595-497e-9875-5a6d332687f3/ChatGPT-Image-13-de-dez.-de-2025-16_39_34.png",
   "unlisted": true,
   "tools": [
     {
-      "name": "EVENT_PUBLISH",
-      "description": "Publish an event to the event bus. The source is automatically set from the caller's connection ID.",
+      "name": "ON_EVENTS",
+      "description": "Receive a batch of CloudEvents. Return success for immediate delivery, retryAfter to request re-delivery, or use results for per-event control.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "type": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "description": "Event type identifier (e.g., 'order.created', 'user.signup')"
-          },
-          "subject": {
-            "type": "string",
-            "maxLength": 255,
-            "description": "Subject/resource identifier (e.g., order ID)"
-          },
-          "data": {
-            "description": "Event payload (any JSON value)"
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Batch of CloudEvents to process",
+            "items": {
+              "type": "object",
+              "properties": {
+                "specversion": {
+                  "type": "string",
+                  "const": "1.0",
+                  "description": "CloudEvents specification version"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique event identifier"
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Connection ID of the event publisher"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Event type (e.g., 'order.created')"
+                },
+                "time": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Event timestamp (ISO 8601)"
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "Subject/resource identifier"
+                },
+                "datacontenttype": {
+                  "type": "string",
+                  "description": "Content type of data"
+                },
+                "dataschema": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Schema URI for data"
+                },
+                "data": {
+                  "description": "Event payload"
+                }
+              },
+              "required": [
+                "specversion",
+                "id",
+                "source",
+                "type"
+              ]
+            }
           }
         },
         "required": [
-          "type"
-        ]
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique event ID"
-          },
-          "type": {
-            "type": "string",
-            "description": "Event type"
-          },
-          "source": {
-            "type": "string",
-            "description": "Source connection ID"
-          },
-          "time": {
-            "type": "string",
-            "description": "Event timestamp (ISO 8601)"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "source",
-          "time"
-        ]
-      }
-    },
-    {
-      "name": "EVENT_SUBSCRIBE",
-      "description": "Subscribe to events of a specific type. The subscriber connection ID is automatically set from the caller's token.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "eventType": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "description": "Event type to subscribe to"
-          },
-          "publisher": {
-            "type": "string",
-            "description": "Filter events by source connection ID"
-          },
-          "filter": {
-            "type": "string",
-            "maxLength": 1000,
-            "description": "JSONPath filter expression on event data"
-          }
-        },
-        "required": [
-          "eventType"
-        ]
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "subscription": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Subscription ID"
-              },
-              "connectionId": {
-                "type": "string",
-                "description": "Subscriber connection ID"
-              },
-              "eventType": {
-                "type": "string",
-                "description": "Event type pattern"
-              },
-              "sourceConnectionId": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Source connection filter"
-              },
-              "filter": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "JSONPath filter expression"
-              },
-              "enabled": {
-                "type": "boolean",
-                "description": "Whether subscription is enabled"
-              },
-              "createdAt": {
-                "type": "string",
-                "description": "Created timestamp"
-              },
-              "updatedAt": {
-                "type": "string",
-                "description": "Updated timestamp"
-              }
-            },
-            "required": [
-              "id",
-              "connectionId",
-              "eventType",
-              "sourceConnectionId",
-              "filter",
-              "enabled",
-              "createdAt",
-              "updatedAt"
-            ]
-          }
-        },
-        "required": [
-          "subscription"
-        ]
-      }
-    },
-    {
-      "name": "EVENT_UNSUBSCRIBE",
-      "description": "Remove a subscription from the event bus.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "subscriptionId": {
-            "type": "string",
-            "description": "Subscription ID to remove"
-          }
-        },
-        "required": [
-          "subscriptionId"
+          "events"
         ]
       },
       "outputSchema": {
@@ -169,17 +78,48 @@
         "properties": {
           "success": {
             "type": "boolean",
-            "description": "Whether unsubscribe was successful"
+            "description": "Batch success - applies to events not in results"
           },
-          "subscriptionId": {
+          "error": {
             "type": "string",
-            "description": "Subscription ID that was removed"
+            "description": "Batch error message - applies to events not in results"
+          },
+          "processedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of events successfully processed"
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Batch retryAfter (ms) - applies to events not in results"
+          },
+          "results": {
+            "type": "object",
+            "description": "Per-event results keyed by event ID",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "description": "Whether this event was processed successfully"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Error message for this event"
+                },
+                "retryAfter": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Re-deliver this event after this many ms"
+                }
+              },
+              "required": [
+                "success"
+              ]
+            }
           }
-        },
-        "required": [
-          "success",
-          "subscriptionId"
-        ]
+        }
       }
     }
   ]
