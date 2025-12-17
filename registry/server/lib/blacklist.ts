@@ -77,7 +77,6 @@ export const BLACKLISTED_SERVERS: string[] = [
   "live.alpic.mcpimmo-10e693d9/mcpimmo", // nao aparece botao de oauth
 
   // CORS or Server down
-  "ai.exa/exa",
   "ai.meminal/meminal",
   "ai.smithery/arjunkmrm-mango-sago",
   "ai.smithery/arjunkmrm-perplexity-search",

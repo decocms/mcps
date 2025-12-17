@@ -14,6 +14,7 @@ import {
   getServerVersions,
   parseServerId,
   formatServerId,
+  type RegistryServer,
 } from "../lib/registry-client.ts";
 import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
 
@@ -122,36 +123,51 @@ export const createListRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Fetch servers directly from API with filters
-        const response = await listServers({
-          registryUrl,
-          cursor,
-          limit,
-          search,
-          version,
-        });
-
-        // Filter only servers that have remotes configured when using the official registry
+        // Setup for filtering
         const isOfficialRegistry = !registryUrl;
-
-        // Words to exclude from server names (case insensitive)
         const excludedWords = ["local", "test", "demo", "example"];
         const hasExcludedWord = (name: string) =>
           excludedWords.some((word) => name.toLowerCase().includes(word));
 
-        const filteredServers = isOfficialRegistry
-          ? response.servers.filter(
-              (s) =>
-                s.server.remotes &&
-                Array.isArray(s.server.remotes) &&
-                s.server.remotes.length > 0 &&
-                !BLACKLISTED_SERVERS.includes(s.server.name) &&
-                !hasExcludedWord(s.server.name),
-            )
-          : response.servers;
+        const filterServer = (s: RegistryServer) => {
+          if (!isOfficialRegistry) return true;
+          return (
+            s.server.remotes &&
+            Array.isArray(s.server.remotes) &&
+            s.server.remotes.length > 0 &&
+            !BLACKLISTED_SERVERS.includes(s.server.name) &&
+            !hasExcludedWord(s.server.name)
+          );
+        };
+
+        // Accumulate filtered servers until we have enough
+        const allFilteredServers: RegistryServer[] = [];
+        let currentCursor: string | undefined = cursor;
+        let lastNextCursor: string | undefined;
+
+        // Keep fetching until we have at least 'limit' items or no more pages
+        do {
+          const response = await listServers({
+            registryUrl,
+            cursor: currentCursor,
+            limit: 100, // Fetch more items per request to reduce API calls
+            search,
+            version,
+          });
+
+          // Filter servers
+          const filtered = response.servers.filter(filterServer);
+          allFilteredServers.push(...filtered);
+
+          // Save the next cursor
+          lastNextCursor = response.metadata.nextCursor;
+          currentCursor = lastNextCursor;
+
+          // Stop if we have enough items or no more pages
+        } while (allFilteredServers.length < limit && lastNextCursor);
 
         // Map servers to output format with ID
-        const items = filteredServers.map((server) => {
+        const items = allFilteredServers.map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
 
@@ -167,7 +183,7 @@ export const createListRegistryTool = (env: Env) =>
 
         return {
           items,
-          nextCursor: response.metadata.nextCursor,
+          nextCursor: lastNextCursor,
         };
       } catch (error) {
         throw new Error(
