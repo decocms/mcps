@@ -15,6 +15,7 @@ import {
   parseServerId,
   formatServerId,
 } from "../lib/registry-client.ts";
+import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -132,12 +133,20 @@ export const createListRegistryTool = (env: Env) =>
 
         // Filter only servers that have remotes configured when using the official registry
         const isOfficialRegistry = !registryUrl;
+
+        // Words to exclude from server names (case insensitive)
+        const excludedWords = ["local", "test", "demo", "example"];
+        const hasExcludedWord = (name: string) =>
+          excludedWords.some((word) => name.toLowerCase().includes(word));
+
         const filteredServers = isOfficialRegistry
           ? response.servers.filter(
               (s) =>
                 s.server.remotes &&
                 Array.isArray(s.server.remotes) &&
-                s.server.remotes.length > 0,
+                s.server.remotes.length > 0 &&
+                !BLACKLISTED_SERVERS.includes(s.server.name) &&
+                !hasExcludedWord(s.server.name),
             )
           : response.servers;
 
