@@ -1,0 +1,15 @@
+{
+  "scopeName": "deco",
+  "name": "mcp-gateway",
+  "friendlyName": "MCP Gateway",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-registry.decocache.com/mcp"
+  },
+  "repository": {
+    "url": "https://github.com/decocms/mcps/tree/main/mcp-gateway"
+  },
+  "description": "A MCP Gateway server that sits between the MCP client and the MCP server.",
+  "icon": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  "unlisted": false
+}
