@@ -1,6 +1,6 @@
 {
   "scopeName": "deco",
-  "name": "registrys",
+  "name": "mcp-registry",
   "friendlyName": "MCP Registry",
   "connection": {
     "type": "HTTP",
