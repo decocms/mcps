@@ -130,8 +130,16 @@ export const createListRegistryTool = (env: Env) =>
           version,
         });
 
+        // Filter only official servers if using the official registry
+        const isOfficialRegistry = !registryUrl;
+        const filteredServers = isOfficialRegistry
+          ? response.servers.filter(
+              (s) => s._meta["io.modelcontextprotocol.registry/official"],
+            )
+          : response.servers;
+
         // Map servers to output format with ID
-        const items = response.servers.map((server) => {
+        const items = filteredServers.map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
 
