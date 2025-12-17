@@ -130,11 +130,14 @@ export const createListRegistryTool = (env: Env) =>
           version,
         });
 
-        // Filter only official servers if using the official registry
+        // Filter only servers that have remotes configured when using the official registry
         const isOfficialRegistry = !registryUrl;
         const filteredServers = isOfficialRegistry
           ? response.servers.filter(
-              (s) => s._meta["io.modelcontextprotocol.registry/official"],
+              (s) =>
+                s.server.remotes &&
+                Array.isArray(s.server.remotes) &&
+                s.server.remotes.length > 0,
             )
           : response.servers;
 
