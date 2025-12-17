@@ -21,6 +21,60 @@ export const BLACKLISTED_SERVERS: string[] = [
   "ai.smithery/Aman-Amith-Shastry-scientific_computation_mcp", // CORS error
   "ai.smithery/Artin0123-gemini-image-mcp-server", // CORS error
   "ai.smithery/BadRooBot-my_test_mcp", // CORS error
+  "ai.smithery/BigVik193-reddit-ads-mcp-api", // CORS error
+  "ai.smithery/BigVik193-reddit-user-mcp", // CORS error
+  "ai.smithery/BowenXU0126-aistudio_hw3", // CORS error
+  "ai.smithery/ChiR24-unreal_mcp", // CORS error
+  "ai.smithery/CollectiveSpend-collectivespend-smithery-mcp", // CORS error
+  "ai.smithery/Danushkumar-V-mcp-discord", // CORS error
+  "ai.smithery/DynamicEndpoints-m365-core-mcp", // CORS error
+  "ai.smithery/DynamicEndpoints-powershell-exec-mcp-server", // CORS error
+  "ai.smithery/RectiFlex-centerassist-mcp-cp1", // CORS error
+  "ai.smithery/FelixYifeiWang-felix-mcp-smithery", // CORS error
+  "ai.smithery/Funding-Machine-ghl-mcp-fundingmachine", // CORS error
+  "ai.smithery/Hint-Services-obsidian-github-mcp", // CORS error
+  "ai.smithery/IlyaGusev-academia_mcp", // CORS error
+  "ai.smithery/IndianAppGuy-magicslide-mcp", // CORS error
+  "ai.smithery/JMoak-chrono-mcp", // CORS error
+  "ai.smithery/JunoJunHyun-festival-finder-mcp", // CORS error
+  "ai.smithery/Kim-soung-won-mcp-smithery-exam", // CORS error
+  "ai.smithery/Kryptoskatt-mcp-server", // CORS error
+  "ai.smithery/Leghis-smart-thinking", // CORS error
+  "ai.smithery/LinkupPlatform-linkup-mcp-server", // CORS error
+  "ai.smithery/MetehanGZL-pokemcp", // CORS error
+  "ai.smithery/MisterSandFR-supabase-mcp-selfhosted", // CORS error
+  "ai.smithery/Nekzus-npm-sentinel-mcp", // CORS error
+  "ai.smithery/Open-Scout-mcp", // CORS error
+  "ai.smithery/PabloLec-keyprobe-mcp", // CORS error
+  "ai.smithery/Parc-Dev-task-breakdown-server", // CORS error
+  "ai.smithery/Phionx-mcp-hello-server", // CORS error
+  "ai.smithery/PixdataOrg-coderide", // CORS error
+  "ai.smithery/ProfessionalWiki-mediawiki-mcp-server", // CORS error
+  "ai.smithery/RectiFlex-centerassist-mcp", // CORS error
+  "ai.smithery/RectiFlex-centerassist-mcp-cp", // CORS error
+  "ai.smithery/RectiFlex-centerassist-mcp1", // CORS error
+  "ai.smithery/STUzhy-py_execute_mcp", // CORS error
+  "ai.smithery/ScrapeGraphAI-scrapegraph-mcp", // CORS error
+  "ai.smithery/TakoData-tako-mcp", // CORS error
+  "ai.smithery/aamangeldi-dad-jokes-mcp", // CORS error
+  "ai.smithery/adamamer20-paper-search-mcp-openai", // CORS error
+  "ai.smithery/afgong-sqlite-mcp-server", // CORS error
+  "ai.smithery/akilat-spec-leave-manager-mcp", // CORS error
+  "ai.smithery/alex-llm-attack-mcp-server", // CORS error
+  "ai.smithery/alphago2580-naramarketmcp", // CORS error
+  "ai.smithery/anirbanbasu-frankfurtermcp", // CORS error
+  "ai.smithery/anirbanbasu-pymcp", // CORS error
+  "build.arca.mcp/arca-mcp-server", // CORS error
+  "com.apify/apify-mcp-server", // token error
+  "com.civic/nexus", // invalid scopes
+  "com.figma.mcp/mcp", // CORS error
+  "com.jepto/mcp", // com.gojinko.mcp/jinko
+  "com.statsig/statsig-mcp-server", // oauth rederect to saas no mcp
+  "io.catchmetrics.mcp/rum-analytics", // oauth  do serviço nao esta funcionando
+  "io.github.mcp-fortress/mcp-fortress",
+  "io.github.microsoft/EnterpriseMCP", //error "Authentication failed: Incompatible auth server: does not support dynamic client registration" but have support
+  "io.ignission/mcp", // oauth  do serviço nao esta funcionando
+  "live.alpic.mcpimmo-10e693d9/mcpimmo", // nao aparece botao de oauth
 
   // CORS or Server down
   "ai.exa/exa",
