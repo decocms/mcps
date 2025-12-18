@@ -35,6 +35,20 @@ const RegistryServerSchema = z.object({
 });
 
 /**
+ * Where clause schema for filtering servers
+ */
+const WhereSchema = z
+  .object({
+    appName: z.string().optional().describe("Filter by app name"),
+    title: z.string().optional().describe("Filter by server title/name"),
+    binder: z
+      .union([z.string(), z.array(z.string())])
+      .optional()
+      .describe("Filter by binding type(s)"),
+  })
+  .describe("Filter expression for servers");
+
+/**
  * Input schema para LIST
  */
 const ListInputSchema = z
@@ -52,10 +66,9 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
-    search: z
-      .string()
-      .optional()
-      .describe("Search servers by name (e.g., 'figma' or 'exa')"),
+    where: WhereSchema.optional().describe(
+      "Filter expression: { appName: string } OR { title: string } OR { binder: string | string[] }",
+    ),
     version: z
       .string()
       .optional()
@@ -114,7 +127,7 @@ export const createListRegistryTool = (env: Env) =>
       const {
         limit = 30,
         cursor,
-        search,
+        where,
         version = "latest",
       } = context as z.infer<typeof ListInputSchema>;
       try {
@@ -123,6 +136,29 @@ export const createListRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
+        // Translate 'where' clause to API search parameter
+        // API only supports substring search on name
+        let apiSearch: string | undefined;
+        let clientSideFilters: {
+          binder?: string[];
+        } = {};
+
+        if (where) {
+          // If where.title or where.appName, use for API search
+          if (where.title) {
+            apiSearch = where.title;
+          } else if (where.appName) {
+            apiSearch = where.appName;
+          }
+
+          // If where.binder, filter on client side (API doesn't support this)
+          if (where.binder) {
+            clientSideFilters.binder = Array.isArray(where.binder)
+              ? where.binder
+              : [where.binder];
+          }
+        }
+
         // Setup for filtering
         const isOfficialRegistry = !registryUrl;
         const excludedWords = ["local", "test", "demo", "example"];
@@ -130,14 +166,32 @@ export const createListRegistryTool = (env: Env) =>
           excludedWords.some((word) => name.toLowerCase().includes(word));
 
         const filterServer = (s: RegistryServer) => {
-          if (!isOfficialRegistry) return true;
-          return (
-            s.server.remotes &&
-            Array.isArray(s.server.remotes) &&
-            s.server.remotes.length > 0 &&
-            !BLACKLISTED_SERVERS.includes(s.server.name) &&
-            !hasExcludedWord(s.server.name)
-          );
+          // Basic filters for official registry
+          if (isOfficialRegistry) {
+            if (
+              !s.server.remotes ||
+              !Array.isArray(s.server.remotes) ||
+              s.server.remotes.length === 0 ||
+              BLACKLISTED_SERVERS.includes(s.server.name) ||
+              hasExcludedWord(s.server.name)
+            ) {
+              return false;
+            }
+          }
+
+          // Client-side binder filter (if specified)
+          if (clientSideFilters.binder && clientSideFilters.binder.length > 0) {
+            // Check if server has any of the specified binders
+            const serverBindings = s._meta?.["mcp.decocms.io/bindings"] || [];
+            const hasMatchingBinder = clientSideFilters.binder.some((binder) =>
+              serverBindings.includes(binder),
+            );
+            if (!hasMatchingBinder) {
+              return false;
+            }
+          }
+
+          return true;
         };
 
         // Accumulate filtered servers until we have enough
@@ -151,7 +205,7 @@ export const createListRegistryTool = (env: Env) =>
             registryUrl,
             cursor: currentCursor,
             limit: 100, // Fetch more items per request to reduce API calls
-            search,
+            search: apiSearch,
             version,
           });
 
