@@ -35,18 +35,42 @@ const RegistryServerSchema = z.object({
 });
 
 /**
- * Where clause schema for filtering servers
+ * Standard WhereExpression schema compatible with @decocms/bindings/collections
+ * Note: The API only supports simple text search, so all filters are converted to search terms
  */
-const WhereSchema = z
-  .object({
-    appName: z.string().optional().describe("Filter by app name"),
-    title: z.string().optional().describe("Filter by server title/name"),
-    binder: z
-      .union([z.string(), z.array(z.string())])
-      .optional()
-      .describe("Filter by binding type(s)"),
-  })
-  .describe("Filter expression for servers");
+const FieldComparisonSchema = z.object({
+  field: z.array(z.string()),
+  operator: z.enum([
+    "eq",
+    "ne",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "contains",
+    "startsWith",
+    "endsWith",
+  ]),
+  value: z.unknown(),
+});
+
+const WhereExpressionSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    FieldComparisonSchema,
+    z.object({
+      operator: z.enum(["and", "or"]),
+      conditions: z.array(WhereExpressionSchema),
+    }),
+    z.object({
+      operator: z.literal("not"),
+      condition: WhereExpressionSchema,
+    }),
+  ]),
+);
+
+const WhereSchema = WhereExpressionSchema.describe(
+  "Standard WhereExpression filter (converted to simple search internally)",
+);
 
 /**
  * Input schema para LIST
@@ -67,7 +91,7 @@ const ListInputSchema = z
       .default(30)
       .describe("Number of items per page (default: 30)"),
     where: WhereSchema.optional().describe(
-      "Filter expression: { appName: string } OR { title: string } OR { binder: string | string[] }",
+      "Standard WhereExpression filter (converted to simple search internally)",
     ),
     version: z
       .string()
@@ -110,6 +134,40 @@ const GetOutputSchema = z.object({
 });
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Extract search term from WhereExpression
+ * Since API only supports simple text search, we extract the first value found
+ */
+function extractSearchTerm(where: unknown): string | undefined {
+  if (!where || typeof where !== "object") return undefined;
+
+  const w = where as {
+    operator?: string;
+    conditions?: unknown[];
+    field?: string[];
+    value?: unknown;
+  };
+
+  // Field comparison - extract the value
+  if (w.field && w.value !== undefined) {
+    return String(w.value);
+  }
+
+  // AND/OR - extract from first condition that has a value
+  if ((w.operator === "and" || w.operator === "or") && w.conditions) {
+    for (const condition of w.conditions) {
+      const term = extractSearchTerm(condition);
+      if (term) return term;
+    }
+  }
+
+  return undefined;
+}
+
+// ============================================================================
 // Tool Implementations
 // ============================================================================
 
@@ -136,28 +194,9 @@ export const createListRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Translate 'where' clause to API search parameter
-        // API only supports substring search on name
-        let apiSearch: string | undefined;
-        let clientSideFilters: {
-          binder?: string[];
-        } = {};
-
-        if (where) {
-          // If where.title or where.appName, use for API search
-          if (where.title) {
-            apiSearch = where.title;
-          } else if (where.appName) {
-            apiSearch = where.appName;
-          }
-
-          // If where.binder, filter on client side (API doesn't support this)
-          if (where.binder) {
-            clientSideFilters.binder = Array.isArray(where.binder)
-              ? where.binder
-              : [where.binder];
-          }
-        }
+        // Extract search term from where clause
+        // API only supports simple text search, so all filters become search terms
+        const apiSearch = where ? extractSearchTerm(where) : undefined;
 
         // Setup for filtering
         const isOfficialRegistry = !registryUrl;
@@ -175,18 +214,6 @@ export const createListRegistryTool = (env: Env) =>
               BLACKLISTED_SERVERS.includes(s.server.name) ||
               hasExcludedWord(s.server.name)
             ) {
-              return false;
-            }
-          }
-
-          // Client-side binder filter (if specified)
-          if (clientSideFilters.binder && clientSideFilters.binder.length > 0) {
-            // Check if server has any of the specified binders
-            const serverBindings = s._meta?.["mcp.decocms.io/bindings"] || [];
-            const hasMatchingBinder = clientSideFilters.binder.some((binder) =>
-              serverBindings.includes(binder),
-            );
-            if (!hasMatchingBinder) {
               return false;
             }
           }
@@ -221,7 +248,7 @@ export const createListRegistryTool = (env: Env) =>
         } while (allFilteredServers.length < limit && lastNextCursor);
 
         // Map servers to output format with ID
-        const items = allFilteredServers.map((server) => {
+        const items = allFilteredServers.slice(0, limit).map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
 
