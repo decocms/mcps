@@ -77,7 +77,6 @@ export const BLACKLISTED_SERVERS: string[] = [
   "live.alpic.mcpimmo-10e693d9/mcpimmo", // nao aparece botao de oauth
 
   // CORS or Server down
-  //   "ai.meminal/meminal",
   "ai.smithery/arjunkmrm-mango-sago",
   "ai.smithery/arjunkmrm-perplexity-search",
   "ai.smithery/arjunkmrm-scrapermcp_el",
@@ -262,8 +261,8 @@ export const BLACKLISTED_SERVERS: string[] = [
   "com.sonatype/dependency-management-mcp-server",
   //"com.stackoverflow.mcp/mcp",
   "com.streamlinehq/mcp",
-  //"com.stripe/mcp",
-  //"com.supabase/mcp",
+  "com.stripe/mcp",
+  "com.supabase/mcp",
   "com.teamwork/mcp",
   "com.textarttools/textarttools-mcp",
   "com.timeslope/timeslope-mcp",
@@ -314,7 +313,7 @@ export const BLACKLISTED_SERVERS: string[] = [
   "io.github.sharksalesinfo-blip/portfolio",
   "io.github.timescale/pg-aiguide",
   "io.github.tonymaynard97/blockscholes-mcp-server",
-  //"io.github.youdotcom-oss/mcp",
+  "io.github.youdotcom-oss/mcp",
   "io.globalping/mcp",
   "io.opsera/opsera",
   //"io.prisma/mcp",
@@ -395,7 +394,7 @@ export const BLACKLISTED_SERVERS: string[] = [
   "com.atlassian/atlassian-mcp-server",
   "com.devcycle/mcp",
   "com.dotprompts/dotprompts",
-  //"com.gitlab/mcp",
+  "com.gitlab/mcp",
   "com.mintmcp/gcal",
   "com.mintmcp/gmail",
   "com.mintmcp/outlook-calendar",
@@ -412,7 +411,7 @@ export const BLACKLISTED_SERVERS: string[] = [
   // Auth required (no OAuth available)
   "com.generect/generect-mcp",
   "com.onkernel/kernel-mcp-server",
-  //"com.postman/postman-mcp-server",
+  "com.postman/postman-mcp-server",
   "com.telerik/agentic-ui-generator-for-angular",
 
   // Timeout
