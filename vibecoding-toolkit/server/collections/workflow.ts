@@ -144,6 +144,4 @@ export interface WorkflowQueries {
   executionStepResultsTableIndexesQuery: string;
   workflowEventsTableIdempotentQuery: string;
   workflowEventsTableIndexesQuery: string;
-  stepStreamChunksTableIdempotentQuery: string;
-  stepStreamChunksTableIndexesQuery: string;
 }

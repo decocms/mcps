@@ -1,0 +1,59 @@
+{
+  "scopeName": "deco",
+  "name": "postgres",
+  "connection": {
+    "type": "BINDING"
+  },
+  "description": "Postgres Binding for MCPs.",
+  "icon": "https://assets.decocache.com/mcp/390f7756-ec01-47e4-bb31-9e7b18f6f56f/database.png",
+  "unlisted": true,
+  "tools": [
+    {
+      "name": "DATABASES_RUN_SQL",
+      "description": "Run a SQL query against the database",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "The SQL query to run"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "The parameters to pass to the SQL query"
+          }
+        },
+        "required": [
+          "sql"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "success": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

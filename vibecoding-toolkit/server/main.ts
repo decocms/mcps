@@ -7,10 +7,6 @@ import {
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./collections/index.ts";
 import { insertDefaultWorkflowIfNotExists } from "./tools/workflow/workflow.ts";
-import {
-  ensureCronExtensions,
-  ensureCronScheduler,
-} from "./lib/cron-scheduler.ts";
 import { ensureAgentsTable } from "./lib/postgres.ts";
 
 export type Env = DefaultEnv<typeof StateSchema> &
@@ -21,12 +17,13 @@ export type Env = DefaultEnv<typeof StateSchema> &
         params: unknown[];
       }) => Promise<{ result: { results: unknown[] }[] }>;
     };
-    CONNECTION: {
-      CONNECTION_CALL_TOOL: (params: {
-        connectionId: string;
-        toolName: string;
-        arguments: Record<string, unknown>;
-      }) => Promise<{ result: unknown }>;
+    EVENT_BUS: {
+      EVENT_PUBLISH: (params: {
+        type: string;
+        subject: string;
+        data: unknown;
+      }) => Promise<unknown>;
+      EVENT_SUBSCRIBE: (params: { eventType: string }) => Promise<unknown>;
     };
   };
 
@@ -34,19 +31,13 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     onChange: async (env) => {
       try {
+        await env.EVENT_BUS.EVENT_SUBSCRIBE({
+          eventType: "workflow.execution.created",
+        });
         await ensureAgentsTable(env);
         await ensureCollections(env);
         await ensureIndexes(env);
         await insertDefaultWorkflowIfNotExists(env);
-
-        // Ensure pg_cron and pg_net extensions are installed
-        await ensureCronExtensions(env);
-
-        // Set up pg_cron job to process enqueued workflows
-        // Use host.docker.internal for Docker to reach the host machine
-        const baseUrl = env.MESH_REQUEST_CONTEXT.meshUrl;
-        const processEndpoint = `${baseUrl}/api/scheduler?connectionId=${env.MESH_REQUEST_CONTEXT?.connectionId}&sub=${env.MESH_REQUEST_CONTEXT?.ensureAuthenticated()?.id}&scopes=PROCESS_ENQUEUED_EXECUTIONS&toolName=PROCESS_ENQUEUED_EXECUTIONS`;
-        await ensureCronScheduler(env, processEndpoint);
       } catch (error) {
         console.error("error changing configuration", error);
       }
@@ -61,7 +52,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      */
     scopes: [
       Scopes.DATABASE.DATABASES_RUN_SQL,
-      Scopes.CONNECTION.CONNECTION_CALL_TOOL,
+      Scopes.EVENT_BUS.EVENT_PUBLISH,
+      Scopes.EVENT_BUS.EVENT_SUBSCRIBE,
     ],
     /**
      * The state schema of your Application defines what
@@ -86,12 +78,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     {
       type: "mcp",
       name: "DATABASE",
-      app_name: "@deco/database",
+      app_name: "@deco/postgres",
     },
     {
       type: "mcp",
-      name: "CONNECTION",
-      app_name: "@deco/tools",
+      name: "EVENT_BUS",
+      app_name: "@deco/event-bus",
     },
   ],
 });

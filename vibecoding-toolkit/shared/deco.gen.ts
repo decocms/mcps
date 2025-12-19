@@ -2060,10 +2060,14 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
 export const StateSchema = z.object({
   DATABASE: z.object({
     value: z.string(),
-    __type: z.literal("@deco/database").default("@deco/database"),
+    __type: z.literal("@deco/postgres").default("@deco/postgres"),
   }),
-  CONNECTION: z.object({
+  "conn_-bS2Wi18dgCRslF5AW-Cs": z.object({
     value: z.string(),
+  }),
+  EVENT_BUS: z.object({
+    value: z.string(),
+    __type: z.literal("@deco/event-bus").default("@deco/event-bus"),
   }),
 });
 
@@ -2105,7 +2109,8 @@ export const Scopes = {
     DATABASES_RUN_SQL: "DATABASE::DATABASES_RUN_SQL",
     DECO_CHAT_VIEWS_LIST: "DATABASE::DECO_CHAT_VIEWS_LIST",
   },
-  CONNECTION: {
-    CONNECTION_CALL_TOOL: "CONNECTION::CONNECTION_CALL_TOOL",
+  EVENT_BUS: {
+    EVENT_PUBLISH: "EVENT_BUS::EVENT_PUBLISH",
+    EVENT_SUBSCRIBE: "EVENT_BUS::EVENT_SUBSCRIBE",
   },
 };

@@ -7,18 +7,21 @@
 
 import type { Env } from "../../main.ts";
 import type { CodeAction, Step } from "@decocms/bindings/workflow";
-import type { RefContext } from "../../workflow/utils/ref-resolver.ts";
-import { isAtRef, resolveRef } from "../../workflow/utils/ref-resolver.ts";
+import {
+  isAtRef,
+  RefContext,
+  resolveRef,
+} from "../../workflow/utils/ref-resolver.ts";
+
 import {
   SleepActionSchema,
   ToolCallActionSchema,
   WaitForSignalActionSchema,
 } from "@decocms/bindings/workflow";
-import { executeCode } from "./code-step.ts";
 import {
+  checkTimer,
   consumeSignal,
   getSignals,
-  checkTimer,
   scheduleTimer,
 } from "../events/events.ts";
 import {
@@ -31,7 +34,9 @@ import {
   getExecution,
   updateStepResult,
 } from "../../lib/execution-db.ts";
-
+import { proxyConnectionForId } from "@decocms/runtime";
+import { createMCPFetchStub } from "@decocms/bindings/client";
+import { executeCode } from "./code-step.ts";
 export interface StepResult {
   id?: string;
   status: "success" | "error";
@@ -43,9 +48,39 @@ export interface StepResult {
 
 export class StepExecutor {
   private env: Env;
+  private workflowToken?: string;
 
-  constructor(env: Env) {
+  constructor(env: Env, workflowToken?: string) {
     this.env = env;
+    this.workflowToken = workflowToken;
+  }
+
+  /**
+   * Check if a connection ID is an external connection (not a state binding)
+   */
+  private isExternalConnection(connectionId: string): boolean {
+    const STATE_BINDING_KEYS = new Set(["DATABASE", "EVENT_BUS"]);
+    return (
+      connectionId.startsWith("conn_") || !STATE_BINDING_KEYS.has(connectionId)
+    );
+  }
+
+  /**
+   * Validate that an external connection is allowed via USED_TOOLS.connections
+   */
+  private validateExternalConnection(connectionId: string): void {
+    const state = this.env.MESH_REQUEST_CONTEXT?.state as
+      | { USED_TOOLS?: { connections?: string[] } }
+      | undefined;
+    const allowedConnections = state?.USED_TOOLS?.connections ?? [];
+
+    if (!allowedConnections.includes(connectionId)) {
+      throw new Error(
+        `External connection '${connectionId}' is not allowed. ` +
+          `Add it to USED_TOOLS.connections to enable access. ` +
+          `Currently allowed: [${allowedConnections.join(", ")}]`,
+      );
+    }
   }
 
   private async executeToolStep(
@@ -61,45 +96,45 @@ export class StepExecutor {
 
       const { connectionId, toolName } = parsed.data;
 
-      if (!this.env.MESH_REQUEST_CONTEXT.meshUrl) {
-        throw new Error("MESH_URL is not set");
+      // Use workflow token if available, otherwise fall back to request context token
+      const token =
+        this.workflowToken || this.env.MESH_REQUEST_CONTEXT?.token || "";
+      console.log({ token });
+      const meshUrl = this.env.MESH_REQUEST_CONTEXT?.meshUrl ?? "";
+
+      // Create MCP connection and client proxy
+      const mcpConnection = proxyConnectionForId(connectionId, {
+        token,
+        meshUrl,
+      });
+
+      const client = createMCPFetchStub({ connection: mcpConnection });
+
+      // The proxy returns a function for each tool name
+      const toolFn = (
+        client as Record<
+          string,
+          (args: Record<string, unknown>) => Promise<unknown>
+        >
+      )[toolName];
+      if (!toolFn) {
+        throw new Error(
+          `Tool ${toolName} not found on connection ${connectionId}`,
+        );
       }
 
-      const { result } = (await this.env.CONNECTION.CONNECTION_CALL_TOOL({
-        connectionId,
-        toolName,
-        arguments: input,
-      })) as {
-        result: {
-          structuredContent?: Record<string, unknown>;
-          isError?: boolean;
-          content?: unknown;
-          _meta?: unknown;
-        };
-      };
+      // Debug: log the input being sent to the tool
+      console.log(
+        `[TOOL_STEP] Calling ${toolName} with input:`,
+        JSON.stringify(input, null, 2),
+      );
 
-      const content = result.structuredContent
-        ? result.structuredContent
-        : Array.isArray(result.content) && typeof result.content !== "object"
-          ? (Object.fromEntries(
-              Array.from(result.content).map((item: unknown) => [
-                (item as { text: string }).text,
-                item,
-              ]),
-            ) as Record<string, string>)
-          : result.content
-            ? {
-                content: result.content,
-              }
-            : {};
+      // The proxy returns structuredContent directly on success, throws on error
+      const result = await toolFn(input);
 
       return {
         status: "success",
-        output: {
-          ...content,
-          isError: result.isError,
-          _meta: result._meta,
-        },
+        output: result,
         startedAt,
         completedAt: Date.now(),
       };

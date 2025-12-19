@@ -210,10 +210,21 @@ function isSingleAtRef(value: unknown): value is `@${string}` {
 export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   const errors: Array<{ ref: string; error: string }> = [];
   function resolveValue(value: unknown): unknown {
+    // Debug: log what we're resolving
+    if (typeof value === "string" && value.includes("@")) {
+      console.log(`[REF_RESOLVER] Processing string: "${value}"`);
+      console.log(`[REF_RESOLVER] isSingleAtRef: ${isSingleAtRef(value)}`);
+    }
+
     // If it's a string that IS an @ref (entire value is ONE reference)
     if (isSingleAtRef(value)) {
       // <-- Changed from isAtRef to isSingleAtRef
       const result = resolveRef(value, ctx);
+      console.log(
+        `[REF_RESOLVER] Single ref "${value}" resolved to:`,
+        typeof result.value,
+        result.value,
+      );
       if (result.error) {
         errors.push({ ref: value, error: result.error });
       }
@@ -222,7 +233,8 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
 
     // If it's a string that CONTAINS @refs, interpolate them
     if (typeof value === "string" && value.includes("@")) {
-      return value.replace(AT_REF_PATTERN, (match) => {
+      console.log(`[REF_RESOLVER] Interpolating string: "${value}"`);
+      const interpolated = value.replace(AT_REF_PATTERN, (match) => {
         if (isAtRef(match as `@${string}`)) {
           const result = resolveRef(match as `@${string}`, ctx);
           if (result.error) {
@@ -237,6 +249,8 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
         }
         return match;
       });
+      console.log(`[REF_RESOLVER] Interpolated result: "${interpolated}"`);
+      return interpolated;
     }
 
     // If it's an array, resolve each element

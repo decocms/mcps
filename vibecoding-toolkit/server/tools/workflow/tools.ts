@@ -24,7 +24,7 @@ export const createAndQueueExecutionTool = (env: Env) =>
       "Create a workflow execution and immediately start processing it (serverless mode)",
     inputSchema: START_BINDING.inputSchema,
     outputSchema: START_BINDING.outputSchema,
-    execute: async ({ context, runtimeContext }) => {
+    execute: async ({ context }) => {
       try {
         const execution = await createExecution(env, {
           workflow_id: context.workflowId,
@@ -32,18 +32,11 @@ export const createAndQueueExecutionTool = (env: Env) =>
           start_at_epoch_ms: context.startAtEpochMs,
           timeout_ms: context.timeoutMs,
         });
-
-        processEnqueuedExecutionsTool(env)
-          .execute({
-            context: {
-              executionId: execution.id,
-            },
-            runtimeContext,
-          })
-          .catch((error) => {
-            console.error("🚀 ~ Error executing workflow:", error);
-            throw error;
-          });
+        await env.EVENT_BUS.EVENT_PUBLISH({
+          type: "workflow.execution.created",
+          subject: "workflow.execution.created",
+          data: execution,
+        });
 
         return {
           executionId: execution.id,

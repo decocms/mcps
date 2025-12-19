@@ -2,7 +2,12 @@ import { createPrivateTool, createTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import { Env } from "../../main.ts";
 import { z } from "zod";
-import { validateWorkflow } from "../../workflow/utils/validator.ts";
+import {
+  validateWorkflow,
+  ensureWorkflowToken,
+  type WorkflowWithToken,
+  type WorkflowToken,
+} from "../../workflow/utils/validator.ts";
 import {
   createDefaultWorkflow,
   Workflow,
@@ -54,7 +59,7 @@ if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
   );
 }
 
-function transformDbRowToWorkflow(row: unknown): Workflow {
+function transformDbRowToWorkflow(row: unknown): WorkflowWithToken {
   const r = row as Record<string, unknown>;
 
   // Parse steps - handle both old { phases: [...] } format and new direct array format
@@ -69,11 +74,21 @@ function transformDbRowToWorkflow(row: unknown): Workflow {
     }
   }
 
+  // Parse token if present
+  let token: WorkflowToken | undefined;
+  if (r.token) {
+    const parsed = typeof r.token === "string" ? JSON.parse(r.token) : r.token;
+    if (parsed && typeof parsed === "object" && "key" in parsed) {
+      token = parsed as WorkflowToken;
+    }
+  }
+
   return {
     id: r.id as string,
     title: r.title as string,
     description: r.description as string | undefined,
     steps: steps as Workflow["steps"],
+    token,
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
@@ -226,12 +241,18 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
     const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
     const now = new Date().toISOString();
 
-    const workflow = {
+    let workflow: WorkflowWithToken = {
       ...createDefaultWorkflow(),
       ...data,
     };
 
+    console.log({ workflow });
+
     await validateWorkflow(workflow);
+
+    // Ensure workflow has a valid permission token
+    workflow = await ensureWorkflowToken(env, workflow);
+    console.log({ workflow });
 
     const stepsJson = JSON.stringify(
       workflow.steps.map((s) => ({
@@ -239,13 +260,15 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
         name: s.name.trim().replaceAll(/\s+/g, "_"),
       })) || [],
     );
+    const tokenJson = workflow.token ? JSON.stringify(workflow.token) : null;
+
     const escapeForSql = (val: unknown): string => {
       if (val === null || val === undefined) return "NULL";
       if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
       if (typeof val === "number") return String(val);
       return `'${String(val).replace(/'/g, "''")}'`;
     };
-    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps) VALUES (${escapeForSql(
+    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps, token) VALUES (${escapeForSql(
       workflow.id,
     )}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(
       now,
@@ -253,7 +276,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
       user?.id || null,
     )}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(
       stepsJson,
-    )})`;
+    )}, ${escapeForSql(tokenJson)})`;
 
     await env.DATABASE.DATABASES_RUN_SQL({
       sql,
@@ -288,6 +311,69 @@ export const createInsertTool = (env: Env) =>
       return await insertWorkflow(env, workflow);
     },
   });
+
+async function updateWorkflow(
+  env: Env,
+  context: { id: string; data: Workflow },
+) {
+  const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
+  const now = new Date().toISOString();
+
+  const { id, data } = context;
+
+  // Get current workflow to check token status
+  const currentWorkflow = await getWorkflow(env, id);
+  if (!currentWorkflow) {
+    throw new Error(`Workflow with id ${id} not found`);
+  }
+
+  const setClauses: string[] = [];
+  const params: unknown[] = [];
+
+  setClauses.push(`updated_at = ?`);
+  params.push(now);
+
+  setClauses.push(`updated_by = ?`);
+  params.push(user?.id || null);
+
+  if (data.title !== undefined) {
+    setClauses.push(`title = ?`);
+    params.push(data.title);
+  }
+  if (data.description !== undefined) {
+    setClauses.push(`description = ?`);
+    params.push(data.description);
+  }
+  if (data.steps !== undefined) {
+    setClauses.push(`steps = ?`);
+    params.push(JSON.stringify(data.steps || []));
+  }
+
+  params.push(id);
+
+  const sql = `
+        UPDATE workflows
+        SET ${setClauses.join(", ")}
+        WHERE id = ?
+        RETURNING *
+      `;
+
+  const result = await env.DATABASE.DATABASES_RUN_SQL({
+    sql,
+    params,
+  });
+
+  if (result.result[0]?.results?.length === 0) {
+    throw new Error(`Workflow with id ${id} not found`);
+  }
+
+  return {
+    item: transformDbRowToWorkflow(
+      result.result[0]?.results?.[0] as Record<string, unknown>,
+    ),
+  };
+}
+
 export const createUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_UPDATE",
@@ -295,58 +381,18 @@ export const createUpdateTool = (env: Env) =>
     inputSchema: UPDATE_BINDING.inputSchema,
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
-      const now = new Date().toISOString();
-
-      console.log({ steps: context.data.steps });
-
-      const { id, data } = context;
-
-      const setClauses: string[] = [];
-      const params: any[] = [];
-
-      setClauses.push(`updated_at = ?`);
-      params.push(now);
-
-      setClauses.push(`updated_by = ?`);
-      params.push(user?.id || null);
-
-      if (data.title !== undefined) {
-        setClauses.push(`title = ?`);
-        params.push(data.title);
+      console.log("createUpdateTool", context);
+      try {
+        return await updateWorkflow(env, {
+          id: context.id as string,
+          data: context.data as Workflow,
+        });
+      } catch (error) {
+        console.error("Error updating workflow:", error);
+        throw new Error(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-      if (data.description !== undefined) {
-        setClauses.push(`description = ?`);
-        params.push(data.description);
-      }
-      if (data.steps !== undefined) {
-        setClauses.push(`steps = ?`);
-        params.push(JSON.stringify(data.steps || []));
-      }
-
-      params.push(id);
-
-      const sql = `
-          UPDATE workflows
-          SET ${setClauses.join(", ")}
-          WHERE id = ?
-          RETURNING *
-        `;
-
-      const result = await env.DATABASE.DATABASES_RUN_SQL({
-        sql,
-        params,
-      });
-
-      if (result.result[0]?.results?.length === 0) {
-        throw new Error(`Workflow with id ${id} not found`);
-      }
-
-      return {
-        item: transformDbRowToWorkflow(
-          result.result[0]?.results?.[0] as Record<string, unknown>,
-        ),
-      };
     },
   });
 

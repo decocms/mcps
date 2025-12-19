@@ -6,6 +6,7 @@
  * - @ref validation (references point to valid steps/paths)
  * - Schema extraction from transform steps
  * - Type compatibility between step outputs and inputs
+ * - Permission token management for tool steps
  *
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
@@ -15,6 +16,7 @@ import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 import { validateCode } from "../steps/code-step.ts";
 import { CodeActionSchema, Step, Workflow } from "@decocms/bindings/workflow";
 import { getStepType } from "../steps/step-executor.ts";
+import { Env } from "server/main.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([
@@ -32,6 +34,24 @@ export const ValidationErrorSchema = z.object({
 });
 
 export type ValidationError = z.infer<typeof ValidationErrorSchema>;
+
+/**
+ * Schema for workflow permission token
+ * Stores the API key and the scopes it was created with
+ */
+export const WorkflowTokenSchema = z.object({
+  key: z.string().describe("The API key for workflow execution"),
+  scopes: z.array(z.string()).describe("Scopes the token was created with"),
+});
+
+export type WorkflowToken = z.infer<typeof WorkflowTokenSchema>;
+
+/**
+ * Extended workflow type that includes the permission token
+ */
+export interface WorkflowWithToken extends Workflow {
+  token?: WorkflowToken;
+}
 
 export interface ValidationResult {
   valid: boolean;
@@ -145,6 +165,89 @@ async function validateCodeStep(step: Step): Promise<{
   };
 }
 
+/**
+ * Known state binding keys that can be used in scopes
+ * External connections (starting with "conn_") are handled via USED_TOOLS
+ */
+const STATE_BINDING_KEYS = new Set(["DATABASE", "EVENT_BUS"]);
+
+/**
+ * Check if a connection ID is an external connection (not a state binding)
+ */
+const isExternalConnection = (connectionId: string): boolean => {
+  return (
+    connectionId.startsWith("conn_") || !STATE_BINDING_KEYS.has(connectionId)
+  );
+};
+
+/**
+ * Extract a scope from a step that has a tool action (connectionId + toolName)
+ * Returns null for non-tool steps (code, sleep, waitForSignal)
+ * Returns null for external connections (those are validated via USED_TOOLS at runtime)
+ */
+const getStepScope = (step: Step): string | null => {
+  if (
+    typeof step.action === "object" &&
+    step.action !== null &&
+    "connectionId" in step.action &&
+    "toolName" in step.action
+  ) {
+    const connectionId = step.action.connectionId;
+
+    // Skip external connections - they're validated via USED_TOOLS at runtime
+    if (isExternalConnection(connectionId)) {
+      return null;
+    }
+
+    return `${connectionId}::${step.action.toolName}`;
+  }
+  return null;
+};
+
+/**
+ * Extract external connection IDs from workflow steps
+ * These need to be validated against USED_TOOLS.connections at save/runtime
+ */
+export function getWorkflowExternalConnections(workflow: Workflow): string[] {
+  const connections = new Set<string>();
+
+  for (const step of workflow.steps || []) {
+    if (
+      typeof step.action === "object" &&
+      step.action !== null &&
+      "connectionId" in step.action
+    ) {
+      const connectionId = step.action.connectionId;
+      if (isExternalConnection(connectionId)) {
+        connections.add(connectionId);
+      }
+    }
+  }
+
+  return Array.from(connections);
+}
+
+/**
+ * Extract all unique scopes from a workflow's steps
+ * Only includes steps that have tool actions with STATE BINDING keys (not external connections)
+ * External connections are validated via USED_TOOLS at runtime
+ *
+ * @param workflow - The workflow to extract scopes from
+ * @returns Array of unique scopes in format "stateBindingKey::toolName"
+ */
+export function getWorkflowScopes(workflow: Workflow): string[] {
+  const scopes = new Set<string>();
+
+  for (const step of workflow.steps || []) {
+    const scope = getStepScope(step);
+    if (scope) {
+      scopes.add(scope);
+    }
+  }
+
+  return Array.from(scopes);
+}
+
 export async function validateWorkflow(workflow: Workflow): Promise<void> {
   const errors: ValidationError[] = [];
   const schemas: Record<
@@ -194,4 +297,31 @@ export async function validateWorkflow(workflow: Workflow): Promise<void> {
   if (errors.length > 0) {
     throw new Error(JSON.stringify(errors, null, 2));
   }
+}
+
+/**
+ * Ensure the workflow has valid permission configuration
+ *
+ * External connections are now validated via USED_TOOLS.connections at runtime,
+ * so we no longer need to create workflow-specific tokens.
+ *
+ * @param _env - The environment (unused, kept for backward compatibility)
+ * @param workflow - The workflow to process
+ * @returns The workflow (token creation is no longer needed)
+ */
+export async function ensureWorkflowToken(
+  _env: Env,
+  workflow: WorkflowWithToken,
+): Promise<WorkflowWithToken> {
+  // External connections are validated via USED_TOOLS.connections at runtime
+  // No workflow-specific token is needed
+  const externalConnections = getWorkflowExternalConnections(workflow);
+  if (externalConnections.length > 0) {
+    console.log(
+      `[WORKFLOW] External connections will be validated at runtime: ${externalConnections.join(", ")}`,
+    );
+  }
+
+  // Clear any existing token since we no longer use this mechanism
+  return { ...workflow, token: undefined };
 }

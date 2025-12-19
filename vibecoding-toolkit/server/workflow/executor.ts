@@ -142,6 +142,8 @@ export async function executeWorkflow(env: Env, executionId: string) {
         ? JSON.parse(execution.input)
         : execution.input || {};
 
+    console.log({ workflowInput });
+
     // Build context from cached results
     const stepOutputs = new Map<string, unknown>();
     for (const sr of await getStepResults(env, executionId)) {
@@ -152,7 +154,10 @@ export async function executeWorkflow(env: Env, executionId: string) {
     const ctx: RefContext = { stepOutputs, workflowInput };
     const completedSteps: string[] = [];
     const alreadyCompleted = new Set(stepOutputs.keys());
-    const stepExecutor = new StepExecutor(env);
+
+    // Use workflow token for tool step authorization
+    const workflowToken = (workflow as { token?: { key: string } }).token?.key;
+    const stepExecutor = new StepExecutor(env, workflowToken);
 
     const validation = validateNoCycles(steps);
     if (!validation.isValid) throw new Error(validation.error);
@@ -181,6 +186,10 @@ export async function executeWorkflow(env: Env, executionId: string) {
             string,
             unknown
           >;
+          console.log(
+            `[EXECUTOR] Step ${step.name} resolved input:`,
+            JSON.stringify(input, null, 2),
+          );
           const result = await stepExecutor.executeStep(
             step,
             input,

@@ -27,10 +27,6 @@ const collectionsQueries = {
     idempotent: postgresQueries.workflowEventsTableIdempotentQuery,
     indexes: postgresQueries.workflowEventsTableIndexesQuery,
   },
-  step_stream_chunks: {
-    idempotent: postgresQueries.stepStreamChunksTableIdempotentQuery,
-    indexes: postgresQueries.stepStreamChunksTableIndexesQuery,
-  },
 };
 
 async function ensureCollections(env: Env) {

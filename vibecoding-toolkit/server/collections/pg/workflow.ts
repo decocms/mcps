@@ -125,25 +125,6 @@ const postgresWorkflowEventsTableIndexesQuery = `
     ON workflow_events(execution_id, created_at);
     `;
 
-const postgresStepStreamChunksTableIdempotentQuery = `
-CREATE TABLE IF NOT EXISTS step_stream_chunks (
-  id TEXT PRIMARY KEY,
-  execution_id TEXT NOT NULL,
-  step_id TEXT NOT NULL,
-  chunk_index INTEGER NOT NULL,
-  chunk_data JSONB NOT NULL,
-  created_at BIGINT NOT NULL,
-  UNIQUE(execution_id, step_id, chunk_index),
-  FOREIGN KEY (execution_id) REFERENCES workflow_executions(id)
-)
-`;
-
-const postgresStepStreamChunksTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_stream_chunks_execution ON step_stream_chunks(execution_id);
-  CREATE INDEX IF NOT EXISTS idx_stream_chunks_step ON step_stream_chunks(execution_id, step_id);
-  CREATE INDEX IF NOT EXISTS idx_stream_chunks_created ON step_stream_chunks(created_at);
-`;
-
 export const postgresQueries: WorkflowQueries = {
   workflowTableIdempotentQuery: postgresWorkflowTableIdempotentQuery,
   workflowTableIndexesQuery: postgresWorkflowTableIndexesQuery,
@@ -158,7 +139,4 @@ export const postgresQueries: WorkflowQueries = {
   workflowEventsTableIdempotentQuery:
     postgresWorkflowEventsTableIdempotentQuery,
   workflowEventsTableIndexesQuery: postgresWorkflowEventsTableIndexesQuery,
-  stepStreamChunksTableIdempotentQuery:
-    postgresStepStreamChunksTableIdempotentQuery,
-  stepStreamChunksTableIndexesQuery: postgresStepStreamChunksTableIndexesQuery,
 };
