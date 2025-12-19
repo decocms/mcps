@@ -2,6 +2,10 @@
  * Registry Binding Implementation
  *
  * Implements COLLECTION_REGISTRY_LIST and COLLECTION_REGISTRY_GET tools
+ *
+ * Supports two modes:
+ * - ALLOWLIST_MODE: Uses pre-generated allowlist for accurate pagination
+ * - DYNAMIC_MODE: Filters on-the-fly (may lose items between pages)
  */
 
 import { createTool } from "@decocms/runtime/tools";
@@ -17,6 +21,17 @@ import {
   type RegistryServer,
 } from "../lib/registry-client.ts";
 import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
+import { ALLOWED_SERVERS } from "../lib/allowlist.ts";
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+/**
+ * Enable allowlist mode for accurate pagination
+ * Set to false to use dynamic filtering (original behavior)
+ */
+const USE_ALLOWLIST_MODE = true;
 
 // ============================================================================
 // Schema Definitions
@@ -172,6 +187,174 @@ function extractSearchTerm(where: unknown): string | undefined {
 // ============================================================================
 
 /**
+ * ALLOWLIST MODE: Fetch servers by name from the pre-generated allowlist
+ * This ensures accurate pagination without losing items
+ */
+async function listServersFromAllowlist(
+  registryUrl: string | undefined,
+  startIndex: number,
+  limit: number,
+  searchTerm: string | undefined,
+  version: string,
+): Promise<{
+  items: Array<{
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    server: unknown;
+    _meta: unknown;
+  }>;
+  nextCursor?: string;
+}> {
+  // Get the list of server names to fetch
+  let serverNames = ALLOWED_SERVERS;
+
+  // Apply search filter if provided
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    serverNames = serverNames.filter((name) =>
+      name.toLowerCase().includes(term),
+    );
+  }
+
+  // Get the slice for this page
+  const endIndex = startIndex + limit;
+  const pageNames = serverNames.slice(startIndex, endIndex);
+
+  // Fetch each server in parallel
+  // Note: version="latest" means get latest, so we pass undefined to getServer
+  const versionToFetch = version === "latest" ? undefined : version;
+
+  const serverPromises = pageNames.map(async (name) => {
+    try {
+      const server = await getServer(name, versionToFetch, registryUrl);
+      return server;
+    } catch {
+      // Server not found or error - skip it
+      return null;
+    }
+  });
+
+  const servers = await Promise.all(serverPromises);
+
+  // Filter out nulls and map to output format
+  const items = servers
+    .filter((s): s is RegistryServer => s !== null)
+    .map((server) => {
+      const officialMeta =
+        server._meta["io.modelcontextprotocol.registry/official"];
+
+      return {
+        id: formatServerId(server.server.name, server.server.version),
+        title: server.server.name,
+        created_at:
+          (officialMeta as { publishedAt?: string })?.publishedAt ||
+          new Date().toISOString(),
+        updated_at:
+          (officialMeta as { updatedAt?: string })?.updatedAt ||
+          new Date().toISOString(),
+        server: server.server,
+        _meta: server._meta,
+      };
+    });
+
+  // Calculate next cursor - only include if there are more items
+  const hasMore = endIndex < serverNames.length;
+
+  // Don't include nextCursor in response when there are no more items
+  if (hasMore) {
+    return { items, nextCursor: String(endIndex) };
+  }
+  return { items };
+}
+
+/**
+ * DYNAMIC MODE: Filter servers on-the-fly (may lose items between pages)
+ */
+async function listServersDynamic(
+  registryUrl: string | undefined,
+  cursor: string | undefined,
+  limit: number,
+  searchTerm: string | undefined,
+  version: string,
+): Promise<{
+  items: Array<{
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    server: unknown;
+    _meta: unknown;
+  }>;
+  nextCursor?: string;
+}> {
+  const isOfficialRegistry = !registryUrl;
+  const excludedWords = ["local", "test", "demo", "example"];
+  const hasExcludedWord = (name: string) =>
+    excludedWords.some((word) => name.toLowerCase().includes(word));
+
+  const filterServer = (s: RegistryServer) => {
+    if (isOfficialRegistry) {
+      if (
+        !s.server.remotes ||
+        !Array.isArray(s.server.remotes) ||
+        s.server.remotes.length === 0 ||
+        BLACKLISTED_SERVERS.includes(s.server.name) ||
+        hasExcludedWord(s.server.name)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const allFilteredServers: RegistryServer[] = [];
+  let currentCursor: string | undefined = cursor;
+  let lastNextCursor: string | undefined;
+
+  do {
+    const response = await listServers({
+      registryUrl,
+      cursor: currentCursor,
+      limit: Math.max(limit, 30),
+      search: searchTerm,
+      version,
+    });
+
+    const filtered = response.servers.filter(filterServer);
+    allFilteredServers.push(...filtered);
+
+    lastNextCursor = response.metadata.nextCursor;
+    currentCursor = lastNextCursor;
+  } while (allFilteredServers.length < limit && lastNextCursor);
+
+  const items = allFilteredServers.slice(0, limit).map((server) => {
+    const officialMeta =
+      server._meta["io.modelcontextprotocol.registry/official"];
+
+    return {
+      id: formatServerId(server.server.name, server.server.version),
+      title: server.server.name,
+      created_at:
+        (officialMeta as { publishedAt?: string })?.publishedAt ||
+        new Date().toISOString(),
+      updated_at:
+        (officialMeta as { updatedAt?: string })?.updatedAt ||
+        new Date().toISOString(),
+      server: server.server,
+      _meta: server._meta,
+    };
+  });
+
+  // Don't include nextCursor when there are no more items
+  if (lastNextCursor) {
+    return { items, nextCursor: lastNextCursor };
+  }
+  return { items };
+}
+
+/**
  * COLLECTION_REGISTRY_LIST - Lists all servers from the registry
  */
 export const createListRegistryTool = (env: Env) =>
@@ -195,77 +378,32 @@ export const createListRegistryTool = (env: Env) =>
           undefined;
 
         // Extract search term from where clause
-        // API only supports simple text search, so all filters become search terms
         const apiSearch = where ? extractSearchTerm(where) : undefined;
 
-        // Setup for filtering
-        const isOfficialRegistry = !registryUrl;
-        const excludedWords = ["local", "test", "demo", "example"];
-        const hasExcludedWord = (name: string) =>
-          excludedWords.some((word) => name.toLowerCase().includes(word));
+        // Use allowlist mode for official registry (no custom registryUrl)
+        const useAllowlist = USE_ALLOWLIST_MODE && !registryUrl;
 
-        const filterServer = (s: RegistryServer) => {
-          // Basic filters for official registry
-          if (isOfficialRegistry) {
-            if (
-              !s.server.remotes ||
-              !Array.isArray(s.server.remotes) ||
-              s.server.remotes.length === 0 ||
-              BLACKLISTED_SERVERS.includes(s.server.name) ||
-              hasExcludedWord(s.server.name)
-            ) {
-              return false;
-            }
-          }
-
-          return true;
-        };
-
-        // Accumulate filtered servers until we have enough
-        const allFilteredServers: RegistryServer[] = [];
-        let currentCursor: string | undefined = cursor;
-        let lastNextCursor: string | undefined;
-
-        // Keep fetching until we have at least 'limit' items or no more pages
-        do {
-          const response = await listServers({
+        if (useAllowlist) {
+          // ALLOWLIST MODE: Use pre-generated list for accurate pagination
+          // Cursor is the index in the allowlist
+          const startIndex = cursor ? parseInt(cursor, 10) : 0;
+          return await listServersFromAllowlist(
             registryUrl,
-            cursor: currentCursor,
-            limit: 100, // Fetch more items per request to reduce API calls
-            search: apiSearch,
+            startIndex,
+            limit,
+            apiSearch,
             version,
-          });
-
-          // Filter servers
-          const filtered = response.servers.filter(filterServer);
-          allFilteredServers.push(...filtered);
-
-          // Save the next cursor
-          lastNextCursor = response.metadata.nextCursor;
-          currentCursor = lastNextCursor;
-
-          // Stop if we have enough items or no more pages
-        } while (allFilteredServers.length < limit && lastNextCursor);
-
-        // Map servers to output format with ID
-        const items = allFilteredServers.slice(0, limit).map((server) => {
-          const officialMeta =
-            server._meta["io.modelcontextprotocol.registry/official"];
-
-          return {
-            id: formatServerId(server.server.name, server.server.version),
-            title: server.server.name,
-            created_at: officialMeta?.publishedAt || new Date().toISOString(),
-            updated_at: officialMeta?.updatedAt || new Date().toISOString(),
-            server: server.server,
-            _meta: server._meta,
-          };
-        });
-
-        return {
-          items,
-          nextCursor: lastNextCursor,
-        };
+          );
+        } else {
+          // DYNAMIC MODE: Filter on-the-fly (original behavior)
+          return await listServersDynamic(
+            registryUrl,
+            cursor,
+            limit,
+            apiSearch,
+            version,
+          );
+        }
       } catch (error) {
         throw new Error(
           `Error listing servers: ${error instanceof Error ? error.message : "Unknown error"}`,
