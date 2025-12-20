@@ -1,7 +1,7 @@
 import { $ } from "bun";
 
 const SITE_NAME_TO_MCP_FOLDER_OVERRIDES = {
-  vibemcp: "vibecoding-toolkit",
+  vibemcp: "mcp-studio",
 };
 
 const getMcpFolder = (siteName: string) => {

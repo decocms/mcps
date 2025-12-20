@@ -38,8 +38,7 @@
     "template-with-view",
     "veo",
     "whisper",
-    "vibecoding-toolkit",
-    "whatsapp"
+    "mcp-studio"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

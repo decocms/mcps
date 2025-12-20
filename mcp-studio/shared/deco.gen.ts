@@ -2062,9 +2062,6 @@ export const StateSchema = z.object({
     value: z.string(),
     __type: z.literal("@deco/postgres").default("@deco/postgres"),
   }),
-  "conn_-bS2Wi18dgCRslF5AW-Cs": z.object({
-    value: z.string(),
-  }),
   EVENT_BUS: z.object({
     value: z.string(),
     __type: z.literal("@deco/event-bus").default("@deco/event-bus"),

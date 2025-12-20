@@ -14,7 +14,9 @@ import {
   getServerVersions,
   parseServerId,
   formatServerId,
+  type RegistryServer,
 } from "../lib/registry-client.ts";
+import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -31,6 +33,44 @@ const RegistryServerSchema = z.object({
   server: z.any().describe("Original server data from API"),
   _meta: z.any().describe("Original metadata from API"),
 });
+
+/**
+ * Standard WhereExpression schema compatible with @decocms/bindings/collections
+ * Note: The API only supports simple text search, so all filters are converted to search terms
+ */
+const FieldComparisonSchema = z.object({
+  field: z.array(z.string()),
+  operator: z.enum([
+    "eq",
+    "ne",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "contains",
+    "startsWith",
+    "endsWith",
+  ]),
+  value: z.unknown(),
+});
+
+const WhereExpressionSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    FieldComparisonSchema,
+    z.object({
+      operator: z.enum(["and", "or"]),
+      conditions: z.array(WhereExpressionSchema),
+    }),
+    z.object({
+      operator: z.literal("not"),
+      condition: WhereExpressionSchema,
+    }),
+  ]),
+);
+
+const WhereSchema = WhereExpressionSchema.describe(
+  "Standard WhereExpression filter (converted to simple search internally)",
+);
 
 /**
  * Input schema para LIST
@@ -50,10 +90,10 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
-    search: z
-      .string()
-      .optional()
-      .describe("Search servers by name (e.g., 'figma' or 'exa')"),
+
+    where: WhereSchema.optional().describe(
+      "Standard WhereExpression filter (converted to simple search internally)",
+    ),
     version: z
       .string()
       .optional()
@@ -69,8 +109,6 @@ const ListInputSchema = z
  */
 const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
-  totalCount: z.number(),
-  hasMore: z.boolean(),
   nextCursor: z
     .string()
     .optional()
@@ -97,6 +135,40 @@ const GetOutputSchema = z.object({
 });
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Extract search term from WhereExpression
+ * Since API only supports simple text search, we extract the first value found
+ */
+function extractSearchTerm(where: unknown): string | undefined {
+  if (!where || typeof where !== "object") return undefined;
+
+  const w = where as {
+    operator?: string;
+    conditions?: unknown[];
+    field?: string[];
+    value?: unknown;
+  };
+
+  // Field comparison - extract the value
+  if (w.field && w.value !== undefined) {
+    return String(w.value);
+  }
+
+  // AND/OR - extract from first condition that has a value
+  if ((w.operator === "and" || w.operator === "or") && w.conditions) {
+    for (const condition of w.conditions) {
+      const term = extractSearchTerm(condition);
+      if (term) return term;
+    }
+  }
+
+  return undefined;
+}
+
+// ============================================================================
 // Tool Implementations
 // ============================================================================
 
@@ -114,7 +186,7 @@ export const createListRegistryTool = (env: Env) =>
       const {
         limit = 30,
         cursor,
-        search,
+        where,
         version = "latest",
       } = context as z.infer<typeof ListInputSchema>;
       try {
@@ -123,17 +195,61 @@ export const createListRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Fetch servers directly from API with filters
-        const response = await listServers({
-          registryUrl,
-          cursor,
-          limit,
-          search,
-          version,
-        });
+        // Extract search term from where clause
+        // API only supports simple text search, so all filters become search terms
+        const apiSearch = where ? extractSearchTerm(where) : undefined;
+
+        // Setup for filtering
+        const isOfficialRegistry = !registryUrl;
+        const excludedWords = ["local", "test", "demo", "example"];
+        const hasExcludedWord = (name: string) =>
+          excludedWords.some((word) => name.toLowerCase().includes(word));
+
+        const filterServer = (s: RegistryServer) => {
+          // Basic filters for official registry
+          if (isOfficialRegistry) {
+            if (
+              !s.server.remotes ||
+              !Array.isArray(s.server.remotes) ||
+              s.server.remotes.length === 0 ||
+              BLACKLISTED_SERVERS.includes(s.server.name) ||
+              hasExcludedWord(s.server.name)
+            ) {
+              return false;
+            }
+          }
+
+          return true;
+        };
+
+        // Accumulate filtered servers until we have enough
+        const allFilteredServers: RegistryServer[] = [];
+        let currentCursor: string | undefined = cursor;
+        let lastNextCursor: string | undefined;
+
+        // Keep fetching until we have at least 'limit' items or no more pages
+        do {
+          const response = await listServers({
+            registryUrl,
+            cursor: currentCursor,
+            limit: 100, // Fetch more items per request to reduce API calls
+            search: apiSearch,
+            version,
+          });
+
+          // Filter servers
+          const filtered = response.servers.filter(filterServer);
+          allFilteredServers.push(...filtered);
+
+          // Save the next cursor
+          lastNextCursor = response.metadata.nextCursor;
+          currentCursor = lastNextCursor;
+
+          // Stop if we have enough items or no more pages
+        } while (allFilteredServers.length < limit && lastNextCursor);
 
         // Map servers to output format with ID
-        const items = response.servers.map((server) => {
+        const items = allFilteredServers.slice(0, limit).map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
 
@@ -149,9 +265,7 @@ export const createListRegistryTool = (env: Env) =>
 
         return {
           items,
-          totalCount: response.metadata.count,
-          hasMore: !!response.metadata.nextCursor,
-          nextCursor: response.metadata.nextCursor,
+          nextCursor: lastNextCursor,
         };
       } catch (error) {
         throw new Error(
