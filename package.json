@@ -38,7 +38,8 @@
     "template-with-view",
     "veo",
     "whisper",
-    "mcp-studio"
+    "mcp-studio",
+    "whatsapp"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

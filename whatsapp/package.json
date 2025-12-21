@@ -1,0 +1,35 @@
+{
+  "name": "whatsapp",
+  "version": "1.0.0",
+  "description": "WhatsApp MCP",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "dev:server": "PORT=8003 bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/oimoi -y",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@decocms/bindings": "1.0.1-alpha.23",
+    "@decocms/runtime": "1.0.0-alpha.39",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.4",
+    "@cloudflare/workers-types": "^4.20251014.0",
+    "@decocms/mcps-shared": "1.0.0",
+    "@mastra/core": "^0.24.0",
+    "@modelcontextprotocol/sdk": "1.20.2",
+    "@types/mime-db": "^1.43.6",
+    "deco-cli": "^0.28.5",
+    "typescript": "^5.7.2",
+    "vite": "7.2.0",
+    "wrangler": "^4.28.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
