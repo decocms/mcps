@@ -28,15 +28,13 @@
     "paths": {
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"]
     },
 
     /* Types */
-    "types": ["@cloudflare/workers-types"]
+    "types": ["node"]
   },
   "include": [
     "server",
-    "shared",
-    "vite.config.ts"
+    "shared"
   ]
 }
