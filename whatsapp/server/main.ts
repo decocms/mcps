@@ -1,109 +1,69 @@
 /**
- * OpenRouter MCP Server
+ * WhatsApp MCP Server
  *
- * This MCP provides tools for interacting with OpenRouter's API,
- * including model discovery, comparison, and AI chat completions.
+ * This MCP provides tools for interacting with the WhatsApp Business API,
+ * including phone number management and webhook handling.
  *
- * OpenRouter offers a unified API for accessing hundreds of AI models
- * with built-in fallback mechanisms, cost optimization, and provider routing.
+ * It publishes incoming WhatsApp webhooks as CloudEvents to the event bus,
+ * allowing other MCPs to subscribe and react to WhatsApp messages.
  */
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { type EventBusBindingClient } from "@decocms/bindings";
 
-import { insertWebhookEvent, tools } from "./tools/index.ts";
-import { WebhookPayload } from "./lib/whatsapp.ts";
+import { tools } from "./tools/index.ts";
+import type { WebhookPayload } from "./lib/types.ts";
 import z from "zod";
-import { type Env as DecoEnv } from "../../vibecoding-toolkit/shared/deco.gen.ts";
+import { handleChallenge, handleWebhook } from "./webhook.ts";
+import { handleTextMessageEvent } from "./events.ts";
 
 export const StateSchema = z.object({
   whatsAppBusinessAccountId: z.string(),
   whatsAppAccessToken: z.string(),
-  DATABASE: z.object({
-    value: z.string(),
-    __type: z.literal("@deco/database").default("@deco/database"),
-  }),
+  EVENT_BUS: BindingOf("@deco/event-bus"),
 });
 
-export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
-
-export async function runSQL<T = unknown>(
-  env: Env,
-  sql: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const response = await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params,
-  });
-  return (response.result[0]?.results ?? []) as T[];
-}
-
-async function ensureWhatsAppWebhookEventsTable(env: Env) {
-  const result = await runSQL(
-    env,
-    `
-    CREATE TABLE IF NOT EXISTS webhook_events (
-      id TEXT PRIMARY KEY,
-      data TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `,
-  );
-  console.log({ result });
-}
-
-let localEnv: Env;
+export type Env = DefaultEnv<typeof StateSchema> & {
+  EVENT_BUS: EventBusBindingClient;
+};
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
+  events: {
+    handlers: {
+      handler: async ({ events }, env) => {
+        for (const event of events) {
+          handleTextMessageEvent(
+            env as unknown as Env,
+            event as { data: WebhookPayload; type: string },
+          );
+        }
+        return { success: true };
+      },
+      events: ["waba.text.message"],
+    },
+  },
   configuration: {
     state: StateSchema,
-    scopes: ["DATABASE::DATABASES_RUN_SQL"],
-    onChange: async (env) => {
-      localEnv = env;
-      try {
-        console.log("onChange");
-        await ensureWhatsAppWebhookEventsTable(env);
-      } catch (error) {
-        console.error(error);
-      }
-    },
+    scopes: ["EVENT_BUS::*"],
   },
-  bindings: [
-    {
-      type: "mcp",
-      name: "DATABASE",
-      app_name: "@deco/database",
-    },
-  ],
+  /**
+   * Custom fetch handler for Meta webhook verification and incoming webhooks
+   */
   fetch: async (req, env) => {
-    if (req.url.includes("/webhook")) {
-      try {
-        return await handleWebhook(env, req);
-      } catch (error) {
-        console.error(error);
-        return new Response("Error", { status: 500 });
+    const url = new URL(req.url);
+    if (url.pathname === "/webhook") {
+      if (req.method === "GET") {
+        return handleChallenge(req);
+      }
+
+      if (req.method === "POST") {
+        return handleWebhook(req, env as unknown as Env);
       }
     }
-    return new Response(null, { status: 204 });
+
+    // Return 404 for unhandled routes
+    return new Response("Not found", { status: 404 });
   },
 });
-
-async function handleWebhook(env: Env, req: Request) {
-  console.log(req);
-  const challenge = new URL(req.url).searchParams.get("hub.challenge");
-  if (challenge) {
-    return new Response(challenge, { status: 200 });
-  }
-  const body: WebhookPayload = await req.json();
-  await insertWebhookEvent(localEnv, body);
-  body.entry?.forEach((entry) => {
-    entry.changes.forEach((change) => {
-      change.value.messages?.forEach((message) => {
-        console.log({ message });
-      });
-    });
-  });
-  return new Response("Webhook received", { status: 200 });
-}
 
 export default runtime;
