@@ -32,6 +32,29 @@ import {
   isDatabaseAvailable,
   type McpAppRecord,
 } from "../lib/postgres.ts";
+import {
+  isServerVerified,
+  createMeshMeta,
+  VERIFIED_SERVERS,
+} from "../lib/verified.ts";
+
+/**
+ * Inject mcp.mesh metadata into any _meta object
+ */
+function injectMeshMeta(
+  originalMeta: unknown,
+  serverName: string,
+): Record<string, unknown> {
+  const meta =
+    typeof originalMeta === "object" && originalMeta !== null
+      ? (originalMeta as Record<string, unknown>)
+      : {};
+
+  return {
+    ...meta,
+    "mcp.mesh": createMeshMeta(serverName),
+  };
+}
 
 // ============================================================================
 // Configuration
@@ -219,7 +242,7 @@ function appRecordToOutput(app: McpAppRecord): {
     created_at: app.published_at ?? app.synced_at,
     updated_at: app.updated_at ?? app.synced_at,
     server: app.server_data,
-    _meta: app.meta_data,
+    _meta: injectMeshMeta(app.meta_data, app.name),
   };
 }
 
@@ -290,7 +313,12 @@ async function listServersFromAllowlist(
   nextCursor?: string;
 }> {
   // Get the list of server names to fetch
-  let serverNames = ALLOWED_SERVERS;
+  // Sort verified servers first, then rest alphabetically
+  const verifiedInAllowlist = VERIFIED_SERVERS.filter((name) =>
+    ALLOWED_SERVERS.includes(name),
+  );
+  const nonVerified = ALLOWED_SERVERS.filter((name) => !isServerVerified(name));
+  let serverNames = [...verifiedInAllowlist, ...nonVerified];
 
   // Apply search filter if provided
   if (searchTerm) {
@@ -337,7 +365,7 @@ async function listServersFromAllowlist(
           (officialMeta as { updatedAt?: string })?.updatedAt ||
           new Date().toISOString(),
         server: server.server,
-        _meta: server._meta,
+        _meta: injectMeshMeta(server._meta, server.server.name),
       };
     });
 
@@ -425,7 +453,7 @@ async function listServersDynamic(
         (officialMeta as { updatedAt?: string })?.updatedAt ||
         new Date().toISOString(),
       server: server.server,
-      _meta: server._meta,
+      _meta: injectMeshMeta(server._meta, server.server.name),
     };
   });
 
@@ -578,7 +606,7 @@ export const createGetRegistryTool = (env: Env) =>
             if (app) {
               return {
                 server: app.server_data,
-                _meta: app.meta_data,
+                _meta: injectMeshMeta(app.meta_data, app.name),
               };
             }
           } catch {
@@ -593,10 +621,10 @@ export const createGetRegistryTool = (env: Env) =>
           throw new Error(`Server not found: ${id}`);
         }
 
-        // Return original API format
+        // Return with mesh metadata
         return {
           server: server.server,
-          _meta: server._meta,
+          _meta: injectMeshMeta(server._meta, server.server.name),
         };
       } catch (error) {
         throw new Error(
@@ -659,7 +687,7 @@ export const createVersionsRegistryTool = (env: Env) =>
         // Fallback to API
         const serverVersions = await getServerVersions(name, registryUrl);
 
-        // Map servers to output format with ID
+        // Map servers to output format with ID and mesh metadata
         const versions = serverVersions.map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
@@ -670,7 +698,7 @@ export const createVersionsRegistryTool = (env: Env) =>
             created_at: officialMeta?.publishedAt || new Date().toISOString(),
             updated_at: officialMeta?.updatedAt || new Date().toISOString(),
             server: server.server,
-            _meta: server._meta,
+            _meta: injectMeshMeta(server._meta, server.server.name),
           };
         });
 
