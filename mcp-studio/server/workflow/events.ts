@@ -8,8 +8,8 @@
  */
 
 import type { Env } from "../main.ts";
-import { transformDbRowToEvent } from "../collections/workflow.ts";
-import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
+import { WorkflowEvent } from "@decocms/bindings/workflow";
+import { executeWorkflow } from "./executor.ts";
 
 /**
  * Add an event to the workflow events table
@@ -19,7 +19,7 @@ export async function addEvent(
   event: Omit<WorkflowEvent, "id" | "created_at"> & { created_at?: number },
 ): Promise<WorkflowEvent> {
   const id = crypto.randomUUID();
-  const created_at = event.created_at ?? new Date().toISOString();
+  const created_at = event.created_at ?? new Date().getTime();
 
   await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
@@ -39,72 +39,11 @@ export async function addEvent(
     ],
   });
 
-  return { ...event, id, created_at } as WorkflowEvent;
-}
-
-/**
- * Get pending events for an execution (visible and unconsumed)
- */
-export async function getPendingEvents(
-  env: Env,
-  executionId: string,
-  type?: EventType,
-): Promise<WorkflowEvent[]> {
-  const now = Date.now();
-
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      SELECT * FROM workflow_events
-      WHERE execution_id = ? 
-        AND consumed_at IS NULL
-        AND (visible_at IS NULL OR visible_at <= ?)
-        ${type ? "AND type = ?" : ""}
-      ORDER BY visible_at ASC NULLS FIRST, created_at ASC
-    `,
-    params: type ? [executionId, now, type] : [executionId, now],
-  });
-
-  return ((result.result[0]?.results || []) as Record<string, unknown>[]).map(
-    transformDbRowToEvent,
-  );
-}
-
-/**
- * Consume an event (mark as processed)
- */
-export async function consumeEvent(
-  env: Env,
-  executionId: string,
-  type: EventType,
-  name?: string,
-): Promise<WorkflowEvent | null> {
-  const now = Date.now();
-
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      UPDATE workflow_events
-      SET consumed_at = ?
-      WHERE id = (
-        SELECT id FROM workflow_events
-        WHERE execution_id = ? 
-          AND type = ? 
-          ${name ? "AND name = ?" : ""}
-          AND consumed_at IS NULL
-          AND (visible_at IS NULL OR visible_at <= ?)
-        ORDER BY visible_at ASC NULLS FIRST, created_at ASC
-        LIMIT 1
-      )
-      RETURNING *
-    `,
-    params: name
-      ? [now, executionId, type, name, now]
-      : [now, executionId, type, now],
-  });
-
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
-  return row ? transformDbRowToEvent(row) : null;
+  return {
+    ...event,
+    id,
+    created_at: new Date(created_at).toISOString(),
+  } as WorkflowEvent;
 }
 
 /**
@@ -130,41 +69,11 @@ export async function sendSignal(
     payload,
     visible_at: Date.now(), // Immediately visible
   });
-
+  const state = (env as unknown as Env).MESH_REQUEST_CONTEXT?.state;
+  executeWorkflow({ ...env, ...state } as unknown as Env, executionId).catch(
+    (error: Error) => {
+      console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
+    },
+  );
   return event;
-}
-
-/**
- * Schedule a timer event for durable sleep.
- *
- * The timer won't be visible until wakeAtEpochMs, allowing
- * the scheduler to pick up the execution at the right time.
- */
-export async function scheduleTimer(
-  env: Env,
-  executionId: string,
-  stepName: string,
-  wakeAtEpochMs: number,
-): Promise<WorkflowEvent> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "timer",
-    name: stepName,
-    payload: { wakeAt: wakeAtEpochMs },
-
-    title: stepName,
-    updated_at: new Date().toISOString(),
-    visible_at: wakeAtEpochMs, // Not visible until wake time
-  });
-}
-
-/**
- * Check if a timer is ready (called from step executor)
- */
-export async function checkTimer(
-  env: Env,
-  executionId: string,
-  stepName: string,
-): Promise<WorkflowEvent | null> {
-  return consumeEvent(env, executionId, "timer", stepName);
 }

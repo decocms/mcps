@@ -13,11 +13,9 @@ import {
   WorkflowExecutionStepResult,
 } from "@decocms/bindings/workflow";
 import type { Env } from "../main.ts";
-import { executeWorkflow } from "server/workflow/executor.ts";
 import {
   transformDbRowToExecution,
   transformDbRowToStepResult,
-  safeJsonParse,
 } from "../collections/workflow.ts";
 
 /**
@@ -305,34 +303,6 @@ export async function listExecutions(
   };
 }
 
-/**
- * List workflow executions with filtering
- */
-export async function processEnqueuedExecutions(env: Env): Promise<string[]> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      UPDATE workflow_executions SET status = 'running' WHERE status = 'enqueued' AND start_at_epoch_ms <= ? RETURNING id
-    `,
-    params: [Date.now()],
-  });
-  const ids =
-    result.result[0]?.results?.map(
-      (row: unknown) => (row as { id: string }).id,
-    ) || [];
-
-  for (const id of ids) {
-    executeWorkflow(env, id).catch((error: Error) => {
-      console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
-    });
-  }
-
-  return (
-    result.result[0]?.results?.map(
-      (row: unknown) => (row as { id: string }).id,
-    ) || []
-  );
-}
-
 // ============================================================================
 // Step Results
 // ============================================================================
@@ -500,90 +470,4 @@ export async function updateStepResult(
   return transformDbRowToStepResult(
     result.result[0]?.results?.[0] as Record<string, unknown>,
   );
-}
-
-// ============================================================================
-// Stream Chunks
-// ============================================================================
-
-export interface StreamChunk {
-  id: string;
-  execution_id: string;
-  step_id: string;
-  chunk_index: number;
-  chunk_data: unknown;
-  created_at: number;
-}
-
-export async function writeStreamChunk(
-  env: Env,
-  executionId: string,
-  stepId: string,
-  chunkIndex: number,
-  chunkData: unknown,
-): Promise<void> {
-  await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `INSERT INTO step_stream_chunks (id, execution_id, step_id, chunk_index, chunk_data, created_at)
-          VALUES (?, ?, ?, ?, ?::jsonb, ?) ON CONFLICT (execution_id, step_id, chunk_index) DO NOTHING`,
-    params: [
-      `${executionId}/${stepId}/${chunkIndex}`,
-      executionId,
-      stepId,
-      chunkIndex,
-      JSON.stringify(chunkData),
-      Date.now(),
-    ],
-  });
-}
-
-export async function getStreamChunks(
-  env: Env,
-  executionId: string,
-  lastSeenIndices: Record<string, number> = {},
-): Promise<StreamChunk[]> {
-  const params: unknown[] = [executionId];
-  const stepConditions = Object.entries(lastSeenIndices).map(
-    ([stepId, lastIndex], idx) => {
-      params.push(stepId, lastIndex);
-      return `(step_id = $${idx * 2 + 2} AND chunk_index > $${idx * 2 + 3})`;
-    },
-  );
-
-  const seenStepIds = Object.keys(lastSeenIndices);
-  let whereClause = "execution_id = $1";
-  if (seenStepIds.length > 0) {
-    const seenList = seenStepIds.map((s) => `'${s}'`).join(",");
-    whereClause += ` AND ((${stepConditions.join(" OR ")}) OR step_id NOT IN (${seenList}))`;
-  }
-
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM step_stream_chunks WHERE ${whereClause} ORDER BY created_at ASC, chunk_index ASC`,
-    params,
-  });
-
-  return (result.result[0]?.results || []).map((row: unknown) => {
-    const r = row as Record<string, unknown>;
-    return {
-      id: r.id as string,
-      execution_id: r.execution_id as string,
-      step_id: r.step_id as string,
-      chunk_index: Number(r.chunk_index),
-      chunk_data: safeJsonParse(r.chunk_data),
-      created_at: Number(r.created_at),
-    };
-  });
-}
-
-export async function deleteStreamChunks(
-  env: Env,
-  executionId: string,
-  stepId?: string,
-): Promise<void> {
-  const sql = stepId
-    ? `DELETE FROM step_stream_chunks WHERE execution_id = ? AND step_id = ?`
-    : `DELETE FROM step_stream_chunks WHERE execution_id = ?`;
-  await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params: stepId ? [executionId, stepId] : [executionId],
-  });
 }

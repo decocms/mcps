@@ -89,23 +89,6 @@ export async function consumeEvent(
 
 export type WorkflowSignal = WorkflowEvent & { signal_name?: string };
 
-export async function sendSignal(
-  env: Env,
-  executionId: string,
-  signalName: string,
-  payload?: unknown,
-): Promise<WorkflowSignal> {
-  return addEvent(env, {
-    execution_id: executionId,
-    type: "signal",
-    name: signalName,
-    title: signalName,
-    updated_at: new Date().toISOString(),
-    payload,
-    visible_at: Date.now(),
-  });
-}
-
 export async function getSignals(
   env: Env,
   executionId: string,
@@ -137,6 +120,16 @@ export async function scheduleTimer(
   stepName: string,
   wakeAtEpochMs: number,
 ): Promise<WorkflowEvent> {
+  await env.EVENT_BUS.EVENT_PUBLISH({
+    type: "timer.scheduled",
+    data: {
+      executionId,
+      stepName,
+      wakeAtEpochMs,
+    },
+    deliverAt: new Date(wakeAtEpochMs).toISOString(),
+    subject: executionId,
+  });
   return addEvent(env, {
     execution_id: executionId,
     type: "timer",

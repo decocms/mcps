@@ -210,21 +210,9 @@ function isSingleAtRef(value: unknown): value is `@${string}` {
 export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
   const errors: Array<{ ref: string; error: string }> = [];
   function resolveValue(value: unknown): unknown {
-    // Debug: log what we're resolving
-    if (typeof value === "string" && value.includes("@")) {
-      console.log(`[REF_RESOLVER] Processing string: "${value}"`);
-      console.log(`[REF_RESOLVER] isSingleAtRef: ${isSingleAtRef(value)}`);
-    }
-
     // If it's a string that IS an @ref (entire value is ONE reference)
     if (isSingleAtRef(value)) {
-      // <-- Changed from isAtRef to isSingleAtRef
       const result = resolveRef(value, ctx);
-      console.log(
-        `[REF_RESOLVER] Single ref "${value}" resolved to:`,
-        typeof result.value,
-        result.value,
-      );
       if (result.error) {
         errors.push({ ref: value, error: result.error });
       }
@@ -233,7 +221,6 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
 
     // If it's a string that CONTAINS @refs, interpolate them
     if (typeof value === "string" && value.includes("@")) {
-      console.log(`[REF_RESOLVER] Interpolating string: "${value}"`);
       const interpolated = value.replace(AT_REF_PATTERN, (match) => {
         if (isAtRef(match as `@${string}`)) {
           const result = resolveRef(match as `@${string}`, ctx);
@@ -249,7 +236,6 @@ export function resolveAllRefs(input: unknown, ctx: RefContext): ResolveResult {
         }
         return match;
       });
-      console.log(`[REF_RESOLVER] Interpolated result: "${interpolated}"`);
       return interpolated;
     }
 
@@ -310,4 +296,165 @@ export function extractRefs(input: unknown): string[] {
 
   extract(input);
   return refs;
+}
+
+// ============================================
+// Condition Evaluation
+// ============================================
+
+/**
+ * Condition structure for conditional step execution
+ */
+export interface Condition {
+  ref: string;
+  operator?: "=" | "!=" | ">" | ">=" | "<" | "<=";
+  value?: unknown;
+}
+
+/**
+ * Result of evaluating a condition
+ */
+export interface ConditionResult {
+  /** Whether the condition evaluated to true */
+  satisfied: boolean;
+  /** The resolved left-hand side value */
+  leftValue: unknown;
+  /** The resolved right-hand side value */
+  rightValue: unknown;
+  /** Error message if evaluation failed */
+  error?: string;
+}
+
+/**
+ * Evaluate a condition against the current context.
+ *
+ * @param condition - The condition to evaluate
+ * @param ctx - The current ref context
+ * @returns ConditionResult with satisfied boolean and resolved values
+ */
+export function evaluateCondition(
+  condition: Condition,
+  ctx: RefContext,
+): ConditionResult {
+  // Resolve the left-hand side (@ref)
+  const leftResolution = isAtRef(condition.ref)
+    ? resolveRef(condition.ref as `@${string}`, ctx)
+    : { value: condition.ref };
+
+  if (leftResolution.error) {
+    return {
+      satisfied: false,
+      leftValue: undefined,
+      rightValue: undefined,
+      error: `Failed to resolve condition ref: ${leftResolution.error}`,
+    };
+  }
+
+  // Resolve the right-hand side (value - can be literal or @ref)
+  let rightValue: unknown = condition.value;
+  if (typeof condition.value === "string" && isAtRef(condition.value)) {
+    const rightResolution = resolveRef(condition.value as `@${string}`, ctx);
+    if (rightResolution.error) {
+      return {
+        satisfied: false,
+        leftValue: leftResolution.value,
+        rightValue: undefined,
+        error: `Failed to resolve condition value: ${rightResolution.error}`,
+      };
+    }
+    rightValue = rightResolution.value;
+  }
+
+  const leftValue = leftResolution.value;
+  const operator = condition.operator || "=";
+
+  // Perform comparison
+  const satisfied = compareValues(leftValue, operator, rightValue);
+
+  return {
+    satisfied,
+    leftValue,
+    rightValue,
+  };
+}
+
+/**
+ * Compare two values using the specified operator
+ */
+function compareValues(
+  left: unknown,
+  operator: "=" | "!=" | ">" | ">=" | "<" | "<=",
+  right: unknown,
+): boolean {
+  // For equality operators, use deep equality for objects
+  if (operator === "=") {
+    return deepEqual(left, right);
+  }
+  if (operator === "!=") {
+    return !deepEqual(left, right);
+  }
+
+  // For comparison operators, convert to numbers if possible
+  const leftNum = typeof left === "number" ? left : Number(left);
+  const rightNum = typeof right === "number" ? right : Number(right);
+
+  // If either side isn't a valid number, fall back to string comparison
+  if (isNaN(leftNum) || isNaN(rightNum)) {
+    const leftStr = String(left);
+    const rightStr = String(right);
+    switch (operator) {
+      case ">":
+        return leftStr > rightStr;
+      case ">=":
+        return leftStr >= rightStr;
+      case "<":
+        return leftStr < rightStr;
+      case "<=":
+        return leftStr <= rightStr;
+    }
+  }
+
+  switch (operator) {
+    case ">":
+      return leftNum > rightNum;
+    case ">=":
+      return leftNum >= rightNum;
+    case "<":
+      return leftNum < rightNum;
+    case "<=":
+      return leftNum <= rightNum;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Deep equality comparison for objects/arrays/primitives
+ */
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return a === b;
+  if (typeof a !== typeof b) return false;
+
+  if (typeof a === "object") {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((val, i) => deepEqual(val, b[i]));
+    }
+
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+
+    const keysA = Object.keys(a as object);
+    const keysB = Object.keys(b as object);
+    if (keysA.length !== keysB.length) return false;
+
+    return keysA.every((key) =>
+      deepEqual(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      ),
+    );
+  }
+
+  return false;
 }

@@ -329,6 +329,9 @@ async function updateWorkflow(
 
   params.push(id);
 
+  console.log("setClauses", setClauses);
+  console.log("params", params);
+
   const sql = `
         UPDATE workflows
         SET ${setClauses.join(", ")}
@@ -359,7 +362,6 @@ export const createUpdateTool = (env: Env) =>
     inputSchema: UPDATE_BINDING.inputSchema,
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      console.log("createUpdateTool", context);
       try {
         return await updateWorkflow(env, {
           id: context.id as string,

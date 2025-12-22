@@ -122,12 +122,6 @@ export class StepExecutor {
         );
       }
 
-      // Debug: log the input being sent to the tool
-      console.log(
-        `[TOOL_STEP] Calling ${toolName} with input:`,
-        JSON.stringify(input, null, 2),
-      );
-
       // The proxy returns structuredContent directly on success, throws on error
       const result = await toolFn(input);
 
@@ -167,7 +161,9 @@ export class StepExecutor {
     const startedAt = existingStepResult?.started_at_epoch_ms || Date.now();
 
     // Check if timer already fired (resuming from durable sleep)
+    console.log("checking timer", executionId, step.name);
     const timer = await checkTimer(this.env, executionId, step.name);
+    console.log("timer", timer);
     if (timer) {
       const wakeAt =
         (timer.payload as { wakeAt: number })?.wakeAt || Date.now();
@@ -292,6 +288,9 @@ export class StepExecutor {
       output?: unknown;
     },
   ): Promise<StepResult> {
+    console.log(
+      `[STEP_EXECUTOR] executing step: ${step.name} on execution: ${executionId}`,
+    );
     const execution = await getExecution(this.env, executionId);
     if (execution?.status === "cancelled") {
       throw new WorkflowCancelledError(executionId);
@@ -301,7 +300,8 @@ export class StepExecutor {
     await createStepResult(this.env, {
       execution_id: executionId,
       step_id: step.name,
-      started_at_epoch_ms: Date.now(),
+      started_at_epoch_ms:
+        existingStepResult?.started_at_epoch_ms ?? Date.now(),
     });
 
     // Extract retry and timeout config
@@ -323,6 +323,7 @@ export class StepExecutor {
           existingStepResult,
           timeoutMs,
         );
+        console.log("result", result);
 
         // Success - break out of retry loop
         if (result.status === "success") {

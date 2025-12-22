@@ -5,10 +5,8 @@ import {
   cancelExecution,
   createExecution,
   getExecution,
-  processEnqueuedExecutions,
   resumeExecution,
 } from "../../lib/execution-db.ts";
-import { sendSignal } from "../../workflow/events/events.ts";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
 const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
@@ -34,10 +32,8 @@ export const createAndQueueExecutionTool = (env: Env) =>
         });
         await env.EVENT_BUS.EVENT_PUBLISH({
           type: "workflow.execution.created",
-          subject: "workflow.execution.created",
-          data: execution,
+          subject: execution.id,
         });
-
         return {
           executionId: execution.id,
         };
@@ -201,36 +197,26 @@ export const sendSignalTool = (env: Env) =>
         };
       }
 
-      const signal = await sendSignal(env, executionId, signalName, payload);
+      if (execution.status !== "running") {
+        return {
+          success: false,
+          message: `Execution ${executionId} is not running`,
+        };
+      }
+
+      await env.EVENT_BUS.EVENT_PUBLISH({
+        type: "workflow.signal.sent",
+        subject: executionId,
+        data: {
+          signalName,
+          payload,
+        },
+      });
 
       return {
         success: true,
-        signalId: signal.id,
         message: `Signal '${signalName}' sent to execution ${executionId}`,
       };
-    },
-  });
-
-export const processEnqueuedExecutionsTool = (env: Env) =>
-  createPrivateTool({
-    id: "PROCESS_ENQUEUED_EXECUTIONS",
-    description: "Process enqueued workflow executions",
-    inputSchema: z.object({}),
-    outputSchema: z.object({
-      success: z.boolean(),
-      ids: z.array(z.string()),
-    }),
-    execute: async () => {
-      try {
-        const ids = await processEnqueuedExecutions(env);
-        console.log(
-          `[PROCESS_ENQUEUED_EXECUTIONS] ids: ${JSON.stringify(ids)}`,
-        );
-        return { success: true, ids };
-      } catch (error) {
-        console.error("🚀 ~ Error processing enqueued executions:", error);
-        return { success: false, ids: [] };
-      }
     },
   });
 
@@ -239,5 +225,4 @@ export const workflowTools = [
   cancelExecutionTool,
   resumeExecutionTool,
   sendSignalTool,
-  processEnqueuedExecutionsTool,
 ];

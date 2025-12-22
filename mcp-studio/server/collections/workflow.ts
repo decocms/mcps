@@ -110,6 +110,7 @@ export function transformDbRowToEvent(
     title: row.title ?? `Event ${row.id}`,
     updated_at: epochMsToIsoString(Number(row.updated_at ?? Date.now())),
     visible_at: Number(row.visible_at),
+    consumed_at: row.consumed_at ? Number(row.consumed_at) : undefined,
     payload: row.payload
       ? typeof row.payload === "string"
         ? JSON.parse(row.payload)
