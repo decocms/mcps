@@ -15,7 +15,6 @@ export const VERIFIED_SERVERS: string[] = [
   "io.github.github/github-mcp-server",
   "com.stripe/mcp",
   "com.notion/mcp",
-  "com.supabase/mcp",
   "com.cloudflare.mcp/mcp",
   "com.vercel/vercel-mcp",
   "io.prisma/mcp",
