@@ -7,10 +7,12 @@
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import {
   type Env as DecoEnv,
+  Scopes,
   StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
 import { z } from "zod";
 import { tools } from "./tools/index.ts";
+import { ensureTables, isDatabaseAvailable } from "./lib/postgres.ts";
 
 /**
  * StateSchema with MCP Registry configuration.
@@ -37,6 +39,12 @@ export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
+    onChange: async (env) => {
+      // Only create tables if DATABASE binding is available
+      if (isDatabaseAvailable(env)) {
+        await ensureTables(env);
+      }
+    },
     /**
      * These scopes define the asking permissions of your
      * app when a user is installing it. When a user
@@ -45,7 +53,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [],
+    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -65,7 +73,13 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
-  bindings: [],
+  bindings: [
+    {
+      type: "mcp",
+      name: "DATABASE",
+      app_name: "@deco/postgres",
+    },
+  ],
   cors: {
     origin: (origin) => {
       // Allow localhost and configured origins
