@@ -26,3 +26,4 @@ export interface Env {
 }
 
 export const Scopes = {};
+
