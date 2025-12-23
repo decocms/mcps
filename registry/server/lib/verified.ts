@@ -25,6 +25,9 @@ export const VERIFIED_SERVERS: string[] = [
   "io.github.perplexityai/mcp-server",
   "com.atlassian/atlassian-mcp-server",
   "com.linear/linear",
+  "io.github.timescale/pg-aiguide",
+  "com.supabase/mcp",
+  "com.microsoft/microsoft-learn-mcp",
 ];
 
 /**
