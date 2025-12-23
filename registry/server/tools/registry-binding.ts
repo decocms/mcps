@@ -25,6 +25,7 @@ import { ALLOWED_SERVERS } from "../lib/allowlist.ts";
 import {
   isServerVerified,
   createMeshMeta,
+  applyServerOverrides,
   VERIFIED_SERVERS,
 } from "../lib/verified.ts";
 
@@ -44,6 +45,26 @@ function injectMeshMeta(
     ...meta,
     "mcp.mesh": createMeshMeta(serverName),
   };
+}
+
+/**
+ * Process server data: apply overrides for verified servers (icons, repository)
+ */
+function processServerData(
+  serverName: string,
+  serverData: unknown,
+): Record<string, unknown> {
+  const data =
+    typeof serverData === "object" && serverData !== null
+      ? (serverData as Record<string, unknown>)
+      : {};
+
+  // Only apply overrides for verified servers
+  if (isServerVerified(serverName)) {
+    return applyServerOverrides(serverName, data);
+  }
+
+  return data;
 }
 
 // ============================================================================
@@ -310,7 +331,7 @@ async function listServersFromAllowlist(
         updated_at:
           (officialMeta as { updatedAt?: string })?.updatedAt ||
           new Date().toISOString(),
-        server: server.server,
+        server: processServerData(server.server.name, server.server),
         _meta: injectMeshMeta(server._meta, server.server.name),
       };
     });
@@ -398,7 +419,7 @@ async function listServersDynamic(
       updated_at:
         (officialMeta as { updatedAt?: string })?.updatedAt ||
         new Date().toISOString(),
-      server: server.server,
+      server: processServerData(server.server.name, server.server),
       _meta: injectMeshMeta(server._meta, server.server.name),
     };
   });
@@ -499,9 +520,9 @@ export const createGetRegistryTool = (env: Env) =>
           throw new Error(`Server not found: ${id}`);
         }
 
-        // Return with mesh metadata
+        // Return with mesh metadata and overrides
         return {
-          server: server.server,
+          server: processServerData(server.server.name, server.server),
           _meta: injectMeshMeta(server._meta, server.server.name),
         };
       } catch (error) {
@@ -558,7 +579,7 @@ export const createVersionsRegistryTool = (env: Env) =>
             title: server.server.name,
             created_at: officialMeta?.publishedAt || new Date().toISOString(),
             updated_at: officialMeta?.updatedAt || new Date().toISOString(),
-            server: server.server,
+            server: processServerData(server.server.name, server.server),
             _meta: injectMeshMeta(server._meta, server.server.name),
           };
         });
