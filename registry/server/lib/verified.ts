@@ -61,17 +61,8 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
   "com.gitlab/mcp": {
     icons: [{ src: "https://about.gitlab.com/ico/favicon.ico" }],
   },
-  "com.postman/postman-mcp-server": {
-    icons: [{ src: "https://www.postman.com/favicon.ico" }],
-  },
   "com.apify/apify-mcp-server": {
     icons: [{ src: "https://apify.com/favicon.ico" }],
-  },
-  "ai.exa/exa": {
-    icons: [{ src: "https://exa.ai/favicon.ico" }],
-  },
-  "io.github.perplexityai/mcp-server": {
-    icons: [{ src: "https://www.perplexity.ai/favicon.ico" }],
   },
   "com.atlassian/atlassian-mcp-server": {
     icons: [
@@ -128,6 +119,26 @@ export function getServerOverride(
 }
 
 /**
+ * Check if server has valid icons
+ */
+function hasIcons(server: Record<string, unknown>): boolean {
+  const icons = server.icons;
+  return Array.isArray(icons) && icons.length > 0;
+}
+
+/**
+ * Check if server has valid repository
+ */
+function hasRepository(server: Record<string, unknown>): boolean {
+  const repo = server.repository;
+  return (
+    typeof repo === "object" &&
+    repo !== null &&
+    typeof (repo as Record<string, unknown>).url === "string"
+  );
+}
+
+/**
  * Apply overrides to a server object (only if icons/repository are missing)
  * Returns a new server object with overrides applied
  */
@@ -140,14 +151,13 @@ export function applyServerOverrides(
 
   const result = { ...server };
 
-  // Apply icons override if server doesn't have icons
-  const existingIcons = server.icons as unknown[] | undefined;
-  if (override.icons && (!existingIcons || existingIcons.length === 0)) {
+  // Apply icons override ONLY if server doesn't have icons
+  if (override.icons && !hasIcons(server)) {
     result.icons = override.icons;
   }
 
-  // Apply repository override if server doesn't have repository
-  if (override.repository && !server.repository) {
+  // Apply repository override ONLY if server doesn't have repository
+  if (override.repository && !hasRepository(server)) {
     result.repository = override.repository;
   }
 
