@@ -39,11 +39,10 @@ export class ExecutionContext {
     return getStepResults(this.env, this.executionId);
   }
 
-  async claimStep(stepId: string, timeoutMs: number): Promise<void> {
+  async claimStep(stepId: string): Promise<void> {
     await createStepResult(this.env, {
       execution_id: this.executionId,
       step_id: stepId,
-      timeout_ms: timeoutMs,
     });
   }
 

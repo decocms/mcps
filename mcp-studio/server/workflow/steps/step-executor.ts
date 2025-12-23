@@ -17,8 +17,6 @@ import { executeCode } from "./code-step.ts";
 import { executeSignalStep } from "./signal-step.ts";
 import { executeToolStep } from "./tool-step.ts";
 
-const DEFAULT_TIMEOUT_MS = 30000;
-
 export class StepExecutor {
   private ctx: ExecutionContext;
 
@@ -36,17 +34,12 @@ export class StepExecutor {
   ): Promise<StepResult> {
     await this.ctx.checkCancelled();
     const stepType = getStepType(step);
-    const timeoutMs = step.config?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
     // Signal steps don't need to claim (handled differently)
     let result: StepResult | undefined;
     if (stepType === "tool") {
-      await this.ctx.claimStep(step.name, timeoutMs);
-      result = await this.executeToolStepWithTimeout(
-        step,
-        resolvedInput,
-        timeoutMs,
-      );
+      await this.ctx.claimStep(step.name);
+      result = await this.executeToolStepWithTimeout(step, resolvedInput);
       await this.ctx.completeStep(step.name, result.output, result.error);
     }
 
@@ -55,7 +48,6 @@ export class StepExecutor {
       await createStepResult(this.ctx.env, {
         execution_id: this.ctx.executionId,
         step_id: step.name,
-        timeout_ms: 0,
         output: result.output,
         error: result.error,
         completed_at_epoch_ms: Date.now(),
@@ -67,7 +59,6 @@ export class StepExecutor {
       await createStepResult(this.ctx.env, {
         execution_id: this.ctx.executionId,
         step_id: step.name,
-        timeout_ms: 0,
         output: result.output,
         error: result.error,
         completed_at_epoch_ms: Date.now(),
@@ -96,8 +87,8 @@ export class StepExecutor {
   private async executeToolStepWithTimeout(
     step: Step,
     resolvedInput: Record<string, unknown>,
-    timeoutMs?: number,
   ): Promise<StepResult> {
+    const timeoutMs = step.config?.timeoutMs ?? 30000;
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
@@ -112,5 +103,22 @@ export class StepExecutor {
       }
       throw err;
     }
+  }
+
+  async getLastStepResult(): Promise<StepResult | null> {
+    const results = await this.ctx.getStepResults();
+    const lastResult = results.sort(
+      (a, b) => b.started_at_epoch_ms - a.started_at_epoch_ms,
+    )[0];
+    if (!lastResult) {
+      return null;
+    }
+    return {
+      stepId: lastResult.step_id,
+      startedAt: lastResult.started_at_epoch_ms,
+      completedAt: lastResult.completed_at_epoch_ms,
+      output: lastResult.output,
+      error: lastResult.error as string | undefined,
+    };
   }
 }

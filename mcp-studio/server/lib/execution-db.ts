@@ -277,7 +277,6 @@ export async function listExecutions(
   const { workflowId, status, limit = 50, offset = 0 } = options;
   const conditions: string[] = [];
   const params: unknown[] = [];
-
   if (workflowId) {
     conditions.push(`workflow_id = ?`);
     params.push(workflowId);
@@ -319,14 +318,12 @@ export async function listExecutions(
 
 export async function getStepResults(
   env: Env,
-  executionId?: string,
+  executionId: string,
 ): Promise<WorkflowExecutionStepResult[]> {
-  const whereClause = executionId ? `WHERE execution_id = ?` : "";
-  const params = executionId ? [executionId] : [];
   const result = await runSQL<WorkflowExecutionStepResult>(
     env,
-    `SELECT * FROM workflow_execution_step_result ${whereClause} ORDER BY started_at_epoch_ms DESC`,
-    params,
+    `SELECT * FROM workflow_execution_step_result WHERE execution_id = ?`,
+    [executionId],
   );
 
   return (
@@ -353,13 +350,6 @@ export async function getStepResult(
   return result[0] ?? null;
 }
 
-export interface CreateStepResultOutcome {
-  /** The step result (either newly created or existing) */
-  result: WorkflowExecutionStepResult;
-  /** Whether we won the race (created) or lost (conflict with existing) */
-  created: boolean;
-}
-
 /**
  * Create a new step result, or detect if another worker already created it.
  *
@@ -374,7 +364,6 @@ export async function createStepResult(
   data: {
     execution_id: string;
     step_id: string;
-    timeout_ms: number;
     output?: unknown;
     error?: string;
     completed_at_epoch_ms?: number;
@@ -440,21 +429,12 @@ export async function updateStepResult(
   const sql = `
     UPDATE workflow_execution_step_result
     SET ${setClauses.join(", ")}
-    WHERE execution_id = ?::text AND step_id = ?::text AND completed_at_epoch_ms IS NULL
+    WHERE execution_id = ?::text AND step_id = ?::text
     RETURNING *
   `;
 
-  console.log("Updating step result", sql, params);
-
   // Don't overwrite a completed step
   const result = await runSQL<WorkflowExecutionStepResult>(env, sql, params);
-
-  // If no rows updated, the step was already completed (we lost the race)
-  if (!result.length) {
-    const existing = await getStepResult(env, executionId, stepId);
-    if (existing) return existing;
-    throw new Error(`Step result not found: ${executionId}/${stepId}`);
-  }
 
   return result[0];
 }

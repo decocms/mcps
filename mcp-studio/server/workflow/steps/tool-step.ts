@@ -24,16 +24,11 @@ export async function executeToolStep(
     }
 
     const { connectionId, toolName } = parsed.data;
-
-    console.log(
-      `[executeToolStep] ${Date.now()} - Creating MCP connection for ${toolName}`,
-    );
     const mcpConnection = proxyConnectionForId(connectionId, {
       token: ctx.token,
       meshUrl: ctx.meshUrl,
     });
 
-    console.log(`[executeToolStep] ${Date.now()} - Creating client stub`);
     const client = createMCPFetchStub({ connection: mcpConnection });
 
     const toolFn = (

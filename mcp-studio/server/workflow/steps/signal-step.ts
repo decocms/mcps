@@ -45,7 +45,6 @@ export async function executeSignalStep(
     await createStepResult(ctx.env, {
       execution_id: ctx.executionId,
       step_id: step.name,
-      timeout_ms: 99999999999999,
     });
 
     return {

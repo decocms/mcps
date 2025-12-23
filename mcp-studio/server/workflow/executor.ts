@@ -14,12 +14,15 @@ import {
   updateExecution,
 } from "../lib/execution-db.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
-import { groupStepsByLevel, validateNoCycles } from "./utils/dag.ts";
 import { ExecutionNotFoundError } from "./utils/errors.ts";
 import {
   handleExecutionError,
   type ExecuteWorkflowResult,
 } from "./error-handler.ts";
+import {
+  groupStepsByLevel,
+  validateNoCycles,
+} from "@decocms/bindings/workflow";
 
 export type { ExecuteWorkflowResult };
 
@@ -56,7 +59,9 @@ export async function executeWorkflow(
       processResults(results, ctx.stepOutputs, completedSteps);
     }
 
-    const output = buildOutput(completedSteps);
+    const lastStepResult = await stepExecutor.getLastStepResult();
+
+    const output = buildOutput(completedSteps, lastStepResult?.output);
     await updateExecution(env, executionId, {
       status: "success",
       output,
@@ -145,11 +150,9 @@ function processResults(
   }
 }
 
-function buildOutput(completedSteps: string[]) {
+function buildOutput(completedSteps: string[], output: unknown) {
   return {
-    _summary: true,
     completedSteps,
-    lastStep: completedSteps[completedSteps.length - 1],
-    message: "Full outputs available in step results",
+    output,
   };
 }

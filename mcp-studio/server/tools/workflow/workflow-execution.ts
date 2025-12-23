@@ -9,6 +9,7 @@ import {
   createExecution,
 } from "../../lib/execution-db.ts";
 import { getWorkflow } from "./workflow.ts";
+import { buildWhereClause } from "../agent.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -86,7 +87,6 @@ export const createGetTool = (env: Env) =>
     id: "COLLECTION_WORKFLOW_EXECUTION_GET",
     description: "Get a single workflow execution by ID with step results",
     inputSchema: GET_BINDING.inputSchema,
-    outputSchema: GET_BINDING.outputSchema,
     execute: async ({
       context,
     }: {
@@ -97,16 +97,13 @@ export const createGetTool = (env: Env) =>
       const execution = await getExecution(env, id);
 
       if (!execution) {
-        return { item: null };
+        throw new Error("Execution not found");
       }
 
       const stepResults = await getStepResults(env, id);
-
       return {
-        item: {
-          ...execution,
-          step_results: stepResults ?? [],
-        },
+        item: execution,
+        step_results: stepResults,
       };
     },
   });
@@ -123,11 +120,15 @@ export const createListTool = (env: Env) =>
     }: {
       context: z.infer<typeof LIST_BINDING.inputSchema>;
     }) => {
-      const { limit = 50, offset = 0 } = context;
+      const { limit = 50, offset = 0, where } = context;
+
+      const whereClause = buildWhereClause(where);
 
       const itemsResult = await listExecutions(env, {
         limit,
         offset,
+        where: whereClause.clause,
+        workflowId: whereClause.params[0] as string,
       });
 
       return {
