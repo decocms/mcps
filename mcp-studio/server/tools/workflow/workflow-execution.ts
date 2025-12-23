@@ -100,7 +100,6 @@ export const createGetTool = (env: Env) =>
         return { item: null };
       }
 
-      // Join step results
       const stepResults = await getStepResults(env, id);
 
       return {

@@ -2,10 +2,10 @@
 // PostgreSQL Dialect
 // ============================================================================
 
-import { WorkflowQueries } from "../workflow";
+import { WorkflowQueries } from "./workflow";
 
 const postgresWorkflowTableIdempotentQuery = `
-  CREATE TABLE IF NOT EXISTS workflows (
+  CREATE TABLE IF NOT EXISTS workflow (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
@@ -18,13 +18,13 @@ const postgresWorkflowTableIdempotentQuery = `
 `;
 
 const postgresWorkflowTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_workflows_created_at ON workflows(created_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflows_updated_at ON workflows(updated_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflows_title ON workflows(title);
+  CREATE INDEX IF NOT EXISTS idx_workflow_created_at ON workflow(created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_updated_at ON workflow(updated_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_title ON workflow(title);
 `;
 
 const postgresWorkflowExecutionTableIdempotentQuery = `
-CREATE TABLE IF NOT EXISTS workflow_executions (
+CREATE TABLE IF NOT EXISTS workflow_execution (
   id TEXT PRIMARY KEY,
   workflow_id TEXT,
   steps JSONB NOT NULL DEFAULT '{}',
@@ -47,14 +47,14 @@ CREATE TABLE IF NOT EXISTS workflow_executions (
 `;
 
 const postgresWorkflowExecutionTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_id ON workflow_executions(workflow_id);
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions(status);
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_created_at ON workflow_executions(created_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflow_executions_start_at ON workflow_executions(start_at_epoch_ms);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_workflow_id ON workflow_execution(workflow_id);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_status ON workflow_execution(status);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_created_at ON workflow_execution(created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_start_at ON workflow_execution(start_at_epoch_ms);
 `;
 
 const postgresExecutionStepResultsTableIdempotentQuery = `
-CREATE TABLE IF NOT EXISTS execution_step_results (
+CREATE TABLE IF NOT EXISTS workflow_execution_step_result (
   execution_id TEXT NOT NULL,
   step_id TEXT NOT NULL,
   started_at_epoch_ms BIGINT,
@@ -62,18 +62,18 @@ CREATE TABLE IF NOT EXISTS execution_step_results (
   output JSONB,
   error JSONB,
   PRIMARY KEY (execution_id, step_id),
-  FOREIGN KEY (execution_id) REFERENCES workflow_executions(id)
+  FOREIGN KEY (execution_id) REFERENCES workflow_execution(id)
 )
 `;
 
 const postgresExecutionStepResultsTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_step_results_execution ON execution_step_results(execution_id);
-  CREATE INDEX IF NOT EXISTS idx_step_results_started ON execution_step_results(started_at_epoch_ms DESC);
-  CREATE INDEX IF NOT EXISTS idx_step_results_completed ON execution_step_results(completed_at_epoch_ms DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_step_result_execution ON workflow_execution_step_result(execution_id);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_step_result_started ON workflow_execution_step_result(started_at_epoch_ms DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_execution_step_result_completed ON workflow_execution_step_result(completed_at_epoch_ms DESC);
 `;
 
 const postgresWorkflowEventsTableIdempotentQuery = `
-CREATE TABLE IF NOT EXISTS workflow_events (
+CREATE TABLE IF NOT EXISTS workflow_event (
   id TEXT PRIMARY KEY,
   execution_id TEXT NOT NULL,
   
@@ -97,33 +97,33 @@ CREATE TABLE IF NOT EXISTS workflow_events (
   
   source_execution_id TEXT,
   
-  FOREIGN KEY (execution_id) REFERENCES workflow_executions(id)
+  FOREIGN KEY (execution_id) REFERENCES workflow_execution(id)
 )
 `;
 
 const postgresWorkflowEventsTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_events_pending 
-    ON workflow_events(execution_id, type, consumed_at, visible_at) 
+  CREATE INDEX IF NOT EXISTS idx_workflow_event_pending 
+    ON workflow_event(execution_id, type, consumed_at, visible_at) 
     WHERE consumed_at IS NULL;
   
-  CREATE INDEX IF NOT EXISTS idx_events_by_name 
-    ON workflow_events(execution_id, type, name) 
+  CREATE INDEX IF NOT EXISTS idx_workflow_event_by_name 
+    ON workflow_event(execution_id, type, name) 
     WHERE consumed_at IS NULL;
   
-  CREATE INDEX IF NOT EXISTS idx_events_output 
-    ON workflow_events(execution_id, name) 
+  CREATE INDEX IF NOT EXISTS idx_workflow_event_output 
+    ON workflow_event(execution_id, name) 
     WHERE type = 'output';
   
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_events_output_unique 
-    ON workflow_events(execution_id, type, name) 
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_workflow_event_output_unique 
+    ON workflow_event(execution_id, type, name) 
     WHERE type = 'output';
   
-  CREATE INDEX IF NOT EXISTS idx_events_source 
-    ON workflow_events(source_execution_id) 
+  CREATE INDEX IF NOT EXISTS idx_workflow_event_source 
+    ON workflow_event(source_execution_id) 
     WHERE source_execution_id IS NOT NULL;
   
-  CREATE INDEX IF NOT EXISTS idx_events_created 
-    ON workflow_events(execution_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_workflow_event_created 
+    ON workflow_event(execution_id, created_at);
     `;
 
 export const postgresQueries: WorkflowQueries = {

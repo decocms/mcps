@@ -12,22 +12,14 @@ import {
   claimExecution,
   getStepResults,
   updateExecution,
-  updateStepResult,
-  createStepResult,
 } from "../lib/execution-db.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
-import {
-  computeBranchMembership,
-  groupStepsByLevel,
-  validateNoCycles,
-} from "./utils/dag.ts";
+import { groupStepsByLevel, validateNoCycles } from "./utils/dag.ts";
 import { ExecutionNotFoundError } from "./utils/errors.ts";
 import {
   handleExecutionError,
   type ExecuteWorkflowResult,
 } from "./error-handler.ts";
-import { shouldSkipStep } from "./skip-logic.ts";
-import { executeForEach } from "./foreach.ts";
 
 export type { ExecuteWorkflowResult };
 
@@ -46,13 +38,9 @@ export async function executeWorkflow(
     const validation = validateNoCycles(steps);
     if (!validation.isValid) throw new Error(validation.error);
 
-    const branchMembership = computeBranchMembership(steps);
-    const skippedBranchRoots = new Set<string>();
     const completedSteps: string[] = [];
-    const skippedSteps: string[] = [];
 
     const stepExecutor = new StepExecutor(env, executionId);
-    const allStepResults = await getStepResults(env, executionId);
 
     for (const levelSteps of groupStepsByLevel(steps)) {
       const { completed, pending } = partitionSteps(
@@ -63,27 +51,12 @@ export async function executeWorkflow(
 
       if (!pending.length) continue;
 
-      const results = await executeLevelSteps(
-        pending,
-        ctx,
-        stepExecutor,
-        executionId,
-        env,
-        skippedBranchRoots,
-        branchMembership,
-        allStepResults,
-      );
+      const results = await executeLevelSteps(pending, ctx, stepExecutor);
 
-      processResults(
-        results,
-        ctx.stepOutputs,
-        completedSteps,
-        skippedSteps,
-        skippedBranchRoots,
-      );
+      processResults(results, ctx.stepOutputs, completedSteps);
     }
 
-    const output = buildOutput(completedSteps, skippedSteps);
+    const output = buildOutput(completedSteps);
     await updateExecution(env, executionId, {
       status: "success",
       output,
@@ -110,7 +83,6 @@ async function buildContext(
 ): Promise<RefContext & { stepOutputs: Map<string, unknown> }> {
   const stepOutputs = new Map<string, unknown>();
   const allStepResults = await getStepResults(env, executionId);
-
   for (const sr of allStepResults) {
     if (sr.completedAt && sr.output) {
       stepOutputs.set(sr.stepId, sr.output);
@@ -131,114 +103,52 @@ function partitionSteps(
 
 interface StepExecutionResult {
   step: Step;
-  skipped: boolean;
-  reason?: string;
   result?: { output?: unknown; stepId: string };
-  isForEach?: boolean;
-  outputs?: unknown[];
-  stepIds?: string[];
 }
 
 async function executeLevelSteps(
   steps: Step[],
   ctx: RefContext,
   stepExecutor: StepExecutor,
-  executionId: string,
-  env: Env,
-  skippedBranchRoots: Set<string>,
-  branchMembership: Map<string, string | null>,
-  allStepResults: { stepId: string; startedAt?: number }[],
 ): Promise<StepExecutionResult[]> {
   return Promise.all(
     steps.map(async (step) => {
-      const skipCheck = shouldSkipStep(
-        step,
-        ctx,
-        skippedBranchRoots,
-        branchMembership,
-      );
-
-      if (skipCheck.skip) {
-        await recordSkippedStep(env, executionId, step, skipCheck.reason);
-        return { step, skipped: true, reason: skipCheck.reason };
-      }
-
-      if (step.config?.loop?.for) {
-        const { outputs, stepIds } = await executeForEach(
-          step,
-          ctx,
-          stepExecutor,
-          executionId,
-        );
-        return { step, skipped: false, isForEach: true, outputs, stepIds };
-      }
-
       const input = resolveAllRefs(step.input, ctx).resolved as Record<
         string,
         unknown
       >;
-      const existingResult = allStepResults.find(
-        (sr) => sr.stepId === step.name,
-      );
-      const startedAt = existingResult?.startedAt ?? Date.now();
+      const existingResult = ctx.stepOutputs.get(step.name) as
+        | { startedAt: number }
+        | undefined;
+      const startedAt = existingResult
+        ? new Date(existingResult.startedAt).getTime()
+        : Date.now();
 
       const result = await stepExecutor.executeStep(step, input, {
         started_at_epoch_ms: startedAt,
       });
 
       if (!result.stepId) throw new Error(`Step result stepId is required`);
-      return { step, skipped: false, result };
+      return { step, result };
     }),
   );
-}
-
-async function recordSkippedStep(
-  env: Env,
-  executionId: string,
-  step: Step,
-  reason?: string,
-): Promise<void> {
-  await createStepResult(env, {
-    execution_id: executionId,
-    step_id: step.name,
-    timeout_ms: step.config?.timeoutMs ?? 30000,
-  });
-  await updateStepResult(env, executionId, step.name, {
-    output: { _skipped: true, reason },
-    completed_at_epoch_ms: Date.now(),
-  });
 }
 
 function processResults(
   results: StepExecutionResult[],
   stepOutputs: Map<string, unknown>,
   completedSteps: string[],
-  skippedSteps: string[],
-  skippedBranchRoots: Set<string>,
 ): void {
   for (const r of results) {
-    if (r.skipped) {
-      skippedSteps.push(r.step.name);
-      stepOutputs.set(r.step.name, { _skipped: true, reason: r.reason });
-
-      if (r.step.if) {
-        skippedBranchRoots.add(r.step.name);
-      }
-    } else if (r.isForEach) {
-      stepOutputs.set(r.step.name, r.outputs);
-      completedSteps.push(...r.stepIds!);
-    } else {
-      stepOutputs.set(r.step.name, r.result!.output);
-      completedSteps.push(r.result!.stepId);
-    }
+    stepOutputs.set(r.step.name, r.result!.output);
+    completedSteps.push(r.result!.stepId);
   }
 }
 
-function buildOutput(completedSteps: string[], skippedSteps: string[]) {
+function buildOutput(completedSteps: string[]) {
   return {
     _summary: true,
     completedSteps,
-    skippedSteps,
     lastStep: completedSteps[completedSteps.length - 1],
     message: "Full outputs available in step results",
   };

@@ -27,21 +27,17 @@ export async function handleExecutionError(
   err: unknown,
 ): Promise<ExecuteWorkflowResult> {
   if (err instanceof ExecutionNotFoundError) {
-    return { status: "error", error: err.message };
+    return { status: "skipped", reason: "Execution busy or not found" };
   }
 
   if (err instanceof StuckStepError) {
-    await env.EVENT_BUS.EVENT_PUBLISH({
-      type: "workflow.execution.retry",
-      deliverAt: new Date(
-        Date.now() + Number(Math.random().toPrecision(1)),
-      ).toISOString(),
-      subject: executionId,
-    });
     return { status: "error", error: err.message };
   }
 
   if (err instanceof WaitingForSignalError) {
+    await updateExecution(env, executionId, {
+      status: "enqueued",
+    });
     return { status: "waiting_for_signal", message: err.message };
   }
 

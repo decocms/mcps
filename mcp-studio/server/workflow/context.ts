@@ -35,14 +35,6 @@ export class ExecutionContext {
     }
   }
 
-  async scheduleRetry(delayMs: number): Promise<void> {
-    await this.env.EVENT_BUS.EVENT_PUBLISH({
-      type: "workflow.execution.retry",
-      deliverAt: new Date(Date.now() + delayMs).toISOString(),
-      subject: this.executionId,
-    });
-  }
-
   async getStepResults() {
     return getStepResults(this.env, this.executionId);
   }

@@ -6,7 +6,6 @@ import {
   getExecution,
   resumeExecution,
 } from "../../lib/execution-db.ts";
-import { addEvent } from "server/workflow/events.ts";
 
 export const cancelExecutionTool = (env: Env) =>
   createPrivateTool({
@@ -129,63 +128,4 @@ export const resumeExecutionTool = (env: Env) =>
       };
     },
   });
-
-export const sendSignalTool = (env: Env) =>
-  createPrivateTool({
-    id: "SEND_SIGNAL",
-    description:
-      "Send a signal to a running workflow execution. Signals allow external systems to inject data or events into workflows. The workflow can receive these signals at step boundaries using the signal API.",
-    inputSchema: z.object({
-      executionId: z.string().describe("The execution ID to send signal to"),
-      signalName: z
-        .string()
-        .describe("Name of the signal (used by workflow to filter)"),
-      payload: z
-        .unknown()
-        .optional()
-        .describe("Optional data payload to send with the signal"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      message: z.string().optional(),
-    }),
-    execute: async ({ context }) => {
-      const { executionId, signalName, payload } = context;
-
-      try {
-        await addEvent(env, {
-          execution_id: executionId,
-          type: "signal",
-          name: signalName,
-          title: signalName,
-          updated_at: new Date().toISOString(),
-          payload,
-          visible_at: Date.now(), // Immediately visible
-        });
-        await env.EVENT_BUS.EVENT_PUBLISH({
-          type: "workflow.signal.sent",
-          subject: executionId,
-          data: {
-            signalName,
-            payload,
-          },
-        });
-
-        return {
-          success: true,
-          message: `Signal '${signalName}' sent to execution ${executionId}`,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: `Failed to send signal: ${error}`,
-        };
-      }
-    },
-  });
-
-export const workflowTools = [
-  cancelExecutionTool,
-  resumeExecutionTool,
-  sendSignalTool,
-];
+export const workflowTools = [cancelExecutionTool, resumeExecutionTool];

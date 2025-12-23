@@ -4,15 +4,9 @@
  * Types for step execution results and extended step definitions.
  */
 
-import type { Step as BaseStep, CodeAction } from "@decocms/bindings/workflow";
-import type { Condition } from "../workflow/utils/ref-resolver.ts";
+import type { CodeAction, Step as BaseStep } from "@decocms/bindings/workflow";
 
-/**
- * Extended Step type that includes the optional "if" condition.
- */
-export type Step = BaseStep & {
-  if?: Condition;
-};
+export type Step = BaseStep;
 
 /**
  * Result of executing a single step.

@@ -16,6 +16,7 @@ export { StateSchema };
 
 function mergeEnvWithState(env: unknown): Env {
   if (!(env instanceof Object) || !("MESH_REQUEST_CONTEXT" in env)) {
+    console.error("Invalid environment", env);
     throw new Error("Invalid environment");
   }
   return { ...env, ...(env as any).MESH_REQUEST_CONTEXT?.state } as Env;

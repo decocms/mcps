@@ -38,7 +38,6 @@ export class StepExecutor {
     existingStepResult: ExistingStepResult,
   ): Promise<StepResult> {
     await this.ctx.checkCancelled();
-
     const stepType = getStepType(step);
     const timeoutMs = step.config?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
@@ -46,7 +45,6 @@ export class StepExecutor {
     if (stepType !== "signal") {
       await this.ctx.claimStep(step.name, timeoutMs);
     }
-
     const result = await this.executeWithRetry(
       step,
       stepType,

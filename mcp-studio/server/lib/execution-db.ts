@@ -34,7 +34,7 @@ export async function claimExecution(
       SET 
         status = 'running',
         updated_at = ?
-      WHERE id = ? AND (status = 'enqueued' OR status = 'running')
+      WHERE id = ? AND (status = 'enqueued')
       RETURNING *
     `,
     params: [now, executionId],
@@ -461,13 +461,6 @@ export async function updateStepResult(
   if (data.completed_at_epoch_ms !== undefined) {
     setClauses.push(`completed_at_epoch_ms = ?`);
     params.push(data.completed_at_epoch_ms);
-  }
-
-  if (!setClauses.length) {
-    const existing = await getStepResult(env, executionId, stepId);
-    if (!existing)
-      throw new Error(`Step result not found: ${executionId}/${stepId}`);
-    return existing;
   }
 
   params.push(executionId, stepId);

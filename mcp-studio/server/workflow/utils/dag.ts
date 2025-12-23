@@ -1,4 +1,4 @@
-import type { Condition, DAGStep } from "@decocms/bindings/workflow";
+import type { DAGStep } from "@decocms/bindings/workflow";
 
 /**
  * Get the dependencies of a step (other steps it references).
@@ -36,17 +36,6 @@ export function getStepDependencies(
   }
 
   traverse(step.input);
-  if (step.config?.loop?.for?.items) {
-    traverse(step.config.loop.for.items);
-  }
-
-  // Also consider "if" condition as a dependency
-  if (step.if) {
-    traverse(step.if.ref);
-    if (typeof step.if.value === "string") {
-      traverse(step.if.value);
-    }
-  }
 
   return [...new Set(deps)];
 }
@@ -170,112 +159,4 @@ export function validateNoCycles<T extends DAGStep>(
   }
 
   return { isValid: true };
-}
-
-/**
- * Get all refs from a condition (both ref and value if value is a @ref)
- */
-export function getConditionRefs(condition: Condition): string[] {
-  const refs: string[] = [];
-
-  // Get ref from the condition's ref field
-  const refMatch = condition.ref.match(/@(\w+)/);
-  if (refMatch?.[1]) {
-    refs.push(refMatch[1]);
-  }
-
-  // Get ref from the value if it's a @ref string
-  if (typeof condition.value === "string") {
-    const valueMatch = condition.value.match(/@(\w+)/);
-    if (valueMatch?.[1]) {
-      refs.push(valueMatch[1]);
-    }
-  }
-
-  return [...new Set(refs)];
-}
-
-/**
- * Determines which branch a step belongs to.
- * A step belongs to a branch if:
- * 1. It has an "if" condition (it's the branch root)
- * 2. It transitively depends on a step with an "if" condition
- *
- * @param steps - All steps in the workflow
- * @returns Map from step name to branch root step name (or null if not in a branch)
- */
-export function computeBranchMembership<T extends DAGStep>(
-  steps: T[],
-): Map<string, string | null> {
-  const stepNames = new Set(steps.map((s) => s.name));
-  const stepMap = new Map(steps.map((s) => [s.name, s]));
-  const branchMembership = new Map<string, string | null>();
-
-  // Build dependency map
-  const dependsOn = new Map<string, Set<string>>();
-  for (const step of steps) {
-    const deps = new Set<string>();
-
-    // Add input dependencies
-    const inputDeps = getStepDependencies(step, stepNames);
-    for (const dep of inputDeps) {
-      deps.add(dep);
-    }
-
-    // Add condition dependencies
-    if (step.if) {
-      const conditionRefs = getConditionRefs(step.if);
-      for (const ref of conditionRefs) {
-        if (stepNames.has(ref)) {
-          deps.add(ref);
-        }
-      }
-    }
-
-    dependsOn.set(step.name, deps);
-  }
-
-  // Find branch root for each step (with memoization)
-  function findBranchRoot(
-    stepName: string,
-    visited: Set<string>,
-  ): string | null {
-    if (branchMembership.has(stepName)) {
-      return branchMembership.get(stepName) ?? null;
-    }
-
-    if (visited.has(stepName)) {
-      return null; // Cycle detection
-    }
-
-    visited.add(stepName);
-    const step = stepMap.get(stepName);
-    if (!step) return null;
-
-    // If this step has an "if" condition, it's a branch root
-    if (step.if) {
-      branchMembership.set(stepName, stepName);
-      return stepName;
-    }
-
-    // Check if any dependency is in a branch
-    const deps = dependsOn.get(stepName) || new Set();
-    for (const dep of deps) {
-      const depBranchRoot = findBranchRoot(dep, new Set(visited));
-      if (depBranchRoot) {
-        branchMembership.set(stepName, depBranchRoot);
-        return depBranchRoot;
-      }
-    }
-
-    branchMembership.set(stepName, null);
-    return null;
-  }
-
-  // Compute branch membership for all steps
-  for (const step of steps) {
-    findBranchRoot(step.name, new Set());
-  }
-
-  return branchMembership;
 }

@@ -62,9 +62,6 @@ function validateStepRefs(
   // Get all @refs used in this step
   const refs = extractRefs(step.input || {});
 
-  // Check if this step has forEach config (allows @item and @index)
-  const hasForEach = !!step.config?.loop?.for;
-
   for (const ref of refs) {
     const parsed = parseAtRef(ref as `@${string}`);
 
@@ -98,18 +95,6 @@ function validateStepRefs(
 
       case "input":
         // Input refs are always valid at this stage (validated at execution time)
-        break;
-
-      case "item":
-        if (!hasForEach) {
-          errors.push({
-            type: "missing_ref",
-            step: step.name,
-            field: "input",
-            ref,
-            message: `${ref} is only valid in steps with forEach config`,
-          });
-        }
         break;
     }
   }
@@ -218,9 +203,9 @@ export async function validateWorkflow(
   await env.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
     id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
     data: {
-      configuration_scopes: [
-        ...Object.keys(currentConfigurationState).map((key) => `${key}::*`),
-      ],
+      configuration_scopes: Object.keys(currentConfigurationState).map(
+        (key) => `${key}::*`,
+      ),
       configuration_state: {
         ...currentPermissions.item.configuration_state,
         ...newConnections.reduce(

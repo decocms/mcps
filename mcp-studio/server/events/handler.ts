@@ -14,11 +14,7 @@ interface WorkflowEvent {
   id: string;
 }
 
-const WORKFLOW_EVENTS = [
-  "workflow.execution.created",
-  "workflow.execution.retry",
-  "workflow.signal.sent",
-] as const;
+const WORKFLOW_EVENTS = ["workflow.execution.created"] as const;
 
 export type WorkflowEventType = (typeof WORKFLOW_EVENTS)[number];
 
@@ -33,9 +29,9 @@ export function handleWorkflowEvents(events: WorkflowEvent[], env: Env): void {
 
     switch (event.type) {
       case "workflow.execution.created":
-      case "workflow.execution.retry":
-      case "workflow.signal.sent":
-        executeWorkflow(env, event.subject);
+        executeWorkflow(env, event.subject).catch((error: Error) => {
+          console.error(`[EXECUTE_WORKFLOW] Error: ${error}`);
+        });
         break;
     }
   }

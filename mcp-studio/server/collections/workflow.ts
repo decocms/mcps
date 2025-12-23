@@ -60,13 +60,11 @@ export function transformDbRowToExecution(
 ): WorkflowExecution & { runtime_context?: unknown } {
   const transformed = {
     ...row,
-    title: row.title ?? `Execution ${row.id}`,
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
     timeout_ms: toNumberOrNull(row.timeout_ms),
     deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
     completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
     created_at: epochMsToIsoString(row.created_at),
-    updated_at: epochMsToIsoString(row.updated_at),
     input: safeJsonParse(row.input),
     runtime_context: safeJsonParse(row.runtime_context),
   };
@@ -103,8 +101,6 @@ export function transformDbRowToEvent(
   return WorkflowEventSchema.parse({
     ...row,
     created_at: epochMsToIsoString(Number(row.created_at)),
-    title: row.title ?? `Event ${row.id}`,
-    updated_at: epochMsToIsoString(Number(row.updated_at ?? Date.now())),
     visible_at: Number(row.visible_at),
     consumed_at: row.consumed_at ? Number(row.consumed_at) : undefined,
     payload: row.payload

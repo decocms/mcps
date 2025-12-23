@@ -1,5 +1,5 @@
 import { runSQL } from "../lib/postgres.ts";
-import { postgresQueries } from "./pg/workflow.ts";
+import { postgresQueries } from "./workflow-collection.ts";
 import type { Env } from "../types/env.ts";
 
 /**

@@ -25,11 +25,15 @@ export async function executeToolStep(
 
     const { connectionId, toolName } = parsed.data;
 
+    console.log(
+      `[executeToolStep] ${Date.now()} - Creating MCP connection for ${toolName}`,
+    );
     const mcpConnection = proxyConnectionForId(connectionId, {
       token: ctx.token,
       meshUrl: ctx.meshUrl,
     });
 
+    console.log(`[executeToolStep] ${Date.now()} - Creating client stub`);
     const client = createMCPFetchStub({ connection: mcpConnection });
 
     const toolFn = (
@@ -45,9 +49,20 @@ export async function executeToolStep(
       );
     }
 
-    await ctx.scheduleRetry(step.config?.timeoutMs ?? 30000);
+    const timeoutMs = step.config?.timeoutMs ?? 30000;
 
-    const result = await toolFn(input);
+    const result = await Promise.race([
+      toolFn(input),
+      new Promise((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(`Tool ${toolName} timed out after ${timeoutMs}ms`),
+            ),
+          timeoutMs,
+        ),
+      ),
+    ]);
 
     return {
       output: result,
@@ -59,6 +74,7 @@ export async function executeToolStep(
     return {
       error: error instanceof Error ? error.message : String(error),
       startedAt,
+      completedAt: Date.now(),
       stepId: step.name,
     };
   }
