@@ -31,7 +31,6 @@ function shouldPerformDecoGen({ filePath }: { filePath: string }): boolean {
 
 const FILES_TO_REMOVE = [
   ".dev.vars",
-  "wrangler.json",
   // TODO: Support source maps
   "index.js.map",
 ];
