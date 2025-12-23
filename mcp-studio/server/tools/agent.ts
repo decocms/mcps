@@ -17,7 +17,7 @@ import {
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
 import { runSQL } from "../lib/postgres.ts";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 // ============================================================================
 // Types

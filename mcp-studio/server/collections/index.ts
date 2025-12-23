@@ -1,6 +1,6 @@
-import { runSQL } from "server/lib/postgres";
-import { postgresQueries } from "./pg/workflow";
-import { Env } from "server/main";
+import { runSQL } from "../lib/postgres.ts";
+import { postgresQueries } from "./pg/workflow.ts";
+import type { Env } from "../types/env.ts";
 
 /**
  * Collection queries for database table creation.

@@ -1,6 +1,6 @@
-import { createPrivateTool, createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
-import { Env } from "../../main.ts";
+import type { Env } from "../../types/env.ts";
 import { z } from "zod";
 import { validateWorkflow } from "../../workflow/utils/validator.ts";
 import {
@@ -172,55 +172,6 @@ export const createGetTool = (env: Env) =>
     },
   });
 
-export const createSuggestStepTool = (_env: Env) =>
-  createTool({
-    id: "COLLECTION_WORKFLOW_SUGGEST_STEP",
-    description: "Suggest a step for a workflow",
-    inputSchema: z.object({
-      purpose: z.string(),
-    }),
-    outputSchema: z.object({
-      step: z.object({
-        name: z.string(),
-        description: z.string(),
-        action: z.object({
-          type: z.string(),
-          configuration: z.record(z.unknown()),
-        }),
-        input: z.record(z.unknown()),
-      }),
-    }),
-    execute: async () => {
-      return {
-        step: {
-          name: "suggest_step",
-          description: "Suggest a step for a workflow",
-          action: {
-            type: "tool",
-            configuration: {},
-          },
-          input: {},
-        },
-      };
-    },
-  });
-
-export async function insertDefaultWorkflowIfNotExists(env: Env) {
-  try {
-    const result = await env.DATABASE.DATABASES_RUN_SQL({
-      sql: "SELECT * FROM workflows WHERE id = ? LIMIT 1",
-      params: [createDefaultWorkflow("default").id],
-    });
-    if ((result.result[0]?.results as unknown[])?.length > 0) {
-      return;
-    }
-    await insertWorkflow(env, createDefaultWorkflow("default"));
-  } catch (error) {
-    console.error("Error inserting default workflow:", error);
-    throw error;
-  }
-}
-
 export async function insertWorkflow(env: Env, data?: Workflow) {
   try {
     const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
@@ -231,7 +182,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
       ...data,
     };
 
-    await validateWorkflow(workflow);
+    await validateWorkflow(workflow, env);
 
     const stepsJson = JSON.stringify(
       workflow.steps.map((s) => ({
@@ -273,7 +224,19 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
     id: CREATE_BINDING.name,
-    description: "Create a new workflow with validation",
+    description: `Create a workflow: a sequence of steps that execute automatically with data flowing between them.
+
+Key concepts:
+- Steps run in parallel unless they reference each other's outputs via @ref
+- Use @ref syntax to wire data: @input.field, @stepName.field, @item (in loops)
+- Execution order is auto-determined from @ref dependencies
+
+Example workflow with 2 parallel fetches + 1 merge:
+{ "title": "Fetch and Merge", "steps": [
+  { "name": "fetch_users", "action": { "connectionId": "api", "toolName": "getUsers" } },
+  { "name": "fetch_orders", "action": { "connectionId": "api", "toolName": "getOrders" } },
+  { "name": "merge", "action": { "code": "export default async (i) => ({ ...i })" }, "input": { "users": "@fetch_users.data", "orders": "@fetch_orders.data" } }
+]}`,
     inputSchema: CREATE_BINDING.inputSchema,
     outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({
@@ -299,11 +262,7 @@ async function updateWorkflow(
 
   const { id, data } = context;
 
-  // Get current workflow to check token status
-  const currentWorkflow = await getWorkflow(env, id);
-  if (!currentWorkflow) {
-    throw new Error(`Workflow with id ${id} not found`);
-  }
+  await validateWorkflow(data, env);
 
   const setClauses: string[] = [];
   const params: unknown[] = [];
@@ -328,9 +287,6 @@ async function updateWorkflow(
   }
 
   params.push(id);
-
-  console.log("setClauses", setClauses);
-  console.log("params", params);
 
   const sql = `
         UPDATE workflows
@@ -406,5 +362,4 @@ export const workflowCollectionTools = [
   createInsertTool,
   createUpdateTool,
   createDeleteTool,
-  createSuggestStepTool,
 ];

@@ -19,7 +19,7 @@ import {
   SandboxContext,
 } from "../../lib/sandbox/index.ts";
 import { transform } from "sucrase";
-import { StepResult } from "./step-executor.ts";
+import type { StepResult } from "../../types/step-types.ts";
 
 export function transpileTypeScript(code: string): string {
   const result = transform(code, {
@@ -152,23 +152,25 @@ export async function executeCode(
     const defaultHandle = ctx.getProp(exportsHandle, "default");
     if (ctx.typeof(defaultHandle) !== "function") {
       return {
-        status: "error",
         error: "Transform must export a default function",
         startedAt: Date.now(),
+        stepId: stepName,
       };
     }
 
     const callHandle = await callFunction(ctx, defaultHandle, undefined, input);
     return {
-      status: "success",
+      completedAt: Date.now(),
       output: ctx.dump(ctx.unwrapResult(callHandle)),
       startedAt: Date.now(),
+      stepId: stepName,
     };
   } catch (err) {
     return {
-      status: "error",
+      completedAt: Date.now(),
       startedAt: Date.now(),
       error: err instanceof Error ? err.message : String(err),
+      stepId: stepName,
     };
   } finally {
     ctx?.dispose();

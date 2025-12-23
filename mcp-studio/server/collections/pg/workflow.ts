@@ -27,6 +27,7 @@ const postgresWorkflowExecutionTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS workflow_executions (
   id TEXT PRIMARY KEY,
   workflow_id TEXT,
+  steps JSONB NOT NULL DEFAULT '{}',
   status TEXT,
   input JSONB,
   output JSONB,

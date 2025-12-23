@@ -7,9 +7,8 @@
  * @see docs/EVENTS_AND_STREAMING.md
  */
 
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 import { WorkflowEvent } from "@decocms/bindings/workflow";
-import { executeWorkflow } from "./executor.ts";
 
 /**
  * Add an event to the workflow events table
@@ -44,36 +43,4 @@ export async function addEvent(
     id,
     created_at: new Date(created_at).toISOString(),
   } as WorkflowEvent;
-}
-
-/**
- * Send a signal to a workflow execution.
- *
- * Signals are used for human-in-the-loop patterns:
- * - Approval workflows
- * - Manual data entry
- * - External webhook triggers
- */
-export async function sendSignal(
-  env: Env,
-  executionId: string,
-  signalName: string,
-  payload?: unknown,
-): Promise<WorkflowEvent> {
-  const event = await addEvent(env, {
-    execution_id: executionId,
-    type: "signal",
-    name: signalName,
-    title: signalName,
-    updated_at: new Date().toISOString(),
-    payload,
-    visible_at: Date.now(), // Immediately visible
-  });
-  const state = (env as unknown as Env).MESH_REQUEST_CONTEXT?.state;
-  executeWorkflow({ ...env, ...state } as unknown as Env, executionId).catch(
-    (error: Error) => {
-      console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
-    },
-  );
-  return event;
 }

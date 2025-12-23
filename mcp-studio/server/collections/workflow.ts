@@ -10,10 +10,7 @@ import {
   WorkflowEventSchema,
   WorkflowExecution,
   WorkflowExecutionSchema,
-  WorkflowExecutionStepResult,
-  WorkflowExecutionStepResultSchema,
 } from "@decocms/bindings/workflow";
-import z from "zod";
 
 // ============================================================================
 // Utility Helpers
@@ -77,27 +74,26 @@ export function transformDbRowToExecution(
   return { ...parsed, runtime_context: transformed.runtime_context };
 }
 
+export interface WorkflowExecutionStepResult {
+  output?: unknown;
+  error?: unknown;
+  startedAt: number;
+  stepId: string;
+  executionId: string;
+  completedAt?: number;
+}
 /** Transform DB row to WorkflowExecutionStepResult */
 export function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
 ): WorkflowExecutionStepResult {
-  const startedAt = epochMsToIsoString(row.started_at_epoch_ms);
-  const completedAt = row.completed_at_epoch_ms
-    ? epochMsToIsoString(row.completed_at_epoch_ms)
-    : startedAt;
-
-  return WorkflowExecutionStepResultSchema.parse({
-    ...row,
-    id: row.id ?? `${row.execution_id}/${row.step_id}`,
-    title: row.title ?? `Step_${row.step_id}`,
-    created_at: startedAt,
-    updated_at: completedAt,
-    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
-    completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
-    input: safeJsonParse(row.input),
+  return {
+    startedAt: toNumberOrNull(row.started_at_epoch_ms) ?? Date.now(),
+    completedAt: toNumberOrNull(row.completed_at_epoch_ms) ?? undefined,
     output: safeJsonParse(row.output),
     error: safeJsonParse(row.error),
-  });
+    stepId: row.step_id as string,
+    executionId: row.execution_id as string,
+  };
 }
 
 /** Transform DB row to WorkflowEvent */
@@ -118,19 +114,6 @@ export function transformDbRowToEvent(
       : undefined,
   });
 }
-
-// ============================================================================
-// Schema Types
-// ============================================================================
-
-export const QueueMessageSchema = z.object({
-  executionId: z.string(),
-  retryCount: z.number().default(0),
-  enqueuedAt: z.number(),
-  authorization: z.string(),
-});
-
-export type QueueMessage = z.infer<typeof QueueMessageSchema>;
 
 // ============================================================================
 // SQL Query Types (for dialect-specific implementations)

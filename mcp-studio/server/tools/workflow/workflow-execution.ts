@@ -1,12 +1,14 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
-import { Env } from "../../main.ts";
+import type { Env } from "../../types/env.ts";
 import { z } from "zod";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 import {
   getStepResults,
   getExecution,
   listExecutions,
+  createExecution,
 } from "../../lib/execution-db.ts";
+import { getWorkflow } from "./workflow.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -28,137 +30,56 @@ if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
   );
 }
 
-const MAX_OUTPUT_SIZE_BYTES = 500_000;
+const CREATE_BINDING = WORKFLOW_BINDING.find(
+  (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_CREATE",
+);
 
-function getByteSize(value: unknown): number {
-  return new TextEncoder().encode(JSON.stringify(value)).length;
+if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
+  throw new Error(
+    "COLLECTION_WORKFLOW_EXECUTION_GET binding not found or missing schemas",
+  );
 }
 
-function truncateLargeOutput(
-  output: unknown,
-  budgetBytes: number = MAX_OUTPUT_SIZE_BYTES,
-): unknown {
-  const currentSize = getByteSize(output);
+export const createCreateTool = (env: Env) =>
+  createPrivateTool({
+    id: CREATE_BINDING?.name,
+    description: "Create a workflow execution and return the execution ID",
+    inputSchema: z.object({
+      workflow_id: z.string(),
+      input: z.record(z.unknown()),
+      start_at_epoch_ms: z.number(),
+      timeout_ms: z.number(),
+    }),
+    outputSchema: z.object({
+      id: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const workflow = await getWorkflow(env, context.workflow_id);
+      if (!workflow) {
+        throw new Error("Workflow not found");
+      }
 
-  // Already under budget
-  if (currentSize <= budgetBytes) {
-    return output;
-  }
-
-  // Handle strings - truncate to fit budget
-  if (typeof output === "string") {
-    const overhead = 2; // quotes in JSON
-    const targetBytes = Math.max(0, budgetBytes - overhead - 15); // room for "[TRUNCATED]"
-    return "[TRUNCATED]" + truncateStringToBytes(output, targetBytes);
-  }
-
-  // Handle arrays - truncate items if too many
-  if (Array.isArray(output)) {
-    if (output.length === 0) return output;
-
-    // Estimate per-item budget (rough, accounts for commas/brackets)
-    const overhead = 2; // []
-    const availableBudget = budgetBytes - overhead;
-
-    // Binary search for how many items we can keep
-    let kept = findMaxItems(output, availableBudget);
-
-    if (kept < output.length) {
-      const truncatedArray = output.slice(0, kept).map((item) => {
-        const itemBudget = Math.floor(availableBudget / kept);
-        return truncateLargeOutput(item, itemBudget);
-      });
-
-      // Add truncation marker
-      truncatedArray.push(`[... ${output.length - kept} more items truncated]`);
-      return truncatedArray;
-    }
-
-    // All items fit, but still over budget - truncate each item
-    const itemBudget = Math.floor(availableBudget / output.length);
-    return output.map((item) => truncateLargeOutput(item, itemBudget));
-  }
-
-  // Handle objects - distribute budget across properties
-  if (typeof output === "object" && output !== null) {
-    const entries = Object.entries(output);
-    if (entries.length === 0) return output;
-
-    const overhead = 2; // {}
-    const availableBudget = budgetBytes - overhead;
-
-    // First pass: measure each property
-    const measured = entries.map(([key, value]) => ({
-      key,
-      value,
-      size: getByteSize({ [key]: value }),
-    }));
-
-    const totalSize = measured.reduce((sum, m) => sum + m.size, 0);
-
-    // Distribute budget proportionally (larger props get more budget)
-    const result: Record<string, unknown> = {};
-    for (const { key, value, size } of measured) {
-      const propBudget = Math.floor((size / totalSize) * availableBudget);
-      const keyOverhead = getByteSize(key) + 3; // "key":
-      result[key] = truncateLargeOutput(
-        value,
-        Math.max(50, propBudget - keyOverhead),
-      );
-    }
-    const finalSize = getByteSize(result);
-
-    if (finalSize > budgetBytes) {
-      // Fallback: just stringify and cut
-      const str = JSON.stringify(result);
-      return {
-        _truncated: true,
-        _originalSize: finalSize,
-        _preview: str.slice(0, budgetBytes - 100) + "...",
-      };
-    }
-
-    return result;
-  }
-
-  return output;
-}
-
-function findMaxItems(arr: unknown[], budgetBytes: number): number {
-  // Quick estimate: try to fit as many items as possible
-  let size = 2; // []
-  let count = 0;
-
-  for (const item of arr) {
-    const itemSize = getByteSize(item) + 1; // +1 for comma
-    if (size + itemSize > budgetBytes) break;
-    size += itemSize;
-    count++;
-  }
-
-  return Math.max(1, count); // Keep at least 1 item
-}
-
-function truncateStringToBytes(str: string, maxBytes: number): string {
-  if (maxBytes <= 0) return "";
-
-  const encoder = new TextEncoder();
-  if (encoder.encode(str).length <= maxBytes) return str;
-
-  // Binary search for cut point
-  let low = 0,
-    high = str.length;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    if (encoder.encode(str.slice(0, mid)).length <= maxBytes) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return str.slice(0, low);
-}
+      try {
+        const { id: executionId } = await createExecution(env, {
+          workflow_id: workflow.id,
+          input: context.input,
+          start_at_epoch_ms: context.start_at_epoch_ms,
+          timeout_ms: context.timeout_ms,
+          steps: workflow.steps,
+        });
+        await env.EVENT_BUS.EVENT_PUBLISH({
+          type: "workflow.execution.created",
+          subject: executionId,
+        });
+        return {
+          id: executionId,
+        };
+      } catch (error) {
+        console.error("🚀 ~ Error creating and queueing execution:", error);
+        throw error;
+      }
+    },
+  });
 
 export const createGetTool = (env: Env) =>
   createPrivateTool({
@@ -181,18 +102,11 @@ export const createGetTool = (env: Env) =>
 
       // Join step results
       const stepResults = await getStepResults(env, id);
-      const perStepBudget = Math.floor(
-        MAX_OUTPUT_SIZE_BYTES / stepResults.length,
-      );
-      const truncatedStepResults = stepResults.map((sr) => ({
-        ...sr,
-        output: truncateLargeOutput(sr.output, perStepBudget),
-      }));
 
       return {
         item: {
           ...execution,
-          step_results: truncatedStepResults,
+          step_results: stepResults,
         },
       };
     },
@@ -225,4 +139,8 @@ export const createListTool = (env: Env) =>
     },
   });
 
-export const workflowExecutionCollectionTools = [createListTool, createGetTool];
+export const workflowExecutionCollectionTools = [
+  createListTool,
+  createGetTool,
+  createCreateTool,
+];

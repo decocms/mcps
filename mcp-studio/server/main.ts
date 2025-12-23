@@ -1,107 +1,56 @@
-import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
+/**
+ * MCP Studio Server Main Entry
+ *
+ * Runtime configuration and wiring.
+ */
+
+import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./collections/index.ts";
-import { insertDefaultWorkflowIfNotExists } from "./tools/workflow/workflow.ts";
 import { ensureAgentsTable } from "./lib/postgres.ts";
-import { EventBusBindingClient } from "@decocms/bindings";
-import { executeWorkflow } from "./workflow/executor.ts";
-import { sendSignal } from "./workflow/events.ts";
-import z from "zod";
+import { handleWorkflowEvents, workflowEventTypes } from "./events/handler.ts";
+import { StateSchema, type Env } from "./types/env.ts";
 
-export const StateSchema = z.object({
-  DATABASE: BindingOf("@deco/postgres"),
-  EVENT_BUS: BindingOf("@deco/event-bus"),
-});
+export type { Env };
+export { StateSchema };
 
-export type Env = DefaultEnv<typeof StateSchema> & {
-  DATABASE: {
-    DATABASES_RUN_SQL: (params: {
-      sql: string;
-      params: unknown[];
-    }) => Promise<{ result: { results: unknown[] }[] }>;
-  };
-  EVENT_BUS: EventBusBindingClient;
-};
-
-async function handleEvents(
-  events: { type: string; data?: unknown; subject?: string; id: string }[],
-  env: Env,
-) {
-  for (const event of events) {
-    if (event.type === "workflow.execution.created" && event.subject) {
-      await executeWorkflow(env, event.subject).catch((error: Error) => {
-        console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
-      });
-    }
-
-    if (event.type === "timer.scheduled") {
-      const data = event.data as {
-        executionId: string;
-        stepName: string;
-        wakeAtEpochMs: number;
-      };
-      await executeWorkflow(env, data.executionId).catch((error: Error) => {
-        console.error(`[EXECUTE_WORKFLOW] Error executing workflow: ${error}`);
-      });
-    }
-
-    if (event.type === "workflow.signal.sent" && event.subject) {
-      try {
-        sendSignal(
-          env,
-          event.subject,
-          (event.data as { signalName: string; payload: unknown }).signalName,
-          (event.data as { signalName: string; payload: unknown }).payload,
-        );
-      } catch (error) {
-        console.error(`[EXECUTE_WORKFLOW] Error sending signal: ${error}`);
-      }
-    }
+function mergeEnvWithState(env: unknown): Env {
+  if (!(env instanceof Object) || !("MESH_REQUEST_CONTEXT" in env)) {
+    throw new Error("Invalid environment");
   }
-  return { success: true };
+  return { ...env, ...(env as any).MESH_REQUEST_CONTEXT?.state } as Env;
 }
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   events: {
     handlers: {
-      events: [
-        "workflow.execution.created",
-        "workflow.signal.sent",
-        "timer.scheduled",
-      ],
+      events: workflowEventTypes,
       handler: async ({ events }, env) => {
-        handleEvents(events, {
-          ...env,
-          ...(env as unknown as Env).MESH_REQUEST_CONTEXT?.state,
-        } as unknown as Env).catch((error: Error) => {
+        try {
+          handleWorkflowEvents(events, mergeEnvWithState(env));
+          return { success: true };
+        } catch (error) {
           console.error(`[MAIN] Error handling events: ${error}`);
-        });
-        return { success: true };
+          return { success: false };
+        }
       },
     },
   },
   configuration: {
     onChange: async (env) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
+      const mergedEnv = mergeEnvWithState(env);
       try {
-        await ensureAgentsTable({ ...env, ...state } as unknown as Env);
-        await ensureCollections({ ...env, ...state } as unknown as Env);
-        await ensureIndexes({ ...env, ...state } as unknown as Env);
-        await insertDefaultWorkflowIfNotExists({
-          ...env,
-          ...state,
-        } as unknown as Env);
+        await ensureAgentsTable(mergedEnv);
+        await ensureCollections(mergedEnv);
+        await ensureIndexes(mergedEnv);
       } catch (error) {
         console.error("error changing configuration", error);
       }
     },
-    scopes: ["DATABASE::DATABASES_RUN_SQL", "EVENT_BUS::*"],
+    scopes: ["DATABASE::DATABASES_RUN_SQL", "EVENT_BUS::*", "CONNECTION::*"],
     state: StateSchema,
   },
-  tools: (env: Env) =>
-    tools.map((tool) =>
-      tool({ ...env, ...env.MESH_REQUEST_CONTEXT.state } as unknown as Env),
-    ),
+  tools: (env) => tools.map((tool) => tool(mergeEnvWithState(env))),
 });
 
 export default runtime;

@@ -11,6 +11,20 @@ export class WorkflowCancelledError extends Error {
   }
 }
 
+export class StuckStepError extends Error {
+  readonly code = "STUCK_STEP";
+
+  constructor(
+    public readonly executionId: string,
+    public readonly stepName: string,
+    message?: string,
+  ) {
+    super(
+      message ||
+        `Step '${stepName}' is stuck in the workflow execution ${executionId}`,
+    );
+  }
+}
 /**
  * Error thrown when there's a contention issue with step execution.
  * Another worker is processing the same step.
@@ -66,37 +80,6 @@ export class MaxRetriesExceededError extends Error {
     );
     this.name = "MaxRetriesExceededError";
     Object.setPrototypeOf(this, MaxRetriesExceededError.prototype);
-  }
-}
-
-/**
- * Error thrown when a durable sleep needs re-scheduling.
- * The workflow should be re-queued with the remaining time.
- *
- * This is a control flow mechanism, not a true error.
- * The executor catches this and returns a "sleeping" result.
- */
-export class DurableSleepError extends Error {
-  readonly code = "DURABLE_SLEEP";
-
-  constructor(
-    public readonly stepName: string,
-    public readonly wakeAtEpochMs: number,
-  ) {
-    const remainingMs = Math.max(0, wakeAtEpochMs - Date.now());
-    super(
-      `Step '${stepName}' sleeping until ${new Date(wakeAtEpochMs).toISOString()} (${remainingMs}ms remaining)`,
-    );
-    this.name = "DurableSleepError";
-    Object.setPrototypeOf(this, DurableSleepError.prototype);
-  }
-
-  get remainingMs(): number {
-    return Math.max(0, this.wakeAtEpochMs - Date.now());
-  }
-
-  get isReady(): boolean {
-    return Date.now() >= this.wakeAtEpochMs;
   }
 }
 

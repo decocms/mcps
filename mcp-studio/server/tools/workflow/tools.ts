@@ -1,48 +1,12 @@
 import z from "zod";
-import type { Env } from "../../main.ts";
+import type { Env } from "../../types/env.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
   cancelExecution,
-  createExecution,
   getExecution,
   resumeExecution,
 } from "../../lib/execution-db.ts";
-import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
-
-const START_BINDING = WORKFLOW_BINDING.find((b) => b.name === "WORKFLOW_START");
-
-if (!START_BINDING?.inputSchema || !START_BINDING?.outputSchema) {
-  throw new Error("WORKFLOW_START binding not found or missing schemas");
-}
-
-export const createAndQueueExecutionTool = (env: Env) =>
-  createPrivateTool({
-    id: START_BINDING?.name,
-    description:
-      "Create a workflow execution and immediately start processing it (serverless mode)",
-    inputSchema: START_BINDING.inputSchema,
-    outputSchema: START_BINDING.outputSchema,
-    execute: async ({ context }) => {
-      try {
-        const execution = await createExecution(env, {
-          workflow_id: context.workflowId,
-          input: context.input,
-          start_at_epoch_ms: context.startAtEpochMs,
-          timeout_ms: context.timeoutMs,
-        });
-        await env.EVENT_BUS.EVENT_PUBLISH({
-          type: "workflow.execution.created",
-          subject: execution.id,
-        });
-        return {
-          executionId: execution.id,
-        };
-      } catch (error) {
-        console.error("🚀 ~ Error creating and queueing execution:", error);
-        throw error;
-      }
-    },
-  });
+import { addEvent } from "server/workflow/events.ts";
 
 export const cancelExecutionTool = (env: Env) =>
   createPrivateTool({
@@ -183,45 +147,44 @@ export const sendSignalTool = (env: Env) =>
     }),
     outputSchema: z.object({
       success: z.boolean(),
-      signalId: z.string().optional(),
       message: z.string().optional(),
     }),
     execute: async ({ context }) => {
       const { executionId, signalName, payload } = context;
 
-      const execution = await getExecution(env, executionId);
-      if (!execution) {
-        return {
-          success: false,
-          message: `Execution ${executionId} not found`,
-        };
-      }
-
-      if (execution.status !== "running") {
-        return {
-          success: false,
-          message: `Execution ${executionId} is not running`,
-        };
-      }
-
-      await env.EVENT_BUS.EVENT_PUBLISH({
-        type: "workflow.signal.sent",
-        subject: executionId,
-        data: {
-          signalName,
+      try {
+        await addEvent(env, {
+          execution_id: executionId,
+          type: "signal",
+          name: signalName,
+          title: signalName,
+          updated_at: new Date().toISOString(),
           payload,
-        },
-      });
+          visible_at: Date.now(), // Immediately visible
+        });
+        await env.EVENT_BUS.EVENT_PUBLISH({
+          type: "workflow.signal.sent",
+          subject: executionId,
+          data: {
+            signalName,
+            payload,
+          },
+        });
 
-      return {
-        success: true,
-        message: `Signal '${signalName}' sent to execution ${executionId}`,
-      };
+        return {
+          success: true,
+          message: `Signal '${signalName}' sent to execution ${executionId}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to send signal: ${error}`,
+        };
+      }
     },
   });
 
 export const workflowTools = [
-  createAndQueueExecutionTool,
   cancelExecutionTool,
   resumeExecutionTool,
   sendSignalTool,

@@ -15,7 +15,8 @@ import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 import { validateCode } from "../steps/code-step.ts";
 import { CodeActionSchema, Step, Workflow } from "@decocms/bindings/workflow";
-import { getStepType } from "../steps/step-executor.ts";
+import type { Env } from "../../types/env.ts";
+import { getStepType } from "server/types/step-types.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([
@@ -165,30 +166,6 @@ const isExternalConnection = (connectionId: string): boolean => {
 };
 
 /**
- * Extract a scope from a step that has a tool action (connectionId + toolName)
- * Returns null for non-tool steps (code, sleep, waitForSignal)
- * Returns null for external connections (those are validated via USED_TOOLS at runtime)
- */
-const getStepScope = (step: Step): string | null => {
-  if (
-    typeof step.action === "object" &&
-    step.action !== null &&
-    "connectionId" in step.action &&
-    "toolName" in step.action
-  ) {
-    const connectionId = step.action.connectionId;
-
-    // Skip external connections - they're validated via USED_TOOLS at runtime
-    if (isExternalConnection(connectionId)) {
-      return null;
-    }
-
-    return `${connectionId}::${step.action.toolName}`;
-  }
-  return null;
-};
-
-/**
  * Extract external connection IDs from workflow steps
  * These need to be validated against USED_TOOLS.connections at save/runtime
  */
@@ -211,28 +188,10 @@ export function getWorkflowExternalConnections(workflow: Workflow): string[] {
   return Array.from(connections);
 }
 
-/**
- * Extract all unique scopes from a workflow's steps
- * Only includes steps that have tool actions with STATE BINDING keys (not external connections)
- * External connections are validated via USED_TOOLS at runtime
- *
- * @param workflow - The workflow to extract scopes from
- * @returns Array of unique scopes in format "stateBindingKey::toolName"
- */
-export function getWorkflowScopes(workflow: Workflow): string[] {
-  const scopes = new Set<string>();
-
-  for (const step of workflow.steps || []) {
-    const scope = getStepScope(step);
-    if (scope) {
-      scopes.add(scope);
-    }
-  }
-
-  return Array.from(scopes);
-}
-
-export async function validateWorkflow(workflow: Workflow): Promise<void> {
+export async function validateWorkflow(
+  workflow: Workflow,
+  env: Env,
+): Promise<void> {
   const errors: ValidationError[] = [];
   const schemas: Record<
     string,
@@ -241,8 +200,41 @@ export async function validateWorkflow(workflow: Workflow): Promise<void> {
 
   const stepNames = new Set<string>();
   const duplicateNames = new Set<string>();
+  const currentPermissions = await env.CONNECTION.COLLECTION_CONNECTIONS_GET({
+    id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
+  });
+  const externalConnections = getWorkflowExternalConnections(workflow);
 
   const availableSteps = new Map<string, number>();
+  const currentConfigurationState = currentPermissions.item.configuration_state;
+  console.log({ currentConfigurationState });
+  const newConnections = externalConnections.filter(
+    (connectionId) =>
+      !currentPermissions.item.configuration_state[
+        connectionId as keyof typeof currentPermissions.item.configuration_state
+      ],
+  );
+
+  await env.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
+    id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
+    data: {
+      configuration_scopes: [
+        ...Object.keys(currentConfigurationState).map((key) => `${key}::*`),
+      ],
+      configuration_state: {
+        ...currentPermissions.item.configuration_state,
+        ...newConnections.reduce(
+          (acc, connectionId) => ({
+            ...acc,
+            [connectionId]: {
+              value: connectionId,
+            },
+          }),
+          {},
+        ),
+      },
+    },
+  });
 
   // Steps is now a flat array (no phases)
   const steps = workflow.steps || [];

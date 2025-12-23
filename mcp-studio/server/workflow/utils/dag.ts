@@ -1,33 +1,6 @@
 import type { Condition, DAGStep } from "@decocms/bindings/workflow";
 
 /**
- * Extract all @ref references from a value recursively.
- * Finds patterns like @stepName or @stepName.field
- *
- * @param input - Any value that might contain @ref strings
- * @returns Array of unique reference names (without @ prefix)
- */
-export function getAllRefs(input: unknown): string[] {
-  const refs: string[] = [];
-
-  function traverse(value: unknown) {
-    if (typeof value === "string") {
-      const matches = value.match(/@(\w+)/g);
-      if (matches) {
-        refs.push(...matches.map((m) => m.substring(1))); // Remove @ prefix
-      }
-    } else if (Array.isArray(value)) {
-      value.forEach(traverse);
-    } else if (typeof value === "object" && value !== null) {
-      Object.values(value).forEach(traverse);
-    }
-  }
-
-  traverse(input);
-  return [...new Set(refs)].sort(); // Dedupe and sort for consistent results
-}
-
-/**
  * Get the dependencies of a step (other steps it references).
  * Only returns dependencies that are actual step names (filters out built-ins like "item", "index", "input").
  *
@@ -147,44 +120,6 @@ export function groupStepsByLevel<T extends DAGStep>(steps: T[]): T[][] {
 }
 
 /**
- * Get the dependency signature for a step (for grouping steps with same deps).
- *
- * @param step - The step to get signature for
- * @returns Comma-separated sorted list of dependencies
- */
-export function getRefSignature(step: DAGStep): string {
-  const inputRefs = getAllRefs(step.input);
-  const forEachRefs = step.config?.loop?.for?.items
-    ? getAllRefs(step.config.loop.for.items)
-    : [];
-  const allRefs = [...new Set([...inputRefs, ...forEachRefs])].sort();
-  return allRefs.join(",");
-}
-
-/**
- * Build a dependency graph for visualization.
- * Returns edges as [fromStep, toStep] pairs.
- *
- * @param steps - Array of steps
- * @returns Array of [source, target] pairs representing edges
- */
-export function buildDependencyEdges<T extends DAGStep>(
-  steps: T[],
-): [string, string][] {
-  const stepNames = new Set(steps.map((s) => s.name));
-  const edges: [string, string][] = [];
-
-  for (const step of steps) {
-    const deps = getStepDependencies(step, stepNames);
-    for (const dep of deps) {
-      edges.push([dep, step.name]);
-    }
-  }
-
-  return edges;
-}
-
-/**
  * Validate that there are no cycles in the step dependencies.
  *
  * @param steps - Array of steps to validate
@@ -235,24 +170,6 @@ export function validateNoCycles<T extends DAGStep>(
   }
 
   return { isValid: true };
-}
-
-// ============================================
-// Branch Detection Utilities
-// ============================================
-
-/**
- * Get the step that a conditional step's "if" condition references.
- * Returns the step name from the @ref in the condition.
- *
- * @param step - The step with an if condition
- * @returns The step name referenced in the condition, or null if not found
- */
-export function getConditionDependency(step: DAGStep): string | null {
-  if (!step.if?.ref) return null;
-
-  const match = step.if.ref.match(/@(\w+)/);
-  return match?.[1] ?? null;
 }
 
 /**
@@ -361,34 +278,4 @@ export function computeBranchMembership<T extends DAGStep>(
   }
 
   return branchMembership;
-}
-
-/**
- * Get all steps that are branch roots (have an "if" condition)
- */
-export function getBranchRoots<T extends DAGStep>(steps: T[]): T[] {
-  return steps.filter((step) => step.if !== undefined);
-}
-
-/**
- * Get all steps that belong to a specific branch
- */
-export function getStepsInBranch<T extends DAGStep>(
-  steps: T[],
-  branchRootName: string,
-): T[] {
-  const membership = computeBranchMembership(steps);
-  return steps.filter((step) => membership.get(step.name) === branchRootName);
-}
-
-/**
- * Format a condition for display
- */
-export function formatCondition(condition: Condition): string {
-  const operator = condition.operator || "=";
-  const valueStr =
-    typeof condition.value === "string"
-      ? condition.value
-      : JSON.stringify(condition.value);
-  return `${condition.ref} ${operator} ${valueStr}`;
 }

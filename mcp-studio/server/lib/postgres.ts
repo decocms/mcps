@@ -5,7 +5,7 @@
  * and handles automatic table creation for the agents collection.
  */
 
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 /**
  * Run a SQL query using the DATABASE binding
