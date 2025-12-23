@@ -3,9 +3,8 @@
  *
  * Implements COLLECTION_REGISTRY_LIST and COLLECTION_REGISTRY_GET tools
  *
- * Supports three modes:
- * - DATABASE_MODE (default): Uses PostgreSQL indexed data for fast queries
- * - ALLOWLIST_MODE: Uses pre-generated allowlist for accurate pagination (fallback)
+ * Supports two modes:
+ * - ALLOWLIST_MODE: Uses pre-generated allowlist for accurate pagination
  * - DYNAMIC_MODE: Filters on-the-fly (may lose items between pages)
  */
 
@@ -23,15 +22,6 @@ import {
 } from "../lib/registry-client.ts";
 import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
 import { ALLOWED_SERVERS } from "../lib/allowlist.ts";
-import {
-  getApps,
-  getAppById,
-  getAppByName,
-  getAppVersions,
-  getSyncStats,
-  isDatabaseAvailable,
-  type McpAppRecord,
-} from "../lib/postgres.ts";
 import {
   isServerVerified,
   createMeshMeta,
@@ -59,12 +49,6 @@ function injectMeshMeta(
 // ============================================================================
 // Configuration
 // ============================================================================
-
-/**
- * Enable database mode for indexed queries
- * Falls back to allowlist mode if database is empty
- */
-const USE_DATABASE_MODE = true;
 
 /**
  * Enable allowlist mode for accurate pagination
@@ -122,9 +106,23 @@ const WhereExpressionSchema: z.ZodType<unknown> = z.lazy(() =>
   ]),
 );
 
-const WhereSchema = WhereExpressionSchema.describe(
-  "Standard WhereExpression filter (converted to simple search internally)",
-);
+/**
+ * Legacy simplified where schema for easier filtering
+ */
+const LegacyWhereSchema = z.object({
+  appName: z.string().optional().describe("Filter by app name"),
+  title: z.string().optional().describe("Filter by server title/name"),
+  binder: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe("Filter by binding type(s)"),
+});
+
+const WhereSchema = z
+  .union([WhereExpressionSchema, LegacyWhereSchema])
+  .describe(
+    "Filter expression (supports WhereExpression or legacy {appName, title, binder})",
+  );
 
 /**
  * Input schema para LIST
@@ -192,20 +190,33 @@ const GetOutputSchema = z.object({
 // ============================================================================
 
 /**
- * Extract search term from WhereExpression
+ * Extract search term from WhereExpression or Legacy format
  * Since API only supports simple text search, we extract the first value found
  */
 function extractSearchTerm(where: unknown): string | undefined {
   if (!where || typeof where !== "object") return undefined;
 
   const w = where as {
+    // WhereExpression fields
     operator?: string;
     conditions?: unknown[];
     field?: string[];
     value?: unknown;
+    // Legacy fields
+    appName?: string;
+    title?: string;
+    binder?: string | string[];
   };
 
-  // Field comparison - extract the value
+  // Legacy format - check for appName or title first
+  if (w.appName) {
+    return w.appName;
+  }
+  if (w.title) {
+    return w.title;
+  }
+
+  // WhereExpression format - Field comparison - extract the value
   if (w.field && w.value !== undefined) {
     return String(w.value);
   }
@@ -224,72 +235,6 @@ function extractSearchTerm(where: unknown): string | undefined {
 // ============================================================================
 // Tool Implementations
 // ============================================================================
-
-/**
- * Convert McpAppRecord to the output format expected by the tool
- */
-function appRecordToOutput(app: McpAppRecord): {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  server: unknown;
-  _meta: unknown;
-} {
-  return {
-    id: app.id,
-    title: app.title ?? app.name,
-    created_at: app.published_at ?? app.synced_at,
-    updated_at: app.updated_at ?? app.synced_at,
-    server: app.server_data,
-    _meta: injectMeshMeta(app.meta_data, app.name),
-  };
-}
-
-/**
- * DATABASE MODE: Query apps from PostgreSQL indexed database
- * This is the fastest and most flexible mode
- */
-async function listServersFromDatabase(
-  env: Env,
-  offset: number,
-  limit: number,
-  searchTerm: string | undefined,
-  filters: {
-    hasRemotes?: boolean;
-    hasPackages?: boolean;
-    isLatest?: boolean;
-    isOfficial?: boolean;
-  } = {},
-): Promise<{
-  items: Array<{
-    id: string;
-    title: string;
-    created_at: string;
-    updated_at: string;
-    server: unknown;
-    _meta: unknown;
-  }>;
-  nextCursor?: string;
-  total: number;
-}> {
-  const { apps, total } = await getApps(env, {
-    limit,
-    offset,
-    search: searchTerm,
-    ...filters,
-  });
-
-  const items = apps.map(appRecordToOutput);
-
-  // Calculate next cursor
-  const hasMore = offset + limit < total;
-
-  if (hasMore) {
-    return { items, nextCursor: String(offset + limit), total };
-  }
-  return { items, total };
-}
 
 /**
  * ALLOWLIST MODE: Fetch servers by name from the pre-generated allowlist
@@ -490,50 +435,6 @@ export const createListRegistryTool = (env: Env) =>
         // Extract search term from where clause
         const apiSearch = where ? extractSearchTerm(where) : undefined;
 
-        // Try database mode first (for official registry only)
-        if (USE_DATABASE_MODE && !registryUrl && isDatabaseAvailable(env)) {
-          try {
-            // Check if database has data
-            const stats = await getSyncStats(env);
-
-            if (stats.totalApps > 0) {
-              // DATABASE MODE: Use indexed PostgreSQL data
-              const startIndex = cursor ? parseInt(cursor, 10) : 0;
-
-              // Extract boolean filters from where clause if present
-              const filters: {
-                hasRemotes?: boolean;
-                hasPackages?: boolean;
-                isLatest?: boolean;
-                isOfficial?: boolean;
-              } = {};
-
-              // By default, filter by latest version
-              if (version === "latest") {
-                filters.isLatest = true;
-              }
-
-              const result = await listServersFromDatabase(
-                env,
-                startIndex,
-                limit,
-                apiSearch,
-                filters,
-              );
-
-              return {
-                items: result.items,
-                nextCursor: result.nextCursor,
-              };
-            }
-          } catch {
-            // Database not available or error - fall through to other modes
-            console.warn(
-              "Database mode failed, falling back to allowlist/dynamic mode",
-            );
-          }
-        }
-
         // Use allowlist mode for official registry (no custom registryUrl)
         const useAllowlist = USE_ALLOWLIST_MODE && !registryUrl;
 
@@ -590,31 +491,7 @@ export const createGetRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Try database first (for official registry)
-        if (USE_DATABASE_MODE && !registryUrl && isDatabaseAvailable(env)) {
-          try {
-            let app: McpAppRecord | null = null;
-
-            if (version) {
-              // Get specific version by full ID
-              app = await getAppById(env, id);
-            } else {
-              // Get latest version by name
-              app = await getAppByName(env, name);
-            }
-
-            if (app) {
-              return {
-                server: app.server_data,
-                _meta: injectMeshMeta(app.meta_data, app.name),
-              };
-            }
-          } catch {
-            // Database error - fall through to API
-          }
-        }
-
-        // Fallback to API
+        // Fetch from API
         const server = await getServer(name, version, registryUrl);
 
         if (!server) {
@@ -667,24 +544,7 @@ export const createVersionsRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Try database first (for official registry)
-        if (USE_DATABASE_MODE && !registryUrl && isDatabaseAvailable(env)) {
-          try {
-            const dbVersions = await getAppVersions(env, name);
-
-            if (dbVersions.length > 0) {
-              const versions = dbVersions.map(appRecordToOutput);
-              return {
-                versions,
-                count: versions.length,
-              };
-            }
-          } catch {
-            // Database error - fall through to API
-          }
-        }
-
-        // Fallback to API
+        // Fetch from API
         const serverVersions = await getServerVersions(name, registryUrl);
 
         // Map servers to output format with ID and mesh metadata
