@@ -14,11 +14,9 @@ import {
   createGetRegistryTool,
   createVersionsRegistryTool,
 } from "./registry-binding.ts";
-import { createSyncTool } from "./sync-tool.ts";
 
 export const tools = [
   createListRegistryTool,
   createGetRegistryTool,
   createVersionsRegistryTool,
-  createSyncTool,
 ];
