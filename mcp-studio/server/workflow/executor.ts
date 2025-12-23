@@ -84,8 +84,8 @@ async function buildContext(
   const stepOutputs = new Map<string, unknown>();
   const allStepResults = await getStepResults(env, executionId);
   for (const sr of allStepResults) {
-    if (sr.completedAt && sr.output) {
-      stepOutputs.set(sr.stepId, sr.output);
+    if (sr.completed_at_epoch_ms && sr.output) {
+      stepOutputs.set(sr.step_id, sr.output);
     }
   }
 
