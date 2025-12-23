@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "hyperdx",
+  "friendlyName": "HyperDX",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-hyperdx.decocache.com/mcp"
+  },
+  "description": "Query observability data from HyperDX. Search logs, metrics, and traces with time series charts and pattern analysis.",
+  "icon": "https://hyperdx.io/Icon-192.png",
+  "unlisted": true,
+  "metadata": {
+    "categories": ["Observability"],
+    "official": false,
+    "tags": ["hyperdx", "observability", "logs", "metrics", "traces", "monitoring", "debugging", "apm", "opentelemetry"],
+    "short_description": "Query observability data from HyperDX. Search logs, metrics, and traces with time series charts and pattern analysis.",
+    "mesh_description": "The HyperDX MCP provides deep integration with HyperDX, an open-source observability platform for developers. This MCP enables AI agents to search and analyze logs, query metrics, and explore distributed traces from applications instrumented with OpenTelemetry. It supports flexible log search with field-based filtering (level, service, site, etc.), time series chart queries with multiple aggregation functions (count, avg, sum, p50, p95, p99, etc.), and grouping by any field for detailed breakdowns. The integration allows for automated debugging workflows, error pattern detection, performance analysis, and incident investigation. Use it to search for errors across services, analyze request patterns, monitor application health, and correlate events across your distributed system. Ideal for developers, SREs, and DevOps teams who need to quickly investigate issues, understand system behavior, or build automated observability workflows. Supports both environment variable and Bearer token authentication for flexible deployment."
+  }
+}
