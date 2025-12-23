@@ -1,0 +1,9 @@
+{
+  "scopeName": "deco",
+  "name": "hyperdx",
+  "friendlyName": "HyperDX",
+  "description": "Query observability data from HyperDX. Search logs, metrics, and traces with time series charts and pattern analysis.",
+  "icon": "https://hyperdx.io/Icon-192.png",
+  "unlisted": true
+}
+
