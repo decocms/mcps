@@ -7,6 +7,13 @@ export const BLACKLISTED_SERVERS: string[] = [
   // Add server names here that you want to exclude
   // Examples:
   // "com.example/broken-server",
+  "ai.explorium/mcp-explorium",
+  "ai.gomarble/mcp-api",
+  "ai.seltz/seltz-ai-seltz-mcp",
+  "ai.shawndurrani/mcp-merchant",
+  "ai.shawndurrani/mcp-registry",
+  "ai.kubit/mcp-server",
+  "ai.meminal/meminal",
   "com.apify/apify-mcp-server",
   "ai.vendor/non-functional-mcp",
   "ai.smithery/arjunkmrm-ahoy",

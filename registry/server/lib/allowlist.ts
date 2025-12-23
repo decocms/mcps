@@ -10,16 +10,9 @@
 
 export const ALLOWED_SERVERS: string[] = [
   "ai.exa/exa",
-  "ai.explorium/mcp-explorium",
-  "ai.gomarble/mcp-api",
   "ai.klavis/strata",
-  "ai.kubit/mcp-server",
   "ai.mcpanalytics/analytics",
-  "ai.meminal/meminal",
   "ai.packmind/mcp-server",
-  "ai.seltz/seltz-ai-seltz-mcp",
-  "ai.shawndurrani/mcp-merchant",
-  "ai.shawndurrani/mcp-registry",
   "ai.smithery/222wcnm-bilistalkermcp",
   "ai.smithery/Aman-Amith-Shastry-scientific_computation_mcp",
   "ai.smithery/Artin0123-gemini-image-mcp-server",
