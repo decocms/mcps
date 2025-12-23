@@ -8,8 +8,8 @@ import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./collections/index.ts";
 import { ensureAgentsTable } from "./lib/postgres.ts";
-import { handleWorkflowEvents, workflowEventTypes } from "./events/handler.ts";
 import { StateSchema, type Env } from "./types/env.ts";
+import { WORKFLOW_EVENTS, handleWorkflowEvents } from "./events/handler.ts";
 
 export type { Env };
 export { StateSchema };
@@ -25,7 +25,7 @@ function mergeEnvWithState(env: unknown): Env {
 const runtime = withRuntime<Env, typeof StateSchema>({
   events: {
     handlers: {
-      events: workflowEventTypes,
+      events: [...WORKFLOW_EVENTS] as string[],
       handler: async ({ events }, env) => {
         try {
           handleWorkflowEvents(events, mergeEnvWithState(env));

@@ -47,6 +47,18 @@ export class ExecutionContext {
     });
   }
 
+  async completeStep(
+    stepId: string,
+    output?: unknown,
+    error?: string,
+  ): Promise<void> {
+    await updateStepResult(this.env, this.executionId, stepId, {
+      output,
+      error,
+      completed_at_epoch_ms: Date.now(),
+    });
+  }
+
   async updateStep(
     stepId: string,
     data: {

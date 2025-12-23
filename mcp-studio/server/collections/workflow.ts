@@ -54,10 +54,10 @@ export const safeJsonParse = (value: unknown): unknown => {
 // Row Transformers
 // ============================================================================
 
-/** Transform DB row to WorkflowExecution (with optional runtime_context) */
+/** Transform DB row to WorkflowExecution */
 export function transformDbRowToExecution(
   row: Record<string, unknown> = {},
-): WorkflowExecution & { runtime_context?: unknown } {
+): WorkflowExecution {
   const transformed = {
     ...row,
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
@@ -65,32 +65,34 @@ export function transformDbRowToExecution(
     deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
     completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
     created_at: epochMsToIsoString(row.created_at),
+    updated_at: epochMsToIsoString(row.created_at),
+    title: (row.title ?? "") as string,
     input: safeJsonParse(row.input),
-    runtime_context: safeJsonParse(row.runtime_context),
   };
   const parsed = WorkflowExecutionSchema.parse(transformed);
-  return { ...parsed, runtime_context: transformed.runtime_context };
+  return { ...parsed };
 }
 
 export interface WorkflowExecutionStepResult {
+  started_at_epoch_ms: number;
+  completed_at_epoch_ms?: number;
   output?: unknown;
   error?: unknown;
-  startedAt: number;
-  stepId: string;
-  executionId: string;
-  completedAt?: number;
+  step_id: string;
+  execution_id: string;
 }
 /** Transform DB row to WorkflowExecutionStepResult */
 export function transformDbRowToStepResult(
   row: Record<string, unknown> = {},
 ): WorkflowExecutionStepResult {
   return {
-    startedAt: toNumberOrNull(row.started_at_epoch_ms) ?? Date.now(),
-    completedAt: toNumberOrNull(row.completed_at_epoch_ms) ?? undefined,
+    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms) ?? Date.now(),
+    completed_at_epoch_ms:
+      toNumberOrNull(row.completed_at_epoch_ms) ?? undefined,
     output: safeJsonParse(row.output),
     error: safeJsonParse(row.error),
-    stepId: row.step_id as string,
-    executionId: row.execution_id as string,
+    step_id: row.step_id as string,
+    execution_id: row.execution_id as string,
   };
 }
 

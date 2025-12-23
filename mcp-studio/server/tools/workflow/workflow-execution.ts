@@ -105,7 +105,7 @@ export const createGetTool = (env: Env) =>
       return {
         item: {
           ...execution,
-          step_results: stepResults,
+          step_results: stepResults ?? [],
         },
       };
     },

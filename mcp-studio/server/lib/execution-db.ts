@@ -19,7 +19,6 @@ import {
   WorkflowExecutionStepResult,
 } from "../collections/workflow.ts";
 import { runSQL } from "./postgres.ts";
-import { StuckStepError } from "server/workflow/utils/errors.ts";
 
 export async function claimExecution(
   env: Env,
@@ -30,7 +29,7 @@ export async function claimExecution(
   // Atomic claim: only succeeds if status is 'enqueued'
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
-      UPDATE workflow_executions
+      UPDATE workflow_execution
       SET 
         status = 'running',
         updated_at = ?
@@ -59,7 +58,7 @@ export async function getExecution(
   id: string,
 ): Promise<WorkflowExecution | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflow_executions WHERE id = ? LIMIT 1",
+    sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
     params: [id],
   });
 
@@ -93,7 +92,7 @@ export async function createExecution(
   const stepsJson = JSON.stringify(data.steps);
   const result = await runSQL<{ id: string }>(
     env,
-    `INSERT INTO workflow_executions (id, workflow_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms, steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    `INSERT INTO workflow_execution (id, workflow_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms, steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     [
       id,
       data.workflow_id,
@@ -166,7 +165,7 @@ export async function updateExecution(
 
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
-      UPDATE workflow_executions
+      UPDATE workflow_execution
       SET ${setClauses.join(", ")}
       WHERE id = ?
       RETURNING id, status, output, error, completed_at_epoch_ms
@@ -212,7 +211,7 @@ export async function cancelExecution(
   // Only cancel if currently enqueued or running
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
-      UPDATE workflow_executions
+      UPDATE workflow_execution
       SET 
         status = 'cancelled',
         updated_at = ?
@@ -250,28 +249,13 @@ export async function resumeExecution(
 ): Promise<WorkflowExecution | null> {
   const now = Date.now();
 
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      UPDATE workflow_executions
-      SET 
-        status = 'enqueued',
-        updated_at = ?,
-        completed_at_epoch_ms = NULL
-      WHERE id = ? AND status = 'cancelled'
-      RETURNING *
-    `,
-    params: [now, executionId],
-  });
+  const result = await runSQL<WorkflowExecution>(
+    env,
+    `UPDATE workflow_execution SET status = 'enqueued', updated_at = ?, completed_at_epoch_ms = NULL WHERE id = ? AND status = 'cancelled' RETURNING *`,
+    [now, executionId],
+  );
 
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
-
-  if (!row) {
-    return null;
-  }
-
-  return transformDbRowToExecution(row);
+  return result[0] ?? null;
 }
 
 /**
@@ -307,34 +291,25 @@ export async function listExecutions(
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
 
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      SELECT * FROM workflow_executions
+  const result = await runSQL<Record<string, unknown>[]>(
+    env,
+    `
+      SELECT * FROM workflow_execution
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
     `,
-    params: [...params, limit, offset],
-  });
-
-  const countResult = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT COUNT(*) as count FROM workflow_executions ${whereClause}`,
-    params,
-  });
-
-  const totalCount = parseInt(
-    (countResult.result[0]?.results?.[0] as { count: string })?.count || "0",
-    10,
+    [...params, limit, offset],
   );
 
-  const items = (result.result[0]?.results || []).map((row: unknown) =>
-    transformDbRowToExecution(row as Record<string, unknown>),
-  );
+  const totalCount = result.length;
 
   return {
-    items,
+    items: result.map((row) =>
+      transformDbRowToExecution(row as unknown as Record<string, unknown>),
+    ),
     totalCount,
-    hasMore: offset + items.length < totalCount,
+    hasMore: offset + result.length < totalCount,
   };
 }
 
@@ -348,13 +323,16 @@ export async function getStepResults(
 ): Promise<WorkflowExecutionStepResult[]> {
   const whereClause = executionId ? `WHERE execution_id = ?` : "";
   const params = executionId ? [executionId] : [];
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM execution_step_results ${whereClause}`,
+  const result = await runSQL<WorkflowExecutionStepResult>(
+    env,
+    `SELECT * FROM workflow_execution_step_result ${whereClause} ORDER BY started_at_epoch_ms DESC`,
     params,
-  });
+  );
 
-  return (result.result[0]?.results || []).map((row: unknown) =>
-    transformDbRowToStepResult(row as Record<string, unknown>),
+  return (
+    result.map((row) =>
+      transformDbRowToStepResult(row as unknown as Record<string, unknown>),
+    ) ?? []
   );
 }
 
@@ -366,15 +344,13 @@ export async function getStepResult(
   executionId: string,
   stepId: string,
 ): Promise<WorkflowExecutionStepResult | null> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM execution_step_results WHERE execution_id = ? AND step_id = ?`,
-    params: [executionId, stepId],
-  });
+  const result = await runSQL<WorkflowExecutionStepResult>(
+    env,
+    `SELECT * FROM workflow_execution_step_result WHERE execution_id = ? AND step_id = ?`,
+    [executionId, stepId],
+  );
 
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
-  return row ? transformDbRowToStepResult(row) : null;
+  return result[0] ?? null;
 }
 
 export interface CreateStepResultOutcome {
@@ -399,34 +375,26 @@ export async function createStepResult(
     execution_id: string;
     step_id: string;
     timeout_ms: number;
+    output?: unknown;
+    error?: string;
+    completed_at_epoch_ms?: number;
   },
-): Promise<void> {
+): Promise<WorkflowExecutionStepResult> {
   // Try to INSERT - if UNIQUE conflict, RETURNING gives nothing
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      INSERT INTO execution_step_results
-      (execution_id, step_id, started_at_epoch_ms)
-      VALUES (?, ?, ?)
-      ON CONFLICT (execution_id, step_id) DO UPDATE 
-        SET started_at_epoch_ms = EXCLUDED.started_at_epoch_ms
-        WHERE execution_step_results.completed_at_epoch_ms IS NULL
-          AND execution_step_results.started_at_epoch_ms < ?     
-      RETURNING *
-    `,
-    params: [
+  const result = await runSQL<WorkflowExecutionStepResult>(
+    env,
+    `INSERT INTO workflow_execution_step_result (execution_id, step_id, started_at_epoch_ms, completed_at_epoch_ms, output, error) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (execution_id, step_id) DO NOTHING RETURNING *`,
+    [
       data.execution_id,
       data.step_id,
       Date.now(),
-      Date.now() - data.timeout_ms,
+      data.completed_at_epoch_ms ?? null,
+      JSON.stringify(data.output),
+      JSON.stringify(data.error),
     ],
-  });
+  );
 
-  // If we got a row back, we won the race (created it)
-  if (result.result[0]?.results?.length) {
-    return;
-  }
-
-  throw new StuckStepError(data.execution_id, data.step_id);
+  return result[0];
 }
 
 /**
@@ -446,12 +414,8 @@ export async function updateStepResult(
   const setClauses: string[] = [];
   const params: unknown[] = [];
 
-  if (data.output !== undefined) {
-    setClauses.push(`output = ?::jsonb`); // Add ::jsonb cast
-    params.push(JSON.stringify(data.output));
-  }
   if (data.error !== undefined) {
-    setClauses.push(`error = ?::jsonb`); // Add ::jsonb cast
+    setClauses.push(`error = ?::jsonb`);
     params.push(JSON.stringify(data.error));
   }
   if (data.started_at_epoch_ms !== undefined) {
@@ -462,30 +426,35 @@ export async function updateStepResult(
     setClauses.push(`completed_at_epoch_ms = ?`);
     params.push(data.completed_at_epoch_ms);
   }
+  if (data.output !== undefined) {
+    setClauses.push(`output = ?::jsonb`);
+    params.push(JSON.stringify(data.output));
+  }
+
+  if (setClauses.length === 0) {
+    throw new Error("No fields to update");
+  }
 
   params.push(executionId, stepId);
 
   const sql = `
-    UPDATE execution_step_results
+    UPDATE workflow_execution_step_result
     SET ${setClauses.join(", ")}
-    WHERE execution_id = ? AND step_id = ? AND completed_at_epoch_ms IS NULL
+    WHERE execution_id = ?::text AND step_id = ?::text AND completed_at_epoch_ms IS NULL
     RETURNING *
   `;
 
+  console.log("Updating step result", sql, params);
+
   // Don't overwrite a completed step
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params,
-  });
+  const result = await runSQL<WorkflowExecutionStepResult>(env, sql, params);
 
   // If no rows updated, the step was already completed (we lost the race)
-  if (!result.result[0]?.results?.length) {
+  if (!result.length) {
     const existing = await getStepResult(env, executionId, stepId);
     if (existing) return existing;
     throw new Error(`Step result not found: ${executionId}/${stepId}`);
   }
 
-  return transformDbRowToStepResult(
-    result.result[0]?.results?.[0] as Record<string, unknown>,
-  );
+  return result[0];
 }

@@ -105,7 +105,7 @@ export const createListTool = (env: Env) =>
       const orderByClause = buildOrderByClause(orderBy);
 
       const sql = `
-          SELECT * FROM workflows
+          SELECT * FROM workflow
           ${whereClause}
           ${orderByClause}
           LIMIT ? OFFSET ?
@@ -116,7 +116,7 @@ export const createListTool = (env: Env) =>
         params: [...params, limit, offset],
       });
 
-      const countQuery = `SELECT COUNT(*) as count FROM workflows ${whereClause}`;
+      const countQuery = `SELECT COUNT(*) as count FROM workflow ${whereClause}`;
       const countResult = await env.DATABASE.DATABASES_RUN_SQL({
         sql: countQuery,
         params,
@@ -143,7 +143,7 @@ export async function getWorkflow(
   id: string,
 ): Promise<Workflow | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflows WHERE id = ? LIMIT 1",
+    sql: "SELECT * FROM workflow WHERE id = ? LIMIT 1",
     params: [id],
   });
   const item = result.result[0]?.results?.[0] || null;
@@ -197,7 +197,7 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
       if (typeof val === "number") return String(val);
       return `'${String(val).replace(/'/g, "''")}'`;
     };
-    const sql = `INSERT INTO workflows (id, title, created_at, updated_at, created_by, updated_by, description, steps) VALUES (${escapeForSql(
+    const sql = `INSERT INTO workflow (id, title, created_at, updated_at, created_by, updated_by, description, steps) VALUES (${escapeForSql(
       workflow.id,
     )}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(
       now,
@@ -289,7 +289,7 @@ async function updateWorkflow(
   params.push(id);
 
   const sql = `
-        UPDATE workflows
+        UPDATE workflow
         SET ${setClauses.join(", ")}
         WHERE id = ?
         RETURNING *
@@ -345,7 +345,7 @@ export const createDeleteTool = (env: Env) =>
       const { id } = context;
 
       await env.DATABASE.DATABASES_RUN_SQL({
-        sql: "DELETE FROM workflows WHERE id = ?",
+        sql: "DELETE FROM workflow WHERE id = ?",
         params: [id],
       });
 

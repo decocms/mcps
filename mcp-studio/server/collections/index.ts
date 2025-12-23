@@ -6,7 +6,7 @@ import type { Env } from "../types/env.ts";
  * Collection queries for database table creation.
  *
  * Note: Only 'agents' and 'workflows' are true collections with MCP tools.
- * 'workflow_executions', 'execution_step_results', and 'workflow_events'
+ * 'workflow_execution', 'workflow_execution_step_result', and 'workflow_event'
  * are internal engine tables managed by direct database functions.
  */
 const collectionsQueries = {

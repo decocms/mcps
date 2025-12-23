@@ -22,7 +22,7 @@ export async function addEvent(
 
   await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
-      INSERT INTO workflow_events 
+      INSERT INTO workflow_event 
       (id, execution_id, type, name, payload, created_at, visible_at, source_execution_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,

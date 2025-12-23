@@ -14,11 +14,7 @@ interface WorkflowEvent {
   id: string;
 }
 
-const WORKFLOW_EVENTS = ["workflow.execution.created"] as const;
-
-export type WorkflowEventType = (typeof WORKFLOW_EVENTS)[number];
-
-export const workflowEventTypes = [...WORKFLOW_EVENTS];
+export const WORKFLOW_EVENTS = ["workflow.execution.created"] as const;
 
 /**
  * Handle a batch of workflow events.
