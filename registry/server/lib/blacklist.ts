@@ -7,6 +7,18 @@ export const BLACKLISTED_SERVERS: string[] = [
   // Add server names here that you want to exclude
   // Examples:
   // "com.example/broken-server",
+  "ai.waystation/airtable",
+  "ai.waystation/gmail",
+  "ai.waystation/jira",
+  "ai.waystation/mcp",
+  "ai.waystation/miro",
+  "ai.waystation/monday",
+  "ai.waystation/office",
+  "ai.waystation/postgres",
+  "ai.waystation/slack",
+  "ai.waystation/supabase",
+  "ai.waystation/teams",
+  "ai.waystation/wrike",
   "ai.explorium/mcp-explorium",
   "ai.gomarble/mcp-api",
   "ai.seltz/seltz-ai-seltz-mcp",
