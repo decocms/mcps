@@ -22,6 +22,29 @@ import {
 } from "../lib/registry-client.ts";
 import { BLACKLISTED_SERVERS } from "../lib/blacklist.ts";
 import { ALLOWED_SERVERS } from "../lib/allowlist.ts";
+import {
+  isServerVerified,
+  createMeshMeta,
+  VERIFIED_SERVERS,
+} from "../lib/verified.ts";
+
+/**
+ * Inject mcp.mesh metadata into any _meta object
+ */
+function injectMeshMeta(
+  originalMeta: unknown,
+  serverName: string,
+): Record<string, unknown> {
+  const meta =
+    typeof originalMeta === "object" && originalMeta !== null
+      ? (originalMeta as Record<string, unknown>)
+      : {};
+
+  return {
+    ...meta,
+    "mcp.mesh": createMeshMeta(serverName),
+  };
+}
 
 // ============================================================================
 // Configuration
@@ -83,9 +106,23 @@ const WhereExpressionSchema: z.ZodType<unknown> = z.lazy(() =>
   ]),
 );
 
-const WhereSchema = WhereExpressionSchema.describe(
-  "Standard WhereExpression filter (converted to simple search internally)",
-);
+/**
+ * Legacy simplified where schema for easier filtering
+ */
+const LegacyWhereSchema = z.object({
+  appName: z.string().optional().describe("Filter by app name"),
+  title: z.string().optional().describe("Filter by server title/name"),
+  binder: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe("Filter by binding type(s)"),
+});
+
+const WhereSchema = z
+  .union([WhereExpressionSchema, LegacyWhereSchema])
+  .describe(
+    "Filter expression (supports WhereExpression or legacy {appName, title, binder})",
+  );
 
 /**
  * Input schema para LIST
@@ -154,20 +191,33 @@ const GetOutputSchema = z.object({
 // ============================================================================
 
 /**
- * Extract search term from WhereExpression
+ * Extract search term from WhereExpression or Legacy format
  * Since API only supports simple text search, we extract the first value found
  */
 function extractSearchTerm(where: unknown): string | undefined {
   if (!where || typeof where !== "object") return undefined;
 
   const w = where as {
+    // WhereExpression fields
     operator?: string;
     conditions?: unknown[];
     field?: string[];
     value?: unknown;
+    // Legacy fields
+    appName?: string;
+    title?: string;
+    binder?: string | string[];
   };
 
-  // Field comparison - extract the value
+  // Legacy format - check for appName or title first
+  if (w.appName) {
+    return w.appName;
+  }
+  if (w.title) {
+    return w.title;
+  }
+
+  // WhereExpression format - Field comparison - extract the value
   if (w.field && w.value !== undefined) {
     return String(w.value);
   }
@@ -209,7 +259,12 @@ async function listServersFromAllowlist(
   nextCursor?: string;
 }> {
   // Get the list of server names to fetch
-  let serverNames = ALLOWED_SERVERS;
+  // Sort verified servers first, then rest alphabetically
+  const verifiedInAllowlist = VERIFIED_SERVERS.filter((name) =>
+    ALLOWED_SERVERS.includes(name),
+  );
+  const nonVerified = ALLOWED_SERVERS.filter((name) => !isServerVerified(name));
+  let serverNames = [...verifiedInAllowlist, ...nonVerified];
 
   // Apply search filter if provided
   if (searchTerm) {
@@ -256,7 +311,7 @@ async function listServersFromAllowlist(
           (officialMeta as { updatedAt?: string })?.updatedAt ||
           new Date().toISOString(),
         server: server.server,
-        _meta: server._meta,
+        _meta: injectMeshMeta(server._meta, server.server.name),
       };
     });
 
@@ -344,7 +399,7 @@ async function listServersDynamic(
         (officialMeta as { updatedAt?: string })?.updatedAt ||
         new Date().toISOString(),
       server: server.server,
-      _meta: server._meta,
+      _meta: injectMeshMeta(server._meta, server.server.name),
     };
   });
 
@@ -362,7 +417,7 @@ export const createListRegistryTool = (env: Env) =>
   createTool({
     id: "COLLECTION_REGISTRY_APP_LIST",
     description:
-      "Lists MCP servers available in the registry with support for pagination, search, and version filtering",
+      "Lists MCP servers available in the registry with support for pagination, search, and boolean filters (has_remotes, has_packages, is_latest, etc.)",
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({ context }: { context: any }) => {
@@ -420,7 +475,7 @@ export const createGetRegistryTool = (env: Env) =>
   createTool({
     id: "COLLECTION_REGISTRY_APP_GET",
     description:
-      "Gets a specific MCP server from the registry by ID (format: 'name' or 'name:version')",
+      "Gets a specific MCP server from the registry by ID (format: 'name' or 'name@version')",
     inputSchema: GetInputSchema,
     outputSchema: GetOutputSchema,
     execute: async ({ context }: { context: any }) => {
@@ -437,17 +492,17 @@ export const createGetRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Fetch specific server
+        // Fetch from API
         const server = await getServer(name, version, registryUrl);
 
         if (!server) {
           throw new Error(`Server not found: ${id}`);
         }
 
-        // Return original API format
+        // Return with mesh metadata
         return {
           server: server.server,
-          _meta: server._meta,
+          _meta: injectMeshMeta(server._meta, server.server.name),
         };
       } catch (error) {
         throw new Error(
@@ -490,21 +545,21 @@ export const createVersionsRegistryTool = (env: Env) =>
           (env.state as z.infer<typeof StateSchema> | undefined)?.registryUrl ||
           undefined;
 
-        // Fetch all versions
+        // Fetch from API
         const serverVersions = await getServerVersions(name, registryUrl);
 
-        // Map servers to output format with ID
+        // Map servers to output format with ID and mesh metadata
         const versions = serverVersions.map((server) => {
           const officialMeta =
             server._meta["io.modelcontextprotocol.registry/official"];
 
           return {
-            id: crypto.randomUUID(),
+            id: formatServerId(server.server.name, server.server.version),
             title: server.server.name,
             created_at: officialMeta?.publishedAt || new Date().toISOString(),
             updated_at: officialMeta?.updatedAt || new Date().toISOString(),
             server: server.server,
-            _meta: server._meta,
+            _meta: injectMeshMeta(server._meta, server.server.name),
           };
         });
 

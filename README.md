@@ -1,6 +1,6 @@
 # mcps
 
-First-party MCPs maintained by the decocms team.
+First-party MCPs maintained by the decocms team. 
 
 ## Getting Started
 
