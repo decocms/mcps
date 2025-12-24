@@ -5,6 +5,9 @@
 // API Version
 export const META_API_VERSION = "v21.0";
 
+// Facebook App ID (public - appears in OAuth URLs)
+export const META_APP_ID = "1471509347872521";
+
 // Base URLs
 export const META_GRAPH_API_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 export const META_OAUTH_URL = "https://www.facebook.com";

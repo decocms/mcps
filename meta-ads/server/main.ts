@@ -14,7 +14,7 @@ import { readFileSync } from "fs";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 
 import { tools } from "./tools/index.ts";
-import { META_API_VERSION, META_ADS_SCOPES } from "./constants.ts";
+import { META_API_VERSION, META_ADS_SCOPES, META_APP_ID } from "./constants.ts";
 
 /**
  * Load environment variables from .dev.vars for local development
@@ -78,15 +78,10 @@ const runtime = withRuntime<Env>({
      * Generates the URL to redirect users to for Meta OAuth authorization
      */
     authorizationUrl: (callbackUrl: string) => {
-      const appId = getEnv("META_APP_ID");
-      if (!appId) {
-        throw new Error("META_APP_ID environment variable is required");
-      }
-
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
-      url.searchParams.set("client_id", appId);
+      url.searchParams.set("client_id", META_APP_ID);
       url.searchParams.set("redirect_uri", callbackUrl);
       url.searchParams.set("scope", META_ADS_SCOPES);
       url.searchParams.set("response_type", "code");
@@ -103,13 +98,10 @@ const runtime = withRuntime<Env>({
       redirect_uri?: string;
       redirectUri?: string;
     }) => {
-      const appId = getEnv("META_APP_ID");
       const appSecret = getEnv("META_APP_SECRET");
 
-      if (!appId || !appSecret) {
-        throw new Error(
-          "META_APP_ID and META_APP_SECRET environment variables are required",
-        );
+      if (!appSecret) {
+        throw new Error("META_APP_SECRET environment variable is required");
       }
 
       // Meta requires the EXACT same redirect_uri used in authorization
@@ -117,7 +109,7 @@ const runtime = withRuntime<Env>({
       const redirectUri = oauthParams.redirect_uri || oauthParams.redirectUri;
 
       const params = new URLSearchParams({
-        client_id: appId,
+        client_id: META_APP_ID,
         client_secret: appSecret,
         code: oauthParams.code,
       });
@@ -149,7 +141,7 @@ const runtime = withRuntime<Env>({
       // Exchange short-lived token for long-lived token (~60 days)
       const longLivedParams = new URLSearchParams({
         grant_type: "fb_exchange_token",
-        client_id: appId,
+        client_id: META_APP_ID,
         client_secret: appSecret,
         fb_exchange_token: data.access_token,
       });
