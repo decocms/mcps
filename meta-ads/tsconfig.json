@@ -5,6 +5,8 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "noEmit": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -12,7 +14,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
-    "noEmit": true,
     "jsx": "react-jsx",
     "allowJs": true,
 
@@ -27,7 +28,11 @@
     "baseUrl": ".",
     "paths": {
       "server/*": ["./server/*"]
-    }
+    },
+
+    /* Types */
+    "types": ["node"]
   },
-  "include": ["server"]
+  "include": ["server"],
+  "exclude": ["node_modules"]
 }
