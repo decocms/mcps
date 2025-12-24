@@ -5,13 +5,13 @@
  */
 
 import type { Env } from "../types/env.ts";
-import { updateExecution } from "../lib/execution-db.ts";
+import { updateExecution } from "../db/queries/executions.ts";
 import {
   ExecutionNotFoundError,
   StepTimeoutError,
   WaitingForSignalError,
   WorkflowCancelledError,
-} from "./utils/errors.ts";
+} from "../utils/errors.ts";
 
 export type ExecuteWorkflowResult =
   | { status: "success"; output: unknown }

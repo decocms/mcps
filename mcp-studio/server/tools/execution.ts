@@ -1,5 +1,5 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
-import type { Env } from "../../types/env.ts";
+import type { Env } from "../types/env.ts";
 import { z } from "zod";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 import {
@@ -7,9 +7,11 @@ import {
   getExecution,
   listExecutions,
   createExecution,
-} from "../../lib/execution-db.ts";
+  cancelExecution,
+  resumeExecution,
+} from "../db/queries/executions.ts";
 import { getWorkflow } from "./workflow.ts";
-import { buildWhereClause } from "../agent.ts";
+import { buildWhereClause } from "./_helpers.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -40,6 +42,67 @@ if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
     "COLLECTION_WORKFLOW_EXECUTION_GET binding not found or missing schemas",
   );
 }
+
+export const cancelExecutionTool = (env: Env) =>
+  createPrivateTool({
+    id: "CANCEL_EXECUTION",
+    description:
+      "Cancel a running or pending workflow execution. Currently executing steps will complete, but no new steps will start. The execution can be resumed later using RESUME_EXECUTION.",
+    inputSchema: z.object({
+      executionId: z.string().describe("The execution ID to cancel"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+    }),
+    execute: async ({ context }) => {
+      const { executionId } = context;
+
+      const result = await cancelExecution(env, executionId);
+
+      if (!result) {
+        return {
+          success: false,
+        };
+      }
+
+      return {
+        success: true,
+      };
+    },
+  });
+
+export const resumeExecutionTool = (env: Env) =>
+  createPrivateTool({
+    id: "RESUME_EXECUTION",
+    description:
+      "Resume a cancelled workflow execution. The execution will be set back to pending and can be re-queued for processing.",
+    inputSchema: z.object({
+      executionId: z.string().describe("The execution ID to resume"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+    }),
+    execute: async ({ context }) => {
+      const { executionId } = context;
+
+      const result = await resumeExecution(env, executionId);
+
+      if (!result) {
+        return {
+          success: false,
+        };
+      }
+
+      await env.EVENT_BUS.EVENT_PUBLISH({
+        type: "workflow.execution.created",
+        subject: executionId,
+      });
+
+      return {
+        success: true,
+      };
+    },
+  });
 
 export const createCreateTool = (env: Env) =>
   createPrivateTool({
@@ -143,3 +206,5 @@ export const workflowExecutionCollectionTools = [
   createGetTool,
   createCreateTool,
 ];
+
+export const workflowTools = [cancelExecutionTool, resumeExecutionTool];

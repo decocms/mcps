@@ -5,7 +5,7 @@
  */
 
 import type { Env } from "../types/env.ts";
-import { executeWorkflow } from "../workflow/executor.ts";
+import { executeWorkflow } from "../engine/executor.ts";
 
 interface WorkflowEvent {
   type: string;

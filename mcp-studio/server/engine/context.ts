@@ -11,8 +11,8 @@ import {
   getStepResults,
   createStepResult,
   updateStepResult,
-} from "../lib/execution-db.ts";
-import { WorkflowCancelledError } from "./utils/errors.ts";
+} from "../db/queries/executions.ts";
+import { WorkflowCancelledError } from "../utils/errors.ts";
 
 export class ExecutionContext {
   constructor(

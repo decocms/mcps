@@ -5,14 +5,10 @@
  */
 
 import { WaitForSignalActionSchema } from "@decocms/bindings/workflow";
-import { consumeSignal, getSignals } from "../events/events.ts";
-import { WaitingForSignalError } from "../utils/errors.ts";
-import { createStepResult } from "../../lib/execution-db.ts";
-import type {
-  Step,
-  StepResult,
-  ExistingStepResult,
-} from "../../types/step-types.ts";
+import { consumeSignal, getSignals } from "../events.ts";
+import { WaitingForSignalError } from "../../utils/errors.ts";
+import { createStepResult } from "../../db/queries/executions.ts";
+import type { Step, StepResult, ExistingStepResult } from "../../types/step.ts";
 import type { ExecutionContext } from "../context.ts";
 
 export async function executeSignalStep(

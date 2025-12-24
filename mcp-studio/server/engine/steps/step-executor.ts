@@ -4,14 +4,10 @@
  * Orchestrates step execution with retry logic and timeout handling.
  */
 
-import { createStepResult } from "server/lib/execution-db.ts";
+import { createStepResult } from "../../db/queries/executions.ts";
 import type { Env } from "../../types/env.ts";
-import type {
-  Step,
-  StepResult,
-  ExistingStepResult,
-} from "../../types/step-types.ts";
-import { getStepType } from "../../types/step-types.ts";
+import type { Step, StepResult, ExistingStepResult } from "../../types/step.ts";
+import { getStepType } from "../../types/step.ts";
 import { ExecutionContext } from "../context.ts";
 import { executeCode } from "./code-step.ts";
 import { executeSignalStep } from "./signal-step.ts";

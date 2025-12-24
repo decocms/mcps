@@ -12,13 +12,13 @@ import {
   WorkflowExecution,
   WorkflowExecutionStatus,
 } from "@decocms/bindings/workflow";
-import type { Env } from "../types/env.ts";
+import type { Env } from "../../types/env.ts";
 import {
   transformDbRowToExecution,
   transformDbRowToStepResult,
   WorkflowExecutionStepResult,
-} from "../collections/workflow.ts";
-import { runSQL } from "./postgres.ts";
+} from "../transformers.ts";
+import { runSQL } from "../postgres.ts";
 
 export async function claimExecution(
   env: Env,

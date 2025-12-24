@@ -1,15 +1,15 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
-import type { Env } from "../../types/env.ts";
+import type { Env } from "../types/env.ts";
 import { z } from "zod";
-import { validateWorkflow } from "../../workflow/utils/validator.ts";
+import { validateWorkflow } from "../utils/validator.ts";
 import {
   createDefaultWorkflow,
   Workflow,
   WORKFLOW_BINDING,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
-import { buildOrderByClause, buildWhereClause } from "../agent.ts";
+import { buildOrderByClause, buildWhereClause } from "./_helpers.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",

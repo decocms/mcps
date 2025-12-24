@@ -7,7 +7,7 @@
 import { proxyConnectionForId } from "@decocms/runtime";
 import { createMCPFetchStub } from "@decocms/bindings/client";
 import { ToolCallActionSchema } from "@decocms/bindings/workflow";
-import type { Step, StepResult } from "../../types/step-types.ts";
+import type { Step, StepResult } from "../../types/step.ts";
 import type { ExecutionContext } from "../context.ts";
 
 export async function executeToolStep(

@@ -13,10 +13,10 @@
 
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateCode } from "../steps/code-step.ts";
+import { validateCode } from "../engine/steps/code-step.ts";
 import { CodeActionSchema, Step, Workflow } from "@decocms/bindings/workflow";
-import type { Env } from "../../types/env.ts";
-import { getStepType } from "server/types/step-types.ts";
+import type { Env } from "../types/env.ts";
+import { getStepType } from "../types/step.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([

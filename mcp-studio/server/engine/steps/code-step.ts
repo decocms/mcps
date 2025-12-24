@@ -17,9 +17,9 @@ import {
   installConsole,
   type QuickJSHandle,
   SandboxContext,
-} from "../../lib/sandbox/index.ts";
+} from "../../sandbox/index.ts";
 import { transform } from "sucrase";
-import type { StepResult } from "../../types/step-types.ts";
+import type { StepResult } from "../../types/step.ts";
 
 export function transpileTypeScript(code: string): string {
   const result = transform(code, {

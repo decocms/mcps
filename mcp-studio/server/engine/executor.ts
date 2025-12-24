@@ -5,16 +5,16 @@
  */
 
 import type { Env } from "../types/env.ts";
-import type { Step } from "../types/step-types.ts";
-import type { RefContext } from "./utils/ref-resolver.ts";
-import { resolveAllRefs } from "./utils/ref-resolver.ts";
+import type { Step } from "../types/step.ts";
+import type { RefContext } from "../utils/ref-resolver.ts";
+import { resolveAllRefs } from "../utils/ref-resolver.ts";
 import {
   claimExecution,
   getStepResults,
   updateExecution,
-} from "../lib/execution-db.ts";
+} from "../db/queries/executions.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
-import { ExecutionNotFoundError } from "./utils/errors.ts";
+import { ExecutionNotFoundError } from "../utils/errors.ts";
 import {
   handleExecutionError,
   type ExecuteWorkflowResult,

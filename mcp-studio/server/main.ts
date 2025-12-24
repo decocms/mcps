@@ -6,8 +6,8 @@
 
 import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
-import { ensureCollections, ensureIndexes } from "./collections/index.ts";
-import { ensureAgentsTable } from "./lib/postgres.ts";
+import { ensureCollections, ensureIndexes } from "./db/index.ts";
+import { ensureAgentsTable } from "./db/schemas/agents.ts";
 import { StateSchema, type Env } from "./types/env.ts";
 import { WORKFLOW_EVENTS, handleWorkflowEvents } from "./events/handler.ts";
 

@@ -5,8 +5,8 @@
  * Inspired by DBOS send/recv patterns and deco-cx/durable visible_at.
  */
 
-import type { Env } from "../../types/env.ts";
-import { transformDbRowToEvent } from "../../collections/workflow.ts";
+import type { Env } from "../types/env.ts";
+import { transformDbRowToEvent } from "../db/transformers.ts";
 import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
 
 export async function getPendingEvents(
