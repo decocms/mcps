@@ -70,6 +70,7 @@ export async function executeWorkflow(
 
     return { status: "success", output };
   } catch (err) {
+    console.error(`[WORKFLOW] Error executing workflow: ${err}`);
     return handleExecutionError(env, executionId, err);
   }
 }

@@ -8,7 +8,7 @@ import type { Env } from "../types/env.ts";
 import { updateExecution } from "../lib/execution-db.ts";
 import {
   ExecutionNotFoundError,
-  StuckStepError,
+  StepTimeoutError,
   WaitingForSignalError,
   WorkflowCancelledError,
 } from "./utils/errors.ts";
@@ -30,7 +30,12 @@ export async function handleExecutionError(
     return { status: "skipped", reason: "Execution busy or not found" };
   }
 
-  if (err instanceof StuckStepError) {
+  if (err instanceof StepTimeoutError) {
+    await updateExecution(env, executionId, {
+      status: "error",
+      error: err.message,
+      completed_at_epoch_ms: Date.now(),
+    });
     return { status: "error", error: err.message };
   }
 

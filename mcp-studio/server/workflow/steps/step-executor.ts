@@ -69,7 +69,7 @@ export class StepExecutor {
       throw new Error(`Step '${step.name}' failed`);
     }
 
-    if (!result.completedAt) {
+    if (result.error) {
       await this.ctx.updateStep(step.name, {
         error: result.error,
         started_at_epoch_ms:

@@ -127,7 +127,6 @@ export const createListTool = (env: Env) =>
       const itemsResult = await listExecutions(env, {
         limit,
         offset,
-        where: whereClause.clause,
         workflowId: whereClause.params[0] as string,
       });
 

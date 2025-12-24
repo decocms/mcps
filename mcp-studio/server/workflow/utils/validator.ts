@@ -192,7 +192,6 @@ export async function validateWorkflow(
 
   const availableSteps = new Map<string, number>();
   const currentConfigurationState = currentPermissions.item.configuration_state;
-  console.log({ currentConfigurationState });
   const newConnections = externalConnections.filter(
     (connectionId) =>
       !currentPermissions.item.configuration_state[
@@ -203,20 +202,22 @@ export async function validateWorkflow(
   await env.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
     id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
     data: {
-      configuration_scopes: Object.keys(currentConfigurationState).map(
-        (key) => `${key}::*`,
-      ),
+      configuration_scopes: Object.keys(currentConfigurationState)
+        .filter((key) => key !== "")
+        .map((key) => `${key}::*`),
       configuration_state: {
         ...currentPermissions.item.configuration_state,
-        ...newConnections.reduce(
-          (acc, connectionId) => ({
-            ...acc,
-            [connectionId]: {
-              value: connectionId,
-            },
-          }),
-          {},
-        ),
+        ...newConnections
+          .filter((connectionId) => connectionId !== "")
+          .reduce(
+            (acc, connectionId) => ({
+              ...acc,
+              [connectionId]: {
+                value: connectionId,
+              },
+            }),
+            {},
+          ),
       },
     },
   });

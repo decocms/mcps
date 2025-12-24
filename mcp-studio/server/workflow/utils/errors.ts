@@ -11,41 +11,6 @@ export class WorkflowCancelledError extends Error {
   }
 }
 
-export class StuckStepError extends Error {
-  readonly code = "STUCK_STEP";
-
-  constructor(
-    public readonly executionId: string,
-    public readonly stepName: string,
-    message?: string,
-  ) {
-    super(
-      message ||
-        `Step '${stepName}' is stuck in the workflow execution ${executionId}`,
-    );
-  }
-}
-/**
- * Error thrown when there's a contention issue with step execution.
- * Another worker is processing the same step.
- */
-export class StepContentionError extends Error {
-  readonly code = "STEP_CONTENTION";
-
-  constructor(
-    public readonly executionId: string,
-    public readonly stepName: string,
-    message?: string,
-  ) {
-    super(
-      message ||
-        `Step ${stepName} in execution ${executionId} is being processed by another worker`,
-    );
-    this.name = "StepContentionError";
-    Object.setPrototypeOf(this, StepContentionError.prototype);
-  }
-}
-
 /**
  * Error thrown when a workflow execution is not found.
  */
@@ -80,6 +45,19 @@ export class MaxRetriesExceededError extends Error {
     );
     this.name = "MaxRetriesExceededError";
     Object.setPrototypeOf(this, MaxRetriesExceededError.prototype);
+  }
+}
+
+export class StepTimeoutError extends Error {
+  readonly code = "STEP_TIMEOUT";
+  constructor(
+    public readonly executionId: string,
+    public readonly stepName: string,
+    public readonly timeoutMs: number,
+  ) {
+    super(`Step '${stepName}' timed out after ${timeoutMs}ms`);
+    this.name = "StepTimeoutError";
+    Object.setPrototypeOf(this, StepTimeoutError.prototype);
   }
 }
 
