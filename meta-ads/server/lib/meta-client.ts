@@ -350,17 +350,14 @@ export class MetaAdsClient {
 
   /**
    * Get insights for any object (account, campaign, adset, ad)
+   * Note: Account IDs must include the "act_" prefix (e.g., "act_123456789")
    */
   async getInsights(
     objectId: string,
     params: InsightsParams = {},
   ): Promise<PaginatedResponse<InsightData>> {
-    // Format account ID if needed
-    const formattedId =
-      objectId.startsWith("act_") || !objectId.includes("act")
-        ? objectId
-        : `act_${objectId}`;
-
+    // Use objectId as-is: account IDs should already have "act_" prefix,
+    // campaign/adset/ad IDs don't need any prefix
     const queryParams: Record<string, string> = {
       fields:
         params.fields?.join(",") ||
@@ -392,7 +389,7 @@ export class MetaAdsClient {
 
     return makeRequest<PaginatedResponse<InsightData>>(
       this.config,
-      `/${formattedId}/insights`,
+      `/${objectId}/insights`,
       { params: queryParams },
     );
   }

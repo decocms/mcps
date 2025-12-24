@@ -63,7 +63,7 @@ export const createGetAdSetsTool = (env: Env) =>
           targeting_summary: targetingSummarySchema.optional(),
         }),
       ),
-      total: z.number(),
+      count: z.number().describe("Number of ad sets returned"),
     }),
     execute: async ({ context }) => {
       const accessToken = getMetaAccessToken(env);
@@ -101,7 +101,7 @@ export const createGetAdSetsTool = (env: Env) =>
               }
             : undefined,
         })),
-        total: response.data.length,
+        count: response.data.length,
       };
     },
   });

@@ -47,7 +47,7 @@ export const createGetAdAccountsTool = (env: Env) =>
           business_name: z.string().optional(),
         }),
       ),
-      total: z.number(),
+      count: z.number().describe("Number of accounts returned"),
     }),
     execute: async ({ context }) => {
       const accessToken = getMetaAccessToken(env);
@@ -72,7 +72,7 @@ export const createGetAdAccountsTool = (env: Env) =>
           amount_spent: account.amount_spent,
           business_name: account.business_name,
         })),
-        total: response.data.length,
+        count: response.data.length,
       };
     },
   });
@@ -161,7 +161,7 @@ export const createGetAccountPagesTool = (env: Env) =>
           tasks: z.array(z.string()).optional(),
         }),
       ),
-      total: z.number(),
+      count: z.number().describe("Number of pages returned"),
     }),
     execute: async ({ context }) => {
       const accessToken = getMetaAccessToken(env);
@@ -179,7 +179,7 @@ export const createGetAccountPagesTool = (env: Env) =>
           category: page.category,
           tasks: page.tasks,
         })),
-        total: response.data.length,
+        count: response.data.length,
       };
     },
   });

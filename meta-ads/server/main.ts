@@ -6,7 +6,7 @@
  *
  * Authentication is handled via OAuth PKCE with Meta's Graph API.
  *
- * Required environment variables (set as secrets in Cloudflare/GitHub):
+ * Required environment variables (set as secrets in Deco/GitHub):
  * - META_APP_ID: Facebook App ID
  * - META_APP_SECRET: Facebook App Secret
  */
@@ -18,7 +18,7 @@ import { META_API_VERSION, META_ADS_SCOPES } from "./constants.ts";
 
 /**
  * Load environment variables from .dev.vars for local development
- * In production, these are injected by Cloudflare Workers via secrets
+ * In production, these are injected by Deco runtime via secrets
  */
 const loadEnvVars = (): Record<string, string> => {
   const vars: Record<string, string> = {};
@@ -46,9 +46,6 @@ const envVars = loadEnvVars();
 // Helper to get env var from .dev.vars or process.env
 const getEnv = (key: string): string | undefined =>
   envVars[key] || process.env[key];
-
-// Store the redirect_uri used in authorization (Meta requires it in token exchange)
-let lastAuthorizationRedirectUri = "";
 
 /**
  * Environment type for Meta Ads MCP
@@ -86,9 +83,6 @@ const runtime = withRuntime<Env>({
         throw new Error("META_APP_ID environment variable is required");
       }
 
-      // Store for later use in exchangeCode (Meta requires exact match)
-      lastAuthorizationRedirectUri = callbackUrl;
-
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
@@ -119,10 +113,8 @@ const runtime = withRuntime<Env>({
       }
 
       // Meta requires the EXACT same redirect_uri used in authorization
-      const redirectUri =
-        oauthParams.redirect_uri ||
-        oauthParams.redirectUri ||
-        lastAuthorizationRedirectUri;
+      // The runtime provides this via oauthParams
+      const redirectUri = oauthParams.redirect_uri || oauthParams.redirectUri;
 
       const params = new URLSearchParams({
         client_id: appId,
@@ -178,6 +170,14 @@ const runtime = withRuntime<Env>({
           expires_in: longLivedData.expires_in,
         };
       }
+
+      // Log warning when long-lived token exchange fails
+      // User will receive short-lived token (~1 hour) instead of long-lived (~60 days)
+      const longLivedError = await longLivedResponse.text();
+      console.warn(
+        `Failed to exchange for long-lived token (${longLivedResponse.status}): ${longLivedError}. ` +
+          "Falling back to short-lived token (~1 hour instead of ~60 days).",
+      );
 
       // Fallback to short-lived token if long-lived exchange fails
       return {

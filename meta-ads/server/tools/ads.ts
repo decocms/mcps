@@ -47,7 +47,7 @@ export const createGetAdsTool = (env: Env) =>
           creative_id: z.string().optional(),
         }),
       ),
-      total: z.number(),
+      count: z.number().describe("Number of ads returned"),
     }),
     execute: async ({ context }) => {
       const accessToken = getMetaAccessToken(env);
@@ -71,7 +71,7 @@ export const createGetAdsTool = (env: Env) =>
           updated_time: ad.updated_time,
           creative_id: ad.creative?.id,
         })),
-        total: response.data.length,
+        count: response.data.length,
       };
     },
   });

@@ -1,87 +1,92 @@
-# Secrets Necessários para Deploy dos MCPs
+# Required Secrets for MCP Deployment
 
-Este documento lista todos os secrets necessários para fazer deploy dos MCPs no GitHub Actions.
+This document lists all secrets required to deploy MCPs via GitHub Actions.
 
-## Secrets Obrigatórios
+## Required Secrets
 
 ### `DECO_DEPLOY_TOKEN`
-- **Usado por**: Todos os MCPs
-- **Descrição**: Token de autenticação para o Deco CLI
-- **Como obter**: Gerado pelo Deco CLI ou dashboard
+- **Used by**: All MCPs
+- **Description**: Authentication token for Deco CLI
+- **How to obtain**: Generated via Deco CLI or dashboard
 
-## Secrets Opcionais (por MCP)
+## Optional Secrets (per MCP)
 
 ### MCP: `sora`
-- **`OPENAI_API_KEY`**: API key da OpenAI para o modelo Sora
-  - Obtenha em: https://platform.openai.com/api-keys
+- **`OPENAI_API_KEY`**: OpenAI API key for Sora model
+  - Obtain at: https://platform.openai.com/api-keys
 
 ### MCP: `veo`
-- **`GOOGLE_GENAI_API_KEY`**: API key do Google Generative AI para o modelo Veo
-  - Obtenha em: https://aistudio.google.com/app/apikey
-  - ⚠️ **Importante**: O código espera `GOOGLE_GENAI_API_KEY`, não `VEO_TOKEN`
+- **`GOOGLE_GENAI_API_KEY`**: Google Generative AI API key for Veo model
+  - Obtain at: https://aistudio.google.com/app/apikey
+  - ⚠️ **Important**: The code expects `GOOGLE_GENAI_API_KEY`, not `VEO_TOKEN`
 
 ### MCP: `nanobanana`
-- **`NANOBANANA_API_KEY`**: API key para o serviço Nanobanana (OpenRouter)
-  - Obtenha em: https://openrouter.ai/keys
+- **`NANOBANANA_API_KEY`**: API key for Nanobanana service (OpenRouter)
+  - Obtain at: https://openrouter.ai/keys
 
 ### MCP: `openrouter`
-- **`OPENROUTER_API_KEY`**: API key usada pelo MCP OpenRouter
-  - Obtenha em: https://openrouter.ai/keys
+- **`OPENROUTER_API_KEY`**: API key used by OpenRouter MCP
+  - Obtain at: https://openrouter.ai/keys
 
 ### MCP: `pinecone`
-- **`PINECONE_TOKEN`**: Token de API do Pinecone
-  - Obtenha em: https://app.pinecone.io/
-- **`PINECONE_INDEX`**: Nome do índice Pinecone (se necessário)
+- **`PINECONE_TOKEN`**: Pinecone API token
+  - Obtain at: https://app.pinecone.io/
+- **`PINECONE_INDEX`**: Pinecone index name (if required)
 
-## Como Adicionar Secrets no GitHub
+### MCP: `meta-ads`
+- **`META_APP_ID`**: Facebook App ID for Meta Ads
+  - Obtain at: https://developers.facebook.com/apps/
+- **`META_APP_SECRET`**: Facebook App Secret for Meta Ads
+  - Obtain at: https://developers.facebook.com/apps/ (Settings > Basic)
 
-1. Vá para seu repositório no GitHub
-2. Clique em **Settings** > **Secrets and variables** > **Actions**
-3. Clique em **New repository secret**
-4. Adicione o nome e valor do secret
-5. Clique em **Add secret**
+## How to Add Secrets on GitHub
 
-## Como os Secrets São Usados
+1. Go to your repository on GitHub
+2. Click **Settings** > **Secrets and variables** > **Actions**
+3. Click **New repository secret**
+4. Add the secret name and value
+5. Click **Add secret**
 
-Os workflows do GitHub Actions passam todos os secrets configurados como variáveis de ambiente para o script de deploy (`scripts/deploy.ts`). O script automaticamente detecta quais variáveis estão definidas e as passa para o comando `deco deploy` usando a flag `--env`.
+## How Secrets Are Used
 
-Cada MCP usa apenas os secrets que precisa, então é seguro configurar todos os secrets mesmo que nem todos os MCPs os utilizem.
+GitHub Actions workflows pass all configured secrets as environment variables to the deploy script (`scripts/deploy.ts`). The script automatically detects which variables are defined and passes them to the `deco deploy` command using the `--env` flag.
 
-## Como Adicionar um Novo Secret
+Each MCP only uses the secrets it needs, so it's safe to configure all secrets even if not all MCPs use them.
 
-Quando você precisar adicionar suporte para um novo secret:
+## How to Add a New Secret
 
-1. **Adicione o secret no GitHub** (conforme instruções acima)
+When you need to add support for a new secret:
 
-2. **Atualize o script de deploy** (`scripts/deploy.ts`):
-   - Adicione o nome da variável no array `envVarsToPass` (por volta da linha 116)
+1. **Add the secret on GitHub** (as described above)
+
+2. **Update the deploy script** (`scripts/deploy.ts`):
+   - Add the variable name to the `envVarsToPass` array (around line 139)
    ```typescript
    const envVarsToPass = [
      "OPENAI_API_KEY",
      "GOOGLE_GENAI_API_KEY",
      "NANOBANANA_API_KEY",
-     "SEU_NOVO_SECRET",  // <- Adicione aqui
+     "YOUR_NEW_SECRET",  // <- Add here
      // ...
    ];
    ```
 
-3. **Atualize os workflows**:
-   - Em `.github/workflows/deploy.yml` e `.github/workflows/deploy-preview.yml`
-   - Adicione a variável na seção `env:` do step de deploy
+3. **Update the workflows**:
+   - In `.github/workflows/deploy.yml` and `.github/workflows/deploy-preview.yml`
+   - Add the variable in the `env:` section of the deploy step
    ```yaml
    env:
      DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}
      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-     SEU_NOVO_SECRET: ${{ secrets.SEU_NOVO_SECRET }}  # <- Adicione aqui
+     YOUR_NEW_SECRET: ${{ secrets.YOUR_NEW_SECRET }}  # <- Add here
    ```
 
-⚠️ **Nota**: Sim, você ainda precisa editar os workflows, mas agora é mais simples e centralizado. Basta adicionar uma linha na seção `env:`.
+⚠️ **Note**: Yes, you still need to edit the workflows, but now it's simpler and centralized. Just add one line in the `env:` section.
 
-## ⚠️ Atenção: Renomeie o Secret VEO_TOKEN
+## ⚠️ Attention: Rename VEO_TOKEN Secret
 
-Se você tem um secret chamado `VEO_TOKEN`, você precisa:
-1. Criar um novo secret chamado `GOOGLE_GENAI_API_KEY` com o mesmo valor do `VEO_TOKEN`
-2. Deletar o secret `VEO_TOKEN` (ou mantê-lo se preferir)
+If you have a secret called `VEO_TOKEN`, you need to:
+1. Create a new secret called `GOOGLE_GENAI_API_KEY` with the same value as `VEO_TOKEN`
+2. Delete the `VEO_TOKEN` secret (or keep it if you prefer)
 
-O MCP `veo` espera `GOOGLE_GENAI_API_KEY` no código.
-
+The `veo` MCP expects `GOOGLE_GENAI_API_KEY` in the code.

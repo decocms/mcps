@@ -1,76 +1,76 @@
 # Meta Ads Analytics MCP
 
-MCP para análise de desempenho de campanhas do Meta/Facebook Ads.
+MCP for performance analysis of Meta/Facebook Ads campaigns.
 
-## Funcionalidades
+## Features
 
-Este MCP fornece ferramentas para analisar o desempenho de suas campanhas de publicidade no Meta (Facebook/Instagram):
+This MCP provides tools to analyze the performance of your Meta (Facebook/Instagram) advertising campaigns:
 
-- **Visualizar performance** de campanhas, ad sets e anúncios
-- **Obter métricas detalhadas** com breakdowns por idade, gênero, país, dispositivo, etc.
-- **Comparar desempenho** entre períodos
-- **Analisar ROI e custos** em diferentes níveis
+- **View performance** of campaigns, ad sets, and ads
+- **Get detailed metrics** with breakdowns by age, gender, country, device, etc.
+- **Compare performance** between periods
+- **Analyze ROI and costs** at different levels
 
-## Tools Disponíveis
+## Available Tools
 
 ### Accounts (3 tools)
-| Tool | Descrição |
-|------|-----------|
-| `META_ADS_GET_AD_ACCOUNTS` | Lista contas de anúncio acessíveis |
-| `META_ADS_GET_ACCOUNT_INFO` | Detalhes de uma conta (moeda, timezone, status) |
-| `META_ADS_GET_ACCOUNT_PAGES` | Páginas associadas à conta |
+| Tool | Description |
+|------|-------------|
+| `META_ADS_GET_AD_ACCOUNTS` | List accessible ad accounts |
+| `META_ADS_GET_ACCOUNT_INFO` | Account details (currency, timezone, status) |
+| `META_ADS_GET_ACCOUNT_PAGES` | Pages associated with the account |
 
 ### Campaigns (2 tools)
-| Tool | Descrição |
-|------|-----------|
-| `META_ADS_GET_CAMPAIGNS` | Lista campanhas com filtro por status |
-| `META_ADS_GET_CAMPAIGN_DETAILS` | Detalhes de uma campanha específica |
+| Tool | Description |
+|------|-------------|
+| `META_ADS_GET_CAMPAIGNS` | List campaigns with status filter |
+| `META_ADS_GET_CAMPAIGN_DETAILS` | Details of a specific campaign |
 
 ### Ad Sets (2 tools)
-| Tool | Descrição |
-|------|-----------|
-| `META_ADS_GET_ADSETS` | Lista ad sets com filtro por campanha |
-| `META_ADS_GET_ADSET_DETAILS` | Detalhes de um ad set (targeting, budget) |
+| Tool | Description |
+|------|-------------|
+| `META_ADS_GET_ADSETS` | List ad sets with campaign filter |
+| `META_ADS_GET_ADSET_DETAILS` | Ad set details (targeting, budget) |
 
 ### Ads (3 tools)
-| Tool | Descrição |
-|------|-----------|
-| `META_ADS_GET_ADS` | Lista anúncios com filtro por ad set |
-| `META_ADS_GET_AD_DETAILS` | Detalhes de um anúncio |
-| `META_ADS_GET_AD_CREATIVES` | Criativos de um anúncio |
+| Tool | Description |
+|------|-------------|
+| `META_ADS_GET_ADS` | List ads with ad set filter |
+| `META_ADS_GET_AD_DETAILS` | Ad details |
+| `META_ADS_GET_AD_CREATIVES` | Ad creatives |
 
 ### Insights (1 tool)
-| Tool | Descrição |
-|------|-----------|
-| `META_ADS_GET_INSIGHTS` | Métricas de performance com breakdowns |
+| Tool | Description |
+|------|-------------|
+| `META_ADS_GET_INSIGHTS` | Performance metrics with breakdowns |
 
-## Métricas de Insights
+## Insights Metrics
 
-A tool `get_insights` retorna métricas como:
+The `META_ADS_GET_INSIGHTS` tool returns metrics such as:
 
 - **Performance**: impressions, reach, clicks, ctr, cpc, cpm
-- **Conversões**: conversions, cost_per_conversion
-- **Custos**: spend, cost_per_unique_click
+- **Conversions**: conversions, cost_per_conversion
+- **Costs**: spend, cost_per_unique_click
 
-**Breakdowns disponíveis**: age, gender, country, device_platform, publisher_platform
+**Available breakdowns**: age, gender, country, device_platform, publisher_platform
 
-## Autenticação
+## Authentication
 
-Este MCP usa OAuth PKCE para autenticação com a Meta Graph API. O usuário será redirecionado para autorizar o acesso à conta de anúncios.
+This MCP uses OAuth PKCE for authentication with the Meta Graph API. The user will be redirected to authorize access to the ad account.
 
-### Permissões necessárias
+### Required Permissions
 
-- `ads_read` - Leitura de informações de anúncios
-- `pages_read_engagement` - Leitura de páginas associadas
-- `business_management` - Acesso a contas de negócios
+- `ads_read` - Read ad information
+- `pages_read_engagement` - Read associated pages
+- `business_management` - Access business accounts
 
-## Desenvolvimento
+## Development
 
 ```bash
-# Instalar dependências
+# Install dependencies
 bun install
 
-# Desenvolvimento local
+# Local development
 bun run dev
 
 # Build
@@ -80,22 +80,21 @@ bun run build
 bun run publish
 ```
 
-## Exemplos de Uso
+## Usage Examples
 
 ```
-1. "Liste minhas contas de anúncio" 
+1. "List my ad accounts" 
    -> META_ADS_GET_AD_ACCOUNTS
 
-2. "Mostre campanhas ativas da conta act_123" 
+2. "Show active campaigns for account act_123" 
    -> META_ADS_GET_CAMPAIGNS(account_id: "act_123", status_filter: "ACTIVE")
 
-3. "Como está o desempenho da campanha X nos últimos 7 dias?"
+3. "How is campaign X performing in the last 7 days?"
    -> META_ADS_GET_INSIGHTS(object_id: "campaign_id", date_preset: "last_7d")
 
-4. "Compare resultados por idade e gênero" 
+4. "Compare results by age and gender" 
    -> META_ADS_GET_INSIGHTS(object_id: "campaign_id", breakdowns: ["age", "gender"])
 
-5. "Quais anúncios tem melhor CTR?"
-   -> META_ADS_GET_ADS + META_ADS_GET_INSIGHTS para cada
+5. "Which ads have the best CTR?"
+   -> META_ADS_GET_ADS + META_ADS_GET_INSIGHTS for each
 ```
-

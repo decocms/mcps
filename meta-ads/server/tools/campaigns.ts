@@ -53,7 +53,7 @@ export const createGetCampaignsTool = (env: Env) =>
           special_ad_categories: z.array(z.string()).optional(),
         }),
       ),
-      total: z.number(),
+      count: z.number().describe("Number of campaigns returned"),
     }),
     execute: async ({ context }) => {
       const accessToken = getMetaAccessToken(env);
@@ -79,7 +79,7 @@ export const createGetCampaignsTool = (env: Env) =>
           buying_type: campaign.buying_type,
           special_ad_categories: campaign.special_ad_categories,
         })),
-        total: response.data.length,
+        count: response.data.length,
       };
     },
   });
