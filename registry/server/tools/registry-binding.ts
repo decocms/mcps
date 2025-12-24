@@ -163,6 +163,7 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
+
     where: WhereSchema.optional().describe(
       "Standard WhereExpression filter (converted to simple search internally)",
     ),

@@ -1,0 +1,617 @@
+{
+  "scopeName": "deco",
+  "name": "connection",
+  "connection": {
+    "type": "BINDING"
+  },
+  "description": "Connection Binding for MCPs.",
+  "icon": "https://assets.decocache.com/mcp/390f7756-ec01-47e4-bb31-9e7b18f6f56f/database.png",
+  "unlisted": true,
+  "tools": [
+    {
+      "name": "COLLECTION_CONNECTIONS_UPDATE",
+      "description": "Update an existing MCP connection in the organization",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the connection"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "updated_at": {
+                "type": "string",
+                "description": "When the connection was last updated"
+              },
+              "updated_by": {
+                "type": "string",
+                "description": "User ID who last updated the connection"
+              },
+              "configuration_state": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Configuration state (decrypted)"
+              },
+              "configuration_scopes": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Configuration scopes"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the connection"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable name for the connection"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When the connection was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "When the connection was last updated"
+          },
+          "created_by": {
+            "type": "string",
+            "description": "User ID who created the connection"
+          },
+          "updated_by": {
+            "type": "string",
+            "description": "User ID who last updated the connection"
+          },
+          "organization_id": {
+            "type": "string",
+            "description": "Organization ID this connection belongs to"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Description of the connection"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Icon URL for the connection"
+          },
+          "app_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Associated app name"
+          },
+          "app_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Associated app ID"
+          },
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "HTTP",
+              "SSE",
+              "Websocket"
+            ],
+            "description": "Type of connection"
+          },
+          "connection_url": {
+            "type": "string",
+            "description": "URL for the connection"
+          },
+          "connection_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Authentication token"
+          },
+          "connection_headers": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom headers"
+          },
+          "oauth_config": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "authorizationEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tokenEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "introspectionEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "clientId": {
+                    "type": "string"
+                  },
+                  "clientSecret": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "grantType": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "client_credentials"
+                    ]
+                  }
+                },
+                "required": [
+                  "authorizationEndpoint",
+                  "tokenEndpoint",
+                  "clientId",
+                  "scopes",
+                  "grantType"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "OAuth configuration"
+          },
+          "configuration_state": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration state (decrypted)"
+          },
+          "configuration_scopes": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration scopes"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Additional metadata (includes repository info)"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "inputSchema": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "outputSchema": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "inputSchema"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Discovered tools from MCP"
+          },
+          "bindings": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Detected bindings"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "error"
+            ],
+            "description": "Current status"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at",
+          "created_by",
+          "organization_id",
+          "description",
+          "icon",
+          "app_name",
+          "app_id",
+          "connection_type",
+          "connection_url",
+          "connection_token",
+          "connection_headers",
+          "oauth_config",
+          "configuration_state",
+          "metadata",
+          "tools",
+          "bindings",
+          "status"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "COLLECTION_CONNECTIONS_GET",
+      "description": "Get an existing MCP connection in the organization",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the connection"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the connection"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable name for the connection"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When the connection was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "When the connection was last updated"
+          },
+          "created_by": {
+            "type": "string",
+            "description": "User ID who created the connection"
+          },
+          "updated_by": {
+            "type": "string",
+            "description": "User ID who last updated the connection"
+          },
+          "organization_id": {
+            "type": "string",
+            "description": "Organization ID this connection belongs to"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Description of the connection"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Icon URL for the connection"
+          },
+          "app_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Associated app name"
+          },
+          "app_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Associated app ID"
+          },
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "HTTP",
+              "SSE",
+              "Websocket"
+            ],
+            "description": "Type of connection"
+          },
+          "connection_url": {
+            "type": "string",
+            "description": "URL for the connection"
+          },
+          "connection_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Authentication token"
+          },
+          "connection_headers": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom headers"
+          },
+          "oauth_config": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "authorizationEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tokenEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "introspectionEndpoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "clientId": {
+                    "type": "string"
+                  },
+                  "clientSecret": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "grantType": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "client_credentials"
+                    ]
+                  }
+                },
+                "required": [
+                  "authorizationEndpoint",
+                  "tokenEndpoint",
+                  "clientId",
+                  "scopes",
+                  "grantType"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "OAuth configuration"
+          },
+          "configuration_state": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration state (decrypted)"
+          },
+          "configuration_scopes": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration scopes"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Additional metadata (includes repository info)"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "inputSchema": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "outputSchema": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "inputSchema"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Discovered tools from MCP"
+          },
+          "bindings": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Detected bindings"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "error"
+            ],
+            "description": "Current status"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at",
+          "created_by",
+          "organization_id",
+          "description",
+          "icon",
+          "app_name",
+          "app_id",
+          "connection_type",
+          "connection_url",
+          "connection_token",
+          "connection_headers",
+          "oauth_config",
+          "configuration_state",
+          "metadata",
+          "tools",
+          "bindings",
+          "status"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}
