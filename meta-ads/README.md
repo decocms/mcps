@@ -1,4 +1,4 @@
-# Meta Ads Analytics MCP
+# Meta Ads Analytics MCP  
 
 MCP for performance analysis of Meta/Facebook Ads campaigns.
 
