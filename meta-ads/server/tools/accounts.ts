@@ -125,7 +125,9 @@ export const createGetAccountInfoTool = (env: Env) =>
         amount_spent: account.amount_spent,
         spend_cap: account.spend_cap,
         balance: account.balance,
-        min_daily_budget: account.min_daily_budget,
+        min_daily_budget: account.min_daily_budget
+          ? String(account.min_daily_budget)
+          : undefined,
       };
     },
   });

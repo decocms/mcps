@@ -16,7 +16,7 @@ export interface AdAccount {
   spend_cap?: string;
   balance?: string;
   min_campaign_group_spend_cap?: string;
-  min_daily_budget?: string;
+  min_daily_budget?: string | number;
 }
 
 export interface Page {
