@@ -99,7 +99,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@decocms/bindings": "1.0.1-alpha.26",
-        "@decocms/runtime": "1.0.0-alpha.31",
+        "@decocms/runtime": "1.0.0-alpha.42",
         "@radix-ui/react-collapsible": "^1.1.12",
         "@radix-ui/react-popover": "^1.1.15",
         "@radix-ui/react-slot": "^1.2.3",
@@ -2635,7 +2635,7 @@
 
     "log-symbols/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
-    "mcp-studio/@decocms/runtime": ["@decocms/runtime@1.0.0-alpha.31", "", { "dependencies": { "@ai-sdk/provider": "^2.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@deco/mcp": "npm:@jsr/deco__mcp@0.7.8", "@decocms/bindings": "1.0.1-alpha.17", "@modelcontextprotocol/sdk": "1.20.2", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^3.25.76", "zod-to-json-schema": "3.25.0" } }, "sha512-p1QjlPYfLeH3otIMkzStkO5GY6nExc+SnqBAqOAL8y/hud7rV5f7ejXXEpyvF+5aAOqH4psgr4QjPYoW/MO5qQ=="],
+    "mcp-studio/@decocms/runtime": ["@decocms/runtime@1.0.0-alpha.42", "", { "dependencies": { "@ai-sdk/provider": "^2.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@deco/mcp": "npm:@jsr/deco__mcp@0.7.8", "@decocms/bindings": "1.0.1-alpha.23", "@modelcontextprotocol/sdk": "1.20.2", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^3.25.76", "zod-to-json-schema": "3.25.0" } }, "sha512-Z70UbSoERgIZAEhWX9B64xjIOcjmBhuAKsH59dSbBF5AWkIVdIC8KvcT5shJLGBwnFK0CtTvaxUx+8jpyG61Pg=="],
 
     "mcp-template-with-view/@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
 
@@ -2896,6 +2896,8 @@
     "mcp-studio/@decocms/runtime/@ai-sdk/provider": ["@ai-sdk/provider@2.0.0", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA=="],
 
     "mcp-studio/@decocms/runtime/@deco/mcp": ["@jsr/deco__mcp@0.7.8", "https://npm.jsr.io/~/11/@jsr/deco__mcp/0.7.8.tgz", { "dependencies": { "@jsr/deco__deco": "^1.112.1", "@jsr/hono__hono": "^4.5.4", "@modelcontextprotocol/sdk": "^1.11.4", "fetch-to-node": "^2.1.0", "zod": "^3.24.2" } }, "sha512-NcDGuKv2ZxId8ZHCD3zGZhHNLzrExn+DL11yDo60mZ44zbbRwuLRRmAYTwrdtZ6A45fVWYmEIloPY93tKrtimw=="],
+
+    "mcp-studio/@decocms/runtime/@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.23", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-CVvfLeQPzD0RwkIznl4CPg8yLcdz5O2bgMmaL+lyHe+azO2qkGpQkTp1pX5fDhdr7jvWtjTcThUNoiCno58cSw=="],
 
     "mcp-studio/@decocms/runtime/@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.17", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-lFIqOQm8/9yhXIvRq5pETTuzZaEMtMsMbz5noPi+lVZ+6VRykLULsGCpEYT0rP1IlgFjGgXv7SH+TjvCJAhxfQ=="],
 
