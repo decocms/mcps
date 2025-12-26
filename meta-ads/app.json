@@ -7,6 +7,6 @@
   },
   "description": "Meta Ads Analytics - Analyze performance of Meta/Facebook advertising campaigns with detailed insights and metrics",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_%282019%29.png/1200px-Facebook_Logo_%282019%29.png",
-  "unlisted": true
+  "unlisted": false
 }
 
