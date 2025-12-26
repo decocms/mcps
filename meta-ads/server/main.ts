@@ -171,6 +171,21 @@ const runtime = withRuntime<Env>({
         "[OAuth] oauthParams.code (first 20 chars):",
         oauthParams.code?.substring(0, 20),
       );
+      console.log("[OAuth] oauthParams.code exists:", !!oauthParams.code);
+      console.log("[OAuth] oauthParams.code length:", oauthParams.code?.length);
+
+      // Validate that code is present
+      if (
+        !oauthParams.code ||
+        typeof oauthParams.code !== "string" ||
+        oauthParams.code.trim().length === 0
+      ) {
+        console.error("[OAuth] ERROR: code is missing or invalid!");
+        console.error("[OAuth] oauthParams.code:", oauthParams.code);
+        throw new Error(
+          "OAuth code is required but was not provided or is invalid",
+        );
+      }
 
       const appSecret = getEnv("META_APP_SECRET");
       console.log(
@@ -211,14 +226,42 @@ const runtime = withRuntime<Env>({
       );
       console.log("[OAuth] Will use redirect_uri:", redirectUri);
 
+      // Validate redirect_uri before building params
+      if (
+        !redirectUri ||
+        typeof redirectUri !== "string" ||
+        redirectUri.trim().length === 0
+      ) {
+        console.error("[OAuth] ERROR: redirect_uri is missing or invalid!");
+        console.error("[OAuth] redirectUri:", redirectUri);
+        throw new Error(
+          "redirect_uri is required but was not provided or is invalid",
+        );
+      }
+
       const params = new URLSearchParams({
         client_id: META_APP_ID,
         client_secret: appSecret,
-        code: oauthParams.code,
+        code: oauthParams.code.trim(),
         // CRITICAL: Use the base redirect_uri (without query params) to match authorizationUrl
         // This ensures Meta accepts the token exchange (no error 36008)
-        redirect_uri: redirectUri,
+        redirect_uri: redirectUri.trim(),
       });
+
+      console.log("[OAuth] Params validation:");
+      console.log("  - client_id:", params.get("client_id") ? "✓" : "✗");
+      console.log(
+        "  - client_secret:",
+        params.get("client_secret") ? "✓" : "✗",
+      );
+      console.log(
+        "  - code:",
+        params.get("code") ? `✓ (length: ${params.get("code")?.length})` : "✗",
+      );
+      console.log(
+        "  - redirect_uri:",
+        params.get("redirect_uri") ? `✓ (${params.get("redirect_uri")})` : "✗",
+      );
 
       console.log(
         "[OAuth] redirect_uri added to params:",
