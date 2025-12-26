@@ -69,6 +69,29 @@ export const getMetaAccessToken = (env: Env): string => {
   return authorization;
 };
 
+/**
+ * Fixed redirect URI base (without query parameters)
+ * Meta App settings should be configured with this exact URL
+ */
+const META_REDIRECT_URI_BASE =
+  "https://sites-meta-ads.decocache.com/oauth/callback";
+
+/**
+ * Extract the base redirect_uri (without query parameters)
+ * Meta requires the redirect_uri to match what's configured in App settings,
+ * which typically doesn't include query parameters like ?state=...
+ */
+function getBaseRedirectUri(callbackUrl: string): string {
+  try {
+    const url = new URL(callbackUrl);
+    // Return only origin + pathname (no query params or hash)
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    // If URL parsing fails, return the fixed base
+    return META_REDIRECT_URI_BASE;
+  }
+}
+
 const runtime = withRuntime<Env>({
   oauth: {
     mode: "PKCE",
@@ -77,17 +100,20 @@ const runtime = withRuntime<Env>({
     /**
      * Generates the URL to redirect users to for Meta OAuth authorization
      *
-     * CRITICAL: Use the callbackUrl provided by runtime and ensure it's identical
-     * in both authorization and token exchange steps.
-     * Meta is very strict: the redirect_uri must match byte-for-byte.
+     * CRITICAL: Meta requires the redirect_uri to match EXACTLY what's configured
+     * in the App settings. The callbackUrl from runtime may include query params (?state=...),
+     * but we should use only the base URL (origin + pathname) to match App settings.
      */
     authorizationUrl: (callbackUrl: string) => {
+      // Extract base URL (without query params) to match Meta App settings
+      const redirectUri = getBaseRedirectUri(callbackUrl);
+
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
       url.searchParams.set("client_id", META_APP_ID);
-      // Use the callbackUrl from runtime - it should be the fixed redirect_uri
-      url.searchParams.set("redirect_uri", callbackUrl);
+      // Use the base redirect_uri (without query params) to match App settings
+      url.searchParams.set("redirect_uri", redirectUri);
       url.searchParams.set("scope", META_ADS_SCOPES);
       url.searchParams.set("response_type", "code");
 
@@ -98,7 +124,7 @@ const runtime = withRuntime<Env>({
      * Exchanges the authorization code for an access token
      *
      * CRITICAL: The redirect_uri MUST be EXACTLY the same as used in authorizationUrl
-     * Use the redirect_uri from oauthParams (provided by runtime) to ensure perfect match.
+     * We use the base URL (without query params) to match what's configured in Meta App settings.
      */
     exchangeCode: async (oauthParams: {
       code: string;
@@ -112,21 +138,20 @@ const runtime = withRuntime<Env>({
         throw new Error("META_APP_SECRET environment variable is required");
       }
 
-      // Get redirect_uri from params - runtime provides the same value used in authorizationUrl
-      const redirectUri = oauthParams.redirect_uri || oauthParams.redirectUri;
+      // Get redirect_uri from params (provided by runtime)
+      const providedRedirectUri =
+        oauthParams.redirect_uri || oauthParams.redirectUri;
 
-      if (!redirectUri) {
-        throw new Error(
-          "redirect_uri is required for Meta OAuth token exchange. " +
-            "It must be identical to the one used in the authorization dialog.",
-        );
-      }
+      // Extract base URL (without query params) to match what was used in authorizationUrl
+      const redirectUri = providedRedirectUri
+        ? getBaseRedirectUri(providedRedirectUri)
+        : META_REDIRECT_URI_BASE;
 
       const params = new URLSearchParams({
         client_id: META_APP_ID,
         client_secret: appSecret,
         code: oauthParams.code,
-        // CRITICAL: Use the EXACT same redirect_uri as in authorizationUrl
+        // CRITICAL: Use the base redirect_uri (without query params) to match authorizationUrl
         // This ensures Meta accepts the token exchange (no error 36008)
         redirect_uri: redirectUri,
       });
@@ -149,11 +174,13 @@ const runtime = withRuntime<Env>({
             "\n\n❌ OAuth Error 36008: redirect_uri mismatch" +
             "\n\nThe redirect_uri used in token exchange must be IDENTICAL to the one used in the authorization dialog." +
             `\n\n📋 Details:` +
-            `\n  - redirect_uri used: ${redirectUri}` +
+            `\n  - redirect_uri used in exchange: ${redirectUri}` +
+            `\n  - redirect_uri provided by runtime: ${providedRedirectUri || "not provided"}` +
+            `\n  - Base redirect_uri: ${META_REDIRECT_URI_BASE}` +
             `\n\n🔍 Solution:` +
-            `\n  1. Ensure the redirect_uri in Meta App settings matches: ${redirectUri}` +
-            `\n  2. Verify no query parameters or encoding differences` +
-            `\n  3. The redirect_uri must be exactly the same in both authorization and token exchange`;
+            `\n  1. Ensure the redirect_uri in Meta App settings matches: ${META_REDIRECT_URI_BASE}` +
+            `\n  2. The redirect_uri should NOT include query parameters (like ?state=...)` +
+            `\n  3. Both authorization and token exchange use the base URL: ${redirectUri}`;
         }
 
         throw new Error(errorMessage);
