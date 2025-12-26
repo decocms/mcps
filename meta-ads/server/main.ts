@@ -47,10 +47,6 @@ const envVars = loadEnvVars();
 const getEnv = (key: string): string | undefined =>
   envVars[key] || process.env[key];
 
-// Armazena o redirect_uri usado na autorização para usar no exchangeCode
-// Como o runtime não passa o redirect_uri no oauthParams, precisamos armazená-lo
-let storedRedirectUri: string | null = null;
-
 /**
  * Environment type for Meta Ads MCP
  */
@@ -73,6 +69,29 @@ export const getMetaAccessToken = (env: Env): string => {
   return authorization;
 };
 
+/**
+ * Fixed redirect URI base (without query parameters)
+ * Meta App settings should be configured with this exact URL
+ */
+const META_REDIRECT_URI_BASE =
+  "https://sites-meta-ads.decocache.com/oauth/callback";
+
+/**
+ * Extract the base redirect_uri (without query parameters)
+ * Meta requires the redirect_uri to match what's configured in App settings,
+ * which typically doesn't include query parameters like ?state=...
+ */
+function getBaseRedirectUri(callbackUrl: string): string {
+  try {
+    const url = new URL(callbackUrl);
+    // Return only origin + pathname (no query params or hash)
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    // If URL parsing fails, return the fixed base
+    return META_REDIRECT_URI_BASE;
+  }
+}
+
 const runtime = withRuntime<Env>({
   oauth: {
     mode: "PKCE",
@@ -80,25 +99,29 @@ const runtime = withRuntime<Env>({
 
     /**
      * Generates the URL to redirect users to for Meta OAuth authorization
+     *
+     * CRITICAL: Meta requires the redirect_uri to match EXACTLY what's configured
+     * in the App settings. The callbackUrl from runtime may include query params (?state=...),
+     * but we should use only the base URL (origin + pathname) to match App settings.
      */
     authorizationUrl: (callbackUrl: string) => {
       console.log("[OAuth] authorizationUrl called");
       console.log("[OAuth] callbackUrl received:", callbackUrl);
       console.log("[OAuth] callbackUrl type:", typeof callbackUrl);
 
-      // Armazena o redirect_uri para usar no exchangeCode
-      // O Meta precisa do EXATO mesmo redirect_uri (incluindo query params se houver)
-      storedRedirectUri = callbackUrl;
+      // Extract base URL (without query params) to match Meta App settings
+      const redirectUri = getBaseRedirectUri(callbackUrl);
       console.log(
-        "[OAuth] Stored redirect_uri for exchangeCode:",
-        storedRedirectUri,
+        "[OAuth] Base redirect_uri (without query params):",
+        redirectUri,
       );
 
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
       url.searchParams.set("client_id", META_APP_ID);
-      url.searchParams.set("redirect_uri", callbackUrl);
+      // Use the base redirect_uri (without query params) to match App settings
+      url.searchParams.set("redirect_uri", redirectUri);
       url.searchParams.set("scope", META_ADS_SCOPES);
       url.searchParams.set("response_type", "code");
 
@@ -114,6 +137,9 @@ const runtime = withRuntime<Env>({
 
     /**
      * Exchanges the authorization code for an access token
+     *
+     * CRITICAL: The redirect_uri MUST be EXACTLY the same as used in authorizationUrl
+     * We use the base URL (without query params) to match what's configured in Meta App settings.
      */
     exchangeCode: async (oauthParams: {
       code: string;
@@ -150,12 +176,9 @@ const runtime = withRuntime<Env>({
         throw new Error("META_APP_SECRET environment variable is required");
       }
 
-      // Meta requires the EXACT same redirect_uri used in authorization
-      // O runtime não passa o redirect_uri nos oauthParams, então usamos o armazenado
-      let redirectUri =
-        oauthParams.redirect_uri ||
-        oauthParams.redirectUri ||
-        storedRedirectUri;
+      // Get redirect_uri from params (provided by runtime)
+      const providedRedirectUri =
+        oauthParams.redirect_uri || oauthParams.redirectUri;
 
       console.log(
         "[OAuth] redirectUri from oauthParams.redirect_uri:",
@@ -166,90 +189,77 @@ const runtime = withRuntime<Env>({
         oauthParams.redirectUri,
       );
       console.log(
-        "[OAuth] redirectUri from storedRedirectUri:",
-        storedRedirectUri,
+        "[OAuth] providedRedirectUri (from runtime):",
+        providedRedirectUri,
       );
 
-      // Se o redirectUri tem query params (como ?state=...), extrai apenas a URL base
-      // O Meta pode exigir que seja exatamente igual ao usado na autorização
-      // Mas vamos tentar primeiro com o valor completo armazenado
-      if (redirectUri) {
-        try {
-          const urlObj = new URL(redirectUri);
-          console.log(
-            "[OAuth] redirectUri URL object - origin + pathname:",
-            urlObj.origin + urlObj.pathname,
-          );
-          console.log(
-            "[OAuth] redirectUri URL object - search:",
-            urlObj.search,
-          );
-          // Manter o redirect_uri completo como foi enviado na autorização
-          console.log(
-            "[OAuth] Using full redirect_uri with query params:",
-            redirectUri,
-          );
-        } catch (e) {
-          console.warn("[OAuth] Failed to parse redirectUri as URL:", e);
-        }
-      }
+      // Extract base URL (without query params) to match what was used in authorizationUrl
+      const redirectUri = providedRedirectUri
+        ? getBaseRedirectUri(providedRedirectUri)
+        : META_REDIRECT_URI_BASE;
 
-      console.log("[OAuth] redirectUri final value:", redirectUri);
-      console.log("[OAuth] redirectUri type:", typeof redirectUri);
-      console.log("[OAuth] redirectUri length:", redirectUri?.length);
+      console.log("[OAuth] Base redirect_uri (extracted):", redirectUri);
+      console.log(
+        "[OAuth] META_REDIRECT_URI_BASE (fallback):",
+        META_REDIRECT_URI_BASE,
+      );
 
       const params = new URLSearchParams({
         client_id: META_APP_ID,
         client_secret: appSecret,
         code: oauthParams.code,
+        // CRITICAL: Use the base redirect_uri (without query params) to match authorizationUrl
+        // This ensures Meta accepts the token exchange (no error 36008)
+        redirect_uri: redirectUri,
       });
 
-      if (redirectUri) {
-        params.set("redirect_uri", redirectUri);
-        console.log(
-          "[OAuth] redirect_uri added to params:",
-          params.get("redirect_uri"),
-        );
-      } else {
-        console.warn(
-          "[OAuth] WARNING: redirectUri is missing! This will cause the request to fail.",
-        );
-        throw new Error(
-          "redirect_uri is required but was not provided by the runtime or stored from authorization",
-        );
-      }
+      console.log(
+        "[OAuth] redirect_uri added to params:",
+        params.get("redirect_uri"),
+      );
+      console.log("[OAuth] All params keys:", Array.from(params.keys()));
 
       if (oauthParams.code_verifier) {
         params.set("code_verifier", oauthParams.code_verifier);
       }
 
-      const requestUrl = `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`;
+      const tokenUrl = `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`;
       console.log(
         "[OAuth] Request URL (without secret):",
-        requestUrl.replace(appSecret, "***"),
-      );
-      console.log("[OAuth] All params keys:", Array.from(params.keys()));
-      console.log(
-        "[OAuth] redirect_uri from params:",
-        params.get("redirect_uri"),
+        tokenUrl.replace(appSecret, "***"),
       );
 
-      const response = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`,
-        { method: "GET" },
-      );
+      const response = await fetch(tokenUrl, { method: "GET" });
 
       console.log("[OAuth] Response status:", response.status);
       console.log("[OAuth] Response ok:", response.ok);
 
       if (!response.ok) {
-        const error = await response.text();
-        console.error("[OAuth] Error response:", error);
+        const errorText = await response.text();
+        console.error("[OAuth] Error response:", errorText);
         console.error(
           "[OAuth] redirect_uri used in request:",
           params.get("redirect_uri"),
         );
-        throw new Error(`Meta OAuth failed: ${response.status} - ${error}`);
+
+        let errorMessage = `Meta OAuth failed: ${response.status} - ${errorText}`;
+
+        // Provide helpful error message for redirect_uri mismatch
+        if (response.status === 400 && errorText.includes("36008")) {
+          errorMessage +=
+            "\n\n❌ OAuth Error 36008: redirect_uri mismatch" +
+            "\n\nThe redirect_uri used in token exchange must be IDENTICAL to the one used in the authorization dialog." +
+            `\n\n📋 Details:` +
+            `\n  - redirect_uri used in exchange: ${redirectUri}` +
+            `\n  - redirect_uri provided by runtime: ${providedRedirectUri || "not provided"}` +
+            `\n  - Base redirect_uri: ${META_REDIRECT_URI_BASE}` +
+            `\n\n🔍 Solution:` +
+            `\n  1. Ensure the redirect_uri in Meta App settings matches: ${META_REDIRECT_URI_BASE}` +
+            `\n  2. The redirect_uri should NOT include query parameters (like ?state=...)` +
+            `\n  3. Both authorization and token exchange use the base URL: ${redirectUri}`;
+        }
+
+        throw new Error(errorMessage);
       }
 
       console.log("[OAuth] Token exchange successful!");

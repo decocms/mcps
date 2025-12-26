@@ -12,21 +12,15 @@ export const VERIFIED_SERVERS: string[] = [
   // Add your verified MCPs here
 
   // === Official/Popular MCPs ===
-  "io.github.github/github-mcp-server",
   "com.stripe/mcp",
   "com.notion/mcp",
   "com.cloudflare.mcp/mcp",
   "com.vercel/vercel-mcp",
   "io.prisma/mcp",
-  "com.gitlab/mcp",
   "com.postman/postman-mcp-server",
-  "com.apify/apify-mcp-server",
   "ai.exa/exa",
-  "io.github.perplexityai/mcp-server",
-  "com.atlassian/atlassian-mcp-server",
   "com.linear/linear",
   "io.github.timescale/pg-aiguide",
-  "com.supabase/mcp",
   "com.microsoft/microsoft-learn-mcp",
 ];
 
