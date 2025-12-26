@@ -147,7 +147,9 @@ const runtime = withRuntime<Env>({
       redirect_uri?: string;
       redirectUri?: string;
     }) => {
-      console.log("[OAuth] exchangeCode called");
+      console.log("=".repeat(80));
+      console.log("[OAuth] ========== EXCHANGE CODE CALLED ==========");
+      console.log("=".repeat(80));
       console.log(
         "[OAuth] oauthParams received:",
         JSON.stringify(oauthParams, null, 2),
@@ -164,6 +166,10 @@ const runtime = withRuntime<Env>({
       console.log(
         "[OAuth] oauthParams.redirectUri type:",
         typeof oauthParams.redirectUri,
+      );
+      console.log(
+        "[OAuth] oauthParams.code (first 20 chars):",
+        oauthParams.code?.substring(0, 20),
       );
 
       const appSecret = getEnv("META_APP_SECRET");
@@ -203,6 +209,7 @@ const runtime = withRuntime<Env>({
         "[OAuth] META_REDIRECT_URI_BASE (fallback):",
         META_REDIRECT_URI_BASE,
       );
+      console.log("[OAuth] Will use redirect_uri:", redirectUri);
 
       const params = new URLSearchParams({
         client_id: META_APP_ID,
@@ -233,13 +240,28 @@ const runtime = withRuntime<Env>({
 
       console.log("[OAuth] Response status:", response.status);
       console.log("[OAuth] Response ok:", response.ok);
+      console.log(
+        "[OAuth] Response headers:",
+        JSON.stringify(Object.fromEntries(response.headers.entries())),
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("=".repeat(80));
+        console.error("[OAuth] ========== ERROR IN TOKEN EXCHANGE ==========");
+        console.error("=".repeat(80));
         console.error("[OAuth] Error response:", errorText);
         console.error(
           "[OAuth] redirect_uri used in request:",
           params.get("redirect_uri"),
+        );
+        console.error(
+          "[OAuth] redirect_uri that was used in authorizationUrl should match:",
+          META_REDIRECT_URI_BASE,
+        );
+        console.error(
+          "[OAuth] Are they equal?",
+          params.get("redirect_uri") === META_REDIRECT_URI_BASE,
         );
 
         let errorMessage = `Meta OAuth failed: ${response.status} - ${errorText}`;
@@ -253,6 +275,7 @@ const runtime = withRuntime<Env>({
             `\n  - redirect_uri used in exchange: ${redirectUri}` +
             `\n  - redirect_uri provided by runtime: ${providedRedirectUri || "not provided"}` +
             `\n  - Base redirect_uri: ${META_REDIRECT_URI_BASE}` +
+            `\n  - redirect_uri used in authorizationUrl: ${META_REDIRECT_URI_BASE}` +
             `\n\n🔍 Solution:` +
             `\n  1. Ensure the redirect_uri in Meta App settings matches: ${META_REDIRECT_URI_BASE}` +
             `\n  2. The redirect_uri should NOT include query parameters (like ?state=...)` +
@@ -262,7 +285,9 @@ const runtime = withRuntime<Env>({
         throw new Error(errorMessage);
       }
 
-      console.log("[OAuth] Token exchange successful!");
+      console.log("=".repeat(80));
+      console.log("[OAuth] ========== TOKEN EXCHANGE SUCCESSFUL ==========");
+      console.log("=".repeat(80));
 
       const data = (await response.json()) as {
         access_token: string;
