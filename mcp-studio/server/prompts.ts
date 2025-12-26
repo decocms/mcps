@@ -86,10 +86,7 @@ export async function createPrompts(env: Env) {
             let text = msg.content.text;
             for (const [key, value] of Object.entries(args)) {
               if (value) {
-                text = text.replace(
-                  new RegExp(`\\{\\{${key}\\}\\}`, "g"),
-                  value,
-                );
+                text = text.replaceAll(`{{${key}}}`, value);
               }
             }
             return {
