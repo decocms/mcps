@@ -47,6 +47,10 @@ const envVars = loadEnvVars();
 const getEnv = (key: string): string | undefined =>
   envVars[key] || process.env[key];
 
+// Armazena o redirect_uri usado na autorização para usar no exchangeCode
+// Como o runtime pode não passar o redirect_uri nos oauthParams, precisamos armazená-lo
+let storedRedirectUri: string | null = null;
+
 /**
  * Environment type for Meta Ads MCP
  */
@@ -78,6 +82,13 @@ const runtime = withRuntime<Env>({
      * Generates the URL to redirect users to for Meta OAuth authorization
      */
     authorizationUrl: (callbackUrl: string) => {
+      // Armazena o redirect_uri usado para garantir que seja o mesmo no exchangeCode
+      storedRedirectUri = callbackUrl;
+      console.log(
+        "[OAuth] authorizationUrl - stored redirect_uri:",
+        storedRedirectUri,
+      );
+
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
@@ -105,18 +116,41 @@ const runtime = withRuntime<Env>({
       }
 
       // Meta requires the EXACT same redirect_uri used in authorization
-      // The runtime provides this via oauthParams
-      const redirectUri = oauthParams.redirect_uri || oauthParams.redirectUri;
+      // O runtime pode não passar o redirect_uri nos oauthParams, então usamos o armazenado
+      const redirectUri =
+        oauthParams.redirect_uri ||
+        oauthParams.redirectUri ||
+        storedRedirectUri;
+
+      console.log(
+        "[OAuth] exchangeCode - redirect_uri from oauthParams.redirect_uri:",
+        oauthParams.redirect_uri,
+      );
+      console.log(
+        "[OAuth] exchangeCode - redirect_uri from oauthParams.redirectUri:",
+        oauthParams.redirectUri,
+      );
+      console.log(
+        "[OAuth] exchangeCode - redirect_uri from storedRedirectUri:",
+        storedRedirectUri,
+      );
+      console.log(
+        "[OAuth] exchangeCode - final redirect_uri to use:",
+        redirectUri,
+      );
+
+      if (!redirectUri) {
+        throw new Error(
+          "redirect_uri is required but was not provided by the runtime or stored from authorization",
+        );
+      }
 
       const params = new URLSearchParams({
         client_id: META_APP_ID,
         client_secret: appSecret,
         code: oauthParams.code,
+        redirect_uri: redirectUri,
       });
-
-      if (redirectUri) {
-        params.set("redirect_uri", redirectUri);
-      }
 
       if (oauthParams.code_verifier) {
         params.set("code_verifier", oauthParams.code_verifier);
