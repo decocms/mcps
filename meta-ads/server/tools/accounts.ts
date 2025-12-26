@@ -28,7 +28,7 @@ export const createGetAdAccountsTool = (env: Env) =>
         .optional()
         .default("me")
         .describe("Meta user ID or 'me' for the current user"),
-      limit: z
+      limit: z.coerce
         .number()
         .optional()
         .default(50)
@@ -174,7 +174,7 @@ export const createGetAccountPagesTool = (env: Env) =>
         .describe(
           "Meta Ads account ID (format: act_XXXXXXXXX) or 'me' for the current user's pages",
         ),
-      limit: z
+      limit: z.coerce
         .number()
         .optional()
         .default(50)

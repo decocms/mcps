@@ -15,6 +15,7 @@ export const META_OAUTH_URL = "https://www.facebook.com";
 // OAuth Scopes required for Ads Analytics
 export const META_ADS_SCOPES = [
   "ads_read", // Read ad account info, campaigns, ad sets, ads, and insights
+  "ads_management", // Manage ads (required for some operations)
   "pages_read_engagement", // Read page info for ad context
   "business_management", // Access business accounts
 ].join(",");

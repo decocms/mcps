@@ -66,7 +66,7 @@ Use date_preset for common time ranges (last_7d, last_30d, etc) or time_range fo
         .describe(
           "Level of aggregation when querying an account. Default: aggregate all.",
         ),
-      limit: z
+      limit: z.coerce
         .number()
         .optional()
         .default(100)

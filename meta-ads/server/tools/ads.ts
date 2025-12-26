@@ -25,7 +25,7 @@ export const createGetAdsTool = (env: Env) =>
       account_id: z
         .string()
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
-      limit: z
+      limit: z.coerce
         .number()
         .optional()
         .default(50)

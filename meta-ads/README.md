@@ -61,6 +61,7 @@ This MCP uses OAuth PKCE for authentication with the Meta Graph API. The user wi
 ### Required Permissions
 
 - `ads_read` - Read ad information
+- `ads_management` - Manage ads (required for some operations)
 - `pages_read_engagement` - Read associated pages
 - `business_management` - Access business accounts
 
