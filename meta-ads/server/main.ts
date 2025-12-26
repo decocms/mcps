@@ -109,7 +109,14 @@ const runtime = withRuntime<Env>({
       redirect_uri?: string;
       redirectUri?: string;
     }) => {
+      console.log("[Meta OAuth] exchangeCode called");
+      console.log("[Meta OAuth] oauthParams:", JSON.stringify(oauthParams));
+
       const appSecret = getEnv("META_APP_SECRET");
+      console.log(
+        "[Meta OAuth] META_APP_SECRET:",
+        appSecret ? "found" : "NOT FOUND",
+      );
 
       if (!appSecret) {
         throw new Error("META_APP_SECRET environment variable is required");
@@ -156,15 +163,25 @@ const runtime = withRuntime<Env>({
         params.set("code_verifier", oauthParams.code_verifier);
       }
 
-      const response = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`,
-        { method: "GET" },
+      const tokenUrl = `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`;
+      console.log(
+        "[Meta OAuth] Token URL (without secret):",
+        tokenUrl.replace(appSecret, "***"),
       );
+
+      const response = await fetch(tokenUrl, { method: "GET" });
 
       if (!response.ok) {
         const error = await response.text();
+        console.error(
+          "[Meta OAuth] Token exchange failed:",
+          response.status,
+          error,
+        );
         throw new Error(`Meta OAuth failed: ${response.status} - ${error}`);
       }
+
+      console.log("[Meta OAuth] Token exchange successful!");
 
       const data = (await response.json()) as {
         access_token: string;
