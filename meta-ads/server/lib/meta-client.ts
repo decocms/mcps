@@ -81,6 +81,19 @@ export class MetaAdsClient {
     this.config = config;
   }
 
+  // ============ User Methods ============
+
+  /**
+   * Get information about the authenticated user
+   */
+  async getUserInfo(fields?: string): Promise<{ id: string; name?: string }> {
+    return makeRequest<{ id: string; name?: string }>(this.config, "/me", {
+      params: {
+        fields: fields || "id,name",
+      },
+    });
+  }
+
   // ============ Account Methods ============
 
   /**

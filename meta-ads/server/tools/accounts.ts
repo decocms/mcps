@@ -131,6 +131,32 @@ export const createGetAccountInfoTool = (env: Env) =>
   });
 
 /**
+ * Get information about the authenticated user
+ */
+export const createGetUserInfoTool = (env: Env) =>
+  createPrivateTool({
+    id: "META_ADS_GET_USER_INFO",
+    description:
+      "Get information about the currently authenticated Meta user including user ID and name. Use this to get the user_id needed for other operations.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      id: z.string().describe("Meta user ID"),
+      name: z.string().optional().describe("User's display name"),
+    }),
+    execute: async () => {
+      const accessToken = getMetaAccessToken(env);
+      const client = createMetaAdsClient({ accessToken });
+
+      const user = await client.getUserInfo();
+
+      return {
+        id: user.id,
+        name: user.name,
+      };
+    },
+  });
+
+/**
  * Get pages associated with an account or user
  */
 export const createGetAccountPagesTool = (env: Env) =>
@@ -186,6 +212,7 @@ export const createGetAccountPagesTool = (env: Env) =>
 
 // Export all account tools
 export const accountTools = [
+  createGetUserInfoTool,
   createGetAdAccountsTool,
   createGetAccountInfoTool,
   createGetAccountPagesTool,
