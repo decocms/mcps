@@ -23,6 +23,54 @@ export type OrderByExpression = Array<{
 }>;
 
 // ============================================================================
+// Validation
+// ============================================================================
+
+/**
+ * Valid SQL identifier pattern: alphanumeric and underscores only
+ */
+const VALID_IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+/**
+ * Validate and sanitize a SQL identifier (column/field name)
+ * Prevents SQL injection by ensuring only valid identifier characters
+ */
+function sanitizeIdentifier(name: string): string {
+  if (!VALID_IDENTIFIER_PATTERN.test(name)) {
+    throw new Error(
+      `Invalid SQL identifier: "${name}". Only alphanumeric characters and underscores are allowed.`,
+    );
+  }
+  return name;
+}
+
+/**
+ * Validate sort direction
+ */
+function sanitizeDirection(direction: string): "ASC" | "DESC" {
+  const upper = direction.toUpperCase();
+  if (upper !== "ASC" && upper !== "DESC") {
+    throw new Error(
+      `Invalid sort direction: "${direction}". Must be "ASC" or "DESC".`,
+    );
+  }
+  return upper;
+}
+
+/**
+ * Validate nulls ordering
+ */
+function sanitizeNulls(nulls: string): "FIRST" | "LAST" {
+  const upper = nulls.toUpperCase();
+  if (upper !== "FIRST" && upper !== "LAST") {
+    throw new Error(
+      `Invalid nulls ordering: "${nulls}". Must be "FIRST" or "LAST".`,
+    );
+  }
+  return upper;
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -44,8 +92,8 @@ export function buildWhereClause(
     !("conditions" in whereExpr)
   ) {
     const fieldPath = whereExpr.field;
-    if (!fieldPath) return { clause: "", params };
-    const fieldName = fieldPath[fieldPath.length - 1];
+    if (!fieldPath || fieldPath.length === 0) return { clause: "", params };
+    const fieldName = sanitizeIdentifier(fieldPath[fieldPath.length - 1]);
 
     switch (whereExpr.operator) {
       case "eq":
@@ -115,9 +163,12 @@ export function buildOrderByClause(
 
   const orderClauses = orderByExpr.map((order) => {
     const fieldPath = order.field;
-    const fieldName = fieldPath[fieldPath.length - 1];
-    const direction = order.direction.toUpperCase();
-    const nulls = order.nulls ? ` NULLS ${order.nulls.toUpperCase()}` : "";
+    if (!fieldPath || fieldPath.length === 0) {
+      throw new Error("ORDER BY field path cannot be empty");
+    }
+    const fieldName = sanitizeIdentifier(fieldPath[fieldPath.length - 1]);
+    const direction = sanitizeDirection(order.direction);
+    const nulls = order.nulls ? ` NULLS ${sanitizeNulls(order.nulls)}` : "";
     return `${fieldName} ${direction}${nulls}`;
   });
 
