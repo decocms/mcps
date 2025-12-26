@@ -69,14 +69,6 @@ export const getMetaAccessToken = (env: Env): string => {
   return authorization;
 };
 
-/**
- * Fixed redirect URI for Meta OAuth
- *
- * CRITICAL: This must match EXACTLY what is configured in the Meta App settings.
- * Meta requires the redirect_uri to be identical in both authorization and token exchange.
- */
-const META_REDIRECT_URI = "https://sites-meta-ads.decocache.com/oauth/callback";
-
 const runtime = withRuntime<Env>({
   oauth: {
     mode: "PKCE",
@@ -85,19 +77,17 @@ const runtime = withRuntime<Env>({
     /**
      * Generates the URL to redirect users to for Meta OAuth authorization
      *
-     * CRITICAL: We use the fixed redirect_uri to ensure it's identical
+     * CRITICAL: Use the callbackUrl provided by runtime and ensure it's identical
      * in both authorization and token exchange steps.
      * Meta is very strict: the redirect_uri must match byte-for-byte.
-     *
-     * @param _callbackUrl - Provided by runtime but not used (we use fixed META_REDIRECT_URI)
      */
-    authorizationUrl: (_callbackUrl: string) => {
+    authorizationUrl: (callbackUrl: string) => {
       const url = new URL(
         `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
       );
       url.searchParams.set("client_id", META_APP_ID);
-      // CRITICAL: Use the fixed redirect_uri - must match Meta App settings exactly
-      url.searchParams.set("redirect_uri", META_REDIRECT_URI);
+      // Use the callbackUrl from runtime - it should be the fixed redirect_uri
+      url.searchParams.set("redirect_uri", callbackUrl);
       url.searchParams.set("scope", META_ADS_SCOPES);
       url.searchParams.set("response_type", "code");
 
@@ -108,7 +98,7 @@ const runtime = withRuntime<Env>({
      * Exchanges the authorization code for an access token
      *
      * CRITICAL: The redirect_uri MUST be EXACTLY the same as used in authorizationUrl
-     * We use the fixed META_REDIRECT_URI constant to ensure perfect match.
+     * Use the redirect_uri from oauthParams (provided by runtime) to ensure perfect match.
      */
     exchangeCode: async (oauthParams: {
       code: string;
@@ -122,13 +112,23 @@ const runtime = withRuntime<Env>({
         throw new Error("META_APP_SECRET environment variable is required");
       }
 
+      // Get redirect_uri from params - runtime provides the same value used in authorizationUrl
+      const redirectUri = oauthParams.redirect_uri || oauthParams.redirectUri;
+
+      if (!redirectUri) {
+        throw new Error(
+          "redirect_uri is required for Meta OAuth token exchange. " +
+            "It must be identical to the one used in the authorization dialog.",
+        );
+      }
+
       const params = new URLSearchParams({
         client_id: META_APP_ID,
         client_secret: appSecret,
         code: oauthParams.code,
-        // CRITICAL: Use the EXACT same fixed redirect_uri as in authorizationUrl
+        // CRITICAL: Use the EXACT same redirect_uri as in authorizationUrl
         // This ensures Meta accepts the token exchange (no error 36008)
-        redirect_uri: META_REDIRECT_URI,
+        redirect_uri: redirectUri,
       });
 
       if (oauthParams.code_verifier) {
@@ -149,12 +149,11 @@ const runtime = withRuntime<Env>({
             "\n\n❌ OAuth Error 36008: redirect_uri mismatch" +
             "\n\nThe redirect_uri used in token exchange must be IDENTICAL to the one used in the authorization dialog." +
             `\n\n📋 Details:` +
-            `\n  - Fixed redirect_uri: ${META_REDIRECT_URI}` +
-            `\n  - redirect_uri from params: ${oauthParams.redirect_uri || oauthParams.redirectUri || "not provided"}` +
+            `\n  - redirect_uri used: ${redirectUri}` +
             `\n\n🔍 Solution:` +
-            `\n  1. Ensure the redirect_uri in Meta App settings matches: ${META_REDIRECT_URI}` +
+            `\n  1. Ensure the redirect_uri in Meta App settings matches: ${redirectUri}` +
             `\n  2. Verify no query parameters or encoding differences` +
-            `\n  3. Check that the domain is exactly: sites-meta-ads.decocache.com`;
+            `\n  3. The redirect_uri must be exactly the same in both authorization and token exchange`;
         }
 
         throw new Error(errorMessage);
