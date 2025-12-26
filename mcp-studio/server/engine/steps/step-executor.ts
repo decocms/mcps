@@ -62,19 +62,23 @@ export class StepExecutor {
     }
 
     if (!result) {
-      throw new Error(`Step '${step.name}' failed`);
+      // Return error result instead of throwing
+      return {
+        stepId: step.name,
+        startedAt: existingStepResult?.started_at_epoch_ms ?? Date.now(),
+        completedAt: Date.now(),
+        output: undefined,
+        error: `Step '${step.name}' failed: no result returned`,
+      };
     }
 
     if (result.error) {
+      // Save error to database but don't throw - let executor decide
       await this.ctx.updateStep(step.name, {
         error: result.error,
         started_at_epoch_ms:
           existingStepResult?.started_at_epoch_ms ?? Date.now(),
       });
-
-      throw new Error(
-        `Step '${step.name}' failed after ${step.config?.maxAttempts ?? 1} attempt(s): ${result.error}`,
-      );
     }
 
     return result;

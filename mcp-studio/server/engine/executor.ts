@@ -5,13 +5,14 @@
  */
 
 import type { Env } from "../types/env.ts";
-import type { Step } from "../types/step.ts";
+import type { Step, StepResult } from "../types/step.ts";
 import type { RefContext } from "../utils/ref-resolver.ts";
 import { resolveAllRefs } from "../utils/ref-resolver.ts";
 import {
   claimExecution,
   getStepResults,
   updateExecution,
+  updateStepResult,
 } from "../db/queries/executions.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
 import { ExecutionNotFoundError } from "../utils/errors.ts";
@@ -54,7 +55,13 @@ export async function executeWorkflow(
 
       if (!pending.length) continue;
 
-      const results = await executeLevelSteps(pending, ctx, stepExecutor);
+      const results = await executeLevelSteps({
+        executionId,
+        steps: pending,
+        ctx,
+        stepExecutor,
+        env,
+      });
 
       processResults(results, ctx.stepOutputs, completedSteps);
     }
@@ -71,7 +78,7 @@ export async function executeWorkflow(
     return { status: "success", output };
   } catch (err) {
     console.error(`[WORKFLOW] Error executing workflow: ${err}`);
-    return handleExecutionError(env, executionId, err);
+    return await handleExecutionError(env, executionId, err);
   }
 }
 
@@ -109,14 +116,22 @@ function partitionSteps(
 
 interface StepExecutionResult {
   step: Step;
-  result?: { output?: unknown; stepId: string };
+  result?: StepResult;
 }
 
-async function executeLevelSteps(
-  steps: Step[],
-  ctx: RefContext,
-  stepExecutor: StepExecutor,
-): Promise<StepExecutionResult[]> {
+async function executeLevelSteps({
+  executionId,
+  steps,
+  ctx,
+  stepExecutor,
+  env,
+}: {
+  executionId: string;
+  steps: Step[];
+  ctx: RefContext;
+  stepExecutor: StepExecutor;
+  env: Env;
+}): Promise<StepExecutionResult[]> {
   return Promise.all(
     steps.map(async (step) => {
       const input = resolveAllRefs(step.input, ctx).resolved as Record<
@@ -130,12 +145,20 @@ async function executeLevelSteps(
         ? new Date(existingResult.startedAt).getTime()
         : Date.now();
 
-      const result = await stepExecutor.executeStep(step, input, {
-        started_at_epoch_ms: startedAt,
-      });
-
-      if (!result.stepId) throw new Error(`Step result stepId is required`);
-      return { step, result };
+      try {
+        const result = await stepExecutor.executeStep(step, input, {
+          started_at_epoch_ms: startedAt,
+        });
+        console.log("Step executed", step.name, result);
+        return { step, result };
+      } catch (err) {
+        console.error("Step failed", step.name, err);
+        updateStepResult(env, executionId, step.name, {
+          error: err instanceof Error ? err.message : String(err),
+          completed_at_epoch_ms: Date.now(),
+        });
+        throw err;
+      }
     }),
   );
 }
@@ -146,8 +169,8 @@ function processResults(
   completedSteps: string[],
 ): void {
   for (const r of results) {
-    stepOutputs.set(r.step.name, r.result!.output);
-    completedSteps.push(r.result!.stepId);
+    stepOutputs.set(r.step.name, r.result?.output ?? undefined);
+    completedSteps.push(r.step.name);
   }
 }
 

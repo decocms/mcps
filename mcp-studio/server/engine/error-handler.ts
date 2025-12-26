@@ -33,7 +33,10 @@ export async function handleExecutionError(
   if (err instanceof StepTimeoutError) {
     await updateExecution(env, executionId, {
       status: "error",
-      error: err.message,
+      error:
+        typeof err.message === "string"
+          ? err.message
+          : JSON.stringify(err.message),
       completed_at_epoch_ms: Date.now(),
     });
     return { status: "error", error: err.message };
@@ -45,7 +48,6 @@ export async function handleExecutionError(
     });
     return { status: "waiting_for_signal", message: err.message };
   }
-
   if (err instanceof WorkflowCancelledError) {
     await updateExecution(env, executionId, {
       status: "cancelled",
@@ -55,13 +57,17 @@ export async function handleExecutionError(
   }
 
   const errorMsg = err instanceof Error ? err.message : String(err);
-  console.error(`[WORKFLOW] Error executing workflow: ${errorMsg}`);
+  console.error(`[WORKFLOW] Unknown error executing workflow: ${errorMsg}`);
 
-  await updateExecution(env, executionId, {
-    status: "error",
-    error: errorMsg,
-    completed_at_epoch_ms: Date.now(),
-  });
+  try {
+    await updateExecution(env, executionId, {
+      status: "error",
+      error: errorMsg,
+      completed_at_epoch_ms: Date.now(),
+    });
+  } catch (err) {
+    console.error(`[WORKFLOW] Error updating execution: ${err}`);
+  }
 
   return { status: "error", error: errorMsg };
 }

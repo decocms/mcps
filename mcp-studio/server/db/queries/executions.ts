@@ -163,31 +163,18 @@ export async function updateExecution(
 
   params.push(id);
 
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
-      UPDATE workflow_execution
-      SET ${setClauses.join(", ")}
-      WHERE id = ?
-      RETURNING id, status, output, error, completed_at_epoch_ms
-    `,
+  const result = await runSQL<{
+    id: string;
+    status: WorkflowExecutionStatus;
+    output: unknown;
+    error: string;
+    completed_at_epoch_ms: number;
+  }>(
+    env,
+    `UPDATE workflow_execution SET ${setClauses.join(", ")} WHERE id = ? RETURNING id, status, output, error, completed_at_epoch_ms`,
     params,
-  });
-
-  if (!result.result[0]?.results?.length) {
-    throw new Error(`Workflow execution with id ${id} not found`);
-  }
-
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
-
-  return {
-    id: row?.id as string,
-    status: row?.status as WorkflowExecutionStatus,
-    output: row?.output as unknown,
-    error: row?.error as string,
-    completed_at_epoch_ms: row?.completed_at_epoch_ms as number,
-  };
+  );
+  return result[0];
 }
 
 /**
