@@ -286,6 +286,8 @@ async function updateWorkflow(
     params.push(JSON.stringify(data.steps || []));
   }
 
+  console.log({ steps: data.steps });
+
   params.push(id);
 
   const sql = `

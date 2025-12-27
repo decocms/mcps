@@ -14,7 +14,12 @@
 import z from "zod";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 import { validateCode } from "../engine/steps/code-step.ts";
-import { CodeActionSchema, Step, Workflow } from "@decocms/bindings/workflow";
+import {
+  CodeActionSchema,
+  Step,
+  ToolCallAction,
+  Workflow,
+} from "@decocms/bindings/workflow";
 import type { Env } from "../types/env.ts";
 import { getStepType } from "../types/step.ts";
 
@@ -188,6 +193,7 @@ export async function validateWorkflow(
   const currentPermissions = await env.CONNECTION.COLLECTION_CONNECTIONS_GET({
     id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
   });
+  const currentTools = currentPermissions.item.tools;
   const externalConnections = getWorkflowExternalConnections(workflow);
 
   const availableSteps = new Map<string, number>();
@@ -222,6 +228,8 @@ export async function validateWorkflow(
     },
   });
 
+  env.CONNECTION.COLLECTION_CONNECTIONS_GET;
+
   // Steps is now a flat array (no phases)
   const steps = workflow.steps || [];
 
@@ -236,6 +244,16 @@ export async function validateWorkflow(
     const refErrors = validateStepRefs(step, availableSteps);
     errors.push(...refErrors);
     const stepType = getStepType(step);
+
+    if (stepType === "tool") {
+      const tool = currentTools.find(
+        (tool) => tool.name === (step.action as ToolCallAction).toolName,
+      );
+
+      if (!step.outputSchema) {
+        step.outputSchema = (tool?.outputSchema as any) ?? {};
+      }
+    }
 
     if (stepType === "code") {
       const { error, schema } = await validateCodeStep(step);

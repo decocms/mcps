@@ -33,6 +33,12 @@ export type ConnectionBinding = {
     item: {
       configuration_state: object;
       configuration_scopes: string[];
+      tools: {
+        name: string;
+        description: string;
+        inputSchema: object;
+        outputSchema: object;
+      }[];
     };
   }>;
 };

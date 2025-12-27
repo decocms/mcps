@@ -9,6 +9,7 @@ import { createMCPFetchStub } from "@decocms/bindings/client";
 import { ToolCallActionSchema } from "@decocms/bindings/workflow";
 import type { Step, StepResult } from "../../types/step.ts";
 import type { ExecutionContext } from "../context.ts";
+import { executeCode } from "./code-step.ts";
 
 export async function executeToolStep(
   ctx: ExecutionContext,
@@ -22,7 +23,7 @@ export async function executeToolStep(
     throw new Error("Tool step missing tool configuration");
   }
 
-  const { connectionId, toolName } = parsed.data;
+  const { connectionId, toolName, transformCode } = parsed.data;
   const mcpConnection = proxyConnectionForId(connectionId, {
     token: ctx.token,
     meshUrl: ctx.meshUrl.replace("/mcp/", "/mcp"),
@@ -53,6 +54,30 @@ export async function executeToolStep(
       ),
     ),
   ]);
+
+  if (step.outputSchema) {
+    // return only fields that are in the output schema
+    const outputSchemaProperties = step.outputSchema.properties as Record<
+      string,
+      unknown
+    >;
+    const output = outputSchemaProperties
+      ? Object.fromEntries(
+          Object.entries(result as Record<string, unknown>).filter(
+            ([key]) => key in outputSchemaProperties,
+          ),
+        )
+      : (result as Record<string, unknown>);
+
+    if (transformCode) {
+      const transformResult = await executeCode(
+        transformCode,
+        output,
+        step.name,
+      );
+      return transformResult;
+    }
+  }
 
   return {
     output: result,
