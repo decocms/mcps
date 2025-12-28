@@ -24,6 +24,8 @@
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",
+    "grain",
+    "mcp-studio",
     "nanobanana",
     "object-storage",
     "openrouter",
@@ -37,8 +39,7 @@
     "template-minimal",
     "template-with-view",
     "veo",
-    "whisper",
-    "mcp-studio"
+    "whisper"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

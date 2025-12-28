@@ -1,0 +1,11 @@
+{
+  "scopeName": "deco",
+  "name": "grain",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-grain.decocache.com/mcp"
+  },
+  "description": "AI-powered meeting recorder - Access recordings, transcripts, and insights from your Grain meetings.",
+  "icon": "https://assets.decocache.com/decocms/bc2ca488-2bae-4aac-8d3e-ead262dad764/agent.png",
+  "unlisted": false
+}

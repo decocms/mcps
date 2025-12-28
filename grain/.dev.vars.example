@@ -1,0 +1,8 @@
+# Grain API Configuration
+# Get your API key from https://grain.com/settings/api (if available)
+GRAIN_API_KEY=your_grain_api_key_here
+
+# Optional: Override API URL for testing
+# GRAIN_API_URL=http://localhost:3000/mock-api
+
+
