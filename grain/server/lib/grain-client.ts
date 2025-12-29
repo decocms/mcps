@@ -1,0 +1,150 @@
+/**
+ * Grain API client
+ * Handles all communication with the Grain API
+ */
+
+import {
+  GRAIN_BASE_URL,
+  GRAIN_LIST_RECORDINGS_ENDPOINT,
+  GRAIN_RECORDING_ENDPOINT,
+} from "../constants.ts";
+import type {
+  ListRecordingsParams,
+  ListRecordingsResponse,
+  Recording,
+  RecordingDetails,
+} from "./types.ts";
+
+export interface GrainClientConfig {
+  apiKey: string;
+}
+
+export class GrainClient {
+  private apiKey: string;
+  private baseUrl: string;
+
+  constructor(config: GrainClientConfig) {
+    this.apiKey = config.apiKey;
+    this.baseUrl = GRAIN_BASE_URL;
+  }
+
+  /**
+   * Build headers for API requests
+   */
+  private getHeaders(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+  }
+
+  /**
+   * Make a GET request to the Grain API
+   */
+  private async get<T>(
+    endpoint: string,
+    params?: Record<string, string>,
+  ): Promise<T> {
+    const url = new URL(`${this.baseUrl}${endpoint}`);
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          url.searchParams.append(key, value);
+        }
+      });
+    }
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
+
+    return (await response.json()) as T;
+  }
+
+  /**
+   * Make a POST request to the Grain API
+   */
+  private async post<T>(
+    endpoint: string,
+    body?: Record<string, unknown>,
+  ): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
+
+    return (await response.json()) as T;
+  }
+
+  /**
+   * List all recordings with optional filters
+   * NOTE: Grain API uses GET with query parameters and cursor-based pagination
+   */
+  async listRecordings(
+    params?: ListRecordingsParams,
+  ): Promise<ListRecordingsResponse> {
+    const queryParams: Record<string, string> = {};
+
+    // Add query parameters
+    if (params?.limit !== undefined) {
+      queryParams.limit = params.limit.toString();
+    }
+    // Note: Grain API uses offset for initial pagination
+    if (params?.offset !== undefined) {
+      queryParams.offset = params.offset.toString();
+    }
+    if (params?.start_date) {
+      queryParams.start_date = params.start_date;
+    }
+    if (params?.end_date) {
+      queryParams.end_date = params.end_date;
+    }
+    if (params?.status) {
+      queryParams.status = params.status;
+    }
+    if (params?.search) {
+      queryParams.search = params.search;
+    }
+
+    return await this.get<ListRecordingsResponse>(
+      GRAIN_LIST_RECORDINGS_ENDPOINT,
+      queryParams,
+    );
+  }
+
+  /**
+   * Get detailed information about a specific recording
+   */
+  async getRecording(recordingId: string): Promise<RecordingDetails> {
+    return await this.get<RecordingDetails>(
+      `${GRAIN_RECORDING_ENDPOINT}/${recordingId}`,
+    );
+  }
+
+  /**
+   * Search recordings by text
+   */
+  async searchRecordings(
+    query: string,
+    params?: Omit<ListRecordingsParams, "search">,
+  ): Promise<ListRecordingsResponse> {
+    return await this.listRecordings({
+      ...params,
+      search: query,
+    });
+  }
+}
