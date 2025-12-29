@@ -42,12 +42,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         console.error("error changing configuration", error);
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "*",
-    ],
+    scopes: ["DATABASE::DATABASES_RUN_SQL", "EVENT_BUS::*", "*"],
     state: StateSchema,
   },
   tools: (env) => tools.map((tool) => tool(mergeEnvWithState(env))),
