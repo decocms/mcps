@@ -9,6 +9,7 @@
 import {
   DEFAULT_PAGE_SIZE,
   GRAIN_BASE_URL,
+  GRAIN_HOOKS_CREATE_ENDPOINT,
   GRAIN_RECORDINGS_ENDPOINT,
   GRAIN_TRANSCRIPT_ENDPOINT,
 } from "../constants.ts";
@@ -72,41 +73,67 @@ export class GrainClient {
 
   /**
    * List recordings with filters and pagination
+   * Uses POST method with cursor-based pagination
    */
   async listRecordings(params: ListRecordingsParams = {}): Promise<{
     recordings: RecordingSummary[];
     total: number;
     hasMore: boolean;
+    cursor?: string;
   }> {
-    const queryParams = new URLSearchParams();
+    const body: Record<string, unknown> = {
+      limit: params.limit || DEFAULT_PAGE_SIZE,
+    };
 
-    if (params.meeting_type) {
-      queryParams.set("meeting_type", params.meeting_type);
+    // Add cursor if provided (for pagination)
+    if (params.cursor) {
+      body.cursor = params.cursor;
     }
-    if (params.meeting_platform) {
-      queryParams.set("meeting_platform", params.meeting_platform);
-    }
-    if (params.tags) queryParams.set("tags", params.tags.join(","));
+
+    // Add filters
+    if (params.meeting_type) body.meeting_type = params.meeting_type;
+    if (params.meeting_platform)
+      body.meeting_platform = params.meeting_platform;
+    if (params.tags) body.tags = params.tags;
     if (params.participant_email) {
-      queryParams.set("participant_email", params.participant_email);
+      body.participant_email = params.participant_email;
     }
-    if (params.from_date) queryParams.set("from_date", params.from_date);
-    if (params.to_date) queryParams.set("to_date", params.to_date);
-    if (params.status) queryParams.set("status", params.status);
-    if (params.sort_by) queryParams.set("sort_by", params.sort_by);
-    if (params.sort_order) queryParams.set("sort_order", params.sort_order);
-
-    queryParams.set("limit", String(params.limit || DEFAULT_PAGE_SIZE));
-    queryParams.set("offset", String(params.offset || 0));
+    if (params.from_date) body.from_date = params.from_date;
+    if (params.to_date) body.to_date = params.to_date;
+    if (params.status) body.status = params.status;
+    if (params.sort_by) body.sort_by = params.sort_by;
+    if (params.sort_order) body.sort_order = params.sort_order;
 
     const response = await this.request<GrainAPIResponse<RecordingSummary[]>>(
-      `${GRAIN_RECORDINGS_ENDPOINT}?${queryParams.toString()}`,
+      GRAIN_RECORDINGS_ENDPOINT,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
     );
 
     return {
       recordings: response.data,
       total: response.meta?.total || response.data.length,
       hasMore: response.meta?.has_more || false,
+      cursor: response.meta?.cursor,
     };
+  }
+
+  /**
+   * Create a webhook (hook) for receiving events
+   */
+  async createHook(hookUrl: string): Promise<{ id: string; hook_url: string }> {
+    const response = await this.request<{ id: string; hook_url: string }>(
+      GRAIN_HOOKS_CREATE_ENDPOINT,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          hook_url: hookUrl,
+        }),
+      },
+    );
+
+    return response;
   }
 }

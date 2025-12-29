@@ -90,7 +90,8 @@ export interface ListRecordingsParams {
   sort_by?: "recorded_at" | "created_at" | "duration" | "title";
   sort_order?: "asc" | "desc";
   limit?: number;
-  offset?: number;
+  offset?: number; // Deprecated: use cursor instead
+  cursor?: string; // For cursor-based pagination
 }
 
 /**
@@ -138,6 +139,7 @@ export interface GrainAPIResponse<T> {
     page?: number;
     page_size?: number;
     has_more?: boolean;
+    cursor?: string; // For cursor-based pagination
   };
 }
 

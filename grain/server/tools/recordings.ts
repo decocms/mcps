@@ -9,9 +9,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { getGrainApiKey, getGrainApiUrl } from "../lib/env.ts";
-import { GrainClient } from "../lib/client.ts";
-import { MockGrainClient } from "../lib/mock-client.ts";
+import { runSQL } from "../lib/postgres.ts";
 
 /**
  * List recordings with filters and pagination
@@ -98,35 +96,104 @@ export const createListRecordingsTool = (env: Env) =>
       has_more: z.boolean().describe("Whether there are more results"),
     }),
     execute: async ({ context }) => {
-      // Use mock client if API key is "mock" or not set
-      const apiKey = env.GRAIN_API_KEY || "";
-      const client =
-        apiKey === "mock" || !apiKey
-          ? new MockGrainClient()
-          : new GrainClient({
-              apiKey: getGrainApiKey(env),
-              baseUrl: getGrainApiUrl(env),
-            });
+      try {
+        // Build SQL query with filters
+        const conditions: string[] = [];
+        const params: unknown[] = [];
+        let paramIndex = 1;
 
-      const result = await client.listRecordings({
-        meeting_type: context.meeting_type,
-        meeting_platform: context.meeting_platform,
-        tags: context.tags,
-        participant_email: context.participant_email,
-        from_date: context.from_date,
-        to_date: context.to_date,
-        status: context.status,
-        sort_by: context.sort_by,
-        sort_order: context.sort_order,
-        limit: context.limit,
-        offset: context.offset,
-      });
+        // Add date filters
+        if (context.from_date) {
+          conditions.push(`recorded_at >= $${paramIndex++}`);
+          params.push(context.from_date);
+        }
+        if (context.to_date) {
+          conditions.push(`recorded_at <= $${paramIndex++}`);
+          params.push(context.to_date);
+        }
 
-      return {
-        recordings: result.recordings,
-        total: result.total,
-        has_more: result.hasMore,
-      };
+        // Add status filter
+        if (context.status) {
+          conditions.push(`status = $${paramIndex++}`);
+          params.push(context.status);
+        }
+
+        // Build WHERE clause
+        const whereClause =
+          conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+        // Build ORDER BY clause
+        const sortField = context.sort_by || "recorded_at";
+        const sortOrder = context.sort_order || "desc";
+        const orderClause = `ORDER BY ${sortField} ${sortOrder.toUpperCase()}`;
+
+        // Add LIMIT and OFFSET
+        const limit = context.limit || 20;
+        const offset = context.offset || 0;
+        const limitClause = `LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+        params.push(limit, offset);
+
+        // Execute query
+        const recordings = await runSQL<{
+          id: string;
+          title: string;
+          duration_seconds: number;
+          recorded_at: string;
+          status: string;
+          participants_count: number;
+          transcript_available: boolean;
+        }>(
+          env,
+          `
+          SELECT 
+            id, 
+            title, 
+            duration_seconds, 
+            recorded_at, 
+            status, 
+            participants_count, 
+            transcript_available
+          FROM grain_recordings
+          ${whereClause}
+          ${orderClause}
+          ${limitClause}
+        `,
+          params,
+        );
+
+        // Get total count
+        const countResult = await runSQL<{ count: number }>(
+          env,
+          `SELECT COUNT(*) as count FROM grain_recordings ${whereClause}`,
+          params.slice(0, conditions.length),
+        );
+        const total = countResult[0]?.count || 0;
+
+        // Check if there are more results
+        const hasMore = offset + recordings.length < total;
+
+        return {
+          recordings: recordings.map((r) => ({
+            id: r.id,
+            title: r.title,
+            duration_seconds: r.duration_seconds,
+            recorded_at: r.recorded_at,
+            status: r.status,
+            participants_count: r.participants_count,
+            transcript_available: r.transcript_available,
+          })),
+          total,
+          has_more: hasMore,
+        };
+      } catch (error) {
+        console.error("Error listing recordings from PostgreSQL:", error);
+        // Return empty results on error
+        return {
+          recordings: [],
+          total: 0,
+          has_more: false,
+        };
+      }
     },
   });
 
