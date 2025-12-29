@@ -12,13 +12,13 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^2.0.0",
-    "@ai-sdk/provider-utils": "^3.0.17",
+    "@ai-sdk/provider": "^3.0.0",
+    "@ai-sdk/provider-utils": "^4.0.1",
     "@decocms/bindings": "1.0.1-alpha.23",
     "@decocms/runtime": "1.0.0-alpha.41",
     "@openrouter/ai-sdk-provider": "^1.2.0",
     "@openrouter/sdk": "^0.1.11",
-    "ai": "^5.0.0",
+    "ai": "^6.0.3",
     "zod": "^3.24.3"
   },
   "devDependencies": {
