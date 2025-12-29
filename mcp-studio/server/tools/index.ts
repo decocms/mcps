@@ -5,7 +5,7 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { agentTools } from "./agent.ts";
+import { assistantTools } from "./assistant.ts";
 
 // Export all tools from all domains
-export const tools = [...agentTools];
+export const tools = [...assistantTools];

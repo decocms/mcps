@@ -98,7 +98,7 @@
       "name": "mcp-studio",
       "version": "1.0.0",
       "dependencies": {
-        "@decocms/bindings": "1.0.1-alpha.17",
+        "@decocms/bindings": "1.0.1-alpha.26",
         "@decocms/runtime": "1.0.0-alpha.31",
         "@radix-ui/react-collapsible": "^1.1.12",
         "@radix-ui/react-popover": "^1.1.15",
@@ -140,16 +140,10 @@
         "zod": "^3.24.3",
       },
       "devDependencies": {
-        "@cloudflare/vite-plugin": "^1.13.4",
-        "@cloudflare/workers-types": "^4.20251014.0",
         "@decocms/mcps-shared": "workspace:*",
-        "@mastra/core": "^0.24.0",
         "@modelcontextprotocol/sdk": "1.20.2",
-        "@types/mime-db": "^1.43.6",
         "deco-cli": "^0.28.0",
         "typescript": "^5.7.2",
-        "vite": "7.2.0",
-        "wrangler": "^4.28.0",
       },
     },
     "nanobanana": {
@@ -652,7 +646,7 @@
 
     "@deco/mcp": ["@jsr/deco__mcp@0.5.5", "https://npm.jsr.io/~/11/@jsr/deco__mcp/0.5.5.tgz", { "dependencies": { "@jsr/deco__deco": "^1.112.1", "@jsr/hono__hono": "^4.5.4", "@modelcontextprotocol/sdk": "^1.11.4", "fetch-to-node": "^2.1.0", "zod": "^3.24.2" } }, "sha512-46TaWGu7lbsPleHjCVrG6afhQjv3muBTNRFBkIhLrSzlQ+9d21UeukpYs19z0AGpOlmjSSK9qIRFTf8SlH2B6Q=="],
 
-    "@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.17", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-lFIqOQm8/9yhXIvRq5pETTuzZaEMtMsMbz5noPi+lVZ+6VRykLULsGCpEYT0rP1IlgFjGgXv7SH+TjvCJAhxfQ=="],
+    "@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.26", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-i6WlXYKL61PDkxBbPaA1NNvezqxa7CW6wPaRBZueAuEUxBcDSeOTs4DE6LWjzWz7TpsUg4fD72Ov3IEk7S1nVA=="],
 
     "@decocms/mcps-shared": ["@decocms/mcps-shared@workspace:shared"],
 
@@ -2839,6 +2833,8 @@
     "log-symbols/chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
     "mcp-studio/@decocms/runtime/@deco/mcp": ["@jsr/deco__mcp@0.7.8", "https://npm.jsr.io/~/11/@jsr/deco__mcp/0.7.8.tgz", { "dependencies": { "@jsr/deco__deco": "^1.112.1", "@jsr/hono__hono": "^4.5.4", "@modelcontextprotocol/sdk": "^1.11.4", "fetch-to-node": "^2.1.0", "zod": "^3.24.2" } }, "sha512-NcDGuKv2ZxId8ZHCD3zGZhHNLzrExn+DL11yDo60mZ44zbbRwuLRRmAYTwrdtZ6A45fVWYmEIloPY93tKrtimw=="],
+
+    "mcp-studio/@decocms/runtime/@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.17", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-lFIqOQm8/9yhXIvRq5pETTuzZaEMtMsMbz5noPi+lVZ+6VRykLULsGCpEYT0rP1IlgFjGgXv7SH+TjvCJAhxfQ=="],
 
     "mcp-template-with-view/@vitejs/plugin-react/@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 
