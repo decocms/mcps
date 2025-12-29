@@ -1,18 +1,27 @@
 /**
- * Agent Binding Implementation
+ * Assistant Binding Implementation
  *
- * Implements the AGENTS_BINDING from @decocms/bindings/agent:
- * - COLLECTION_AGENT_LIST: Query agents with filtering, sorting, and pagination
- * - COLLECTION_AGENT_GET: Fetch a single agent by ID
- * - COLLECTION_AGENT_CREATE: Create a new agent
- * - COLLECTION_AGENT_UPDATE: Update an existing agent
- * - COLLECTION_AGENT_DELETE: Delete an agent
+ * Implements the ASSISTANTS_BINDING from @decocms/bindings/assistant:
+ * - COLLECTION_ASSISTANT_LIST: Query assistants with filtering, sorting, and pagination
+ * - COLLECTION_ASSISTANT_GET: Fetch a single assistant by ID
+ * - COLLECTION_ASSISTANT_CREATE: Create a new assistant
+ * - COLLECTION_ASSISTANT_UPDATE: Update an existing assistant
+ * - COLLECTION_ASSISTANT_DELETE: Delete an assistant
  */
 
-import { AGENTS_BINDING, AgentSchema } from "@decocms/bindings/agent";
+import {
+  ASSISTANTS_BINDING,
+  AssistantSchema,
+} from "@decocms/bindings/assistant";
 import {
   CollectionGetInputSchema,
+  CollectionDeleteInputSchema,
   createCollectionGetOutputSchema,
+  createCollectionInsertInputSchema,
+  createCollectionInsertOutputSchema,
+  createCollectionUpdateInputSchema,
+  createCollectionUpdateOutputSchema,
+  createCollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
@@ -37,64 +46,107 @@ type OrderByExpression = Array<{
 }>;
 
 // Extract binding schemas
-const LIST_BINDING = AGENTS_BINDING.find(
-  (b) => b.name === "COLLECTION_AGENT_LIST",
+const LIST_BINDING = ASSISTANTS_BINDING.find(
+  (b) => b.name === "COLLECTION_ASSISTANT_LIST",
 );
-const GET_BINDING = AGENTS_BINDING.find(
-  (b) => b.name === "COLLECTION_AGENT_GET",
-);
-const CREATE_BINDING = AGENTS_BINDING.find(
-  (b) => b.name === "COLLECTION_AGENT_CREATE",
-);
-const UPDATE_BINDING = AGENTS_BINDING.find(
-  (b) => b.name === "COLLECTION_AGENT_UPDATE",
-);
-const DELETE_BINDING = AGENTS_BINDING.find(
-  (b) => b.name === "COLLECTION_AGENT_DELETE",
+const GET_BINDING = ASSISTANTS_BINDING.find(
+  (b) => b.name === "COLLECTION_ASSISTANT_GET",
 );
 
 if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
-  throw new Error("COLLECTION_AGENT_LIST binding not found or missing schemas");
+  throw new Error(
+    "COLLECTION_ASSISTANT_LIST binding not found or missing schemas",
+  );
 }
 if (!GET_BINDING?.inputSchema || !GET_BINDING?.outputSchema) {
-  throw new Error("COLLECTION_AGENT_GET binding not found or missing schemas");
-}
-if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
   throw new Error(
-    "COLLECTION_AGENT_CREATE binding not found or missing schemas",
-  );
-}
-if (!UPDATE_BINDING?.inputSchema || !UPDATE_BINDING?.outputSchema) {
-  throw new Error(
-    "COLLECTION_AGENT_UPDATE binding not found or missing schemas",
-  );
-}
-if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
-  throw new Error(
-    "COLLECTION_AGENT_DELETE binding not found or missing schemas",
+    "COLLECTION_ASSISTANT_GET binding not found or missing schemas",
   );
 }
 
-// ============================================================================
-// Standard Agent (always available)
-// ============================================================================
-
-const STANDARD_AGENT: z.infer<typeof AgentSchema> = {
-  id: "standard",
-  title: "Standard Agent",
-  created_at: "2024-01-01T00:00:00.000Z",
-  updated_at: "2024-01-01T00:00:00.000Z",
-  created_by: undefined,
-  updated_by: undefined,
-  description: "The default standard agent",
-  instructions: "",
-  tool_set: {},
-  avatar: "https://assets.webdraw.app/uploads/capy.png",
-};
+// Legacy mutation tools are intentionally kept (tool IDs stay the same),
+// but Assistant well-known binding is read-only (LIST + GET only).
+const CREATE_INPUT_SCHEMA = createCollectionInsertInputSchema(AssistantSchema);
+const CREATE_OUTPUT_SCHEMA =
+  createCollectionInsertOutputSchema(AssistantSchema);
+const UPDATE_INPUT_SCHEMA = createCollectionUpdateInputSchema(AssistantSchema);
+const UPDATE_OUTPUT_SCHEMA =
+  createCollectionUpdateOutputSchema(AssistantSchema);
+const DELETE_OUTPUT_SCHEMA =
+  createCollectionDeleteOutputSchema(AssistantSchema);
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+const DEFAULT_MODEL: z.infer<typeof AssistantSchema>["model"] = {
+  id: "",
+  connectionId: "",
+};
+
+function normalizeModel(
+  value: unknown,
+): z.infer<typeof AssistantSchema>["model"] {
+  if (!value) return DEFAULT_MODEL;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        "id" in parsed &&
+        "connectionId" in parsed
+      ) {
+        const p = parsed as { id: unknown; connectionId: unknown };
+        return {
+          id: typeof p.id === "string" ? p.id : DEFAULT_MODEL.id,
+          connectionId:
+            typeof p.connectionId === "string"
+              ? p.connectionId
+              : DEFAULT_MODEL.connectionId,
+        };
+      }
+    } catch {
+      // fallthrough
+    }
+    return DEFAULT_MODEL;
+  }
+  if (typeof value === "object") {
+    const v = value as { id?: unknown; connectionId?: unknown };
+    return {
+      id: typeof v.id === "string" ? v.id : DEFAULT_MODEL.id,
+      connectionId:
+        typeof v.connectionId === "string"
+          ? v.connectionId
+          : DEFAULT_MODEL.connectionId,
+    };
+  }
+  return DEFAULT_MODEL;
+}
+
+function mapDbRowToAssistant(
+  row: Record<string, unknown>,
+): z.infer<typeof AssistantSchema> {
+  return {
+    id: String(row.id ?? ""),
+    title: String(row.title ?? ""),
+    description:
+      row.description === null || row.description === undefined
+        ? null
+        : String(row.description),
+    created_at: String(row.created_at ?? new Date(0).toISOString()),
+    updated_at: String(row.updated_at ?? new Date(0).toISOString()),
+    created_by: (row.created_by as string | undefined) ?? undefined,
+    updated_by: (row.updated_by as string | undefined) ?? undefined,
+    avatar: String(
+      row.avatar ??
+        "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
+    ),
+    system_prompt: String(row.system_prompt ?? ""),
+    gateway_id: String(row.gateway_id ?? ""),
+    model: normalizeModel(row.model),
+  };
+}
 
 /**
  * Build SQL WHERE clause from filter expression using ? placeholders
@@ -200,20 +252,20 @@ function buildOrderByClause(
 // ============================================================================
 
 /**
- * COLLECTION_AGENT_LIST - Query agents with filtering, sorting, and pagination
+ * COLLECTION_ASSISTANT_LIST - Query assistants with filtering, sorting, and pagination
  */
 export const createListTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_AGENT_LIST",
-    description: "List agents with filtering, sorting, and pagination",
+    id: "COLLECTION_ASSISTANT_LIST",
+    description: "List assistants with filtering, sorting, and pagination",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
     execute: async ({ context }) => {
-      // If DATABASE is not available, return only the standard agent
+      // If DATABASE is not available, return empty list
       if (!env.DATABASE) {
         return {
-          items: [STANDARD_AGENT],
-          totalCount: 1,
+          items: [],
+          totalCount: 0,
           hasMore: false,
         };
       }
@@ -234,7 +286,7 @@ export const createListTool = (env: Env) =>
 
       // Query items with pagination
       const query = `
-				SELECT * FROM agents
+				SELECT * FROM assistants
 				${whereClause}
 				${orderByClause}
 				LIMIT ? OFFSET ?
@@ -243,7 +295,7 @@ export const createListTool = (env: Env) =>
       const items = await runSQL(env, query, [...params, limit, offset]);
 
       // Get total count
-      const countQuery = `SELECT COUNT(*) as count FROM agents ${whereClause}`;
+      const countQuery = `SELECT COUNT(*) as count FROM assistants ${whereClause}`;
       const countResult = await runSQL<{ count: string | number }>(
         env,
         countQuery,
@@ -252,13 +304,7 @@ export const createListTool = (env: Env) =>
       const totalCount = parseInt(String(countResult[0]?.count || "0"), 10);
 
       return {
-        items: items.map((item) => {
-          const record = item as Record<string, unknown>;
-          return {
-            ...record,
-            tool_set: record.tool_set || {},
-          } as z.infer<typeof AgentSchema>;
-        }),
+        items: (items as Record<string, unknown>[]).map(mapDbRowToAssistant),
         totalCount,
         hasMore: offset + items.length < totalCount,
       };
@@ -266,20 +312,24 @@ export const createListTool = (env: Env) =>
   });
 
 /**
- * COLLECTION_AGENT_GET - Fetch a single agent by ID
+ * COLLECTION_ASSISTANT_GET - Fetch a single assistant by ID
  */
 export const createGetTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_AGENT_GET",
-    description: "Get a single agent by ID",
+    id: "COLLECTION_ASSISTANT_GET",
+    description: "Get a single assistant by ID",
     inputSchema: CollectionGetInputSchema,
-    outputSchema: createCollectionGetOutputSchema(AgentSchema),
+    outputSchema: createCollectionGetOutputSchema(AssistantSchema),
     execute: async ({ context }) => {
+      if (!env.DATABASE) {
+        return { item: null };
+      }
+
       const { id } = context;
 
       const result = await runSQL(
         env,
-        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        `SELECT * FROM assistants WHERE id = ? LIMIT 1`,
         [id],
       );
 
@@ -287,29 +337,30 @@ export const createGetTool = (env: Env) =>
 
       return {
         item: item
-          ? ({
-              ...(item as Record<string, unknown>),
-              tool_set: (item as Record<string, unknown>).tool_set || {},
-            } as z.infer<typeof AgentSchema>)
+          ? mapDbRowToAssistant(item as Record<string, unknown>)
           : null,
       };
     },
   });
 
 /**
- * COLLECTION_AGENT_CREATE - Create a new agent
+ * COLLECTION_ASSISTANT_CREATE - Create a new assistant
  */
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_AGENT_CREATE",
-    description: "Create a new agent",
-    inputSchema: CREATE_BINDING.inputSchema,
-    outputSchema: CREATE_BINDING.outputSchema,
+    id: "COLLECTION_ASSISTANT_CREATE",
+    description: "Create a new assistant",
+    inputSchema: CREATE_INPUT_SCHEMA,
+    outputSchema: CREATE_OUTPUT_SCHEMA,
     execute: async ({
       context,
     }: {
-      context: z.infer<typeof CREATE_BINDING.inputSchema>;
+      context: z.infer<typeof CREATE_INPUT_SCHEMA>;
     }) => {
+      if (!env.DATABASE) {
+        throw new Error("DATABASE not configured for mcp-studio");
+      }
+
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
 
@@ -317,13 +368,16 @@ export const createInsertTool = (env: Env) =>
 
       const id = data.id ?? crypto.randomUUID();
 
+      const model = data.model ?? DEFAULT_MODEL;
+
       await runSQL(
         env,
         `
-				INSERT INTO agents (
+				INSERT INTO assistants (
 					id, title, created_at, updated_at, created_by, updated_by,
-					description, instructions, tool_set, avatar
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					description, instructions, tool_set, avatar,
+          system_prompt, gateway_id, model
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				ON CONFLICT (id) DO NOTHING
 			`,
         [
@@ -334,47 +388,51 @@ export const createInsertTool = (env: Env) =>
           user?.id || "unknown",
           user?.id || "unknown",
           data.description ?? "",
-          data.instructions ?? "",
-          JSON.stringify(data.tool_set || {}),
+          "",
+          JSON.stringify({}),
           data.avatar ??
             "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
+          data.system_prompt ?? "",
+          data.gateway_id ?? "",
+          JSON.stringify(model),
         ],
       );
 
       const result = await runSQL<Record<string, unknown>>(
         env,
-        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        `SELECT * FROM assistants WHERE id = ? LIMIT 1`,
         [id],
       );
 
       const insertedItem = result[0];
       if (!insertedItem) {
-        throw new Error(`Failed to insert agent`);
+        throw new Error(`Failed to insert assistant`);
       }
 
       return {
-        item: {
-          ...insertedItem,
-          tool_set: insertedItem.tool_set || {},
-        } as z.infer<typeof AgentSchema>,
+        item: mapDbRowToAssistant(insertedItem),
       };
     },
   });
 
 /**
- * COLLECTION_AGENT_UPDATE - Update an existing agent
+ * COLLECTION_ASSISTANT_UPDATE - Update an existing assistant
  */
 export const createUpdateTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_AGENT_UPDATE",
-    description: "Update an existing agent",
-    inputSchema: UPDATE_BINDING.inputSchema,
-    outputSchema: UPDATE_BINDING.outputSchema,
+    id: "COLLECTION_ASSISTANT_UPDATE",
+    description: "Update an existing assistant",
+    inputSchema: UPDATE_INPUT_SCHEMA,
+    outputSchema: UPDATE_OUTPUT_SCHEMA,
     execute: async ({
       context,
     }: {
-      context: z.infer<typeof UPDATE_BINDING.inputSchema>;
+      context: z.infer<typeof UPDATE_INPUT_SCHEMA>;
     }) => {
+      if (!env.DATABASE) {
+        throw new Error("DATABASE not configured for mcp-studio");
+      }
+
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
 
       const now = new Date().toISOString();
@@ -391,15 +449,23 @@ export const createUpdateTool = (env: Env) =>
       }
       if (data.description !== undefined) {
         setClauses.push("description = ?");
-        params.push(data.description);
+        params.push(data.description ?? "");
       }
-      if (data.instructions !== undefined) {
-        setClauses.push("instructions = ?");
-        params.push(data.instructions);
+      if (data.avatar !== undefined) {
+        setClauses.push("avatar = ?");
+        params.push(data.avatar);
       }
-      if (data.tool_set !== undefined) {
-        setClauses.push("tool_set = ?");
-        params.push(JSON.stringify(data.tool_set));
+      if (data.system_prompt !== undefined) {
+        setClauses.push("system_prompt = ?");
+        params.push(data.system_prompt);
+      }
+      if (data.gateway_id !== undefined) {
+        setClauses.push("gateway_id = ?");
+        params.push(data.gateway_id);
+      }
+      if (data.model !== undefined) {
+        setClauses.push("model = ?");
+        params.push(JSON.stringify(data.model));
       }
 
       // Add id for WHERE clause
@@ -407,72 +473,69 @@ export const createUpdateTool = (env: Env) =>
 
       await runSQL(
         env,
-        `UPDATE agents SET ${setClauses.join(", ")} WHERE id = ?`,
+        `UPDATE assistants SET ${setClauses.join(", ")} WHERE id = ?`,
         params,
       );
 
       const result = await runSQL<Record<string, unknown>>(
         env,
-        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        `SELECT * FROM assistants WHERE id = ? LIMIT 1`,
         [id],
       );
 
       const updatedItem = result[0];
       if (!updatedItem) {
-        throw new Error(`Agent with id ${id} not found`);
+        throw new Error(`Assistant with id ${id} not found`);
       }
 
       return {
-        item: {
-          ...updatedItem,
-          updated_by: updatedItem.updated_by || "unknown",
-          tool_set: updatedItem.tool_set || {},
-        } as z.infer<typeof AgentSchema>,
+        item: mapDbRowToAssistant(updatedItem),
       };
     },
   });
 
 /**
- * COLLECTION_AGENT_DELETE - Delete an agent by ID
+ * COLLECTION_ASSISTANT_DELETE - Delete an assistant by ID
  */
 export const createDeleteTool = (env: Env) =>
   createPrivateTool({
-    id: "COLLECTION_AGENT_DELETE",
-    description: "Delete an agent by ID",
-    inputSchema: DELETE_BINDING.inputSchema,
-    outputSchema: DELETE_BINDING.outputSchema,
+    id: "COLLECTION_ASSISTANT_DELETE",
+    description: "Delete an assistant by ID",
+    inputSchema: CollectionDeleteInputSchema,
+    outputSchema: DELETE_OUTPUT_SCHEMA,
     execute: async ({
       context,
     }: {
-      context: z.infer<typeof DELETE_BINDING.inputSchema>;
+      context: z.infer<typeof CollectionDeleteInputSchema>;
     }) => {
+      if (!env.DATABASE) {
+        throw new Error("DATABASE not configured for mcp-studio");
+      }
+
       const { id } = context;
 
-      // Get the agent before deleting
+      // Get the assistant before deleting
       const existing = await runSQL<Record<string, unknown>>(
         env,
-        `SELECT * FROM agents WHERE id = ? LIMIT 1`,
+        `SELECT * FROM assistants WHERE id = ? LIMIT 1`,
         [id],
       );
 
-      const agent = existing[0];
-      if (!agent) {
-        throw new Error(`Agent with id ${id} not found`);
+      const assistant = existing[0];
+      if (!assistant) {
+        throw new Error(`Assistant with id ${id} not found`);
       }
 
-      await runSQL(env, `DELETE FROM agents WHERE id = ?`, [id]);
+      await runSQL(env, `DELETE FROM assistants WHERE id = ?`, [id]);
 
       return {
-        item: {
-          ...agent,
-          tool_set: agent.tool_set || {},
-        } as z.infer<typeof AgentSchema>,
+        item: mapDbRowToAssistant(assistant),
       };
     },
   });
 
 // Export all tools as an array
-export const agentTools = [
+export const assistantTools = [
   createListTool,
   createGetTool,
   createInsertTool,
