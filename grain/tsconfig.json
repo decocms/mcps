@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["bun-types"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "server/*": ["./server/*"],
+      "shared/*": ["./shared/*"],
+      "@decocms/mcps-shared": ["../shared/package.json"],
+      "@decocms/mcps-shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["server/**/*", "shared/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+
