@@ -205,6 +205,8 @@ export async function validateWorkflow(
       ],
   );
 
+  console.log({newConnections, currentConfigurationState, currentPermissions})
+
   await env.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
     id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
     data: {
@@ -227,8 +229,6 @@ export async function validateWorkflow(
       },
     },
   });
-
-  env.CONNECTION.COLLECTION_CONNECTIONS_GET;
 
   // Steps is now a flat array (no phases)
   const steps = workflow.steps || [];
