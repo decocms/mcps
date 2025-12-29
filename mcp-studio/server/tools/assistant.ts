@@ -498,19 +498,16 @@ export const createDeleteTool = (env: Env) =>
 
       const { id } = context;
 
-      // Get the assistant before deleting
-      const existing = await runSQL<Record<string, unknown>>(
+      const result = await runSQL<Record<string, unknown>>(
         env,
-        `SELECT * FROM assistants WHERE id = ? LIMIT 1`,
+        `DELETE FROM assistants WHERE id = ? RETURNING *`,
         [id],
       );
 
-      const assistant = existing[0];
+      const assistant = result[0];
       if (!assistant) {
         throw new Error(`Assistant with id ${id} not found`);
       }
-
-      await runSQL(env, `DELETE FROM assistants WHERE id = ?`, [id]);
 
       return {
         item: mapDbRowToAssistant(assistant),
