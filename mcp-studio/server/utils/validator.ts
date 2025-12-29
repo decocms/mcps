@@ -92,7 +92,9 @@ function validateStepRefs(
             step: step.name,
             field: "input",
             ref,
-            message: `Step '${stepName}' not found in previous steps. Available: ${Array.from(availableSteps.keys()).join(", ") || "none"}`,
+            message: `Step '${stepName}' not found in previous steps. Available: ${
+              Array.from(availableSteps.keys()).join(", ") || "none"
+            }`,
           });
         }
         break;
@@ -140,44 +142,6 @@ async function validateCodeStep(step: Step): Promise<{
   };
 }
 
-/**
- * Known state binding keys that can be used in scopes
- * External connections (starting with "conn_") are handled via USED_TOOLS
- */
-const STATE_BINDING_KEYS = new Set(["DATABASE", "EVENT_BUS"]);
-
-/**
- * Check if a connection ID is an external connection (not a state binding)
- */
-const isExternalConnection = (connectionId: string): boolean => {
-  return (
-    connectionId.startsWith("conn_") || !STATE_BINDING_KEYS.has(connectionId)
-  );
-};
-
-/**
- * Extract external connection IDs from workflow steps
- * These need to be validated against USED_TOOLS.connections at save/runtime
- */
-export function getWorkflowExternalConnections(workflow: Workflow): string[] {
-  const connections = new Set<string>();
-
-  for (const step of workflow.steps || []) {
-    if (
-      typeof step.action === "object" &&
-      step.action !== null &&
-      "connectionId" in step.action
-    ) {
-      const connectionId = step.action.connectionId;
-      if (isExternalConnection(connectionId)) {
-        connections.add(connectionId);
-      }
-    }
-  }
-
-  return Array.from(connections);
-}
-
 export async function validateWorkflow(
   workflow: Workflow,
   env: Env,
@@ -194,43 +158,9 @@ export async function validateWorkflow(
     id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
   });
   const currentTools = currentPermissions.item.tools;
-  const externalConnections = getWorkflowExternalConnections(workflow);
 
   const availableSteps = new Map<string, number>();
-  const currentConfigurationState = currentPermissions.item.configuration_state;
-  const newConnections = externalConnections.filter(
-    (connectionId) =>
-      !currentPermissions.item.configuration_state[
-        connectionId as keyof typeof currentPermissions.item.configuration_state
-      ],
-  );
 
-  console.log({newConnections, currentConfigurationState, currentPermissions})
-
-  await env.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
-    id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
-    data: {
-      configuration_scopes: Object.keys(currentConfigurationState)
-        .filter((key) => key !== "")
-        .map((key) => `${key}::*`),
-      configuration_state: {
-        ...currentPermissions.item.configuration_state,
-        ...newConnections
-          .filter((connectionId) => connectionId !== "")
-          .reduce(
-            (acc, connectionId) => ({
-              ...acc,
-              [connectionId]: {
-                value: connectionId,
-              },
-            }),
-            {},
-          ),
-      },
-    },
-  });
-
-  // Steps is now a flat array (no phases)
   const steps = workflow.steps || [];
 
   for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {

@@ -16,8 +16,8 @@ import { executeToolStep } from "./tool-step.ts";
 export class StepExecutor {
   private ctx: ExecutionContext;
 
-  constructor(env: Env, executionId: string) {
-    this.ctx = new ExecutionContext(env, executionId);
+  constructor(env: Env, executionId: string, gatewayId: string) {
+    this.ctx = new ExecutionContext(env, executionId, gatewayId);
   }
 
   /**

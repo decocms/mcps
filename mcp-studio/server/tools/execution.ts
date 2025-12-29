@@ -1,7 +1,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { z } from "zod";
-import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
+import { StepSchema, WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 import {
   getStepResults,
   getExecution,
@@ -10,8 +10,6 @@ import {
   cancelExecution,
   resumeExecution,
 } from "../db/queries/executions.ts";
-import { getWorkflow } from "./workflow.ts";
-import { buildWhereClause } from "./_helpers.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -109,8 +107,9 @@ export const createCreateTool = (env: Env) =>
     id: CREATE_BINDING?.name,
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
-      workflow_id: z.string(),
       input: z.record(z.unknown()),
+      steps: z.array(StepSchema),
+      gateway_id: z.string(),
       start_at_epoch_ms: z.number(),
       timeout_ms: z.number(),
     }),
@@ -118,18 +117,13 @@ export const createCreateTool = (env: Env) =>
       id: z.string(),
     }),
     execute: async ({ context }) => {
-      const workflow = await getWorkflow(env, context.workflow_id);
-      if (!workflow) {
-        throw new Error("Workflow not found");
-      }
-
       try {
         const { id: executionId } = await createExecution(env, {
-          workflow_id: workflow.id,
           input: context.input,
+          gateway_id: context.gateway_id,
           start_at_epoch_ms: context.start_at_epoch_ms,
           timeout_ms: context.timeout_ms,
-          steps: workflow.steps,
+          steps: context.steps,
         });
         await env.EVENT_BUS.EVENT_PUBLISH({
           type: "workflow.execution.created",
@@ -183,14 +177,11 @@ export const createListTool = (env: Env) =>
     }: {
       context: z.infer<typeof LIST_BINDING.inputSchema>;
     }) => {
-      const { limit = 50, offset = 0, where } = context;
-
-      const whereClause = buildWhereClause(where);
+      const { limit = 50, offset = 0 } = context;
 
       const itemsResult = await listExecutions(env, {
         limit,
         offset,
-        workflowId: whereClause.params[0] as string,
       });
 
       return {

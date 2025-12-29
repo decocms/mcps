@@ -18,6 +18,7 @@ export class ExecutionContext {
   constructor(
     readonly env: Env,
     readonly executionId: string,
+    readonly gatewayId: string,
   ) {}
 
   get token(): string {

@@ -74,7 +74,7 @@ export async function getExecution(
 export async function createExecution(
   env: Env,
   data: {
-    workflow_id: string;
+    gateway_id: string;
     input?: Record<string, unknown> | null;
     steps: Step[];
     timeout_ms?: number | null;
@@ -92,10 +92,10 @@ export async function createExecution(
   const stepsJson = JSON.stringify(data.steps);
   const result = await runSQL<{ id: string }>(
     env,
-    `INSERT INTO workflow_execution (id, workflow_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms, steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    `INSERT INTO workflow_execution (id, gateway_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms, steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     [
       id,
-      data.workflow_id,
+      data.gateway_id,
       "enqueued",
       now,
       now,
@@ -251,7 +251,6 @@ export async function resumeExecution(
 export async function listExecutions(
   env: Env,
   options: {
-    workflowId?: string;
     status?: string;
     limit?: number;
     offset?: number;
@@ -261,13 +260,9 @@ export async function listExecutions(
   totalCount: number;
   hasMore: boolean;
 }> {
-  const { workflowId, status, limit = 50, offset = 0 } = options;
+  const { status, limit = 50, offset = 0 } = options;
   const conditions: string[] = [];
   const params: unknown[] = [];
-  if (workflowId) {
-    conditions.push(`workflow_id = ?`);
-    params.push(workflowId);
-  }
   if (status) {
     conditions.push(`status = ?`);
     params.push(status);

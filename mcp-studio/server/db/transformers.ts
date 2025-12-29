@@ -68,6 +68,7 @@ export function transformDbRowToExecution(
     updated_at: epochMsToIsoString(row.created_at),
     title: (row.title ?? "") as string,
     input: safeJsonParse(row.input),
+    steps: safeJsonParse(row.steps),
   };
   const parsed = WorkflowExecutionSchema.parse(transformed);
   return { ...parsed };

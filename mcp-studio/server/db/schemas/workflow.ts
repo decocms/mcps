@@ -26,8 +26,8 @@ const postgresWorkflowTableIndexesQuery = `
 const postgresWorkflowExecutionTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS workflow_execution (
   id TEXT PRIMARY KEY,
-  workflow_id TEXT,
   steps JSONB NOT NULL DEFAULT '{}',
+  gateway_id TEXT NOT NULL,
   status TEXT,
   input JSONB,
   output JSONB,
@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS workflow_execution (
 `;
 
 const postgresWorkflowExecutionTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_workflow_execution_workflow_id ON workflow_execution(workflow_id);
   CREATE INDEX IF NOT EXISTS idx_workflow_execution_status ON workflow_execution(status);
   CREATE INDEX IF NOT EXISTS idx_workflow_execution_created_at ON workflow_execution(created_at DESC);
   CREATE INDEX IF NOT EXISTS idx_workflow_execution_start_at ON workflow_execution(start_at_epoch_ms);

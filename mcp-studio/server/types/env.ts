@@ -41,6 +41,12 @@ export type ConnectionBinding = {
       }[];
     };
   }>;
+  COLLECTION_CONNECTIONS_LIST: () => Promise<{
+    items: {
+      id: string;
+      title: string;
+    }[];
+  }>;
 };
 
 export type Env = DefaultEnv<typeof StateSchema> & {

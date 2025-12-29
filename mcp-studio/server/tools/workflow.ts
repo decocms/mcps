@@ -339,21 +339,29 @@ export const createDeleteTool = (env: Env) =>
     id: "COLLECTION_WORKFLOW_DELETE",
     description: "Delete a workflow by ID",
     inputSchema: DELETE_BINDING.inputSchema,
-    outputSchema: z.object({
-      success: z.boolean(),
-      id: z.string(),
-    }),
+    outputSchema: DELETE_BINDING.outputSchema,
     execute: async ({ context }) => {
       const { id } = context;
 
-      await env.DATABASE.DATABASES_RUN_SQL({
-        sql: "DELETE FROM workflow WHERE id = ?",
+      const result = await env.DATABASE.DATABASES_RUN_SQL({
+        sql: "DELETE FROM workflow WHERE id = ? RETURNING *",
         params: [id],
       });
 
+      if (result.result[0]?.results?.length === 0) {
+        throw new Error(`Workflow with id ${id} not found`);
+      }
+
+      const item = result.result[0]?.results?.[0] as Record<string, unknown>;
+
       return {
-        success: true,
-        id,
+        item: {
+          id,
+          title: item.title as string,
+          created_at: item.created_at as string,
+          updated_at: item.updated_at as string,
+          steps: item.steps as Workflow["steps"],
+        },
       };
     },
   });

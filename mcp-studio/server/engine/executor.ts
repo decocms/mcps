@@ -44,7 +44,11 @@ export async function executeWorkflow(
 
     const completedSteps: string[] = [];
 
-    const stepExecutor = new StepExecutor(env, executionId);
+    const stepExecutor = new StepExecutor(
+      env,
+      executionId,
+      execution.gateway_id,
+    );
 
     for (const levelSteps of groupStepsByLevel(steps)) {
       const { completed, pending } = partitionSteps(
