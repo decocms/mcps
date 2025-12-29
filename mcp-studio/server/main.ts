@@ -37,7 +37,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       try {
         await ensureCollections(mergedEnv);
         await ensureIndexes(mergedEnv);
-        await ensureAssistantsTable(env);
+        await ensureAssistantsTable(mergedEnv);
       } catch (error) {
         console.error("error changing configuration", error);
       }
