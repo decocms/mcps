@@ -1,12 +1,12 @@
-import { agentTools } from "./agent.ts";
 import {
   workflowTools,
   workflowExecutionCollectionTools,
 } from "./execution.ts";
 import { workflowCollectionTools } from "./workflow.ts";
+import { assistantTools } from "./assistant.ts";
 
 export const tools = [
-  ...agentTools,
+  ...assistantTools,
   ...workflowTools,
   ...workflowCollectionTools,
   ...workflowExecutionCollectionTools,

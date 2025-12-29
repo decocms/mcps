@@ -1,15 +1,9 @@
-/**
- * MCP Studio Server Main Entry
- *
- * Runtime configuration and wiring.
- */
-
 import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
-import { ensureAgentsTable } from "./db/schemas/agents.ts";
 import { StateSchema, type Env } from "./types/env.ts";
 import { WORKFLOW_EVENTS, handleWorkflowEvents } from "./events/handler.ts";
+import { ensureAssistantsTable } from "./db/schemas/agents.ts";
 
 export type { Env };
 export { StateSchema };
@@ -41,9 +35,9 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     onChange: async (env) => {
       const mergedEnv = mergeEnvWithState(env);
       try {
-        await ensureAgentsTable(mergedEnv);
         await ensureCollections(mergedEnv);
         await ensureIndexes(mergedEnv);
+        await ensureAssistantsTable(env);
       } catch (error) {
         console.error("error changing configuration", error);
       }

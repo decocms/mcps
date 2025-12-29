@@ -146,6 +146,8 @@ try {
       "APIFY_TOKEN",
       "REPLICATE_API_TOKEN",
       "PERPLEXITY_API_KEY",
+      "META_APP_ID",
+      "META_APP_SECRET",
     ];
 
     const autoEnvArgs: string[] = [];
