@@ -10,6 +10,7 @@ import {
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
 import { buildOrderByClause, buildWhereClause } from "./_helpers.ts";
+import { runSQL } from "../db/postgres.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
@@ -343,25 +344,19 @@ export const createDeleteTool = (env: Env) =>
     execute: async ({ context }) => {
       const { id } = context;
 
-      const result = await env.DATABASE.DATABASES_RUN_SQL({
-        sql: "DELETE FROM workflow WHERE id = ? RETURNING *",
-        params: [id],
-      });
+      const result = await runSQL<Record<string, unknown>>(
+        env,
+        "DELETE FROM workflow WHERE id = ? RETURNING *",
+        [id],
+      );
 
-      if (result.result[0]?.results?.length === 0) {
+      const item = result[0];
+      if (!item) {
         throw new Error(`Workflow with id ${id} not found`);
       }
 
-      const item = result.result[0]?.results?.[0] as Record<string, unknown>;
-
       return {
-        item: {
-          id,
-          title: item.title as string,
-          created_at: item.created_at as string,
-          updated_at: item.updated_at as string,
-          steps: item.steps as Workflow["steps"],
-        },
+        item,
       };
     },
   });
