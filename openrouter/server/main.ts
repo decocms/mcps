@@ -8,6 +8,7 @@
  * with built-in fallback mechanisms, cost optimization, and provider routing.
  */
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "./tools/index.ts";
 
@@ -60,4 +61,4 @@ const runtime = withRuntime<Env>({
   tools,
 });
 
-export default runtime;
+serve(runtime.fetch);
