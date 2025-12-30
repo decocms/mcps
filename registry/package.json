@@ -21,6 +21,7 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@decocms/mcps-shared": "workspace:*",
     "@decocms/vite-plugin": "1.0.0-alpha.1",
     "@modelcontextprotocol/sdk": "1.20.2",
     "@types/mime-db": "^1.43.6",

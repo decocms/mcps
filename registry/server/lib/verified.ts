@@ -22,6 +22,7 @@ export const VERIFIED_SERVERS: string[] = [
   "com.linear/linear",
   "io.github.timescale/pg-aiguide",
   "com.microsoft/microsoft-learn-mcp",
+  "com.supabase/mcp",
 ];
 
 /**
@@ -67,6 +68,13 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
   },
   "com.linear/linear": {
     icons: [{ src: "https://linear.app/favicon.ico" }],
+  },
+  "com.supabase/mcp": {
+    icons: [
+      {
+        src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT28y_F_fqSBA5jWMYdru_JwbZnYgi3gOfZSg&s",
+      },
+    ],
   },
 };
 
