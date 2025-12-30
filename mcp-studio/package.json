@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@decocms/bindings": "1.0.1-alpha.26",
-    "@decocms/runtime": "1.0.0-alpha.31",
+    "@decocms/runtime": "1.0.0-alpha.42",
+    "@decocms/mcps-shared": "1.0.0",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",

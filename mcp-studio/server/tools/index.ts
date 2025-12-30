@@ -6,6 +6,7 @@
  * the domain separation.
  */
 import { assistantTools } from "./assistant.ts";
+import { promptTools } from "./prompt.ts";
 
 // Export all tools from all domains
-export const tools = [...assistantTools];
+export const tools = [...assistantTools, ...promptTools];

@@ -5,16 +5,36 @@
  * application at /.
  */
 
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
+import {
+  type BindingRegistry,
+  type DefaultEnv,
+  withRuntime,
+} from "@decocms/runtime";
+import type { z } from "zod";
 import {
   type Env as DecoEnv,
   Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
-import { ensureAssistantsTable } from "./lib/postgres.ts";
+import { ensureAssistantsTable, ensurePromptsTable } from "./lib/postgres.ts";
+import { createPrompts } from "./prompts.ts";
 import { tools } from "./tools/index.ts";
 
+interface Registry extends BindingRegistry {
+  "@deco/postgres": [
+    {
+      name: "DATABASES_RUN_SQL";
+      description: "Run a SQL query against the database";
+      inputSchema: z.ZodType<
+        Parameters<Env["DATABASE"]["DATABASES_RUN_SQL"]>[0]
+      >;
+      outputSchema: z.ZodType<
+        Awaited<ReturnType<Env["DATABASE"]["DATABASES_RUN_SQL"]>>
+      >;
+    },
+  ];
+}
 /**
  * This Env type is the main context object that is passed to
  * all of your Application.
@@ -22,12 +42,13 @@ import { tools } from "./tools/index.ts";
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv<typeof StateSchema> & DecoEnv;
+export type Env = DefaultEnv<typeof StateSchema, Registry> & DecoEnv;
 
-const runtime = withRuntime<Env, typeof StateSchema>({
+const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
       await ensureAssistantsTable(env);
+      await ensurePromptsTable(env);
     },
     /**
      * These scopes define the asking permissions of your
@@ -57,13 +78,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools,
-  bindings: [
-    {
-      type: "mcp",
-      name: "DATABASE",
-      app_name: "@deco/postgres",
-    },
-  ],
+  prompts: createPrompts,
 });
 
 serve(runtime.fetch);
