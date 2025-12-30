@@ -34,10 +34,13 @@ This document lists all secrets required to deploy MCPs via GitHub Actions.
 - **`PINECONE_INDEX`**: Pinecone index name (if required)
 
 ### MCP: `meta-ads`
-- **`META_APP_ID`**: Facebook App ID for Meta Ads
-  - Obtain at: https://developers.facebook.com/apps/
-- **`META_APP_SECRET`**: Facebook App Secret for Meta Ads
-  - Obtain at: https://developers.facebook.com/apps/ (Settings > Basic)
+- **`META_ACCESS_TOKEN`**: Facebook Access Token for Meta Ads API
+  - Obtain at: https://developers.facebook.com/tools/explorer/
+  - Select your app and generate token with required permissions:
+    - `ads_read` - Read ad information
+    - `ads_management` - Manage ads
+    - `pages_read_engagement` - Read associated pages
+    - `business_management` - Access business accounts
 
 ## How to Add Secrets on GitHub
 
