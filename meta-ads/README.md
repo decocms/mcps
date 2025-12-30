@@ -56,10 +56,54 @@ The `META_ADS_GET_INSIGHTS` tool returns metrics such as:
 
 ## Authentication
 
-This MCP uses OAuth PKCE for authentication with the Meta Graph API. The user will be redirected to authorize access to the ad account.
+This MCP uses direct access token authentication with the Meta Graph API. You need to provide your Facebook access token to use this MCP.
+
+### Getting Your Access Token
+
+You can obtain a Facebook access token in several ways:
+
+1. **Facebook Graph API Explorer** (Recommended for testing):
+   - Go to https://developers.facebook.com/tools/explorer/
+   - Select your app (or create one at https://developers.facebook.com/apps/)
+   - Click "Generate Access Token"
+   - Select the required permissions:
+     - `ads_read` - Read ad information
+     - `ads_management` - Manage ads (required for some operations)
+     - `pages_read_engagement` - Read associated pages
+     - `business_management` - Access business accounts
+   - Copy the generated token
+
+2. **Facebook App Dashboard**:
+   - Go to https://developers.facebook.com/apps/
+   - Select your app
+   - Navigate to Tools > Graph API Explorer
+   - Generate a token with the required permissions
+
+3. **Long-lived Token** (Recommended for production):
+   - Generate a short-lived token using the Graph API Explorer
+   - Exchange it for a long-lived token (60 days) using:
+     ```
+     GET https://graph.facebook.com/v21.0/oauth/access_token?
+       grant_type=fb_exchange_token&
+       client_id={app-id}&
+       client_secret={app-secret}&
+       fb_exchange_token={short-lived-token}
+     ```
+
+### Configuration
+
+Set the `META_ACCESS_TOKEN` environment variable with your Facebook access token:
+
+- **Local development**: Add to `.dev.vars` file:
+  ```
+  META_ACCESS_TOKEN=your_token_here
+  ```
+
+- **Production**: Set as a secret in your deployment platform (Deco/GitHub Actions)
 
 ### Required Permissions
 
+Your access token must have the following permissions:
 - `ads_read` - Read ad information
 - `ads_management` - Manage ads (required for some operations)
 - `pages_read_engagement` - Read associated pages
