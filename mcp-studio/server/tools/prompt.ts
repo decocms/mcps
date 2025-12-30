@@ -10,11 +10,13 @@
  */
 
 import {
-  BaseCollectionEntitySchema,
   CollectionGetInputSchema,
-  createCollectionBindings,
   createCollectionGetOutputSchema,
 } from "@decocms/bindings/collections";
+import {
+  PROMPTS_COLLECTION_BINDING,
+  PromptSchema,
+} from "@decocms/bindings/prompt";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z, type ZodType } from "zod";
 import { runSQL } from "../lib/postgres.ts";
@@ -29,75 +31,6 @@ import type { Env } from "../main.ts";
 // ============================================================================
 // Schemas (following MCP Prompts specification)
 // ============================================================================
-
-/**
- * Schema for prompt arguments that can be passed when getting a prompt
- */
-const PromptArgumentSchema = z.object({
-  name: z.string().describe("Argument name"),
-  description: z.string().optional().describe("Argument description"),
-  required: z.boolean().optional().describe("Whether argument is required"),
-});
-
-/**
- * Schema for prompt icons for display in user interfaces
- */
-const PromptIconSchema = z.object({
-  src: z.string().url().describe("Icon URL"),
-  mimeType: z.string().optional().describe("Icon MIME type"),
-  sizes: z.array(z.string()).optional().describe("Icon sizes"),
-});
-
-/**
- * Schema for content within a prompt message
- */
-const PromptMessageContentSchema = z.object({
-  type: z.enum(["text", "image", "audio", "resource"]).describe("Content type"),
-  text: z.string().optional().describe("Text content"),
-  data: z.string().optional().describe("Base64-encoded data for image/audio"),
-  mimeType: z
-    .string()
-    .optional()
-    .describe("MIME type for image/audio/resource"),
-  resource: z
-    .object({
-      uri: z.string().describe("Resource URI"),
-      mimeType: z.string().optional().describe("Resource MIME type"),
-      text: z.string().optional().describe("Resource text content"),
-      blob: z.string().optional().describe("Base64-encoded resource blob"),
-    })
-    .optional()
-    .describe("Embedded resource"),
-});
-
-/**
- * Schema for a message in a prompt
- */
-const PromptMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]).describe("Message role"),
-  content: PromptMessageContentSchema.describe("Message content"),
-});
-
-/**
- * Full prompt entity schema extending base collection fields
- */
-export const PromptSchema = BaseCollectionEntitySchema.extend({
-  arguments: z
-    .array(PromptArgumentSchema)
-    .optional()
-    .describe("Arguments that can be passed when getting this prompt"),
-  icons: z
-    .array(PromptIconSchema)
-    .optional()
-    .describe("Icons for display in user interfaces"),
-  messages: z.array(PromptMessageSchema).describe("Prompt messages template"),
-});
-
-// Create collection bindings
-const PROMPTS_COLLECTION_BINDING = createCollectionBindings(
-  "prompt",
-  PromptSchema,
-);
 
 // Extract binding schemas
 const LIST_BINDING = PROMPTS_COLLECTION_BINDING.find(
