@@ -1,3 +1,5 @@
+/// <reference types="bun" />
+
 /**
  * Shared Bun.serve utility for MCP servers
  *
@@ -5,7 +7,10 @@
  * with the correct configuration for SSE endpoints and K8s compatibility.
  */
 
-type Fetcher = (req: Request) => Response | Promise<Response>;
+// Using 'any' for additional args to support both simple fetch handlers
+// and runtime.fetch which expects (req, env, ctx)
+// biome-ignore lint/suspicious/noExplicitAny: Required for compatibility with runtime.fetch signature
+type Fetcher = (req: Request, ...args: any[]) => Response | Promise<Response>;
 
 /**
  * Starts a Bun server with the provided fetch handler.

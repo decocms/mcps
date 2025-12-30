@@ -8,6 +8,7 @@
  * with built-in fallback mechanisms, cost optimization, and provider routing.
  */
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "./tools/index.ts";
 
@@ -60,11 +61,4 @@ const runtime = withRuntime<Env>({
   tools,
 });
 
-Bun.serve({
-  // This was necessary because MCP has SSE endpoints (like notification) that disconnects after 10 seconds (default bun idle timeout)
-  idleTimeout: 0,
-  port: process.env.PORT || 8001,
-  hostname: "0.0.0.0", // Listen on all network interfaces (required for K8s)
-  fetch: runtime.fetch,
-  development: process.env.NODE_ENV !== "production",
-});
+serve(runtime.fetch);
