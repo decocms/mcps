@@ -114,12 +114,59 @@ export function extractSchemas(code: string): {
   };
 }
 
+/**
+ * Summarize input for error messages (truncated to avoid huge error messages)
+ */
+function summarizeInput(input: unknown, maxLength = 500): string {
+  try {
+    const json = JSON.stringify(input, null, 2);
+    if (json.length <= maxLength) return json;
+    return json.substring(0, maxLength) + "... (truncated)";
+  } catch {
+    return String(input);
+  }
+}
+
+/**
+ * Detect common issues with input and provide helpful warnings
+ */
+function validateTransformInput(input: unknown): string[] {
+  const warnings: string[] = [];
+
+  if (input === undefined) {
+    warnings.push(
+      "Input is undefined - the transform function will receive undefined as its argument",
+    );
+  } else if (input === null) {
+    warnings.push(
+      "Input is null - make sure your transform handles null values",
+    );
+  } else if (typeof input === "object" && input !== null) {
+    // Check for common undefined nested properties
+    const obj = input as Record<string, unknown>;
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === undefined) {
+        warnings.push(`Input.${key} is undefined`);
+      }
+    }
+  }
+
+  return warnings;
+}
+
 export async function executeCode(
   code: string,
   input: unknown,
   stepName: string,
 ): Promise<StepResult> {
   let ctx: SandboxContext | undefined;
+  const startedAt = Date.now();
+
+  // Validate input and collect warnings
+  const inputWarnings = validateTransformInput(input);
+  if (inputWarnings.length > 0) {
+    console.warn(`[TRANSFORM] Warnings for step "${stepName}":`, inputWarnings);
+  }
 
   try {
     const jsCode = transpileTypeScript(code);
@@ -153,7 +200,8 @@ export async function executeCode(
     if (ctx.typeof(defaultHandle) !== "function") {
       return {
         error: "Transform must export a default function",
-        startedAt: Date.now(),
+        startedAt,
+        completedAt: Date.now(),
         stepId: stepName,
       };
     }
@@ -162,14 +210,28 @@ export async function executeCode(
     return {
       completedAt: Date.now(),
       output: ctx.dump(ctx.unwrapResult(callHandle)),
-      startedAt: Date.now(),
+      startedAt,
       stepId: stepName,
     };
   } catch (err) {
+    const baseError = err instanceof Error ? err.message : String(err);
+
+    // Enhance error message with input context for common runtime errors
+    let enhancedError = baseError;
+    if (
+      baseError.includes("cannot read property") ||
+      baseError.includes("undefined")
+    ) {
+      enhancedError = `${baseError}\n\nInput received by transform:\n${summarizeInput(input)}`;
+      if (inputWarnings.length > 0) {
+        enhancedError += `\n\nWarnings:\n- ${inputWarnings.join("\n- ")}`;
+      }
+    }
+
     return {
       completedAt: Date.now(),
-      startedAt: Date.now(),
-      error: err instanceof Error ? err.message : String(err),
+      startedAt,
+      error: enhancedError,
       stepId: stepName,
     };
   } finally {

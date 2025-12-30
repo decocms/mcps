@@ -62,6 +62,23 @@ export class StepTimeoutError extends Error {
 }
 
 /**
+ * Error thrown when a step fails execution.
+ */
+export class StepExecutionError extends Error {
+  readonly code = "STEP_EXECUTION_FAILED";
+
+  constructor(
+    public readonly executionId: string,
+    public readonly stepName: string,
+    public readonly stepError: string,
+  ) {
+    super(`Step '${stepName}' failed: ${stepError}`);
+    this.name = "StepExecutionError";
+    Object.setPrototypeOf(this, StepExecutionError.prototype);
+  }
+}
+
+/**
  * Error thrown when a step is waiting for a signal.
  *
  * This is a special "pause" error - the workflow should:

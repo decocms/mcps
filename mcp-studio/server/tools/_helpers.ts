@@ -18,13 +18,46 @@ export type OrderByExpression = Array<{
 }>;
 
 /**
+ * Check if a where expression is empty (no meaningful filters)
+ */
+function isEmptyWhereExpression(whereExpr: WhereExpression): boolean {
+  // Empty object
+  if (Object.keys(whereExpr).length === 0) return true;
+
+  // Has operator but no field (for simple conditions) and no conditions (for logical)
+  if (!whereExpr.field && !whereExpr.conditions) return true;
+
+  // Logical condition with empty conditions array
+  if (whereExpr.conditions && whereExpr.conditions.length === 0) return true;
+
+  return false;
+}
+
+/**
  * Build SQL WHERE clause from filter expression using ? placeholders
+ *
+ * Supported simple operators: eq, gt, gte, lt, lte, in, like, contains
+ * Supported logical operators: and, or, not
+ *
+ * @example Simple condition
+ * { field: ["status"], operator: "eq", value: "active" }
+ *
+ * @example Logical AND
+ * { operator: "and", conditions: [
+ *   { field: ["status"], operator: "eq", value: "active" },
+ *   { field: ["type"], operator: "in", value: ["A", "B"] }
+ * ]}
  */
 export function buildWhereClause(
   whereExpr: WhereExpression | undefined,
   params: unknown[] = [],
 ): { clause: string; params: unknown[] } {
   if (!whereExpr) {
+    return { clause: "", params };
+  }
+
+  // Handle empty where expressions gracefully
+  if (isEmptyWhereExpression(whereExpr)) {
     return { clause: "", params };
   }
 
@@ -74,11 +107,18 @@ export function buildWhereClause(
 
   // Logical condition (and, or, not)
   if ("operator" in whereExpr && "conditions" in whereExpr) {
-    const conditions = (whereExpr.conditions || []).map((cond) => {
-      const result = buildWhereClause(cond, params);
-      params = result.params;
-      return result.clause;
-    });
+    const conditions = (whereExpr.conditions || [])
+      .map((cond) => {
+        const result = buildWhereClause(cond, params);
+        params = result.params;
+        return result.clause;
+      })
+      .filter(Boolean); // Filter out empty clauses
+
+    // If all conditions resolved to empty, return empty
+    if (conditions.length === 0) {
+      return { clause: "", params };
+    }
 
     switch (whereExpr.operator) {
       case "and":

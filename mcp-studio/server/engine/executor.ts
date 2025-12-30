@@ -15,7 +15,7 @@ import {
   updateStepResult,
 } from "../db/queries/executions.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
-import { ExecutionNotFoundError } from "../utils/errors.ts";
+import { ExecutionNotFoundError, StepExecutionError } from "../utils/errors.ts";
 import {
   handleExecutionError,
   type ExecuteWorkflowResult,
@@ -86,7 +86,7 @@ export async function executeWorkflow(
         env,
       });
 
-      processResults(results, ctx.stepOutputs, completedSteps);
+      processResults(results, ctx.stepOutputs, completedSteps, executionId);
     }
 
     const lastStepResult = await stepExecutor.getLastStepResult();
@@ -193,7 +193,18 @@ function processResults(
   results: StepExecutionResult[],
   stepOutputs: Map<string, unknown>,
   completedSteps: string[],
+  executionId: string,
 ): void {
+  // Check for any step failures
+  const failedStep = results.find((r) => r.result?.error);
+  if (failedStep && failedStep.result?.error) {
+    throw new StepExecutionError(
+      executionId,
+      failedStep.step.name,
+      failedStep.result.error,
+    );
+  }
+
   for (const r of results) {
     stepOutputs.set(r.step.name, r.result?.output ?? undefined);
     completedSteps.push(r.step.name);

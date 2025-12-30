@@ -8,6 +8,7 @@ import type { Env } from "../types/env.ts";
 import { updateExecution } from "../db/queries/executions.ts";
 import {
   ExecutionNotFoundError,
+  StepExecutionError,
   StepTimeoutError,
   WaitingForSignalError,
   WorkflowCancelledError,
@@ -37,6 +38,15 @@ export async function handleExecutionError(
         typeof err.message === "string"
           ? err.message
           : JSON.stringify(err.message),
+      completed_at_epoch_ms: Date.now(),
+    });
+    return { status: "error", error: err.message };
+  }
+
+  if (err instanceof StepExecutionError) {
+    await updateExecution(env, executionId, {
+      status: "error",
+      error: err.message,
       completed_at_epoch_ms: Date.now(),
     });
     return { status: "error", error: err.message };
