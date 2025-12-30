@@ -25,6 +25,9 @@ export interface Page {
   category?: string;
   access_token?: string;
   tasks?: string[];
+  about?: string;
+  website?: string;
+  phone?: string;
 }
 
 // Campaign types

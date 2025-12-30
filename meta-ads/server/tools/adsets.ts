@@ -66,7 +66,7 @@ export const createGetAdSetsTool = (env: Env) =>
       count: z.number().describe("Number of ad sets returned"),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const response = await client.getAdSets(context.account_id, {
@@ -168,7 +168,7 @@ export const createGetAdSetDetailsTool = (env: Env) =>
       promoted_object: z.record(z.unknown()).optional(),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const adset = await client.getAdSetDetails(context.adset_id);

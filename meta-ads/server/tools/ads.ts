@@ -50,7 +50,7 @@ export const createGetAdsTool = (env: Env) =>
       count: z.number().describe("Number of ads returned"),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const response = await client.getAds(context.account_id, {
@@ -101,7 +101,7 @@ export const createGetAdDetailsTool = (env: Env) =>
       conversion_specs: z.array(z.record(z.unknown())).optional(),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const ad = await client.getAdDetails(context.ad_id);
@@ -147,7 +147,7 @@ export const createGetAdCreativesTool = (env: Env) =>
       effective_object_story_id: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const creative = await client.getAdCreatives(context.ad_id);

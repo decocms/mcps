@@ -4,217 +4,152 @@
  * This MCP provides tools for analyzing Meta/Facebook advertising campaigns,
  * including performance metrics, insights, and detailed breakdowns.
  *
- * Authentication is handled via OAuth PKCE with Meta's Graph API.
- *
- * Required environment variables (set as secrets in Deco/GitHub):
- * - META_APP_ID: Facebook App ID
- * - META_APP_SECRET: Facebook App Secret
+ * Authentication is handled via Access Token provided during installation.
+ * Users can generate tokens from the Graph API Explorer.
+ * Short-lived tokens are automatically exchanged for long-lived tokens (~60 days).
  */
-import { readFileSync } from "fs";
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
-import { serve } from "@decocms/mcps-shared/serve";
+import { z } from "zod";
+import { withRuntime } from "@decocms/runtime";
+import {
+  type Env as DecoEnv,
+  StateSchema as BaseStateSchema,
+} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
-import { META_API_VERSION, META_ADS_SCOPES, META_APP_ID } from "./constants.ts";
+import {
+  exchangeForLongLivedToken,
+  shouldExchangeToken,
+} from "./lib/meta-client.ts";
 
 /**
- * Load environment variables from .dev.vars for local development
- * In production, these are injected by Deco runtime via secrets
+ * State schema for Meta Ads MCP configuration.
+ * Users fill these values when installing the MCP.
  */
-const loadEnvVars = (): Record<string, string> => {
-  const vars: Record<string, string> = {};
-  try {
-    const text = readFileSync(".dev.vars", "utf-8");
-    for (const line of text.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("#")) {
-        const idx = trimmed.indexOf("=");
-        if (idx > 0) {
-          vars[trimmed.substring(0, idx).trim()] = trimmed
-            .substring(idx + 1)
-            .trim();
-        }
-      }
-    }
-  } catch {
-    // File doesn't exist - will use process.env (production)
-  }
-  return vars;
-};
+export const StateSchema = BaseStateSchema.extend({
+  META_APP_ID: z
+    .string()
+    .describe(
+      "Meta App ID from https://developers.facebook.com/apps/ - Required to exchange for long-lived token",
+    ),
+  META_APP_SECRET: z
+    .string()
+    .describe(
+      "Meta App Secret from App Settings > Basic - Required to exchange for long-lived token (keep this secret!)",
+    ),
+  META_ACCESS_TOKEN: z
+    .string()
+    .describe(
+      "Meta Access Token from Graph API Explorer (https://developers.facebook.com/tools/explorer/). Will be automatically exchanged for a long-lived token (~60 days). Required permissions: ads_read, ads_management, pages_read_engagement, business_management",
+    ),
+});
 
-const envVars = loadEnvVars();
-
-// Helper to get env var from .dev.vars or process.env
-const getEnv = (key: string): string | undefined =>
-  envVars[key] || process.env[key];
-
-// Armazena o redirect_uri usado na autorização para usar no exchangeCode
-// Como o runtime pode não passar o redirect_uri nos oauthParams, precisamos armazená-lo
-let storedRedirectUri: string | null = null;
+/**
+ * Request context with state containing credentials
+ */
+interface RequestContext {
+  state: {
+    META_APP_ID?: string;
+    META_APP_SECRET?: string;
+    META_ACCESS_TOKEN?: string;
+  };
+}
 
 /**
  * Environment type for Meta Ads MCP
  */
-export type Env = DefaultEnv & {
-  META_APP_ID?: string;
-  META_APP_SECRET?: string;
+export type Env = DecoEnv & {
+  ASSETS: {
+    fetch: (request: Request, init?: RequestInit) => Promise<Response>;
+  };
+  MESH_REQUEST_CONTEXT?: RequestContext;
 };
+
+// Cache for long-lived tokens per session
+const longLivedTokenCache = new Map<string, string>();
 
 /**
- * Get the access token from the request context
+ * Get the access token from the request context state or environment variables.
+ * Automatically exchanges short-lived tokens for long-lived tokens when app credentials are provided.
  */
-export const getMetaAccessToken = (env: Env): string => {
-  // @ts-ignore - MESH_REQUEST_CONTEXT is injected by the runtime
-  const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
-  if (!authorization) {
+export const getMetaAccessToken = async (env: Env): Promise<string> => {
+  const context = env.MESH_REQUEST_CONTEXT;
+  const state = context?.state;
+
+  let token = state?.META_ACCESS_TOKEN;
+  let appId = state?.META_APP_ID;
+  let appSecret = state?.META_APP_SECRET;
+
+  // Fallback to environment variables for development
+  if (typeof process !== "undefined" && process.env) {
+    if (!token) token = process.env.META_ACCESS_TOKEN;
+    if (!appId) appId = process.env.META_APP_ID;
+    if (!appSecret) appSecret = process.env.META_APP_SECRET;
+  }
+
+  if (!token) {
     throw new Error(
-      "Meta authorization is required. Please authenticate with Meta first.",
+      "META_ACCESS_TOKEN is required. Please configure it in the MCP settings or as an environment variable. " +
+        "You can generate a token from https://developers.facebook.com/tools/explorer/",
     );
   }
-  return authorization;
+
+  // If we have app credentials, try to exchange for long-lived token
+  if (appId && appSecret) {
+    const cacheKey = `${appId}:${token.substring(0, 20)}`;
+
+    // Check cache first
+    const cachedToken = longLivedTokenCache.get(cacheKey);
+    if (cachedToken) {
+      return cachedToken;
+    }
+
+    try {
+      // Check if token needs exchange
+      const needsExchange = await shouldExchangeToken(token);
+
+      if (needsExchange) {
+        const { token: longLivedToken, expiresIn } =
+          await exchangeForLongLivedToken(token, appId, appSecret);
+
+        // Cache the long-lived token
+        longLivedTokenCache.set(cacheKey, longLivedToken);
+
+        console.log(
+          `[Meta Ads] Token exchanged successfully. New token expires in ${Math.floor(expiresIn / 86400)} days.`,
+        );
+
+        return longLivedToken;
+      }
+    } catch (error) {
+      // If exchange fails, use original token
+      console.warn(
+        `[Meta Ads] Could not exchange token for long-lived version: ${error}`,
+      );
+    }
+  }
+
+  return token;
 };
 
-const runtime = withRuntime<Env>({
-  oauth: {
-    mode: "PKCE",
-    authorizationServer: "https://www.facebook.com",
-
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
     /**
-     * Generates the URL to redirect users to for Meta OAuth authorization
+     * No external scopes needed - we use a user-provided token
      */
-    authorizationUrl: (callbackUrl: string) => {
-      // Armazena o redirect_uri usado para garantir que seja o mesmo no exchangeCode
-      storedRedirectUri = callbackUrl;
-      console.log(
-        "[OAuth] authorizationUrl - stored redirect_uri:",
-        storedRedirectUri,
-      );
-
-      const url = new URL(
-        `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
-      );
-      url.searchParams.set("client_id", META_APP_ID);
-      url.searchParams.set("redirect_uri", callbackUrl);
-      url.searchParams.set("scope", META_ADS_SCOPES);
-      url.searchParams.set("response_type", "code");
-
-      return url.toString();
-    },
-
+    scopes: [],
     /**
-     * Exchanges the authorization code for an access token
+     * The state schema of your Application defines what
+     * your installed App state will look like. When a user
+     * is installing your App, they will have to fill in
+     * a form with the fields defined in the state schema.
      */
-    exchangeCode: async (oauthParams: {
-      code: string;
-      code_verifier?: string;
-      redirect_uri?: string;
-      redirectUri?: string;
-    }) => {
-      const appSecret = getEnv("META_APP_SECRET");
-
-      if (!appSecret) {
-        throw new Error("META_APP_SECRET environment variable is required");
-      }
-
-      // Meta requires the EXACT same redirect_uri used in authorization
-      // O runtime pode não passar o redirect_uri nos oauthParams, então usamos o armazenado
-      const redirectUri =
-        oauthParams.redirect_uri ||
-        oauthParams.redirectUri ||
-        storedRedirectUri;
-
-      console.log(
-        "[OAuth] exchangeCode - redirect_uri from oauthParams.redirect_uri:",
-        oauthParams.redirect_uri,
-      );
-      console.log(
-        "[OAuth] exchangeCode - redirect_uri from oauthParams.redirectUri:",
-        oauthParams.redirectUri,
-      );
-      console.log(
-        "[OAuth] exchangeCode - redirect_uri from storedRedirectUri:",
-        storedRedirectUri,
-      );
-      console.log(
-        "[OAuth] exchangeCode - final redirect_uri to use:",
-        redirectUri,
-      );
-
-      if (!redirectUri) {
-        throw new Error(
-          "redirect_uri is required but was not provided by the runtime or stored from authorization",
-        );
-      }
-
-      const params = new URLSearchParams({
-        client_id: META_APP_ID,
-        client_secret: appSecret,
-        code: oauthParams.code,
-        redirect_uri: redirectUri,
-      });
-
-      if (oauthParams.code_verifier) {
-        params.set("code_verifier", oauthParams.code_verifier);
-      }
-
-      const response = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${params.toString()}`,
-        { method: "GET" },
-      );
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Meta OAuth failed: ${response.status} - ${error}`);
-      }
-
-      const data = (await response.json()) as {
-        access_token: string;
-        token_type: string;
-        expires_in?: number;
-      };
-
-      // Exchange short-lived token for long-lived token (~60 days)
-      const longLivedParams = new URLSearchParams({
-        grant_type: "fb_exchange_token",
-        client_id: META_APP_ID,
-        client_secret: appSecret,
-        fb_exchange_token: data.access_token,
-      });
-
-      const longLivedResponse = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${longLivedParams.toString()}`,
-      );
-
-      if (longLivedResponse.ok) {
-        const longLivedData = (await longLivedResponse.json()) as {
-          access_token: string;
-          token_type: string;
-          expires_in?: number;
-        };
-        return {
-          access_token: longLivedData.access_token,
-          token_type: longLivedData.token_type || "Bearer",
-          expires_in: longLivedData.expires_in,
-        };
-      }
-
-      // Log warning when long-lived token exchange fails
-      // User will receive short-lived token (~1 hour) instead of long-lived (~60 days)
-      const longLivedError = await longLivedResponse.text();
-      console.warn(
-        `Failed to exchange for long-lived token (${longLivedResponse.status}): ${longLivedError}. ` +
-          "Falling back to short-lived token (~1 hour instead of ~60 days).",
-      );
-
-      // Fallback to short-lived token if long-lived exchange fails
-      return {
-        access_token: data.access_token,
-        token_type: data.token_type || "Bearer",
-        expires_in: data.expires_in,
-      };
-    },
+    state: StateSchema,
   },
   tools,
+  /**
+   * Fallback directly to assets for all requests that do not match a tool or auth.
+   */
+  fetch: (req: Request, env: Env) => env.ASSETS.fetch(req),
 });
 
-serve(runtime.fetch);
+export default runtime;

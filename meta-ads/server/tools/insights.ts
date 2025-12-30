@@ -132,7 +132,7 @@ Use date_preset for common time ranges (last_7d, last_30d, etc) or time_range fo
       }),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       // Build time range if custom dates provided

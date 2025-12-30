@@ -56,7 +56,7 @@ export const createGetCampaignsTool = (env: Env) =>
       count: z.number().describe("Number of campaigns returned"),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const response = await client.getCampaigns(context.account_id, {
@@ -112,7 +112,7 @@ export const createGetCampaignDetailsTool = (env: Env) =>
       special_ad_categories: z.array(z.string()).optional(),
     }),
     execute: async ({ context }) => {
-      const accessToken = getMetaAccessToken(env);
+      const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
       const campaign = await client.getCampaignDetails(context.campaign_id);
