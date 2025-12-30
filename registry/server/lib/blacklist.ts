@@ -84,7 +84,6 @@ export const BLACKLISTED_SERVERS: string[] = [
   "io.github.tonymaynard97/blockscholes-mcp-server",
   "io.github.youdotcom-oss/mcp",
   "com.gitlab/mcp",
-  "com.supabase/mcp",
   "com.atlassian/atlassian-mcp-server",
   "ai.cirra/salesforce-mcp", // CORS error
   "com.figma.mcp/mcp", // CORS error
