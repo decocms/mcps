@@ -9,7 +9,7 @@
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
-    "check": "bun run oxlint server/",
+    "check": "tsc --noEmit",
     "dev:tunnel": "deco link -p 3003 -- PORT=3003 bun run dev"
   },
   "dependencies": {

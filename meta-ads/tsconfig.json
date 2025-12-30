@@ -33,6 +33,6 @@
     /* Types */
     "types": ["node"]
   },
-  "include": ["server", "types.d.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["server"],
+  "exclude": ["node_modules"]
 }

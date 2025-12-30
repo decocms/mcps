@@ -1,6 +1,5 @@
 // Generated types - do not edit manually
 
-/* eslint-disable */
 import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
@@ -21,11 +20,6 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
 
 export const StateSchema = z.object({});
 
-export interface Env {
-  DECO_CHAT_WORKSPACE: string;
-  DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-}
+export interface Env {}
 
-export const Scopes = {
-  // No scopes needed for Meta Ads - uses direct token authentication
-} as const;
+export const Scopes = {};

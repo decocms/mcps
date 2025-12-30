@@ -23,6 +23,133 @@ export interface MetaClientConfig {
 }
 
 /**
+ * Token exchange response from Meta
+ */
+interface TokenExchangeResponse {
+  access_token: string;
+  token_type: string;
+  expires_in?: number;
+}
+
+/**
+ * Token debug info from Meta
+ */
+interface TokenDebugInfo {
+  data: {
+    app_id: string;
+    type: string;
+    application: string;
+    data_access_expires_at: number;
+    expires_at: number;
+    is_valid: boolean;
+    issued_at?: number;
+    scopes: string[];
+    user_id?: string;
+  };
+}
+
+// Cache for exchanged tokens to avoid repeated API calls
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+/**
+ * Exchange a short-lived token for a long-lived token
+ * Long-lived tokens last ~60 days
+ */
+export async function exchangeForLongLivedToken(
+  shortLivedToken: string,
+  appId: string,
+  appSecret: string,
+): Promise<{ token: string; expiresIn: number }> {
+  // Check cache first (use first 20 chars of token as key)
+  const cacheKey = `${appId}:${shortLivedToken.substring(0, 20)}`;
+  const cached = tokenCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now() + 86400000) {
+    // Return cached if expires in more than 1 day
+    return {
+      token: cached.token,
+      expiresIn: Math.floor((cached.expiresAt - Date.now()) / 1000),
+    };
+  }
+
+  const url = new URL(`${META_GRAPH_API_URL}/oauth/access_token`);
+  url.searchParams.set("grant_type", "fb_exchange_token");
+  url.searchParams.set("client_id", appId);
+  url.searchParams.set("client_secret", appSecret);
+  url.searchParams.set("fb_exchange_token", shortLivedToken);
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    const errorData = (await response.json()) as ApiError;
+    throw new Error(
+      `Failed to exchange token: ${errorData.error?.message || response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as TokenExchangeResponse;
+
+  // Cache the new token
+  const expiresIn = data.expires_in || 5184000; // Default 60 days
+  tokenCache.set(cacheKey, {
+    token: data.access_token,
+    expiresAt: Date.now() + expiresIn * 1000,
+  });
+
+  return {
+    token: data.access_token,
+    expiresIn,
+  };
+}
+
+/**
+ * Debug/inspect a token to get its info
+ */
+export async function debugToken(
+  inputToken: string,
+  accessToken: string,
+): Promise<TokenDebugInfo["data"]> {
+  const url = new URL(`${META_GRAPH_API_URL}/debug_token`);
+  url.searchParams.set("input_token", inputToken);
+  url.searchParams.set("access_token", accessToken);
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    const errorData = (await response.json()) as ApiError;
+    throw new Error(
+      `Failed to debug token: ${errorData.error?.message || response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as TokenDebugInfo;
+  return data.data;
+}
+
+/**
+ * Check if a token needs to be exchanged (is short-lived or expiring soon)
+ */
+export async function shouldExchangeToken(token: string): Promise<boolean> {
+  try {
+    const debugInfo = await debugToken(token, token);
+
+    // If expires_at is 0, it's a long-lived token that doesn't expire
+    if (debugInfo.expires_at === 0) {
+      return false;
+    }
+
+    // Check if token expires in less than 7 days
+    const expiresIn = debugInfo.expires_at * 1000 - Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+    return expiresIn < sevenDays;
+  } catch {
+    // If we can't debug, try to exchange anyway
+    return true;
+  }
+}
+
+/**
  * Makes a request to the Meta Graph API
  */
 async function makeRequest<T>(
@@ -72,13 +199,59 @@ async function makeRequest<T>(
 }
 
 /**
+ * Detect if the access token is a User Token or Page Token
+ */
+export async function detectTokenType(
+  accessToken: string,
+): Promise<"user" | "page"> {
+  try {
+    const response = await makeRequest<{
+      id: string;
+      name?: string;
+      category?: string;
+      tasks?: string[];
+    }>({ accessToken }, "/me", {
+      params: {
+        fields: "id,name,category,tasks",
+      },
+    });
+
+    // If response has 'category' or 'tasks', it's a Page Token
+    if (response.category || response.tasks) {
+      return "page";
+    }
+
+    // Otherwise, it's a User Token
+    return "user";
+  } catch (error) {
+    // If error accessing /me, default to user (safer fallback)
+    console.warn(
+      "[Meta Ads] Could not detect token type, defaulting to user:",
+      error,
+    );
+    return "user";
+  }
+}
+
+/**
  * Meta Ads Client class
  */
 export class MetaAdsClient {
   private config: MetaClientConfig;
+  private tokenType: "user" | "page" | null = null;
 
   constructor(config: MetaClientConfig) {
     this.config = config;
+  }
+
+  /**
+   * Get the detected token type (lazy detection)
+   */
+  async getTokenType(): Promise<"user" | "page"> {
+    if (!this.tokenType) {
+      this.tokenType = await detectTokenType(this.config.accessToken);
+    }
+    return this.tokenType;
   }
 
   // ============ User Methods ============
@@ -138,6 +311,7 @@ export class MetaAdsClient {
 
   /**
    * Get pages associated with an ad account or user
+   * @deprecated Use getUserAccountPages or getPageInfo instead
    */
   async getAccountPages(
     accountId: string = "me",
@@ -154,6 +328,87 @@ export class MetaAdsClient {
         limit: limit.toString(),
       },
     });
+  }
+
+  // ============ User Token Methods ============
+
+  /**
+   * Get all ad accounts accessible by the current user (User Token only)
+   */
+  async getUserAdAccounts(
+    userId: string = "me",
+    limit: number = 50,
+    fields?: string,
+  ): Promise<PaginatedResponse<AdAccount>> {
+    return makeRequest<PaginatedResponse<AdAccount>>(
+      this.config,
+      `/${userId}/adaccounts`,
+      {
+        params: {
+          fields:
+            fields ||
+            "id,name,account_id,account_status,currency,timezone_name,timezone_offset_hours_utc,business_name,amount_spent",
+          limit: limit.toString(),
+        },
+      },
+    );
+  }
+
+  /**
+   * Get pages associated with the current user (User Token only)
+   */
+  async getUserAccountPages(
+    limit: number = 50,
+  ): Promise<PaginatedResponse<Page>> {
+    return makeRequest<PaginatedResponse<Page>>(this.config, "/me/accounts", {
+      params: {
+        fields: "id,name,category,access_token,tasks",
+        limit: limit.toString(),
+      },
+    });
+  }
+
+  // ============ Page Token Methods ============
+
+  /**
+   * Get information about the current page (Page Token only)
+   */
+  async getPageInfo(fields?: string): Promise<Page> {
+    return makeRequest<Page>(this.config, "/me", {
+      params: {
+        fields:
+          fields || "id,name,category,access_token,tasks,about,phone,website",
+      },
+    });
+  }
+
+  /**
+   * Get ad accounts associated with the current page (Page Token only)
+   */
+  async getPageAdAccounts(
+    limit: number = 50,
+    fields?: string,
+  ): Promise<PaginatedResponse<AdAccount>> {
+    return makeRequest<PaginatedResponse<AdAccount>>(
+      this.config,
+      "/me/adaccounts",
+      {
+        params: {
+          fields:
+            fields ||
+            "id,name,account_id,account_status,currency,timezone_name,timezone_offset_hours_utc,business_name,amount_spent",
+          limit: limit.toString(),
+        },
+      },
+    );
+  }
+
+  /**
+   * Get the current page info (Page Token only)
+   * This returns the page itself, not a list
+   */
+  async getPageAccountPages(): Promise<Page> {
+    return this.getPageInfo();
   }
 
   // ============ Campaign Methods ============

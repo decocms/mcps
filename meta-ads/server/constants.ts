@@ -8,15 +8,6 @@ export const META_API_VERSION = "v21.0";
 // Base URLs
 export const META_GRAPH_API_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 
-// Required permissions/scopes for Meta Ads API
-// These permissions must be included when generating your access token
-export const META_ADS_SCOPES = [
-  "ads_read", // Read ad account info, campaigns, ad sets, ads, and insights
-  "ads_management", // Manage ads (required for some operations)
-  "pages_read_engagement", // Read page info for ad context
-  "business_management", // Access business accounts
-].join(",");
-
 // Default fields for different objects
 export const ACCOUNT_FIELDS = [
   "id",
