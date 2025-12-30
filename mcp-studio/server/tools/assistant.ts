@@ -14,20 +14,25 @@ import {
   AssistantSchema,
 } from "@decocms/bindings/assistant";
 import {
-  CollectionGetInputSchema,
   CollectionDeleteInputSchema,
+  CollectionGetInputSchema,
+  createCollectionDeleteOutputSchema,
   createCollectionGetOutputSchema,
   createCollectionInsertInputSchema,
   createCollectionInsertOutputSchema,
   createCollectionUpdateInputSchema,
   createCollectionUpdateOutputSchema,
-  createCollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
 import { runSQL } from "../db/postgres.ts";
 import type { Env } from "../types/env.ts";
-import { type WhereExpression, type OrderByExpression } from "./_helpers.ts";
+import {
+  buildOrderByClause,
+  buildWhereClause,
+  type OrderByExpression,
+  type WhereExpression,
+} from "../lib/query-builder.ts";
 
 // Extract binding schemas
 const LIST_BINDING = ASSISTANTS_BINDING.find(
@@ -67,7 +72,6 @@ const DEFAULT_MODEL: z.infer<typeof AssistantSchema>["model"] = {
   id: "",
   connectionId: "",
 };
-
 function normalizeModel(
   value: unknown,
 ): z.infer<typeof AssistantSchema>["model"] {
@@ -132,105 +136,6 @@ function mapDbRowToAssistant(
   };
 }
 
-/**
- * Build SQL WHERE clause from filter expression using ? placeholders
- */
-function buildWhereClause(
-  whereExpr: WhereExpression | undefined,
-  params: unknown[] = [],
-): { clause: string; params: unknown[] } {
-  if (!whereExpr) {
-    return { clause: "", params };
-  }
-
-  // Simple condition
-  if (
-    "field" in whereExpr &&
-    "operator" in whereExpr &&
-    !("conditions" in whereExpr)
-  ) {
-    const fieldPath = whereExpr.field;
-    if (!fieldPath) return { clause: "", params };
-    const fieldName = fieldPath[fieldPath.length - 1];
-
-    switch (whereExpr.operator) {
-      case "eq":
-        params.push(whereExpr.value);
-        return { clause: `${fieldName} = ?`, params };
-      case "gt":
-        params.push(whereExpr.value);
-        return { clause: `${fieldName} > ?`, params };
-      case "gte":
-        params.push(whereExpr.value);
-        return { clause: `${fieldName} >= ?`, params };
-      case "lt":
-        params.push(whereExpr.value);
-        return { clause: `${fieldName} < ?`, params };
-      case "lte":
-        params.push(whereExpr.value);
-        return { clause: `${fieldName} <= ?`, params };
-      case "in": {
-        const values = Array.isArray(whereExpr.value)
-          ? whereExpr.value
-          : [whereExpr.value];
-        // Create placeholders for each value in the IN clause
-        const placeholders = values.map(() => "?").join(", ");
-        params.push(...values);
-        return { clause: `${fieldName} IN (${placeholders})`, params };
-      }
-      case "like":
-      case "contains":
-        params.push(`%${whereExpr.value}%`);
-        return { clause: `${fieldName} LIKE ?`, params };
-      default:
-        throw new Error(`Unsupported operator: ${whereExpr.operator}`);
-    }
-  }
-
-  // Logical condition (and, or, not)
-  if ("operator" in whereExpr && "conditions" in whereExpr) {
-    const conditions = (whereExpr.conditions || []).map((cond) => {
-      const result = buildWhereClause(cond, params);
-      params = result.params;
-      return result.clause;
-    });
-
-    switch (whereExpr.operator) {
-      case "and":
-        return { clause: `(${conditions.join(" AND ")})`, params };
-      case "or":
-        return { clause: `(${conditions.join(" OR ")})`, params };
-      case "not":
-        return { clause: `NOT (${conditions[0]})`, params };
-      default:
-        throw new Error(`Unsupported logical operator: ${whereExpr.operator}`);
-    }
-  }
-
-  return { clause: "", params };
-}
-
-/**
- * Build SQL ORDER BY clause from sort expression
- */
-function buildOrderByClause(
-  orderByExpr: OrderByExpression | undefined,
-): string {
-  if (!orderByExpr || orderByExpr.length === 0) {
-    return "ORDER BY created_at DESC";
-  }
-
-  const orderClauses = orderByExpr.map((order) => {
-    const fieldPath = order.field;
-    const fieldName = fieldPath[fieldPath.length - 1];
-    const direction = order.direction.toUpperCase();
-    const nulls = order.nulls ? ` NULLS ${order.nulls.toUpperCase()}` : "";
-    return `${fieldName} ${direction}${nulls}`;
-  });
-
-  return `ORDER BY ${orderClauses.join(", ")}`;
-}
-
 // ============================================================================
 // Tool Implementations
 // ============================================================================
@@ -246,7 +151,7 @@ export const createListTool = (env: Env) =>
     outputSchema: LIST_BINDING.outputSchema,
     execute: async ({ context }) => {
       // If DATABASE is not available, return empty list
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         return {
           items: [],
           totalCount: 0,
@@ -305,7 +210,7 @@ export const createGetTool = (env: Env) =>
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(AssistantSchema),
     execute: async ({ context }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         return { item: null };
       }
 
@@ -341,7 +246,7 @@ export const createInsertTool = (env: Env) =>
     }: {
       context: z.infer<typeof CREATE_INPUT_SCHEMA>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 
@@ -413,7 +318,7 @@ export const createUpdateTool = (env: Env) =>
     }: {
       context: z.infer<typeof UPDATE_INPUT_SCHEMA>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 
@@ -492,7 +397,7 @@ export const createDeleteTool = (env: Env) =>
     }: {
       context: z.infer<typeof CollectionDeleteInputSchema>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 

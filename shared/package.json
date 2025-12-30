@@ -16,9 +16,11 @@
         "./video-generators": "./video-generators/index.ts",
         "./audio-transcribers": "./audio-transcribers/index.ts",
         "./storage": "./storage/index.ts",
-        "./search-ai": "./search-ai/index.ts"
+        "./search-ai": "./search-ai/index.ts",
+        "./serve": "./serve.ts"
     },
     "devDependencies": {
+        "@types/bun": "^1.2.14",
         "vite": "7.2.0",
         "@decocms/runtime": "0.25.1",
         "zod": "^3.24.3"
