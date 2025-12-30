@@ -5,6 +5,7 @@
  */
 
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
@@ -81,13 +82,9 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
 });
 
-const server = {
-  fetch: (req: Request) => {
-    if (new URL(req.url).pathname === "/_healthcheck") {
-      return new Response("OK", { status: 200 });
-    }
-    return runtime.fetch(req, { ...process.env } as Env, {});
-  },
-};
-
-export default server;
+serve((req: Request) => {
+  if (new URL(req.url).pathname === "/_healthcheck") {
+    return new Response("OK", { status: 200 });
+  }
+  return runtime.fetch(req, { ...process.env } as Env, {});
+});

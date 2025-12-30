@@ -6,6 +6,7 @@
  */
 
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 import {
   type Env as DecoEnv,
   Scopes,
@@ -65,4 +66,4 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   ],
 });
 
-export default runtime;
+serve(runtime.fetch);
