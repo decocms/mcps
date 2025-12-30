@@ -6,15 +6,30 @@
  *
  * Authentication is handled via direct access token from Meta Graph API.
  * Users must provide their Facebook access token to use this MCP.
- *
- * Required environment variables (set as secrets in Deco/GitHub):
- * - META_ACCESS_TOKEN: Facebook Access Token (obtained from Facebook Graph API Explorer or App Dashboard)
  */
 import { readFileSync } from "fs";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
+import {
+  type Env as DecoEnv,
+  StateSchema as BaseStateSchema,
+} from "../shared/deco.gen.ts";
 
 import { tools } from "./tools/index.ts";
+import { z } from "zod";
+
+/**
+ * State schema for Meta Ads MCP configuration.
+ * Users fill these values when installing the MCP.
+ */
+export const StateSchema = BaseStateSchema.extend({
+  accessToken: z
+    .string()
+    .describe(
+      "Facebook Access Token from https://developers.facebook.com/tools/explorer/. " +
+        "Select your app and generate token with required permissions: ads_read, ads_management, pages_read_engagement, business_management",
+    ),
+});
 
 /**
  * Load environment variables from .dev.vars for local development
@@ -50,29 +65,57 @@ const getEnv = (key: string): string | undefined =>
 /**
  * Environment type for Meta Ads MCP
  */
-export type Env = DefaultEnv & {
-  META_ACCESS_TOKEN?: string;
-};
+export type Env = DefaultEnv<typeof StateSchema> &
+  DecoEnv & {
+    META_ACCESS_TOKEN?: string;
+    ASSETS?: {
+      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
+    };
+  };
 
 /**
- * Get the access token from environment variables
+ * Get the access token from state (user configuration) or environment variables (fallback)
  */
 export const getMetaAccessToken = (env: Env): string => {
-  // Try to get token from environment (production) or .dev.vars (local)
-  const token = getEnv("META_ACCESS_TOKEN") || env.META_ACCESS_TOKEN;
+  // First, try to get token from state (user configuration when installing MCP)
+  const stateToken = (env.state as z.infer<typeof StateSchema> | undefined)
+    ?.accessToken;
+
+  // Fallback to environment variable (for local development or legacy setups)
+  const envToken = getEnv("META_ACCESS_TOKEN") || env.META_ACCESS_TOKEN;
+
+  const token = stateToken || envToken;
 
   if (!token) {
     throw new Error(
-      "META_ACCESS_TOKEN is required. Please configure your Facebook access token in the environment variables. " +
-        "You can obtain a token from https://developers.facebook.com/tools/explorer/ or your Facebook App Dashboard.",
+      "Facebook access token is required. Please configure your access token when installing this MCP. " +
+        "You can obtain a token from https://developers.facebook.com/tools/explorer/ " +
+        "with permissions: ads_read, ads_management, pages_read_engagement, business_management",
     );
   }
 
   return token;
 };
 
-const runtime = withRuntime<Env>({
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    /**
+     * These scopes define the asking permissions of your
+     * app when a user is installing it.
+     */
+    scopes: [],
+    /**
+     * The state schema defines what fields users need to fill when installing the MCP.
+     * In this case, users provide their Facebook access token.
+     */
+    state: StateSchema,
+  },
   tools,
+  /**
+   * Fallback directly to assets for all requests that do not match a tool or auth.
+   */
+  fetch: (req, env) =>
+    env.ASSETS?.fetch(req) || new Response("Not Found", { status: 404 }),
 });
 
 serve(runtime.fetch);
