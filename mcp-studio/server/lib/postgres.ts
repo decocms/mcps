@@ -25,10 +25,11 @@ export async function runSQL<T = unknown>(
     if (typeof p === "string") return p.replaceAll("'", "''");
     return p;
   });
-  const response = await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params: sanitizedParams,
-  });
+  const response =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql,
+      params: sanitizedParams,
+    });
   return (response.result[0]?.results ?? []) as T[];
 }
 

@@ -44,7 +44,7 @@ interface StoredPrompt {
  * Load prompts from the database
  */
 async function loadPrompts(env: Env): Promise<StoredPrompt[]> {
-  if (!env.DATABASE) {
+  if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
     return [];
   }
 

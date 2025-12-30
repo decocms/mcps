@@ -14,14 +14,14 @@ import {
   AssistantSchema,
 } from "@decocms/bindings/assistant";
 import {
-  CollectionGetInputSchema,
   CollectionDeleteInputSchema,
+  CollectionGetInputSchema,
+  createCollectionDeleteOutputSchema,
   createCollectionGetOutputSchema,
   createCollectionInsertInputSchema,
   createCollectionInsertOutputSchema,
   createCollectionUpdateInputSchema,
   createCollectionUpdateOutputSchema,
-  createCollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
@@ -151,7 +151,7 @@ export const createListTool = (env: Env) =>
     outputSchema: LIST_BINDING.outputSchema,
     execute: async ({ context }) => {
       // If DATABASE is not available, return empty list
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         return {
           items: [],
           totalCount: 0,
@@ -210,7 +210,7 @@ export const createGetTool = (env: Env) =>
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(AssistantSchema),
     execute: async ({ context }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         return { item: null };
       }
 
@@ -246,7 +246,7 @@ export const createInsertTool = (env: Env) =>
     }: {
       context: z.infer<typeof CREATE_INPUT_SCHEMA>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 
@@ -318,7 +318,7 @@ export const createUpdateTool = (env: Env) =>
     }: {
       context: z.infer<typeof UPDATE_INPUT_SCHEMA>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 
@@ -397,7 +397,7 @@ export const createDeleteTool = (env: Env) =>
     }: {
       context: z.infer<typeof CollectionDeleteInputSchema>;
     }) => {
-      if (!env.DATABASE) {
+      if (!env.MESH_REQUEST_CONTEXT.state.DATABASE) {
         throw new Error("DATABASE not configured for mcp-studio");
       }
 
