@@ -98,7 +98,7 @@
       "name": "mcp-studio",
       "version": "1.0.0",
       "dependencies": {
-        "@decocms/bindings": "1.0.1-alpha.26",
+        "@decocms/bindings": "1.0.1-alpha.27",
         "@decocms/mcps-shared": "1.0.0",
         "@decocms/runtime": "1.0.0-alpha.42",
         "@radix-ui/react-collapsible": "^1.1.12",
@@ -650,7 +650,7 @@
 
     "@deco/mcp": ["@jsr/deco__mcp@0.5.5", "https://npm.jsr.io/~/11/@jsr/deco__mcp/0.5.5.tgz", { "dependencies": { "@jsr/deco__deco": "^1.112.1", "@jsr/hono__hono": "^4.5.4", "@modelcontextprotocol/sdk": "^1.11.4", "fetch-to-node": "^2.1.0", "zod": "^3.24.2" } }, "sha512-46TaWGu7lbsPleHjCVrG6afhQjv3muBTNRFBkIhLrSzlQ+9d21UeukpYs19z0AGpOlmjSSK9qIRFTf8SlH2B6Q=="],
 
-    "@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.26", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-i6WlXYKL61PDkxBbPaA1NNvezqxa7CW6wPaRBZueAuEUxBcDSeOTs4DE6LWjzWz7TpsUg4fD72Ov3IEk7S1nVA=="],
+    "@decocms/bindings": ["@decocms/bindings@1.0.1-alpha.27", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.20.2", "zod": "^3.25.76", "zod-from-json-schema": "^0.0.5" } }, "sha512-0usZaDC5wKMT+aoLV/H8jDLJkuT0lVHWrXGR7AoAJ0A6eEZCCuXu3G4/Yoo8xR5uYjv2MjEw2Xbf4GnVS2Rttg=="],
 
     "@decocms/mcps-shared": ["@decocms/mcps-shared@workspace:shared"],
 
