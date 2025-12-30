@@ -10,7 +10,8 @@
 
 export const ALLOWED_SERVERS: string[] = [
   "ai.exa/exa",
-  "ai.klavis/strata",
+  "ai.klavis/strata",  
+  "com.supabase/mcp",
   "ai.mcpanalytics/analytics",
   "ai.packmind/mcp-server",
   "ai.smithery/222wcnm-bilistalkermcp",
