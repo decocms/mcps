@@ -35,7 +35,7 @@ export class StepExecutor {
     let result: StepResult | undefined;
     if (stepType === "tool") {
       await this.ctx.claimStep(step.name);
-      result = await this.executeToolStepWithTimeout(step, resolvedInput);
+      result = await executeToolStep(this.ctx, step, resolvedInput);
       await this.ctx.completeStep(step.name, result.output, result.error);
     }
 
@@ -82,27 +82,6 @@ export class StepExecutor {
     }
 
     return result;
-  }
-
-  private async executeToolStepWithTimeout(
-    step: Step,
-    resolvedInput: Record<string, unknown>,
-  ): Promise<StepResult> {
-    const timeoutMs = step.config?.timeoutMs ?? 30000;
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
-
-    try {
-      const result = await executeToolStep(this.ctx, step, resolvedInput);
-      clearTimeout(timeoutId);
-      return result;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      if (abortController.signal.aborted) {
-        throw new Error(`Step '${step.name}' timed out after ${timeoutMs}ms`);
-      }
-      throw err;
-    }
   }
 
   async getLastStepResult(): Promise<StepResult | null> {
