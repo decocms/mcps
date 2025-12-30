@@ -60,15 +60,23 @@ export function transformDbRowToExecution(
 ): WorkflowExecution {
   const transformed = {
     ...row,
+    // Execution now references workflow via workflow_id
+    // These fields are now on the workflow table, provide empty placeholders for schema
+    // The actual values will be joined from the workflow table when needed
+    workflow_id: row.workflow_id as string,
+    title: row.title ?? "",
+    steps: row.steps ?? [],
+    gateway_id: row.gateway_id ?? "",
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
+    started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
     timeout_ms: toNumberOrNull(row.timeout_ms),
     deadline_at_epoch_ms: toNumberOrNull(row.deadline_at_epoch_ms),
     completed_at_epoch_ms: toNumberOrNull(row.completed_at_epoch_ms),
     created_at: epochMsToIsoString(row.created_at),
-    updated_at: epochMsToIsoString(row.created_at),
-    title: (row.title ?? "") as string,
+    updated_at: epochMsToIsoString(row.updated_at),
     input: safeJsonParse(row.input),
-    steps: safeJsonParse(row.steps),
+    output: safeJsonParse(row.output),
+    error: safeJsonParse(row.error),
   };
   const parsed = WorkflowExecutionSchema.parse(transformed);
   return { ...parsed };
@@ -119,6 +127,8 @@ export function transformDbRowToEvent(
 // ============================================================================
 
 export interface WorkflowQueries {
+  workflowCollectionTableIdempotentQuery: string;
+  workflowCollectionTableIndexesQuery: string;
   workflowTableIdempotentQuery: string;
   workflowTableIndexesQuery: string;
   workflowExecutionTableIdempotentQuery: string;

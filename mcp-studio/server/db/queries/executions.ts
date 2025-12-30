@@ -20,13 +20,23 @@ import {
 } from "../transformers.ts";
 import { runSQL } from "../postgres.ts";
 
+/**
+ * Execution with workflow data joined
+ */
+export interface ExecutionWithWorkflow extends WorkflowExecution {
+  workflow_id: string;
+  steps: Step[];
+  gateway_id: string;
+}
+
 export async function claimExecution(
   env: Env,
   executionId: string,
-): Promise<WorkflowExecution | null> {
+): Promise<ExecutionWithWorkflow | null> {
   const now = Date.now();
 
   // Atomic claim: only succeeds if status is 'enqueued'
+  // Join with workflow table to get steps and gateway_id
   const result = await env.DATABASE.DATABASES_RUN_SQL({
     sql: `
       UPDATE workflow_execution
@@ -39,15 +49,42 @@ export async function claimExecution(
     params: [now, executionId],
   });
 
-  const row = result.result[0]?.results?.[0] as
+  const executionRow = result.result[0]?.results?.[0] as
     | Record<string, unknown>
     | undefined;
 
-  if (!row) {
+  if (!executionRow) {
     return null;
   }
 
-  return transformDbRowToExecution(row);
+  // Get the workflow data
+  const workflowId = executionRow.workflow_id as string;
+  console.log(
+    `[EXECUTION] Claimed execution ${executionId}, fetching workflow ${workflowId}`,
+  );
+  const workflow = await getWorkflow(env, workflowId);
+
+  if (!workflow) {
+    throw new Error(
+      `Workflow ${workflowId} not found for execution ${executionId}`,
+    );
+  }
+
+  console.log(`[EXECUTION] Workflow data:`, {
+    id: workflow.id,
+    gateway_id: workflow.gateway_id,
+    stepsCount: workflow.steps?.length ?? 0,
+    steps: workflow.steps?.map((s: Step) => s.name) ?? [],
+  });
+
+  const execution = transformDbRowToExecution(executionRow);
+
+  return {
+    ...execution,
+    workflow_id: workflowId,
+    steps: workflow.steps,
+    gateway_id: workflow.gateway_id,
+  };
 }
 
 /**
@@ -69,7 +106,87 @@ export async function getExecution(
 }
 
 /**
+ * Create an immutable workflow record (snapshot of the workflow definition)
+ */
+export async function createWorkflow(
+  env: Env,
+  data: {
+    workflow_collection_id?: string | null;
+    gateway_id: string;
+    input?: Record<string, unknown> | null;
+    steps: Step[];
+  },
+): Promise<{ id: string }> {
+  const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
+  const now = Date.now();
+  const id = crypto.randomUUID();
+
+  const stepsJson = JSON.stringify(data.steps);
+  const result = await runSQL<{ id: string }>(
+    env,
+    `INSERT INTO workflow (id, workflow_collection_id, steps, input, gateway_id, created_at_epoch_ms, created_by) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    [
+      id,
+      data.workflow_collection_id ?? null,
+      stepsJson,
+      JSON.stringify(data.input || {}),
+      data.gateway_id,
+      now,
+      user?.id || null,
+    ],
+  );
+
+  if (!result.length) {
+    throw new Error(`Failed to create workflow`);
+  }
+
+  return { id: result[0].id };
+}
+
+/**
+ * Get a workflow by ID
+ */
+export async function getWorkflow(
+  env: Env,
+  id: string,
+): Promise<{
+  id: string;
+  workflow_collection_id: string | null;
+  steps: Step[];
+  input: Record<string, unknown> | null;
+  gateway_id: string;
+  created_at_epoch_ms: number;
+  created_by: string | null;
+} | null> {
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    "SELECT * FROM workflow WHERE id = ? LIMIT 1",
+    [id],
+  );
+
+  const row = result[0];
+  if (!row) return null;
+
+  return {
+    id: row.id as string,
+    workflow_collection_id: row.workflow_collection_id as string | null,
+    steps:
+      typeof row.steps === "string"
+        ? JSON.parse(row.steps)
+        : (row.steps as Step[]),
+    input:
+      typeof row.input === "string"
+        ? JSON.parse(row.input)
+        : (row.input as Record<string, unknown> | null),
+    gateway_id: row.gateway_id as string,
+    created_at_epoch_ms: Number(row.created_at_epoch_ms),
+    created_by: row.created_by as string | null,
+  };
+}
+
+/**
  * Create a new workflow execution
+ * First creates an immutable workflow record, then creates the execution referencing it
  */
 export async function createExecution(
   env: Env,
@@ -79,32 +196,48 @@ export async function createExecution(
     steps: Step[];
     timeout_ms?: number | null;
     start_at_epoch_ms?: number | null;
+    workflow_collection_id?: string | null;
   },
-): Promise<{ id: string }> {
-  const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
-  const now = new Date().getTime();
-  const id = crypto.randomUUID();
+): Promise<{ id: string; workflow_id: string }> {
+  console.log(`[EXECUTION] Creating execution with data:`, {
+    gateway_id: data.gateway_id,
+    hasInput: !!data.input,
+    stepsCount: data.steps?.length ?? 0,
+    steps: data.steps?.map((s) => s.name) ?? [],
+    workflow_collection_id: data.workflow_collection_id,
+  });
 
+  const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
+  const now = Date.now();
+
+  // First, create an immutable workflow record
+  const { id: workflowId } = await createWorkflow(env, {
+    workflow_collection_id: data.workflow_collection_id,
+    gateway_id: data.gateway_id,
+    input: data.input,
+    steps: data.steps,
+  });
+
+  // Then create the execution referencing the workflow
+  const executionId = crypto.randomUUID();
   const startAtEpochMs = data.start_at_epoch_ms ?? now;
   const timeoutMs = data.timeout_ms;
   const deadlineAtEpochMs = timeoutMs ? startAtEpochMs + timeoutMs : undefined;
 
-  const stepsJson = JSON.stringify(data.steps);
   const result = await runSQL<{ id: string }>(
     env,
-    `INSERT INTO workflow_execution (id, gateway_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms, steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    `INSERT INTO workflow_execution (id, workflow_id, status, created_at, updated_at, created_by, input, timeout_ms, start_at_epoch_ms, deadline_at_epoch_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     [
-      id,
-      data.gateway_id,
+      executionId,
+      workflowId,
       "enqueued",
       now,
       now,
       user?.id || null,
       JSON.stringify(data.input || {}),
-      timeoutMs,
+      timeoutMs ?? null,
       startAtEpochMs,
-      deadlineAtEpochMs,
-      stepsJson,
+      deadlineAtEpochMs ?? null,
     ],
   );
 
@@ -112,7 +245,7 @@ export async function createExecution(
     throw new Error(`Failed to create workflow execution`);
   }
 
-  return { id: result[0].id };
+  return { id: result[0].id, workflow_id: workflowId };
 }
 
 /**

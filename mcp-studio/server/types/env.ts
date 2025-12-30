@@ -41,15 +41,25 @@ export type ConnectionBinding = {
       }[];
     };
   }>;
-  COLLECTION_CONNECTIONS_LIST: () => Promise<{
+  // Accepts an (empty) object because MCP tool validation rejects `undefined` inputs.
+  COLLECTION_CONNECTIONS_LIST: (params?: Record<string, never>) => Promise<{
     items: {
       id: string;
       title: string;
+      tools: {
+        name: string;
+        description: string;
+        inputSchema: object;
+        outputSchema: object;
+      }[];
     }[];
   }>;
 };
 
-export type Env = DefaultEnv<typeof StateSchema> & {
+export type Env = Omit<
+  DefaultEnv<typeof StateSchema>,
+  "DATABASE" | "EVENT_BUS" | "CONNECTION"
+> & {
   DATABASE: DatabaseBinding;
   EVENT_BUS: EventBusBindingClient;
   CONNECTION: ConnectionBinding;

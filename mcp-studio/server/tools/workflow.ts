@@ -106,7 +106,7 @@ export const createListTool = (env: Env) =>
       const orderByClause = buildOrderByClause(orderBy);
 
       const sql = `
-          SELECT * FROM workflow
+          SELECT * FROM workflow_collection
           ${whereClause}
           ${orderByClause}
           LIMIT ? OFFSET ?
@@ -117,7 +117,7 @@ export const createListTool = (env: Env) =>
         params: [...params, limit, offset],
       });
 
-      const countQuery = `SELECT COUNT(*) as count FROM workflow ${whereClause}`;
+      const countQuery = `SELECT COUNT(*) as count FROM workflow_collection ${whereClause}`;
       const countResult = await env.DATABASE.DATABASES_RUN_SQL({
         sql: countQuery,
         params,
@@ -139,12 +139,12 @@ export const createListTool = (env: Env) =>
     },
   });
 
-export async function getWorkflow(
+export async function getWorkflowCollection(
   env: Env,
   id: string,
 ): Promise<Workflow | null> {
   const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflow WHERE id = ? LIMIT 1",
+    sql: "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
     params: [id],
   });
   const item = result.result[0]?.results?.[0] || null;
@@ -156,7 +156,7 @@ export async function getWorkflow(
 export const createGetTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_GET",
-    description: "Get a single agent by ID",
+    description: "Get a single workflow by ID",
     inputSchema: GET_BINDING.inputSchema,
     outputSchema: GET_BINDING.outputSchema,
     execute: async ({
@@ -166,14 +166,14 @@ export const createGetTool = (env: Env) =>
     }) => {
       const { id } = context;
 
-      const workflow = await getWorkflow(env, id);
+      const workflow = await getWorkflowCollection(env, id);
       return {
         item: workflow,
       };
     },
   });
 
-export async function insertWorkflow(env: Env, data?: Workflow) {
+export async function insertWorkflowCollection(env: Env, data?: Workflow) {
   try {
     const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
     const now = new Date().toISOString();
@@ -192,26 +192,30 @@ export async function insertWorkflow(env: Env, data?: Workflow) {
       })) || [],
     );
 
-    const escapeForSql = (val: unknown): string => {
-      if (val === null || val === undefined) return "NULL";
-      if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
-      if (typeof val === "number") return String(val);
-      return `'${String(val).replace(/'/g, "''")}'`;
-    };
-    const sql = `INSERT INTO workflow (id, title, created_at, updated_at, created_by, updated_by, description, steps) VALUES (${escapeForSql(
-      workflow.id,
-    )}, ${escapeForSql(workflow.title)}, ${escapeForSql(now)}, ${escapeForSql(
-      now,
-    )}, ${escapeForSql(user?.id || null)}, ${escapeForSql(
-      user?.id || null,
-    )}, ${escapeForSql(workflow.description || null)}, ${escapeForSql(
-      stepsJson,
-    )})`;
+    // Note: gateway_id should come from workflow data, not hard-coded
+    const gatewayId = (workflow as any).gateway_id ?? "";
 
-    await env.DATABASE.DATABASES_RUN_SQL({
-      sql,
-      params: [],
-    });
+    const result = await runSQL<Record<string, unknown>>(
+      env,
+      `INSERT INTO workflow_collection (id, title, input, gateway_id, description, steps, created_at, updated_at, created_by, updated_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      [
+        workflow.id,
+        workflow.title,
+        JSON.stringify((workflow as any).input ?? null),
+        gatewayId,
+        workflow.description || null,
+        stepsJson,
+        now,
+        now,
+        user?.id || null,
+        user?.id || null,
+      ],
+    );
+
+    if (!result.length) {
+      throw new Error("Failed to create workflow collection");
+    }
 
     return {
       item: workflow,
@@ -232,12 +236,18 @@ Key concepts:
 - Use @ref syntax to wire data: @input.field, @stepName.field, @item (in loops)
 - Execution order is auto-determined from @ref dependencies
 
-Example workflow with 2 parallel fetches + 1 merge:
-{ "title": "Fetch and Merge", "steps": [
-  { "name": "fetch_users", "action": { "connectionId": "api", "toolName": "getUsers" } },
-  { "name": "fetch_orders", "action": { "connectionId": "api", "toolName": "getOrders" } },
-  { "name": "merge", "action": { "code": "export default async (i) => ({ ...i })" }, "input": { "users": "@fetch_users.data", "orders": "@fetch_orders.data" } }
-]}`,
+Example workflow with 2 parallel steps:
+{ "title": "Fetch users and orders", "steps": [
+  { "name": "fetch_users", "action": { "toolName": "GET_USERS" } },
+  { "name": "fetch_orders", "action": { "toolName": "GET_ORDERS" } },
+]}
+
+Example workflow with a step that references the output of another step:
+{ "title": "Get first user and then fetch orders", "steps": [
+  true }, "transformCode": "export default async (i) => i[0]" },
+  { "name": "fetch_orders", "action": { "toolName": "GET_ORDERS" }, "input": { "user": "@fetch_users.user" } },
+]}
+`,
     inputSchema: CREATE_BINDING.inputSchema,
     outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({
@@ -250,11 +260,11 @@ Example workflow with 2 parallel fetches + 1 merge:
         ...createDefaultWorkflow(),
         ...data,
       };
-      return await insertWorkflow(env, workflow);
+      return await insertWorkflowCollection(env, workflow);
     },
   });
 
-async function updateWorkflow(
+async function updateWorkflowCollection(
   env: Env,
   context: { id: string; data: Workflow },
 ) {
@@ -287,12 +297,10 @@ async function updateWorkflow(
     params.push(JSON.stringify(data.steps || []));
   }
 
-  console.log({ steps: data.steps });
-
   params.push(id);
 
   const sql = `
-        UPDATE workflow
+        UPDATE workflow_collection
         SET ${setClauses.join(", ")}
         WHERE id = ?
         RETURNING *
@@ -304,7 +312,7 @@ async function updateWorkflow(
   });
 
   if (result.result[0]?.results?.length === 0) {
-    throw new Error(`Workflow with id ${id} not found`);
+    throw new Error(`Workflow collection with id ${id} not found`);
   }
 
   return {
@@ -322,7 +330,7 @@ export const createUpdateTool = (env: Env) =>
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {
-        return await updateWorkflow(env, {
+        return await updateWorkflowCollection(env, {
           id: context.id as string,
           data: context.data as Workflow,
         });
@@ -346,17 +354,16 @@ export const createDeleteTool = (env: Env) =>
 
       const result = await runSQL<Record<string, unknown>>(
         env,
-        "DELETE FROM workflow WHERE id = ? RETURNING *",
+        "DELETE FROM workflow_collection WHERE id = ? RETURNING *",
         [id],
       );
 
       const item = result[0];
       if (!item) {
-        throw new Error(`Workflow with id ${id} not found`);
+        throw new Error(`Workflow collection with id ${id} not found`);
       }
-
       return {
-        item,
+        item: transformDbRowToWorkflow(item),
       };
     },
   });

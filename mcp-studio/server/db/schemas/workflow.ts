@@ -4,10 +4,12 @@
 
 import { WorkflowQueries } from "../transformers.ts";
 
-const postgresWorkflowTableIdempotentQuery = `
-  CREATE TABLE IF NOT EXISTS workflow (
+const postgresWorkflowCollectionTableIdempotentQuery = `
+  CREATE TABLE IF NOT EXISTS workflow_collection (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
+    input JSONB,
+    gateway_id TEXT NOT NULL,
     description TEXT,
     steps JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -17,18 +19,35 @@ const postgresWorkflowTableIdempotentQuery = `
   )
 `;
 
+const postgresWorkflowCollectionTableIndexesQuery = `
+  CREATE INDEX IF NOT EXISTS idx_workflow_collection_created_at ON workflow_collection(created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_collection_updated_at ON workflow_collection(updated_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_collection_title ON workflow_collection(title);
+`;
+
+const postgresWorkflowTableIdempotentQuery = `
+  CREATE TABLE IF NOT EXISTS workflow (
+    id TEXT PRIMARY KEY,
+    workflow_collection_id TEXT,
+    steps JSONB NOT NULL DEFAULT '{}',
+    input JSONB,
+    gateway_id TEXT NOT NULL,
+    created_at_epoch_ms BIGINT NOT NULL,
+    created_by TEXT
+  )
+`;
+
 const postgresWorkflowTableIndexesQuery = `
-  CREATE INDEX IF NOT EXISTS idx_workflow_created_at ON workflow(created_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflow_updated_at ON workflow(updated_at DESC);
-  CREATE INDEX IF NOT EXISTS idx_workflow_title ON workflow(title);
+  CREATE INDEX IF NOT EXISTS idx_workflow_created_at_epoch ON workflow(created_at_epoch_ms DESC);
+  CREATE INDEX IF NOT EXISTS idx_workflow_collection_id ON workflow(workflow_collection_id);
+  CREATE INDEX IF NOT EXISTS idx_workflow_gateway_id ON workflow(gateway_id);
 `;
 
 const postgresWorkflowExecutionTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS workflow_execution (
   id TEXT PRIMARY KEY,
-  steps JSONB NOT NULL DEFAULT '{}',
-  gateway_id TEXT NOT NULL,
-  status TEXT,
+  workflow_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('enqueued', 'cancelled', 'success', 'error', 'running')),
   input JSONB,
   output JSONB,
   
@@ -39,7 +58,7 @@ CREATE TABLE IF NOT EXISTS workflow_execution (
   completed_at_epoch_ms BIGINT,
 
   timeout_ms BIGINT,
-  deadline_at_epoch_ms BIGINT,
+  deadline_at_epoch_ms BIGINT,  
   error JSONB,
   
   created_by TEXT
@@ -126,6 +145,10 @@ const postgresWorkflowEventsTableIndexesQuery = `
     `;
 
 export const postgresQueries: WorkflowQueries = {
+  workflowCollectionTableIdempotentQuery:
+    postgresWorkflowCollectionTableIdempotentQuery,
+  workflowCollectionTableIndexesQuery:
+    postgresWorkflowCollectionTableIndexesQuery,
   workflowTableIdempotentQuery: postgresWorkflowTableIdempotentQuery,
   workflowTableIndexesQuery: postgresWorkflowTableIndexesQuery,
   workflowExecutionTableIdempotentQuery:

@@ -110,20 +110,23 @@ export const createCreateTool = (env: Env) =>
       input: z.record(z.unknown()),
       steps: z.array(StepSchema),
       gateway_id: z.string(),
-      start_at_epoch_ms: z.number(),
-      timeout_ms: z.number(),
+      start_at_epoch_ms: z.number().optional(),
+      timeout_ms: z.number().optional(),
+      workflow_collection_id: z.string().optional(),
     }),
     outputSchema: z.object({
       id: z.string(),
+      workflow_id: z.string(),
     }),
     execute: async ({ context }) => {
       try {
-        const { id: executionId } = await createExecution(env, {
+        const { id: executionId, workflow_id } = await createExecution(env, {
           input: context.input,
           gateway_id: context.gateway_id,
           start_at_epoch_ms: context.start_at_epoch_ms,
           timeout_ms: context.timeout_ms,
           steps: context.steps,
+          workflow_collection_id: context.workflow_collection_id,
         });
         await env.EVENT_BUS.EVENT_PUBLISH({
           type: "workflow.execution.created",
@@ -131,6 +134,7 @@ export const createCreateTool = (env: Env) =>
         });
         return {
           id: executionId,
+          workflow_id,
         };
       } catch (error) {
         console.error("🚀 ~ Error creating and queueing execution:", error);

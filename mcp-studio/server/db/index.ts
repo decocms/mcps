@@ -10,6 +10,10 @@ import type { Env } from "../types/env.ts";
  * are internal engine tables managed by direct database functions.
  */
 const collectionsQueries = {
+  workflow_collections: {
+    idempotent: postgresQueries.workflowCollectionTableIdempotentQuery,
+    indexes: postgresQueries.workflowCollectionTableIndexesQuery,
+  },
   workflows: {
     idempotent: postgresQueries.workflowTableIdempotentQuery,
     indexes: postgresQueries.workflowTableIndexesQuery,

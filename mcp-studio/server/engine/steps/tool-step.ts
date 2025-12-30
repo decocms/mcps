@@ -30,18 +30,6 @@ function createGatewayTransport(
     new URL(`${env.MESH_REQUEST_CONTEXT?.meshUrl}/mcp/gateway/${gatewayId}`),
   );
 
-  // Forward cookie and authorization headers
-  console.log(
-    "env.MESH_REQUEST_CONTEXT?.token",
-    env.MESH_REQUEST_CONTEXT?.token,
-  );
-  console.log(
-    "env.MESH_REQUEST_CONTEXT?.meshUrl",
-    env.MESH_REQUEST_CONTEXT?.meshUrl,
-  );
-  console.log("env.MESH_REQUEST_CONTEXT", env.MESH_REQUEST_CONTEXT);
-  console.log("gatewayId", gatewayId);
-  console.log("url", url);
   const headers = new Headers();
   headers.set(
     "Authorization",
@@ -66,27 +54,24 @@ export async function executeToolStep(
   const gatewayId = ctx.gatewayId;
 
   const transport = createGatewayTransport(gatewayId, ctx.env);
-  const client = new Client(
-    {
-      title: "MCP Studio",
-      version: "1.0.0",
-      name: "MCP Studio",
-      websiteUrl: "https://mcp-studio.com",
-      description: "MCP Studio",
-      icons: [
-        {
-          src: "https://mcp-studio.com/icon.png",
-          mimeType: "image/png",
-        },
-      ],
-    },
-    {},
-  );
+  const client = new Client({
+    title: "MCP Studio",
+    version: "1.0.0",
+    name: "MCP Studio",
+    websiteUrl: "https://mcp-studio.com",
+    description: "MCP Studio",
+    icons: [
+      {
+        src: "https://mcp-studio.com/icon.png",
+        mimeType: "image/png",
+      },
+    ],
+  });
   await client.connect(transport);
 
   const timeoutMs = step.config?.timeoutMs ?? 30000;
 
-  const result = await client.callTool(
+  const { content, structuredContent, isError } = await client.callTool(
     {
       name: toolName,
       arguments: input,
@@ -97,11 +82,20 @@ export async function executeToolStep(
     },
   );
 
-  console.log("result", result.content);
-  console.log("result", result.structuredContent);
+  const result = structuredContent ?? content;
 
+  // If there's transform code, run it on the raw tool result
+  if (transformCode) {
+    const transformResult = await executeCode(
+      transformCode,
+      result as Record<string, unknown>,
+      step.name,
+    );
+    return transformResult;
+  }
+
+  // If there's an output schema but no transform, filter the result
   if (step.outputSchema) {
-    // return only fields that are in the output schema
     const outputSchemaProperties = step.outputSchema.properties as Record<
       string,
       unknown
@@ -114,19 +108,19 @@ export async function executeToolStep(
         )
       : (result as Record<string, unknown>);
 
-    if (transformCode) {
-      const transformResult = await executeCode(
-        transformCode,
-        output,
-        step.name,
-      );
-      return transformResult;
-    }
+    return {
+      output,
+      startedAt,
+      error: isError ? JSON.stringify(result) : undefined,
+      completedAt: Date.now(),
+      stepId: step.name,
+    };
   }
 
   return {
     output: result,
     startedAt,
+    error: isError ? JSON.stringify(result) : undefined,
     completedAt: Date.now(),
     stepId: step.name,
   };

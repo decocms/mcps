@@ -151,13 +151,13 @@ export async function validateWorkflow(
     string,
     { input: Record<string, unknown>; output: Record<string, unknown> }
   > = {};
-
   const stepNames = new Set<string>();
   const duplicateNames = new Set<string>();
-  const currentPermissions = await env.CONNECTION.COLLECTION_CONNECTIONS_GET({
-    id: env.MESH_REQUEST_CONTEXT?.connectionId || "",
-  });
-  const currentTools = currentPermissions.item.tools;
+  // Some MCP clients send `undefined` when a tool has no arguments.
+  // The Connection binding expects an object input for LIST, so always pass `{}`.
+  const currentTools = (
+    await env.CONNECTION.COLLECTION_CONNECTIONS_LIST({})
+  ).items.flatMap((connection) => connection.tools);
 
   const availableSteps = new Map<string, number>();
 
@@ -165,6 +165,23 @@ export async function validateWorkflow(
 
   for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
     const step = steps[stepIndex];
+
+    const toolName = "toolName" in step.action ? step.action.toolName : null;
+    if (toolName) {
+      const tool = currentTools.find((tool) => tool.name === toolName);
+      if (!tool) {
+        errors.push({
+          type: "missing_ref",
+          step: step.name,
+          field: "action.toolName",
+          ref: toolName,
+          message: `Tool '${toolName}' not found in connections. Available: ${currentTools
+            .map((tool) => tool.name)
+            .join(", ")}`,
+        });
+      }
+      step.outputSchema = tool?.outputSchema as any;
+    }
 
     if (stepNames.has(step.name)) {
       duplicateNames.add(step.name);
@@ -180,9 +197,8 @@ export async function validateWorkflow(
         (tool) => tool.name === (step.action as ToolCallAction).toolName,
       );
 
-      if (!step.outputSchema) {
-        step.outputSchema = (tool?.outputSchema as any) ?? {};
-      }
+      const transformCode = (step.action as ToolCallAction).transformCode;
+      if (!transformCode) step.outputSchema = (tool?.outputSchema as any) ?? {}; // hacky, but works for now
     }
 
     if (stepType === "code") {

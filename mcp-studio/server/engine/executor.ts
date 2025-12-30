@@ -13,6 +13,7 @@ import {
   getStepResults,
   updateExecution,
   updateStepResult,
+  type ExecutionWithWorkflow,
 } from "../db/queries/executions.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
 import { ExecutionNotFoundError } from "../utils/errors.ts";
@@ -32,11 +33,30 @@ export async function executeWorkflow(
   executionId: string,
 ): Promise<ExecuteWorkflowResult> {
   try {
+    console.log(`[WORKFLOW] Starting execution: ${executionId}`);
     const execution = await claimExecution(env, executionId);
     if (!execution) throw new ExecutionNotFoundError(executionId);
 
+    console.log(`[WORKFLOW] Claimed execution:`, {
+      id: execution.id,
+      workflow_id: execution.workflow_id,
+      gateway_id: execution.gateway_id,
+      status: execution.status,
+      stepsCount: execution.steps?.length ?? 0,
+      hasInput: !!execution.input,
+    });
+
+    // Steps and gateway_id are now on the joined workflow data
     const steps = execution.steps as Step[];
+    if (!steps || steps.length === 0) {
+      console.error(`[WORKFLOW] No steps found in execution:`, execution);
+      throw new Error(
+        `Workflow has no steps. Execution data: ${JSON.stringify(execution)}`,
+      );
+    }
+
     const workflowInput = parseInput(execution.input);
+    console.log(`[WORKFLOW] Parsed input:`, workflowInput);
     const ctx = await buildContext(env, executionId, workflowInput);
 
     const validation = validateNoCycles(steps);
@@ -47,7 +67,7 @@ export async function executeWorkflow(
     const stepExecutor = new StepExecutor(
       env,
       executionId,
-      execution.gateway_id,
+      execution.gateway_id, // Now comes from joined workflow data
     );
 
     for (const levelSteps of groupStepsByLevel(steps)) {
@@ -81,7 +101,10 @@ export async function executeWorkflow(
 
     return { status: "success", output };
   } catch (err) {
-    console.error(`[WORKFLOW] Error executing workflow: ${err}`);
+    console.error(`[WORKFLOW] Error executing workflow ${executionId}:`, err);
+    if (err instanceof Error) {
+      console.error(`[WORKFLOW] Error stack:`, err.stack);
+    }
     return await handleExecutionError(env, executionId, err);
   }
 }
