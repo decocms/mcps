@@ -22,6 +22,7 @@ export const VERIFIED_SERVERS: string[] = [
   "com.linear/linear",
   "io.github.timescale/pg-aiguide",
   "com.microsoft/microsoft-learn-mcp",
+  "com.supabase/mcp",
 ];
 
 /**
