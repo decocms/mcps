@@ -13,7 +13,6 @@ import {
   getStepResults,
   updateExecution,
   updateStepResult,
-  type ExecutionWithWorkflow,
 } from "../db/queries/executions.ts";
 import { StepExecutor } from "./steps/step-executor.ts";
 import { ExecutionNotFoundError } from "../utils/errors.ts";

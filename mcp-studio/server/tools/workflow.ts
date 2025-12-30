@@ -182,7 +182,6 @@ export async function insertWorkflowCollection(env: Env, data?: Workflow) {
       ...createDefaultWorkflow(),
       ...data,
     };
-
     await validateWorkflow(workflow, env);
 
     const stepsJson = JSON.stringify(
@@ -249,7 +248,10 @@ Example workflow with a step that references the output of another step:
 ]}
 `,
     inputSchema: CREATE_BINDING.inputSchema,
-    outputSchema: CREATE_BINDING.outputSchema,
+    outputSchema: z
+      .object({})
+      .catchall(z.unknown())
+      .describe("The ID of the created workflow"),
     execute: async ({
       context,
     }: {
