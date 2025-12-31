@@ -14,8 +14,8 @@
   "dependencies": {
     "@ai-sdk/provider": "^3.0.0",
     "@ai-sdk/provider-utils": "^4.0.1",
-    "@decocms/bindings": "1.0.1-alpha.23",
-    "@decocms/runtime": "1.0.0-alpha.41",
+    "@decocms/bindings": "^1.0.3",
+    "@decocms/runtime": "^1.0.3",
     "@openrouter/ai-sdk-provider": "^1.2.0",
     "@openrouter/sdk": "^0.1.11",
     "ai": "^6.0.3",

@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.1",
-    "@decocms/bindings": "file:../../mesh/packages/bindings",
-    "@decocms/runtime": "file:../../mesh/packages/runtime",
+    "@decocms/bindings": "^1.0.3",
+    "@decocms/runtime": "^1.0.3",
     "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@radix-ui/react-collapsible": "^1.1.12",
