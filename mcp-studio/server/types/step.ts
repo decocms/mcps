@@ -4,7 +4,7 @@
  * Types for step execution results and extended step definitions.
  */
 
-import type { CodeAction, Step as BaseStep } from "@decocms/bindings/workflow";
+import type { Step as BaseStep, CodeAction } from "@decocms/bindings/workflow";
 
 export type Step = BaseStep;
 

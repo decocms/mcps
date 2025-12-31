@@ -99,7 +99,7 @@ export function getValueByPath(obj: unknown, path: string): unknown {
       current = (current as Record<string, unknown>)[key];
     } else if (Array.isArray(current)) {
       const index = parseInt(key, 10);
-      current = isNaN(index) ? undefined : current[index];
+      current = Number.isNaN(index) ? undefined : current[index];
     } else {
       // Trying to access property on primitive
       const traversedPath = keys.slice(0, i).join(".");

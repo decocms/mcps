@@ -18,7 +18,7 @@ import {
   PromptSchema,
 } from "@decocms/bindings/prompt";
 import { createPrivateTool } from "@decocms/runtime/tools";
-import { z, type ZodType } from "zod";
+import type { ZodType, z } from "zod";
 import { runSQL } from "../db/postgres.ts";
 import {
   buildOrderByClause,

@@ -6,7 +6,7 @@
 
 import { createStepResult } from "../../db/queries/executions.ts";
 import type { Env } from "../../types/env.ts";
-import type { Step, StepResult, ExistingStepResult } from "../../types/step.ts";
+import type { ExistingStepResult, Step, StepResult } from "../../types/step.ts";
 import { getStepType } from "../../types/step.ts";
 import { ExecutionContext } from "../context.ts";
 import { executeCode } from "./code-step.ts";

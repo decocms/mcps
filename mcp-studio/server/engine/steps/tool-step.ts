@@ -5,12 +5,12 @@
  */
 
 import { ToolCallActionSchema } from "@decocms/bindings/workflow";
+import { Client } from "@modelcontextprotocol/sdk/client";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Env } from "../../types/env.ts";
 import type { Step, StepResult } from "../../types/step.ts";
 import type { ExecutionContext } from "../context.ts";
 import { executeCode } from "./code-step.ts";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { Client } from "@modelcontextprotocol/sdk/client";
-import type { Env } from "../../types/env.ts";
 
 type JSONSchema = {
   type?: string | string[];
@@ -33,7 +33,7 @@ function coerceValue(value: unknown, schema: JSONSchema | undefined): unknown {
   // Handle union types (oneOf/anyOf) - try to find a matching type
   if (schema.oneOf || schema.anyOf) {
     const variants = schema.oneOf || schema.anyOf;
-    for (const variant of variants!) {
+    for (const variant of variants ?? []) {
       const coerced = coerceValue(value, variant);
       if (coerced !== value) return coerced;
     }
@@ -44,7 +44,7 @@ function coerceValue(value: unknown, schema: JSONSchema | undefined): unknown {
   if (schemaType === "number" || schemaType === "integer") {
     if (typeof value === "string") {
       const num = Number(value);
-      if (!isNaN(num)) return num;
+      if (!Number.isNaN(num)) return num;
     }
     return value;
   }

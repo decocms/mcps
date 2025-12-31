@@ -6,9 +6,9 @@
  */
 
 import {
-  WorkflowEvent,
+  type WorkflowEvent,
   WorkflowEventSchema,
-  WorkflowExecution,
+  type WorkflowExecution,
   WorkflowExecutionSchema,
 } from "@decocms/bindings/workflow";
 
@@ -22,14 +22,16 @@ export const epochMsToIsoString = (epochMs: unknown): string => {
     return new Date().toISOString();
   const num =
     typeof epochMs === "string" ? parseInt(epochMs, 10) : Number(epochMs);
-  return isNaN(num) ? new Date().toISOString() : new Date(num).toISOString();
+  return Number.isNaN(num)
+    ? new Date().toISOString()
+    : new Date(num).toISOString();
 };
 
 /** Convert bigint/string to number or null */
 export const toNumberOrNull = (value: unknown): number | null => {
   if (value === null || value === undefined) return null;
   const num = typeof value === "string" ? parseInt(value, 10) : Number(value);
-  return isNaN(num) ? null : num;
+  return Number.isNaN(num) ? null : num;
 };
 
 /** Safely parse JSON - handles JSONB already-parsed values */

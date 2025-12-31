@@ -1,21 +1,10 @@
 import {
   DefaultIntrinsics,
-  Intrinsics,
+  type Intrinsics,
   type QuickJSContext,
-  QuickJSRuntime,
+  type QuickJSRuntime,
 } from "quickjs-emscripten";
 import { getQuickJS } from "./quickjs.ts";
-
-// Export utilities
-export { callFunction } from "./utils/call-function.ts";
-export { inspect } from "./utils/error-handling.ts";
-export { toQuickJS } from "./utils/to-quickjs.ts";
-
-// Export built-ins
-export { installConsole, installFetch } from "./builtins/index.ts";
-
-// Export types
-export type { EvaluationResult, Log } from "./types.ts";
 
 // Export QuickJS types
 export type {
@@ -30,8 +19,15 @@ export type {
   QuickJSRuntime,
   QuickJSWASMModule,
 } from "quickjs-emscripten";
-
 export { Scope } from "quickjs-emscripten";
+// Export built-ins
+export { installConsole, installFetch } from "./builtins/index.ts";
+// Export types
+export type { EvaluationResult, Log } from "./types.ts";
+// Export utilities
+export { callFunction } from "./utils/call-function.ts";
+export { inspect } from "./utils/error-handling.ts";
+export { toQuickJS } from "./utils/to-quickjs.ts";
 
 /**
  * Creates a timing function that measures execution time and logs the result.

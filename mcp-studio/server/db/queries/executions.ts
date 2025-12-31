@@ -7,18 +7,18 @@
  * @see https://github.com/dbos-inc/dbos-transact-ts
  */
 
-import {
+import type {
   Step,
   WorkflowExecution,
   WorkflowExecutionStatus,
 } from "@decocms/bindings/workflow";
 import type { Env } from "../../types/env.ts";
+import { runSQL } from "../postgres.ts";
 import {
   transformDbRowToExecution,
   transformDbRowToStepResult,
-  WorkflowExecutionStepResult,
+  type WorkflowExecutionStepResult,
 } from "../transformers.ts";
-import { runSQL } from "../postgres.ts";
 
 /**
  * Execution with workflow data joined
@@ -37,8 +37,9 @@ export async function claimExecution(
 
   // Atomic claim: only succeeds if status is 'enqueued'
   // Join with workflow table to get steps and gateway_id
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: `
       UPDATE workflow_execution
       SET 
         status = 'running',
@@ -46,8 +47,8 @@ export async function claimExecution(
       WHERE id = ? AND (status = 'enqueued')
       RETURNING *
     `,
-    params: [now, executionId],
-  });
+      params: [now, executionId],
+    });
 
   const executionRow = result.result[0]?.results?.[0] as
     | Record<string, unknown>
@@ -94,10 +95,11 @@ export async function getExecution(
   env: Env,
   id: string,
 ): Promise<WorkflowExecution | null> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
-    params: [id],
-  });
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
+      params: [id],
+    });
 
   const row = result.result[0]?.results?.[0] as
     | Record<string, unknown>
@@ -267,7 +269,7 @@ export async function updateExecution(
   error: string;
   completed_at_epoch_ms: number;
 }> {
-  const now = new Date().getTime();
+  const now = Date.now();
 
   const setClauses: string[] = [];
   const params: unknown[] = [];
@@ -329,8 +331,9 @@ export async function cancelExecution(
   const now = Date.now();
 
   // Only cancel if currently enqueued or running
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: `
       UPDATE workflow_execution
       SET 
         status = 'cancelled',
@@ -338,9 +341,9 @@ export async function cancelExecution(
       WHERE id = ? AND status IN ('enqueued', 'running')
       RETURNING id
     `,
-    // error column is JSONB, so serialize it
-    params: [now, executionId],
-  });
+      // error column is JSONB, so serialize it
+      params: [now, executionId],
+    });
 
   const id = result.result[0]?.results?.[0] as string | undefined;
 

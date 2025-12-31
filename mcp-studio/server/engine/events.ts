@@ -5,9 +5,9 @@
  * Inspired by DBOS send/recv patterns and deco-cx/durable visible_at.
  */
 
-import type { Env } from "../types/env.ts";
+import type { EventType, WorkflowEvent } from "@decocms/bindings/workflow";
 import { transformDbRowToEvent } from "../db/transformers.ts";
-import { type EventType, WorkflowEvent } from "@decocms/bindings/workflow";
+import type { Env } from "../types/env.ts";
 
 export async function getPendingEvents(
   env: Env,
@@ -15,12 +15,13 @@ export async function getPendingEvents(
   type?: EventType,
 ): Promise<WorkflowEvent[]> {
   const now = Date.now();
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `SELECT * FROM workflow_event WHERE execution_id = ? AND consumed_at IS NULL
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: `SELECT * FROM workflow_event WHERE execution_id = ? AND consumed_at IS NULL
           AND (visible_at IS NULL OR visible_at <= ?) ${type ? "AND type = ?" : ""}
           ORDER BY visible_at ASC NULLS FIRST, created_at ASC`,
-    params: type ? [executionId, now, type] : [executionId, now],
-  });
+      params: type ? [executionId, now, type] : [executionId, now],
+    });
   return ((result.result[0]?.results || []) as Record<string, unknown>[]).map(
     transformDbRowToEvent,
   );
@@ -46,9 +47,10 @@ export async function consumeSignal(
   env: Env,
   signalId: string,
 ): Promise<boolean> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: `UPDATE workflow_event SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL RETURNING id`,
-    params: [Date.now(), signalId],
-  });
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: `UPDATE workflow_event SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL RETURNING id`,
+      params: [Date.now(), signalId],
+    });
   return (result.result[0]?.results?.length ?? 0) > 0;
 }

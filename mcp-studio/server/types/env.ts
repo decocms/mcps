@@ -4,8 +4,13 @@
  * Central definition for the Env type used throughout the workflow system.
  */
 
-import { BindingOf, type DefaultEnv } from "@decocms/runtime";
-import type { EventBusBindingClient } from "@decocms/bindings";
+import type { EVENT_BUS_BINDING } from "@decocms/bindings";
+import type { createCollectionBindings } from "@decocms/bindings/collections";
+import {
+  BindingOf,
+  type BindingRegistry,
+  type DefaultEnv,
+} from "@decocms/runtime";
 import z from "zod";
 
 export const StateSchema = z.object({
@@ -13,13 +18,6 @@ export const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 });
-
-export type DatabaseBinding = {
-  DATABASES_RUN_SQL: (params: {
-    sql: string;
-    params: unknown[];
-  }) => Promise<{ result: { results: unknown[] }[] }>;
-};
 
 export type ConnectionBinding = {
   COLLECTION_CONNECTIONS_UPDATE: (params: {
@@ -55,12 +53,40 @@ export type ConnectionBinding = {
     }[];
   }>;
 };
+const ConnectionSchema = z.object({
+  configuration_state: z.object({}),
+  configuration_scopes: z.array(z.string()),
+  tools: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+      inputSchema: z.object({}),
+      outputSchema: z.object({}),
+    }),
+  ),
+});
 
-export type Env = Omit<
-  DefaultEnv<typeof StateSchema>,
-  "DATABASE" | "EVENT_BUS" | "CONNECTION"
-> & {
-  DATABASE: DatabaseBinding;
-  EVENT_BUS: EventBusBindingClient;
-  CONNECTION: ConnectionBinding;
-};
+export interface Registry extends BindingRegistry {
+  "@deco/event-bus": typeof EVENT_BUS_BINDING;
+  "@deco/connection": ReturnType<
+    typeof createCollectionBindings<typeof ConnectionSchema, "connections">
+  >;
+  "@deco/postgres": [
+    {
+      name: "DATABASES_RUN_SQL";
+      description: "Run a SQL query against the database";
+      inputSchema: z.ZodType<{
+        sql: string;
+        params?: unknown[];
+      }>;
+      outputSchema: z.ZodType<{
+        result: {
+          results?: unknown[];
+          success?: boolean;
+        }[];
+      }>;
+    },
+  ];
+}
+
+export type Env = DefaultEnv<typeof StateSchema, Registry>;

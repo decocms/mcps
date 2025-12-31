@@ -11,14 +11,14 @@
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
 
+import { transform } from "sucrase";
 import {
-  createSandboxRuntime,
   callFunction,
+  createSandboxRuntime,
   installConsole,
   type QuickJSHandle,
-  SandboxContext,
+  type SandboxContext,
 } from "../../sandbox/index.ts";
-import { transform } from "sucrase";
 import type { StepResult } from "../../types/step.ts";
 
 export function transpileTypeScript(code: string): string {
@@ -45,9 +45,9 @@ export function extractSchemas(code: string): {
 
     // Parse simple property declarations
     const propRegex = /(\w+)(\?)?\s*:\s*([^;]+);/g;
-    let match;
+    let match: RegExpExecArray | null = propRegex.exec(body);
 
-    while ((match = propRegex.exec(body)) !== null) {
+    while (match !== null) {
       const [, name, optional, typeStr] = match;
       const type = typeStr.trim();
 
@@ -56,6 +56,7 @@ export function extractSchemas(code: string): {
       }
 
       properties[name] = parseTypeToSchema(type);
+      match = propRegex.exec(body);
     }
 
     return {

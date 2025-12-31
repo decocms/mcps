@@ -1,16 +1,17 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+/** biome-ignore-all lint/suspicious/noExplicitAny: complicated types */
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
-import type { Env } from "../types/env.ts";
-import { z } from "zod";
-import { validateWorkflow } from "../utils/validator.ts";
 import {
   createDefaultWorkflow,
-  Workflow,
   WORKFLOW_BINDING,
+  type Workflow,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
-import { buildOrderByClause, buildWhereClause } from "./_helpers.ts";
+import { createPrivateTool } from "@decocms/runtime/tools";
+import { z } from "zod";
 import { runSQL } from "../db/postgres.ts";
+import type { Env } from "../types/env.ts";
+import { validateWorkflow } from "../utils/validator.ts";
+import { buildOrderByClause, buildWhereClause } from "./_helpers.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
@@ -112,16 +113,18 @@ export const createListTool = (env: Env) =>
           LIMIT ? OFFSET ?
         `;
 
-      const itemsResult: any = await env.DATABASE.DATABASES_RUN_SQL({
-        sql,
-        params: [...params, limit, offset],
-      });
+      const itemsResult: any =
+        await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+          sql,
+          params: [...params, limit, offset],
+        });
 
       const countQuery = `SELECT COUNT(*) as count FROM workflow_collection ${whereClause}`;
-      const countResult = await env.DATABASE.DATABASES_RUN_SQL({
-        sql: countQuery,
-        params,
-      });
+      const countResult =
+        await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+          sql: countQuery,
+          params,
+        });
       const totalCount = parseInt(
         (countResult.result[0]?.results?.[0] as { count: string })?.count ||
           "0",
@@ -143,10 +146,11 @@ export async function getWorkflowCollection(
   env: Env,
   id: string,
 ): Promise<Workflow | null> {
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql: "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
-    params: [id],
-  });
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql: "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
+      params: [id],
+    });
   const item = result.result[0]?.results?.[0] || null;
   return item
     ? transformDbRowToWorkflow(item as Record<string, unknown>)
@@ -178,7 +182,7 @@ export async function insertWorkflowCollection(env: Env, data?: Workflow) {
     const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
     const now = new Date().toISOString();
 
-    let workflow: Workflow = {
+    const workflow: Workflow = {
       ...createDefaultWorkflow(),
       ...data,
     };
@@ -308,10 +312,11 @@ y        UPDATE workflow_collection
         RETURNING *
       `;
 
-  const result = await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params,
-  });
+  const result =
+    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+      sql,
+      params,
+    });
 
   if (result.result[0]?.results?.length === 0) {
     throw new Error(`Workflow collection with id ${id} not found`);

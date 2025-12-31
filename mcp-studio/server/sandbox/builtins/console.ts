@@ -19,7 +19,9 @@ export function installConsole(ctx: QuickJSContext): ConsoleBuiltin {
           content: parts.map(String).join(" "),
         });
       } finally {
-        args.forEach((h) => h.dispose());
+        args.forEach((h) => {
+          h.dispose();
+        });
       }
       return ctx.undefined;
     });
@@ -42,7 +44,9 @@ export function installConsole(ctx: QuickJSContext): ConsoleBuiltin {
   return {
     logs,
     [Symbol.dispose]() {
-      handles.forEach((handle) => handle.dispose());
+      handles.forEach((handle) => {
+        handle.dispose();
+      });
     },
   };
 }

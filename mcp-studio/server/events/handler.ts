@@ -4,8 +4,8 @@
  * Handles workflow-related events from the event bus.
  */
 
-import type { Env } from "../types/env.ts";
 import { executeWorkflow } from "../engine/executor.ts";
+import type { Env } from "../types/env.ts";
 
 interface WorkflowEvent {
   type: string;

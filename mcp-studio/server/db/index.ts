@@ -1,6 +1,6 @@
+import type { Env } from "../types/env.ts";
 import { runSQL } from "./postgres.ts";
 import { postgresQueries } from "./schemas/workflow.ts";
-import type { Env } from "../types/env.ts";
 
 /**
  * Collection queries for database table creation.

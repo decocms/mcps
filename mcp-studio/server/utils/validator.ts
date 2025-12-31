@@ -11,17 +11,17 @@
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
 
-import z from "zod";
-import { extractRefs, parseAtRef } from "./ref-resolver.ts";
-import { validateCode } from "../engine/steps/code-step.ts";
 import {
   CodeActionSchema,
-  Step,
-  ToolCallAction,
-  Workflow,
+  type Step,
+  type ToolCallAction,
+  type Workflow,
 } from "@decocms/bindings/workflow";
+import z from "zod";
+import { validateCode } from "../engine/steps/code-step.ts";
 import type { Env } from "../types/env.ts";
 import { getStepType } from "../types/step.ts";
+import { extractRefs, parseAtRef } from "./ref-resolver.ts";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([
@@ -156,7 +156,9 @@ export async function validateWorkflow(
   // Some MCP clients send `undefined` when a tool has no arguments.
   // The Connection binding expects an object input for LIST, so always pass `{}`.
   const currentTools = (
-    await env.CONNECTION.COLLECTION_CONNECTIONS_LIST({})
+    await env.MESH_REQUEST_CONTEXT.state.CONNECTION.COLLECTION_CONNECTIONS_LIST(
+      {},
+    )
   ).items.flatMap((connection) => connection.tools);
 
   const availableSteps = new Map<string, number>();
@@ -180,6 +182,7 @@ export async function validateWorkflow(
             .join(", ")}`,
         });
       }
+      // biome-ignore lint/suspicious/noExplicitAny: hard typings
       step.outputSchema = tool?.outputSchema as any;
     }
 
@@ -198,6 +201,7 @@ export async function validateWorkflow(
       );
 
       const transformCode = (step.action as ToolCallAction).transformCode;
+      // biome-ignore lint/suspicious/noExplicitAny: hard for typing
       if (!transformCode) step.outputSchema = (tool?.outputSchema as any) ?? {}; // hacky, but works for now
     }
 

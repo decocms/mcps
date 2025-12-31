@@ -2,7 +2,7 @@
 // PostgreSQL Dialect
 // ============================================================================
 
-import { WorkflowQueries } from "../transformers.ts";
+import type { WorkflowQueries } from "../transformers.ts";
 
 const postgresWorkflowCollectionTableIdempotentQuery = `
   CREATE TABLE IF NOT EXISTS workflow_collection (

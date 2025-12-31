@@ -5,13 +5,13 @@
  * Provides convenient access to common operations.
  */
 
-import type { Env } from "../types/env.ts";
 import {
+  createStepResult,
   getExecution,
   getStepResults,
-  createStepResult,
   updateStepResult,
 } from "../db/queries/executions.ts";
+import type { Env } from "../types/env.ts";
 import { WorkflowCancelledError } from "../utils/errors.ts";
 
 export class ExecutionContext {

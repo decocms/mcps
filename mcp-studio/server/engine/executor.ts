@@ -4,26 +4,26 @@
  * Orchestrates parallel step execution based on DAG analysis.
  */
 
-import type { Env } from "../types/env.ts";
-import type { Step, StepResult } from "../types/step.ts";
-import type { RefContext } from "../utils/ref-resolver.ts";
-import { resolveAllRefs } from "../utils/ref-resolver.ts";
+import {
+  groupStepsByLevel,
+  validateNoCycles,
+} from "@decocms/bindings/workflow";
 import {
   claimExecution,
   getStepResults,
   updateExecution,
   updateStepResult,
 } from "../db/queries/executions.ts";
-import { StepExecutor } from "./steps/step-executor.ts";
+import type { Env } from "../types/env.ts";
+import type { Step, StepResult } from "../types/step.ts";
 import { ExecutionNotFoundError, StepExecutionError } from "../utils/errors.ts";
+import type { RefContext } from "../utils/ref-resolver.ts";
+import { resolveAllRefs } from "../utils/ref-resolver.ts";
 import {
-  handleExecutionError,
   type ExecuteWorkflowResult,
+  handleExecutionError,
 } from "./error-handler.ts";
-import {
-  groupStepsByLevel,
-  validateNoCycles,
-} from "@decocms/bindings/workflow";
+import { StepExecutor } from "./steps/step-executor.ts";
 
 export type { ExecuteWorkflowResult };
 

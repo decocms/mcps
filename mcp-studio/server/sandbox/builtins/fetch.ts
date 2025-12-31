@@ -25,7 +25,6 @@ export function installFetch(ctx: QuickJSContext): FetchBuiltin {
         // Parse init options
         let status = 200;
         let statusText = "OK";
-        // @ts-ignore
         let _headers: Record<string, string> = {};
 
         if (init && init !== ctx.null && init !== ctx.undefined) {
@@ -180,7 +179,9 @@ export function installFetch(ctx: QuickJSContext): FetchBuiltin {
 
   return {
     [Symbol.dispose]() {
-      handles.forEach((handle) => handle.dispose());
+      handles.forEach((handle) => {
+        handle.dispose();
+      });
     },
   };
 }
