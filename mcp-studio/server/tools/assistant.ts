@@ -32,7 +32,7 @@ import {
   buildWhereClause,
   type OrderByExpression,
   type WhereExpression,
-} from "../lib/query-builder.ts";
+} from "../db/schemas/query-builder.ts";
 
 // Extract binding schemas
 const LIST_BINDING = ASSISTANTS_BINDING.find(

@@ -302,7 +302,7 @@ async function updateWorkflowCollection(
   params.push(id);
 
   const sql = `
-        UPDATE workflow_collection
+y        UPDATE workflow_collection
         SET ${setClauses.join(", ")}
         WHERE id = ?
         RETURNING *
