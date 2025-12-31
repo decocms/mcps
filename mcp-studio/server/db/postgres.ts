@@ -19,7 +19,7 @@ export async function runSQL<T = unknown>(
   params: unknown[] = [],
 ): Promise<T[]> {
   const response =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql,
       params,
     });

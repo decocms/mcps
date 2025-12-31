@@ -16,7 +16,7 @@ export async function getPendingEvents(
 ): Promise<WorkflowEvent[]> {
   const now = Date.now();
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: `SELECT * FROM workflow_event WHERE execution_id = ? AND consumed_at IS NULL
           AND (visible_at IS NULL OR visible_at <= ?) ${type ? "AND type = ?" : ""}
           ORDER BY visible_at ASC NULLS FIRST, created_at ASC`,
@@ -48,7 +48,7 @@ export async function consumeSignal(
   signalId: string,
 ): Promise<boolean> {
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: `UPDATE workflow_event SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL RETURNING id`,
       params: [Date.now(), signalId],
     });

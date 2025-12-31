@@ -38,7 +38,7 @@ export async function claimExecution(
   // Atomic claim: only succeeds if status is 'enqueued'
   // Join with workflow table to get steps and gateway_id
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: `
       UPDATE workflow_execution
       SET 
@@ -96,7 +96,7 @@ export async function getExecution(
   id: string,
 ): Promise<WorkflowExecution | null> {
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
       params: [id],
     });
@@ -332,7 +332,7 @@ export async function cancelExecution(
 
   // Only cancel if currently enqueued or running
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: `
       UPDATE workflow_execution
       SET 
