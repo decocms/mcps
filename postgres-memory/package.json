@@ -1,0 +1,28 @@
+{
+  "name": "postgres-memory",
+  "version": "1.0.0",
+  "description": "MCP server for AI memory storage using Postgres + pgvector",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "build": "bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "check": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5",
+    "zod": "^3.24.3",
+    "zod-to-json-schema": "^3.25.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "1.20.2",
+    "@types/bun": "^1.2.14",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

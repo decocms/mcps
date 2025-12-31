@@ -30,6 +30,7 @@
     "openrouter",
     "perplexity",
     "pinecone",
+    "postgres-memory",
     "readonly-sql",
     "registry",
     "replicate",
