@@ -1,11 +1,4 @@
-/**
- * PostgreSQL Database Module
- *
- * This module provides PostgreSQL connectivity using the DATABASE binding
- * and handles automatic table creation for the assistants collection.
- */
-
-import type { Env } from "../main.ts";
+import type { Env } from "../../types/env.ts";
 
 /**
  * Run a SQL query using the DATABASE binding

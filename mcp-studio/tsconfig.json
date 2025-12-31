@@ -4,8 +4,6 @@
     "useDefineForClassFields": true,
     "lib": [
       "ES2023",
-      "DOM",
-      "DOM.Iterable"
     ],
     "module": "ESNext",
     "skipLibCheck": true,
@@ -16,7 +14,6 @@
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
     "allowJs": true,
     /* Linting */
     "strict": true,
@@ -27,29 +24,16 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./view/src/*"
-      ],
-      "shared/*": [
-        "./shared/*"
-      ],
       "server/*": [
         "./server/*"
-      ],
-      "worker/*": [
-        "./worker/*"
       ],
     },
     /* Types */
     "types": [
       "@types/node",
-      "vite/client",
     ]
   },
   "include": [
-    "view",
     "server",
-    "shared",
-    "vite.config.ts"
   ]
 }

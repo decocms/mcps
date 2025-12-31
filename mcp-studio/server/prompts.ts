@@ -7,8 +7,8 @@
 
 import { createPrompt, type GetPromptResult } from "@decocms/runtime";
 import { z } from "zod";
-import { runSQL } from "./lib/postgres.ts";
-import type { Env } from "./main.ts";
+import { runSQL } from "./db/postgres.ts";
+import type { Env } from "./types/env.ts";
 
 interface StoredPromptArgument {
   name: string;

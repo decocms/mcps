@@ -6,75 +6,42 @@
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
+import { withRuntime } from "@decocms/runtime";
+import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import {
-  type BindingRegistry,
-  type DefaultEnv,
-  withRuntime,
-} from "@decocms/runtime";
-import type { z } from "zod";
-import {
-  type Env as DecoEnv,
-  Scopes,
-  StateSchema,
-} from "../shared/deco.gen.ts";
-import { ensureAssistantsTable, ensurePromptsTable } from "./lib/postgres.ts";
+  ensureAssistantsTable,
+  ensurePromptsTable,
+} from "./db/schemas/agents.ts";
+import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { createPrompts } from "./prompts.ts";
 import { tools } from "./tools/index.ts";
+import { type Env, type Registry, StateSchema } from "./types/env.ts";
 
-interface Registry extends BindingRegistry {
-  "@deco/postgres": [
-    {
-      name: "DATABASES_RUN_SQL";
-      description: "Run a SQL query against the database";
-      inputSchema: z.ZodType<
-        Parameters<Env["DATABASE"]["DATABASES_RUN_SQL"]>[0]
-      >;
-      outputSchema: z.ZodType<
-        Awaited<ReturnType<Env["DATABASE"]["DATABASES_RUN_SQL"]>>
-      >;
-    },
-  ];
-}
-/**
- * This Env type is the main context object that is passed to
- * all of your Application.
- *
- * It includes all of the generated types from your
- * Deco bindings, along with the default ones.
- */
-export type Env = DefaultEnv<typeof StateSchema, Registry> & DecoEnv;
+export { StateSchema };
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
+  events: {
+    handlers: {
+      events: [...WORKFLOW_EVENTS] as string[],
+      handler: async ({ events }, env) => {
+        try {
+          handleWorkflowEvents(events, env);
+          return { success: true };
+        } catch (error) {
+          console.error(`[MAIN] Error handling events: ${error}`);
+          return { success: false };
+        }
+      },
+    },
+  },
   configuration: {
     onChange: async (env) => {
+      await ensureIndexes(env);
+      await ensureCollections(env);
       await ensureAssistantsTable(env);
       await ensurePromptsTable(env);
     },
-    /**
-     * These scopes define the asking permissions of your
-     * app when a user is installing it. When a user
-     * authorizes your app for using AI_GENERATE, you will
-     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
-     * and utilize the user's own AI Gateway, without having to
-     * deploy your own, setup any API keys, etc.
-     */
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
-    /**
-     * The state schema of your Application defines what
-     * your installed App state will look like. When a user
-     * is installing your App, they will have to fill in
-     * a form with the fields defined in the state schema.
-     *
-     * This is powerful for building multi-tenant apps,
-     * where you can have multiple users and projects
-     * sharing different configurations on the same app.
-     *
-     * When you define a binding dependency on another app,
-     * it will automatically be linked to your StateSchema on
-     * type generation. You can also `.extend` it to add more
-     * fields to the state schema, like asking for an API Key
-     * for connecting to a third-party service.
-     */
+    scopes: ["DATABASE::DATABASES_RUN_SQL", "EVENT_BUS::*", "*"],
     state: StateSchema,
   },
   tools,

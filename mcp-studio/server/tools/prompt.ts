@@ -18,15 +18,15 @@ import {
   PromptSchema,
 } from "@decocms/bindings/prompt";
 import { createPrivateTool } from "@decocms/runtime/tools";
-import { z, type ZodType } from "zod";
-import { runSQL } from "../lib/postgres.ts";
+import type { ZodType, z } from "zod";
+import { runSQL } from "../db/postgres.ts";
 import {
   buildOrderByClause,
   buildWhereClause,
   type OrderByExpression,
   type WhereExpression,
-} from "../lib/query-builder.ts";
-import type { Env } from "../main.ts";
+} from "../db/schemas/query-builder.ts";
+import type { Env } from "../types/env.ts";
 
 // ============================================================================
 // Schemas (following MCP Prompts specification)
