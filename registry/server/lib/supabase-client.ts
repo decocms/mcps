@@ -1,0 +1,391 @@
+/**
+ * Supabase Client for MCP Registry
+ *
+ * Provides functions to query and manage MCP servers in Supabase.
+ * This replaces the need to call the MCP Registry API at runtime.
+ */
+
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+// ═══════════════════════════════════════════════════════════════
+// Types that reflect EXACTLY the database table
+// ═══════════════════════════════════════════════════════════════
+
+export interface McpServerRow {
+  // Registry data
+  name: string;
+  version: string;
+  schema_url: string | null;
+  description: string | null;
+  website_url: string | null;
+  repository: { url: string; source?: string; subfolder?: string } | null;
+  remotes: Array<{ type: string; url: string }> | null;
+  packages: Array<{ type: string; name: string; version?: string }> | null;
+  icons: Array<{ src: string; mimeType?: string; theme?: string }> | null;
+  registry_status: string;
+  published_at: string | null;
+  registry_updated_at: string | null;
+  is_latest: boolean;
+
+  // Mesh data
+  friendly_name: string | null;
+  short_description: string | null;
+  mesh_description: string | null;
+  tags: string[] | null;
+  categories: string[] | null;
+  verified: boolean;
+  unlisted: boolean;
+  has_oauth: boolean;
+  has_remote: boolean;
+  is_npm: boolean;
+  is_local_repo: boolean;
+
+  // Control
+  created_at: string;
+  updated_at: string;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Registry Server type (API response format)
+// ═══════════════════════════════════════════════════════════════
+
+export interface RegistryServer {
+  server: {
+    $schema: string;
+    name: string;
+    description: string;
+    version: string;
+    repository?: { url: string; source?: string; subfolder?: string };
+    remotes?: Array<{ type: string; url: string }>;
+    packages?: Array<{ type: string; name: string; version?: string }>;
+    icons?: Array<{ src: string; mimeType?: string; theme?: string }>;
+    websiteUrl?: string;
+    [key: string]: unknown;
+  };
+  _meta: {
+    "io.modelcontextprotocol.registry/official"?: {
+      status: string;
+      publishedAt: string;
+      updatedAt: string;
+      isLatest: boolean;
+    };
+    "mcp.mesh"?: McpMeshMeta;
+    [key: string]: unknown;
+  };
+}
+
+export interface McpMeshMeta {
+  friendly_name: string | null;
+  short_description: string | null;
+  mesh_description: string | null;
+  tags: string[] | null;
+  categories: string[] | null;
+  verified: boolean;
+  unlisted: boolean;
+  has_oauth: boolean;
+  has_remote: boolean;
+  is_npm: boolean;
+  is_local_repo: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Client Creation
+// ═══════════════════════════════════════════════════════════════
+
+export function createSupabaseClient(
+  supabaseUrl: string,
+  supabaseKey: string,
+): SupabaseClient {
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Row to API Response Conversion
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULT_SCHEMA =
+  "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json";
+
+export function rowToRegistryServer(row: McpServerRow): RegistryServer {
+  return {
+    server: {
+      $schema: row.schema_url ?? DEFAULT_SCHEMA,
+      name: row.name,
+      description: row.description ?? "", // Descrição original do registry
+      version: row.version,
+      ...(row.repository && { repository: row.repository }),
+      ...(row.remotes && { remotes: row.remotes }),
+      ...(row.packages && { packages: row.packages }),
+      ...(row.icons && { icons: row.icons }),
+      ...(row.website_url && { websiteUrl: row.website_url }),
+    },
+    _meta: {
+      "io.modelcontextprotocol.registry/official": {
+        status: row.registry_status ?? "active",
+        publishedAt: row.published_at ?? new Date().toISOString(),
+        updatedAt: row.registry_updated_at ?? new Date().toISOString(),
+        isLatest: row.is_latest ?? true,
+      },
+      "mcp.mesh": {
+        friendly_name: row.friendly_name,
+        short_description: row.short_description,
+        mesh_description: row.mesh_description,
+        tags: row.tags,
+        categories: row.categories,
+        verified: row.verified ?? false,
+        unlisted: row.unlisted ?? false,
+        has_oauth: row.has_oauth ?? false,
+        has_remote: row.has_remote ?? false,
+        is_npm: row.is_npm ?? false,
+        is_local_repo: row.is_local_repo ?? false,
+      },
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Query Options
+// ═══════════════════════════════════════════════════════════════
+
+export interface ListServersOptions {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  tags?: string[];
+  categories?: string[];
+  verified?: boolean;
+  hasRemote?: boolean;
+  includeUnlisted?: boolean;
+}
+
+export interface ListServersResult {
+  servers: RegistryServer[];
+  count: number;
+  hasMore: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Query Functions
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * List servers from Supabase with filters
+ */
+export async function listServers(
+  client: SupabaseClient,
+  options: ListServersOptions = {},
+): Promise<ListServersResult> {
+  const {
+    limit = 30,
+    offset = 0,
+    search,
+    tags,
+    categories,
+    verified,
+    hasRemote,
+    includeUnlisted = false,
+  } = options;
+
+  let query = client.from("mcp_servers").select("*", { count: "exact" });
+
+  // SEMPRE filtrar apenas a última versão (is_latest: true)
+  query = query.eq("is_latest", true);
+
+  // Filter unlisted unless explicitly included
+  if (!includeUnlisted) {
+    query = query.eq("unlisted", false);
+  }
+
+  // Filter by verified
+  if (verified !== undefined) {
+    query = query.eq("verified", verified);
+  }
+
+  // Filter by has_remote
+  if (hasRemote !== undefined) {
+    query = query.eq("has_remote", hasRemote);
+  }
+
+  // Filter by tags (contains any)
+  if (tags && tags.length > 0) {
+    query = query.overlaps("tags", tags);
+  }
+
+  // Filter by categories (contains any)
+  if (categories && categories.length > 0) {
+    query = query.overlaps("categories", categories);
+  }
+
+  // Full-text search
+  if (search) {
+    query = query.or(
+      `name.ilike.%${search}%,description.ilike.%${search}%,friendly_name.ilike.%${search}%,short_description.ilike.%${search}%`,
+    );
+  }
+
+  // Order: verified first, then by name
+  query = query
+    .order("verified", { ascending: false })
+    .order("name", { ascending: true });
+
+  // Pagination
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Error listing servers from Supabase: ${error.message}`);
+  }
+
+  const rows = (data as McpServerRow[]) || [];
+  const servers = rows.map(rowToRegistryServer);
+  const totalCount = count ?? 0;
+
+  return {
+    servers,
+    count: totalCount,
+    hasMore: offset + rows.length < totalCount,
+  };
+}
+
+/**
+ * Get a single server by name
+ */
+export async function getServer(
+  client: SupabaseClient,
+  name: string,
+): Promise<RegistryServer | null> {
+  const { data, error } = await client
+    .from("mcp_servers")
+    .select("*")
+    .eq("name", name)
+    .eq("is_latest", true)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      // Not found
+      return null;
+    }
+    throw new Error(`Error getting server from Supabase: ${error.message}`);
+  }
+
+  return data ? rowToRegistryServer(data as McpServerRow) : null;
+}
+
+/**
+ * Get all versions of a server
+ */
+export async function getServerVersions(
+  client: SupabaseClient,
+  name: string,
+): Promise<RegistryServer[]> {
+  const { data, error } = await client
+    .from("mcp_servers")
+    .select("*")
+    .eq("name", name)
+    .order("version", { ascending: false });
+
+  if (error) {
+    throw new Error(
+      `Error getting server versions from Supabase: ${error.message}`,
+    );
+  }
+
+  const rows = (data as McpServerRow[]) || [];
+  return rows.map(rowToRegistryServer);
+}
+
+/**
+ * Upsert a server (insert or update)
+ */
+export async function upsertServer(
+  client: SupabaseClient,
+  data: Partial<McpServerRow> & { name: string; version: string },
+): Promise<void> {
+  const { error } = await client
+    .from("mcp_servers")
+    .upsert(data, { onConflict: "name,version" });
+
+  if (error) {
+    throw new Error(`Error upserting server to Supabase: ${error.message}`);
+  }
+}
+
+/**
+ * Upsert multiple servers in batch
+ */
+export async function upsertServers(
+  client: SupabaseClient,
+  servers: Array<Partial<McpServerRow> & { name: string; version: string }>,
+): Promise<void> {
+  // Supabase has a limit of ~1000 rows per upsert, batch if needed
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < servers.length; i += BATCH_SIZE) {
+    const batch = servers.slice(i, i + BATCH_SIZE);
+    const { error } = await client
+      .from("mcp_servers")
+      .upsert(batch, { onConflict: "name,version" });
+
+    if (error) {
+      throw new Error(
+        `Error upserting servers batch to Supabase: ${error.message}`,
+      );
+    }
+  }
+}
+
+/**
+ * Get server count by status
+ */
+export async function getServerStats(client: SupabaseClient): Promise<{
+  total: number;
+  verified: number;
+  withRemote: number;
+  withNpm: number;
+  unlisted: number;
+}> {
+  const { data, error } = await client.rpc("get_mcp_server_stats");
+
+  if (error) {
+    // Fallback to manual count if RPC doesn't exist
+    const { count: total } = await client
+      .from("mcp_servers")
+      .select("*", { count: "exact", head: true })
+      .eq("unlisted", false);
+
+    const { count: verified } = await client
+      .from("mcp_servers")
+      .select("*", { count: "exact", head: true })
+      .eq("unlisted", false)
+      .eq("verified", true);
+
+    const { count: withRemote } = await client
+      .from("mcp_servers")
+      .select("*", { count: "exact", head: true })
+      .eq("unlisted", false)
+      .eq("has_remote", true);
+
+    const { count: withNpm } = await client
+      .from("mcp_servers")
+      .select("*", { count: "exact", head: true })
+      .eq("unlisted", false)
+      .eq("is_npm", true);
+
+    const { count: unlisted } = await client
+      .from("mcp_servers")
+      .select("*", { count: "exact", head: true })
+      .eq("unlisted", true);
+
+    return {
+      total: total ?? 0,
+      verified: verified ?? 0,
+      withRemote: withRemote ?? 0,
+      withNpm: withNpm ?? 0,
+      unlisted: unlisted ?? 0,
+    };
+  }
+
+  return data;
+}
