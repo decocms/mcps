@@ -23,7 +23,7 @@
   "devDependencies": {
     "@decocms/mcps-shared": "workspace:*",
     "@decocms/vite-plugin": "1.0.0-alpha.1",
-    "@modelcontextprotocol/sdk": "1.20.2",
+    "@modelcontextprotocol/sdk": "1.25.1",
     "@types/mime-db": "^1.43.6",
     "@types/node": "^22.0.0",
     "deco-cli": "^0.28.0",
