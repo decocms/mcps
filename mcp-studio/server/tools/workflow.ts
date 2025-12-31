@@ -114,14 +114,14 @@ export const createListTool = (env: Env) =>
         `;
 
       const itemsResult: any =
-        await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
           sql,
           params: [...params, limit, offset],
         });
 
       const countQuery = `SELECT COUNT(*) as count FROM workflow_collection ${whereClause}`;
       const countResult =
-        await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
           sql: countQuery,
           params,
         });
@@ -147,7 +147,7 @@ export async function getWorkflowCollection(
   id: string,
 ): Promise<Workflow | null> {
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
       params: [id],
     });
@@ -313,7 +313,7 @@ y        UPDATE workflow_collection
       `;
 
   const result =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql,
       params,
     });
