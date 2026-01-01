@@ -82,7 +82,7 @@ async function callMeshTool<T = unknown>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
+      Accept: "application/json, text/event-stream",
       Authorization: `Bearer ${meshConfig.meshToken}`,
     },
     body: JSON.stringify({
@@ -101,10 +101,26 @@ async function callMeshTool<T = unknown>(
     throw new Error(`Mesh API error (${response.status}): ${text}`);
   }
 
-  const json = (await response.json()) as {
+  // Handle both JSON and SSE responses
+  const contentType = response.headers.get("Content-Type") || "";
+  let json: {
     result?: { structuredContent?: T; content?: { text: string }[] };
     error?: { message: string };
   };
+
+  if (contentType.includes("text/event-stream")) {
+    // Parse SSE response - extract JSON from data lines
+    const text = await response.text();
+    const lines = text.split("\n");
+    const dataLines = lines.filter((line) => line.startsWith("data: "));
+    const lastData = dataLines[dataLines.length - 1];
+    if (!lastData) {
+      throw new Error("Empty SSE response from Mesh API");
+    }
+    json = JSON.parse(lastData.slice(6)); // Remove "data: " prefix
+  } else {
+    json = await response.json();
+  }
 
   if (json.error) {
     throw new Error(`Mesh tool error: ${json.error.message}`);
