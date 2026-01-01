@@ -17,6 +17,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
+import {
+  isFilesystemMode,
+  loadWorkflows,
+  getCachedWorkflows,
+  getWorkflowById,
+  startWatching,
+  getWorkflowSource,
+  type LoadedWorkflow,
+} from "./workflow-loader.ts";
 
 // ============================================================================
 // Configuration State (Bindings)
@@ -329,6 +338,30 @@ function withLogging<T extends Record<string, unknown>>(
 
 export async function registerStdioTools(server: McpServer): Promise<void> {
   // =========================================================================
+  // Initialize Filesystem Workflow Loading (if configured)
+  // =========================================================================
+
+  const filesystemMode = isFilesystemMode();
+  if (filesystemMode) {
+    console.error("[mcp-studio] Filesystem workflow mode enabled");
+    await loadWorkflows();
+
+    // Start watching for changes
+    const source = getWorkflowSource();
+    if (source.workflowDir) {
+      await startWatching({
+        ...source,
+        watch: true,
+        onChange: (workflows) => {
+          console.error(
+            `[mcp-studio] Workflows reloaded: ${workflows.length} workflow(s)`,
+          );
+        },
+      });
+    }
+  }
+
+  // =========================================================================
   // MCP Configuration Tools (for Mesh bindings UI)
   // =========================================================================
 
@@ -465,24 +498,64 @@ export async function registerStdioTools(server: McpServer): Promise<void> {
       inputSchema: {
         limit: z.number().default(50),
         offset: z.number().default(0),
+        source: z
+          .enum(["all", "filesystem", "database"])
+          .default("all")
+          .describe(
+            "Filter by source: all (both), filesystem (from files), database (from PostgreSQL)",
+          ),
       },
       annotations: { readOnlyHint: true },
     },
     withLogging("COLLECTION_WORKFLOW_LIST", async (args) => {
-      const items = await runSQL<Record<string, unknown>>(
-        "SELECT * FROM workflow_collection ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-        [args.limit, args.offset],
-      );
+      const includeFilesystem =
+        args.source === "all" || args.source === "filesystem";
+      const includeDatabase =
+        args.source === "all" || args.source === "database";
 
-      const countResult = await runSQL<{ count: string }>(
-        "SELECT COUNT(*) as count FROM workflow_collection",
+      let allItems: Record<string, unknown>[] = [];
+
+      // Get filesystem workflows
+      if (includeFilesystem && filesystemMode) {
+        const fsWorkflows = getCachedWorkflows().map((w) => ({
+          ...w,
+          _source: "filesystem",
+        }));
+        allItems.push(...fsWorkflows);
+      }
+
+      // Get database workflows (only if we have mesh config)
+      if (includeDatabase && meshConfig) {
+        try {
+          const dbItems = await runSQL<Record<string, unknown>>(
+            "SELECT * FROM workflow_collection ORDER BY updated_at DESC",
+            [],
+          );
+          const transformed = dbItems.map((item) => ({
+            ...transformWorkflow(item),
+            _source: "database",
+          }));
+          allItems.push(...transformed);
+        } catch (error) {
+          // Database not available, skip silently
+          console.error(
+            "[mcp-studio] Database query failed, using filesystem only",
+          );
+        }
+      }
+
+      // Apply pagination
+      const totalCount = allItems.length;
+      const paginatedItems = allItems.slice(
+        args.offset,
+        args.offset + args.limit,
       );
-      const totalCount = parseInt(countResult[0]?.count || "0", 10);
 
       const result = {
-        items: items.map(transformWorkflow),
+        items: paginatedItems,
         totalCount,
-        hasMore: args.offset + items.length < totalCount,
+        hasMore: args.offset + paginatedItems.length < totalCount,
+        mode: filesystemMode ? "filesystem" : "database",
       };
 
       return {
@@ -503,15 +576,41 @@ export async function registerStdioTools(server: McpServer): Promise<void> {
       annotations: { readOnlyHint: true },
     },
     withLogging("COLLECTION_WORKFLOW_GET", async (args) => {
-      const items = await runSQL<Record<string, unknown>>(
-        "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
-        [args.id],
-      );
+      // Try filesystem first
+      if (filesystemMode) {
+        const fsWorkflow = getWorkflowById(args.id);
+        if (fsWorkflow) {
+          const result = {
+            item: { ...fsWorkflow, _source: "filesystem" },
+          };
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            structuredContent: result,
+          };
+        }
+      }
 
-      const result = {
-        item: items[0] ? transformWorkflow(items[0]) : null,
-      };
+      // Fall back to database
+      if (meshConfig) {
+        const items = await runSQL<Record<string, unknown>>(
+          "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
+          [args.id],
+        );
 
+        const result = {
+          item: items[0]
+            ? { ...transformWorkflow(items[0]), _source: "database" }
+            : null,
+        };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
+      }
+
+      // No workflow found
+      const result = { item: null };
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         structuredContent: result,
@@ -1044,7 +1143,89 @@ export async function registerStdioTools(server: McpServer): Promise<void> {
     }),
   );
 
+  // =========================================================================
+  // Filesystem Workflow Tools
+  // =========================================================================
+
+  if (filesystemMode) {
+    server.registerTool(
+      "WORKFLOW_RELOAD",
+      {
+        title: "Reload Workflows",
+        description:
+          "Reload all workflows from the filesystem. Use this after editing workflow JSON files.",
+        inputSchema: {},
+        annotations: { readOnlyHint: true },
+      },
+      withLogging("WORKFLOW_RELOAD", async () => {
+        const workflows = await loadWorkflows();
+
+        const result = {
+          success: true,
+          count: workflows.length,
+          workflows: workflows.map((w) => ({
+            id: w.id,
+            title: w.title,
+            sourceFile: w._sourceFile,
+            stepCount: w.steps.length,
+          })),
+        };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
+      }),
+    );
+
+    server.registerTool(
+      "WORKFLOW_SOURCE_INFO",
+      {
+        title: "Workflow Source Info",
+        description:
+          "Get information about where workflows are loaded from (filesystem paths, file counts)",
+        inputSchema: {},
+        annotations: { readOnlyHint: true },
+      },
+      withLogging("WORKFLOW_SOURCE_INFO", async () => {
+        const source = getWorkflowSource();
+        const workflows = getCachedWorkflows();
+
+        // Group by source file
+        const byFile = new Map<string, string[]>();
+        for (const w of workflows) {
+          const file = w._sourceFile;
+          if (!byFile.has(file)) {
+            byFile.set(file, []);
+          }
+          byFile.get(file)!.push(w.id);
+        }
+
+        const result = {
+          mode: "filesystem",
+          workflowDir: source.workflowDir || null,
+          workflowFiles: source.workflowFiles || [],
+          totalWorkflows: workflows.length,
+          files: Array.from(byFile.entries()).map(([file, ids]) => ({
+            path: file,
+            workflows: ids,
+          })),
+        };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
+      }),
+    );
+  }
+
   console.error("[mcp-studio] All stdio tools registered");
+  if (filesystemMode) {
+    console.error(
+      "[mcp-studio] Filesystem mode: WORKFLOW_RELOAD and WORKFLOW_SOURCE_INFO available",
+    );
+  }
 }
 
 // ============================================================================
