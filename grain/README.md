@@ -13,6 +13,7 @@ The Grain MCP provides seamless integration with [Grain](https://grain.com), all
 - 📊 **Rich Metadata**: Access titles, dates, durations, participants, and summaries
 - 🎯 **Filter by Status**: View only ready recordings or check processing status
 - 📅 **Date Range Filtering**: Find meetings within specific time periods
+- 🔔 **Real-time Webhooks**: Receive automatic notifications when recordings are created, updated, or processed
 
 ## Authentication
 
@@ -121,6 +122,31 @@ Each recording object includes:
 }
 ```
 
+## Webhooks
+
+This MCP automatically sets up webhooks with Grain to receive real-time notifications about your recordings. When you install or configure this MCP, it will:
+
+1. **Automatically create webhooks** pointing to the Deco Mesh
+2. **Listen for events** such as:
+   - `recording.created` - When a new recording starts
+   - `recording.updated` - When recording metadata changes
+   - `recording.processed` - When transcription and AI processing completes
+
+3. **Process events** through the `eventHandler` where you can add custom logic
+
+### How Webhooks Work
+
+```
+Grain Event → Grain API → Mesh → Your MCP → Custom Logic
+```
+
+The webhook URL is automatically constructed as:
+```
+${meshUrl}/events/grain_recording?sub=${connectionId}
+```
+
+This ensures events are routed to your specific MCP instance.
+
 ## Use Cases
 
 ### Meeting Analytics
@@ -137,6 +163,9 @@ Identify meetings that require follow-up based on participants, topics, or actio
 
 ### Team Insights
 Track team collaboration by analyzing who attends which meetings and how often different people interact.
+
+### Real-time Notifications
+Get instant alerts when new recordings are ready, enabling immediate action on important meetings.
 
 ## API Reference
 
