@@ -173,7 +173,7 @@ export interface ListServersResult {
  * Escapes special characters that have meaning in PostgREST queries
  */
 function sanitizeSearchInput(input: string): string {
-  // Escape special PostgREST characters: , . ( ) * % \
+  // Escape special PostgREST characters: , . ( ) * % _ \
   return input
     .replace(/\\/g, "\\\\") // Backslash first
     .replace(/,/g, "\\,") // Comma (separates OR conditions)
@@ -181,7 +181,8 @@ function sanitizeSearchInput(input: string): string {
     .replace(/\(/g, "\\(") // Left paren (grouping)
     .replace(/\)/g, "\\)") // Right paren (grouping)
     .replace(/\*/g, "\\*") // Asterisk (wildcard)
-    .replace(/%/g, "\\%"); // Percent (wildcard in LIKE)
+    .replace(/%/g, "\\%") // Percent (wildcard in LIKE)
+    .replace(/_/g, "\\_"); // Underscore (single-char wildcard in LIKE)
 }
 
 /**
