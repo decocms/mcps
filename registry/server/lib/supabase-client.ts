@@ -355,6 +355,57 @@ export async function upsertServers(
 }
 
 /**
+ * Get available tags and categories from all servers
+ */
+export async function getAvailableFilters(client: SupabaseClient): Promise<{
+  tags: Array<{ value: string; count: number }>;
+  categories: Array<{ value: string; count: number }>;
+}> {
+  // Get all latest servers with their tags and categories
+  const { data, error } = await client
+    .from("mcp_servers")
+    .select("tags, categories")
+    .eq("is_latest", true)
+    .eq("unlisted", false);
+
+  if (error) {
+    throw new Error(`Error fetching available filters: ${error.message}`);
+  }
+
+  const servers = (data || []) as Array<{
+    tags: string[] | null;
+    categories: string[] | null;
+  }>;
+
+  // Count tags
+  const tagCounts = new Map<string, number>();
+  servers.forEach((server) => {
+    server.tags?.forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    });
+  });
+
+  // Count categories
+  const categoryCounts = new Map<string, number>();
+  servers.forEach((server) => {
+    server.categories?.forEach((category) => {
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    });
+  });
+
+  // Convert to sorted arrays
+  const tags = Array.from(tagCounts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count); // Sort by count desc
+
+  const categories = Array.from(categoryCounts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count); // Sort by count desc
+
+  return { tags, categories };
+}
+
+/**
  * Get server count by status
  */
 export async function getServerStats(client: SupabaseClient): Promise<{

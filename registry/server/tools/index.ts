@@ -13,10 +13,12 @@ import {
   createListRegistryTool,
   createGetRegistryTool,
   createVersionsRegistryTool,
+  createFiltersRegistryTool,
 } from "./registry-binding.ts";
 
 export const tools = [
   createListRegistryTool,
   createGetRegistryTool,
   createVersionsRegistryTool,
+  createFiltersRegistryTool,
 ];

@@ -14,6 +14,7 @@ import {
   listServers as listServersFromSupabase,
   getServer as getServerFromSupabase,
   getServerVersions as getServerVersionsFromSupabase,
+  getAvailableFilters as getAvailableFiltersFromSupabase,
 } from "../lib/supabase-client.ts";
 
 // ============================================================================
@@ -86,10 +87,29 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
-
     where: WhereSchema.optional().describe(
       "Standard WhereExpression filter (converted to simple search internally)",
     ),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Filter by tags (returns servers that have ANY of the specified tags)",
+      ),
+    categories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Filter by categories (returns servers that have ANY of the specified categories). Valid categories: productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation",
+      ),
+    verified: z
+      .boolean()
+      .optional()
+      .describe("Filter by verification status (true = verified only)"),
+    hasRemote: z
+      .boolean()
+      .optional()
+      .describe("Filter servers that support remote execution"),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -214,7 +234,7 @@ export const createListRegistryTool = (_env: Env) =>
   createPrivateTool({
     id: "COLLECTION_REGISTRY_APP_LIST",
     description:
-      "Lists MCP servers available in the registry with support for pagination, search, and boolean filters (has_remotes, has_packages, is_latest, etc.)",
+      "Lists MCP servers available in the registry with support for pagination, search, and filters (tags, categories, verified, hasRemote). Always returns the latest version of each server.",
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({
@@ -222,7 +242,15 @@ export const createListRegistryTool = (_env: Env) =>
     }: {
       context: z.infer<typeof ListInputSchema>;
     }) => {
-      const { limit = 30, cursor, where } = context;
+      const {
+        limit = 30,
+        cursor,
+        where,
+        tags,
+        categories,
+        verified,
+        hasRemote,
+      } = context;
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
@@ -245,7 +273,10 @@ export const createListRegistryTool = (_env: Env) =>
           limit,
           offset,
           search: apiSearch,
-          hasRemote: true, // Only show servers with remotes
+          tags,
+          categories,
+          verified,
+          hasRemote: hasRemote ?? true, // Default: only show servers with remotes
         });
 
         const items = result.servers.map((server) => ({
@@ -387,6 +418,58 @@ export const createVersionsRegistryTool = (_env: Env) =>
       } catch (error) {
         throw new Error(
           `Error listing server versions: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+    },
+  });
+
+/**
+ * COLLECTION_REGISTRY_APP_FILTERS - Get available filter options
+ */
+export const createFiltersRegistryTool = (_env: Env) =>
+  createPrivateTool({
+    id: "COLLECTION_REGISTRY_APP_FILTERS",
+    description:
+      "Gets all available tags and categories that can be used to filter MCP servers, with counts showing how many servers use each filter value",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      tags: z
+        .array(
+          z.object({
+            value: z.string().describe("Tag name"),
+            count: z.number().describe("Number of servers with this tag"),
+          }),
+        )
+        .describe("Available tags sorted by usage count (descending)"),
+      categories: z
+        .array(
+          z.object({
+            value: z.string().describe("Category name"),
+            count: z.number().describe("Number of servers in this category"),
+          }),
+        )
+        .describe("Available categories sorted by usage count (descending)"),
+    }),
+    execute: async () => {
+      try {
+        // Get configuration from environment
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error(
+            "Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.",
+          );
+        }
+
+        // Query directly from Supabase
+        const client = createSupabaseClient(supabaseUrl, supabaseKey);
+        const filters = await getAvailableFiltersFromSupabase(client);
+
+        return filters;
+      } catch (error) {
+        throw new Error(
+          `Error getting available filters: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     },
