@@ -1,0 +1,13 @@
+{
+  "scopeName": "grain",
+  "name": "grain-official",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://api.grain.com/_/mcp"
+  },
+  "description": "Grain Official MCP - Acesse e gerencie suas reuniões, transcrições e insights do Grain. Este é o MCP oficial da Grain para integração completa com a plataforma de gravação e análise de reuniões.",
+  "icon": "https://assets.grain.com/grain-logo.png",
+  "unlisted": false,
+  "official": true
+}
+
