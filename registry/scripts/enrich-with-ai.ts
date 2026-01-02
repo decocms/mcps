@@ -28,8 +28,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // ═══════════════════════════════════════════════════════════════
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_API_KEY =
-  "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";
 
 // Recommended models (cheap and always available)
 const RECOMMENDED_MODELS = [
@@ -73,13 +71,16 @@ interface EnrichedData {
 /**
  * Call LLM via OpenRouter API directly
  */
-async function generateWithLLM(prompt: string): Promise<string> {
+async function generateWithLLM(
+  prompt: string,
+  apiKey: string,
+): Promise<string> {
   try {
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "HTTP-Referer": "https://github.com/decocms/mcps",
         "X-Title": "MCP Registry AI Enrichment",
       },
@@ -118,7 +119,10 @@ async function generateWithLLM(prompt: string): Promise<string> {
 /**
  * Generate enriched data for an MCP using AI
  */
-async function enrichMcpWithAI(server: McpServer): Promise<EnrichedData> {
+async function enrichMcpWithAI(
+  server: McpServer,
+  apiKey: string,
+): Promise<EnrichedData> {
   const name = server.name;
   const description = server.description || server.short_description || "";
   const repoUrl = server.repository?.url || "";
@@ -201,7 +205,7 @@ Generate metadata in JSON format (respond ONLY with valid JSON, no markdown bloc
       console.log(
         `   🤖 Calling LLM for ${name}... (attempt ${attempt}/${maxAttempts})`,
       );
-      const response = await generateWithLLM(prompt);
+      const response = await generateWithLLM(prompt, apiKey);
 
       // Try to extract JSON from response (in case it comes with markdown)
       const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -349,11 +353,13 @@ async function main() {
   // Check environment variables
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !supabaseKey || !openrouterApiKey) {
     console.error("❌ Missing environment variables:");
     if (!supabaseUrl) console.error("   - SUPABASE_URL");
     if (!supabaseKey) console.error("   - SUPABASE_SERVICE_ROLE_KEY");
+    if (!openrouterApiKey) console.error("   - OPENROUTER_API_KEY");
     process.exit(1);
   }
 
@@ -383,7 +389,7 @@ async function main() {
 
       try {
         // Generate enriched data
-        const enriched = await enrichMcpWithAI(mcp);
+        const enriched = await enrichMcpWithAI(mcp, openrouterApiKey);
 
         // Update database (ALL versions)
         const versionsUpdated = await updateMcp(supabase, mcp.name, enriched);
