@@ -7,12 +7,18 @@ import {
   GRAIN_BASE_URL,
   GRAIN_LIST_RECORDINGS_ENDPOINT,
   GRAIN_RECORDING_ENDPOINT,
+  GRAIN_CREATE_WEBHOOK_ENDPOINT,
+  GRAIN_LIST_WEBHOOKS_ENDPOINT,
+  GRAIN_DELETE_WEBHOOK_ENDPOINT,
+  GRAIN_API_VERSION,
 } from "../constants.ts";
 import type {
   ListRecordingsParams,
   ListRecordingsResponse,
-  Recording,
   RecordingDetails,
+  WebhookConfig,
+  CreateWebhookResponse,
+  ListWebhooksResponse,
 } from "./types.ts";
 
 export interface GrainClientConfig {
@@ -30,13 +36,20 @@ export class GrainClient {
 
   /**
    * Build headers for API requests
+   * Note: API v2 requires the Public-Api-Version header
    */
-  private getHeaders(): Record<string, string> {
-    return {
+  private getHeaders(includeApiVersion = false): Record<string, string> {
+    const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     };
+
+    if (includeApiVersion) {
+      headers["Public-Api-Version"] = GRAIN_API_VERSION;
+    }
+
+    return headers;
   }
 
   /**
@@ -146,5 +159,75 @@ export class GrainClient {
       ...params,
       search: query,
     });
+  }
+
+  /**
+   * Create a webhook to receive real-time notifications from Grain
+   * API v2 endpoint: POST /_/public-api/v2/hooks/create
+   *
+   * Note: Grain performs a reachability test on the provided URL.
+   * The endpoint MUST respond with a 2xx status for the hook to be created.
+   *
+   * @param config - Webhook configuration with hook_url and optional filter/include
+   * @returns Created webhook details
+   */
+  async createWebhook(config: WebhookConfig): Promise<CreateWebhookResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${GRAIN_CREATE_WEBHOOK_ENDPOINT}`,
+      {
+        method: "POST",
+        headers: this.getHeaders(true),
+        body: JSON.stringify(config),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
+
+    return (await response.json()) as CreateWebhookResponse;
+  }
+
+  /**
+   * List all webhooks configured for this account
+   * API v2 endpoint: POST /_/public-api/v2/hooks (yes, it's POST not GET!)
+   * @returns List of webhooks
+   */
+  async listWebhooks(): Promise<ListWebhooksResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${GRAIN_LIST_WEBHOOKS_ENDPOINT}`,
+      {
+        method: "POST", // Grain API v2 uses POST for listing hooks
+        headers: this.getHeaders(true),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
+
+    return (await response.json()) as ListWebhooksResponse;
+  }
+
+  /**
+   * Delete a webhook by its ID
+   * API v2 endpoint: DELETE /_/public-api/v2/hooks/{id}
+   * @param webhookId - The ID of the webhook to delete
+   */
+  async deleteWebhook(webhookId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}${GRAIN_DELETE_WEBHOOK_ENDPOINT}/${webhookId}`,
+      {
+        method: "DELETE",
+        headers: this.getHeaders(true),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
   }
 }
