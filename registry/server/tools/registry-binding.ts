@@ -86,10 +86,29 @@ const ListInputSchema = z
       .max(100)
       .default(30)
       .describe("Number of items per page (default: 30)"),
-
     where: WhereSchema.optional().describe(
       "Standard WhereExpression filter (converted to simple search internally)",
     ),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Filter by tags (returns servers that have ANY of the specified tags)",
+      ),
+    categories: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Filter by categories (returns servers that have ANY of the specified categories). Valid categories: productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation",
+      ),
+    verified: z
+      .boolean()
+      .optional()
+      .describe("Filter by verification status (true = verified only)"),
+    hasRemote: z
+      .boolean()
+      .optional()
+      .describe("Filter servers that support remote execution"),
   })
   .describe("Filtering, sorting, and pagination context");
 
@@ -214,7 +233,7 @@ export const createListRegistryTool = (_env: Env) =>
   createPrivateTool({
     id: "COLLECTION_REGISTRY_APP_LIST",
     description:
-      "Lists MCP servers available in the registry with support for pagination, search, and boolean filters (has_remotes, has_packages, is_latest, etc.)",
+      "Lists MCP servers available in the registry with support for pagination, search, and filters (tags, categories, verified, hasRemote). Always returns the latest version of each server.",
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
     execute: async ({
@@ -222,7 +241,15 @@ export const createListRegistryTool = (_env: Env) =>
     }: {
       context: z.infer<typeof ListInputSchema>;
     }) => {
-      const { limit = 30, cursor, where } = context;
+      const {
+        limit = 30,
+        cursor,
+        where,
+        tags,
+        categories,
+        verified,
+        hasRemote,
+      } = context;
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
@@ -245,7 +272,10 @@ export const createListRegistryTool = (_env: Env) =>
           limit,
           offset,
           search: apiSearch,
-          hasRemote: true, // Only show servers with remotes
+          tags,
+          categories,
+          verified,
+          hasRemote: hasRemote ?? true, // Default: only show servers with remotes
         });
 
         const items = result.servers.map((server) => ({
