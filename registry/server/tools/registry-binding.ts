@@ -69,8 +69,7 @@ const WhereSchema = z
  * Input schema para LIST
  *
  * Note: This tool always returns the latest version of each server (is_latest: true).
- * To get a specific version, use COLLECTION_REGISTRY_APP_GET with 'name@version'.
- * To get all versions, use COLLECTION_REGISTRY_APP_VERSIONS.
+ * To get all versions of a server, use COLLECTION_REGISTRY_APP_VERSIONS.
  */
 const ListInputSchema = z
   .object({
@@ -113,7 +112,9 @@ const ListOutputSchema = z.object({
 const GetInputSchema = z.object({
   id: z
     .string()
-    .describe("Server ID (format: 'ai.exa/exa' or 'ai.exa/exa@3.1.1')"),
+    .describe(
+      "Server name (format: 'ai.exa/exa' or 'ai.exa/exa@3.1.1'). Note: version suffix is ignored, always returns latest version.",
+    ),
 });
 
 /**
@@ -275,12 +276,16 @@ export const createListRegistryTool = (_env: Env) =>
 
 /**
  * COLLECTION_REGISTRY_GET - Gets a specific server from Supabase
+ *
+ * Note: This tool always returns the LATEST version (is_latest: true).
+ * The version suffix in 'name@version' is accepted but ignored.
+ * To get all versions of a server, use COLLECTION_REGISTRY_APP_VERSIONS.
  */
 export const createGetRegistryTool = (_env: Env) =>
   createPrivateTool({
     id: "COLLECTION_REGISTRY_APP_GET",
     description:
-      "Gets a specific MCP server from the registry by ID (format: 'name' or 'name@version')",
+      "Gets the latest version of a specific MCP server from the registry by name (accepts 'name' or 'name@version', but always returns latest)",
     inputSchema: GetInputSchema,
     outputSchema: GetOutputSchema,
     execute: async ({
