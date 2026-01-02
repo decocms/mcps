@@ -13,11 +13,14 @@
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
-    "publish": "cat app.json | deco registry publish -w /shared/deco -y"
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "sync:supabase": "bun run scripts/populate-supabase.ts",
+    "sync:supabase:force": "FORCE_UPDATE=true bun run scripts/populate-supabase.ts"
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.3",
     "@decocms/runtime": "^1.0.3",
+    "@supabase/supabase-js": "^2.89.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {
