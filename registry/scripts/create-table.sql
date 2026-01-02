@@ -116,10 +116,10 @@ CREATE TRIGGER update_mcp_servers_updated_at
 -- Enable RLS
 ALTER TABLE mcp_servers ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access (anon key)
+-- Allow public read access (anon key) - only visible (non-unlisted) items
 CREATE POLICY "Allow public read access" ON mcp_servers
     FOR SELECT
-    USING (true);
+    USING (unlisted = false);
 
 -- Allow authenticated users to insert/update (service role key)
 CREATE POLICY "Allow service role full access" ON mcp_servers

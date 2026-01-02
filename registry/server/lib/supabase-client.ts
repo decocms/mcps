@@ -111,7 +111,7 @@ export function rowToRegistryServer(row: McpServerRow): RegistryServer {
     server: {
       $schema: row.schema_url ?? DEFAULT_SCHEMA,
       name: row.name,
-      description: row.description ?? "", // Descrição original do registry
+      description: row.description ?? "", // Original description from registry
       version: row.version,
       ...(row.repository && { repository: row.repository }),
       ...(row.remotes && { remotes: row.remotes }),
@@ -169,6 +169,22 @@ export interface ListServersResult {
 // ═══════════════════════════════════════════════════════════════
 
 /**
+ * Sanitize search input to prevent PostgREST query injection
+ * Escapes special characters that have meaning in PostgREST queries
+ */
+function sanitizeSearchInput(input: string): string {
+  // Escape special PostgREST characters: , . ( ) * % \
+  return input
+    .replace(/\\/g, "\\\\") // Backslash first
+    .replace(/,/g, "\\,") // Comma (separates OR conditions)
+    .replace(/\./g, "\\.") // Period (operator separator)
+    .replace(/\(/g, "\\(") // Left paren (grouping)
+    .replace(/\)/g, "\\)") // Right paren (grouping)
+    .replace(/\*/g, "\\*") // Asterisk (wildcard)
+    .replace(/%/g, "\\%"); // Percent (wildcard in LIKE)
+}
+
+/**
  * List servers from Supabase with filters
  */
 export async function listServers(
@@ -188,7 +204,7 @@ export async function listServers(
 
   let query = client.from("mcp_servers").select("*", { count: "exact" });
 
-  // SEMPRE filtrar apenas a última versão (is_latest: true)
+  // ALWAYS filter only the latest version (is_latest: true)
   query = query.eq("is_latest", true);
 
   // Filter unlisted unless explicitly included
@@ -216,10 +232,11 @@ export async function listServers(
     query = query.overlaps("categories", categories);
   }
 
-  // Full-text search
+  // Full-text search (sanitize input to prevent PostgREST query injection)
   if (search) {
+    const sanitized = sanitizeSearchInput(search);
     query = query.or(
-      `name.ilike.%${search}%,description.ilike.%${search}%,friendly_name.ilike.%${search}%,short_description.ilike.%${search}%`,
+      `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%,friendly_name.ilike.%${sanitized}%,short_description.ilike.%${sanitized}%`,
     );
   }
 
@@ -350,32 +367,38 @@ export async function getServerStats(client: SupabaseClient): Promise<{
 
   if (error) {
     // Fallback to manual count if RPC doesn't exist
+    // ALWAYS filter by is_latest to count only the latest version of each server
     const { count: total } = await client
       .from("mcp_servers")
       .select("*", { count: "exact", head: true })
+      .eq("is_latest", true)
       .eq("unlisted", false);
 
     const { count: verified } = await client
       .from("mcp_servers")
       .select("*", { count: "exact", head: true })
+      .eq("is_latest", true)
       .eq("unlisted", false)
       .eq("verified", true);
 
     const { count: withRemote } = await client
       .from("mcp_servers")
       .select("*", { count: "exact", head: true })
+      .eq("is_latest", true)
       .eq("unlisted", false)
       .eq("has_remote", true);
 
     const { count: withNpm } = await client
       .from("mcp_servers")
       .select("*", { count: "exact", head: true })
+      .eq("is_latest", true)
       .eq("unlisted", false)
       .eq("is_npm", true);
 
     const { count: unlisted } = await client
       .from("mcp_servers")
       .select("*", { count: "exact", head: true })
+      .eq("is_latest", true)
       .eq("unlisted", true);
 
     return {

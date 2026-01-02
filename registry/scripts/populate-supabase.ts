@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Script para popular o Supabase com TODOS os MCPs do Registry
+ * Script to populate Supabase with ALL MCPs from the Registry
  *
- * Funcionalidades:
- * 1. Cria a tabela mcp_servers se não existir
- * 2. Busca todos os servidores da API do Registry
- * 3. Computa flags (has_remote, is_npm, is_local_repo)
- * 4. Define unlisted baseado na allowlist (allowlist = visible, resto = hidden)
- * 5. Migra dados de verified.ts
- * 6. Upsert no Supabase
+ * Features:
+ * 1. Create mcp_servers table if it doesn't exist
+ * 2. Fetch all servers from the Registry API
+ * 3. Compute flags (has_remote, is_npm, is_local_repo)
+ * 4. Set unlisted based on allowlist (allowlist = visible, rest = hidden)
+ * 5. Migrate data from verified.ts
+ * 6. Upsert to Supabase
  *
  * Usage:
  *   bun run scripts/populate-supabase.ts
@@ -25,11 +25,11 @@ import {
 } from "../server/lib/verified.ts";
 
 // ═══════════════════════════════════════════════════════════════
-// SQL para criar a tabela
+// SQL to create the table
 // ═══════════════════════════════════════════════════════════════
 
 const CREATE_TABLE_SQL = `
--- Tabela principal (chave primária composta para suportar múltiplas versões)
+-- Main table (composite primary key to support multiple versions)
 CREATE TABLE IF NOT EXISTS mcp_servers (
   name TEXT NOT NULL,
   version TEXT NOT NULL,
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_mcp_servers_listing ON mcp_servers(is_latest, unl
 CREATE INDEX IF NOT EXISTS idx_mcp_servers_tags ON mcp_servers USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_mcp_servers_categories ON mcp_servers USING GIN(categories);
 
--- Trigger para updated_at
+-- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -114,45 +114,45 @@ const REQUEST_TIMEOUT = 30000;
 async function ensureTableExists(supabase: SupabaseClient): Promise<void> {
   console.log("🗄️  Verificando/criando tabela mcp_servers...\n");
 
-  // Executa o SQL para criar tabela (IF NOT EXISTS garante idempotência)
+  // Execute SQL to create table (IF NOT EXISTS ensures idempotency)
   const { error: createError } = await supabase.rpc("exec_sql", {
     sql: CREATE_TABLE_SQL,
   });
 
-  // Se o RPC não existir, tenta via query direta (menos seguro, mas funcional)
+  // If RPC doesn't exist, try via direct query (less secure, but functional)
   if (
     createError?.message?.includes("function") ||
     createError?.code === "42883"
   ) {
     console.log(
-      "   ⚠️  RPC exec_sql não disponível, tentando criar tabela via select...",
+      "   ⚠️  RPC exec_sql not available, trying to create table via select...",
     );
 
-    // Verifica se a tabela existe tentando uma query
+    // Check if table exists by trying a query
     const { error: checkError } = await supabase
       .from("mcp_servers")
       .select("name")
       .limit(1);
 
     if (checkError?.code === "42P01") {
-      // Tabela não existe - precisa criar manualmente
-      console.error("\n❌ Tabela mcp_servers não existe!");
+      // Table doesn't exist - needs manual creation
+      console.error("\n❌ mcp_servers table doesn't exist!");
       console.error("   Execute o SQL em: registry/scripts/create-table.sql");
       console.error("   No Supabase Dashboard → SQL Editor\n");
       process.exit(1);
     } else if (checkError) {
-      throw new Error(`Erro ao verificar tabela: ${checkError.message}`);
+      throw new Error(`Error checking table: ${checkError.message}`);
     } else {
-      console.log("   ✅ Tabela mcp_servers já existe\n");
+      console.log("   ✅ mcp_servers table already exists\n");
     }
   } else if (createError) {
-    throw new Error(`Erro ao criar tabela: ${createError.message}`);
+    throw new Error(`Error creating table: ${createError.message}`);
   } else {
-    console.log("   ✅ Tabela mcp_servers pronta\n");
+    console.log("   ✅ mcp_servers table ready\n");
 
-    // Tenta habilitar RLS (pode falhar se já estiver habilitado)
+    // Try to enable RLS (may fail if already enabled)
     await supabase.rpc("exec_sql", { sql: ENABLE_RLS_SQL }).catch(() => {
-      // Ignora erros de RLS - provavelmente já está configurado
+      // Ignore RLS errors - probably already configured
     });
   }
 }
@@ -224,7 +224,7 @@ interface McpServerRow {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Busca todos os nomes de servidores (apenas latest para obter a lista)
+ * Fetch all server names (only latest to get the list)
  */
 async function fetchAllServerNames(): Promise<string[]> {
   const serverNames: string[] = [];
@@ -273,7 +273,7 @@ async function fetchAllServerNames(): Promise<string[]> {
 }
 
 /**
- * Busca todas as versões de um servidor com retry para 429
+ * Fetch all versions of a server with retry for 429
  */
 async function fetchServerVersions(
   name: string,
@@ -343,20 +343,20 @@ async function fetchServerVersions(
 }
 
 /**
- * Busca servidores que precisam ser atualizados (não estão no banco)
+ * Fetch servers that need to be updated (not in database)
  */
 async function getServersToUpdate(
   supabase: SupabaseClient,
   allServerNames: string[],
   forceUpdate = false,
 ): Promise<string[]> {
-  // Se forceUpdate = true, retornar todos
+  // If forceUpdate = true, return all
   if (forceUpdate) {
     console.log("   🔄 Force update enabled - will update all servers");
     return allServerNames;
   }
 
-  // Buscar nomes únicos já no banco
+  // Fetch unique names already in database
   const { data: existingServers } = await supabase
     .from("mcp_servers")
     .select("name")
@@ -366,19 +366,19 @@ async function getServersToUpdate(
     (existingServers || []).map((s: { name: string }) => s.name),
   );
 
-  // Retornar apenas os que faltam
+  // Return only missing ones
   return allServerNames.filter((name) => !existingNames.has(name));
 }
 
 /**
- * Busca todas as versões de todos os servidores (com controle de concorrência e retry)
+ * Fetch all versions of all servers (with concurrency control and retry)
  */
 async function fetchAllServersWithVersions(
   supabase: SupabaseClient,
   resumeFrom?: number,
   forceUpdate = false,
 ): Promise<RegistryServer[]> {
-  // 1. Buscar lista de nomes
+  // 1. Fetch list of names
   const allServerNames = await fetchAllServerNames();
 
   // 2. Identificar quais precisam ser atualizados
@@ -398,9 +398,9 @@ async function fetchAllServersWithVersions(
     `📦 Need to fetch ${serversToFetch.length} servers (${allServerNames.length - serversToFetch.length} already in DB)\n`,
   );
 
-  // 3. Buscar versões com concorrência reduzida e retry
-  const CONCURRENT_REQUESTS = 3; // Reduzido para evitar 429
-  const BATCH_DELAY = 1000; // 1s entre batches
+  // 3. Fetch versions with reduced concurrency and retry
+  const CONCURRENT_REQUESTS = 3; // Reduced to avoid 429
+  const BATCH_DELAY = 1000; // 1s between batches
   const allServers: RegistryServer[] = [];
   const startFrom = resumeFrom || 0;
 
@@ -432,7 +432,7 @@ async function fetchAllServersWithVersions(
       `   Processed ${processed}/${serversToFetch.length} servers (${allServers.length} total versions)`,
     );
 
-    // Delay entre batches para evitar rate limiting
+    // Delay between batches to avoid rate limiting
     if (i + CONCURRENT_REQUESTS < serversToFetch.length) {
       await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
     }
@@ -489,7 +489,7 @@ function transformServerToRow(
     is_npm: isNpm,
     is_local_repo: isLocalRepo,
 
-    // Duplicar description em short_description (para consistência)
+    // Duplicate description in short_description (for consistency)
     short_description: server.server.description ?? null,
 
     // To be filled later (manually or AI)
@@ -541,9 +541,9 @@ async function main() {
       forceUpdate,
     );
 
-    // Se não há nada novo, finalizar
+    // If nothing new, finish
     if (allServers.length === 0) {
-      console.log("✅ Nenhum servidor novo para adicionar!");
+      console.log("✅ No new servers to add!");
       return;
     }
 

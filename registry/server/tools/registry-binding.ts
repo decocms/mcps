@@ -67,6 +67,10 @@ const WhereSchema = z
 
 /**
  * Input schema para LIST
+ *
+ * Note: This tool always returns the latest version of each server (is_latest: true).
+ * To get a specific version, use COLLECTION_REGISTRY_APP_GET with 'name@version'.
+ * To get all versions, use COLLECTION_REGISTRY_APP_VERSIONS.
  */
 const ListInputSchema = z
   .object({
@@ -87,13 +91,6 @@ const ListInputSchema = z
     where: WhereSchema.optional().describe(
       "Standard WhereExpression filter (converted to simple search internally)",
     ),
-    version: z
-      .string()
-      .optional()
-      .default("latest")
-      .describe(
-        "Filter by specific version (e.g., '1.0.0' or 'latest', default: 'latest')",
-      ),
   })
   .describe("Filtering, sorting, and pagination context");
 

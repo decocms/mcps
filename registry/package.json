@@ -15,7 +15,11 @@
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
     "sync:supabase": "bun run scripts/populate-supabase.ts",
-    "sync:supabase:force": "FORCE_UPDATE=true bun run scripts/populate-supabase.ts"
+    "sync:supabase:force": "FORCE_UPDATE=true bun run scripts/populate-supabase.ts",
+    "enrich:ai": "bun run scripts/enrich-with-ai.ts",
+    "enrich:ai:force": "bun run scripts/enrich-with-ai.ts --force",
+    "enrich:ai:test": "bun run scripts/enrich-with-ai.ts --limit=3",
+    "enrich:ai:retry": "bun run scripts/enrich-with-ai.ts --limit=400"
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.3",
