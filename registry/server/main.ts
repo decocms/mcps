@@ -10,22 +10,15 @@ import {
   type Env as DecoEnv,
   StateSchema as BaseStateSchema,
 } from "../shared/deco.gen.ts";
-import { z } from "zod";
 import { tools } from "./tools/index.ts";
 
 /**
- * StateSchema with MCP Registry configuration.
- * Users can customize the registry URL when installing the MCP.
+ * StateSchema for MCP Registry.
+ * Supabase configuration comes from environment variables:
+ * - SUPABASE_URL
+ * - SUPABASE_ANON_KEY
  */
-export const StateSchema = BaseStateSchema.extend({
-  registryUrl: z
-    .string()
-    .url()
-    .optional()
-    .describe(
-      "MCP registry servers URL (default: https://registry.modelcontextprotocol.io/v0.1/servers)",
-    ),
-});
+export const StateSchema = BaseStateSchema;
 
 /**
  * This Env type is the main context object that is passed to
