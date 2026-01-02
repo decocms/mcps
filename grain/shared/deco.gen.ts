@@ -187,4 +187,7 @@ export const Scopes = {
     CONTRACT_AUTHORIZE: "grain:authorize",
     CONTRACT_SETTLE: "grain:settle",
   },
+  DATABASE: {
+    DATABASES_RUN_SQL: "database:run_sql",
+  },
 };

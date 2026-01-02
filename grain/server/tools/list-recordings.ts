@@ -114,7 +114,6 @@ export const createListRecordingsTool = (env: Env) =>
       const client = new GrainClient({
         apiKey: getGrainApiKey(env),
       });
-
       // Fetch recordings with filters
       const response = await client.listRecordings({
         limit,
