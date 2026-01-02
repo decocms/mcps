@@ -1,0 +1,56 @@
+{
+  "name": "@decocms/mcp-local-fs",
+  "version": "1.0.2",
+  "description": "MCP server that mounts any local filesystem path. Supports stdio (default) and HTTP transports.",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "bin": {
+    "mcp-local-fs": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "bun run server/http.ts",
+    "dev:stdio": "bun run server/stdio.ts",
+    "start": "node dist/cli.js",
+    "start:http": "node dist/cli.js --http",
+    "check": "tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "filesystem",
+    "local-fs",
+    "ai",
+    "claude",
+    "mesh",
+    "stdio"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/decocms/mcps.git",
+    "directory": "local-fs"
+  },
+  "author": "DecoCMS",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
