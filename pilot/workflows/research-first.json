@@ -1,0 +1,42 @@
+{
+  "id": "research-first",
+  "title": "Research First",
+  "description": "Read a context file before responding. Useful for including local knowledge in responses.",
+  "steps": [
+    {
+      "name": "gather_context",
+      "description": "Read the specified context file",
+      "action": {
+        "type": "tool",
+        "toolName": "READ_FILE"
+      },
+      "input": {
+        "path": "@input.contextPath"
+      },
+      "config": {
+        "continueOnError": true
+      }
+    },
+    {
+      "name": "respond",
+      "description": "Respond using the gathered context",
+      "action": {
+        "type": "llm",
+        "prompt": "Context from file:\n@gather_context.content\n\n---\n\nUser message: @input.message",
+        "model": "smart",
+        "systemPrompt": "You have been provided with context from a local file. Use this context to inform your response to the user's message. If the context is not relevant, you can ignore it.",
+        "tools": "all",
+        "maxIterations": 20
+      },
+      "input": {
+        "message": "@input.message",
+        "context": "@gather_context.content",
+        "history": "@input.history"
+      }
+    }
+  ],
+  "defaultInput": {
+    "contextPath": "~/Projects/context/GUILHERME_TONE_OF_VOICE.md"
+  }
+}
+

@@ -1,0 +1,24 @@
+{
+  "id": "direct-execution",
+  "title": "Direct Execution",
+  "description": "Skip routing phase, execute directly with the smart model and all available tools. Good for when you know exactly what needs to be done.",
+  "steps": [
+    {
+      "name": "execute",
+      "description": "Direct execution with smart model and all tools",
+      "action": {
+        "type": "llm",
+        "prompt": "@input.message",
+        "model": "smart",
+        "systemPrompt": "You are a capable AI assistant with access to various tools. Complete the user's request step by step.\n\n**RULES:**\n1. Execute each step in order\n2. Use tools via function calling (never simulate)\n3. Complete the ENTIRE task before responding\n4. For content creation, write actual content (not placeholders)\n5. Summarize what you accomplished",
+        "tools": "all",
+        "maxIterations": 30
+      },
+      "input": {
+        "message": "@input.message",
+        "history": "@input.history"
+      }
+    }
+  ]
+}
+
