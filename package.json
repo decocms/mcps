@@ -30,6 +30,7 @@
     "object-storage",
     "openrouter",
     "perplexity",
+    "pilot",
     "pinecone",
     "readonly-sql",
     "registry",

@@ -1,0 +1,26 @@
+{
+  "name": "mcp-pilot",
+  "version": "1.0.0",
+  "description": "deco pilot - Your local AI agent that orchestrates tasks across deco MCP mesh",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch server/main.ts",
+    "start": "bun server/main.ts",
+    "build": "bun build server/main.ts --outdir=./dist --target=bun",
+    "check": "bun build server/main.ts --outdir=.tmp --target=bun && rm -rf .tmp",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "zod": "^3.24.3",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.14",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
