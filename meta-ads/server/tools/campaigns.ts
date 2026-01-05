@@ -27,7 +27,7 @@ export const createGetCampaignsTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .default(50)
+        .prefault(50)
         .describe("Maximum number of campaigns to return (default: 50)"),
       status_filter: z
         .enum(["ACTIVE", "PAUSED", "DELETED", "ARCHIVED"])

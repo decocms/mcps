@@ -39,7 +39,7 @@ export const createCompareModelsTool = (env: Env) =>
           modelId: z.string(),
           name: z.string(),
           metrics: z
-            .record(z.any())
+            .record(z.string(), z.any())
             .describe("Model metrics based on selected criteria"),
         }),
       ),

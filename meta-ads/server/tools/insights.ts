@@ -69,7 +69,7 @@ Use date_preset for common time ranges (last_7d, last_30d, etc) or time_range fo
       limit: z.coerce
         .number()
         .optional()
-        .default(100)
+        .prefault(100)
         .describe(
           "Maximum number of insight rows to return (default: 100, useful when using breakdowns)",
         ),
