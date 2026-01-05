@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "bun --watch server/main.ts",
     "start": "bun server/main.ts",
+    "cli": "bun cli/index.ts",
+    "cli:dev": "bun --watch cli/index.ts",
     "build": "bun build server/main.ts --outdir=./dist --target=bun",
     "check": "bun build server/main.ts --outdir=.tmp --target=bun && rm -rf .tmp",
     "test": "bun test"
