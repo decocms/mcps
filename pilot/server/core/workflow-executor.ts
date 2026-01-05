@@ -838,17 +838,19 @@ async function gatherTools(
       {
         name: "start_task",
         description:
-          "Start a workflow as a new background task. Returns task ID immediately. Use for long-running operations.",
+          "Start a workflow as a new background task. IMPORTANT: You MUST provide workflowId! Call list_workflows() first to see available workflow IDs. Example: start_task({ workflowId: 'create-article-research', input: { topic: 'AI' } })",
         inputSchema: {
           type: "object",
           properties: {
             workflowId: {
               type: "string",
-              description: "The ID of the workflow to run",
+              description:
+                "REQUIRED. The ID of the workflow to run (e.g., 'create-article-research'). Get this from list_workflows().",
             },
             input: {
               type: "object",
-              description: "Input parameters for the workflow",
+              description:
+                "Input parameters for the workflow (e.g., { topic: 'AI agents', message: 'original user message' })",
             },
           },
           required: ["workflowId"],
@@ -1044,11 +1046,47 @@ async function executeToolCall(
     // ========================================================================
 
     case "start_task": {
-      const workflowId = args.workflowId as string | undefined;
+      // Handle various argument formats LLMs might use
+      let workflowId: string | undefined;
+      if (typeof args.workflowId === "string" && args.workflowId.trim()) {
+        workflowId = args.workflowId.trim();
+      } else if (
+        typeof args.workflow_id === "string" &&
+        args.workflow_id.trim()
+      ) {
+        workflowId = args.workflow_id.trim();
+      } else if (typeof args.workflow === "string" && args.workflow.trim()) {
+        workflowId = args.workflow.trim();
+      } else if (typeof args.id === "string" && args.id.trim()) {
+        workflowId = args.id.trim();
+      } else if (typeof args.name === "string" && args.name.trim()) {
+        workflowId = args.name.trim();
+      }
+
+      // Also try to extract from nested objects
+      if (
+        !workflowId &&
+        typeof args.input === "object" &&
+        args.input !== null
+      ) {
+        const input = args.input as Record<string, unknown>;
+        if (typeof input.workflowId === "string") {
+          workflowId = input.workflowId;
+        } else if (typeof input.workflow_id === "string") {
+          workflowId = input.workflow_id;
+        }
+      }
+
       const workflowInput = (args.input as Record<string, unknown>) || {};
 
-      if (!workflowId || workflowId.trim() === "") {
-        throw new Error("workflowId is required");
+      if (!workflowId) {
+        // Log what we actually received for debugging
+        console.error(
+          `[pilot] start_task called with args: ${JSON.stringify(args)}`,
+        );
+        throw new Error(
+          `workflowId is required. Call list_workflows() first to see available IDs, then call start_task({ workflowId: "the-id", input: { ... } })`,
+        );
       }
 
       const { loadWorkflow } = await import("./workflow-storage.ts");
@@ -1201,7 +1239,7 @@ async function executeToolCall(
       return {
         tasks: tasks.map((t) => {
           // Extract topic/input for context
-          const input = t.input || {};
+          const input = t.workflowInput || {};
           const topic =
             input.topic || input.message || input.theme || "(no topic)";
 
@@ -1220,7 +1258,7 @@ async function executeToolCall(
             topic: typeof topic === "string" ? topic.slice(0, 100) : topic,
             currentStep: t.stepResults[t.currentStepIndex]?.stepName,
             createdAt: t.createdAt,
-            completedAt: t.completedAt,
+            lastUpdatedAt: t.lastUpdatedAt,
             resultPreview: resultSummary,
           };
         }),
