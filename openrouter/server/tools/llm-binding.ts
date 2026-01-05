@@ -24,7 +24,7 @@ import {
 } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
-import type { z } from "zod";
+import { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
 import { getBaseUrl } from "./models/utils.ts";
@@ -476,7 +476,8 @@ export const createLLMStreamTool = (env: Env) =>
     description:
       "Stream a language model response in real-time using OpenRouter. " +
       "Returns a streaming response for interactive chat experiences.",
-    inputSchema: STREAM_BINDING.inputSchema,
+    // inputSchema: STREAM_BINDING.inputSchema,
+    inputSchema: z.object({}),
     execute: async ({ context }) => {
       const {
         modelId,
@@ -509,8 +510,9 @@ export const createLLMGenerateTool = (env: Env) =>
     description:
       "Generate a complete language model response using OpenRouter (non-streaming). " +
       "Returns the full response with usage statistics and cost information.",
-    inputSchema: GENERATE_BINDING.inputSchema,
-    outputSchema: GENERATE_BINDING.outputSchema,
+    // inputSchema: GENERATE_BINDING.inputSchema,
+    inputSchema: z.object({}),
+    outputSchema: z.object({}),
     execute: async ({ context }) => {
       const {
         modelId,
