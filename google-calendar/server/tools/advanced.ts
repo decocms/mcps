@@ -247,6 +247,42 @@ export const createDuplicateEventTool = (env: Env) =>
         context.eventId,
       );
 
+      // Calculate new end time preserving original duration when only newStart is provided
+      let newEnd = context.newEnd || originalEvent.end;
+      if (context.newStart && !context.newEnd) {
+        // Preserve original event duration
+        const origStartTime =
+          originalEvent.start.dateTime || originalEvent.start.date;
+        const origEndTime =
+          originalEvent.end.dateTime || originalEvent.end.date;
+
+        if (origStartTime && origEndTime) {
+          const duration =
+            new Date(origEndTime).getTime() - new Date(origStartTime).getTime();
+          const newStartTime =
+            context.newStart.dateTime || context.newStart.date;
+
+          if (newStartTime) {
+            const calculatedEnd = new Date(
+              new Date(newStartTime).getTime() + duration,
+            );
+
+            // Preserve the same format (dateTime vs date) as the original
+            if (context.newStart.dateTime) {
+              newEnd = {
+                dateTime: calculatedEnd.toISOString(),
+                timeZone:
+                  context.newStart.timeZone || originalEvent.end.timeZone,
+              };
+            } else {
+              newEnd = {
+                date: calculatedEnd.toISOString().split("T")[0],
+              };
+            }
+          }
+        }
+      }
+
       // Create the duplicate
       const newEvent = await client.createEvent({
         calendarId: targetCalendarId,
@@ -255,7 +291,7 @@ export const createDuplicateEventTool = (env: Env) =>
         description: originalEvent.description,
         location: originalEvent.location,
         start: context.newStart || originalEvent.start,
-        end: context.newEnd || originalEvent.end,
+        end: newEnd,
         attendees: originalEvent.attendees?.map((a) => ({
           email: a.email,
           displayName: a.displayName,
