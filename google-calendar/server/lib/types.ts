@@ -2,6 +2,12 @@
  * Google Calendar API types
  */
 
+export type CalendarAccessRole =
+  | "freeBusyReader"
+  | "reader"
+  | "writer"
+  | "owner";
+
 export interface CalendarListEntry {
   kind: "calendar#calendarListEntry";
   etag: string;
@@ -16,7 +22,7 @@ export interface CalendarListEntry {
   foregroundColor?: string;
   hidden?: boolean;
   selected?: boolean;
-  accessRole: "freeBusyReader" | "reader" | "writer" | "owner";
+  accessRole: CalendarAccessRole;
   defaultReminders?: Reminder[];
   primary?: boolean;
   deleted?: boolean;
@@ -145,7 +151,7 @@ export interface EventsListResponse {
   description?: string;
   updated: string;
   timeZone: string;
-  accessRole: string;
+  accessRole: CalendarAccessRole;
   nextPageToken?: string;
   nextSyncToken?: string;
   items: Event[];

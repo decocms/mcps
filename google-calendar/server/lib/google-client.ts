@@ -352,9 +352,7 @@ export class GoogleCalendarClient {
 /**
  * Get access token from environment context
  */
-export function getAccessToken(env: {
-  MESH_REQUEST_CONTEXT?: { accessToken?: string };
-}): string {
+export function getAccessToken(env: any): string {
   const token = env.MESH_REQUEST_CONTEXT?.accessToken;
   if (!token) {
     throw new Error(

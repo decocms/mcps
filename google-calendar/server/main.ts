@@ -19,6 +19,9 @@ const GOOGLE_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
+// Store the last used redirect_uri for token exchange
+let lastRedirectUri: string | null = null;
+
 const runtime = withRuntime<Env>({
   oauth: {
     mode: "PKCE",
@@ -35,6 +38,12 @@ const runtime = withRuntime<Env>({
       // Remove state from redirect_uri (Google requires clean redirect_uri)
       callbackUrlObj.searchParams.delete("state");
       const cleanRedirectUri = callbackUrlObj.toString();
+
+      // Store for later use in exchangeCode
+      lastRedirectUri = cleanRedirectUri;
+
+      // Debug: log the redirect_uri being used
+      console.log("[Google Calendar OAuth] redirect_uri:", cleanRedirectUri);
 
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("redirect_uri", cleanRedirectUri);
@@ -57,27 +66,28 @@ const runtime = withRuntime<Env>({
       code,
       code_verifier,
       code_challenge_method,
-      redirect_uri,
-    }) => {
-      // Clean the redirect_uri (remove state param if present)
-      let cleanRedirectUri = redirect_uri;
-      if (redirect_uri) {
-        const redirectUrlObj = new URL(redirect_uri);
-        redirectUrlObj.searchParams.delete("state");
-        cleanRedirectUri = redirectUrlObj.toString();
+    }: any) => {
+      // Use the stored redirect_uri from authorizationUrl
+      const cleanRedirectUri = lastRedirectUri;
+
+      if (!cleanRedirectUri) {
+        throw new Error(
+          "redirect_uri is required for Google OAuth token exchange",
+        );
       }
+
+      console.log(
+        "[Google Calendar OAuth] exchangeCode redirect_uri:",
+        cleanRedirectUri,
+      );
 
       const params = new URLSearchParams({
         code,
         client_id: process.env.GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
         grant_type: "authorization_code",
+        redirect_uri: cleanRedirectUri,
       });
-
-      // Google requires redirect_uri in token exchange
-      if (cleanRedirectUri) {
-        params.set("redirect_uri", cleanRedirectUri);
-      }
 
       // Add PKCE verifier if provided
       if (code_verifier) {
