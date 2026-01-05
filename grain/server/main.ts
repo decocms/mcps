@@ -1,5 +1,10 @@
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
-import { Scopes } from "../shared/deco.gen.ts";
+import {
+  BindingOf,
+  type BindingRegistry,
+  type DefaultEnv,
+  withRuntime,
+} from "@decocms/runtime";
+import z from "zod";
 
 import { tools } from "./tools/index.ts";
 import { GrainClient } from "./lib/grain-client.ts";
@@ -7,19 +12,41 @@ import type { WebhookPayload } from "./lib/types.ts";
 import { ensureRecordingsTable, indexRecording } from "./lib/postgres.ts";
 
 /**
+ * State schema defining the required bindings
+ */
+export const StateSchema = z.object({
+  DATABASE: BindingOf("@deco/postgres"),
+});
+
+/**
+ * Binding registry for type safety
+ */
+export interface Registry extends BindingRegistry {
+  "@deco/postgres": [
+    {
+      name: "DATABASES_RUN_SQL";
+      description: "Run a SQL query against the database";
+      inputSchema: z.ZodType<{
+        sql: string;
+        params?: unknown[];
+      }>;
+      outputSchema: z.ZodType<{
+        result: {
+          results?: unknown[];
+          success?: boolean;
+        }[];
+      }>;
+    },
+  ];
+}
+
+/**
  * Environment type combining Deco bindings
  * Includes DATABASE binding for indexing recordings
  */
-export type Env = DefaultEnv & {
-  DATABASE?: {
-    DATABASES_RUN_SQL: (params: {
-      sql: string;
-      params: unknown[];
-    }) => Promise<{ result: Array<{ results: unknown[] }> }>;
-  };
-};
+export type Env = DefaultEnv<typeof StateSchema, Registry>;
 
-const runtime = withRuntime<Env>({
+const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   oauth: {
     mode: "PKCE",
     authorizationServer: "https://grain.com",
@@ -43,13 +70,7 @@ const runtime = withRuntime<Env>({
   configuration: {
     onChange: async (env) => {
       try {
-        if (env.DATABASE) {
-          await ensureRecordingsTable(env);
-        } else {
-          console.warn(
-            "DATABASE binding not available - skipping table creation",
-          );
-        }
+        await ensureRecordingsTable(env);
 
         const grainToken = env.MESH_REQUEST_CONTEXT?.token;
         const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
@@ -88,7 +109,8 @@ const runtime = withRuntime<Env>({
         console.error("Error setting up webhook:", error);
       }
     },
-    scopes: [Scopes.DATABASE.DATABASES_RUN_SQL],
+    scopes: ["DATABASE::DATABASES_RUN_SQL"],
+    state: StateSchema,
   },
   tools,
 });

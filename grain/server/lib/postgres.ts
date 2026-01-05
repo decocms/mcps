@@ -20,20 +20,17 @@ export async function runSQL<T = unknown>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  if (!env.DATABASE) {
-    throw new Error("DATABASE binding not available");
-  }
-
   // Sanitize string params to prevent SQL injection
   const sanitizedParams = params.map((p) => {
     if (typeof p === "string") return p.replaceAll("'", "''");
     return p;
   });
 
-  const response = await env.DATABASE.DATABASES_RUN_SQL({
-    sql,
-    params: sanitizedParams,
-  });
+  const response =
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+      sql,
+      params: sanitizedParams,
+    });
 
   return (response.result[0]?.results ?? []) as T[];
 }
