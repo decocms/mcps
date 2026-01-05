@@ -67,6 +67,9 @@ const runtime = withRuntime<Env>({
       // Use the stored redirect_uri from authorizationUrl
       const cleanRedirectUri = lastRedirectUri;
 
+      console.log("[DEBUG] lastRedirectUri:", lastRedirectUri);
+      console.log("[DEBUG] cleanRedirectUri:", cleanRedirectUri);
+
       if (!cleanRedirectUri) {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
@@ -80,6 +83,8 @@ const runtime = withRuntime<Env>({
         grant_type: "authorization_code",
         redirect_uri: cleanRedirectUri,
       });
+
+      console.log("[DEBUG] params redirect_uri:", params.get("redirect_uri"));
 
       // Add PKCE verifier if provided
       if (code_verifier) {
