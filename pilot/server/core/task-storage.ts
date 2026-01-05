@@ -179,6 +179,7 @@ export function updateTaskStatus(
 
 /**
  * Update task's current step
+ * IMPORTANT: Preserves existing progressMessages that were accumulated during execution
  */
 export function updateTaskStep(
   taskId: string,
@@ -196,7 +197,27 @@ export function updateTaskStep(
     (r) => r.stepId === stepResult.stepId,
   );
   if (existingIndex >= 0) {
-    task.stepResults[existingIndex] = stepResult;
+    // PRESERVE existing progressMessages - merge with new ones
+    const existingProgress =
+      task.stepResults[existingIndex].progressMessages || [];
+    const newProgress = stepResult.progressMessages || [];
+
+    // Merge: existing messages + any new messages not already present
+    const mergedProgress = [...existingProgress];
+    for (const msg of newProgress) {
+      // Avoid duplicates by checking timestamp + message
+      const isDuplicate = existingProgress.some(
+        (e) => e.timestamp === msg.timestamp && e.message === msg.message,
+      );
+      if (!isDuplicate) {
+        mergedProgress.push(msg);
+      }
+    }
+
+    task.stepResults[existingIndex] = {
+      ...stepResult,
+      progressMessages: mergedProgress,
+    };
   } else {
     task.stepResults.push(stepResult);
   }

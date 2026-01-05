@@ -78,7 +78,27 @@ export const LIST_FILES: Tool = {
     required: ["path"],
   },
   execute: async (args) => {
-    const path = args.path as string;
+    // Handle various argument formats LLMs might use
+    let path: string;
+    if (typeof args.path === "string") {
+      path = args.path;
+    } else if (Array.isArray(args.paths) && args.paths.length > 0) {
+      path = String(args.paths[0]);
+    } else if (typeof args.directory === "string") {
+      path = args.directory;
+    } else {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: `Missing required 'path' argument. Provide a directory path to list.`,
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
 
     if (!isPathAllowed(path)) {
       return {
@@ -169,7 +189,29 @@ export const READ_FILE: Tool = {
     required: ["path"],
   },
   execute: async (args) => {
-    const path = args.path as string;
+    // Handle various argument formats LLMs might use
+    let path: string;
+    if (typeof args.path === "string") {
+      path = args.path;
+    } else if (typeof args.file === "string") {
+      path = args.file;
+    } else if (typeof args.filePath === "string") {
+      path = args.filePath;
+    } else if (typeof args.file_path === "string") {
+      path = args.file_path;
+    } else {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: `Missing required 'path' argument. Provide a file path to read.`,
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
     const limit = (args.limit as number) || 500;
 
     if (!isPathAllowed(path)) {
