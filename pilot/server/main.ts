@@ -7,7 +7,7 @@
  * Key concepts:
  * - Workflows: Reusable task templates stored in workflows/
  * - Tasks: MCP-compliant persistent task state stored in TASKS_DIR
- * - Conversations: Long-running threads that persist until timeout
+ * - Threads: Follow-up messages within 5 min are added to the same task
  * - Event Mapping: Route mesh events to specific workflows
  *
  * @see https://modelcontextprotocol.io/specification/draft/basic/utilities/tasks
@@ -28,6 +28,9 @@ import {
   cancelTask as cancelTaskInStorage,
   getTaskStats,
   cleanupExpiredTasks,
+  getRecentThread,
+  addFollowUpToTask,
+  completeFollowUpStep,
 } from "./core/task-storage.ts";
 import {
   loadWorkflow,
@@ -42,17 +45,6 @@ import {
   type LLMCallback,
   type ListConnectionsCallback,
 } from "./core/workflow-executor.ts";
-
-// Conversation
-import {
-  getActiveConversation,
-  registerConversation,
-  endConversation,
-  addMessageToConversation,
-  isEndOfConversation,
-  cleanConversationResponse,
-  cleanupExpiredConversations,
-} from "./core/conversation-manager.ts";
 
 // Events
 import {
@@ -71,7 +63,9 @@ const PILOT_VERSION = "2.1.0";
 // ============================================================================
 
 const DEFAULT_WORKFLOW_FALLBACK = "fast-router";
-const CONVERSATION_WORKFLOW_FALLBACK = "conversation";
+
+/** Thread timeout: messages within this window are added to existing task */
+const THREAD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 const config = {
   meshUrl: process.env.MESH_URL || "http://localhost:3000",
@@ -82,8 +76,10 @@ const config = {
     process.env.FAST_MODEL ||
     "google/gemini-2.5-flash",
   defaultWorkflow: process.env.DEFAULT_WORKFLOW || DEFAULT_WORKFLOW_FALLBACK,
-  conversationWorkflow:
-    process.env.CONVERSATION_WORKFLOW || CONVERSATION_WORKFLOW_FALLBACK,
+  threadTimeoutMs: parseInt(
+    process.env.THREAD_TIMEOUT_MS || String(THREAD_TIMEOUT_MS),
+    10,
+  ),
 };
 
 /**
@@ -99,18 +95,6 @@ function validateWorkflowConfig(): void {
     );
     console.error(`[pilot]    Falling back to: ${DEFAULT_WORKFLOW_FALLBACK}`);
     config.defaultWorkflow = DEFAULT_WORKFLOW_FALLBACK;
-  }
-
-  // Check conversation workflow
-  const convWf = loadWorkflow(config.conversationWorkflow);
-  if (!convWf) {
-    console.error(
-      `[pilot] ⚠️ WARNING: CONVERSATION_WORKFLOW="${config.conversationWorkflow}" not found!`,
-    );
-    console.error(
-      `[pilot]    Falling back to: ${CONVERSATION_WORKFLOW_FALLBACK}`,
-    );
-    config.conversationWorkflow = CONVERSATION_WORKFLOW_FALLBACK;
   }
 }
 
@@ -571,55 +555,71 @@ function extractResponse(result: unknown, task?: Task): string {
 }
 
 // ============================================================================
-// Conversation Handling
+// Thread Handling (Simple Continuation Model)
 // ============================================================================
 
-async function handleConversationMessage(
+/**
+ * Handle a message with thread continuation.
+ *
+ * If there's a recent completed task (< 5 min) from the same source/chatId,
+ * the new message is added as a follow-up step to that task.
+ * Otherwise, a new task is created.
+ *
+ * This creates a natural "thread" without explicit conversation management.
+ */
+async function handleMessage(
   text: string,
   source: string,
   chatId?: string,
   history: Array<{ role: "user" | "assistant"; content: string }> = [],
-): Promise<{ response: string; task: Task; isConversation: boolean }> {
-  // Check for active conversation
-  const activeConv = getActiveConversation(source, chatId);
-
-  if (activeConv) {
-    // Route to existing conversation
-    console.error(`[pilot] Routing to conversation: ${activeConv.taskId}`);
-
-    // Add message to history
-    addMessageToConversation(activeConv.taskId, "user", text);
-    const convHistory = [
-      ...history,
-      ...((activeConv.workflowInput.history as Array<{
-        role: "user" | "assistant";
-        content: string;
-      }>) || []),
-    ];
-
-    // Execute conversation workflow with updated history
-    const result = await startWorkflow(
-      config.conversationWorkflow,
-      { message: text, history: convHistory },
+  forceNewTask = false,
+): Promise<{ response: string; task: Task; isFollowUp: boolean }> {
+  // Check for recent thread to continue (unless user wants new task)
+  if (!forceNewTask) {
+    const recentThread = getRecentThread(
       source,
       chatId,
+      config.threadTimeoutMs,
     );
 
-    // Check if conversation ended
-    let response = result.response;
-    if (isEndOfConversation(response)) {
-      response = cleanConversationResponse(response);
-      endConversation(source, chatId);
-      console.error(`[pilot] Conversation ended`);
-    } else {
-      // Add assistant response to history
-      addMessageToConversation(activeConv.taskId, "assistant", response);
-    }
+    if (recentThread) {
+      console.error(
+        `[pilot] Continuing thread: ${recentThread.taskId} (adding follow-up)`,
+      );
 
-    return { response, task: result.task, isConversation: true };
+      // Add follow-up step to existing task
+      const followUp = addFollowUpToTask(recentThread.taskId, text);
+      if (!followUp) {
+        console.error(`[pilot] Failed to add follow-up, starting new task`);
+      } else {
+        // Build history from the existing task's steps
+        const threadHistory = buildHistoryFromTask(recentThread);
+
+        // Execute the workflow with history context
+        const result = await startWorkflow(
+          config.defaultWorkflow,
+          { message: text, history: [...history, ...threadHistory] },
+          source,
+          chatId,
+        );
+
+        // Update the follow-up step with the response
+        completeFollowUpStep(
+          recentThread.taskId,
+          followUp.stepIndex,
+          result.response,
+        );
+
+        return {
+          response: result.response,
+          task: loadTask(recentThread.taskId) || result.task,
+          isFollowUp: true,
+        };
+      }
+    }
   }
 
-  // No active conversation - use command mode (default workflow)
+  // No recent thread or forceNewTask - create new task
   const result = await startWorkflow(
     config.defaultWorkflow,
     { message: text, history },
@@ -630,33 +630,50 @@ async function handleConversationMessage(
   return {
     response: result.response,
     task: result.task,
-    isConversation: false,
+    isFollowUp: false,
   };
 }
 
-async function startConversation(
-  text: string,
-  source: string,
-  chatId?: string,
-): Promise<{ response: string; task: Task }> {
-  console.error(`[pilot] Starting new conversation`);
+/**
+ * Build conversation history from a task's step outputs.
+ * Extracts user messages and assistant responses from step results.
+ */
+function buildHistoryFromTask(
+  task: Task,
+): Array<{ role: "user" | "assistant"; content: string }> {
+  const history: Array<{ role: "user" | "assistant"; content: string }> = [];
 
-  // Execute conversation workflow
-  const result = await startWorkflow(
-    config.conversationWorkflow,
-    { message: text, history: [] },
-    source,
-    chatId,
-  );
+  // Add the original message
+  if (task.workflowInput?.message) {
+    history.push({
+      role: "user",
+      content: String(task.workflowInput.message),
+    });
+  }
 
-  // Register as active conversation
-  registerConversation(result.task);
+  // Add responses from completed steps
+  for (const step of task.stepResults) {
+    if (step.status === "completed" && step.output) {
+      const output = step.output as Record<string, unknown>;
+      const response = output.response || output.text;
+      if (response && typeof response === "string") {
+        history.push({ role: "assistant", content: response });
+      }
+    }
 
-  // Add messages to history
-  addMessageToConversation(result.task.taskId, "user", text);
-  addMessageToConversation(result.task.taskId, "assistant", result.response);
+    // Check for follow-up messages in progress
+    for (const progress of step.progressMessages || []) {
+      if (progress.message.startsWith("📨 Follow-up:")) {
+        // Extract user message from progress
+        const userMsg = progress.message.replace("📨 Follow-up:", "").trim();
+        if (userMsg) {
+          history.push({ role: "user", content: userMsg });
+        }
+      }
+    }
+  }
 
-  return result;
+  return history;
 }
 
 // ============================================================================
@@ -678,13 +695,10 @@ async function main() {
   // Validate workflow configuration (warn if env vars point to missing workflows)
   validateWorkflowConfig();
 
-  // Cleanup expired tasks and conversations on startup
+  // Cleanup expired tasks on startup
   const cleanedTasks = cleanupExpiredTasks();
-  const cleanedConvs = cleanupExpiredConversations();
-  if (cleanedTasks > 0 || cleanedConvs > 0) {
-    console.error(
-      `[pilot] Cleaned up ${cleanedTasks} tasks, ${cleanedConvs} conversations`,
-    );
+  if (cleanedTasks > 0) {
+    console.error(`[pilot] Cleaned up ${cleanedTasks} expired tasks`);
   }
 
   const server = new McpServer({
@@ -828,83 +842,19 @@ async function main() {
   );
 
   server.registerTool(
-    "CONVERSATION_START",
-    {
-      title: "Start Conversation",
-      description:
-        "Start a long-running conversation thread. Messages will be routed here until timeout or end.",
-      inputSchema: z.object({
-        text: z.string().describe("Initial message"),
-        source: z.string().optional().describe("Source interface"),
-        chatId: z.string().optional().describe("Chat/conversation ID"),
-      }),
-    },
-    async (args) => {
-      const { text, source, chatId } = args;
-
-      const result = await startConversation(text, source || "cli", chatId);
-
-      return {
-        content: [{ type: "text", text: result.response }],
-        structuredContent: {
-          response: result.response,
-          taskId: result.task.taskId,
-          status: result.task.status,
-          isConversation: true,
-        },
-      };
-    },
-  );
-
-  server.registerTool(
-    "CONVERSATION_END",
-    {
-      title: "End Conversation",
-      description: "Explicitly end an active conversation",
-      inputSchema: z.object({
-        source: z.string().optional().describe("Source interface"),
-        chatId: z.string().optional().describe("Chat/conversation ID"),
-      }),
-    },
-    async (args) => {
-      const { source, chatId } = args;
-
-      const task = endConversation(source || "cli", chatId);
-
-      if (!task) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ error: "No active conversation" }),
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ success: true, taskId: task.taskId }),
-          },
-        ],
-        structuredContent: { success: true, taskId: task.taskId },
-      };
-    },
-  );
-
-  server.registerTool(
     "MESSAGE",
     {
       title: "Handle Message",
       description:
-        "Smart message routing: routes to active conversation if exists, otherwise command mode",
+        "Smart message routing with thread continuation. If there's a recent task (< 5 min), adds as follow-up. Otherwise creates new task.",
       inputSchema: z.object({
         text: z.string().describe("The message"),
         source: z.string().optional().describe("Source interface"),
-        chatId: z.string().optional().describe("Chat/conversation ID"),
+        chatId: z.string().optional().describe("Chat/thread ID"),
+        forceNewTask: z
+          .boolean()
+          .optional()
+          .describe("Force creating a new task instead of continuing thread"),
         history: z
           .array(
             z.object({
@@ -916,13 +866,14 @@ async function main() {
       }),
     },
     async (args) => {
-      const { text, source, chatId, history } = args;
+      const { text, source, chatId, forceNewTask, history } = args;
 
-      const result = await handleConversationMessage(
+      const result = await handleMessage(
         text,
         source || "cli",
         chatId,
         history,
+        forceNewTask,
       );
 
       return {
@@ -931,7 +882,7 @@ async function main() {
           response: result.response,
           taskId: result.task.taskId,
           status: result.task.status,
-          isConversation: result.isConversation,
+          isFollowUp: result.isFollowUp,
         },
       };
     },
@@ -1234,7 +1185,7 @@ async function main() {
     {
       title: "Receive Events",
       description:
-        "Receive CloudEvents from mesh. Routes to workflow based on EVENT_WORKFLOW_MAP or handles conversations.",
+        "Receive CloudEvents from mesh. Routes to workflow based on EVENT_WORKFLOW_MAP.",
       inputSchema: z.object({
         events: z.array(
           z.object({
@@ -1268,16 +1219,14 @@ async function main() {
 
             // IMPORTANT: Process asynchronously - don't block the EventBus worker!
             // Return success immediately, let workflow run in background
-            handleConversationMessage(
-              data.text,
-              data.source,
-              data.chatId,
-            ).catch((error) => {
-              console.error(
-                `[pilot] Background workflow failed for event ${event.id}:`,
-                error,
-              );
-            });
+            handleMessage(data.text, data.source, data.chatId).catch(
+              (error) => {
+                console.error(
+                  `[pilot] Background workflow failed for event ${event.id}:`,
+                  error,
+                );
+              },
+            );
             results[event.id] = { success: true };
           } else {
             // Route to mapped workflow or default - also async

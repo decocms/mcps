@@ -399,45 +399,4 @@ Always respond naturally. If starting a task, mention the ID.`,
     fs.writeFileSync(filePath, JSON.stringify(workflow, null, 2));
     console.error("[WorkflowStorage] Created research-first workflow");
   }
-
-  // Create conversation workflow
-  if (!workflowExists("conversation")) {
-    const workflow: Workflow = {
-      id: "conversation",
-      title: "Conversation",
-      description:
-        "Long-running conversation thread. Messages are routed here until timeout or end.",
-      steps: [
-        {
-          name: "conversation_loop",
-          description: "Continuous conversation with the user",
-          action: {
-            type: "llm",
-            prompt: "@input.message",
-            model: "fast",
-            systemPrompt: `You are in CONVERSATION MODE. This is an ongoing dialogue, not a one-shot task.
-
-**RULES:**
-1. Be conversational and engaging
-2. Remember context from previous messages (in history)
-3. Ask clarifying questions if needed
-4. Use tools when the user requests actions
-5. Match the user's language (PT/EN)
-6. If the user says goodbye or the conversation seems done, respond with [END_CONVERSATION]
-
-You have access to all available tools. Use them naturally in the conversation.`,
-            tools: "all",
-            maxIterations: 10,
-          },
-          input: {
-            message: "@input.message",
-            history: "@input.history",
-          },
-        },
-      ],
-    };
-    const filePath = path.join(BUILTIN_WORKFLOWS_DIR, "conversation.json");
-    fs.writeFileSync(filePath, JSON.stringify(workflow, null, 2));
-    console.error("[WorkflowStorage] Created conversation workflow");
-  }
 }

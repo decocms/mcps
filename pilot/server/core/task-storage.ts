@@ -447,3 +447,117 @@ export function getRunningTasks(): {
     };
   });
 }
+
+// ============================================================================
+// Thread Continuation (Simple Conversation Model)
+// ============================================================================
+
+/** Default thread timeout: 5 minutes */
+const THREAD_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Get the most recent task from this source/chatId that can be continued as a thread.
+ *
+ * A task is continuable if:
+ * - It's from the same source and chatId
+ * - It was last updated within THREAD_TIMEOUT_MS
+ * - It's completed (not still running or failed)
+ *
+ * @returns The continuable task, or null if none found
+ */
+export function getRecentThread(
+  source: string,
+  chatId?: string,
+  timeoutMs: number = THREAD_TIMEOUT_MS,
+): Task | null {
+  const now = Date.now();
+  const { tasks } = listTasks({ limit: 10, source });
+
+  for (const task of tasks) {
+    // Must match chatId
+    if (task.chatId !== chatId) continue;
+
+    // Must be completed (not still running, failed, or cancelled)
+    if (task.status !== "completed") continue;
+
+    // Must be recent
+    const lastUpdated = new Date(task.lastUpdatedAt).getTime();
+    const age = now - lastUpdated;
+
+    if (age <= timeoutMs) {
+      console.error(
+        `[task-storage] Found continuable thread: ${task.taskId} (age: ${Math.round(age / 1000)}s)`,
+      );
+      return task;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Add a follow-up interaction to an existing task.
+ * Creates a new step result for the follow-up message.
+ */
+export function addFollowUpToTask(
+  taskId: string,
+  userMessage: string,
+): { stepId: string; stepIndex: number } | null {
+  const task = loadTask(taskId);
+  if (!task) return null;
+
+  const stepIndex = task.stepResults.length;
+  const stepId = `${taskId}_followup_${stepIndex}`;
+
+  const stepResult: StepResult = {
+    stepId,
+    stepName: `followup_${stepIndex}`,
+    startedAt: new Date().toISOString(),
+    status: "working",
+    progressMessages: [
+      {
+        timestamp: new Date().toISOString(),
+        message: `📨 Follow-up: ${userMessage.slice(0, 100)}...`,
+      },
+    ],
+  };
+
+  task.stepResults.push(stepResult);
+  task.currentStepIndex = stepIndex;
+  task.status = "working";
+  task.lastUpdatedAt = new Date().toISOString();
+
+  saveTask(task);
+
+  console.error(
+    `[task-storage] Added follow-up step ${stepIndex} to task ${taskId}`,
+  );
+
+  return { stepId, stepIndex };
+}
+
+/**
+ * Complete a follow-up step with the response
+ */
+export function completeFollowUpStep(
+  taskId: string,
+  stepIndex: number,
+  response: string,
+): Task | null {
+  const task = loadTask(taskId);
+  if (!task) return null;
+
+  const stepResult = task.stepResults[stepIndex];
+  if (!stepResult) return null;
+
+  stepResult.status = "completed";
+  stepResult.completedAt = new Date().toISOString();
+  stepResult.output = { response };
+
+  task.status = "completed";
+  task.lastUpdatedAt = new Date().toISOString();
+
+  saveTask(task);
+
+  return task;
+}
