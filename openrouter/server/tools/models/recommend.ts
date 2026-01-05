@@ -49,7 +49,7 @@ export const createRecommendModelTool = (env: Env) =>
             ),
           prioritize: z
             .enum(["cost", "quality", "speed"])
-            .default("quality")
+            .prefault("quality")
             .optional()
             .describe(
               "What to prioritize: 'cost' for cheapest models, 'quality' for best performance, 'speed' for fastest models",

@@ -38,7 +38,7 @@ export const createGetAdSetsTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .default(50)
+        .prefault(50)
         .describe("Maximum number of ad sets to return (default: 50)"),
       campaign_id: z
         .string()
@@ -165,7 +165,7 @@ export const createGetAdSetDetailsTool = (env: Env) =>
           device_platforms: z.array(z.string()).optional(),
         })
         .optional(),
-      promoted_object: z.record(z.unknown()).optional(),
+      promoted_object: z.record(z.string(), z.unknown()).optional(),
     }),
     execute: async ({ context }) => {
       const accessToken = await getMetaAccessToken(env);

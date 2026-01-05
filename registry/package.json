@@ -22,10 +22,10 @@
     "enrich:ai:retry": "bun run scripts/enrich-with-ai.ts --limit=400"
   },
   "dependencies": {
-    "@decocms/bindings": "^1.0.3",
-    "@decocms/runtime": "^1.0.3",
+    "@decocms/bindings": "^1.0.4",
+    "@decocms/runtime": "^1.1.0",
     "@supabase/supabase-js": "^2.89.0",
-    "zod": "^3.24.3"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@decocms/mcps-shared": "workspace:*",

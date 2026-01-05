@@ -13,8 +13,8 @@
     "dev:tunnel": "deco link -p 3003 -- PORT=3003 bun run dev"
   },
   "dependencies": {
-    "@decocms/runtime": "^1.0.3",
-    "zod": "^3.24.3"
+    "@decocms/runtime": "^1.1.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@decocms/mcps-shared": "workspace:*",

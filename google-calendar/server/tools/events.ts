@@ -32,7 +32,7 @@ const EventDateTimeSchema = z.object({
 });
 
 const AttendeeSchema = z.object({
-  email: z.string().email().describe("Attendee email address"),
+  email: z.email().describe("Attendee email address"),
   displayName: z.string().optional().describe("Attendee display name"),
   optional: z.boolean().optional().describe("Whether attendance is optional"),
   responseStatus: z
@@ -261,7 +261,7 @@ export const createCreateEventTool = (env: Env) =>
       attendees: z
         .array(
           z.object({
-            email: z.string().email().describe("Attendee email"),
+            email: z.email().describe("Attendee email"),
             displayName: z.string().optional().describe("Display name"),
             optional: z.boolean().optional().describe("Is attendance optional"),
           }),
@@ -356,7 +356,7 @@ export const createUpdateEventTool = (env: Env) =>
       attendees: z
         .array(
           z.object({
-            email: z.string().email(),
+            email: z.email(),
             displayName: z.string().optional(),
             optional: z.boolean().optional(),
           }),
