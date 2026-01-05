@@ -20,6 +20,7 @@
   },
   "workspaces": [
     "apify",
+    "content-intelligence",
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",

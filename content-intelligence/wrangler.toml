@@ -1,0 +1,17 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "content-intelligence"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+# Integration metadata for marketplace
+[deco.integration]
+description = "Aggregate, normalize and enrich content from RSS feeds, Reddit, and web scraping. Get weekly digests and trend analysis."
+icon = "https://cdn-icons-png.flaticon.com/512/2103/2103633.png"
+friendlyName = "Content Intelligence"
