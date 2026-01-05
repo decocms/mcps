@@ -1,11 +1,12 @@
+import variant from "@jitl/quickjs-wasmfile-release-sync";
 import {
-  newQuickJSWASMModule,
+  newQuickJSWASMModuleFromVariant,
   type QuickJSWASMModule,
-} from "quickjs-emscripten";
+} from "quickjs-emscripten-core";
 
 let quickJSSingleton: Promise<QuickJSWASMModule> | undefined;
 
 export function getQuickJS() {
-  quickJSSingleton ??= newQuickJSWASMModule();
+  quickJSSingleton ??= newQuickJSWASMModuleFromVariant(variant);
   return quickJSSingleton;
 }
