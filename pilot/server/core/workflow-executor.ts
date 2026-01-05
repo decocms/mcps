@@ -1,0 +1,1697 @@
+/**
+ * Workflow Executor
+ *
+ * Executes workflows step-by-step, tracking progress in task files.
+ * Each step is logged to the task JSON file for debugging and progress reporting.
+ */
+
+console.error("[pilot] workflow-executor.ts LOADED - v2");
+
+import type { Task, StepResult } from "../types/task.ts";
+import { createTask } from "../types/task.ts";
+import {
+  type Workflow,
+  type Step,
+  resolveRefs,
+  groupStepsByLevel,
+} from "../types/workflow.ts";
+import {
+  saveTask,
+  loadTask,
+  updateTaskStep,
+  completeTask,
+  failTask,
+  addStepProgress,
+} from "./task-storage.ts";
+import { loadWorkflow } from "./workflow-storage.ts";
+
+// ============================================================================
+// Workflow Tool Validation
+// ============================================================================
+
+/**
+ * Extract all required tool names from a workflow.
+ * Returns tools explicitly referenced in steps (not "all" or "discover").
+ */
+function extractRequiredTools(workflow: Workflow): string[] {
+  const tools = new Set<string>();
+
+  for (const step of workflow.steps) {
+    // Tool call action - requires specific tool
+    if (step.action.type === "tool") {
+      tools.add(step.action.toolName);
+    }
+
+    // LLM action with explicit tool list
+    if (step.action.type === "llm" && Array.isArray(step.action.tools)) {
+      for (const toolName of step.action.tools) {
+        tools.add(toolName);
+      }
+    }
+  }
+
+  return Array.from(tools).sort();
+}
+
+/**
+ * Validation result for workflow tools
+ */
+export interface ToolValidationResult {
+  valid: boolean;
+  requiredTools: string[];
+  availableTools: string[];
+  missingTools: string[];
+}
+
+/**
+ * Validate that all required tools for a workflow are available.
+ * Returns validation result with missing tools if any.
+ */
+export async function validateWorkflowTools(
+  workflow: Workflow,
+  listConnections: ListConnectionsCallback,
+): Promise<ToolValidationResult> {
+  const requiredTools = extractRequiredTools(workflow);
+
+  // Get all available tools from connections
+  const connections = await listConnections();
+  const availableTools = new Set<string>();
+  for (const conn of connections) {
+    for (const tool of conn.tools) {
+      availableTools.add(tool.name);
+    }
+  }
+
+  // Find missing tools
+  const missingTools = requiredTools.filter((t) => !availableTools.has(t));
+
+  return {
+    valid: missingTools.length === 0,
+    requiredTools,
+    availableTools: Array.from(availableTools).sort(),
+    missingTools,
+  };
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/** Tool definition with full schema */
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: unknown;
+}
+
+export interface ExecutionContext {
+  /** Current task being executed */
+  task: Task;
+  /** Workflow being executed */
+  workflow: Workflow;
+  /** Step outputs keyed by step name */
+  stepOutputs: Record<string, unknown>;
+  /** Workflow input */
+  workflowInput: Record<string, unknown>;
+  /** Progress callback */
+  onProgress?: (taskId: string, stepName: string, message: string) => void;
+  /** Mode change callback */
+  onModeChange?: (mode: "FAST" | "SMART") => void;
+  /** Tool execution callbacks */
+  callLLM: LLMCallback;
+  callMeshTool: MeshToolCallback;
+  listConnections: ListConnectionsCallback;
+  /** Tool cache - populated by first step, reused by subsequent steps */
+  toolCache?: Map<string, ToolDefinition>;
+  /** Event publishing callback - for async task completion notifications */
+  publishEvent?: (
+    eventType: string,
+    data: Record<string, unknown>,
+  ) => Promise<void>;
+}
+
+export type LLMCallback = (
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  tools: Array<{ name: string; description: string; inputSchema: unknown }>,
+) => Promise<{
+  text?: string;
+  toolCalls?: Array<{ name: string; arguments: Record<string, unknown> }>;
+}>;
+
+export type MeshToolCallback = (
+  connectionId: string,
+  toolName: string,
+  args: Record<string, unknown>,
+) => Promise<unknown>;
+
+export type ListConnectionsCallback = () => Promise<
+  Array<{
+    id: string;
+    title: string;
+    tools: Array<{ name: string; description?: string; inputSchema?: unknown }>;
+  }>
+>;
+
+export interface ExecutorConfig {
+  fastModel: string;
+  smartModel: string;
+  onProgress?: (taskId: string, stepName: string, message: string) => void;
+  onModeChange?: (mode: "FAST" | "SMART") => void;
+}
+
+// ============================================================================
+// Output Parsing
+// ============================================================================
+
+interface StructuredLLMOutput {
+  response?: string;
+  taskForSmartAgent?: string;
+  toolsForSmartAgent?: string[];
+  context?: unknown;
+  // Full parsed JSON for schema validation
+  [key: string]: unknown;
+}
+
+/**
+ * Parse structured output from LLM response
+ * The LLM may return JSON or plain text, possibly wrapped in markdown code blocks
+ */
+function parseStructuredOutput(text: string): StructuredLLMOutput {
+  if (!text) {
+    console.warn("[pilot] parseStructuredOutput: empty text received");
+    return { response: "(No response)" };
+  }
+
+  // Try to extract JSON from markdown code block first (```json or just ```)
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  const jsonStr = jsonMatch ? jsonMatch[1] : text;
+
+  try {
+    const parsed = JSON.parse(jsonStr.trim());
+
+    // Validate it's an object
+    if (typeof parsed !== "object" || parsed === null) {
+      return { response: text };
+    }
+
+    // Spread all parsed fields, then add known fields with fallbacks
+    return {
+      ...parsed,
+      response:
+        typeof parsed.response === "string" ? parsed.response : undefined,
+      taskForSmartAgent:
+        typeof parsed.taskForSmartAgent === "string"
+          ? parsed.taskForSmartAgent
+          : typeof parsed.task === "string"
+            ? parsed.task
+            : undefined,
+      toolsForSmartAgent: Array.isArray(parsed.toolsForSmartAgent)
+        ? parsed.toolsForSmartAgent
+        : Array.isArray(parsed.tools)
+          ? parsed.tools
+          : undefined,
+      context: parsed.context,
+    };
+  } catch {
+    // JSON parsing failed - try to extract response from partial/malformed JSON
+    // Look for "response": "..." pattern
+    const responseMatch = text.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (responseMatch) {
+      try {
+        // Unescape the JSON string
+        const unescaped = JSON.parse(`"${responseMatch[1]}"`);
+        return { response: unescaped };
+      } catch {
+        // Return the raw match if unescaping fails
+        return { response: responseMatch[1] };
+      }
+    }
+
+    // Not JSON at all, return as plain response
+    return { response: text };
+  }
+}
+
+/**
+ * Validate step output against schema
+ * Checks that required fields exist and have correct types
+ */
+function validateOutputSchema(
+  output: unknown,
+  schema: Record<string, unknown>,
+  stepName: string,
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  console.error(
+    `[pilot] validateOutputSchema for "${stepName}":`,
+    JSON.stringify(output, null, 2)?.slice(0, 500),
+  );
+
+  if (!schema || typeof schema !== "object") {
+    return { valid: true, errors: [] };
+  }
+
+  const outputObj = output as Record<string, unknown> | undefined;
+  if (!outputObj || typeof outputObj !== "object") {
+    errors.push(`Step "${stepName}" output is not an object`);
+    return { valid: false, errors };
+  }
+
+  // Check required fields
+  const requiredFields = (schema.required as string[]) || [];
+  for (const field of requiredFields) {
+    if (!(field in outputObj) || outputObj[field] === undefined) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  }
+
+  // Check field types if "properties" is defined
+  const properties =
+    (schema.properties as Record<string, { type?: string }>) || {};
+  for (const [field, fieldSchema] of Object.entries(properties)) {
+    if (field in outputObj && fieldSchema.type) {
+      const value = outputObj[field];
+      const expectedType = fieldSchema.type;
+      const actualType = Array.isArray(value) ? "array" : typeof value;
+
+      if (expectedType === "array" && !Array.isArray(value)) {
+        errors.push(`Field "${field}" should be array, got ${actualType}`);
+      } else if (expectedType !== "array" && actualType !== expectedType) {
+        errors.push(
+          `Field "${field}" should be ${expectedType}, got ${actualType}`,
+        );
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+// ============================================================================
+// Step Executors
+// ============================================================================
+
+/**
+ * Execute a tool step
+ */
+async function executeToolStep(
+  step: Step,
+  resolvedInput: Record<string, unknown>,
+  ctx: ExecutionContext,
+): Promise<unknown> {
+  if (step.action.type !== "tool") throw new Error("Not a tool step");
+
+  const { toolName, connectionId } = step.action;
+
+  // Find connection if not specified
+  let connId = connectionId;
+  if (!connId) {
+    const connections = await ctx.listConnections();
+    const conn = connections.find((c) =>
+      c.tools.some((t) => t.name === toolName),
+    );
+    if (conn) connId = conn.id;
+  }
+
+  if (!connId) {
+    throw new Error(`Could not find connection for tool: ${toolName}`);
+  }
+
+  ctx.onProgress?.(ctx.task.taskId, step.name, `⚡ Calling ${toolName}...`);
+
+  const result = await ctx.callMeshTool(connId, toolName, resolvedInput);
+
+  ctx.onProgress?.(ctx.task.taskId, step.name, `✓ ${toolName} completed`);
+
+  return result;
+}
+
+/**
+ * Execute a code step (data transformation)
+ */
+async function executeCodeStep(
+  step: Step,
+  resolvedInput: Record<string, unknown>,
+  ctx: ExecutionContext,
+): Promise<unknown> {
+  if (step.action.type !== "code") throw new Error("Not a code step");
+
+  ctx.onProgress?.(ctx.task.taskId, step.name, `📝 Running transformation...`);
+
+  // Simple eval for now - in production would use QuickJS sandbox
+  // The code should export a default function
+  const code = step.action.code;
+
+  try {
+    // Create a function from the code
+    const fn = new Function(
+      "input",
+      `
+      const exports = {};
+      ${code.replace(/export\s+default\s+/g, "exports.default = ")}
+      return exports.default(input);
+    `,
+    );
+
+    const result = fn(resolvedInput);
+    ctx.onProgress?.(ctx.task.taskId, step.name, `✓ Transformation completed`);
+    return result;
+  } catch (error) {
+    throw new Error(
+      `Code execution failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+/**
+ * Execute a template step (simple string interpolation)
+ * Resolves @references in the template string
+ */
+function executeTemplateStep(step: Step, ctx: ExecutionContext): unknown {
+  if (step.action.type !== "template") throw new Error("Not a template step");
+
+  const template = step.action.template;
+  if (!template) {
+    throw new Error("Template step requires a 'template' field");
+  }
+
+  ctx.onProgress?.(ctx.task.taskId, step.name, `📝 Formatting response...`);
+
+  // Resolve the template by replacing @references
+  const result = resolveRefs(
+    { response: template },
+    {
+      input: ctx.workflowInput,
+      steps: ctx.stepOutputs,
+    },
+  ) as { response: string };
+
+  return { response: result.response };
+}
+
+/**
+ * Execute an LLM step (agent loop)
+ */
+async function executeLLMStep(
+  step: Step,
+  resolvedInput: Record<string, unknown>,
+  ctx: ExecutionContext,
+  config: ExecutorConfig,
+): Promise<{
+  response?: string;
+  taskForSmartAgent?: string;
+  toolsForSmartAgent?: string[];
+  context?: string;
+}> {
+  if (step.action.type !== "llm") throw new Error("Not an LLM step");
+
+  const {
+    prompt,
+    model,
+    systemPrompt,
+    tools,
+    maxIterations = 10,
+  } = step.action;
+
+  // Determine model ID
+  const modelId = model === "fast" ? config.fastModel : config.smartModel;
+  ctx.onModeChange?.(model === "fast" ? "FAST" : "SMART");
+
+  // Use ⚡ for FAST (quick), 🧠 for SMART (thinking hard)
+  const modelEmoji = model === "fast" ? "⚡" : "🧠";
+  await ctx.onProgress?.(
+    ctx.task.taskId,
+    step.name,
+    `${modelEmoji} ${model.toUpperCase()}: Thinking...`,
+  );
+
+  // Build messages
+  const messages: Array<{ role: string; content: string }> = [];
+  if (systemPrompt) {
+    messages.push({ role: "system", content: systemPrompt });
+  }
+
+  // Add history if available
+  const history = resolvedInput.history as
+    | Array<{ role: string; content: string }>
+    | undefined;
+  if (history) {
+    messages.push(...history.slice(-4));
+  }
+
+  // Add the prompt
+  const resolvedPrompt =
+    typeof prompt === "string"
+      ? (resolveRefs(prompt, {
+          input: ctx.workflowInput,
+          steps: ctx.stepOutputs,
+        }) as string)
+      : String(resolvedInput.message || "");
+
+  messages.push({ role: "user", content: resolvedPrompt });
+
+  // Resolve tools config if it's a reference (e.g., "@fast_discovery.toolsForSmartAgent")
+  let resolvedToolsConfig: "all" | "discover" | "none" | string[] | undefined =
+    tools;
+  if (typeof tools === "string" && tools.startsWith("@")) {
+    const resolved = resolveRefs(tools, {
+      input: ctx.workflowInput,
+      steps: ctx.stepOutputs,
+    });
+    if (Array.isArray(resolved)) {
+      resolvedToolsConfig = resolved as string[];
+      console.error(
+        `[pilot] [${step.name}] Resolved tools reference: ${tools} → ${resolved.length} tools`,
+      );
+    } else {
+      console.warn(
+        `[pilot] [${step.name}] Tools reference ${tools} resolved to non-array:`,
+        resolved,
+      );
+      resolvedToolsConfig = undefined;
+    }
+  }
+
+  // Gather tools based on configuration
+  const toolDefs = await gatherTools(resolvedToolsConfig, resolvedInput, ctx);
+
+  // Log discovered tools for debugging
+  const toolNames = toolDefs.map((t) => t.name);
+  console.error(
+    `[pilot] [${step.name}] Discovered ${toolDefs.length} tools: ${toolNames.slice(0, 20).join(", ")}${toolDefs.length > 20 ? "..." : ""}`,
+  );
+
+  ctx.onProgress?.(
+    ctx.task.taskId,
+    step.name,
+    `🧠 ${model.toUpperCase()}: ${toolDefs.length} tools available`,
+  );
+
+  // Run the LLM loop
+  const usedTools: string[] = [];
+
+  for (let i = 0; i < maxIterations; i++) {
+    const result = await ctx.callLLM(modelId, messages, toolDefs);
+
+    // No tool calls = final response
+    if (!result.toolCalls || result.toolCalls.length === 0) {
+      console.error(
+        `[pilot] [${step.name}] LLM final response: ${result.text?.slice(0, 200)}...`,
+      );
+
+      // Note: No "Done" message - "workflow completed" is sufficient
+
+      // Try to parse structured output from the LLM
+      const parsed = parseStructuredOutput(result.text || "");
+
+      // Ensure we always have a response
+      const finalResponse =
+        parsed.response || result.text || "(Task completed)";
+
+      // Return ALL parsed fields (for schema validation) plus standard fields
+      return {
+        ...parsed, // Include all JSON fields for schema validation
+        response: finalResponse,
+        taskForSmartAgent: parsed.taskForSmartAgent,
+        toolsForSmartAgent: parsed.toolsForSmartAgent,
+        context: parsed.context ? JSON.stringify(parsed.context) : undefined,
+      };
+    }
+
+    // Process tool calls
+    for (const tc of result.toolCalls) {
+      usedTools.push(tc.name);
+
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        step.name,
+        `🔧 ${model.toUpperCase()}: ${tc.name}...`,
+      );
+
+      try {
+        // Find and execute the tool
+        const toolResult = await executeToolCall(
+          tc.name,
+          tc.arguments,
+          ctx,
+          config,
+        );
+        const resultStr = JSON.stringify(toolResult, null, 2);
+        const resultPreview = resultStr.slice(0, 500);
+
+        // Log tool result for debugging
+        console.error(
+          `[pilot] Tool ${tc.name} result (${resultStr.length} chars): ${resultPreview}`,
+        );
+
+        // Log tool result to task progress - check for various error patterns
+        const lowerResult = resultStr.toLowerCase();
+        const isError =
+          lowerResult.includes("error") ||
+          lowerResult.includes("unauthorized") ||
+          lowerResult.includes("forbidden") ||
+          lowerResult.includes("api key") ||
+          lowerResult.includes("apikey") ||
+          lowerResult.includes("authentication") ||
+          lowerResult.includes("invalid");
+
+        if (isError) {
+          ctx.onProgress?.(
+            ctx.task.taskId,
+            step.name,
+            `❌ ${tc.name} error: ${resultPreview}`,
+          );
+        }
+
+        // Add to messages
+        messages.push({
+          role: "assistant",
+          content: result.text || `Calling ${tc.name}...`,
+        });
+        messages.push({
+          role: "user",
+          content: `[Tool Result for ${tc.name}]:\n${resultStr.slice(0, 3000)}`,
+        });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Tool failed";
+
+        // Log tool error to task progress
+        ctx.onProgress?.(
+          ctx.task.taskId,
+          step.name,
+          `❌ ${tc.name} threw: ${errorMsg}`,
+        );
+
+        messages.push({
+          role: "user",
+          content: `[Tool Error for ${tc.name}]: ${errorMsg}`,
+        });
+      }
+    }
+  }
+
+  ctx.onProgress?.(
+    ctx.task.taskId,
+    step.name,
+    `⚠️ ${model.toUpperCase()}: Reached iteration limit`,
+  );
+
+  return {
+    response: "Reached iteration limit without completing.",
+  };
+}
+
+/**
+ * Gather tools based on step configuration
+ * Uses a cache to share full tool definitions between FAST and SMART steps
+ */
+async function gatherTools(
+  toolsConfig: "all" | "discover" | "none" | string[] | undefined,
+  resolvedInput: Record<string, unknown>,
+  ctx: ExecutionContext,
+): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
+  if (toolsConfig === "none" || !toolsConfig) {
+    return [];
+  }
+
+  // Initialize cache if not exists
+  if (!ctx.toolCache) {
+    ctx.toolCache = new Map();
+  }
+
+  // If specific tools are provided (from previous step), look up from cache
+  if (Array.isArray(toolsConfig)) {
+    const tools: ToolDefinition[] = [];
+
+    for (const name of toolsConfig) {
+      const cached = ctx.toolCache.get(name);
+      if (cached) {
+        tools.push(cached);
+        console.error(`[pilot] Tool ${name}: found in cache with schema`);
+      } else {
+        // Fallback: try to find in connections
+        console.error(`[pilot] Tool ${name}: not in cache, fetching...`);
+        const connections = await ctx.listConnections();
+        let found = false;
+        for (const conn of connections) {
+          const tool = conn.tools.find((t) => t.name === name);
+          if (tool) {
+            const def: ToolDefinition = {
+              name: tool.name,
+              description: tool.description || "",
+              inputSchema: tool.inputSchema || { type: "object" },
+            };
+            tools.push(def);
+            ctx.toolCache.set(name, def);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          console.warn(`[pilot] Tool ${name}: NOT FOUND - using stub`);
+          tools.push({
+            name,
+            description: `Tool "${name}" - schema not found`,
+            inputSchema: { type: "object" },
+          });
+        }
+      }
+    }
+
+    return tools;
+  }
+
+  // For "all" or "discover", get all available tools and cache them
+  const connections = await ctx.listConnections();
+  const allTools: ToolDefinition[] = [];
+
+  // Debug: log all connections and their tool counts
+  console.error(
+    `[pilot] Connections: ${connections.map((c) => `${c.title}(${c.tools.length})`).join(", ")}`,
+  );
+
+  for (const conn of connections) {
+    for (const tool of conn.tools) {
+      const def: ToolDefinition = {
+        name: tool.name,
+        description: tool.description || "",
+        inputSchema: tool.inputSchema || { type: "object" },
+      };
+      allTools.push(def);
+      // Cache for later use by SMART step
+      ctx.toolCache.set(tool.name, def);
+    }
+  }
+
+  // Add router tools for "discover" mode
+  if (toolsConfig === "discover") {
+    allTools.push(
+      {
+        name: "list_local_tools",
+        description: "List available local system tools",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "list_mesh_tools",
+        description: "List available MCP mesh tools",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "explore_files",
+        description: "List files in a directory",
+        inputSchema: {
+          type: "object",
+          properties: { path: { type: "string" } },
+          required: ["path"],
+        },
+      },
+      {
+        name: "peek_file",
+        description: "Read a file (first 200 lines)",
+        inputSchema: {
+          type: "object",
+          properties: { path: { type: "string" } },
+          required: ["path"],
+        },
+      },
+      {
+        name: "execute_task",
+        description: "Execute a task with a plan and tools",
+        inputSchema: {
+          type: "object",
+          properties: {
+            task: { type: "string" },
+            tools: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  source: { type: "string" },
+                  connectionId: { type: "string" },
+                },
+              },
+            },
+          },
+          required: ["task", "tools"],
+        },
+      },
+      {
+        name: "list_workflows",
+        description:
+          "List available workflows that can be executed. Workflows are pre-defined multi-step procedures.",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "execute_workflow",
+        description:
+          "Execute a workflow by ID. Use list_workflows to see available workflows. The workflow steps will run in sequence.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            workflowId: {
+              type: "string",
+              description: "The ID of the workflow to execute",
+            },
+            input: {
+              type: "object",
+              description:
+                "Input parameters for the workflow (varies by workflow)",
+            },
+          },
+          required: ["workflowId"],
+        },
+      },
+      // Task management tools (for router)
+      {
+        name: "start_task",
+        description:
+          "Start a workflow as a new background task. Returns task ID immediately. Use for long-running operations.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            workflowId: {
+              type: "string",
+              description: "The ID of the workflow to run",
+            },
+            input: {
+              type: "object",
+              description: "Input parameters for the workflow",
+            },
+          },
+          required: ["workflowId"],
+        },
+      },
+      {
+        name: "check_task",
+        description:
+          "Check the status and progress of a task. Returns current step, progress, and result if completed.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            taskId: {
+              type: "string",
+              description: "The task ID to check",
+            },
+          },
+          required: ["taskId"],
+        },
+      },
+      {
+        name: "list_tasks",
+        description:
+          "List all tasks. Optionally filter by status (working, completed, failed).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["working", "completed", "failed", "cancelled"],
+              description: "Filter by status",
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of tasks to return (default 10)",
+            },
+          },
+        },
+      },
+      {
+        name: "delete_task",
+        description: "Delete a task from history.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            taskId: {
+              type: "string",
+              description: "The task ID to delete",
+            },
+          },
+          required: ["taskId"],
+        },
+      },
+    );
+  }
+
+  return allTools;
+}
+
+/**
+ * Execute a single tool call
+ */
+async function executeToolCall(
+  toolName: string,
+  args: Record<string, unknown>,
+  ctx: ExecutionContext,
+  config: ExecutorConfig,
+): Promise<unknown> {
+  // Check if it's a built-in router tool
+  switch (toolName) {
+    case "list_local_tools":
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_discovery",
+        "🔧 Listing local tools...",
+      );
+      return {
+        tools: ["READ_FILE", "WRITE_FILE", "LIST_FILES", "SHELL", "SPEAK"],
+        count: 5,
+      };
+
+    case "list_mesh_tools": {
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_discovery",
+        "🔍 Discovering mesh tools...",
+      );
+      const connections = await ctx.listConnections();
+      const allTools = connections.flatMap((c) =>
+        c.tools.map((t) => ({
+          name: t.name,
+          description: (t.description || "").slice(0, 150),
+          connectionId: c.id,
+          connectionName: c.title,
+        })),
+      );
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_discovery",
+        `Found ${allTools.length} tools from ${connections.length} connections`,
+      );
+      return { allTools, totalToolCount: allTools.length };
+    }
+
+    case "execute_task": {
+      // This is the handoff from FAST to SMART
+      return {
+        task: args.task as string,
+        tools:
+          (args.tools as Array<{ name: string }>)?.map((t) => t.name) || [],
+        context: args.context as string,
+      };
+    }
+
+    case "list_workflows": {
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_discovery",
+        "📋 Listing workflows...",
+      );
+      const { listWorkflows } = await import("./workflow-storage.ts");
+      const workflows = listWorkflows();
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_discovery",
+        `Found ${workflows.length} workflows`,
+      );
+      return {
+        workflows: workflows.map((w) => ({
+          id: w.id,
+          title: w.title,
+          description: w.description,
+          stepCount: w.steps.length,
+          steps: w.steps.map((s) => s.name),
+        })),
+        count: workflows.length,
+      };
+    }
+
+    case "execute_workflow": {
+      const workflowId = args.workflowId as string | undefined;
+      const workflowInput = (args.input as Record<string, unknown>) || {};
+
+      // Validate workflowId is provided and not empty
+      if (
+        !workflowId ||
+        workflowId === "undefined" ||
+        workflowId.trim() === ""
+      ) {
+        ctx.onProgress?.(
+          ctx.task.taskId,
+          "_workflow",
+          `❌ Invalid workflow ID: "${workflowId}". Use list_workflows() to see available workflows.`,
+        );
+        throw new Error(
+          `Invalid workflow ID: "${workflowId}". Please provide a valid workflow ID. Use list_workflows() to see available workflows.`,
+        );
+      }
+
+      // Note: executeWorkflow will log its own "Start:" message
+      const { loadWorkflow } = await import("./workflow-storage.ts");
+      const workflow = loadWorkflow(workflowId);
+
+      if (!workflow) {
+        ctx.onProgress?.(
+          ctx.task.taskId,
+          "_workflow",
+          `❌ Workflow not found: ${workflowId}`,
+        );
+        throw new Error(`Workflow not found: ${workflowId}`);
+      }
+
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_workflow",
+        `📋 Run: ${workflow.title} (${workflow.steps.length} steps)`,
+      );
+
+      // Execute the workflow inline - steps will be recorded in this task
+      const result = await executeWorkflowSteps(workflow, workflowInput, ctx);
+
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_workflow",
+        `✅ Done: ${workflow.title}`,
+      );
+
+      return result;
+    }
+
+    // ========================================================================
+    // Task Management Tools (for router)
+    // ========================================================================
+
+    case "start_task": {
+      const workflowId = args.workflowId as string | undefined;
+      const workflowInput = (args.input as Record<string, unknown>) || {};
+
+      if (!workflowId || workflowId.trim() === "") {
+        throw new Error("workflowId is required");
+      }
+
+      const { loadWorkflow } = await import("./workflow-storage.ts");
+      const workflow = loadWorkflow(workflowId);
+
+      if (!workflow) {
+        throw new Error(`Workflow not found: ${workflowId}`);
+      }
+
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        "_task",
+        `🚀 Starting task: ${workflow.title}`,
+      );
+
+      // Create a new task for this workflow
+      const taskInput = {
+        ...workflowInput,
+        message: workflowInput.message || ctx.workflowInput?.message,
+      };
+      const newTask = createTask(
+        workflowId,
+        taskInput,
+        ctx.task.source || "api",
+        { chatId: ctx.task.chatId },
+      );
+      saveTask(newTask);
+
+      // Execute the workflow asynchronously (fire and forget)
+      // Use setTimeout to ensure we return BEFORE the workflow starts
+      // Pass the task we created so executeWorkflow uses it instead of creating a new one
+      // When complete, it publishes an event so the bridge can notify the user
+      setTimeout(async () => {
+        console.error(
+          `[pilot] [start_task] Async execution starting for ${workflowId} (task: ${newTask.taskId})`,
+        );
+        try {
+          const result = await executeWorkflow(workflowId, taskInput, {
+            source: ctx.task.source || "api",
+            chatId: ctx.task.chatId,
+            config: {
+              // Pass through the actual model IDs from parent config
+              fastModel: config.fastModel,
+              smartModel: config.smartModel,
+              onProgress: ctx.onProgress,
+              onModeChange: ctx.onModeChange,
+            },
+            callLLM: ctx.callLLM,
+            callMeshTool: ctx.callMeshTool,
+            listConnections: ctx.listConnections,
+            publishEvent: ctx.publishEvent,
+            existingTask: newTask, // Use the task we already created
+          });
+
+          console.error(
+            `[pilot] [start_task] Workflow ${workflowId} completed, result:`,
+            JSON.stringify(result?.result)?.slice(0, 200),
+          );
+
+          // Publish completion event so bridge can notify user
+          if (ctx.publishEvent && ctx.task.chatId) {
+            // Extract the response from the result
+            const taskResult = result?.result as
+              | Record<string, unknown>
+              | undefined;
+            const responseText =
+              taskResult?.response ||
+              (typeof taskResult === "string"
+                ? taskResult
+                : JSON.stringify(taskResult));
+
+            console.error(
+              `[pilot] [start_task] Publishing completion event for ${newTask.taskId}`,
+            );
+
+            await ctx.publishEvent("agent.task.completed", {
+              taskId: newTask.taskId,
+              workflowId,
+              workflowTitle: workflow.title,
+              source: ctx.task.source,
+              chatId: ctx.task.chatId,
+              status: "completed",
+              result: responseText,
+            });
+          }
+        } catch (err) {
+          console.error(`[pilot] Task ${newTask.taskId} failed:`, err);
+
+          // Publish failure event
+          if (ctx.publishEvent && ctx.task.chatId) {
+            await ctx.publishEvent("agent.task.completed", {
+              taskId: newTask.taskId,
+              workflowId,
+              workflowTitle: workflow.title,
+              source: ctx.task.source,
+              chatId: ctx.task.chatId,
+              status: "failed",
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
+      }, 10); // Small delay to ensure start_task returns first
+
+      return {
+        taskId: newTask.taskId,
+        workflow: workflowId,
+        title: workflow.title,
+        status: "started",
+        message: `Started task ${newTask.taskId}. Ask me for status anytime.`,
+      };
+    }
+
+    case "check_task": {
+      const taskId = args.taskId as string;
+      if (!taskId) throw new Error("taskId is required");
+
+      const { loadTask } = await import("./task-storage.ts");
+      const task = loadTask(taskId);
+
+      if (!task) {
+        return { error: `Task not found: ${taskId}` };
+      }
+
+      const currentStep = task.stepResults[task.currentStepIndex];
+      const lastProgress = currentStep?.progressMessages?.slice(-1)[0]?.message;
+
+      return {
+        taskId: task.taskId,
+        workflow: task.workflowId,
+        status: task.status,
+        currentStep: currentStep?.stepName,
+        stepProgress: `${task.currentStepIndex + 1}/${task.stepResults.length || "?"}`,
+        lastProgress,
+        result: task.status === "completed" ? task.result : undefined,
+        error: task.status === "failed" ? task.error : undefined,
+        createdAt: task.createdAt,
+      };
+    }
+
+    case "list_tasks": {
+      const { listTasks } = await import("./task-storage.ts");
+      const status = args.status as string | undefined;
+      const limit = (args.limit as number) || 10;
+
+      const { tasks } = listTasks({
+        status: status as any,
+        limit,
+      });
+
+      return {
+        tasks: tasks.map((t) => ({
+          id: t.taskId,
+          workflow: t.workflowId,
+          status: t.status,
+          currentStep: t.stepResults[t.currentStepIndex]?.stepName,
+          createdAt: t.createdAt,
+        })),
+        count: tasks.length,
+      };
+    }
+
+    case "delete_task": {
+      const taskId = args.taskId as string;
+      if (!taskId) throw new Error("taskId is required");
+
+      const { deleteTask } = await import("./task-storage.ts");
+      const deleted = deleteTask(taskId);
+
+      return {
+        deleted,
+        taskId,
+        message: deleted
+          ? `Task ${taskId} deleted.`
+          : `Task ${taskId} not found.`,
+      };
+    }
+
+    default: {
+      // Find the tool in mesh connections
+      const connections = await ctx.listConnections();
+      for (const conn of connections) {
+        const tool = conn.tools.find((t) => t.name === toolName);
+        if (tool) {
+          return ctx.callMeshTool(conn.id, toolName, args);
+        }
+      }
+      throw new Error(`Tool not found: ${toolName}`);
+    }
+  }
+}
+
+// ============================================================================
+// Inline Workflow Execution (for execute_workflow tool)
+// ============================================================================
+
+/**
+ * Execute a workflow's steps inline within an existing context
+ * Used when an LLM calls execute_workflow tool
+ */
+async function executeWorkflowSteps(
+  workflow: Workflow,
+  workflowInput: Record<string, unknown>,
+  parentCtx: ExecutionContext,
+): Promise<unknown> {
+  // Create a sub-context that shares the parent's callbacks but has its own step outputs
+  const ctx: ExecutionContext = {
+    ...parentCtx,
+    workflow,
+    workflowInput: { ...parentCtx.workflowInput, ...workflowInput },
+    stepOutputs: {}, // Fresh step outputs for this workflow
+  };
+
+  // Execute steps in order
+  const stepLevels = groupStepsByLevel(workflow.steps);
+
+  for (const levelSteps of stepLevels) {
+    for (const step of levelSteps) {
+      // Report progress for each step
+      parentCtx.onProgress?.(
+        parentCtx.task.taskId,
+        `${workflow.id}:${step.name}`,
+        `▶️ ${step.description || step.name}`,
+      );
+
+      try {
+        const { output, skipped } = await executeStep(step, ctx, {
+          fastModel: "fast",
+          smartModel: "smart",
+          onProgress: parentCtx.onProgress
+            ? (taskId, stepName, message) => {
+                // Prefix the step name with workflow id for clarity
+                parentCtx.onProgress!(
+                  taskId,
+                  `${workflow.id}:${stepName}`,
+                  message,
+                );
+              }
+            : undefined,
+          onModeChange: parentCtx.onModeChange,
+        });
+
+        if (!skipped) {
+          ctx.stepOutputs[step.name] = output;
+        }
+
+        parentCtx.onProgress?.(
+          parentCtx.task.taskId,
+          `${workflow.id}:${step.name}`,
+          skipped ? "⏭️ Skipped" : "✅ Done",
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        parentCtx.onProgress?.(
+          parentCtx.task.taskId,
+          `${workflow.id}:${step.name}`,
+          `❌ ${errorMsg}`,
+        );
+
+        if (!step.config?.continueOnError) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  // Return the last step's output
+  let finalOutput: unknown = null;
+  for (let i = workflow.steps.length - 1; i >= 0; i--) {
+    const stepOutput = ctx.stepOutputs[workflow.steps[i].name];
+    if (stepOutput !== undefined) {
+      finalOutput = stepOutput;
+      break;
+    }
+  }
+
+  return finalOutput;
+}
+
+// ============================================================================
+// Skip Condition Evaluation
+// ============================================================================
+
+/**
+ * Evaluate a skipIf condition
+ * Supports:
+ * - "empty:@stepName.field" - skip if field is empty array or undefined
+ * - "equals:@stepName.a,@stepName.b" - skip if a equals b
+ */
+function evaluateSkipIf(
+  condition: string,
+  context: { input: Record<string, unknown>; steps: Record<string, unknown> },
+): boolean {
+  if (condition.startsWith("empty:")) {
+    const ref = condition.slice(6);
+    const value = resolveRefs(ref, context);
+    if (value === undefined || value === null) return true;
+    if (Array.isArray(value) && value.length === 0) return true;
+    return false;
+  }
+
+  if (condition.startsWith("equals:")) {
+    const parts = condition.slice(7).split(",");
+    if (parts.length !== 2) return false;
+    const a = resolveRefs(parts[0].trim(), context);
+    const b = resolveRefs(parts[1].trim(), context);
+    // Deep equality for objects/arrays, simple for primitives
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  return false;
+}
+
+// ============================================================================
+// Main Executor
+// ============================================================================
+
+/**
+ * Execute a single step (or skip if condition met)
+ */
+async function executeStep(
+  step: Step,
+  ctx: ExecutionContext,
+  config: ExecutorConfig,
+): Promise<{ output: unknown; skipped: boolean }> {
+  // Check skipIf condition before executing
+  if (step.config?.skipIf) {
+    const shouldSkip = evaluateSkipIf(step.config.skipIf, {
+      input: ctx.workflowInput,
+      steps: ctx.stepOutputs,
+    });
+
+    if (shouldSkip) {
+      ctx.onProgress?.(
+        ctx.task.taskId,
+        step.name,
+        `⏭️ Skipped (${step.config.skipIf})`,
+      );
+      return { output: null, skipped: true };
+    }
+  }
+
+  // Resolve input references
+  const resolvedInput = resolveRefs(step.input || {}, {
+    input: ctx.workflowInput,
+    steps: ctx.stepOutputs,
+  }) as Record<string, unknown>;
+
+  let output: unknown;
+  switch (step.action.type) {
+    case "tool":
+      output = await executeToolStep(step, resolvedInput, ctx);
+      break;
+    case "code":
+      output = await executeCodeStep(step, resolvedInput, ctx);
+      break;
+    case "llm":
+      output = await executeLLMStep(step, resolvedInput, ctx, config);
+      break;
+    case "template":
+      output = executeTemplateStep(step, ctx);
+      break;
+    default:
+      throw new Error(
+        `Unknown step type: ${(step.action as { type: string }).type}`,
+      );
+  }
+
+  return { output, skipped: false };
+}
+
+/**
+ * Execute a workflow
+ */
+export async function executeWorkflow(
+  workflowId: string,
+  workflowInput: Record<string, unknown>,
+  options: {
+    source: string;
+    chatId?: string;
+    config: ExecutorConfig;
+    callLLM: LLMCallback;
+    callMeshTool: MeshToolCallback;
+    listConnections: ListConnectionsCallback;
+    publishEvent?: (
+      eventType: string,
+      data: Record<string, unknown>,
+    ) => Promise<void>;
+    /** If provided, use this task instead of creating a new one (for start_task) */
+    existingTask?: Task;
+  },
+): Promise<{ task: Task; result: unknown }> {
+  // Load workflow
+  const workflow = loadWorkflow(workflowId);
+  if (!workflow) {
+    throw new Error(`Workflow not found: ${workflowId}`);
+  }
+
+  // Validate all required tools are available before starting
+  const validation = await validateWorkflowTools(
+    workflow,
+    options.listConnections,
+  );
+
+  if (!validation.valid) {
+    const missingList = validation.missingTools
+      .map((t) => `  - ${t}`)
+      .join("\n");
+    throw new Error(
+      `Workflow "${workflow.title}" requires tools that are not available:\n\n` +
+        `Missing tools:\n${missingList}\n\n` +
+        `Make sure the required MCP connections are configured in Mesh.`,
+    );
+  }
+
+  // Use existing task if provided, otherwise create new one
+  const task =
+    options.existingTask ??
+    createTask(workflowId, workflowInput, options.source, {
+      chatId: options.chatId,
+    });
+  if (!options.existingTask) {
+    saveTask(task);
+  }
+
+  // Await the workflow start message to ensure it's sent before step messages
+  await options.config.onProgress?.(
+    task.taskId,
+    "_start",
+    `📋 Start: ${workflow.title}`,
+  );
+
+  // Build execution context
+  // Wrap onProgress to also save to task storage
+  const wrappedOnProgress = options.config.onProgress
+    ? (taskId: string, stepName: string, message: string) => {
+        // Save to task JSON for persistence
+        const saved = addStepProgress(taskId, stepName, message);
+        console.error(
+          `[pilot] Progress persisted: ${stepName} → ${message.slice(0, 50)}... (saved: ${!!saved})`,
+        );
+        // Call the original callback for event publishing
+        options.config.onProgress!(taskId, stepName, message);
+      }
+    : undefined;
+
+  const ctx: ExecutionContext = {
+    task,
+    workflow,
+    stepOutputs: {},
+    workflowInput,
+    onProgress: wrappedOnProgress,
+    onModeChange: options.config.onModeChange,
+    callLLM: options.callLLM,
+    callMeshTool: options.callMeshTool,
+    listConnections: options.listConnections,
+    publishEvent: options.publishEvent,
+  };
+
+  try {
+    // Group steps by level for parallel execution
+    const stepLevels = groupStepsByLevel(workflow.steps);
+
+    for (const levelSteps of stepLevels) {
+      // Execute all steps in this level in parallel
+      const results = await Promise.all(
+        levelSteps.map(async (step) => {
+          const stepId = `${task.taskId}_${step.name}`;
+          const startedAt = new Date().toISOString();
+
+          // Create step result
+          const stepResult: StepResult = {
+            stepId,
+            stepName: step.name,
+            startedAt,
+            status: "working",
+            progressMessages: [],
+          };
+
+          updateTaskStep(task.taskId, workflow.steps.indexOf(step), stepResult);
+
+          try {
+            const { output, skipped } = await executeStep(
+              step,
+              ctx,
+              options.config,
+            );
+
+            // Validate output against schema if defined
+            if (!skipped && step.outputSchema && output) {
+              const validation = validateOutputSchema(
+                output,
+                step.outputSchema,
+                step.name,
+              );
+              if (!validation.valid) {
+                throw new Error(
+                  `Output validation failed for step "${step.name}": ${validation.errors.join(", ")}`,
+                );
+              }
+            }
+
+            // Update step result
+            stepResult.status = skipped ? "completed" : "completed";
+            stepResult.completedAt = new Date().toISOString();
+            stepResult.output = skipped ? { skipped: true } : output;
+
+            updateTaskStep(
+              task.taskId,
+              workflow.steps.indexOf(step),
+              stepResult,
+            );
+
+            return { step, output, skipped };
+          } catch (error) {
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+
+            stepResult.status = "failed";
+            stepResult.completedAt = new Date().toISOString();
+            stepResult.error = errorMsg;
+
+            updateTaskStep(
+              task.taskId,
+              workflow.steps.indexOf(step),
+              stepResult,
+            );
+
+            if (!step.config?.continueOnError) {
+              throw error;
+            }
+
+            return { step, output: null, skipped: false, error: errorMsg };
+          }
+        }),
+      );
+
+      // Store outputs for reference in next level
+      for (const { step, output, skipped } of results) {
+        // If step was skipped, don't store its output - let the previous value remain
+        if (!skipped) {
+          ctx.stepOutputs[step.name] = output;
+        }
+      }
+    }
+
+    // Get final output (from last non-skipped step)
+    let finalOutput: unknown = null;
+    for (let i = workflow.steps.length - 1; i >= 0; i--) {
+      const stepOutput = ctx.stepOutputs[workflow.steps[i].name];
+      if (stepOutput !== undefined) {
+        finalOutput = stepOutput;
+        break;
+      }
+    }
+
+    // Complete task
+    completeTask(task.taskId, finalOutput);
+
+    options.config.onProgress?.(
+      task.taskId,
+      "_end",
+      `✅ Done: ${workflow.title}`,
+    );
+
+    return {
+      task: loadTask(task.taskId) || task,
+      result: finalOutput,
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    failTask(task.taskId, errorMsg);
+
+    options.config.onProgress?.(task.taskId, "_error", `❌ ${errorMsg}`);
+
+    return {
+      task: loadTask(task.taskId) || task,
+      result: null,
+    };
+  }
+}
+
+/**
+ * Resume a task from where it left off
+ */
+export async function resumeTask(
+  taskId: string,
+  options: {
+    config: ExecutorConfig;
+    callLLM: LLMCallback;
+    callMeshTool: MeshToolCallback;
+    listConnections: ListConnectionsCallback;
+  },
+): Promise<{ task: Task; result: unknown } | null> {
+  const task = loadTask(taskId);
+  if (!task) return null;
+
+  // Can only resume working or input_required tasks
+  if (task.status !== "working" && task.status !== "input_required") {
+    return { task, result: task.result };
+  }
+
+  const workflow = loadWorkflow(task.workflowId);
+  if (!workflow) {
+    failTask(taskId, `Workflow not found: ${task.workflowId}`);
+    return { task: loadTask(taskId)!, result: null };
+  }
+
+  // Build context from existing step results
+  const stepOutputs: Record<string, unknown> = {};
+  for (const result of task.stepResults) {
+    if (result.status === "completed" && result.output !== undefined) {
+      stepOutputs[result.stepName] = result.output;
+    }
+  }
+
+  // Wrap onProgress to also save to task storage
+  const wrappedOnProgress = options.config.onProgress
+    ? (taskId: string, stepName: string, message: string) => {
+        addStepProgress(taskId, stepName, message);
+        options.config.onProgress!(taskId, stepName, message);
+      }
+    : undefined;
+
+  const ctx: ExecutionContext = {
+    task,
+    workflow,
+    stepOutputs,
+    workflowInput: task.workflowInput,
+    onProgress: wrappedOnProgress,
+    onModeChange: options.config.onModeChange,
+    callLLM: options.callLLM,
+    callMeshTool: options.callMeshTool,
+    listConnections: options.listConnections,
+  };
+
+  try {
+    // Find remaining steps
+    const completedSteps = new Set(
+      task.stepResults
+        .filter((r) => r.status === "completed")
+        .map((r) => r.stepName),
+    );
+
+    const remainingSteps = workflow.steps.filter(
+      (s) => !completedSteps.has(s.name),
+    );
+
+    if (remainingSteps.length === 0) {
+      // All steps completed, finalize
+      const lastStep = workflow.steps[workflow.steps.length - 1];
+      const finalOutput = stepOutputs[lastStep.name];
+      completeTask(taskId, finalOutput);
+      return { task: loadTask(taskId)!, result: finalOutput };
+    }
+
+    // Execute remaining steps
+    for (const step of remainingSteps) {
+      const stepId = `${taskId}_${step.name}`;
+      const startedAt = new Date().toISOString();
+
+      const stepResult: StepResult = {
+        stepId,
+        stepName: step.name,
+        startedAt,
+        status: "working",
+        progressMessages: [],
+      };
+
+      updateTaskStep(taskId, workflow.steps.indexOf(step), stepResult);
+
+      const { output, skipped } = await executeStep(step, ctx, options.config);
+
+      // Validate output against schema if defined
+      if (!skipped && step.outputSchema && output) {
+        const validation = validateOutputSchema(
+          output,
+          step.outputSchema,
+          step.name,
+        );
+        if (!validation.valid) {
+          throw new Error(
+            `Output validation failed for step "${step.name}": ${validation.errors.join(", ")}`,
+          );
+        }
+      }
+
+      stepResult.status = "completed";
+      stepResult.completedAt = new Date().toISOString();
+      stepResult.output = skipped ? { skipped: true } : output;
+
+      updateTaskStep(taskId, workflow.steps.indexOf(step), stepResult);
+      if (!skipped) {
+        ctx.stepOutputs[step.name] = output;
+      }
+    }
+
+    // Get final output (from last non-skipped step)
+    let finalOutput: unknown = null;
+    for (let i = workflow.steps.length - 1; i >= 0; i--) {
+      const stepOutput = ctx.stepOutputs[workflow.steps[i].name];
+      if (stepOutput !== undefined) {
+        finalOutput = stepOutput;
+        break;
+      }
+    }
+
+    completeTask(taskId, finalOutput);
+
+    return { task: loadTask(taskId)!, result: finalOutput };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    failTask(taskId, errorMsg);
+    return { task: loadTask(taskId)!, result: null };
+  }
+}

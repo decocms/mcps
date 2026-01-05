@@ -1,0 +1,24 @@
+{
+  "id": "conversation",
+  "title": "Conversation",
+  "description": "Long-running conversation thread. Messages are routed here until timeout or end.",
+  "steps": [
+    {
+      "name": "conversation_loop",
+      "description": "Continuous conversation with the user",
+      "action": {
+        "type": "llm",
+        "prompt": "@input.message",
+        "model": "fast",
+        "systemPrompt": "You are in CONVERSATION MODE. This is an ongoing dialogue, not a one-shot task.\n\n**RULES:**\n1. Be conversational and engaging\n2. Remember context from previous messages (in history)\n3. Ask clarifying questions if needed\n4. Use tools when the user requests actions\n5. Match the user's language (PT/EN)\n6. If the user says goodbye or the conversation seems done, respond with [END_CONVERSATION]\n\nYou have access to all available tools. Use them naturally in the conversation.",
+        "tools": "all",
+        "maxIterations": 10
+      },
+      "input": {
+        "message": "@input.message",
+        "history": "@input.history"
+      }
+    }
+  ]
+}
+
