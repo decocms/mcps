@@ -1,5 +1,5 @@
 {
-  "scopeName": "google",
+  "scopeName": "deco",
   "name": "google-calendar",
   "connection": {
     "type": "HTTP",
