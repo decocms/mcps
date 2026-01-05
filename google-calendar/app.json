@@ -1,0 +1,12 @@
+{
+  "scopeName": "google",
+  "name": "google-calendar",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-calendar.decocache.com/mcp"
+  },
+  "description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars.",
+  "icon": "https://assets.decocache.com/mcp/google-calendar.svg",
+  "unlisted": false
+}
+
