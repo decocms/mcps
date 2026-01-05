@@ -119,8 +119,10 @@ export interface ExecutionContext {
   stepOutputs: Record<string, unknown>;
   /** Workflow input */
   workflowInput: Record<string, unknown>;
-  /** Progress callback */
+  /** Progress callback - sent to event bus AND saved to task JSON */
   onProgress?: (taskId: string, stepName: string, message: string) => void;
+  /** Log to task only - saved to task JSON but NOT sent to event bus (for verbose tool results) */
+  logToTask?: (taskId: string, stepName: string, message: string) => void;
   /** Mode change callback */
   onModeChange?: (mode: "FAST" | "SMART") => void;
   /** Tool execution callbacks */
@@ -567,11 +569,19 @@ async function executeLLMStep(
             `❌ ${tc.name} error: ${resultPreview.slice(0, 200)}`,
           );
         } else {
-          // Show successful completion
+          // Short status to WhatsApp (via onProgress)
           ctx.onProgress?.(
             ctx.task.taskId,
             step.name,
             `✓ ${tc.name} completed`,
+          );
+
+          // Full result to task JSON only (via logToTask) - not sent to WhatsApp
+          const taskLogPreview = resultStr.slice(0, 4000);
+          ctx.logToTask?.(
+            ctx.task.taskId,
+            step.name,
+            `📋 ${tc.name} result:\n${taskLogPreview}${resultStr.length > 4000 ? "\n... (truncated)" : ""}`,
           );
         }
 
@@ -1616,12 +1626,22 @@ export async function executeWorkflow(
       }
     : undefined;
 
+  // logToTask: save to task JSON but DON'T publish to event bus
+  // Used for verbose tool results that shouldn't appear in WhatsApp
+  const logToTask = (taskId: string, stepName: string, message: string) => {
+    const saved = addStepProgress(taskId, stepName, message);
+    console.error(
+      `[pilot] Task log: ${stepName} → ${message.slice(0, 100)}... (saved: ${!!saved})`,
+    );
+  };
+
   const ctx: ExecutionContext = {
     task,
     workflow,
     stepOutputs: {},
     workflowInput,
     onProgress: wrappedOnProgress,
+    logToTask,
     onModeChange: options.config.onModeChange,
     callLLM: options.callLLM,
     callMeshTool: options.callMeshTool,
@@ -1795,12 +1815,21 @@ export async function resumeTask(
       }
     : undefined;
 
+  // logToTask: save to task JSON but DON'T publish to event bus
+  const logToTask = (taskId: string, stepName: string, message: string) => {
+    addStepProgress(taskId, stepName, message);
+    console.error(
+      `[pilot] Task log: ${stepName} → ${message.slice(0, 100)}...`,
+    );
+  };
+
   const ctx: ExecutionContext = {
     task,
     workflow,
     stepOutputs,
     workflowInput: task.workflowInput,
     onProgress: wrappedOnProgress,
+    logToTask,
     onModeChange: options.config.onModeChange,
     callLLM: options.callLLM,
     callMeshTool: options.callMeshTool,
