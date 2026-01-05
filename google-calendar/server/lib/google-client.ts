@@ -349,15 +349,5 @@ export class GoogleCalendarClient {
   }
 }
 
-/**
- * Get access token from environment context
- */
-export function getAccessToken(env: any): string {
-  const token = env.MESH_REQUEST_CONTEXT?.accessToken;
-  if (!token) {
-    throw new Error(
-      "Not authenticated. Please authorize with Google Calendar first.",
-    );
-  }
-  return token;
-}
+// Re-export getGoogleAccessToken from env.ts for convenience
+export { getGoogleAccessToken as getAccessToken } from "./env.ts";

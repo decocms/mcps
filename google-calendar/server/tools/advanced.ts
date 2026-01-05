@@ -132,7 +132,7 @@ export const createFindAvailableSlotsTool = (env: Env) =>
         .describe(
           "End of the search range (RFC3339 format, e.g., '2024-01-15T18:00:00Z')",
         ),
-      slotDurationMinutes: z
+      slotDurationMinutes: z.coerce
         .number()
         .int()
         .min(5)
@@ -144,7 +144,7 @@ export const createFindAvailableSlotsTool = (env: Env) =>
         .string()
         .optional()
         .describe("Timezone for the search (e.g., 'America/Sao_Paulo')"),
-      maxSlots: z
+      maxSlots: z.coerce
         .number()
         .int()
         .min(1)

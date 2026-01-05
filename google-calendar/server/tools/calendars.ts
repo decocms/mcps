@@ -38,7 +38,7 @@ export const createListCalendarsTool = (env: Env) =>
     description:
       "List all calendars accessible by the authenticated user. Returns calendar IDs, names, colors, and access roles.",
     inputSchema: z.object({
-      maxResults: z
+      maxResults: z.coerce
         .number()
         .int()
         .min(1)

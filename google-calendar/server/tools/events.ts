@@ -43,7 +43,11 @@ const AttendeeSchema = z.object({
 
 const ReminderSchema = z.object({
   method: z.enum(["email", "popup"]).describe("Reminder method"),
-  minutes: z.number().int().min(0).describe("Minutes before event to remind"),
+  minutes: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .describe("Minutes before event to remind"),
 });
 
 const EventSchema = z.object({
@@ -112,7 +116,7 @@ export const createListEventsTool = (env: Env) =>
         .string()
         .optional()
         .describe("End of time range (RFC3339 format)"),
-      maxResults: z
+      maxResults: z.coerce
         .number()
         .int()
         .min(1)

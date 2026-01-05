@@ -4,15 +4,13 @@
  * This MCP provides tools for interacting with Google Calendar API,
  * including calendar management, event CRUD operations, and availability checks.
  */
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "./tools/index.ts";
+import type { Env } from "../shared/deco.gen.ts";
 
-/**
- * Environment type for the MCP server
- */
-export type Env = DefaultEnv;
+export type { Env };
 
 const GOOGLE_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
