@@ -42,9 +42,6 @@ const runtime = withRuntime<Env>({
       // Store for later use in exchangeCode
       lastRedirectUri = cleanRedirectUri;
 
-      // Debug: log the redirect_uri being used
-      console.log("[Google Calendar OAuth] redirect_uri:", cleanRedirectUri);
-
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("redirect_uri", cleanRedirectUri);
       url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -75,11 +72,6 @@ const runtime = withRuntime<Env>({
           "redirect_uri is required for Google OAuth token exchange",
         );
       }
-
-      console.log(
-        "[Google Calendar OAuth] exchangeCode redirect_uri:",
-        cleanRedirectUri,
-      );
 
       const params = new URLSearchParams({
         code,
