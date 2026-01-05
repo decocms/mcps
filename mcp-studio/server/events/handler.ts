@@ -14,7 +14,7 @@ interface WorkflowEvent {
   id: string;
 }
 
-export const WORKFLOW_EVENTS = ["workflow.execution.created"] as const;
+export const WORKFLOW_EVENTS = ["SELF::workflow.execution.created"] as const;
 
 /**
  * Handle a batch of workflow events.

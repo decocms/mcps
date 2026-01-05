@@ -25,7 +25,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       events: [...WORKFLOW_EVENTS] as string[],
       handler: async ({ events }, env) => {
         try {
-          handleWorkflowEvents(events, env);
+          handleWorkflowEvents(events, env as unknown as Env);
           return { success: true };
         } catch (error) {
           console.error(`[MAIN] Error handling events: ${error}`);
@@ -41,7 +41,12 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       await ensureAssistantsTable(env);
       await ensurePromptsTable(env);
     },
-    scopes: ["DATABASE::DATABASES_RUN_SQL", "EVENT_BUS::*", "*"],
+    scopes: [
+      "DATABASE::DATABASES_RUN_SQL",
+      "EVENT_BUS::*",
+      "CONNECTION::*",
+      "*",
+    ],
     state: StateSchema,
   },
   tools,

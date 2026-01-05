@@ -91,7 +91,7 @@ export const resumeExecutionTool = (env: Env) =>
         };
       }
 
-      await env.EVENT_BUS.EVENT_PUBLISH({
+      await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
         type: "workflow.execution.created",
         subject: executionId,
       });
@@ -128,10 +128,12 @@ export const createCreateTool = (env: Env) =>
           steps: context.steps,
           workflow_collection_id: context.workflow_collection_id,
         });
-        await env.EVENT_BUS.EVENT_PUBLISH({
-          type: "workflow.execution.created",
-          subject: executionId,
-        });
+        const result =
+          await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
+            type: "workflow.execution.created",
+            subject: executionId,
+          });
+        console.log("🚀 ~ result:", result);
         return {
           id: executionId,
           workflow_id,
