@@ -241,12 +241,23 @@ async function callMeshTool<T = unknown>(
   }
 
   const json = (await response.json()) as {
-    result?: { structuredContent?: T; content?: Array<{ text?: string }> };
+    result?: {
+      structuredContent?: T;
+      content?: Array<{ text?: string }>;
+      isError?: boolean;
+    };
     error?: { message: string };
   };
 
   if (json.error) {
     throw new Error(json.error.message);
+  }
+
+  // Check for tool error response (isError flag)
+  if (json.result?.isError) {
+    const errorText = json.result.content?.[0]?.text || "Unknown tool error";
+    console.error(`[pilot] [callMeshTool] Tool error: ${errorText}`);
+    throw new Error(`Tool error from ${toolName}: ${errorText}`);
   }
 
   if (json.result?.structuredContent) {
@@ -283,18 +294,23 @@ const callLLM: LLMCallback = async (model, messages, tools) => {
     parameters: t.inputSchema,
   }));
 
+  // Build callOptions without undefined values (some LLM MCPs don't handle undefined well)
+  const callOptions: Record<string, unknown> = {
+    prompt,
+    maxOutputTokens: 2048,
+    temperature: 0.7,
+  };
+  if (toolsForLLM.length > 0) {
+    callOptions.tools = toolsForLLM;
+    callOptions.toolChoice = { type: "auto" };
+  }
+
   const result = await callMeshTool<LLMResponse>(
     llmConnectionId,
     "LLM_DO_GENERATE",
     {
       modelId: model,
-      callOptions: {
-        prompt,
-        tools: toolsForLLM.length > 0 ? toolsForLLM : undefined,
-        toolChoice: toolsForLLM.length > 0 ? { type: "auto" } : undefined,
-        maxOutputTokens: 2048,
-        temperature: 0.7,
-      },
+      callOptions,
     },
   );
 
@@ -304,10 +320,6 @@ const callLLM: LLMCallback = async (model, messages, tools) => {
     if (textPart?.text) text = textPart.text;
   }
   if (!text && result?.text) text = result.text;
-
-  console.error(
-    `[pilot] [callLLM] Extracted text: ${text?.slice(0, 200) || "(none)"}...`,
-  );
 
   const toolCalls: Array<{ name: string; arguments: Record<string, unknown> }> =
     [];
