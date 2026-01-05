@@ -8,14 +8,14 @@
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
 import {
   createSupabaseClient,
-  listServers as listServersFromSupabase,
+  getAvailableFilters as getAvailableFiltersFromSupabase,
   getServer as getServerFromSupabase,
   getServerVersions as getServerVersionsFromSupabase,
-  getAvailableFilters as getAvailableFiltersFromSupabase,
+  listServers as listServersFromSupabase,
 } from "../lib/supabase-client.ts";
+import type { Env } from "../main.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -24,12 +24,14 @@ import {
 /**
  * Server data schema - flexible to accept data from Supabase
  */
-const ServerDataSchema = z.record(z.unknown()).describe("Server data");
+const ServerDataSchema = z
+  .record(z.string(), z.unknown())
+  .describe("Server data");
 
 /**
  * Meta data schema - flexible to accept metadata
  */
-const MetaDataSchema = z.record(z.unknown()).describe("Metadata");
+const MetaDataSchema = z.record(z.string(), z.unknown()).describe("Metadata");
 
 /**
  * Schema for a collection item
