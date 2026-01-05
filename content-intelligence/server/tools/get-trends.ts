@@ -10,6 +10,7 @@
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Env } from "../main.ts";
+import { parseSourcesFromState, parseTopicsFromState } from "../main.ts";
 import {
   GetTrendsInputSchema,
   GetTrendsOutputSchema,
@@ -17,8 +18,6 @@ import {
 
 /**
  * Creates the get_trends MCP tool.
- *
- * Uses state.categoriesOfInterest for filtering relevant trends.
  */
 export const createGetTrendsTool = (env: Env) =>
   createPrivateTool({
@@ -40,17 +39,17 @@ export const createGetTrendsTool = (env: Env) =>
     }) => {
       const { daysBack = 7, categories, limit = 10 } = context;
 
-      // Access configuration from state
+      // Parse configuration from state
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
-      const sources = state.sources || [];
-      const defaultCategories = state.categoriesOfInterest || [];
+      const sources = parseSourcesFromState(state);
+      const defaultTopics = parseTopicsFromState(state);
 
-      // Use provided categories or fall back to configured ones
-      const targetCategories = categories || defaultCategories;
+      // Use provided categories or fall back to configured topics
+      const targetTopics = categories || defaultTopics;
 
-      console.log("[GET_TRENDS] Analyzing trends:", {
+      console.log("[GET_TRENDS] Config:", {
         daysBack,
-        categories: targetCategories,
+        topics: targetTopics,
         limit,
         sourcesCount: sources.length,
       });

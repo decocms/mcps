@@ -10,6 +10,7 @@
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Env } from "../main.ts";
+import { parseSourcesFromState, parseTopicsFromState } from "../main.ts";
 import {
   GetWeeklyDigestInputSchema,
   GetWeeklyDigestOutputSchema,
@@ -17,8 +18,6 @@ import {
 
 /**
  * Creates the get_weekly_digest MCP tool.
- *
- * Uses state.categoriesOfInterest and state.sources for context.
  */
 export const createGetWeeklyDigestTool = (env: Env) =>
   createPrivateTool({
@@ -39,16 +38,16 @@ export const createGetWeeklyDigestTool = (env: Env) =>
     }) => {
       const { weekOffset = 0, includeFullContent = false } = context;
 
-      // Access configuration from state
+      // Parse configuration from state
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
-      const sources = state.sources || [];
-      const categoriesOfInterest = state.categoriesOfInterest || [];
+      const sources = parseSourcesFromState(state);
+      const topics = parseTopicsFromState(state);
 
-      console.log("[GET_WEEKLY_DIGEST] Fetching digest:", {
+      console.log("[GET_WEEKLY_DIGEST] Config:", {
         weekOffset,
         includeFullContent,
         sourcesCount: sources.length,
-        categoriesOfInterest,
+        topics,
       });
 
       // Calculate period dates

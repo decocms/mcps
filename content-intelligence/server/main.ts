@@ -4,11 +4,6 @@
  * A domain service for aggregating, normalizing, and enriching content
  * from multiple external sources (RSS, Reddit, web scraping).
  *
- * Configuration Pattern:
- * - Uses StateSchema for user-provided configuration (like readonly-sql)
- * - NOT using Deco bindings since we connect to external APIs
- * - Sources are configured at installation time via state
- *
  * @module main
  * @version 1.0.0
  */
@@ -23,109 +18,125 @@ import { z } from "zod";
 import { tools } from "./tools/index.ts";
 
 /**
- * Source configuration schemas for StateSchema
- */
-const RssSourceSchema = z.object({
-  type: z.literal("rss"),
-  name: z.string().describe("Source name (e.g., TechCrunch)"),
-  feedUrl: z.string().url().describe("RSS/Atom feed URL"),
-  enabled: z.boolean().default(true),
-});
-
-const RedditSourceSchema = z.object({
-  type: z.literal("reddit"),
-  name: z.string().describe("Source name (e.g., r/MachineLearning)"),
-  subreddit: z.string().describe("Subreddit name (without r/)"),
-  sortBy: z.enum(["hot", "new", "top", "rising"]).default("hot"),
-  minUpvotes: z.number().int().nonnegative().default(0),
-  enabled: z.boolean().default(true),
-});
-
-const WebScraperSourceSchema = z.object({
-  type: z.literal("web_scraper"),
-  name: z.string().describe("Source name"),
-  baseUrl: z.string().url().describe("Website base URL"),
-  selectors: z.object({
-    title: z.string().describe("CSS selector for title"),
-    content: z.string().describe("CSS selector for content"),
-    link: z.string().optional().describe("CSS selector for link"),
-  }),
-  enabled: z.boolean().default(true),
-});
-
-const SourceSchema = z.discriminatedUnion("type", [
-  RssSourceSchema,
-  RedditSourceSchema,
-  WebScraperSourceSchema,
-]);
-
-/**
  * State Schema for Content Intelligence MCP
  *
- * Similar to readonly-sql pattern: configuration provided by user at install time.
- * NOT using Deco bindings because we connect to external APIs.
+ * All fields are simple strings/numbers for easy form input.
  */
 export const StateSchema = BaseStateSchema.extend({
   /**
-   * Content sources to aggregate.
-   * Each source is configured with its specific parameters.
+   * RSS feed URLs (one per line)
    */
-  sources: z
-    .array(SourceSchema)
-    .default([])
-    .describe("List of content sources to aggregate"),
+  rssFeeds: z.string().default("").describe("RSS feed URLs, one per line"),
 
   /**
-   * OpenAI API key for LLM-based enrichment.
-   * Optional - enrichment disabled if not provided.
+   * Reddit subreddits to follow (comma-separated)
+   */
+  subreddits: z
+    .string()
+    .default("")
+    .describe(
+      "Subreddits to follow, comma-separated (e.g. MachineLearning, programming)",
+    ),
+
+  /**
+   * Minimum upvotes for Reddit posts
+   */
+  redditMinUpvotes: z
+    .number()
+    .int()
+    .min(0)
+    .default(50)
+    .describe("Minimum upvotes for Reddit posts"),
+
+  /**
+   * OpenAI API key for content enrichment (optional)
    */
   openaiApiKey: z
     .string()
-    .optional()
-    .describe("OpenAI API key for content enrichment (optional)"),
+    .default("")
+    .describe("OpenAI API key for summaries and classification (optional)"),
 
   /**
-   * Reddit API credentials for higher rate limits.
-   * Optional - uses public API if not provided.
+   * Topics/categories of interest - free text input
    */
-  redditClientId: z
+  topicsOfInterest: z
     .string()
-    .optional()
-    .describe("Reddit OAuth client ID (optional, for higher rate limits)"),
-  redditClientSecret: z
-    .string()
-    .optional()
-    .describe("Reddit OAuth client secret (optional)"),
+    .default("AI, technology, startups")
+    .describe(
+      "Topics you're interested in, comma-separated (e.g. AI, technology, startups, design)",
+    ),
 
   /**
-   * Default relevance threshold for content filtering.
+   * Minimum relevance score (0-100)
    */
-  defaultRelevanceThreshold: z
+  minRelevanceScore: z
     .number()
+    .int()
     .min(0)
-    .max(1)
-    .default(0.5)
-    .describe("Default minimum relevance score (0-1)"),
-
-  /**
-   * Categories of interest for relevance scoring.
-   */
-  categoriesOfInterest: z
-    .array(
-      z.enum([
-        "technology",
-        "business",
-        "science",
-        "design",
-        "ai_ml",
-        "engineering",
-        "product",
-        "other",
-      ]),
-    )
-    .default(["technology", "ai_ml"])
-    .describe("Categories of interest for relevance scoring"),
+    .max(100)
+    .default(50)
+    .describe("Minimum relevance score 0-100"),
 });
+
+/**
+ * Helper to parse sources from state
+ */
+export function parseSourcesFromState(state: z.infer<typeof StateSchema>) {
+  const sources: Array<{
+    type: "rss" | "reddit";
+    name: string;
+    config: Record<string, unknown>;
+  }> = [];
+
+  // Parse RSS feeds
+  const rssFeeds = state.rssFeeds
+    .split("\n")
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0 && url.startsWith("http"));
+
+  for (const feedUrl of rssFeeds) {
+    try {
+      const url = new URL(feedUrl);
+      sources.push({
+        type: "rss",
+        name: url.hostname,
+        config: { feedUrl },
+      });
+    } catch {
+      // Invalid URL, skip
+    }
+  }
+
+  // Parse subreddits
+  const subreddits = state.subreddits
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  for (const subreddit of subreddits) {
+    sources.push({
+      type: "reddit",
+      name: `r/${subreddit}`,
+      config: {
+        subreddit,
+        sortBy: "hot",
+        minUpvotes: state.redditMinUpvotes,
+      },
+    });
+  }
+
+  return sources;
+}
+
+/**
+ * Helper to parse topics from state
+ */
+export function parseTopicsFromState(state: z.infer<typeof StateSchema>) {
+  return state.topicsOfInterest
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
 
 /**
  * Environment type for Content Intelligence MCP
@@ -143,10 +154,6 @@ export type Env = DefaultEnv &
  */
 const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
-    /**
-     * No Deco bindings needed - we connect to external APIs directly.
-     * Configuration comes from StateSchema (like readonly-sql pattern).
-     */
     scopes: [],
     state: StateSchema,
   },

@@ -2,7 +2,6 @@
  * Tool: Search Content
  *
  * Search and filter aggregated content from all configured sources.
- * Sources are configured via StateSchema at installation time.
  *
  * @module tools/search-content
  * @version 1.0.0
@@ -10,6 +9,7 @@
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Env } from "../main.ts";
+import { parseSourcesFromState, parseTopicsFromState } from "../main.ts";
 import {
   SearchContentInputSchema,
   SearchContentOutputSchema,
@@ -17,19 +17,13 @@ import {
 
 /**
  * Creates the search_content MCP tool.
- *
- * Access to configured sources comes from:
- * env.DECO_CHAT_REQUEST_CONTEXT.state.sources
- *
- * This follows the same pattern as readonly-sql accessing:
- * env.DECO_CHAT_REQUEST_CONTEXT.state.connectionString
  */
 export const createSearchContentTool = (env: Env) =>
   createPrivateTool({
     id: "SEARCH_CONTENT",
     description:
-      "Search through aggregated content from configured sources (RSS feeds, Reddit, web scrapers). " +
-      "Supports free text search, filtering by categories, source types, tags, and relevance scores. " +
+      "Search through aggregated content from configured sources (RSS feeds, Reddit). " +
+      "Supports free text search, filtering by categories, source types, and relevance scores. " +
       "Returns normalized content with summaries and metadata.",
     inputSchema: SearchContentInputSchema,
     outputSchema: SearchContentOutputSchema,
@@ -58,33 +52,30 @@ export const createSearchContentTool = (env: Env) =>
         excludeDuplicates = true,
       } = context;
 
-      // Access state from request context (same pattern as readonly-sql)
+      // Parse configuration from state
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
-      const configuredSources = state.sources || [];
+      const sources = parseSourcesFromState(state);
+      const configuredTopics = parseTopicsFromState(state);
 
-      // Filter sources by enabled status and type
-      const activeSources = configuredSources.filter(
-        (source: { enabled: boolean; type: string }) => {
-          if (!source.enabled) return false;
-          if (sourceTypes && !sourceTypes.includes(source.type)) return false;
-          return true;
-        },
-      );
+      // Filter sources by type if specified
+      const activeSources = sourceTypes
+        ? sources.filter((s) => sourceTypes.includes(s.type))
+        : sources;
 
-      console.log("[SEARCH_CONTENT] Searching with params:", {
+      console.log("[SEARCH_CONTENT] Config:", {
         query,
-        categories,
+        topics: categories || configuredTopics,
         sourceTypes,
         tags,
-        minRelevanceScore,
+        minRelevanceScore: minRelevanceScore ?? state.minRelevanceScore,
         daysBack,
         limit,
         excludeDuplicates,
-        configuredSourcesCount: configuredSources.length,
+        sourcesCount: sources.length,
         activeSourcesCount: activeSources.length,
       });
 
-      // TODO: Implement actual search logic using activeSources
+      // TODO: Implement actual search logic
       // 1. Fetch from each source using connectors
       // 2. Apply filters
       // 3. Return normalized results
