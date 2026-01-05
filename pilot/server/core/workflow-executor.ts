@@ -904,6 +904,15 @@ async function gatherTools(
           required: ["taskId"],
         },
       },
+      {
+        name: "NEW_THREAD",
+        description:
+          "Close the current conversation thread. Next message will start fresh. Use when user says 'new thread', 'nova conversa', 'start over', etc.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     );
   }
 
@@ -1280,6 +1289,29 @@ async function executeToolCall(
         message: deleted
           ? `Task ${taskId} deleted.`
           : `Task ${taskId} not found.`,
+      };
+    }
+
+    case "NEW_THREAD": {
+      const { closeThread } = await import("./task-storage.ts");
+      const source = (args.source as string) || ctx.task.source;
+      const chatId = (args.chatId as string) || ctx.task.chatId;
+
+      const closedTask = closeThread(source, chatId);
+
+      if (!closedTask) {
+        return {
+          success: true,
+          hadActiveThread: false,
+          message: "No active thread to close. Next message will start fresh.",
+        };
+      }
+
+      return {
+        success: true,
+        hadActiveThread: true,
+        closedTaskId: closedTask.taskId,
+        message: "Thread closed. Next message will start a new conversation.",
       };
     }
 
