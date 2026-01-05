@@ -23,16 +23,12 @@ export const SourceTypeSchema = z.enum([
   "linkedin",
 ]);
 
-export const ContentCategorySchema = z.enum([
-  "technology",
-  "business",
-  "science",
-  "design",
-  "ai_ml",
-  "engineering",
-  "product",
-  "other",
-]);
+/**
+ * Content category is a free-form string.
+ * Categories come from user's configured topics of interest.
+ * The LLM classifies content based on these topics.
+ */
+export const ContentCategorySchema = z.string();
 
 export const ProcessingStatusSchema = z.enum([
   "raw",
@@ -222,34 +218,49 @@ export const ContentQueryResultSchema = z.object({
 /**
  * Input schema for search_content tool
  */
+/**
+ * Helper to parse comma-separated string or array
+ */
+const stringOrArray = z.union([
+  z.array(z.string()),
+  z.string().transform((s) =>
+    s
+      .split(",")
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0),
+  ),
+]);
+
 export const SearchContentInputSchema = z.object({
   query: z
     .string()
     .optional()
     .describe("Free text search query to match against content"),
-  categories: z
-    .array(ContentCategorySchema)
+  categories: stringOrArray
     .optional()
-    .describe("Filter by content categories"),
-  sourceTypes: z
-    .array(SourceTypeSchema)
+    .describe("Filter by categories (array or comma-separated)"),
+  sourceTypes: stringOrArray
     .optional()
-    .describe("Filter by source types (rss, reddit, web_scraper)"),
-  tags: z.array(z.string()).optional().describe("Filter by tags"),
-  minRelevanceScore: z
+    .describe(
+      "Filter by source types: rss, reddit, web_scraper (array or comma-separated)",
+    ),
+  tags: stringOrArray
+    .optional()
+    .describe("Filter by tags (array or comma-separated)"),
+  minRelevanceScore: z.coerce
     .number()
     .min(0)
     .max(1)
     .optional()
     .describe("Minimum relevance score (0-1)"),
-  daysBack: z
+  daysBack: z.coerce
     .number()
     .int()
     .positive()
     .max(90)
     .optional()
     .describe("Number of days back to search (default: 7)"),
-  limit: z
+  limit: z.coerce
     .number()
     .int()
     .positive()
@@ -257,7 +268,7 @@ export const SearchContentInputSchema = z.object({
     .optional()
     .describe("Maximum number of results to return (default: 20)"),
   excludeDuplicates: z
-    .boolean()
+    .union([z.boolean(), z.string().transform((s) => s === "true")])
     .optional()
     .describe("Whether to exclude duplicate content (default: true)"),
 });
@@ -286,9 +297,10 @@ export const SearchContentOutputSchema = z.object({
 
 /**
  * Input schema for get_weekly_digest tool
+ * Uses coerce to handle string inputs from forms/JSON
  */
 export const GetWeeklyDigestInputSchema = z.object({
-  weekOffset: z
+  weekOffset: z.coerce
     .number()
     .int()
     .min(0)
@@ -296,7 +308,7 @@ export const GetWeeklyDigestInputSchema = z.object({
     .optional()
     .describe("Weeks back from current (0 = this week, 1 = last week)"),
   includeFullContent: z
-    .boolean()
+    .union([z.boolean(), z.string().transform((s) => s === "true")])
     .optional()
     .describe("Whether to include full content items (default: false)"),
 });
@@ -311,20 +323,20 @@ export const GetWeeklyDigestOutputSchema = z.object({
 
 /**
  * Input schema for get_trends tool
+ * Uses coerce to handle string inputs from forms/JSON
  */
 export const GetTrendsInputSchema = z.object({
-  daysBack: z
+  daysBack: z.coerce
     .number()
     .int()
     .positive()
     .max(30)
     .optional()
     .describe("Number of days to analyze for trends (default: 7)"),
-  categories: z
-    .array(ContentCategorySchema)
+  categories: stringOrArray
     .optional()
-    .describe("Filter trends by categories"),
-  limit: z
+    .describe("Filter trends by categories (array or comma-separated)"),
+  limit: z.coerce
     .number()
     .int()
     .positive()

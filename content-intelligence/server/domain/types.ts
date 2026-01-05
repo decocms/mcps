@@ -20,18 +20,12 @@
 export type SourceType = "rss" | "reddit" | "web_scraper" | "linkedin";
 
 /**
- * Content categories for classification.
- * This is the initial set - can be extended based on domain needs.
+ * Content category/topic.
+ *
+ * Categories are dynamic - they come from user's configured topics,
+ * not a fixed enum. The LLM classifies content based on user's interests.
  */
-export type ContentCategory =
-  | "technology"
-  | "business"
-  | "science"
-  | "design"
-  | "ai_ml"
-  | "engineering"
-  | "product"
-  | "other";
+export type ContentCategory = string;
 
 /**
  * Processing status of a content item through the pipeline.
