@@ -1,6 +1,7 @@
 {
   "scopeName": "deco",
   "name": "google-calendar",
+  "friendlyName": "Google Calendar",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-google-calendar.decocache.com/mcp"
