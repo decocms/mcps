@@ -567,8 +567,7 @@ async function executeLLMStep(
             `❌ ${tc.name} error: ${resultPreview.slice(0, 200)}`,
           );
         } else {
-          // Show a brief preview of successful results
-          const briefPreview = resultPreview.slice(0, 150).replace(/\n/g, " ");
+          // Show successful completion
           ctx.onProgress?.(
             ctx.task.taskId,
             step.name,
@@ -606,11 +605,44 @@ async function executeLLMStep(
   ctx.onProgress?.(
     ctx.task.taskId,
     step.name,
-    `⚠️ ${model.toUpperCase()}: Reached iteration limit`,
+    `⚠️ ${model.toUpperCase()}: Reached iteration limit, summarizing...`,
   );
 
+  // Instead of giving up, ask LLM to summarize what it found (no tools)
+  messages.push({
+    role: "user",
+    content:
+      "You've reached the iteration limit. Please provide a summary response based on the information you've gathered so far. Do NOT call any more tools - just summarize your findings.",
+  });
+
+  try {
+    const summaryResult = await ctx.callLLM(modelId, messages, []); // No tools
+    if (summaryResult.text) {
+      console.error(
+        `[pilot] [${step.name}] Summary after limit: ${summaryResult.text.slice(0, 200)}...`,
+      );
+      return {
+        response: summaryResult.text,
+      };
+    }
+  } catch (e) {
+    console.error(`[pilot] [${step.name}] Failed to get summary:`, e);
+  }
+
+  // Fallback: extract any useful content from message history
+  const toolResults = messages
+    .filter((m) => m.content.startsWith("[Tool Result"))
+    .map((m) => m.content)
+    .join("\n\n");
+
+  if (toolResults) {
+    return {
+      response: `Research completed (partial results):\n\n${toolResults.slice(0, 3000)}`,
+    };
+  }
+
   return {
-    response: "Reached iteration limit without completing.",
+    response: "Reached iteration limit. Some results may be incomplete.",
   };
 }
 
@@ -1167,14 +1199,33 @@ async function executeToolCall(
       });
 
       return {
-        tasks: tasks.map((t) => ({
-          id: t.taskId,
-          workflow: t.workflowId,
-          status: t.status,
-          currentStep: t.stepResults[t.currentStepIndex]?.stepName,
-          createdAt: t.createdAt,
-        })),
+        tasks: tasks.map((t) => {
+          // Extract topic/input for context
+          const input = t.input || {};
+          const topic =
+            input.topic || input.message || input.theme || "(no topic)";
+
+          // Get result summary if completed
+          const resultSummary =
+            t.status === "completed" && t.result
+              ? typeof t.result === "string"
+                ? t.result.slice(0, 200)
+                : JSON.stringify(t.result).slice(0, 200)
+              : undefined;
+
+          return {
+            id: t.taskId,
+            workflow: t.workflowId,
+            status: t.status,
+            topic: typeof topic === "string" ? topic.slice(0, 100) : topic,
+            currentStep: t.stepResults[t.currentStepIndex]?.stepName,
+            createdAt: t.createdAt,
+            completedAt: t.completedAt,
+            resultPreview: resultSummary,
+          };
+        }),
         count: tasks.length,
+        hint: "Use this context to understand what the user is referring to when they say 'draft this', 'continue', etc.",
       };
     }
 
