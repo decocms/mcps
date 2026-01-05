@@ -25,7 +25,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       events: [...WORKFLOW_EVENTS] as string[],
       handler: async ({ events }, env) => {
         try {
+          console.log("handling events", events);
           handleWorkflowEvents(events, env as unknown as Env);
+          console.log("events handled");
           return { success: true };
         } catch (error) {
           console.error(`[MAIN] Error handling events: ${error}`);

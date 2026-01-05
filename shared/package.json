@@ -20,9 +20,9 @@
         "./serve": "./serve.ts"
     },
     "devDependencies": {
+        "@decocms/runtime": "0.25.1",
         "@types/bun": "^1.2.14",
         "vite": "7.2.0",
-        "@decocms/runtime": "0.25.1",
-        "zod": "^3.24.3"
+        "zod": "^4.0.0"
     }
 }

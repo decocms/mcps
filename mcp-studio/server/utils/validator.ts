@@ -33,8 +33,8 @@ export const ValidationErrorSchema = z.object({
   step: z.string(),
   field: z.string(),
   ref: z.string().optional(),
-  expected: z.record(z.unknown()).optional(),
-  actual: z.record(z.unknown()).optional(),
+  expected: z.record(z.string(), z.unknown()).optional(),
+  actual: z.record(z.string(), z.unknown()).optional(),
   message: z.string(),
 });
 

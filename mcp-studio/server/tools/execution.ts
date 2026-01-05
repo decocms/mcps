@@ -107,7 +107,7 @@ export const createCreateTool = (env: Env) =>
     id: CREATE_BINDING?.name,
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
-      input: z.record(z.unknown()),
+      input: z.record(z.string(), z.unknown()),
       steps: z.array(StepSchema),
       gateway_id: z.string(),
       start_at_epoch_ms: z.number().optional(),
@@ -120,6 +120,7 @@ export const createCreateTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
+        console.log("creating execution");
         const { id: executionId, workflow_id } = await createExecution(env, {
           input: context.input,
           gateway_id: context.gateway_id,
@@ -128,6 +129,7 @@ export const createCreateTool = (env: Env) =>
           steps: context.steps,
           workflow_collection_id: context.workflow_collection_id,
         });
+        console.log("publishing event");
         const result =
           await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
             type: "workflow.execution.created",
