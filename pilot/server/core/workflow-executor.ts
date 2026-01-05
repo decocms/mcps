@@ -552,22 +552,27 @@ async function executeLLMStep(
           `[pilot] Tool ${tc.name} result (${resultStr.length} chars): ${resultPreview}`,
         );
 
-        // Log tool result to task progress - check for various error patterns
-        const lowerResult = resultStr.toLowerCase();
-        const isError =
-          lowerResult.includes("error") ||
-          lowerResult.includes("unauthorized") ||
-          lowerResult.includes("forbidden") ||
-          lowerResult.includes("api key") ||
-          lowerResult.includes("apikey") ||
-          lowerResult.includes("authentication") ||
-          lowerResult.includes("invalid");
+        // Check if result is actually an error (structured error response, not just containing the word "error")
+        const isErrorResult =
+          (typeof toolResult === "object" &&
+            toolResult !== null &&
+            ("error" in toolResult || "isError" in toolResult)) ||
+          resultStr.startsWith('{"error":') ||
+          resultStr.startsWith('{"isError":true');
 
-        if (isError) {
+        if (isErrorResult) {
           ctx.onProgress?.(
             ctx.task.taskId,
             step.name,
-            `❌ ${tc.name} error: ${resultPreview}`,
+            `❌ ${tc.name} error: ${resultPreview.slice(0, 200)}`,
+          );
+        } else {
+          // Show a brief preview of successful results
+          const briefPreview = resultPreview.slice(0, 150).replace(/\n/g, " ");
+          ctx.onProgress?.(
+            ctx.task.taskId,
+            step.name,
+            `✓ ${tc.name} completed`,
           );
         }
 
@@ -637,6 +642,21 @@ async function gatherTools(
         tools.push(cached);
         console.error(`[pilot] Tool ${name}: found in cache with schema`);
       } else {
+        // First check local tools
+        const localTools = getAllLocalTools();
+        const localTool = localTools.find((t) => t.name === name);
+        if (localTool) {
+          const def: ToolDefinition = {
+            name: localTool.name,
+            description: localTool.description || "",
+            inputSchema: localTool.inputSchema || { type: "object" },
+          };
+          tools.push(def);
+          ctx.toolCache.set(name, def);
+          console.error(`[pilot] Tool ${name}: found in local tools`);
+          continue;
+        }
+
         // Fallback: try to find in connections
         console.error(`[pilot] Tool ${name}: not in cache, fetching...`);
         const connections = await ctx.listConnections();
@@ -672,6 +692,18 @@ async function gatherTools(
   // For "all" or "discover", get all available tools and cache them
   const connections = await ctx.listConnections();
   const allTools: ToolDefinition[] = [];
+
+  // Add local tools first (LIST_FILES, READ_FILE, etc.)
+  const localTools = getAllLocalTools();
+  for (const tool of localTools) {
+    const def: ToolDefinition = {
+      name: tool.name,
+      description: tool.description || "",
+      inputSchema: tool.inputSchema || { type: "object" },
+    };
+    allTools.push(def);
+    ctx.toolCache.set(tool.name, def);
+  }
 
   // Debug: log all connections and their tool counts
   console.error(
@@ -1160,6 +1192,39 @@ async function executeToolCall(
           ? `Task ${taskId} deleted.`
           : `Task ${taskId} not found.`,
       };
+    }
+
+    // ========================================================================
+    // Local Tools (LIST_FILES, READ_FILE, WRITE_FILE, EXECUTE, SPEAK)
+    // ========================================================================
+
+    case "LIST_FILES":
+    case "READ_FILE":
+    case "WRITE_FILE":
+    case "EXECUTE":
+    case "SPEAK": {
+      // Import and execute local tool
+      const { getAllLocalTools } = await import("../tools/index.ts");
+      const localTools = getAllLocalTools();
+      const localTool = localTools.find((t) => t.name === toolName);
+      if (localTool) {
+        const result = await localTool.execute(args);
+        // Extract text content from MCP result format
+        if (result.content && Array.isArray(result.content)) {
+          const textContent = result.content.find(
+            (c: { type: string }) => c.type === "text",
+          );
+          if (textContent && "text" in textContent) {
+            try {
+              return JSON.parse(textContent.text as string);
+            } catch {
+              return textContent.text;
+            }
+          }
+        }
+        return result;
+      }
+      throw new Error(`Local tool not found: ${toolName}`);
     }
 
     default: {
