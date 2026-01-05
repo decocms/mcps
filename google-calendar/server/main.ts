@@ -23,6 +23,7 @@ const GOOGLE_CALENDAR_SCOPES = [
 let lastRedirectUri: string | null = null;
 
 const runtime = withRuntime<Env>({
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: {
     mode: "PKCE",
     // Used in protected resource metadata to point to the auth server
@@ -67,9 +68,6 @@ const runtime = withRuntime<Env>({
       // Use the stored redirect_uri from authorizationUrl
       const cleanRedirectUri = lastRedirectUri;
 
-      console.log("[DEBUG] lastRedirectUri:", lastRedirectUri);
-      console.log("[DEBUG] cleanRedirectUri:", cleanRedirectUri);
-
       if (!cleanRedirectUri) {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
@@ -83,8 +81,6 @@ const runtime = withRuntime<Env>({
         grant_type: "authorization_code",
         redirect_uri: cleanRedirectUri,
       });
-
-      console.log("[DEBUG] params redirect_uri:", params.get("redirect_uri"));
 
       // Add PKCE verifier if provided
       if (code_verifier) {
@@ -120,7 +116,6 @@ const runtime = withRuntime<Env>({
       };
     },
   },
-  tools,
 });
 
 serve(runtime.fetch);
