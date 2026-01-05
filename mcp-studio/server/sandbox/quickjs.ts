@@ -1,4 +1,4 @@
-import variant from "@jitl/quickjs-wasmfile-release-sync";
+import variant from "@jitl/quickjs-singlefile-cjs-release-sync";
 import {
   newQuickJSWASMModuleFromVariant,
   type QuickJSWASMModule,
