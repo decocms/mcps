@@ -486,10 +486,12 @@ export const createLLMStreamTool = (env: Env) =>
     // inputSchema: STREAM_BINDING.inputSchema,
     inputSchema: z.object({}),
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
@@ -639,10 +641,12 @@ export const createLLMGenerateTool = (env: Env) =>
     inputSchema: GENERATE_BINDING.inputSchema,
     outputSchema: GENERATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
