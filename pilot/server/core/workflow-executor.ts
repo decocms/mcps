@@ -24,6 +24,7 @@ import {
   addStepProgress,
 } from "./task-storage.ts";
 import { loadWorkflow } from "./workflow-storage.ts";
+import { getAllLocalTools } from "../tools/index.ts";
 
 // ============================================================================
 // Workflow Tool Validation
@@ -80,6 +81,11 @@ export async function validateWorkflowTools(
     for (const tool of conn.tools) {
       availableTools.add(tool.name);
     }
+  }
+
+  // Also include Pilot's local tools (LIST_FILES, READ_FILE, EXECUTE, etc.)
+  for (const tool of getAllLocalTools()) {
+    availableTools.add(tool.name);
   }
 
   // Find missing tools
