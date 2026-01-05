@@ -77,6 +77,9 @@ export const TaskSchema = z.object({
   // Final result
   result: z.unknown().optional(),
   error: z.string().optional(),
+
+  // Thread management - when true, this task won't be used for thread continuation
+  threadClosed: z.boolean().optional(),
 });
 
 export type Task = z.infer<typeof TaskSchema>;

@@ -462,6 +462,7 @@ const THREAD_TIMEOUT_MS = 5 * 60 * 1000;
  * - It's from the same source and chatId
  * - It was last updated within THREAD_TIMEOUT_MS
  * - It's completed (not still running or failed)
+ * - It's not marked as threadClosed
  *
  * @returns The continuable task, or null if none found
  */
@@ -480,6 +481,9 @@ export function getRecentThread(
     // Must be completed (not still running, failed, or cancelled)
     if (task.status !== "completed") continue;
 
+    // Must not be explicitly closed
+    if (task.threadClosed) continue;
+
     // Must be recent
     const lastUpdated = new Date(task.lastUpdatedAt).getTime();
     const age = now - lastUpdated;
@@ -490,6 +494,32 @@ export function getRecentThread(
       );
       return task;
     }
+  }
+
+  return null;
+}
+
+/**
+ * Close the current thread for a source/chatId.
+ * This marks the most recent task as threadClosed so the next message starts fresh.
+ *
+ * @returns The closed task, or null if no active thread found
+ */
+export function closeThread(source: string, chatId?: string): Task | null {
+  const { tasks } = listTasks({ limit: 10, source });
+
+  for (const task of tasks) {
+    if (task.chatId !== chatId) continue;
+    if (task.status !== "completed") continue;
+    if (task.threadClosed) continue;
+
+    // Found the active thread - close it
+    task.threadClosed = true;
+    task.lastUpdatedAt = new Date().toISOString();
+    saveTask(task);
+
+    console.error(`[task-storage] Closed thread: ${task.taskId}`);
+    return task;
   }
 
   return null;

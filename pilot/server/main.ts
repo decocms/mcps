@@ -29,6 +29,7 @@ import {
   getTaskStats,
   cleanupExpiredTasks,
   getRecentThread,
+  closeThread,
 } from "./core/task-storage.ts";
 import {
   loadWorkflow,
@@ -861,6 +862,59 @@ async function main() {
           taskId: result.task.taskId,
           status: result.task.status,
           isFollowUp: result.isFollowUp,
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "NEW_THREAD",
+    {
+      title: "Start New Thread",
+      description:
+        "Close the current conversation thread so the next message starts fresh. Use when user says 'new thread', 'nova conversa', 'start over', etc.",
+      inputSchema: z.object({
+        source: z.string().optional().describe("Source interface"),
+        chatId: z.string().optional().describe("Chat/thread ID"),
+      }),
+    },
+    async (args) => {
+      const { source, chatId } = args;
+
+      const closedTask = closeThread(source || "cli", chatId);
+
+      if (!closedTask) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message:
+                  "No active thread to close. Next message will start fresh.",
+              }),
+            },
+          ],
+          structuredContent: { success: true, hadActiveThread: false },
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              message:
+                "Thread closed. Next message will start a new conversation.",
+              closedTaskId: closedTask.taskId,
+            }),
+          },
+        ],
+        structuredContent: {
+          success: true,
+          hadActiveThread: true,
+          closedTaskId: closedTask.taskId,
         },
       };
     },
