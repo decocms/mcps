@@ -38,6 +38,28 @@ Pilot is a local AI agent that executes configurable workflows. It subscribes to
 5. **Pilot** publishes `agent.response.{source}` event
 6. **Interface** receives and displays response
 
+## Recent Updates
+
+### Thread Management
+
+Messages within 5 minutes are treated as the same "thread" (conversation). This enables:
+
+- **Workflow chaining**: "draft this" after research continues the flow
+- **Natural follow-ups**: "yes", "continue", "go ahead" proceed to next step
+- **Fresh starts**: "new thread", "nova conversa" clears context
+
+### Improved Tool Routing
+
+The fast-router now explicitly guides LLMs to use the correct local tools:
+
+| Use This | NOT This |
+|----------|----------|
+| `list_tasks` | `TASK_LIST`, `task_list` |
+| `list_workflows` | `COLLECTION_WORKFLOW_LIST` |
+| `start_task` | `WORKFLOW_START`, `TASK_CREATE` |
+
+This prevents confusion when 192+ tools are available.
+
 ## Quick Start
 
 ### 1. Configure
