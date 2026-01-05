@@ -481,7 +481,7 @@ export const createLLMStreamTool = (env: Env) =>
     execute: async ({ context }) => {
       const {
         modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
+        callOptions: { abortSignal: _abortSignal, ...callOptions } = {},
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
@@ -516,7 +516,7 @@ export const createLLMGenerateTool = (env: Env) =>
     execute: async ({ context }) => {
       const {
         modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
+        callOptions: { abortSignal: _abortSignal, ...callOptions } = {},
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
@@ -530,6 +530,12 @@ export const createLLMGenerateTool = (env: Env) =>
       const result = await model.doGenerate(
         callOptions as LanguageModelV2CallOptions,
       );
+
+      // Clean up response.body if it's a Uint8Array (raw HTTP response)
+      // This ensures JSON serialization works correctly over MCP
+      if (result?.response?.body instanceof Uint8Array) {
+        result.response.body = new TextDecoder().decode(result.response.body);
+      }
 
       return result as unknown as z.infer<typeof GENERATE_BINDING.outputSchema>;
     },
