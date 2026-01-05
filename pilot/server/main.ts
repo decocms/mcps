@@ -29,8 +29,6 @@ import {
   getTaskStats,
   cleanupExpiredTasks,
   getRecentThread,
-  addFollowUpToTask,
-  completeFollowUpStep,
 } from "./core/task-storage.ts";
 import {
   loadWorkflow,
@@ -562,10 +560,8 @@ function extractResponse(result: unknown, task?: Task): string {
  * Handle a message with thread continuation.
  *
  * If there's a recent completed task (< 5 min) from the same source/chatId,
- * the new message is added as a follow-up step to that task.
- * Otherwise, a new task is created.
- *
- * This creates a natural "thread" without explicit conversation management.
+ * we include its history for context. Each message creates a new task,
+ * but the "thread" is implicit from the shared history.
  */
 async function handleMessage(
   text: string,
@@ -575,6 +571,10 @@ async function handleMessage(
   forceNewTask = false,
 ): Promise<{ response: string; task: Task; isFollowUp: boolean }> {
   // Check for recent thread to continue (unless user wants new task)
+  let threadHistory: Array<{ role: "user" | "assistant"; content: string }> =
+    [];
+  let isFollowUp = false;
+
   if (!forceNewTask) {
     const recentThread = getRecentThread(
       source,
@@ -584,45 +584,19 @@ async function handleMessage(
 
     if (recentThread) {
       console.error(
-        `[pilot] Continuing thread: ${recentThread.taskId} (adding follow-up)`,
+        `[pilot] Continuing thread from: ${recentThread.taskId} (passing history)`,
       );
 
-      // Add follow-up step to existing task
-      const followUp = addFollowUpToTask(recentThread.taskId, text);
-      if (!followUp) {
-        console.error(`[pilot] Failed to add follow-up, starting new task`);
-      } else {
-        // Build history from the existing task's steps
-        const threadHistory = buildHistoryFromTask(recentThread);
-
-        // Execute the workflow with history context
-        const result = await startWorkflow(
-          config.defaultWorkflow,
-          { message: text, history: [...history, ...threadHistory] },
-          source,
-          chatId,
-        );
-
-        // Update the follow-up step with the response
-        completeFollowUpStep(
-          recentThread.taskId,
-          followUp.stepIndex,
-          result.response,
-        );
-
-        return {
-          response: result.response,
-          task: loadTask(recentThread.taskId) || result.task,
-          isFollowUp: true,
-        };
-      }
+      // Build history from the recent task
+      threadHistory = buildHistoryFromTask(recentThread);
+      isFollowUp = true;
     }
   }
 
-  // No recent thread or forceNewTask - create new task
+  // Always create a new task, but include thread history for context
   const result = await startWorkflow(
     config.defaultWorkflow,
-    { message: text, history },
+    { message: text, history: [...history, ...threadHistory] },
     source,
     chatId,
   );
@@ -630,20 +604,37 @@ async function handleMessage(
   return {
     response: result.response,
     task: result.task,
-    isFollowUp: false,
+    isFollowUp,
   };
 }
 
 /**
  * Build conversation history from a task's step outputs.
- * Extracts user messages and assistant responses from step results.
+ * This creates the "thread context" for follow-up messages.
  */
 function buildHistoryFromTask(
   task: Task,
 ): Array<{ role: "user" | "assistant"; content: string }> {
   const history: Array<{ role: "user" | "assistant"; content: string }> = [];
 
-  // Add the original message
+  // First, include any history the task already had
+  if (
+    task.workflowInput?.history &&
+    Array.isArray(task.workflowInput.history)
+  ) {
+    for (const h of task.workflowInput.history) {
+      const entry = h as { role: string; content: string };
+      if (
+        entry.role &&
+        entry.content &&
+        (entry.role === "user" || entry.role === "assistant")
+      ) {
+        history.push({ role: entry.role, content: entry.content });
+      }
+    }
+  }
+
+  // Add the original message from this task
   if (task.workflowInput?.message) {
     history.push({
       role: "user",
@@ -651,25 +642,12 @@ function buildHistoryFromTask(
     });
   }
 
-  // Add responses from completed steps
-  for (const step of task.stepResults) {
-    if (step.status === "completed" && step.output) {
-      const output = step.output as Record<string, unknown>;
-      const response = output.response || output.text;
-      if (response && typeof response === "string") {
-        history.push({ role: "assistant", content: response });
-      }
-    }
-
-    // Check for follow-up messages in progress
-    for (const progress of step.progressMessages || []) {
-      if (progress.message.startsWith("📨 Follow-up:")) {
-        // Extract user message from progress
-        const userMsg = progress.message.replace("📨 Follow-up:", "").trim();
-        if (userMsg) {
-          history.push({ role: "user", content: userMsg });
-        }
-      }
+  // Add the final response from this task
+  if (task.result) {
+    const result = task.result as Record<string, unknown>;
+    const response = result.response || result.text;
+    if (response && typeof response === "string") {
+      history.push({ role: "assistant", content: response });
     }
   }
 
