@@ -6,7 +6,6 @@
  * used as a binding by other MCPs for data persistence.
  */
 import { z } from "zod";
-import { serve } from "@decocms/mcps-shared/serve";
 import {
   withRuntime,
   type DefaultEnv,
@@ -43,4 +42,4 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-serve(runtime.fetch);
+export default runtime;
