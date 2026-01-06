@@ -1,13 +1,17 @@
-# Meta Ads Analytics MCP  
+# Meta Ads MCP  
 
-MCP for performance analysis of Meta/Facebook Ads campaigns.
+Complete MCP for managing and analyzing Meta/Facebook Ads campaigns.
 
 ## Features
 
-This MCP provides tools to analyze the performance of your Meta (Facebook/Instagram) advertising campaigns:
+This MCP provides comprehensive tools to **create, manage, and analyze** your Meta (Facebook/Instagram) advertising campaigns:
 
-- **View performance** of campaigns, ad sets, and ads
-- **Get detailed metrics** with breakdowns by age, gender, country, device, etc.
+- **Create campaigns** with objectives, budgets, and scheduling
+- **Create ad sets** with targeting, optimization, and bidding
+- **Create ads** with creatives, images, and call-to-actions
+- **Update/pause/delete** campaigns, ad sets, and ads
+- **Upload images** for use in ad creatives
+- **View performance** metrics with breakdowns by age, gender, country, device, etc.
 - **Compare performance** between periods
 - **Analyze ROI and costs** at different levels
 
@@ -32,24 +36,39 @@ This MCP provides tools to analyze the performance of your Meta (Facebook/Instag
 |------|-------------|
 | `META_ADS_GET_ACCOUNT_INFO` | Account details (currency, timezone, status) - works with both token types |
 
-### Campaigns (2 tools)
+### Campaigns (5 tools)
 | Tool | Description |
 |------|-------------|
 | `META_ADS_GET_CAMPAIGNS` | List campaigns with status filter |
 | `META_ADS_GET_CAMPAIGN_DETAILS` | Details of a specific campaign |
+| `META_ADS_CREATE_CAMPAIGN` | Create a new campaign with objective, budget, and schedule |
+| `META_ADS_UPDATE_CAMPAIGN` | Update/pause/activate a campaign |
+| `META_ADS_DELETE_CAMPAIGN` | Delete a campaign |
 
-### Ad Sets (2 tools)
+### Ad Sets (5 tools)
 | Tool | Description |
 |------|-------------|
 | `META_ADS_GET_ADSETS` | List ad sets with campaign filter |
 | `META_ADS_GET_ADSET_DETAILS` | Ad set details (targeting, budget) |
+| `META_ADS_CREATE_ADSET` | Create ad set with targeting, budget, and optimization |
+| `META_ADS_UPDATE_ADSET` | Update/pause/activate an ad set |
+| `META_ADS_DELETE_ADSET` | Delete an ad set |
 
-### Ads (3 tools)
+### Ads (6 tools)
 | Tool | Description |
 |------|-------------|
 | `META_ADS_GET_ADS` | List ads with ad set filter |
 | `META_ADS_GET_AD_DETAILS` | Ad details |
-| `META_ADS_GET_AD_CREATIVES` | Ad creatives |
+| `META_ADS_GET_AD_CREATIVES` | Get creative details for an ad |
+| `META_ADS_CREATE_AD` | Create a new ad with a creative |
+| `META_ADS_UPDATE_AD` | Update/pause/activate an ad |
+| `META_ADS_DELETE_AD` | Delete an ad |
+
+### Creatives & Images (2 tools)
+| Tool | Description |
+|------|-------------|
+| `META_ADS_UPLOAD_AD_IMAGE` | Upload an image for use in creatives |
+| `META_ADS_CREATE_AD_CREATIVE` | Create a creative with image, text, and CTA |
 
 ### Insights (1 tool)
 | Tool | Description |
@@ -151,11 +170,48 @@ bun run build
 bun run publish
 ```
 
+## Creating a Complete Campaign
+
+To create a full campaign from scratch, follow this flow:
+
+```
+1. Create Campaign
+   -> META_ADS_CREATE_CAMPAIGN(account_id, name, objective, ...)
+
+2. Create Ad Set with targeting
+   -> META_ADS_CREATE_ADSET(account_id, campaign_id, targeting, ...)
+
+3. Upload image (if needed)
+   -> META_ADS_UPLOAD_AD_IMAGE(account_id, image_url)
+
+4. Create Ad Creative
+   -> META_ADS_CREATE_AD_CREATIVE(account_id, page_id, link, image_hash, ...)
+
+5. Create Ad
+   -> META_ADS_CREATE_AD(account_id, adset_id, creative_id, ...)
+
+6. Activate (when ready)
+   -> META_ADS_UPDATE_CAMPAIGN(campaign_id, status: "ACTIVE")
+```
+
+### Campaign Objectives
+
+| Objective | Use Case |
+|-----------|----------|
+| `OUTCOME_TRAFFIC` | Drive website visits |
+| `OUTCOME_ENGAGEMENT` | Get likes, comments, shares |
+| `OUTCOME_LEADS` | Collect leads via forms |
+| `OUTCOME_SALES` | Drive purchases/conversions |
+| `OUTCOME_AWARENESS` | Reach and brand awareness |
+| `OUTCOME_APP_PROMOTION` | App installs |
+
 ## Usage Examples
+
+### Reading Data
 
 ```
 1. "List my ad accounts" 
-   -> META_ADS_GET_AD_ACCOUNTS
+   -> META_ADS_GET_USER_AD_ACCOUNTS
 
 2. "Show active campaigns for account act_123" 
    -> META_ADS_GET_CAMPAIGNS(account_id: "act_123", status_filter: "ACTIVE")
@@ -168,4 +224,72 @@ bun run publish
 
 5. "Which ads have the best CTR?"
    -> META_ADS_GET_ADS + META_ADS_GET_INSIGHTS for each
+```
+
+### Creating Campaigns
+
+```
+1. "Create a traffic campaign for my website"
+   -> META_ADS_CREATE_CAMPAIGN(
+        account_id: "act_123",
+        name: "Website Traffic Q1",
+        objective: "OUTCOME_TRAFFIC",
+        status: "PAUSED"
+      )
+
+2. "Create an ad set targeting 25-45 year olds in Brazil"
+   -> META_ADS_CREATE_ADSET(
+        account_id: "act_123",
+        campaign_id: "123456",
+        name: "Brazil Adults",
+        targeting: {
+          age_min: 25,
+          age_max: 45,
+          geo_locations: { countries: ["BR"] }
+        },
+        optimization_goal: "LINK_CLICKS",
+        billing_event: "IMPRESSIONS",
+        daily_budget: "5000"
+      )
+
+3. "Upload an image for my ad"
+   -> META_ADS_UPLOAD_AD_IMAGE(
+        account_id: "act_123",
+        image_url: "https://example.com/my-ad-image.jpg"
+      )
+
+4. "Create a creative with the uploaded image"
+   -> META_ADS_CREATE_AD_CREATIVE(
+        account_id: "act_123",
+        page_id: "page_123",
+        link: "https://mysite.com",
+        message: "Check out our amazing products!",
+        headline: "Limited Time Offer",
+        image_hash: "abc123hash",
+        call_to_action_type: "SHOP_NOW"
+      )
+
+5. "Create an ad using the creative"
+   -> META_ADS_CREATE_AD(
+        account_id: "act_123",
+        adset_id: "adset_456",
+        name: "Shop Now Ad",
+        creative_id: "creative_789"
+      )
+```
+
+### Managing Campaigns
+
+```
+1. "Pause campaign X"
+   -> META_ADS_UPDATE_CAMPAIGN(campaign_id: "123", status: "PAUSED")
+
+2. "Increase daily budget to $100"
+   -> META_ADS_UPDATE_ADSET(adset_id: "456", daily_budget: "10000")
+
+3. "Activate my ad"
+   -> META_ADS_UPDATE_AD(ad_id: "789", status: "ACTIVE")
+
+4. "Delete old campaign"
+   -> META_ADS_DELETE_CAMPAIGN(campaign_id: "123")
 ```

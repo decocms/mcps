@@ -16,6 +16,16 @@ import type {
   Page,
   PaginatedResponse,
   ApiError,
+  CreateCampaignParams,
+  UpdateCampaignParams,
+  CreateAdSetParams,
+  UpdateAdSetParams,
+  CreateAdParams,
+  UpdateAdParams,
+  CreateAdCreativeParams,
+  MutationResponse,
+  DeleteResponse,
+  ImageUploadResponse,
 } from "./types.ts";
 
 export interface MetaClientConfig {
@@ -469,6 +479,100 @@ export class MetaAdsClient {
     });
   }
 
+  /**
+   * Create a new campaign
+   */
+  async createCampaign(
+    accountId: string,
+    params: CreateCampaignParams,
+  ): Promise<MutationResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const body: Record<string, unknown> = {
+      name: params.name,
+      objective: params.objective,
+      status: params.status || "PAUSED",
+      special_ad_categories: params.special_ad_categories || [],
+    };
+
+    // Add optional budget fields
+    if (params.daily_budget) {
+      body.daily_budget = params.daily_budget;
+    }
+    if (params.lifetime_budget) {
+      body.lifetime_budget = params.lifetime_budget;
+    }
+    if (params.start_time) {
+      body.start_time = params.start_time;
+    }
+    if (params.stop_time) {
+      body.stop_time = params.stop_time;
+    }
+    if (params.buying_type) {
+      body.buying_type = params.buying_type;
+    }
+    if (params.bid_strategy) {
+      body.bid_strategy = params.bid_strategy;
+    }
+
+    return makeRequest<MutationResponse>(
+      this.config,
+      `/${formattedId}/campaigns`,
+      {
+        method: "POST",
+        body,
+      },
+    );
+  }
+
+  /**
+   * Update an existing campaign
+   */
+  async updateCampaign(
+    campaignId: string,
+    params: UpdateCampaignParams,
+  ): Promise<MutationResponse> {
+    const body: Record<string, unknown> = {};
+
+    if (params.name !== undefined) {
+      body.name = params.name;
+    }
+    if (params.status !== undefined) {
+      body.status = params.status;
+    }
+    if (params.daily_budget !== undefined) {
+      body.daily_budget = params.daily_budget;
+    }
+    if (params.lifetime_budget !== undefined) {
+      body.lifetime_budget = params.lifetime_budget;
+    }
+    if (params.start_time !== undefined) {
+      body.start_time = params.start_time;
+    }
+    if (params.stop_time !== undefined) {
+      body.stop_time = params.stop_time;
+    }
+    if (params.bid_strategy !== undefined) {
+      body.bid_strategy = params.bid_strategy;
+    }
+
+    return makeRequest<MutationResponse>(this.config, `/${campaignId}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Delete a campaign
+   */
+  async deleteCampaign(campaignId: string): Promise<DeleteResponse> {
+    return makeRequest<DeleteResponse>(this.config, `/${campaignId}`, {
+      method: "DELETE",
+    });
+  }
+
   // ============ AdSet Methods ============
 
   /**
@@ -521,6 +625,123 @@ export class MetaAdsClient {
           fields ||
           "id,name,campaign_id,status,effective_status,created_time,updated_time,start_time,end_time,daily_budget,lifetime_budget,budget_remaining,bid_amount,bid_strategy,billing_event,optimization_goal,targeting,promoted_object",
       },
+    });
+  }
+
+  /**
+   * Create a new ad set
+   */
+  async createAdSet(
+    accountId: string,
+    params: CreateAdSetParams,
+  ): Promise<MutationResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const body: Record<string, unknown> = {
+      campaign_id: params.campaign_id,
+      name: params.name,
+      status: params.status || "PAUSED",
+      targeting: params.targeting,
+      optimization_goal: params.optimization_goal,
+      billing_event: params.billing_event,
+    };
+
+    // Add optional fields
+    if (params.bid_strategy) {
+      body.bid_strategy = params.bid_strategy;
+    }
+    if (params.bid_amount) {
+      body.bid_amount = params.bid_amount;
+    }
+    if (params.daily_budget) {
+      body.daily_budget = params.daily_budget;
+    }
+    if (params.lifetime_budget) {
+      body.lifetime_budget = params.lifetime_budget;
+    }
+    if (params.start_time) {
+      body.start_time = params.start_time;
+    }
+    if (params.end_time) {
+      body.end_time = params.end_time;
+    }
+    if (params.promoted_object) {
+      body.promoted_object = params.promoted_object;
+    }
+    if (params.destination_type) {
+      body.destination_type = params.destination_type;
+    }
+    if (params.attribution_spec) {
+      body.attribution_spec = params.attribution_spec;
+    }
+
+    return makeRequest<MutationResponse>(
+      this.config,
+      `/${formattedId}/adsets`,
+      {
+        method: "POST",
+        body,
+      },
+    );
+  }
+
+  /**
+   * Update an existing ad set
+   */
+  async updateAdSet(
+    adsetId: string,
+    params: UpdateAdSetParams,
+  ): Promise<MutationResponse> {
+    const body: Record<string, unknown> = {};
+
+    if (params.name !== undefined) {
+      body.name = params.name;
+    }
+    if (params.status !== undefined) {
+      body.status = params.status;
+    }
+    if (params.targeting !== undefined) {
+      body.targeting = params.targeting;
+    }
+    if (params.optimization_goal !== undefined) {
+      body.optimization_goal = params.optimization_goal;
+    }
+    if (params.billing_event !== undefined) {
+      body.billing_event = params.billing_event;
+    }
+    if (params.bid_strategy !== undefined) {
+      body.bid_strategy = params.bid_strategy;
+    }
+    if (params.bid_amount !== undefined) {
+      body.bid_amount = params.bid_amount;
+    }
+    if (params.daily_budget !== undefined) {
+      body.daily_budget = params.daily_budget;
+    }
+    if (params.lifetime_budget !== undefined) {
+      body.lifetime_budget = params.lifetime_budget;
+    }
+    if (params.start_time !== undefined) {
+      body.start_time = params.start_time;
+    }
+    if (params.end_time !== undefined) {
+      body.end_time = params.end_time;
+    }
+
+    return makeRequest<MutationResponse>(this.config, `/${adsetId}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Delete an ad set
+   */
+  async deleteAdSet(adsetId: string): Promise<DeleteResponse> {
+    return makeRequest<DeleteResponse>(this.config, `/${adsetId}`, {
+      method: "DELETE",
     });
   }
 
@@ -612,6 +833,217 @@ export class MetaAdsClient {
           "id,name,title,body,call_to_action_type,image_url,image_hash,video_id,link_url,object_story_spec,thumbnail_url,effective_object_story_id",
       },
     });
+  }
+
+  /**
+   * Create a new ad
+   */
+  async createAd(
+    accountId: string,
+    params: CreateAdParams,
+  ): Promise<MutationResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const body: Record<string, unknown> = {
+      adset_id: params.adset_id,
+      name: params.name,
+      status: params.status || "PAUSED",
+      creative: params.creative,
+    };
+
+    if (params.tracking_specs) {
+      body.tracking_specs = params.tracking_specs;
+    }
+    if (params.conversion_domain) {
+      body.conversion_domain = params.conversion_domain;
+    }
+
+    return makeRequest<MutationResponse>(this.config, `/${formattedId}/ads`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Update an existing ad
+   */
+  async updateAd(
+    adId: string,
+    params: UpdateAdParams,
+  ): Promise<MutationResponse> {
+    const body: Record<string, unknown> = {};
+
+    if (params.name !== undefined) {
+      body.name = params.name;
+    }
+    if (params.status !== undefined) {
+      body.status = params.status;
+    }
+    if (params.creative !== undefined) {
+      body.creative = params.creative;
+    }
+
+    return makeRequest<MutationResponse>(this.config, `/${adId}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Delete an ad
+   */
+  async deleteAd(adId: string): Promise<DeleteResponse> {
+    return makeRequest<DeleteResponse>(this.config, `/${adId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Upload an image to use in ad creatives
+   * @param accountId - The ad account ID
+   * @param imageUrl - URL of the image to upload (Meta will fetch it)
+   * @returns Image hash and URL
+   */
+  async uploadAdImage(
+    accountId: string,
+    imageUrl: string,
+  ): Promise<ImageUploadResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const response = await makeRequest<{
+      images: Record<
+        string,
+        { hash: string; url: string; width?: number; height?: number }
+      >;
+    }>(this.config, `/${formattedId}/adimages`, {
+      method: "POST",
+      body: {
+        url: imageUrl,
+      },
+    });
+
+    // The response contains the image info keyed by filename
+    const imageKey = Object.keys(response.images)[0];
+    const imageData = response.images[imageKey];
+
+    return {
+      hash: imageData.hash,
+      url: imageData.url,
+      width: imageData.width,
+      height: imageData.height,
+    };
+  }
+
+  /**
+   * Upload an image using base64 encoded bytes
+   * @param accountId - The ad account ID
+   * @param imageBytes - Base64 encoded image bytes
+   * @param filename - Optional filename for the image
+   * @returns Image hash and URL
+   */
+  async uploadAdImageBytes(
+    accountId: string,
+    imageBytes: string,
+    filename?: string,
+  ): Promise<ImageUploadResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const body: Record<string, unknown> = {
+      bytes: imageBytes,
+    };
+
+    if (filename) {
+      body.filename = filename;
+    }
+
+    const response = await makeRequest<{
+      images: Record<
+        string,
+        { hash: string; url: string; width?: number; height?: number }
+      >;
+    }>(this.config, `/${formattedId}/adimages`, {
+      method: "POST",
+      body,
+    });
+
+    const imageKey = Object.keys(response.images)[0];
+    const imageData = response.images[imageKey];
+
+    return {
+      hash: imageData.hash,
+      url: imageData.url,
+      width: imageData.width,
+      height: imageData.height,
+    };
+  }
+
+  /**
+   * Create an ad creative
+   */
+  async createAdCreative(
+    accountId: string,
+    params: CreateAdCreativeParams,
+  ): Promise<MutationResponse> {
+    const formattedId = accountId.startsWith("act_")
+      ? accountId
+      : `act_${accountId}`;
+
+    const body: Record<string, unknown> = {};
+
+    if (params.name) {
+      body.name = params.name;
+    }
+    if (params.object_story_spec) {
+      body.object_story_spec = params.object_story_spec;
+    }
+    if (params.effective_object_story_id) {
+      body.effective_object_story_id = params.effective_object_story_id;
+    }
+    if (params.source_instagram_media_id) {
+      body.source_instagram_media_id = params.source_instagram_media_id;
+    }
+    if (params.object_url) {
+      body.object_url = params.object_url;
+    }
+    if (params.title) {
+      body.title = params.title;
+    }
+    if (params.body) {
+      body.body = params.body;
+    }
+    if (params.image_hash) {
+      body.image_hash = params.image_hash;
+    }
+    if (params.video_id) {
+      body.video_id = params.video_id;
+    }
+    if (params.link_url) {
+      body.link_url = params.link_url;
+    }
+    if (params.call_to_action_type) {
+      body.call_to_action_type = params.call_to_action_type;
+    }
+    if (params.url_tags) {
+      body.url_tags = params.url_tags;
+    }
+    if (params.degrees_of_freedom_spec) {
+      body.degrees_of_freedom_spec = params.degrees_of_freedom_spec;
+    }
+
+    return makeRequest<MutationResponse>(
+      this.config,
+      `/${formattedId}/adcreatives`,
+      {
+        method: "POST",
+        body,
+      },
+    );
   }
 
   // ============ Insights Methods ============
