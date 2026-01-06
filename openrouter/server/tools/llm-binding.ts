@@ -502,6 +502,114 @@ export const createLLMStreamTool = (env: Env) =>
   });
 
 /**
+ * Transform AI SDK content part to binding schema format
+ */
+function transformContentPart(part: unknown): Record<string, unknown> | null {
+  if (!part || typeof part !== "object") return null;
+
+  const p = part as Record<string, unknown>;
+
+  switch (p.type) {
+    case "text":
+      return {
+        type: "text",
+        text: String(p.text ?? ""),
+      };
+
+    case "file":
+      return {
+        type: "file",
+        data: String(p.data ?? p.url ?? ""),
+        mediaType: String(
+          p.mediaType ?? p.mimeType ?? "application/octet-stream",
+        ),
+        ...(p.filename ? { filename: String(p.filename) } : {}),
+      };
+
+    case "reasoning":
+      return {
+        type: "reasoning",
+        text: String(p.text ?? ""),
+      };
+
+    case "tool-call":
+      return {
+        type: "tool-call",
+        toolCallId: String(p.toolCallId ?? ""),
+        toolName: String(p.toolName ?? ""),
+        // AI SDK uses 'args' (object), binding expects 'input' (JSON string)
+        input:
+          typeof p.input === "string"
+            ? p.input
+            : JSON.stringify(p.args ?? p.input ?? {}),
+      };
+
+    case "tool-result":
+      return {
+        type: "tool-result",
+        toolCallId: String(p.toolCallId ?? ""),
+        toolName: String(p.toolName ?? ""),
+        output: p.output ?? { type: "text", value: "" },
+        result: p.result ?? null,
+      };
+
+    default:
+      // For any unrecognized type, try to convert to text if possible
+      if (typeof p.text === "string") {
+        return {
+          type: "text",
+          text: p.text,
+        };
+      }
+      return null;
+  }
+}
+
+/**
+ * Transform AI SDK generate result to binding schema format
+ */
+function transformGenerateResult(result: unknown): Record<string, unknown> {
+  const r = result as Record<string, unknown>;
+
+  // Transform content array
+  const rawContent = Array.isArray(r.content) ? r.content : [];
+  const content = rawContent
+    .map(transformContentPart)
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+  // Handle legacy 'text' property - some providers return text at top level
+  if (content.length === 0 && typeof r.text === "string" && r.text) {
+    content.push({ type: "text", text: r.text });
+  }
+
+  // Transform response object
+  const rawResponse = (r.response ?? {}) as Record<string, unknown>;
+  const response = {
+    ...(rawResponse.id ? { id: String(rawResponse.id) } : {}),
+    ...(rawResponse.timestamp
+      ? { timestamp: String(rawResponse.timestamp) }
+      : {}),
+    ...(rawResponse.modelId ? { modelId: String(rawResponse.modelId) } : {}),
+    ...(rawResponse.headers && typeof rawResponse.headers === "object"
+      ? { headers: rawResponse.headers as Record<string, string> }
+      : {}),
+    ...(rawResponse.body !== undefined ? { body: rawResponse.body } : {}),
+  };
+
+  return {
+    content,
+    finishReason: (r.finishReason as string) ?? "unknown",
+    usage: (r.usage as Record<string, number>) ?? {},
+    warnings: Array.isArray(r.warnings) ? r.warnings : [],
+    ...(r.providerMetadata !== undefined
+      ? { providerMetadata: r.providerMetadata }
+      : {}),
+    ...(r.request !== undefined ? { request: r.request } : {}),
+    ...(Object.keys(response).length > 0 ? { response } : {}),
+  };
+}
+
+/**
  * LLM_DO_GENERATE - Generates a complete response in a single call (non-streaming)
  */
 export const createLLMGenerateTool = (env: Env) =>
@@ -530,7 +638,10 @@ export const createLLMGenerateTool = (env: Env) =>
         callOptions as LanguageModelV2CallOptions,
       );
 
-      return result as unknown as z.infer<typeof GENERATE_BINDING.outputSchema>;
+      // Transform the result to match the binding schema
+      return transformGenerateResult(result) as z.infer<
+        typeof GENERATE_BINDING.outputSchema
+      >;
     },
   });
 
