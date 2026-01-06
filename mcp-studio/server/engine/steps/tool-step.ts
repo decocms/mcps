@@ -212,6 +212,7 @@ export async function executeToolStep(
       timeout: timeoutMs,
     },
   );
+  await client.close();
 
   const result = structuredContent ?? content;
 
