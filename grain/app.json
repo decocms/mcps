@@ -7,14 +7,7 @@
   },
   "description": "Grain App Connection - Access and manage your meeting recordings",
   "icon": "https://grain.com/favicon.ico",
-  "unlisted": false,
-  "bindings": [
-    {
-      "type": "mcp",
-      "name": "DATABASE",
-      "app_name": "@deco/postgres"
-    }
-  ]
+  "unlisted": false
 }
 
 
