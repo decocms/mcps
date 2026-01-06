@@ -4,6 +4,7 @@ import {
   type DefaultEnv,
   withRuntime,
 } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 import z from "zod";
 
 import { tools } from "./tools/index.ts";
@@ -46,7 +47,46 @@ export interface Registry extends BindingRegistry {
  */
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
 
+/**
+ * Event names that this MCP handles
+ */
+export const GRAIN_EVENTS = ["grain_recording"];
+
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
+  events: {
+    handlers: {
+      events: GRAIN_EVENTS,
+      handler: async ({ events }, env) => {
+        try {
+          console.log("[GRAIN_MCP] Handling events:", events.length);
+
+          for (const event of events) {
+            console.log("[GRAIN_MCP] Processing event:", {
+              type: event.type,
+              id: event.id,
+            });
+
+            // Parse the event payload
+            const payload = event.data as WebhookPayload;
+
+            // Index the recording in the database
+            await indexRecording(env as unknown as Env, payload);
+
+            console.log("[GRAIN_MCP] Recording indexed successfully:", {
+              id: payload.data.id,
+              title: payload.data.title,
+              source: payload.data.source,
+            });
+          }
+
+          return { success: true };
+        } catch (error) {
+          console.error("[GRAIN_MCP] Error handling events:", error);
+          return { success: false, error: String(error) };
+        }
+      },
+    },
+  },
   oauth: {
     mode: "PKCE",
     authorizationServer: "https://grain.com",
@@ -70,7 +110,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
       try {
-        await ensureRecordingsTable(env);
+        await ensureRecordingsTable(env as unknown as Env);
 
         const grainToken = env.MESH_REQUEST_CONTEXT?.token;
         const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
@@ -115,28 +155,4 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   tools,
 });
 
-/**
- * Event handler function for processing webhook events from Grain via the Mesh.
- * This is called when the Mesh routes a webhook event to this MCP.
- *
- * Grain sends a "recording_added" event when a new recording is available.
- */
-export async function handleGrainEvent(env: Env, payload: WebhookPayload) {
-  console.log("Received webhook event from Grain via Mesh:", {
-    type: payload.type,
-    user_id: payload.user_id,
-    recording_id: payload.data.id,
-  });
-
-  // Index the recording in the database
-  await indexRecording(env, payload);
-
-  console.log("Recording indexed:", {
-    id: payload.data.id,
-    title: payload.data.title,
-    source: payload.data.source,
-    url: payload.data.url,
-  });
-}
-
-export default runtime;
+serve(runtime.fetch);
