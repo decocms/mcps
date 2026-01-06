@@ -1,0 +1,11 @@
+{
+  "scopeName": "deco",
+  "name": "openrouter",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-openrouter.decocache.com/mcp"
+  },
+  "description": "OpenRouter App Connection for LLM uses.",
+  "icon": "https://assets.decocache.com/decocms/b2e2f64f-6025-45f7-9e8c-3b3ebdd073d8/openrouter_logojpg.jpg",
+  "unlisted": false
+}

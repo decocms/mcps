@@ -1,0 +1,126 @@
+{
+  "scopeName": "deco",
+  "name": "event-subscriber",
+  "connection": {
+    "type": "BINDING"
+  },
+  "description": "Event Subscriber Binding for MCPs. Implements ON_EVENTS to receive CloudEvents from the MCP Mesh event bus. Supports batch and per-event result handling.",
+  "icon": "https://assets.decocache.com/mcp/10ce1dc3-1595-497e-9875-5a6d332687f3/ChatGPT-Image-13-de-dez.-de-2025-16_39_34.png",
+  "unlisted": true,
+  "tools": [
+    {
+      "name": "ON_EVENTS",
+      "description": "Receive a batch of CloudEvents. Return success for immediate delivery, retryAfter to request re-delivery, or use results for per-event control.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Batch of CloudEvents to process",
+            "items": {
+              "type": "object",
+              "properties": {
+                "specversion": {
+                  "type": "string",
+                  "const": "1.0",
+                  "description": "CloudEvents specification version"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique event identifier"
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Connection ID of the event publisher"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Event type (e.g., 'order.created')"
+                },
+                "time": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Event timestamp (ISO 8601)"
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "Subject/resource identifier"
+                },
+                "datacontenttype": {
+                  "type": "string",
+                  "description": "Content type of data"
+                },
+                "dataschema": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Schema URI for data"
+                },
+                "data": {
+                  "description": "Event payload"
+                }
+              },
+              "required": [
+                "specversion",
+                "id",
+                "source",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "events"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Batch success - applies to events not in results"
+          },
+          "error": {
+            "type": "string",
+            "description": "Batch error message - applies to events not in results"
+          },
+          "processedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of events successfully processed"
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Batch retryAfter (ms) - applies to events not in results"
+          },
+          "results": {
+            "type": "object",
+            "description": "Per-event results keyed by event ID",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "description": "Whether this event was processed successfully"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Error message for this event"
+                },
+                "retryAfter": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Re-deliver this event after this many ms"
+                }
+              },
+              "required": [
+                "success"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -44,7 +44,7 @@ export const fileUploadInputSchema = z.object({
       "The optional name of the file with extension (if not provided, the file will be named 'file-{timestamp}.txt')",
     ),
   metadata: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe("The optional metadata to attach to the file"),
 });
@@ -60,7 +60,7 @@ export const fileInfoSchema = z.object({
   status: z.string().optional(),
   created_on: z.string().optional(),
   updated_on: z.string().optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export type FileInfo = z.infer<typeof fileInfoSchema>;

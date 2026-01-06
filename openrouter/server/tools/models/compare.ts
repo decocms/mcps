@@ -3,12 +3,12 @@
  * Compare multiple models side-by-side to help choose the best one
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
+import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
-import type { Env } from "../../main.ts";
 import { OpenRouterClient } from "../../lib/openrouter-client.ts";
+import type { Env } from "../../main.ts";
 import { compareModels } from "./utils.ts";
-import { getOpenRouterApiKey } from "../../lib/env.ts";
 
 export const createCompareModelsTool = (env: Env) =>
   createPrivateTool({
@@ -39,7 +39,7 @@ export const createCompareModelsTool = (env: Env) =>
           modelId: z.string(),
           name: z.string(),
           metrics: z
-            .record(z.any())
+            .record(z.string(), z.any())
             .describe("Model metrics based on selected criteria"),
         }),
       ),
@@ -48,16 +48,7 @@ export const createCompareModelsTool = (env: Env) =>
         .optional()
         .describe("Automated recommendation based on comparison"),
     }),
-    execute: async ({
-      context,
-    }: {
-      context: {
-        modelIds: string[];
-        criteria?: Array<
-          "price" | "context_length" | "modality" | "moderation"
-        >;
-      };
-    }) => {
+    execute: async ({ context }) => {
       const { modelIds, criteria } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),

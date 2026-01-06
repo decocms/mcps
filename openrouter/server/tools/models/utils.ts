@@ -193,12 +193,14 @@ export function recommendModelsForTask(
 
   if (requirements.maxCostPer1MTokens !== undefined) {
     candidates = candidates.filter(
+      // biome-ignore lint/style/noNonNullAssertion: is always present
       (m) => parseFloat(m.pricing.prompt) <= requirements.maxCostPer1MTokens!,
     );
   }
 
   if (requirements.minContextLength !== undefined) {
     candidates = candidates.filter(
+      // biome-ignore lint/style/noNonNullAssertion: is always present
       (m) => m.context_length >= requirements.minContextLength!,
     );
   }
