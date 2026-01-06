@@ -146,27 +146,33 @@ export const createGetAdSetDetailsTool = (env: Env) =>
             .object({
               countries: z.array(z.string()).optional(),
               regions: z
-                .array(z.object({ key: z.string(), name: z.string() }))
+                .array(
+                  z.object({ key: z.string(), name: z.string() }).passthrough(),
+                )
                 .optional(),
               cities: z
-                .array(z.object({ key: z.string(), name: z.string() }))
+                .array(
+                  z.object({ key: z.string(), name: z.string() }).passthrough(),
+                )
                 .optional(),
             })
+            .passthrough()
             .optional(),
           interests: z
-            .array(z.object({ id: z.string(), name: z.string() }))
+            .array(z.object({ id: z.string(), name: z.string() }).passthrough())
             .optional(),
           behaviors: z
-            .array(z.object({ id: z.string(), name: z.string() }))
+            .array(z.object({ id: z.string(), name: z.string() }).passthrough())
             .optional(),
           custom_audiences: z
-            .array(z.object({ id: z.string(), name: z.string() }))
+            .array(z.object({ id: z.string(), name: z.string() }).passthrough())
             .optional(),
           publisher_platforms: z.array(z.string()).optional(),
           facebook_positions: z.array(z.string()).optional(),
           instagram_positions: z.array(z.string()).optional(),
           device_platforms: z.array(z.string()).optional(),
         })
+        .passthrough()
         .optional(),
       promoted_object: z.record(z.string(), z.unknown()).optional(),
     }),
