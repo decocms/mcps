@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
+    "stdio": "bun server/stdio.ts",
+    "stdio:dev": "bun --watch server/stdio.ts",
+    "start": "bun server/stdio.ts",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
