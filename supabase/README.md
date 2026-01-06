@@ -1,10 +1,10 @@
-# Supabase MCP Binding
+# Supabase MCP
 
-Generic Supabase database operations binding. Designed to be used by other MCPs for data persistence.
+Generic Supabase database operations MCP. Designed to be used as a binding for data persistence in other MCPs.
 
 ## Overview
 
-This binding provides a standardized interface for common database operations with Supabase:
+This MCP provides a standardized interface for common database operations with Supabase:
 
 | Tool | Description |
 |------|-------------|
@@ -15,9 +15,9 @@ This binding provides a standardized interface for common database operations wi
 | `db_upsert` | Insert or update based on conflict resolution |
 | `db_rpc` | Call PostgreSQL functions (stored procedures) |
 
-## Configuration (stateSchema)
+## Configuration
 
-When using this binding, consumers need to provide:
+When installing this MCP, you'll need to provide:
 
 | Field | Description | Example |
 |-------|-------------|---------|
@@ -152,6 +152,25 @@ interface DbResponse {
 - **Anon Key**: Respects RLS policies. Recommended for user-facing operations.
 - Filters are required for `update` and `delete` operations to prevent accidental mass modifications.
 
+## Development
+
+```bash
+# Install dependencies
+bun install
+
+# Run in development mode
+bun run dev
+
+# Type check
+bun run check
+
+# Build for production
+bun run build
+
+# Publish to registry
+bun run publish
+```
+
 ## Pricing
 
-This binding is **free to use**. You only pay for your Supabase database usage directly to Supabase based on their pricing plans.
+This MCP is **free to use**. You only pay for your Supabase database usage directly to Supabase based on their pricing plans.

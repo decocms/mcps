@@ -16,7 +16,7 @@
   "dependencies": {
     "@decocms/runtime": "^1.1.0",
     "@supabase/supabase-js": "^2.47.10",
-    "zod": "^3.24.3"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "deco-cli": "^0.28.0",
