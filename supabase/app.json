@@ -2,8 +2,7 @@
   "scopeName": "supabase",
   "name": "Supabase MCP",
   "connection": {
-    "type": "HTTP",
-    "url": "https://mcp.supabase.com/mcp?project_ref=ovbxhfblvsuilhnoievu"
+    "type": "BINDING"
   },
   "description": "Supabase Official MCP - Access and manage your Supabase database, run SQL queries, manage tables and more. This is the official Supabase MCP.",
   "icon": "https://supabase.com/dashboard/_next/image?url=%2Fimages%2Fsupabase-logo-wordmark--dark.png&w=128&q=75",
