@@ -44,9 +44,46 @@ const RegistryServerSchema = z.object({
 });
 
 /**
- * WhereExpression schema - using z.unknown() to avoid deep type instantiation
+ * WhereExpression type - recursive type for filtering
+ * Supports simple conditions and logical operators (and, or, not)
  */
-const WhereExpressionSchema = z.unknown();
+type WhereExpression = {
+  field?: string[];
+  operator?: string;
+  value?: unknown;
+  conditions?: WhereExpression[];
+};
+
+/**
+ * WhereExpression schema - recursive Zod schema for filtering
+ * Supports: eq, gt, gte, lt, lte, in, like, contains, and, or, not
+ */
+const WhereExpressionSchema: z.ZodType<WhereExpression> = z.lazy(() =>
+  z.object({
+    field: z.array(z.string()).optional().describe("Field path to filter on"),
+    operator: z
+      .enum([
+        "eq",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "in",
+        "like",
+        "contains",
+        "and",
+        "or",
+        "not",
+      ])
+      .optional()
+      .describe("Comparison or logical operator"),
+    value: z.unknown().optional().describe("Value to compare against"),
+    conditions: z
+      .array(z.lazy(() => WhereExpressionSchema))
+      .optional()
+      .describe("Nested conditions for logical operators"),
+  }),
+);
 
 /**
  * Legacy simplified where schema for easier filtering
