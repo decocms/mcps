@@ -59,6 +59,7 @@ const runtime = withRuntime<Env>({
     },
   },
   tools,
+  prompts: [],
 });
 
 serve(runtime.fetch);

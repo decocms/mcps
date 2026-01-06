@@ -510,9 +510,8 @@ export const createLLMGenerateTool = (env: Env) =>
     description:
       "Generate a complete language model response using OpenRouter (non-streaming). " +
       "Returns the full response with usage statistics and cost information.",
-    // inputSchema: GENERATE_BINDING.inputSchema,
-    inputSchema: z.object({}),
-    outputSchema: z.object({}),
+    inputSchema: GENERATE_BINDING.inputSchema,
+    outputSchema: GENERATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       const {
         modelId,
