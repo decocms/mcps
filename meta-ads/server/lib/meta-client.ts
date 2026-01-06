@@ -196,34 +196,16 @@ async function makeRequest<T>(
     fetchOptions.body = JSON.stringify(options.body);
   }
 
-  console.log("🟢 Making request to:", endpoint);
-  console.log("🟢 Method:", options.method || "GET");
-  console.log(
-    "🟢 Body:",
-    options.body ? JSON.stringify(options.body, null, 2) : "none",
-  );
-
   const response = await fetch(url.toString(), fetchOptions);
 
   if (!response.ok) {
     const errorData = (await response.json()) as ApiError;
-    console.error(
-      "🔴 Meta API Error Response:",
-      JSON.stringify(errorData, null, 2),
-    );
-    console.error("🔴 Request was:", {
-      endpoint,
-      method: options.method,
-      body: options.body,
-    });
     throw new Error(
       `Meta API Error: ${errorData.error?.message || response.statusText} (Code: ${errorData.error?.code || response.status})`,
     );
   }
 
-  const result = await response.json();
-  console.log("✅ Meta API Success:", JSON.stringify(result, null, 2));
-  return result as T;
+  return response.json() as Promise<T>;
 }
 
 /**
@@ -694,12 +676,6 @@ export class MetaAdsClient {
     if (params.attribution_spec) {
       body.attribution_spec = params.attribution_spec;
     }
-
-    console.log(
-      "🔵 CREATE_ADSET - Request body:",
-      JSON.stringify(body, null, 2),
-    );
-    console.log("🔵 CREATE_ADSET - Endpoint:", `/${formattedId}/adsets`);
 
     return makeRequest<MutationResponse>(
       this.config,
