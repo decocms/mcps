@@ -22,6 +22,7 @@ import { OpenRouterClient } from "./lib/openrouter-client.ts";
 import { z } from "zod";
 import { type ModelCollectionEntitySchema } from "@decocms/bindings/llm";
 import { WELL_KNOWN_MODEL_IDS } from "./tools/models/well-known.ts";
+import { compareModels, recommendModelsForTask } from "./tools/models/utils.ts";
 
 // ============================================================================
 // Environment
@@ -285,6 +286,127 @@ async function main() {
   );
 
   // ============================================================================
+  // LLM_DO_STREAM - Stream a response (simplified for stdio)
+  // ============================================================================
+  server.tool(
+    "LLM_DO_STREAM",
+    "Stream a language model response in real-time using OpenRouter. Note: In stdio mode, this returns the full response (streaming not supported via stdio transport).",
+    {
+      modelId: z.string().describe("The model ID to use"),
+      callOptions: z
+        .any()
+        .optional()
+        .describe("Language model call options (prompt, messages, etc.)"),
+    },
+    async ({ modelId, callOptions: rawCallOptions }) => {
+      // In stdio mode, we can't truly stream, so we use doGenerate instead
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
+      const model = openrouter.languageModel(modelId);
+      const result = await model.doGenerate(
+        callOptions as LanguageModelV2CallOptions,
+      );
+
+      // Clean up non-serializable data
+      const cleanResult = {
+        ...result,
+        request: result.request ? { body: undefined } : undefined,
+        response: result.response
+          ? {
+              id: result.response.id,
+              timestamp: result.response.timestamp,
+              modelId: result.response.modelId,
+              headers: result.response.headers,
+            }
+          : undefined,
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(cleanResult) }],
+      };
+    },
+  );
+
+  // ============================================================================
+  // COMPARE_MODELS - Compare multiple models side-by-side
+  // ============================================================================
+  server.tool(
+    "COMPARE_MODELS",
+    "Compare multiple OpenRouter models side-by-side to help choose the best model for a specific use case. Compares pricing, context length, capabilities, and performance characteristics.",
+    {
+      modelIds: z
+        .array(z.string())
+        .min(2)
+        .max(5)
+        .describe(
+          "Array of 2-5 model IDs to compare (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet'])",
+        ),
+      criteria: z
+        .array(z.enum(["price", "context_length", "modality", "moderation"]))
+        .optional()
+        .describe("Specific criteria to focus on in comparison"),
+    },
+    async ({ modelIds, criteria }) => {
+      const allModels = await client.listModels();
+      const result = compareModels(modelIds, allModels, criteria);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result) }],
+      };
+    },
+  );
+
+  // ============================================================================
+  // RECOMMEND_MODEL - Get model recommendations for a task
+  // ============================================================================
+  server.tool(
+    "RECOMMEND_MODEL",
+    "Get intelligent model recommendations based on your task description and requirements. Analyzes your task and suggests the most suitable models.",
+    {
+      taskDescription: z
+        .string()
+        .describe(
+          "Description of your task (e.g., 'generate Python code', 'analyze documents')",
+        ),
+      requirements: z
+        .object({
+          maxCostPer1MTokens: z
+            .number()
+            .positive()
+            .optional()
+            .describe("Maximum budget per 1M tokens in dollars"),
+          minContextLength: z
+            .number()
+            .positive()
+            .optional()
+            .describe("Minimum required context length in tokens"),
+          requiredModality: z
+            .enum(["text->text", "text+image->text", "text->image"])
+            .optional()
+            .describe("Required model capability"),
+          prioritize: z
+            .enum(["cost", "quality", "speed"])
+            .default("quality")
+            .optional()
+            .describe("What to prioritize in recommendations"),
+        })
+        .optional()
+        .describe("Optional requirements and constraints"),
+    },
+    async ({ taskDescription, requirements = {} }) => {
+      const allModels = await client.listModels();
+      const recommendations = recommendModelsForTask(
+        taskDescription,
+        requirements,
+        allModels,
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify({ recommendations }) }],
+      };
+    },
+  );
+
+  // ============================================================================
   // Connect to stdio transport
   // ============================================================================
   const transport = new StdioServerTransport();
@@ -292,7 +414,7 @@ async function main() {
 
   console.error("[openrouter] MCP server running via stdio");
   console.error(
-    "[openrouter] Available tools: COLLECTION_LLM_LIST, COLLECTION_LLM_GET, LLM_METADATA, LLM_DO_GENERATE",
+    "[openrouter] Available tools: COLLECTION_LLM_LIST, COLLECTION_LLM_GET, LLM_METADATA, LLM_DO_GENERATE, LLM_DO_STREAM, COMPARE_MODELS, RECOMMEND_MODEL",
   );
 }
 
