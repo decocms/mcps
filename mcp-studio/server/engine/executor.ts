@@ -91,14 +91,13 @@ export async function executeWorkflow(
 
     const lastStepResult = await stepExecutor.getLastStepResult();
 
-    const output = buildOutput(completedSteps, lastStepResult?.output);
     await updateExecution(env, executionId, {
       status: "success",
-      output,
+      output: lastStepResult?.output,
       completed_at_epoch_ms: Date.now(),
     });
 
-    return { status: "success", output };
+    return { status: "success", output: lastStepResult?.output };
   } catch (err) {
     console.error(`[WORKFLOW] Error executing workflow ${executionId}:`, err);
     if (err instanceof Error) {
@@ -209,11 +208,4 @@ function processResults(
     stepOutputs.set(r.step.name, r.result?.output ?? undefined);
     completedSteps.push(r.step.name);
   }
-}
-
-function buildOutput(completedSteps: string[], output: unknown) {
-  return {
-    completedSteps,
-    output,
-  };
 }

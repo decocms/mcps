@@ -1,16 +1,20 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { z } from "zod";
-import { StepSchema, WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 import {
-  getStepResults,
-  getExecution,
-  listExecutions,
-  createExecution,
+  StepSchema,
+  Workflow,
+  WORKFLOW_BINDING,
+} from "@decocms/bindings/workflow";
+import {
   cancelExecution,
+  createExecution,
+  getExecutionFull,
+  getStepResult,
+  listExecutions,
   resumeExecution,
-  getExecutionWorkflow,
 } from "../db/queries/executions.ts";
+import { validateWorkflow } from "../utils/validator.ts";
 import { getWorkflowCollection } from "./workflow.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
@@ -110,11 +114,32 @@ export const createCreateTool = (env: Env) =>
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
       input: z.record(z.string(), z.unknown()),
-      steps: z.array(StepSchema),
-      gateway_id: z.string(),
-      start_at_epoch_ms: z.number().optional(),
-      timeout_ms: z.number().optional(),
-      workflow_collection_id: z.string().optional(),
+      steps: z
+        .array(
+          z
+            .object(StepSchema.omit({ outputSchema: true }).shape)
+            .describe(
+              "The steps to execute - need to provide this or the workflow_collection_id",
+            ),
+        )
+        .optional(),
+      gateway_id: z
+        .string()
+        .describe("The gateway ID to use for the execution"),
+      start_at_epoch_ms: z
+        .number()
+        .optional()
+        .describe("The start time for the execution"),
+      timeout_ms: z
+        .number()
+        .optional()
+        .describe("The timeout for the execution"),
+      workflow_collection_id: z
+        .string()
+        .optional()
+        .describe(
+          "The workflow collection ID to use for the execution - need to provide this or the steps",
+        ),
     }),
     outputSchema: z.object({
       id: z.string(),
@@ -123,12 +148,43 @@ export const createCreateTool = (env: Env) =>
     execute: async ({ context }) => {
       try {
         console.log("creating execution");
+
+        if (!context.steps && !context.workflow_collection_id) {
+          throw new Error(
+            "Either steps or workflow_collection_id must be provided",
+          );
+        }
+
+        if (context.steps) {
+          // Validate workflow before creating execution
+          await validateWorkflow(
+            {
+              id: "temp-validation",
+              title: "Execution Workflow",
+              steps: context.steps,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            env,
+          );
+        }
+
+        const steps =
+          context.steps ??
+          (
+            (await getWorkflowCollection(
+              env,
+              context.workflow_collection_id ?? "",
+            )) as Workflow | null
+          )?.steps ??
+          [];
+
         const { id: executionId, workflow_id } = await createExecution(env, {
           input: context.input,
           gateway_id: context.gateway_id,
           start_at_epoch_ms: context.start_at_epoch_ms,
           timeout_ms: context.timeout_ms,
-          steps: context.steps,
+          steps,
           workflow_collection_id: context.workflow_collection_id,
         });
         console.log("publishing event");
@@ -160,32 +216,50 @@ export const createGetTool = (env: Env) =>
     }) => {
       const { id } = context;
 
-      const execution = await getExecution(env, id);
-      if (!execution) {
+      const result = await getExecutionFull(env, id);
+      if (!result) {
         throw new Error("Execution not found");
       }
-      const workflow = await getExecutionWorkflow(env, execution.workflow_id);
-      if (!workflow) {
-        throw new Error("Workflow not found");
-      }
 
-      if (!workflow.workflow_collection_id) {
-        throw new Error("Workflow collection ID not found");
-      }
-
-      const collection = await getWorkflowCollection(
-        env,
-        workflow.workflow_collection_id,
-      );
-
-      const stepResults = await getStepResults(env, id);
       return {
         item: {
-          ...execution,
-          title: collection?.title ?? "",
-          steps: workflow.steps,
+          ...result.execution,
+          completed_steps: result.completed_steps,
         },
-        step_results: stepResults,
+      };
+    },
+  });
+
+export const createGetStepResultTool = (env: Env) =>
+  createPrivateTool({
+    id: "COLLECTION_WORKFLOW_EXECUTION_GET_STEP_RESULT",
+    description: "Get a single step result by execution ID and step ID",
+    inputSchema: z.object({
+      executionId: z
+        .string()
+        .describe("The execution ID to get the step result from"),
+      stepId: z.string().describe("The step ID to get the step result for"),
+    }),
+    outputSchema: z.object({
+      output: z.unknown().optional(),
+      error: z.string().nullable().optional(),
+    }),
+    execute: async ({ context }) => {
+      const { executionId, stepId } = context;
+
+      const result = await getStepResult(env, executionId, stepId);
+      if (!result) {
+        throw new Error("Step result not found");
+      }
+
+      return {
+        output: result.output,
+        error:
+          typeof result.error === "string"
+            ? result.error
+            : typeof result.error === "object"
+              ? JSON.stringify(result.error)
+              : undefined,
       };
     },
   });
@@ -220,6 +294,7 @@ export const createListTool = (env: Env) =>
 export const workflowExecutionCollectionTools = [
   createListTool,
   createGetTool,
+  createGetStepResultTool,
   createCreateTool,
 ];
 

@@ -30,6 +30,159 @@ export function transpileTypeScript(code: string): string {
   return result.code;
 }
 
+/**
+ * Convert a JSON Schema type to TypeScript type string
+ */
+function jsonSchemaTypeToTS(
+  schema: Record<string, unknown>,
+  indent = 0,
+): string {
+  const spaces = "  ".repeat(indent);
+
+  if (!schema || Object.keys(schema).length === 0) {
+    return "unknown";
+  }
+
+  // Handle anyOf/oneOf
+  if (schema.anyOf || schema.oneOf) {
+    const variants = (schema.anyOf || schema.oneOf) as Record<
+      string,
+      unknown
+    >[];
+    const types = variants.map((v) => jsonSchemaTypeToTS(v, indent));
+    return types.join(" | ");
+  }
+
+  // Handle const values
+  if (schema.const !== undefined) {
+    return JSON.stringify(schema.const);
+  }
+
+  // Handle enum
+  if (schema.enum) {
+    return (schema.enum as unknown[]).map((v) => JSON.stringify(v)).join(" | ");
+  }
+
+  const type = schema.type as string | string[] | undefined;
+
+  // Handle array of types
+  if (Array.isArray(type)) {
+    const types = type.map((t) =>
+      jsonSchemaTypeToTS({ ...schema, type: t }, indent),
+    );
+    return types.join(" | ");
+  }
+
+  switch (type) {
+    case "string":
+      return "string";
+    case "number":
+    case "integer":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "null":
+      return "null";
+    case "array": {
+      const items = schema.items as Record<string, unknown> | undefined;
+      if (items) {
+        return `${jsonSchemaTypeToTS(items, indent)}[]`;
+      }
+      return "unknown[]";
+    }
+    case "object": {
+      const properties = schema.properties as
+        | Record<string, Record<string, unknown>>
+        | undefined;
+      if (!properties || Object.keys(properties).length === 0) {
+        return "Record<string, unknown>";
+      }
+
+      const required = new Set((schema.required as string[]) || []);
+      const lines: string[] = ["{"];
+
+      for (const [key, propSchema] of Object.entries(properties)) {
+        const optional = !required.has(key) ? "?" : "";
+        const propType = jsonSchemaTypeToTS(propSchema, indent + 1);
+        lines.push(`${spaces}  ${key}${optional}: ${propType};`);
+      }
+
+      lines.push(`${spaces}}`);
+      return lines.join("\n");
+    }
+    default:
+      return "unknown";
+  }
+}
+
+/**
+ * Convert JSON Schema to TypeScript interface string
+ */
+export function jsonSchemaToTypeScript(
+  schema: Record<string, unknown>,
+  interfaceName = "Input",
+): string {
+  const typeBody = jsonSchemaTypeToTS(schema, 0);
+
+  // If it's already a simple type, wrap in type alias
+  if (!typeBody.startsWith("{")) {
+    return `type ${interfaceName} = ${typeBody};`;
+  }
+
+  return `interface ${interfaceName} ${typeBody}`;
+}
+
+/**
+ * Check if transform code needs Input interface injection
+ * Returns true if:
+ * - No Input interface exists
+ * - Input interface uses `any` as the function parameter type
+ */
+export function needsInputInjection(code: string): boolean {
+  // Check if function parameter is typed as `any`
+  const funcParamMatch = code.match(
+    /export\s+default\s+(?:async\s+)?function\s*\([^)]*:\s*any\s*\)/,
+  );
+  if (funcParamMatch) {
+    return true;
+  }
+
+  // Check if Input interface exists and has meaningful content
+  const inputMatch = code.match(/interface\s+Input\s*\{([^}]*)\}/);
+  if (!inputMatch) {
+    return true;
+  }
+
+  // Check if Input interface is empty or only has `any` types
+  const body = inputMatch[1].trim();
+  if (!body) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Inject Input interface into transform code
+ * Replaces existing Input interface or adds new one at the top
+ */
+export function injectInputInterface(
+  code: string,
+  inputInterface: string,
+): string {
+  // Remove existing Input interface if present
+  const withoutInput = code.replace(/interface\s+Input\s*\{[^}]*\}\s*/g, "");
+
+  // Also update the function signature to use Input type
+  const withTypedParam = withoutInput.replace(
+    /export\s+default\s+(async\s+)?function\s*\(\s*(\w+)\s*:\s*any\s*\)/,
+    "export default $1function($2: Input)",
+  );
+
+  // Add Input interface at the top
+  return `${inputInterface}\n\n${withTypedParam}`;
+}
+
 export function extractSchemas(code: string): {
   input: Record<string, unknown>;
   output: Record<string, unknown>;

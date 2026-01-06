@@ -68,6 +68,12 @@ export function transformDbRowToExecution(
     workflow_id: row.workflow_id as string,
     title: row.title ?? "",
     steps: row.steps ?? [],
+    completed_steps: row.completed_steps
+      ? {
+          success: (row.completed_steps as { success: string[] }) ?? [],
+          error: (row.completed_steps as { error: string[] }) ?? [],
+        }
+      : undefined,
     gateway_id: row.gateway_id ?? "",
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
     started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
@@ -81,7 +87,13 @@ export function transformDbRowToExecution(
     error: safeJsonParse(row.error),
   };
   const parsed = WorkflowExecutionSchema.parse(transformed);
-  return { ...parsed };
+  return {
+    ...parsed,
+    steps: parsed.steps.map((s) => ({
+      ...s,
+      outputSchema: {},
+    })),
+  };
 }
 
 export interface WorkflowExecutionStepResult {

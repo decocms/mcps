@@ -5,6 +5,7 @@ import {
   WORKFLOW_BINDING,
   type Workflow,
   WorkflowSchema,
+  StepSchema,
 } from "@decocms/bindings/workflow";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
@@ -252,23 +253,48 @@ Example workflow with a step that references the output of another step:
   { "name": "fetch_orders", "action": { "toolName": "GET_ORDERS" }, "input": { "user": "@fetch_users.user" } },
 ]}
 `,
-    inputSchema: CREATE_BINDING.inputSchema,
+    inputSchema: z.object({
+      data: z
+        .object({
+          title: z.string().optional().describe("The title of the workflow"),
+          steps: z
+            .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+            .optional()
+            .describe(
+              "The steps to execute - need to provide this or the workflow_collection_id",
+            ),
+          input: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .describe("The input to the workflow"),
+          gateway_id: z
+            .string()
+            .optional()
+            .describe("The gateway ID to use for the workflow"),
+          description: z
+            .string()
+            .optional()
+            .describe("The description of the workflow"),
+          created_by: z
+            .string()
+            .optional()
+            .describe("The created by user of the workflow"),
+        })
+        .optional()
+        .describe("The data for the workflow"),
+    }),
     outputSchema: z
       .object({})
       .catchall(z.unknown())
       .describe("The ID of the created workflow"),
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof CREATE_BINDING.inputSchema>;
-    }) => {
+    execute: async ({ context }) => {
       const { data } = context;
       const workflow = {
         id: crypto.randomUUID(),
-        title: data.title ?? `Workflow ${Date.now()}`,
+        title: data?.title ?? `Workflow ${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        steps: data.steps ?? [],
+        steps: data?.steps ?? [],
         ...data,
       };
       return await insertWorkflowCollection(env, workflow);
@@ -281,9 +307,7 @@ async function updateWorkflowCollection(
 ) {
   const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = new Date().toISOString();
-
   const { id, data } = context;
-
   await validateWorkflow(data, env);
 
   const setClauses: string[] = [];
@@ -338,7 +362,37 @@ export const createUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_UPDATE",
     description: "Update an existing workflow",
-    inputSchema: UPDATE_BINDING.inputSchema,
+    inputSchema: z.object({
+      id: z.string().describe("The ID of the workflow to update"),
+      data: z
+        .object({
+          title: z.string().optional().describe("The title of the workflow"),
+          steps: z
+            .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+            .optional()
+            .describe(
+              "The steps to execute - need to provide this or the workflow_collection_id",
+            ),
+          input: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .describe("The input to the workflow"),
+          gateway_id: z
+            .string()
+            .optional()
+            .describe("The gateway ID to use for the workflow"),
+          description: z
+            .string()
+            .optional()
+            .describe("The description of the workflow"),
+          created_by: z
+            .string()
+            .optional()
+            .describe("The created by user of the workflow"),
+        })
+        .optional()
+        .describe("The data for the workflow"),
+    }),
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {

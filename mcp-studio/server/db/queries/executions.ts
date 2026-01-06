@@ -101,7 +101,7 @@ export async function getExecution(
       params: [id],
     });
 
-  const row = result.result[0]?.results?.[0] as
+  const row = result?.result?.[0]?.results?.[0] as
     | Record<string, unknown>
     | undefined;
   return row
@@ -110,6 +110,70 @@ export async function getExecution(
         workflow_id: row.workflow_id as string,
       }
     : null;
+}
+
+/**
+ * Get execution with workflow steps and completed step IDs in a single query
+ */
+export async function getExecutionFull(
+  env: Env,
+  id: string,
+): Promise<{
+  execution: WorkflowExecution & { workflow_id: string };
+  completed_steps: {
+    success: string[];
+    error: string[];
+  };
+} | null> {
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    `SELECT 
+      we.*,
+      w.steps as workflow_steps,
+      COALESCE(
+        (SELECT array_agg(step_id) 
+         FROM workflow_execution_step_result 
+         WHERE execution_id = we.id AND completed_at_epoch_ms IS NOT NULL AND error IS NULL),
+        ARRAY[]::text[]
+      ) as success_steps,
+      COALESCE(
+        (SELECT array_agg(step_id) 
+         FROM workflow_execution_step_result 
+         WHERE execution_id = we.id AND error IS NOT NULL),
+        ARRAY[]::text[]
+      ) as error_steps
+    FROM workflow_execution we
+    JOIN workflow w ON we.workflow_id = w.id
+    WHERE we.id = ?`,
+    [id],
+  );
+
+  const row = result[0];
+  if (!row) return null;
+
+  const steps: Step[] =
+    typeof row.workflow_steps === "string"
+      ? JSON.parse(row.workflow_steps)
+      : (row.workflow_steps as Step[]);
+
+  const successSteps = row.success_steps as string[];
+  const errorSteps = row.error_steps as string[];
+
+  return {
+    execution: {
+      ...transformDbRowToExecution(row),
+      workflow_id: row.workflow_id as string,
+      steps:
+        steps.map((s) => ({
+          ...s,
+          outputSchema: {},
+        })) ?? [],
+    },
+    completed_steps: {
+      success: successSteps,
+      error: errorSteps,
+    },
+  };
 }
 
 export async function getExecutionWorkflow(env: Env, id: string) {
@@ -300,13 +364,16 @@ export async function updateExecution(
     error: string;
     completed_at_epoch_ms: number;
   }>,
+  options?: {
+    onlyIfStatus?: WorkflowExecutionStatus;
+  },
 ): Promise<{
   id: string;
   status: WorkflowExecutionStatus;
   output: unknown;
   error: string;
   completed_at_epoch_ms: number;
-}> {
+} | null> {
   const now = Date.now();
 
   const setClauses: string[] = [];
@@ -336,6 +403,13 @@ export async function updateExecution(
 
   params.push(id);
 
+  // Build WHERE clause
+  let whereClause = "WHERE id = ?";
+  if (options?.onlyIfStatus) {
+    whereClause += " AND status = ?";
+    params.push(options.onlyIfStatus);
+  }
+
   const result = await runSQL<{
     id: string;
     status: WorkflowExecutionStatus;
@@ -344,10 +418,10 @@ export async function updateExecution(
     completed_at_epoch_ms: number;
   }>(
     env,
-    `UPDATE workflow_execution SET ${setClauses.join(", ")} WHERE id = ? RETURNING id, status, output, error, completed_at_epoch_ms`,
+    `UPDATE workflow_execution SET ${setClauses.join(", ")} ${whereClause} RETURNING id, status, output, error, completed_at_epoch_ms`,
     params,
   );
-  return result[0];
+  return result[0] ?? null;
 }
 
 /**
