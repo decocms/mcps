@@ -41,7 +41,7 @@ export const createGetAdSetsTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .prefault(50)
+        .default(50)
         .describe("Maximum number of ad sets to return (default: 50)"),
       campaign_id: z
         .string()

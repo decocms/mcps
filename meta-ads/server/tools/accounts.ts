@@ -26,12 +26,12 @@ export const createGetUserAdAccountsTool = (env: Env) =>
       user_id: z
         .string()
         .optional()
-        .prefault("me")
+        .default("me")
         .describe("Meta user ID or 'me' for the current user"),
       limit: z.coerce
         .number()
         .optional()
-        .prefault(50)
+        .default(50)
         .describe("Maximum number of accounts to return (default: 50)"),
     }),
     outputSchema: z.object({
@@ -89,7 +89,7 @@ export const createGetPageAdAccountsTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .prefault(50)
+        .default(50)
         .describe("Maximum number of accounts to return (default: 50)"),
     }),
     outputSchema: z.object({
@@ -225,7 +225,7 @@ export const createGetUserAccountPagesTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .prefault(50)
+        .default(50)
         .describe("Maximum number of pages to return (default: 50)"),
     }),
     outputSchema: z.object({

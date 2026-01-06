@@ -34,7 +34,7 @@ export const createGetAdsTool = (env: Env) =>
       limit: z.coerce
         .number()
         .optional()
-        .prefault(50)
+        .default(50)
         .describe("Maximum number of ads to return (default: 50)"),
       campaign_id: z.string().optional().describe("Filter ads by campaign ID"),
       adset_id: z.string().optional().describe("Filter ads by ad set ID"),
