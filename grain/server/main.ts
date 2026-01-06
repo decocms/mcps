@@ -1,51 +1,12 @@
-import {
-  BindingOf,
-  type BindingRegistry,
-  type DefaultEnv,
-  withRuntime,
-} from "@decocms/runtime";
+import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import z from "zod";
 
 import { tools } from "./tools/index.ts";
 import { GrainClient } from "./lib/grain-client.ts";
 import type { WebhookPayload } from "./lib/types.ts";
 import { ensureRecordingsTable, indexRecording } from "./lib/postgres.ts";
-
-/**
- * State schema defining the required bindings
- */
-export const StateSchema = z.object({
-  DATABASE: BindingOf("@deco/postgres"),
-});
-
-/**
- * Binding registry for type safety
- */
-export interface Registry extends BindingRegistry {
-  "@deco/postgres": [
-    {
-      name: "DATABASES_RUN_SQL";
-      description: "Run a SQL query against the database";
-      inputSchema: z.ZodType<{
-        sql: string;
-        params?: unknown[];
-      }>;
-      outputSchema: z.ZodType<{
-        result: {
-          results?: unknown[];
-          success?: boolean;
-        }[];
-      }>;
-    },
-  ];
-}
-
-/**
- * Environment type combining Deco bindings
- * Includes DATABASE binding for indexing recordings
- */
-export type Env = DefaultEnv<typeof StateSchema, Registry>;
+import type { Env, Registry } from "./types/env.ts";
+import { StateSchema } from "./types/env.ts";
 
 /**
  * Event names that this MCP handles

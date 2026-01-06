@@ -58,6 +58,7 @@ export class GrainClient {
   private async get<T>(
     endpoint: string,
     params?: Record<string, string>,
+    includeApiVersion = false,
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
@@ -71,7 +72,7 @@ export class GrainClient {
 
     const response = await fetch(url.toString(), {
       method: "GET",
-      headers: this.getHeaders(),
+      headers: this.getHeaders(includeApiVersion),
     });
 
     if (!response.ok) {
@@ -88,10 +89,11 @@ export class GrainClient {
   private async post<T>(
     endpoint: string,
     body?: Record<string, unknown>,
+    includeApiVersion = false,
   ): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
-      headers: this.getHeaders(),
+      headers: this.getHeaders(includeApiVersion),
       body: body ? JSON.stringify(body) : undefined,
     });
 
@@ -101,6 +103,24 @@ export class GrainClient {
     }
 
     return (await response.json()) as T;
+  }
+
+  /**
+   * Make a DELETE request to the Grain API
+   */
+  private async delete(
+    endpoint: string,
+    includeApiVersion = false,
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "DELETE",
+      headers: this.getHeaders(includeApiVersion),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+    }
   }
 
   /**
@@ -195,20 +215,11 @@ export class GrainClient {
    * @returns List of webhooks
    */
   async listWebhooks(): Promise<ListWebhooksResponse> {
-    const response = await fetch(
-      `${this.baseUrl}${GRAIN_LIST_WEBHOOKS_ENDPOINT}`,
-      {
-        method: "POST", // Grain API v2 uses POST for listing hooks
-        headers: this.getHeaders(true),
-      },
+    return await this.post<ListWebhooksResponse>(
+      GRAIN_LIST_WEBHOOKS_ENDPOINT,
+      undefined,
+      true, // includeApiVersion
     );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
-    }
-
-    return (await response.json()) as ListWebhooksResponse;
   }
 
   /**
@@ -217,17 +228,9 @@ export class GrainClient {
    * @param webhookId - The ID of the webhook to delete
    */
   async deleteWebhook(webhookId: string): Promise<void> {
-    const response = await fetch(
-      `${this.baseUrl}${GRAIN_DELETE_WEBHOOK_ENDPOINT}/${webhookId}`,
-      {
-        method: "DELETE",
-        headers: this.getHeaders(true),
-      },
+    return await this.delete(
+      `${GRAIN_DELETE_WEBHOOK_ENDPOINT}/${webhookId}`,
+      true, // includeApiVersion
     );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
-    }
   }
 }

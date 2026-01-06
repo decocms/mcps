@@ -7,7 +7,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
 import { GrainClient } from "../lib/grain-client.ts";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 export const createGetRecordingTool = (env: Env) =>
   createPrivateTool({

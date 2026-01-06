@@ -5,14 +5,14 @@
  * Note: DATABASE binding is only available in production (via Mesh)
  */
 
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 import type { WebhookPayload } from "./types.ts";
 
 /**
  * Run a SQL query using the DATABASE binding
  * @param env - The environment containing the DATABASE binding
  * @param sql - SQL query with ? placeholders
- * @param params - Parameters to substitute for ? placeholders
+ * @param params - Parameters to substitute for ? placeholders (properly parameterized by DATABASES_RUN_SQL)
  * @returns The query results as an array of rows
  */
 export async function runSQL<T = unknown>(
@@ -20,19 +20,25 @@ export async function runSQL<T = unknown>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  // Sanitize string params to prevent SQL injection
-  const sanitizedParams = params.map((p) => {
-    if (typeof p === "string") return p.replaceAll("'", "''");
-    return p;
+  // Check if DATABASE binding is available
+  const dbBinding = env.MESH_REQUEST_CONTEXT?.state?.DATABASE;
+
+  if (!dbBinding) {
+    throw new Error(
+      "DATABASE binding is not available. Ensure the binding is configured in app.json and scopes are requested.",
+    );
+  }
+
+  const response = await dbBinding.DATABASES_RUN_SQL({
+    sql,
+    params,
   });
 
-  const response =
-    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql,
-      params: sanitizedParams,
-    });
+  if (!response?.result?.[0]) {
+    throw new Error("Invalid response from database binding");
+  }
 
-  return (response.result[0]?.results ?? []) as T[];
+  return (response.result[0].results ?? []) as T[];
 }
 
 /**
@@ -86,7 +92,7 @@ export async function ensureRecordingsTable(env: Env) {
       `CREATE INDEX IF NOT EXISTS idx_grain_recordings_title ON grain_recordings USING gin(to_tsvector('english', title))`,
     );
 
-    console.log("✅ Grain recordings table ensured");
+    console.log("Grain recordings table ensured");
   } catch (error) {
     console.error("Error ensuring grain_recordings table:", error);
     throw error;
@@ -150,7 +156,7 @@ export async function indexRecording(
       ],
     );
 
-    console.log(`✅ Indexed recording: ${data.id} - ${data.title}`);
+    console.log(`Indexed recording: ${data.id} - ${data.title}`);
   } catch (error) {
     console.error("Error indexing recording:", error);
     throw error;
