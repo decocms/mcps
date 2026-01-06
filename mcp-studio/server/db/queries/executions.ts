@@ -512,7 +512,7 @@ export async function listExecutions(
   const conditions: string[] = [];
   const params: unknown[] = [];
   if (status) {
-    conditions.push(`status = ?`);
+    conditions.push(`we.status = ?`);
     params.push(status);
   }
 
@@ -520,12 +520,20 @@ export async function listExecutions(
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
 
+  // Join with workflow table to get steps and gateway_id which are required by WorkflowExecutionSchema
   const result = await runSQL<Record<string, unknown>[]>(
     env,
     `
-      SELECT * FROM workflow_execution
+      SELECT 
+        we.*,
+        w.steps,
+        w.gateway_id,
+        COALESCE(wc.title, 'Workflow Execution') as title
+      FROM workflow_execution we
+      JOIN workflow w ON we.workflow_id = w.id
+      LEFT JOIN workflow_collection wc ON w.workflow_collection_id = wc.id
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY we.created_at DESC
       LIMIT ? OFFSET ?
     `,
     [...params, limit, offset],

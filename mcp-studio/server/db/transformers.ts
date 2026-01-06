@@ -84,7 +84,8 @@ export function transformDbRowToExecution(
     updated_at: epochMsToIsoString(row.updated_at),
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
-    error: safeJsonParse(row.error),
+    // error is required by WorkflowExecutionSchema - always include it, use null if not present
+    error: safeJsonParse(row.error) ?? null,
   };
   const parsed = WorkflowExecutionSchema.parse(transformed);
   return {

@@ -197,25 +197,36 @@ function validateStepRefs(
 
       case "input": {
         // Validate path exists in workflow input schema
-        if (workflowInputSchema && parsed.path) {
-          const pathSchema = getSchemaPropertyByPath(
-            workflowInputSchema,
-            parsed.path,
-          );
-          if (!pathSchema) {
+        if (parsed.path) {
+          // If no input schema is defined at all, that's an error
+          if (!workflowInputSchema) {
             errors.push({
               type: "schema_mismatch",
               step: step.name,
               field: "input",
               ref,
-              message: `Path '${parsed.path}' not found in workflow input schema. Available properties: ${
-                workflowInputSchema.properties
-                  ? Object.keys(workflowInputSchema.properties as object).join(
-                      ", ",
-                    )
-                  : "none"
-              }`,
+              message: `Step references '${ref}' but workflow has no input schema defined. Add an 'input' object with a JSON Schema that includes '${parsed.path}' property.`,
             });
+          } else {
+            const pathSchema = getSchemaPropertyByPath(
+              workflowInputSchema,
+              parsed.path,
+            );
+            if (!pathSchema) {
+              const availableProps = workflowInputSchema.properties
+                ? Object.keys(workflowInputSchema.properties as object)
+                : [];
+              errors.push({
+                type: "schema_mismatch",
+                step: step.name,
+                field: "input",
+                ref,
+                message:
+                  availableProps.length > 0
+                    ? `Path '${parsed.path}' not found in workflow input schema. Available properties: ${availableProps.join(", ")}`
+                    : `Path '${parsed.path}' not found in workflow input schema. The input schema has no properties defined. Add 'properties' to your input schema with a '${parsed.path}' property.`,
+              });
+            }
           }
         }
         break;

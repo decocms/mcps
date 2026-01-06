@@ -57,7 +57,9 @@ if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
   );
 }
 
-function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
+function transformDbRowToWorkflowCollectionItem(
+  row: unknown,
+): Workflow & { input?: Record<string, unknown> } {
   const r = row as Record<string, unknown>;
 
   // Parse steps - handle both old { phases: [...] } format and new direct array format
@@ -72,11 +74,21 @@ function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
     }
   }
 
+  // Parse input schema from database
+  let input: Record<string, unknown> | undefined;
+  if (r.input) {
+    input =
+      typeof r.input === "string"
+        ? JSON.parse(r.input)
+        : (r.input as Record<string, unknown>);
+  }
+
   return {
     id: r.id as string,
     title: r.title as string,
     description: r.description as string | undefined,
     steps: steps as Workflow["steps"],
+    input,
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
