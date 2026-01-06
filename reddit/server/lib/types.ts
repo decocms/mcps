@@ -82,7 +82,7 @@ export const getSubredditPostsInputSchema = z.object({
     .describe(
       "Time filter for 'top' sort: hour, day, week, month, year, all. Only used when sort is 'top'",
     ),
-  limit: z
+  limit: z.coerce
     .number()
     .min(1)
     .max(100)
@@ -144,7 +144,7 @@ export const searchRedditInputSchema = z.object({
     .optional()
     .default("all")
     .describe("Time filter: hour, day, week, month, year, all"),
-  limit: z
+  limit: z.coerce
     .number()
     .min(1)
     .max(100)
