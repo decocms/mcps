@@ -643,7 +643,7 @@ export class MetaAdsClient {
       campaign_id: params.campaign_id,
       name: params.name,
       status: params.status || "PAUSED",
-      targeting: params.targeting,
+      targeting: JSON.stringify(params.targeting), // Meta API expects targeting as JSON string
       optimization_goal: params.optimization_goal,
       billing_event: params.billing_event,
     };
@@ -703,7 +703,7 @@ export class MetaAdsClient {
       body.status = params.status;
     }
     if (params.targeting !== undefined) {
-      body.targeting = params.targeting;
+      body.targeting = JSON.stringify(params.targeting); // Meta API expects targeting as JSON string
     }
     if (params.optimization_goal !== undefined) {
       body.optimization_goal = params.optimization_goal;
