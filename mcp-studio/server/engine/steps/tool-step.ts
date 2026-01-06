@@ -185,36 +185,52 @@ export async function executeToolStep(
       },
     ],
   });
-  await client.connect(transport);
-
-  // Fetch tool schema for type coercion
-  let inputSchema: JSONSchema | undefined;
+  let result: unknown;
   try {
-    const { tools } = await client.listTools();
-    const tool = tools.find((t) => t.name === toolName);
-    inputSchema = tool?.inputSchema as JSONSchema | undefined;
-  } catch {
-    // If we can't get the schema, proceed without type coercion
+    await client.connect(transport);
+
+    // Fetch tool schema for type coercion
+    let inputSchema: JSONSchema | undefined;
+    try {
+      const { tools } = await client.listTools();
+      const tool = tools.find((t) => t.name === toolName);
+      inputSchema = tool?.inputSchema as JSONSchema | undefined;
+    } catch {
+      // If we can't get the schema, proceed without type coercion
+    }
+
+    // Sanitize input and coerce types based on tool schema
+    const sanitizedInput = sanitizeInput(input, inputSchema);
+
+    const timeoutMs = step.config?.timeoutMs ?? 30000;
+
+    const { content, structuredContent, isError } = await client.callTool(
+      {
+        name: toolName,
+        arguments: sanitizedInput,
+      },
+      undefined,
+      {
+        timeout: timeoutMs,
+      },
+    );
+
+    result = structuredContent ?? content;
+
+    if (isError) {
+      throw new Error(JSON.stringify(result));
+    }
+  } catch (error) {
+    await client.close();
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      startedAt,
+      completedAt: Date.now(),
+      stepId: step.name,
+    };
+  } finally {
+    await client.close();
   }
-
-  // Sanitize input and coerce types based on tool schema
-  const sanitizedInput = sanitizeInput(input, inputSchema);
-
-  const timeoutMs = step.config?.timeoutMs ?? 30000;
-
-  const { content, structuredContent, isError } = await client.callTool(
-    {
-      name: toolName,
-      arguments: sanitizedInput,
-    },
-    undefined,
-    {
-      timeout: timeoutMs,
-    },
-  );
-  await client.close();
-
-  const result = structuredContent ?? content;
 
   // If there's transform code, run it on the raw tool result
   if (transformCode) {
@@ -243,7 +259,6 @@ export async function executeToolStep(
     return {
       output,
       startedAt,
-      error: isError ? JSON.stringify(result) : undefined,
       completedAt: Date.now(),
       stepId: step.name,
     };
@@ -252,7 +267,6 @@ export async function executeToolStep(
   return {
     output: result,
     startedAt,
-    error: isError ? JSON.stringify(result) : undefined,
     completedAt: Date.now(),
     stepId: step.name,
   };

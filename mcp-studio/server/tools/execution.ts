@@ -132,12 +132,10 @@ export const createCreateTool = (env: Env) =>
           workflow_collection_id: context.workflow_collection_id,
         });
         console.log("publishing event");
-        const result =
-          await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
-            type: "workflow.execution.created",
-            subject: executionId,
-          });
-        console.log("🚀 ~ result:", result);
+        await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
+          type: "workflow.execution.created",
+          subject: executionId,
+        });
         return {
           id: executionId,
           workflow_id,
@@ -179,8 +177,6 @@ export const createGetTool = (env: Env) =>
         env,
         workflow.workflow_collection_id,
       );
-
-      console.log({ collection });
 
       const stepResults = await getStepResults(env, id);
       return {
