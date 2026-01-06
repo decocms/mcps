@@ -9,9 +9,10 @@
  * - LLM_DO_GENERATE: Generates complete non-streaming responses
  */
 
-import type {
-  LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
+import {
+  APICallError,
+  type LanguageModelV2CallOptions,
+  type LanguageModelV2StreamPart,
 } from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_BINDING,
@@ -467,6 +468,12 @@ const getUsageFromStream = (
   ];
 };
 
+const isAPICallError = (error: unknown): error is APICallError =>
+  typeof error === "object" &&
+  error !== null &&
+  Symbol.for("vercel.ai.error") in error &&
+  Symbol.for("vercel.ai.error.AI_APICallError") in error;
+
 /**
  * LLM_DO_STREAM - Streams a language model response in real-time
  */
@@ -490,14 +497,25 @@ export const createLLMStreamTool = (env: Env) =>
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
-      const callResponse = await model.doStream(
-        callOptions as LanguageModelV2CallOptions,
-      );
-      const [_, stream] = getUsageFromStream(callResponse.stream);
-      const response = streamToResponse(stream);
+      try {
+        const callResponse = await model.doStream(
+          callOptions as LanguageModelV2CallOptions,
+        );
 
-      // Return the data stream response
-      return response;
+        const [_, stream] = getUsageFromStream(callResponse.stream);
+        const response = streamToResponse(stream);
+
+        // Return the data stream response
+        return response;
+      } catch (error) {
+        if (isAPICallError(error)) {
+          return new Response(error.responseBody, {
+            status: error.statusCode,
+            headers: error.responseHeaders,
+          });
+        }
+        return new Response(String(error ?? "Unknown error"), { status: 500 });
+      }
     },
   });
 
