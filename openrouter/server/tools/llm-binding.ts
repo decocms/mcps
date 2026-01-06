@@ -478,10 +478,12 @@ export const createLLMStreamTool = (env: Env) =>
       "Returns a streaming response for interactive chat experiences.",
     inputSchema: STREAM_BINDING.inputSchema,
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
@@ -512,10 +514,12 @@ export const createLLMGenerateTool = (env: Env) =>
     inputSchema: GENERATE_BINDING.inputSchema,
     outputSchema: GENERATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
@@ -529,7 +533,28 @@ export const createLLMGenerateTool = (env: Env) =>
         callOptions as LanguageModelV2CallOptions,
       );
 
-      return result as unknown as z.infer<typeof GENERATE_BINDING.outputSchema>;
+      // Clean up the result to remove non-serializable data (Uint8Array bodies)
+      // The AI SDK includes raw request/response bodies that don't serialize to JSON properly
+      const cleanResult = {
+        ...result,
+        // Remove binary bodies that cause serialization issues
+        request: result.request
+          ? { body: undefined } // Don't include raw request body
+          : undefined,
+        response: result.response
+          ? {
+              id: result.response.id,
+              timestamp: result.response.timestamp,
+              modelId: result.response.modelId,
+              headers: result.response.headers,
+              // Don't include raw response body (Uint8Array)
+            }
+          : undefined,
+      };
+
+      return cleanResult as unknown as z.infer<
+        typeof GENERATE_BINDING.outputSchema
+      >;
     },
   });
 
