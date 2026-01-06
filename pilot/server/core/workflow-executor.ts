@@ -1165,8 +1165,8 @@ async function executeToolCall(
             JSON.stringify(result?.result)?.slice(0, 200),
           );
 
-          // Publish completion event so bridge can notify user
-          if (ctx.publishEvent && ctx.task.chatId) {
+          // Publish completion events so bridge can notify user
+          if (ctx.publishEvent) {
             // Extract the response from the result
             const taskResult = result?.result as
               | Record<string, unknown>
@@ -1177,33 +1177,58 @@ async function executeToolCall(
                 ? taskResult
                 : JSON.stringify(taskResult));
 
+            const source = ctx.task.source || "api";
+
             console.error(
-              `[pilot] [start_task] Publishing completion event for ${newTask.taskId}`,
+              `[pilot] [start_task] Publishing completion events for ${newTask.taskId} (source: ${source})`,
             );
 
+            // Publish response event (same pattern as synchronous workflows)
+            await ctx.publishEvent(`agent.response.${source}`, {
+              taskId: newTask.taskId,
+              source,
+              chatId: ctx.task.chatId,
+              text: responseText,
+              isFinal: true,
+            });
+
+            // Also publish task.completed for monitoring
             await ctx.publishEvent("agent.task.completed", {
               taskId: newTask.taskId,
               workflowId,
               workflowTitle: workflow.title,
-              source: ctx.task.source,
+              source,
               chatId: ctx.task.chatId,
               status: "completed",
-              result: responseText,
+              response: responseText,
             });
           }
         } catch (err) {
           console.error(`[pilot] Task ${newTask.taskId} failed:`, err);
 
-          // Publish failure event
-          if (ctx.publishEvent && ctx.task.chatId) {
+          // Publish failure events
+          if (ctx.publishEvent) {
+            const source = ctx.task.source || "api";
+            const errorMsg = err instanceof Error ? err.message : String(err);
+
+            // Publish error response
+            await ctx.publishEvent(`agent.response.${source}`, {
+              taskId: newTask.taskId,
+              source,
+              chatId: ctx.task.chatId,
+              text: `❌ Task failed: ${errorMsg}`,
+              isFinal: true,
+            });
+
+            // Also publish task.completed for monitoring
             await ctx.publishEvent("agent.task.completed", {
               taskId: newTask.taskId,
               workflowId,
               workflowTitle: workflow.title,
-              source: ctx.task.source,
+              source,
               chatId: ctx.task.chatId,
               status: "failed",
-              error: err instanceof Error ? err.message : String(err),
+              error: errorMsg,
             });
           }
         }

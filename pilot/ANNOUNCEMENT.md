@@ -435,3 +435,4 @@ The future of AI isn't siloed bots—it's composable intelligence.
 - **Mesh Bridge**: [decolabs/mesh-bridge](https://github.com/decolabs/mesh-bridge)
 - **Event Bus Docs**: [mesh.dev/docs/event-bus](https://mesh.dev/docs/event-bus)
 
+

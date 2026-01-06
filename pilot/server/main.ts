@@ -55,7 +55,7 @@ import {
   type TaskFailedEvent,
 } from "./events.ts";
 
-const PILOT_VERSION = "2.1.0";
+const PILOT_VERSION = "2.2.0";
 
 // ============================================================================
 // Configuration
@@ -451,7 +451,7 @@ function createProgressHandler(source: string, chatId?: string) {
       taskId,
       source,
       chatId,
-      message, // Just the message, step context is in the emoji prefix
+      message,
     } satisfies TaskProgressEvent);
   };
 }
@@ -484,11 +484,12 @@ async function startWorkflow(
   });
 
   const response = extractResponse(result.result, result.task);
-  const responseEventType = getResponseEventType(source);
 
   console.error(
     `[pilot] Task ${result.task.status}, response: "${response.slice(0, 100)}..."`,
   );
+
+  const responseEventType = getResponseEventType(source);
   console.error(
     `[pilot] Publishing to: ${responseEventType} (chatId: ${chatId || "none"})`,
   );
@@ -576,13 +577,19 @@ function extractResponse(result: unknown, task?: Task): string {
  * we include its history for context. Each message creates a new task,
  * but the "thread" is implicit from the shared history.
  */
+interface HandleMessageOptions {
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
+  forceNewTask?: boolean;
+}
+
 async function handleMessage(
   text: string,
   source: string,
   chatId?: string,
-  history: Array<{ role: "user" | "assistant"; content: string }> = [],
-  forceNewTask = false,
+  options: HandleMessageOptions = {},
 ): Promise<{ response: string; task: Task; isFollowUp: boolean }> {
+  const { history = [], forceNewTask = false } = options;
+
   // Check for recent thread to continue (unless user wants new task)
   let threadHistory: Array<{ role: "user" | "assistant"; content: string }> =
     [];
@@ -859,13 +866,10 @@ async function main() {
     async (args) => {
       const { text, source, chatId, forceNewTask, history } = args;
 
-      const result = await handleMessage(
-        text,
-        source || "cli",
-        chatId,
+      const result = await handleMessage(text, source || "api", chatId, {
         history,
         forceNewTask,
-      );
+      });
 
       return {
         content: [{ type: "text", text: result.response }],

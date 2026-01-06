@@ -69,34 +69,7 @@ cp env.example .env
 # Edit .env with your MESH_TOKEN
 ```
 
-### 2. CLI Mode (Interactive Terminal)
-
-For a quick interactive session without mesh-bridge:
-
-```bash
-MESH_TOKEN=your-token bun run cli
-```
-
-This opens a Codex/Claude Code-like terminal interface where you can chat with Pilot directly.
-
-```
-╔════════════════════════════════════════════════════════════╗
-║   🚀 PILOT CLI                                             ║
-║   Interactive AI Agent for MCP Mesh                        ║
-╚════════════════════════════════════════════════════════════╝
-
-you ❯ what time is it?
-pilot ❯ The current time is 3:45 PM on January 5, 2026.
-
-you ❯ /help
-Commands:
-  /help   - Show help
-  /new    - Start new conversation
-  /status - Show connection status
-  /quit   - Exit
-```
-
-### 3. Add to Mesh
+### 2. Add to Mesh
 
 In MCP Mesh, add Pilot as a **Custom Command** connection:
 
@@ -117,7 +90,9 @@ Pilot requires these bindings:
 
 ### 4. Test
 
-Send a message via any connected interface (WhatsApp, CLI, etc.) and watch Pilot process it.
+Send a message via any connected interface (WhatsApp, CLI via mesh-bridge, etc.) and watch Pilot process it.
+
+> **Note:** For a CLI interface, use [mesh-bridge CLI](../mesh-bridge) which connects to the mesh event bus like any other interface.
 
 ## Workflows
 
@@ -278,9 +253,6 @@ pilot/
 │   └── types/
 │       ├── task.ts
 │       └── workflow.ts
-├── cli/
-│   ├── index.ts             # Interactive CLI entry point
-│   └── mesh-client.ts       # Mesh connection for CLI
 ├── workflows/               # Built-in workflows
 │   ├── fast-router.json
 │   ├── conversation.json
@@ -299,12 +271,6 @@ bun install
 
 # Run MCP server with hot reload
 bun run dev
-
-# Run CLI with hot reload
-bun run cli:dev
-
-# Run CLI (production)
-bun run cli
 
 # Run tests
 bun test
