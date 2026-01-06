@@ -7,7 +7,7 @@
  */
 
 import { $ } from "bun";
-import { readdirSync, existsSync, statSync } from "fs";
+import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 
 const args = process.argv.slice(2);
@@ -38,8 +38,10 @@ function getAllMcps(): string[] {
     )
       return false;
 
-    // Must have a package.json
-    if (!existsSync(join(fullPath, "package.json"))) return false;
+    const hasPackageJson = existsSync(join(fullPath, "package.json"));
+    const hasAppJson = existsSync(join(fullPath, "app.json"));
+    // Must have a package.json or app.json
+    if (!hasPackageJson && !hasAppJson) return false;
 
     return true;
   });

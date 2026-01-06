@@ -1,7 +1,9 @@
-import { assertEnvKey } from "@decocms/mcps-shared/tools/utils/api-client";
-import type { Env } from "../main.ts";
+import type { Env } from "server/main";
 
-export function getOpenRouterApiKey(env: Env): string {
-  assertEnvKey(env, "OPENROUTER_API_KEY");
-  return env.OPENROUTER_API_KEY as string;
-}
+export const getOpenRouterApiKey = (env: Env) => {
+  const authorization = env.MESH_REQUEST_CONTEXT.authorization;
+  if (!authorization) {
+    throw new Error("Authorization header is required");
+  }
+  return authorization;
+};

@@ -7,11 +7,11 @@ import { OpenRouter as OpenRouterSDK } from "@openrouter/sdk";
 import type {
   ChatGenerationParams,
   ChatMessageContentItem,
+  ModelsListResponse,
+  OpenResponsesUsage,
   ChatResponse as SDKChatResponse,
   Message as SDKMessage,
   Model as SDKModel,
-  ModelsListResponse,
-  OpenResponsesUsage,
 } from "@openrouter/sdk/models";
 import type { GetGenerationResponse } from "@openrouter/sdk/models/operations";
 import type {

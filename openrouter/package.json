@@ -5,31 +5,30 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev --vite",
-    "configure": "deco configure",
-    "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "bun run build && rm -f dist/server/wrangler.json && deco deploy ./dist/server",
-    "check": "tsc --noEmit",
-    "build": "bun --bun vite build"
+    "dev": "bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^2.0.0",
-    "@ai-sdk/provider-utils": "^3.0.17",
-    "@decocms/bindings": "0.2.4",
-    "@decocms/runtime": "0.28.1",
-    "@openrouter/ai-sdk-provider": "^1.2.0",
+    "@ai-sdk/provider": "^3.0.2",
+    "@ai-sdk/provider-utils": "^4.0.4",
+    "@decocms/bindings": "^1.0.6",
+    "@decocms/runtime": "^1.1.0",
+    "@openrouter/ai-sdk-provider": "^1.5.4",
     "@openrouter/sdk": "^0.1.11",
-    "ai": "^5.0.0",
-    "zod": "^3.24.3"
+    "ai": "^6.0.3",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.13.4",
     "@cloudflare/workers-types": "^4.20251014.0",
     "@decocms/mcps-shared": "1.0.0",
     "@mastra/core": "^0.24.0",
-    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@modelcontextprotocol/sdk": "1.25.1",
     "@types/mime-db": "^1.43.6",
-    "deco-cli": "^0.27.0",
+    "deco-cli": "^0.28.0",
     "typescript": "^5.7.2",
     "vite": "7.2.0",
     "wrangler": "^4.28.0"

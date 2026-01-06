@@ -16,7 +16,8 @@
     "lint": "oxlint",
     "check": "bun run --filter=* check",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
-    "prepare": "sh scripts/setup-hooks.sh"
+    "prepare": "sh scripts/setup-hooks.sh",
+    "build": "bun run ./scripts/build-mcp.ts"
   },
   "workspaces": [
     "apify",
@@ -24,19 +25,24 @@
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",
+    "google-calendar",
+    "meta-ads",
     "nanobanana",
     "object-storage",
     "openrouter",
     "perplexity",
     "pinecone",
     "readonly-sql",
+    "reddit",
+    "registry",
     "replicate",
     "shared",
     "sora",
     "template-minimal",
     "template-with-view",
     "veo",
-    "whisper"
+    "whisper",
+    "mcp-studio"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
