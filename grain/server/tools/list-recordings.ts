@@ -7,7 +7,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
 import { GrainClient } from "../lib/grain-client.ts";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../constants.ts";
 
 export const createListRecordingsTool = (env: Env) =>
@@ -75,7 +75,12 @@ export const createListRecordingsTool = (env: Env) =>
               .describe("Recording source (e.g., zoom, meet, teams)"),
             url: z.string().describe("Public share URL"),
             tags: z.array(z.string()).describe("Tags applied to the recording"),
-            summary: z.string().describe("AI-generated summary of the meeting"),
+            summary: z
+              .string()
+              .optional()
+              .describe(
+                "AI-generated summary of the meeting (may be empty if still processing)",
+              ),
             start_datetime: z
               .string()
               .describe("Recording start time (ISO 8601 format)"),
@@ -92,7 +97,10 @@ export const createListRecordingsTool = (env: Env) =>
               .describe("URL to download transcript in TXT format"),
             intelligence_notes_md: z
               .string()
-              .describe("Markdown-formatted meeting notes"),
+              .optional()
+              .describe(
+                "Markdown-formatted meeting notes (may be empty if still processing)",
+              ),
           }),
         )
         .describe("List of recordings matching the filters"),

@@ -1,4 +1,4 @@
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 export const getGrainApiKey = (env: Env) => {
   const authorization = env.MESH_REQUEST_CONTEXT.authorization;
