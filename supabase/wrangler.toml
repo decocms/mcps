@@ -1,0 +1,17 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "supabase"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "Generic Supabase database operations. Use as a binding for data persistence in other MCPs."
+icon = "https://supabase.com/favicon/favicon-196x196.png"
+friendlyName = "Supabase"
+
