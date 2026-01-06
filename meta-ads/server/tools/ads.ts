@@ -8,7 +8,6 @@
  * - META_ADS_CREATE_AD: Create a new ad
  * - META_ADS_UPDATE_AD: Update an existing ad
  * - META_ADS_DELETE_AD: Delete an ad
- * - META_ADS_UPLOAD_AD_IMAGE: Upload an image for use in creatives
  * - META_ADS_CREATE_AD_CREATIVE: Create a new ad creative
  */
 
@@ -181,7 +180,7 @@ export const createCreateAdTool = (env: Env) =>
   createPrivateTool({
     id: "META_ADS_CREATE_AD",
     description:
-      "Create a new Meta Ads ad. This is STEP 5 (final step) to create ads. REQUIRES: adset_id from CREATE_ADSET AND creative_id from CREATE_AD_CREATIVE. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE (optional) → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. If you don't have these IDs, go back and create them first.",
+      "Create a new Meta Ads ad. This is STEP 4 (final step) to create ads. REQUIRES: adset_id from CREATE_ADSET AND creative_id from CREATE_AD_CREATIVE. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. If you don't have these IDs, go back and create them first.",
     inputSchema: z.object({
       account_id: z
         .string()
@@ -293,48 +292,6 @@ export const createDeleteAdTool = (env: Env) =>
     },
   });
 
-/**
- * Upload an image for use in ad creatives
- */
-export const createUploadAdImageTool = (env: Env) =>
-  createPrivateTool({
-    id: "META_ADS_UPLOAD_AD_IMAGE",
-    description:
-      "Upload an image for ad creatives. This is STEP 3 (optional) in the ad creation flow. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. Returns an image_hash to use in CREATE_AD_CREATIVE. Skip this step if using an existing post (effective_object_story_id) or video.",
-    inputSchema: z.object({
-      account_id: z
-        .string()
-        .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
-      image_url: z
-        .string()
-        .describe(
-          "Publicly accessible URL of the image to upload. Meta will fetch and store the image. Supported formats: JPG, PNG. Recommended size: 1200x628 for link ads, 1080x1080 for square.",
-        ),
-    }),
-    outputSchema: z.object({
-      image_hash: z.string().describe("Hash to use when creating ad creatives"),
-      url: z.string().describe("URL of the uploaded image on Meta's CDN"),
-      width: z.number().optional().describe("Image width in pixels"),
-      height: z.number().optional().describe("Image height in pixels"),
-    }),
-    execute: async ({ context }) => {
-      const accessToken = await getMetaAccessToken(env);
-      const client = createMetaAdsClient({ accessToken });
-
-      const response = await client.uploadAdImage(
-        context.account_id,
-        context.image_url,
-      );
-
-      return {
-        image_hash: response.hash,
-        url: response.url,
-        width: response.width,
-        height: response.height,
-      };
-    },
-  });
-
 // Call to action types schema
 const callToActionTypeSchema = z.enum([
   "APPLY_NOW",
@@ -374,7 +331,7 @@ export const createCreateAdCreativeTool = (env: Env) =>
   createPrivateTool({
     id: "META_ADS_CREATE_AD_CREATIVE",
     description:
-      "Create an ad creative with image, text, and CTA. This is STEP 4 in the ad creation flow. REQUIRES: page_id (Facebook Page), and either image_hash from UPLOAD_AD_IMAGE OR effective_object_story_id (existing post). FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. Returns creative_id to use in CREATE_AD.",
+      "Create an ad creative with text and CTA. This is STEP 3 in the ad creation flow. REQUIRES: page_id (Facebook Page) and link URL, OR use effective_object_story_id to promote an existing Facebook/Instagram post. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. Returns creative_id to use in CREATE_AD.",
     inputSchema: z.object({
       account_id: z
         .string()
@@ -406,10 +363,6 @@ export const createCreateAdCreativeTool = (env: Env) =>
         .string()
         .optional()
         .describe("Description text (appears below headline)"),
-      image_hash: z
-        .string()
-        .optional()
-        .describe("Image hash from META_ADS_UPLOAD_AD_IMAGE"),
       video_id: z
         .string()
         .optional()
@@ -476,9 +429,6 @@ export const createCreateAdCreativeTool = (env: Env) =>
         if (context.description) {
           linkData.description = context.description;
         }
-        if (context.image_hash) {
-          linkData.image_hash = context.image_hash;
-        }
         if (context.video_id) {
           linkData.video_id = context.video_id;
         }
@@ -521,6 +471,5 @@ export const adTools = [
   createCreateAdTool,
   createUpdateAdTool,
   createDeleteAdTool,
-  createUploadAdImageTool,
   createCreateAdCreativeTool,
 ];

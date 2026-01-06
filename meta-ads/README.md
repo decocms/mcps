@@ -8,9 +8,8 @@ This MCP provides comprehensive tools to **create, manage, and analyze** your Me
 
 - **Create campaigns** with objectives, budgets, and scheduling
 - **Create ad sets** with targeting, optimization, and bidding
-- **Create ads** with creatives, images, and call-to-actions
+- **Create ads** with creatives and call-to-actions (use existing posts or links)
 - **Update/pause/delete** campaigns, ad sets, and ads
-- **Upload images** for use in ad creatives
 - **View performance** metrics with breakdowns by age, gender, country, device, etc.
 - **Compare performance** between periods
 - **Analyze ROI and costs** at different levels
@@ -54,7 +53,7 @@ This MCP provides comprehensive tools to **create, manage, and analyze** your Me
 | `META_ADS_UPDATE_ADSET` | Update/pause/activate an ad set |
 | `META_ADS_DELETE_ADSET` | Delete an ad set |
 
-### Ads (6 tools)
+### Ads (5 tools)
 | Tool | Description |
 |------|-------------|
 | `META_ADS_GET_ADS` | List ads with ad set filter |
@@ -64,11 +63,10 @@ This MCP provides comprehensive tools to **create, manage, and analyze** your Me
 | `META_ADS_UPDATE_AD` | Update/pause/activate an ad |
 | `META_ADS_DELETE_AD` | Delete an ad |
 
-### Creatives & Images (2 tools)
+### Creatives (1 tool)
 | Tool | Description |
 |------|-------------|
-| `META_ADS_UPLOAD_AD_IMAGE` | Upload an image for use in creatives |
-| `META_ADS_CREATE_AD_CREATIVE` | Create a creative with image, text, and CTA |
+| `META_ADS_CREATE_AD_CREATIVE` | Create a creative with text and CTA (use existing posts or link ads) |
 
 ### Insights (1 tool)
 | Tool | Description |
@@ -181,16 +179,15 @@ To create a full campaign from scratch, follow this flow:
 2. Create Ad Set with targeting
    -> META_ADS_CREATE_ADSET(account_id, campaign_id, targeting, ...)
 
-3. Upload image (if needed)
-   -> META_ADS_UPLOAD_AD_IMAGE(account_id, image_url)
+3. Create Ad Creative (use existing post or link ad)
+   -> META_ADS_CREATE_AD_CREATIVE(account_id, page_id, link, ...)
+   OR
+   -> META_ADS_CREATE_AD_CREATIVE(account_id, effective_object_story_id, ...)
 
-4. Create Ad Creative
-   -> META_ADS_CREATE_AD_CREATIVE(account_id, page_id, link, image_hash, ...)
-
-5. Create Ad
+4. Create Ad
    -> META_ADS_CREATE_AD(account_id, adset_id, creative_id, ...)
 
-6. Activate (when ready)
+5. Activate (when ready)
    -> META_ADS_UPDATE_CAMPAIGN(campaign_id, status: "ACTIVE")
 ```
 
@@ -252,24 +249,17 @@ To create a full campaign from scratch, follow this flow:
         daily_budget: "5000"
       )
 
-3. "Upload an image for my ad"
-   -> META_ADS_UPLOAD_AD_IMAGE(
-        account_id: "act_123",
-        image_url: "https://example.com/my-ad-image.jpg"
-      )
-
-4. "Create a creative with the uploaded image"
+3. "Create a creative with link and text"
    -> META_ADS_CREATE_AD_CREATIVE(
         account_id: "act_123",
         page_id: "page_123",
         link: "https://mysite.com",
         message: "Check out our amazing products!",
         headline: "Limited Time Offer",
-        image_hash: "abc123hash",
         call_to_action_type: "SHOP_NOW"
       )
 
-5. "Create an ad using the creative"
+4. "Create an ad using the creative"
    -> META_ADS_CREATE_AD(
         account_id: "act_123",
         adset_id: "adset_456",
