@@ -17,12 +17,13 @@ import type {
 
 /**
  * Get configured clients from environment
+ * Supabase storage uses MCP binding (SUPABASE) from the mesh
  */
 function getClients(env: Env) {
   const state = env.DECO_REQUEST_CONTEXT.state;
   return {
     firecrawl: createFirecrawlClient(state.firecrawlApiKey),
-    storage: createSupabaseStorage(state.supabaseUrl, state.supabaseKey),
+    storage: createSupabaseStorage(env),
   };
 }
 

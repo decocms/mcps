@@ -32,3 +32,8 @@ id = "blog:summarize"
 price = 0.005
 description = "$0.005 per summary generated"
 
+[[deco.bindings]]
+name = "SUPABASE"
+type = "mcp"
+integration_name = "@supabase/mcp"
+

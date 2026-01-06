@@ -17,15 +17,12 @@ import { tools } from "./tools/index.ts";
 /**
  * State schema for Blog MCP configuration.
  * Users fill these values when installing the MCP.
+ * Supabase storage is provided via MCP binding (SUPABASE).
  */
 export const StateSchema = BaseStateSchema.extend({
   firecrawlApiKey: z
     .string()
     .describe("Firecrawl API key for content extraction"),
-  supabaseUrl: z.string().describe("Supabase project URL"),
-  supabaseKey: z
-    .string()
-    .describe("Supabase service role key (or anon key with RLS)"),
 });
 
 /**

@@ -1,8 +1,9 @@
 /**
- * Supabase client for state persistence.
- * Handles content fingerprints, watermarks, and deduplication.
+ * Supabase storage via MCP binding.
+ * Uses the SUPABASE MCP binding for database operations.
  */
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+import type { Env } from "../main.ts";
 
 export interface ContentRecord {
   id?: string;
@@ -27,13 +28,11 @@ export interface DeduplicationResult {
 }
 
 /**
- * Create Supabase storage client for blog content state
+ * Create Supabase storage using MCP binding
+ * The SUPABASE binding comes from the mesh and provides database operations
  */
-export function createSupabaseStorage(
-  supabaseUrl: string,
-  supabaseKey: string,
-) {
-  const client: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+export function createSupabaseStorage(env: Env) {
+  const supabase = env.SUPABASE;
 
   return {
     /**
@@ -43,15 +42,12 @@ export function createSupabaseStorage(
       url: string,
       fingerprint: string,
     ): Promise<DeduplicationResult> {
-      const { data, error } = await client
-        .from("blog_content")
-        .select("*")
-        .eq("url", url)
-        .maybeSingle();
+      const result = await supabase.EXECUTE_SQL({
+        query: `SELECT * FROM blog_content WHERE url = $1 LIMIT 1`,
+        params: [url],
+      });
 
-      if (error) {
-        throw new Error(`Failed to check fingerprint: ${error.message}`);
-      }
+      const data = result.rows?.[0] as ContentRecord | undefined;
 
       if (!data) {
         return { isNew: true, isUpdated: false };
@@ -61,14 +57,14 @@ export function createSupabaseStorage(
         return {
           isNew: false,
           isUpdated: true,
-          existingRecord: data as ContentRecord,
+          existingRecord: data,
         };
       }
 
       return {
         isNew: false,
         isUpdated: false,
-        existingRecord: data as ContentRecord,
+        existingRecord: data,
       };
     },
 
@@ -82,24 +78,23 @@ export function createSupabaseStorage(
       >,
     ): Promise<ContentRecord> {
       const now = new Date().toISOString();
-      const newRecord = {
-        ...record,
-        first_seen_at: now,
-        last_seen_at: now,
-        updated_count: 0,
-      };
 
-      const { data, error } = await client
-        .from("blog_content")
-        .insert(newRecord)
-        .select()
-        .single();
+      const result = await supabase.EXECUTE_SQL({
+        query: `
+          INSERT INTO blog_content (url, fingerprint, domain, title, first_seen_at, last_seen_at, updated_count)
+          VALUES ($1, $2, $3, $4, $5, $5, 0)
+          RETURNING *
+        `,
+        params: [
+          record.url,
+          record.fingerprint,
+          record.domain,
+          record.title,
+          now,
+        ],
+      });
 
-      if (error) {
-        throw new Error(`Failed to save content: ${error.message}`);
-      }
-
-      return data as ContentRecord;
+      return result.rows?.[0] as ContentRecord;
     },
 
     /**
@@ -112,69 +107,29 @@ export function createSupabaseStorage(
     ): Promise<ContentRecord> {
       const now = new Date().toISOString();
 
-      const { data, error } = await client
-        .from("blog_content")
-        .update({
-          fingerprint,
-          title,
-          last_seen_at: now,
-          updated_count: client.rpc("increment_updated_count"),
-        })
-        .eq("url", url)
-        .select()
-        .single();
+      const result = await supabase.EXECUTE_SQL({
+        query: `
+          UPDATE blog_content 
+          SET fingerprint = $1, title = $2, last_seen_at = $3, updated_count = updated_count + 1
+          WHERE url = $4
+          RETURNING *
+        `,
+        params: [fingerprint, title, now, url],
+      });
 
-      if (error) {
-        // Fallback if RPC doesn't exist
-        const { data: fallbackData, error: fallbackError } = await client
-          .from("blog_content")
-          .select("updated_count")
-          .eq("url", url)
-          .single();
-
-        if (fallbackError) {
-          throw new Error(`Failed to update content: ${error.message}`);
-        }
-
-        const { data: updatedData, error: updateError } = await client
-          .from("blog_content")
-          .update({
-            fingerprint,
-            title,
-            last_seen_at: now,
-            updated_count:
-              ((fallbackData as { updated_count: number })?.updated_count ||
-                0) + 1,
-          })
-          .eq("url", url)
-          .select()
-          .single();
-
-        if (updateError) {
-          throw new Error(`Failed to update content: ${updateError.message}`);
-        }
-
-        return updatedData as ContentRecord;
-      }
-
-      return data as ContentRecord;
+      return result.rows?.[0] as ContentRecord;
     },
 
     /**
      * Get watermark (last_processed_at) for a domain
      */
     async getWatermark(domain: string): Promise<WatermarkRecord | null> {
-      const { data, error } = await client
-        .from("blog_watermarks")
-        .select("*")
-        .eq("domain", domain)
-        .maybeSingle();
+      const result = await supabase.EXECUTE_SQL({
+        query: `SELECT * FROM blog_watermarks WHERE domain = $1 LIMIT 1`,
+        params: [domain],
+      });
 
-      if (error) {
-        throw new Error(`Failed to get watermark: ${error.message}`);
-      }
-
-      return data as WatermarkRecord | null;
+      return (result.rows?.[0] as WatermarkRecord) || null;
     },
 
     /**
@@ -183,33 +138,29 @@ export function createSupabaseStorage(
     async updateWatermark(domain: string): Promise<WatermarkRecord> {
       const now = new Date().toISOString();
 
-      const { data, error } = await client
-        .from("blog_watermarks")
-        .upsert({ domain, last_processed_at: now }, { onConflict: "domain" })
-        .select()
-        .single();
+      const result = await supabase.EXECUTE_SQL({
+        query: `
+          INSERT INTO blog_watermarks (domain, last_processed_at)
+          VALUES ($1, $2)
+          ON CONFLICT (domain) DO UPDATE SET last_processed_at = $2
+          RETURNING *
+        `,
+        params: [domain, now],
+      });
 
-      if (error) {
-        throw new Error(`Failed to update watermark: ${error.message}`);
-      }
-
-      return data as WatermarkRecord;
+      return result.rows?.[0] as WatermarkRecord;
     },
 
     /**
      * Get all watermarks
      */
     async getAllWatermarks(): Promise<WatermarkRecord[]> {
-      const { data, error } = await client
-        .from("blog_watermarks")
-        .select("*")
-        .order("last_processed_at", { ascending: false });
+      const result = await supabase.EXECUTE_SQL({
+        query: `SELECT * FROM blog_watermarks ORDER BY last_processed_at DESC`,
+        params: [],
+      });
 
-      if (error) {
-        throw new Error(`Failed to get watermarks: ${error.message}`);
-      }
-
-      return (data || []) as WatermarkRecord[];
+      return (result.rows || []) as WatermarkRecord[];
     },
 
     /**
@@ -219,18 +170,17 @@ export function createSupabaseStorage(
       domain: string,
       limit = 100,
     ): Promise<ContentRecord[]> {
-      const { data, error } = await client
-        .from("blog_content")
-        .select("*")
-        .eq("domain", domain)
-        .order("last_seen_at", { ascending: false })
-        .limit(limit);
+      const result = await supabase.EXECUTE_SQL({
+        query: `
+          SELECT * FROM blog_content 
+          WHERE domain = $1 
+          ORDER BY last_seen_at DESC 
+          LIMIT $2
+        `,
+        params: [domain, limit],
+      });
 
-      if (error) {
-        throw new Error(`Failed to get content: ${error.message}`);
-      }
-
-      return (data || []) as ContentRecord[];
+      return (result.rows || []) as ContentRecord[];
     },
   };
 }
