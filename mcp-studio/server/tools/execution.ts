@@ -221,9 +221,12 @@ export const createGetTool = (env: Env) =>
         throw new Error("Execution not found");
       }
 
+      // Destructure to exclude workflow_id which is not in the output schema
+      const { workflow_id: _, ...execution } = result.execution;
+
       return {
         item: {
-          ...result.execution,
+          ...execution,
           completed_steps: result.completed_steps,
         },
       };
