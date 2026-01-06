@@ -20,6 +20,7 @@
   },
   "workspaces": [
     "apify",
+    "blog-mcp",
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",
