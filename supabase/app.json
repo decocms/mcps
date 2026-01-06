@@ -1,0 +1,280 @@
+{
+  "scopeName": "deco",
+  "name": "supabase",
+  "friendlyName": "Supabase",
+  "connection": {
+    "type": "BINDING"
+  },
+  "description": "Generic Supabase database operations. Use as a binding for data persistence in other MCPs.",
+  "icon": "https://supabase.com/favicon/favicon-196x196.png",
+  "unlisted": false,
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "supabaseUrl": {
+        "type": "string",
+        "description": "Supabase project URL (e.g., https://xxx.supabase.co)"
+      },
+      "supabaseKey": {
+        "type": "string",
+        "description": "Supabase API key (service role key or anon key)"
+      }
+    },
+    "required": ["supabaseUrl", "supabaseKey"]
+  },
+  "tools": [
+    {
+      "name": "db_select",
+      "description": "Query records from a Supabase table. Supports filtering, ordering, pagination, and column selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "The table name to query"
+          },
+          "columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Columns to select. If not provided, all columns (*) are returned."
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column": { "type": "string", "description": "The column to filter on" },
+                "operator": { 
+                  "type": "string", 
+                  "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "like", "ilike", "in", "is"],
+                  "description": "The comparison operator"
+                },
+                "value": { "description": "The value to compare against" }
+              },
+              "required": ["column", "operator", "value"]
+            },
+            "description": "Array of filter conditions to apply"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip"
+          },
+          "orderBy": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column": { "type": "string", "description": "The column to order by" },
+                "ascending": { "type": "boolean", "description": "Sort ascending (default) or descending" },
+                "nullsFirst": { "type": "boolean", "description": "Whether nulls should appear first" }
+              },
+              "required": ["column"]
+            },
+            "description": "Array of columns to order by"
+          }
+        },
+        "required": ["table"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "error": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "db_insert",
+      "description": "Insert one or more records into a Supabase table. Can optionally return the inserted data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "The table name to insert into"
+          },
+          "data": {
+            "description": "Record(s) to insert. Can be a single object or array of objects."
+          },
+          "returning": {
+            "type": "boolean",
+            "description": "Whether to return the inserted record(s). Defaults to true."
+          }
+        },
+        "required": ["table", "data"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "error": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "db_update",
+      "description": "Update records in a Supabase table that match the specified filters. Requires at least one filter to prevent accidental mass updates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "The table name to update"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Object containing the columns and values to update"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column": { "type": "string", "description": "The column to filter on" },
+                "operator": { 
+                  "type": "string", 
+                  "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "like", "ilike", "in", "is"],
+                  "description": "The comparison operator"
+                },
+                "value": { "description": "The value to compare against" }
+              },
+              "required": ["column", "operator", "value"]
+            },
+            "minItems": 1,
+            "description": "Array of filter conditions to identify records to update (required)"
+          },
+          "returning": {
+            "type": "boolean",
+            "description": "Whether to return the updated record(s). Defaults to true."
+          }
+        },
+        "required": ["table", "data", "filters"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "error": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "db_delete",
+      "description": "Delete records from a Supabase table that match the specified filters. Requires at least one filter to prevent accidental mass deletion.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "The table name to delete from"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column": { "type": "string", "description": "The column to filter on" },
+                "operator": { 
+                  "type": "string", 
+                  "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "like", "ilike", "in", "is"],
+                  "description": "The comparison operator"
+                },
+                "value": { "description": "The value to compare against" }
+              },
+              "required": ["column", "operator", "value"]
+            },
+            "minItems": 1,
+            "description": "Array of filter conditions to identify records to delete (required)"
+          },
+          "returning": {
+            "type": "boolean",
+            "description": "Whether to return the deleted record(s). Defaults to false."
+          }
+        },
+        "required": ["table", "filters"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "error": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "db_upsert",
+      "description": "Insert a record or update it if it already exists (based on unique constraint). Useful for syncing data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "The table name to upsert into"
+          },
+          "data": {
+            "description": "Record(s) to upsert. Can be a single object or array of objects."
+          },
+          "onConflict": {
+            "type": "string",
+            "description": "Column(s) to use for conflict detection. Usually the primary key or unique constraint columns."
+          },
+          "returning": {
+            "type": "boolean",
+            "description": "Whether to return the upserted record(s). Defaults to true."
+          }
+        },
+        "required": ["table", "data", "onConflict"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "error": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "db_rpc",
+      "description": "Call a PostgreSQL function (RPC) in Supabase. Useful for complex operations, aggregations, or custom business logic.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "functionName": {
+            "type": "string",
+            "description": "The name of the PostgreSQL function to call"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Parameters to pass to the function as an object"
+          }
+        },
+        "required": ["functionName"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "description": "Result from the RPC function" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  ]
+}
+

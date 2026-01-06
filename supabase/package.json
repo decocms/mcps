@@ -1,0 +1,29 @@
+{
+  "name": "mcp-supabase",
+  "version": "1.0.0",
+  "description": "Generic Supabase database operations MCP. Use as a binding for data persistence in other MCPs.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y"
+  },
+  "dependencies": {
+    "@decocms/runtime": "^1.1.0",
+    "@supabase/supabase-js": "^2.47.10",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2",
+    "@decocms/mcps-shared": "1.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
