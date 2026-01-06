@@ -94,7 +94,7 @@ export async function claimExecution(
 export async function getExecution(
   env: Env,
   id: string,
-): Promise<WorkflowExecution | null> {
+): Promise<(WorkflowExecution & { workflow_id: string }) | null> {
   const result =
     await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
       sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
@@ -104,7 +104,45 @@ export async function getExecution(
   const row = result.result[0]?.results?.[0] as
     | Record<string, unknown>
     | undefined;
-  return row ? transformDbRowToExecution(row) : null;
+  return row
+    ? {
+        ...transformDbRowToExecution(row),
+        workflow_id: row.workflow_id as string,
+      }
+    : null;
+}
+
+export async function getExecutionWorkflow(env: Env, id: string) {
+  const result =
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+      sql: "SELECT * FROM workflow WHERE id = ? LIMIT 1",
+      params: [id],
+    });
+  const row = result.result[0]?.results?.[0] as
+    | Record<string, unknown>
+    | undefined;
+  return row ? transformDbRowToWorkflow(row) : null;
+}
+
+function transformDbRowToWorkflow(row: Record<string, unknown>): {
+  id: string;
+  workflow_collection_id: string | null;
+  steps: Step[];
+  input: Record<string, unknown> | null;
+  gateway_id: string;
+  created_at_epoch_ms: number;
+  created_by: string | undefined;
+} {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    workflow_collection_id: r.workflow_collection_id as string | null,
+    steps: r.steps as Step[],
+    input: r.input as Record<string, unknown> | null,
+    gateway_id: r.gateway_id as string,
+    created_at_epoch_ms: Number(r.created_at_epoch_ms),
+    created_by: r.created_by as string | undefined,
+  };
 }
 
 /**

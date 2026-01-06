@@ -9,7 +9,9 @@ import {
   createExecution,
   cancelExecution,
   resumeExecution,
+  getExecutionWorkflow,
 } from "../db/queries/executions.ts";
+import { getWorkflowCollection } from "./workflow.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -152,6 +154,7 @@ export const createGetTool = (env: Env) =>
     id: "COLLECTION_WORKFLOW_EXECUTION_GET",
     description: "Get a single workflow execution by ID with step results",
     inputSchema: GET_BINDING.inputSchema,
+    outputSchema: GET_BINDING.outputSchema,
     execute: async ({
       context,
     }: {
@@ -160,14 +163,32 @@ export const createGetTool = (env: Env) =>
       const { id } = context;
 
       const execution = await getExecution(env, id);
-
       if (!execution) {
         throw new Error("Execution not found");
       }
+      const workflow = await getExecutionWorkflow(env, execution.workflow_id);
+      if (!workflow) {
+        throw new Error("Workflow not found");
+      }
+
+      if (!workflow.workflow_collection_id) {
+        throw new Error("Workflow collection ID not found");
+      }
+
+      const collection = await getWorkflowCollection(
+        env,
+        workflow.workflow_collection_id,
+      );
+
+      console.log({ collection });
 
       const stepResults = await getStepResults(env, id);
       return {
-        item: execution,
+        item: {
+          ...execution,
+          title: collection?.title ?? "",
+          steps: workflow.steps,
+        },
         step_results: stepResults,
       };
     },

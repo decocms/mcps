@@ -56,7 +56,7 @@ if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
   );
 }
 
-function transformDbRowToWorkflow(row: unknown): Workflow {
+function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
   const r = row as Record<string, unknown>;
 
   // Parse steps - handle both old { phases: [...] } format and new direct array format
@@ -133,7 +133,8 @@ export const createListTool = (env: Env) =>
 
       return {
         items: itemsResult.result[0]?.results?.map(
-          (item: Record<string, unknown>) => transformDbRowToWorkflow(item),
+          (item: Record<string, unknown>) =>
+            transformDbRowToWorkflowCollectionItem(item),
         ),
         totalCount,
         hasMore:
@@ -153,7 +154,7 @@ export async function getWorkflowCollection(
     });
   const item = result.result[0]?.results?.[0] || null;
   return item
-    ? transformDbRowToWorkflow(item as Record<string, unknown>)
+    ? transformDbRowToWorkflowCollectionItem(item as Record<string, unknown>)
     : null;
 }
 
@@ -263,7 +264,11 @@ Example workflow with a step that references the output of another step:
     }) => {
       const { data } = context;
       const workflow = {
-        ...createDefaultWorkflow(),
+        id: crypto.randomUUID(),
+        title: data.title ?? `Workflow ${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        steps: data.steps ?? [],
         ...data,
       };
       return await insertWorkflowCollection(env, workflow);
@@ -323,7 +328,7 @@ async function updateWorkflowCollection(
   }
 
   return {
-    item: transformDbRowToWorkflow(
+    item: transformDbRowToWorkflowCollectionItem(
       result.result[0]?.results?.[0] as Record<string, unknown>,
     ),
   };
@@ -370,7 +375,7 @@ export const createDeleteTool = (env: Env) =>
         throw new Error(`Workflow collection with id ${id} not found`);
       }
       return {
-        item: transformDbRowToWorkflow(item),
+        item: transformDbRowToWorkflowCollectionItem(item),
       };
     },
   });
