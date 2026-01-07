@@ -8,10 +8,7 @@
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
-import {
-  ensureAssistantsTable,
-  ensurePromptsTable,
-} from "./db/schemas/agents.ts";
+import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { createPrompts } from "./prompts.ts";
 import { tools } from "./tools/index.ts";
@@ -40,7 +37,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     onChange: async (env) => {
       await ensureIndexes(env);
       await ensureCollections(env);
-      await ensureAssistantsTable(env);
       await ensurePromptsTable(env);
     },
     scopes: [

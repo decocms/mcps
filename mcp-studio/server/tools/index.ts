@@ -1,4 +1,3 @@
-import { assistantTools } from "./assistant.ts";
 import {
   workflowExecutionCollectionTools,
   workflowTools,
@@ -7,7 +6,6 @@ import { promptTools } from "./prompt.ts";
 import { workflowCollectionTools } from "./workflow.ts";
 
 export const tools = [
-  ...assistantTools,
   ...promptTools,
   ...workflowTools,
   ...workflowCollectionTools,
