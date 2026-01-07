@@ -7,7 +7,7 @@
  * Tools:
  * - accountTools: Account management (list, get)
  * - containerTools: Container management (list, get, create, delete)
- * - workspaceTools: Workspace management (list, get, create)
+ * - workspaceTools: Workspace management (list, get, create, delete)
  * - tagTools: Tag management (list, get, create, update, delete)
  * - triggerTools: Trigger management (list, get, create, update, delete)
  * - variableTools: Variable management (list, get, create, update, delete)
