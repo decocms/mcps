@@ -18,7 +18,6 @@ MCP Server for Google Tag Manager integration. Manage accounts, containers, work
 - **list_workspaces** - List workspaces in a container
 - **get_workspace** - Get details of a specific workspace
 - **create_workspace** - Create a new workspace
-- **delete_workspace** - Delete a workspace
 
 ### Tag Management
 - **list_tags** - List tags in a workspace
