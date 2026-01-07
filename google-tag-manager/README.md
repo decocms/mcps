@@ -1,4 +1,4 @@
-# Google Tag Manager MCP 
+# Google Tag Manager MCP
 
 MCP Server for Google Tag Manager integration. Manage accounts, containers, workspaces, tags, triggers, and variables using the Google Tag Manager API v2.
 
