@@ -2,6 +2,7 @@
 
 MCP para extração, deduplicação e sumarização de conteúdo web usando Firecrawl e Supabase.
 
+
 ## Funcionalidades
 
 - **Extração de Conteúdo**: Usa Firecrawl para extrair title, body, author e date de URLs
