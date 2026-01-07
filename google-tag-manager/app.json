@@ -1,13 +1,12 @@
 {
-  "scopeName": "deco",
-  "name": "google-tag-manager",
-  "friendlyName": "Google Tag Manager",
-  "connection": {
-    "type": "HTTP",
-    "url": "https://sites-google-tag-manager.decocache.com/mcp"
-  },
-  "description": "Manage Google Tag Manager resources including accounts, containers, workspaces, tags, triggers and variables via API.",
-  "icon": "https://www.gstatic.com/images/branding/product/2x/tag_manager_64dp.png",
-  "unlisted": false
+    "scopeName": "deco",
+    "name": "google-tag-manager",
+    "friendlyName": "Google Tag Manager",
+    "connection": {
+        "type": "HTTP",
+        "url": "https://sites-google-tag-manager.decocache.com/mcp"
+    },
+    "description": "Manage Google Tag Manager resources including accounts, containers, workspaces, tags, triggers and variables via API.",
+    "icon": "https://img.icons8.com/color/1200/google-tag-manager.jpg",
+    "unlisted": false
 }
-
