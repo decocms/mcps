@@ -280,9 +280,20 @@ export interface CreateTagInput {
 
 /**
  * Input for updating a tag
+ * Note: name and type are required by the GTM API
  */
-export interface UpdateTagInput extends Partial<CreateTagInput> {
+export interface UpdateTagInput {
   fingerprint: string;
+  name: string;
+  type: string;
+  parameter?: Parameter[];
+  firingTriggerId?: string[];
+  blockingTriggerId?: string[];
+  tagFiringOption?: TagFiringOption;
+  notes?: string;
+  liveOnly?: boolean;
+  parentFolderId?: string;
+  paused?: boolean;
 }
 
 /**
@@ -301,9 +312,18 @@ export interface CreateTriggerInput {
 
 /**
  * Input for updating a trigger
+ * Note: name and type are required by the GTM API
  */
-export interface UpdateTriggerInput extends Partial<CreateTriggerInput> {
+export interface UpdateTriggerInput {
   fingerprint: string;
+  name: string;
+  type: string;
+  filter?: Condition[];
+  autoEventFilter?: Condition[];
+  customEventFilter?: Condition[];
+  eventName?: Parameter;
+  notes?: string;
+  parentFolderId?: string;
 }
 
 /**
@@ -321,7 +341,15 @@ export interface CreateVariableInput {
 
 /**
  * Input for updating a variable
+ * Note: name and type are required by the GTM API
  */
-export interface UpdateVariableInput extends Partial<CreateVariableInput> {
+export interface UpdateVariableInput {
   fingerprint: string;
+  name: string;
+  type: string;
+  parameter?: Parameter[];
+  notes?: string;
+  parentFolderId?: string;
+  disablingTriggerId?: string[];
+  enablingTriggerId?: string[];
 }
