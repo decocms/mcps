@@ -15,6 +15,8 @@ if (!siteName) {
   process.exit(1);
 }
 
+console.log(`Building MCP for site name ${siteName}`);
+  
 const folderToBuild = getMcpFolder(siteName);
 
 if (!folderToBuild) {
