@@ -18,9 +18,6 @@ const GTM_SCOPES = [
   "https://www.googleapis.com/auth/tagmanager.manage.accounts",
 ].join(" ");
 
-// Store the last used redirect_uri for token exchange
-let lastRedirectUri: string | null = null;
-
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: {
@@ -39,9 +36,6 @@ const runtime = withRuntime<Env>({
       callbackUrlObj.searchParams.delete("state");
       const cleanRedirectUri = callbackUrlObj.toString();
 
-      // Store for later use in exchangeCode
-      lastRedirectUri = cleanRedirectUri;
-
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("redirect_uri", cleanRedirectUri);
       url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -50,9 +44,14 @@ const runtime = withRuntime<Env>({
       url.searchParams.set("access_type", "offline");
       url.searchParams.set("prompt", "consent");
 
-      // Pass state as a separate OAuth parameter (Google will return it in the callback)
+      // Encode redirect_uri into state to avoid race conditions in multi-user environments
+      // The state will be returned by Google and parsed in exchangeCode
       if (state) {
-        url.searchParams.set("state", state);
+        const stateWithRedirect = JSON.stringify({
+          original: state,
+          redirect_uri: cleanRedirectUri,
+        });
+        url.searchParams.set("state", stateWithRedirect);
       }
 
       return url.toString();
@@ -63,15 +62,24 @@ const runtime = withRuntime<Env>({
       code,
       code_verifier,
       code_challenge_method,
+      state,
     }: {
       code: string;
       code_verifier?: string;
       code_challenge_method?: string;
+      state?: string;
     }) => {
-      // Use the stored redirect_uri from authorizationUrl
-      const cleanRedirectUri = lastRedirectUri;
+      // Extract redirect_uri from state parameter (set in authorizationUrl)
+      let cleanRedirectUri: string;
 
-      if (!cleanRedirectUri) {
+      if (state) {
+        try {
+          const stateData = JSON.parse(state);
+          cleanRedirectUri = stateData.redirect_uri;
+        } catch {
+          throw new Error("Invalid state parameter in OAuth callback");
+        }
+      } else {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
         );
