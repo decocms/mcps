@@ -149,7 +149,13 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   /**
    * Fallback directly to assets for all requests that do not match a tool or auth.
    */
-  fetch: (req: Request, env: Env) => env.ASSETS.fetch(req),
+  fetch: (req: Request, env: Env) => {
+    // In development, ASSETS may not be available
+    if (env.ASSETS?.fetch) {
+      return env.ASSETS.fetch(req);
+    }
+    return new Response("Not Found", { status: 404 });
+  },
 });
 
 export default runtime;
