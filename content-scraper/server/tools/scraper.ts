@@ -2,8 +2,8 @@
  * Content scraping tool via n8n webhook.
  */
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/mastra";
-import type { Env } from "../main.ts";
+import { createPrivateTool } from "@decocms/runtime/tools";
+import type { Env } from "../types/env.ts";
 
 const N8N_WEBHOOK_URL =
   "https://ventura29.app.n8n.cloud/webhook-test/get-content-scrape";

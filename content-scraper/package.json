@@ -13,9 +13,9 @@
     "build": "bun --bun vite build"
   },
   "dependencies": {
-    "@decocms/runtime": "0.25.1",
+    "@decocms/runtime": "^1.1.0",
     "@supabase/supabase-js": "^2.49.0",
-    "zod": "^3.24.3"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.13.4",
