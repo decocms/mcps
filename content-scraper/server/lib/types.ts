@@ -1,8 +1,8 @@
 /**
- * Shared types for the Blog MCP
+ * Shared types for the Content Scraper MCP
  */
 
-export interface BlogProcessingResult {
+export interface ContentProcessingResult {
   url: string;
   status: "new" | "updated" | "unchanged" | "error";
   title?: string;
@@ -19,7 +19,7 @@ export interface ProcessUrlsInput {
 }
 
 export interface ProcessUrlsOutput {
-  processed: BlogProcessingResult[];
+  processed: ContentProcessingResult[];
   stats: {
     total: number;
     new: number;

@@ -229,16 +229,16 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
 };
 
 export const StateSchema = z.object({
-  BLOG_CONTRACT: z.object({
+  CONTENT_CONTRACT: z.object({
     value: z.string(),
-    __type: z.literal("@deco/blog-mcp").default("@deco/blog-mcp"),
+    __type: z.literal("@deco/content-scraper").default("@deco/content-scraper"),
   }),
 });
 
 export interface Env {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-  BLOG_CONTRACT: Mcp<{
+  CONTENT_CONTRACT: Mcp<{
     /**
      * Authorize a charge for a contract clause.
      */
@@ -289,10 +289,10 @@ export interface Env {
 }
 
 export const Scopes = {
-  BLOG_CONTRACT: {
-    CONTRACT_AUTHORIZE: "BLOG_CONTRACT::CONTRACT_AUTHORIZE",
-    CONTRACT_GET: "BLOG_CONTRACT::CONTRACT_GET",
-    CONTRACT_SETTLE: "BLOG_CONTRACT::CONTRACT_SETTLE",
-    DECO_CHAT_OAUTH_START: "BLOG_CONTRACT::DECO_CHAT_OAUTH_START",
+  CONTENT_CONTRACT: {
+    CONTRACT_AUTHORIZE: "CONTENT_CONTRACT::CONTRACT_AUTHORIZE",
+    CONTRACT_GET: "CONTENT_CONTRACT::CONTRACT_GET",
+    CONTRACT_SETTLE: "CONTENT_CONTRACT::CONTRACT_SETTLE",
+    DECO_CHAT_OAUTH_START: "CONTENT_CONTRACT::DECO_CHAT_OAUTH_START",
   },
 };

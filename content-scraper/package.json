@@ -1,7 +1,7 @@
 {
-  "name": "mcp-blog",
+  "name": "mcp-content-scraper",
   "version": "1.0.0",
-  "description": "Blog content extraction and deduplication MCP using Firecrawl and Supabase",
+  "description": "Content extraction, deduplication and summarization MCP using Firecrawl and Supabase",
   "private": true,
   "type": "module",
   "scripts": {

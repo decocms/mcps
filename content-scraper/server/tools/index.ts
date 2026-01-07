@@ -6,11 +6,11 @@
  * the domain separation.
  */
 import { userTools } from "@decocms/mcps-shared/tools/user";
-import { blogTools } from "./blog.ts";
+import { scraperTools } from "./scraper.ts";
 
 // Export all tools from all domains
-export const tools = [...userTools, ...blogTools];
+export const tools = [...userTools, ...scraperTools];
 
 // Re-export domain-specific tools for direct access if needed
 export { userTools } from "@decocms/mcps-shared/tools/user";
-export { blogTools } from "./blog.ts";
+export { scraperTools } from "./scraper.ts";

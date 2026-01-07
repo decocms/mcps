@@ -1,7 +1,7 @@
 /**
- * Blog Content Extractor MCP
+ * Content Scraper MCP
  *
- * This MCP extracts, deduplicates, and summarizes blog content from URLs.
+ * This MCP extracts, deduplicates, and summarizes web content from URLs.
  * Uses Firecrawl for content extraction and Supabase for state persistence.
  */
 import { z } from "zod";
@@ -15,7 +15,7 @@ import {
 import { tools } from "./tools/index.ts";
 
 /**
- * State schema for Blog MCP configuration.
+ * State schema for Content Scraper MCP configuration.
  * Users fill these values when installing the MCP.
  * Supabase storage is provided via MCP binding (SUPABASE).
  */
@@ -47,8 +47,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * app when a user is installing it.
      */
     scopes: [
-      Scopes.BLOG_CONTRACT.CONTRACT_AUTHORIZE,
-      Scopes.BLOG_CONTRACT.CONTRACT_SETTLE,
+      Scopes.CONTENT_CONTRACT.CONTRACT_AUTHORIZE,
+      Scopes.CONTENT_CONTRACT.CONTRACT_SETTLE,
     ],
     /**
      * The state schema of your Application defines what

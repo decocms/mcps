@@ -1,5 +1,5 @@
 /**
- * Blog content processing tools.
+ * Content scraping tools.
  * Handles URL processing, deduplication, and watermark management.
  */
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { createFirecrawlClient } from "../lib/firecrawl.ts";
 import { createSupabaseStorage } from "../lib/supabase.ts";
 import { processContent } from "../lib/content.ts";
 import type {
-  BlogProcessingResult,
+  ContentProcessingResult,
   ProcessUrlsOutput,
   CheckUpdatesOutput,
   GetWatermarksOutput,
@@ -37,11 +37,11 @@ export const processUrlsTool = (env: Env) =>
   createTool({
     id: "process_urls",
     description:
-      "Process a list of blog URLs, extracting clean content (title, body, author, date) using Firecrawl. " +
+      "Process a list of URLs, extracting clean content (title, body, author, date) using Firecrawl. " +
       "Automatically deduplicates by fingerprint and tracks changes. " +
       "Returns processing results with summaries for new/updated content.",
     inputSchema: z.object({
-      urls: z.array(z.string().url()).describe("List of blog URLs to process"),
+      urls: z.array(z.string().url()).describe("List of URLs to process"),
       generateSummaries: z
         .boolean()
         .optional()
@@ -71,7 +71,7 @@ export const processUrlsTool = (env: Env) =>
     }),
     execute: async ({ context: input }): Promise<ProcessUrlsOutput> => {
       const { firecrawl, storage } = getClients(env);
-      const results: BlogProcessingResult[] = [];
+      const results: ContentProcessingResult[] = [];
       const stats = {
         total: input.urls.length,
         new: 0,
@@ -283,6 +283,10 @@ export const getWatermarksTool = (env: Env) =>
   });
 
 /**
- * Export all blog tools
+ * Export all scraper tools
  */
-export const blogTools = [processUrlsTool, checkUpdatesTool, getWatermarksTool];
+export const scraperTools = [
+  processUrlsTool,
+  checkUpdatesTool,
+  getWatermarksTool,
+];

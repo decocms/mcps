@@ -1,5 +1,5 @@
 #:schema node_modules/@decocms/runtime/config-schema.json
-name = "mcp-blog"
+name = "content-scraper"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
@@ -11,24 +11,24 @@ enable_workflows = false
 local = false
 
 [deco.integration]
-description = "Extract, deduplicate and summarize blog content from URLs using Firecrawl. Persists state in Supabase to avoid reprocessing."
-icon = "https://assets.decocache.com/mcp/blog-icon.svg"
-friendlyName = "Blog Content Extractor"
+description = "Extract, deduplicate and summarize web content from URLs using Firecrawl. Persists state in Supabase to avoid reprocessing."
+icon = "https://assets.decocache.com/mcp/content-scraper-icon.svg"
+friendlyName = "Content Scraper"
 
 [[deco.bindings]]
 type = "contract"
-name = "BLOG_CONTRACT"
+name = "CONTENT_CONTRACT"
 
 [deco.bindings.contract]
 body = "Pay per content extraction"
 
 [[deco.bindings.contract.clauses]]
-id = "blog:extract"
+id = "content:extract"
 price = 0.01
 description = "$0.01 per URL extracted"
 
 [[deco.bindings.contract.clauses]]
-id = "blog:summarize"
+id = "content:summarize"
 price = 0.005
 description = "$0.005 per summary generated"
 
