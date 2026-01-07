@@ -11,29 +11,6 @@ enable_workflows = false
 local = false
 
 [deco.integration]
-description = "Extract, deduplicate and summarize web content from URLs using Firecrawl. Persists state in Supabase to avoid reprocessing."
+description = "Scrape web content from URLs using n8n workflow automation."
 icon = "https://assets.decocache.com/mcp/content-scraper-icon.svg"
 friendlyName = "Content Scraper"
-
-[[deco.bindings]]
-type = "contract"
-name = "CONTENT_CONTRACT"
-
-[deco.bindings.contract]
-body = "Pay per content extraction"
-
-[[deco.bindings.contract.clauses]]
-id = "content:extract"
-price = 0.01
-description = "$0.01 per URL extracted"
-
-[[deco.bindings.contract.clauses]]
-id = "content:summarize"
-price = 0.005
-description = "$0.005 per summary generated"
-
-[[deco.bindings]]
-name = "SUPABASE"
-type = "mcp"
-integration_name = "@supabase/mcp"
-

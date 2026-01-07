@@ -131,85 +131,6 @@ export interface GET_USEROutput {
   email: String_16;
 }
 
-/* eslint-disable */
-/**
- * Contract types for billing
- */
-
-export type String_17 = string;
-export type Number_1 = number;
-export type Array_3 = Object_1[];
-
-export interface CONTRACT_AUTHORIZEInput {
-  clauses: Array_3;
-}
-export interface Object_1 {
-  clauseId: String_17;
-  amount: Number_1;
-}
-
-export type String_18 = string;
-export type String_19 = string;
-export type Number_2 = number;
-
-export interface CONTRACT_AUTHORIZEOutput {
-  transactionId: String_18;
-  totalAmount: String_19;
-  timestamp: Number_2;
-}
-
-export interface CONTRACT_GETInput {}
-
-export type String_20 = string;
-export type String_21 = string;
-export type String_22 = string;
-export type StringNumber = String_23 | Number_3;
-export type String_23 = string;
-export type Number_3 = number;
-export type String_24 = string;
-export type String_25 = string;
-export type Array_5 = String_25[];
-export type Array_4 = Object_3[];
-
-export interface CONTRACT_GETOutput {
-  appName?: String_20;
-  contract: Object_2;
-}
-export interface Object_2 {
-  body?: String_21;
-  clauses?: Array_4;
-}
-export interface Object_3 {
-  id: String_22;
-  price: StringNumber;
-  description?: String_24;
-  usedByTools?: Array_5;
-}
-
-export type String_26 = string;
-export type String_27 = string;
-export type Number_4 = number;
-export type Array_6 = Object_4[];
-export type Number_5 = number;
-export type String_28 = string;
-
-export interface CONTRACT_SETTLEInput {
-  transactionId: String_26;
-  clauses?: Array_6;
-  amount?: Number_5;
-  vendorId: String_28;
-}
-export interface Object_4 {
-  clauseId: String_27;
-  amount: Number_4;
-}
-
-export type String_29 = string;
-
-export interface CONTRACT_SETTLEOutput {
-  transactionId: String_29;
-}
-
 import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
@@ -228,40 +149,11 @@ export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   };
 };
 
-export const StateSchema = z.object({
-  CONTENT_CONTRACT: z.object({
-    value: z.string(),
-    __type: z.literal("@deco/content-scraper").default("@deco/content-scraper"),
-  }),
-});
+export const StateSchema = z.object({});
 
 export interface Env {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-  CONTENT_CONTRACT: Mcp<{
-    /**
-     * Authorize a charge for a contract clause.
-     */
-    CONTRACT_AUTHORIZE: (
-      input: CONTRACT_AUTHORIZEInput,
-    ) => Promise<CONTRACT_AUTHORIZEOutput>;
-    /**
-     * Get the current contract state.
-     */
-    CONTRACT_GET: (input: CONTRACT_GETInput) => Promise<CONTRACT_GETOutput>;
-    /**
-     * Settle the current authorized charge.
-     */
-    CONTRACT_SETTLE: (
-      input: CONTRACT_SETTLEInput,
-    ) => Promise<CONTRACT_SETTLEOutput>;
-    /**
-     * Start the OAuth flow for the contract app.
-     */
-    DECO_CHAT_OAUTH_START: (
-      input: DECO_CHAT_OAUTH_STARTInput,
-    ) => Promise<DECO_CHAT_OAUTH_STARTOutput>;
-  }>;
   SELF: Mcp<{
     /**
      * OAuth for Deco Chat
@@ -288,11 +180,4 @@ export interface Env {
   }>;
 }
 
-export const Scopes = {
-  CONTENT_CONTRACT: {
-    CONTRACT_AUTHORIZE: "CONTENT_CONTRACT::CONTRACT_AUTHORIZE",
-    CONTRACT_GET: "CONTENT_CONTRACT::CONTRACT_GET",
-    CONTRACT_SETTLE: "CONTENT_CONTRACT::CONTRACT_SETTLE",
-    DECO_CHAT_OAUTH_START: "CONTENT_CONTRACT::DECO_CHAT_OAUTH_START",
-  },
-};
+export const Scopes = {};
