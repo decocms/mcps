@@ -5,6 +5,7 @@ import {
   StepSchema,
   Workflow,
   WORKFLOW_BINDING,
+  WorkflowExecutionSchema,
 } from "@decocms/bindings/workflow";
 import {
   cancelExecution,
@@ -155,29 +156,37 @@ export const createCreateTool = (env: Env) =>
           );
         }
 
-        if (context.steps) {
-          // Validate workflow before creating execution
-          await validateWorkflow(
-            {
-              id: "temp-validation",
-              title: "Execution Workflow",
-              steps: context.steps,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
+        let steps = context.steps;
+        let workflowInput: Record<string, unknown> | undefined;
+
+        if (context.workflow_collection_id) {
+          // Fetch the full workflow collection to get steps and input schema
+          const workflowCollection = await getWorkflowCollection(
             env,
+            context.workflow_collection_id,
           );
+          if (workflowCollection) {
+            steps = steps ?? workflowCollection.steps;
+            workflowInput = (
+              workflowCollection as { input?: Record<string, unknown> }
+            ).input;
+          }
         }
 
-        const steps =
-          context.steps ??
-          (
-            (await getWorkflowCollection(
-              env,
-              context.workflow_collection_id ?? "",
-            )) as Workflow | null
-          )?.steps ??
-          [];
+        steps = steps ?? [];
+
+        // Validate workflow before creating execution
+        await validateWorkflow(
+          {
+            id: "temp-validation",
+            title: "Execution Workflow",
+            steps,
+            input: workflowInput,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Workflow & { input?: Record<string, unknown> },
+          env,
+        );
 
         const { id: executionId, workflow_id } = await createExecution(env, {
           input: context.input,
@@ -224,11 +233,15 @@ export const createGetTool = (env: Env) =>
       // Destructure to exclude workflow_id which is not in the output schema
       const { workflow_id: _, ...execution } = result.execution;
 
+      // Parse through schema to strip any additional properties that might cause
+      // JSON Schema validation to fail (e.g. extra fields from SQL query or stored JSON)
+      const validatedItem = WorkflowExecutionSchema.parse({
+        ...execution,
+        completed_steps: result.completed_steps,
+      });
+
       return {
-        item: {
-          ...execution,
-          completed_steps: result.completed_steps,
-        },
+        item: validatedItem,
       };
     },
   });

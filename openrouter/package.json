@@ -15,9 +15,9 @@
     "@ai-sdk/provider": "^3.0.2",
     "@ai-sdk/provider-utils": "^4.0.4",
     "@decocms/bindings": "^1.0.6",
-    "@decocms/runtime": "^1.1.0",
+    "@decocms/runtime": "^1.1.1",
     "@openrouter/ai-sdk-provider": "^1.5.4",
-    "@openrouter/sdk": "^0.1.11",
+    "@openrouter/sdk": "^0.3.11",
     "ai": "^6.0.3",
     "zod": "^4.0.0"
   },
