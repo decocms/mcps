@@ -20,7 +20,7 @@ console.log(`Building MCP for site name ${siteName}`);
 const folderToBuild = getMcpFolder(siteName);
 
 if (!folderToBuild) {
-  console.error("❌ Error: MCP folder not found");
+  console.error(`❌ Error building MCP: package with name ${siteName} not found`);
   process.exit(1);
 }
 
