@@ -2,7 +2,7 @@
  * Content scraping tool via n8n webhook.
  */
 import { z } from "zod";
-import { createTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Env } from "../main.ts";
 
 const N8N_WEBHOOK_URL =
@@ -11,8 +11,8 @@ const N8N_WEBHOOK_URL =
 /**
  * Call the n8n webhook to scrape content from a URL.
  */
-export const scrapeContentTool = (env: Env) =>
-  createTool({
+export const scrapeContentTool = (_env: Env) =>
+  createPrivateTool({
     id: "scrape_content",
     description:
       "Scrape content from a URL using the n8n workflow. " +
