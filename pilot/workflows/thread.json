@@ -1,0 +1,23 @@
+{
+  "id": "thread",
+  "title": "Conversation Thread",
+  "description": "Basic agentic loop for conversations. Uses meta-tools for discovery and execution.",
+  "type": "thread",
+  "steps": [
+    {
+      "name": "respond",
+      "description": "Process message with LLM and meta-tools",
+      "action": {
+        "type": "llm",
+        "model": "fast",
+        "systemPrompt": "You are a helpful AI assistant with access to tools and workflows.\n\nAvailable meta-tools:\n- list_workflows: Discover available workflows\n- start_workflow: Execute a workflow by ID\n- list_tools: Discover available tools from connected MCPs\n- call_tool: Execute a specific tool by name\n\nStrategy:\n1. For simple questions, respond directly\n2. For tasks, first check list_workflows for relevant workflows\n3. Use start_workflow to run workflows\n4. Use list_tools to discover MCP capabilities\n5. Use call_tool to execute specific tools\n\nAlways provide a clear, helpful response.",
+        "tools": "meta",
+        "maxIterations": 10
+      },
+      "input": {
+        "message": "@input.message",
+        "history": "@input.history"
+      }
+    }
+  ]
+}

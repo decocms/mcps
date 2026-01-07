@@ -2,15 +2,16 @@
  * Pilot MCP Server
  *
  * A workflow-based AI agent that orchestrates tasks across the MCP Mesh.
- * Implements the MCP Tasks specification (draft 2025-11-25).
  *
  * Key concepts:
- * - Workflows: Reusable task templates stored in workflows/
- * - Tasks: MCP-compliant persistent task state stored in TASKS_DIR
- * - Threads: Follow-up messages within 5 min are added to the same task
- * - Event Mapping: Route mesh events to specific workflows
+ * - Workflows: Stored in PostgreSQL via MCP Studio
+ * - Threads: Conversation continuations tracked via workflow executions
+ * - LLM Executor: Pilot's native agent loop for multi-turn tool calling
  *
- * @see https://modelcontextprotocol.io/specification/draft/basic/utilities/tasks
+ * Architecture:
+ * - Workflow definitions: PostgreSQL (workflow_collection)
+ * - Workflow executions: PostgreSQL (workflow_execution)
+ * - Thread = special "thread" workflow type with agentic loop
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -18,53 +19,49 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
-// Types
-import type { Task } from "./types/task.ts";
-
-// Storage
-import {
-  loadTask,
-  listTasks,
-  cancelTask as cancelTaskInStorage,
-  getTaskStats,
-  cleanupExpiredTasks,
-  getRecentThread,
-  closeThread,
-} from "./core/task-storage.ts";
+// Workflow Storage (via MCP Studio - PostgreSQL + file-based)
 import {
   loadWorkflow,
   listWorkflows,
   saveWorkflow,
-  initializeDefaultWorkflows,
-} from "./core/workflow-storage.ts";
+  duplicateWorkflow,
+  hasStudioClient,
+  setWorkflowStudioClient,
+} from "./core/workflow-studio-adapter.ts";
+
+// Execution Tracking (PostgreSQL)
+import {
+  initExecutionAdapter,
+  getThreadContext,
+  createExecution,
+  getExecution,
+  listExecutions,
+  type ThreadMessage,
+} from "./core/execution-adapter.ts";
 
 // Executor
 import {
-  executeWorkflow,
+  runWorkflow,
   type LLMCallback,
   type ListConnectionsCallback,
-} from "./core/workflow-executor.ts";
+  type MeshToolCallback,
+} from "./core/llm-executor.ts";
 
 // Events
 import {
   EVENT_TYPES,
   getResponseEventType,
   UserMessageEventSchema,
-  type TaskCompletedEvent,
-  type TaskProgressEvent,
-  type TaskFailedEvent,
 } from "./events.ts";
 
-const PILOT_VERSION = "2.2.0";
+const PILOT_VERSION = "3.0.0";
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-const DEFAULT_WORKFLOW_FALLBACK = "fast-router";
-
-/** Thread timeout: messages within this window are added to existing task */
-const THREAD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+/** Thread timeout: messages within this window continue the same thread */
+const DEFAULT_THREAD_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 const config = {
   meshUrl: process.env.MESH_URL || "http://localhost:3000",
@@ -74,28 +71,12 @@ const config = {
     process.env.SMART_MODEL ||
     process.env.FAST_MODEL ||
     "google/gemini-2.5-flash",
-  defaultWorkflow: process.env.DEFAULT_WORKFLOW || DEFAULT_WORKFLOW_FALLBACK,
-  threadTimeoutMs: parseInt(
-    process.env.THREAD_TIMEOUT_MS || String(THREAD_TIMEOUT_MS),
+  threadWorkflow: process.env.THREAD_WORKFLOW || "thread",
+  threadTtlMs: parseInt(
+    process.env.THREAD_TTL_MS || String(DEFAULT_THREAD_TTL_MS),
     10,
   ),
 };
-
-/**
- * Validate workflow configuration at startup.
- * Warns and falls back to default if configured workflow doesn't exist.
- */
-function validateWorkflowConfig(): void {
-  // Check default workflow
-  const defaultWf = loadWorkflow(config.defaultWorkflow);
-  if (!defaultWf) {
-    console.error(
-      `[pilot] ⚠️ WARNING: DEFAULT_WORKFLOW="${config.defaultWorkflow}" not found!`,
-    );
-    console.error(`[pilot]    Falling back to: ${DEFAULT_WORKFLOW_FALLBACK}`);
-    config.defaultWorkflow = DEFAULT_WORKFLOW_FALLBACK;
-  }
-}
 
 // Parse event → workflow mapping from env
 function getEventWorkflowMap(): Map<string, string> {
@@ -124,6 +105,7 @@ function parseBindingsFromEnv(): {
   llm?: string;
   connection?: string;
   eventBus?: string;
+  workflowStudio?: string;
 } {
   const meshStateJson = process.env.MESH_STATE;
   if (!meshStateJson) return {};
@@ -134,6 +116,7 @@ function parseBindingsFromEnv(): {
       llm: state.LLM?.value,
       connection: state.CONNECTION?.value,
       eventBus: state.EVENT_BUS?.value,
+      workflowStudio: state.WORKFLOW_STUDIO?.value,
     };
   } catch (e) {
     console.error("[pilot] Failed to parse MESH_STATE:", e);
@@ -148,23 +131,55 @@ const envBindings = parseBindingsFromEnv();
 let llmConnectionId: string | undefined = envBindings.llm;
 let connectionBindingId: string | undefined = envBindings.connection;
 let eventBusConnectionId: string | undefined = envBindings.eventBus;
+let workflowStudioId: string | undefined = envBindings.workflowStudio;
 
 // Log if we got bindings from env
-if (envBindings.llm || envBindings.connection || envBindings.eventBus) {
+if (
+  envBindings.llm ||
+  envBindings.connection ||
+  envBindings.eventBus ||
+  envBindings.workflowStudio
+) {
   console.error("[pilot] ✅ Bindings from MESH_STATE env var:");
   if (envBindings.llm) console.error(`[pilot]   LLM: ${envBindings.llm}`);
   if (envBindings.connection)
     console.error(`[pilot]   CONNECTION: ${envBindings.connection}`);
   if (envBindings.eventBus)
     console.error(`[pilot]   EVENT_BUS: ${envBindings.eventBus}`);
+  if (envBindings.workflowStudio)
+    console.error(`[pilot]   WORKFLOW_STUDIO: ${envBindings.workflowStudio}`);
 }
 
 // ============================================================================
 // Binding Schema
 // ============================================================================
 
+/**
+ * Create a binding field schema.
+ * @param bindingType - String binding type (e.g., "@deco/openrouter")
+ */
 const BindingOf = (bindingType: string) =>
   z.object({
+    __type: z.literal(bindingType).default(bindingType),
+    value: z.string().describe("Connection ID"),
+  });
+
+/**
+ * Tool definitions for the WORKFLOW binding.
+ * Used for tool-based connection matching.
+ */
+const WORKFLOW_BINDING_TOOLS = [
+  { name: "COLLECTION_WORKFLOW_LIST" },
+  { name: "COLLECTION_WORKFLOW_GET" },
+];
+
+/**
+ * Create a binding field with tool-based matching.
+ * Uses __binding with tool definitions for filtering.
+ */
+const BindingWithTools = (bindingType: string, tools: { name: string }[]) =>
+  z.object({
+    // Use a non-@ prefix binding type to avoid app_name filter
     __type: z.literal(bindingType).default(bindingType),
     value: z.string().describe("Connection ID"),
   });
@@ -177,7 +192,33 @@ const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus")
     .optional()
     .describe("Event bus for pub/sub"),
+  // Use WORKFLOW (well-known binding name) instead of @deco/workflow
+  // to enable tool-based matching
+  WORKFLOW_STUDIO: BindingWithTools("WORKFLOW", WORKFLOW_BINDING_TOOLS)
+    .optional()
+    .describe("MCP Studio for workflow storage (PostgreSQL-backed)"),
 });
+
+/**
+ * Post-process the state schema to inject binding tool definitions.
+ * This works around limitations in Zod's literal types for complex values.
+ */
+function injectBindingSchema(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  const props = schema.properties as Record<string, Record<string, unknown>>;
+  if (props?.WORKFLOW_STUDIO?.properties) {
+    const wfProps = props.WORKFLOW_STUDIO.properties as Record<
+      string,
+      Record<string, unknown>
+    >;
+    // Inject __binding with tool definitions for tool-based matching
+    wfProps.__binding = {
+      const: WORKFLOW_BINDING_TOOLS,
+    };
+  }
+  return schema;
+}
 
 // ============================================================================
 // Mesh API Helpers
@@ -440,246 +481,102 @@ async function subscribeToEvents(): Promise<void> {
 }
 
 // ============================================================================
-// Progress Handler
+// Thread Handling (PostgreSQL-based)
 // ============================================================================
-
-function createProgressHandler(source: string, chatId?: string) {
-  return async (taskId: string, stepName: string, message: string) => {
-    console.error(`[pilot] [${stepName}] ${message}`);
-
-    await publishEvent(EVENT_TYPES.TASK_PROGRESS, {
-      taskId,
-      source,
-      chatId,
-      message,
-    } satisfies TaskProgressEvent);
-  };
+interface HandleMessageResult {
+  response: string;
+  executionId?: string;
+  isFollowUp: boolean;
 }
-
-// ============================================================================
-// Workflow Execution
-// ============================================================================
-
-async function startWorkflow(
-  workflowId: string,
-  input: Record<string, unknown>,
-  source: string,
-  chatId?: string,
-): Promise<{ response: string; task: Task }> {
-  console.error(`[pilot] Starting workflow: ${workflowId}`);
-
-  const result = await executeWorkflow(workflowId, input, {
-    source,
-    chatId,
-    config: {
-      fastModel: config.fastModel,
-      smartModel: config.smartModel,
-      onProgress: createProgressHandler(source, chatId),
-      onModeChange: (mode) => console.error(`[pilot] Mode: ${mode}`),
-    },
-    callLLM,
-    callMeshTool,
-    listConnections: listMeshConnections,
-    publishEvent,
-  });
-
-  const response = extractResponse(result.result, result.task);
-
-  console.error(
-    `[pilot] Task ${result.task.status}, response: "${response.slice(0, 100)}..."`,
-  );
-
-  const responseEventType = getResponseEventType(source);
-  console.error(
-    `[pilot] Publishing to: ${responseEventType} (chatId: ${chatId || "none"})`,
-  );
-
-  if (result.task.status === "completed") {
-    await publishEvent(EVENT_TYPES.TASK_COMPLETED, {
-      taskId: result.task.taskId,
-      source,
-      chatId,
-      response,
-      duration: Date.now() - new Date(result.task.createdAt).getTime(),
-      toolsUsed: result.task.stepResults.flatMap(
-        (s) => (s.output as { tools?: string[] })?.tools || [],
-      ),
-    } satisfies TaskCompletedEvent);
-
-    await publishEvent(responseEventType, {
-      taskId: result.task.taskId,
-      source,
-      chatId,
-      text: response,
-      isFinal: true,
-    });
-  } else {
-    await publishEvent(EVENT_TYPES.TASK_FAILED, {
-      taskId: result.task.taskId,
-      source,
-      chatId,
-      error: result.task.error || "Unknown error",
-      canRetry: true,
-    } satisfies TaskFailedEvent);
-  }
-
-  return { response, task: result.task };
-}
-
-function extractResponse(result: unknown, task?: Task): string {
-  // First, try to get response from result
-  if (typeof result === "string") return result;
-  if (result && typeof result === "object") {
-    const r = result as Record<string, unknown>;
-    if (typeof r.response === "string" && r.response.trim()) return r.response;
-    if (typeof r.text === "string" && r.text.trim()) return r.text;
-  }
-
-  // If result is empty/useless, look for response in earlier step outputs
-  if (task?.stepResults) {
-    // Check steps in reverse order (most recent first, but skip empty results)
-    for (let i = task.stepResults.length - 1; i >= 0; i--) {
-      const stepOutput = task.stepResults[i].output as Record<string, unknown>;
-      if (stepOutput) {
-        if (
-          typeof stepOutput.response === "string" &&
-          stepOutput.response.trim()
-        ) {
-          return stepOutput.response;
-        }
-        if (typeof stepOutput.text === "string" && stepOutput.text.trim()) {
-          return stepOutput.text;
-        }
-        if (typeof stepOutput.task === "string" && stepOutput.task.trim()) {
-          return stepOutput.task;
-        }
-      }
-    }
-  }
-
-  // Fallback to original logic
-  if (result && typeof result === "object") {
-    const r = result as Record<string, unknown>;
-    if (typeof r.task === "string") return r.task;
-    return JSON.stringify(result);
-  }
-  return "Task completed.";
-}
-
-// ============================================================================
-// Thread Handling (Simple Continuation Model)
-// ============================================================================
 
 /**
- * Handle a message with thread continuation.
+ * Handle an incoming message with thread continuation.
  *
- * If there's a recent completed task (< 5 min) from the same source/chatId,
- * we include its history for context. Each message creates a new task,
- * but the "thread" is implicit from the shared history.
+ * 1. Check for continuable thread in PostgreSQL
+ * 2. Get history from previous execution
+ * 3. Run thread workflow with message + history
+ * 4. Create execution record in PostgreSQL
  */
-interface HandleMessageOptions {
-  history?: Array<{ role: "user" | "assistant"; content: string }>;
-  forceNewTask?: boolean;
-}
-
 async function handleMessage(
   text: string,
   source: string,
   chatId?: string,
-  options: HandleMessageOptions = {},
-): Promise<{ response: string; task: Task; isFollowUp: boolean }> {
-  const { history = [], forceNewTask = false } = options;
+  options: { forceNewThread?: boolean } = {},
+): Promise<HandleMessageResult> {
+  const { forceNewThread = false } = options;
 
-  // Check for recent thread to continue (unless user wants new task)
-  let threadHistory: Array<{ role: "user" | "assistant"; content: string }> =
-    [];
+  // Get thread context from PostgreSQL
+  let threadContext = { history: [] as ThreadMessage[] };
   let isFollowUp = false;
 
-  if (!forceNewTask) {
-    const recentThread = getRecentThread(
-      source,
-      chatId,
-      config.threadTimeoutMs,
-    );
+  if (!forceNewThread) {
+    threadContext = await getThreadContext(source, chatId, config.threadTtlMs);
+    isFollowUp = threadContext.history.length > 0;
 
-    if (recentThread) {
+    if (isFollowUp) {
       console.error(
-        `[pilot] Continuing thread from: ${recentThread.taskId} (passing history)`,
+        `[pilot] Continuing thread (${threadContext.history.length} messages)`,
       );
-
-      // Build history from the recent task
-      threadHistory = buildHistoryFromTask(recentThread);
-      isFollowUp = true;
     }
   }
 
-  // Always create a new task, but include thread history for context
-  const result = await startWorkflow(
-    config.defaultWorkflow,
-    { message: text, history: [...history, ...threadHistory] },
-    source,
-    chatId,
+  // Create execution record first
+  let executionId: string | undefined;
+  try {
+    const execResult = await createExecution({
+      workflowId: config.threadWorkflow,
+      input: {
+        message: text,
+        history: threadContext.history,
+      },
+      metadata: {
+        source,
+        chatId,
+        workflowType: "thread",
+      },
+    });
+    executionId = execResult?.id;
+  } catch (error) {
+    console.error("[pilot] Failed to create execution:", error);
+  }
+
+  // Run thread workflow
+  const result = await runWorkflow(
+    config.threadWorkflow,
+    {
+      message: text,
+      history: threadContext.history,
+    },
+    {
+      config: {
+        fastModel: config.fastModel,
+        smartModel: config.smartModel,
+        onProgress: (stepName, message) => {
+          console.error(`[pilot] [${stepName}] ${message}`);
+        },
+      },
+      callLLM,
+      callMeshTool,
+      listConnections: listMeshConnections,
+      publishEvent,
+    },
   );
 
+  // Publish response event
+  const responseEventType = getResponseEventType(source);
+  await publishEvent(responseEventType, {
+    executionId,
+    source,
+    chatId,
+    text: result.response || "No response",
+    isFinal: true,
+  });
+
   return {
-    response: result.response,
-    task: result.task,
+    response: result.response || "No response",
+    executionId,
     isFollowUp,
   };
-}
-
-/**
- * Build conversation history from a task's step outputs.
- * This creates the "thread context" for follow-up messages.
- */
-function buildHistoryFromTask(
-  task: Task,
-): Array<{ role: "user" | "assistant"; content: string }> {
-  const history: Array<{ role: "user" | "assistant"; content: string }> = [];
-
-  // First, include any history the task already had
-  if (
-    task.workflowInput?.history &&
-    Array.isArray(task.workflowInput.history)
-  ) {
-    for (const h of task.workflowInput.history) {
-      const entry = h as { role: string; content: string };
-      if (
-        entry.role &&
-        entry.content &&
-        (entry.role === "user" || entry.role === "assistant")
-      ) {
-        history.push({ role: entry.role, content: entry.content });
-      }
-    }
-  }
-
-  // Add the original message from this task
-  if (task.workflowInput?.message) {
-    history.push({
-      role: "user",
-      content: String(task.workflowInput.message),
-    });
-  }
-
-  // Add the final response from this task
-  if (task.result) {
-    const result = task.result as Record<string, unknown>;
-    const response = result.response || result.text;
-    if (response && typeof response === "string") {
-      history.push({ role: "assistant", content: response });
-    }
-  }
-
-  return history;
-}
-
-// ============================================================================
-// Event Routing
-// ============================================================================
-
-function getWorkflowForEvent(eventType: string): string {
-  return eventWorkflowMap.get(eventType) || config.defaultWorkflow;
 }
 
 // ============================================================================
@@ -687,18 +584,6 @@ function getWorkflowForEvent(eventType: string): string {
 // ============================================================================
 
 async function main() {
-  // Initialize default workflows
-  initializeDefaultWorkflows();
-
-  // Validate workflow configuration (warn if env vars point to missing workflows)
-  validateWorkflowConfig();
-
-  // Cleanup expired tasks on startup
-  const cleanedTasks = cleanupExpiredTasks();
-  if (cleanedTasks > 0) {
-    console.error(`[pilot] Cleaned up ${cleanedTasks} expired tasks`);
-  }
-
   const server = new McpServer({
     name: "pilot",
     version: PILOT_VERSION,
@@ -718,9 +603,14 @@ async function main() {
     },
     async () => {
       // Convert Zod schema to JSON Schema format for Mesh UI
-      const stateSchema = zodToJsonSchema(StateSchema, {
+      const rawStateSchema = zodToJsonSchema(StateSchema, {
         $refStrategy: "none",
       });
+
+      // Inject binding tool definitions for tool-based connection matching
+      const stateSchema = injectBindingSchema(
+        rawStateSchema as Record<string, unknown>,
+      );
 
       const result = {
         stateSchema,
@@ -730,6 +620,7 @@ async function main() {
           "CONNECTION::COLLECTION_CONNECTIONS_LIST",
           "CONNECTION::COLLECTION_CONNECTIONS_GET",
           "EVENT_BUS::*",
+          "WORKFLOW_STUDIO::*", // All workflow studio tools
         ],
       };
 
@@ -760,6 +651,8 @@ async function main() {
       if (state?.CONNECTION?.value)
         connectionBindingId = state.CONNECTION.value;
       if (state?.EVENT_BUS?.value) eventBusConnectionId = state.EVENT_BUS.value;
+      if (state?.WORKFLOW_STUDIO?.value)
+        workflowStudioId = state.WORKFLOW_STUDIO.value;
 
       console.error(`[pilot] Configuration received`);
       console.error(`[pilot]   LLM: ${llmConnectionId || "not set"}`);
@@ -769,6 +662,29 @@ async function main() {
       console.error(
         `[pilot]   EVENT_BUS: ${eventBusConnectionId || "not set"}`,
       );
+      console.error(
+        `[pilot]   WORKFLOW_STUDIO: ${workflowStudioId || "not set"}`,
+      );
+
+      // Initialize workflow studio adapter if binding is set
+      if (workflowStudioId) {
+        const studioClient = {
+          callTool: async (toolName: string, args: Record<string, unknown>) =>
+            callMeshTool(workflowStudioId!, toolName, args),
+        };
+
+        // Initialize workflow storage
+        setWorkflowStudioClient(studioClient);
+
+        // Initialize execution tracking
+        initExecutionAdapter(studioClient);
+
+        console.error("[pilot] ✅ Storage: MCP Studio (PostgreSQL)");
+      } else {
+        console.error(
+          "[pilot] ⚠️ WORKFLOW_STUDIO not set - workflows will not work",
+        );
+      }
 
       // Subscribe to events after configuration is received
       if (eventBusConnectionId) {
@@ -844,39 +760,29 @@ async function main() {
     {
       title: "Handle Message",
       description:
-        "Smart message routing with thread continuation. If there's a recent task (< 5 min), adds as follow-up. Otherwise creates new task.",
+        "Handle a message with thread continuation. If there's a recent execution (< 5 min), continues thread. Otherwise starts fresh.",
       inputSchema: z.object({
         text: z.string().describe("The message"),
         source: z.string().optional().describe("Source interface"),
         chatId: z.string().optional().describe("Chat/thread ID"),
-        forceNewTask: z
+        forceNewThread: z
           .boolean()
           .optional()
-          .describe("Force creating a new task instead of continuing thread"),
-        history: z
-          .array(
-            z.object({
-              role: z.enum(["user", "assistant"]),
-              content: z.string(),
-            }),
-          )
-          .optional(),
+          .describe("Force starting a new thread instead of continuing"),
       }),
     },
     async (args) => {
-      const { text, source, chatId, forceNewTask, history } = args;
+      const { text, source, chatId, forceNewThread } = args;
 
       const result = await handleMessage(text, source || "api", chatId, {
-        history,
-        forceNewTask,
+        forceNewThread,
       });
 
       return {
         content: [{ type: "text", text: result.response }],
         structuredContent: {
           response: result.response,
-          taskId: result.task.taskId,
-          status: result.task.status,
+          executionId: result.executionId,
           isFollowUp: result.isFollowUp,
         },
       };
@@ -888,220 +794,88 @@ async function main() {
     {
       title: "Start New Thread",
       description:
-        "Close the current conversation thread so the next message starts fresh. Use when user says 'new thread', 'nova conversa', 'start over', etc.",
-      inputSchema: z.object({
-        source: z.string().optional().describe("Source interface"),
-        chatId: z.string().optional().describe("Chat/thread ID"),
-      }),
+        "Mark that the next message should start a fresh conversation. Use when user says 'new thread', 'nova conversa', 'start over', etc.",
+      inputSchema: z.object({}),
     },
-    async (args) => {
-      const { source, chatId } = args;
-
-      const closedTask = closeThread(source || "cli", chatId);
-
-      if (!closedTask) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                success: true,
-                message:
-                  "No active thread to close. Next message will start fresh.",
-              }),
-            },
-          ],
-          structuredContent: { success: true, hadActiveThread: false },
-        };
-      }
-
+    async () => {
+      // In PostgreSQL mode, threads expire by TTL automatically.
+      // This tool is a semantic hint - the actual fresh start happens
+      // when MESSAGE is called with forceNewThread: true
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify({
               success: true,
-              message:
-                "Thread closed. Next message will start a new conversation.",
-              closedTaskId: closedTask.taskId,
+              message: "Next message will start a new conversation.",
             }),
           },
         ],
-        structuredContent: {
-          success: true,
-          hadActiveThread: true,
-          closedTaskId: closedTask.taskId,
-        },
+        structuredContent: { success: true },
       };
     },
   );
 
   // ==========================================================================
-  // MCP Tasks Protocol Tools
+  // Execution Tools (PostgreSQL-based via MCP Studio)
   // ==========================================================================
 
   server.registerTool(
-    "TASK_GET",
+    "EXECUTION_GET",
     {
-      title: "Get Task",
-      description: "Get the current state of a task (MCP Tasks: tasks/get)",
+      title: "Get Execution",
+      description: "Get a workflow execution by ID",
       inputSchema: z.object({
-        taskId: z.string().describe("Task ID"),
+        executionId: z.string().describe("Execution ID"),
       }),
     },
     async (args) => {
-      const { taskId } = args;
-      const task = loadTask(taskId);
+      const { executionId } = args;
+      const execution = await getExecution(executionId);
 
-      if (!task) {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: "Task not found" }) },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [{ type: "text", text: JSON.stringify(task) }],
-        structuredContent: {
-          taskId: task.taskId,
-          status: task.status,
-          statusMessage: task.statusMessage,
-          createdAt: task.createdAt,
-          lastUpdatedAt: task.lastUpdatedAt,
-          ttl: task.ttl,
-          pollInterval: task.pollInterval,
-        },
-      };
-    },
-  );
-
-  server.registerTool(
-    "TASK_RESULT",
-    {
-      title: "Get Task Result",
-      description:
-        "Get the result of a completed task (MCP Tasks: tasks/result)",
-      inputSchema: z.object({
-        taskId: z.string().describe("Task ID"),
-      }),
-    },
-    async (args) => {
-      const { taskId } = args;
-      const task = loadTask(taskId);
-
-      if (!task) {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: "Task not found" }) },
-          ],
-          isError: true,
-        };
-      }
-
-      if (task.status === "working" || task.status === "input_required") {
+      if (!execution) {
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: "Task not yet complete" }),
+              text: JSON.stringify({ error: "Execution not found" }),
             },
           ],
           isError: true,
         };
       }
 
-      if (task.status === "failed") {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: task.error }) },
-          ],
-          isError: true,
-        };
-      }
-
       return {
-        content: [{ type: "text", text: JSON.stringify(task.result) }],
-        structuredContent: task.result as Record<string, unknown>,
+        content: [{ type: "text", text: JSON.stringify(execution) }],
+        structuredContent: execution,
       };
     },
   );
 
   server.registerTool(
-    "TASK_LIST",
+    "EXECUTION_LIST",
     {
-      title: "List Tasks",
-      description: "List tasks with optional filtering (MCP Tasks: tasks/list)",
+      title: "List Executions",
+      description: "List recent workflow executions",
       inputSchema: z.object({
-        cursor: z.string().optional().describe("Pagination cursor"),
-        limit: z.number().optional().describe("Max tasks to return"),
-        status: z
-          .enum([
-            "working",
-            "input_required",
-            "completed",
-            "failed",
-            "cancelled",
-          ])
-          .optional(),
+        limit: z.number().optional().describe("Max executions to return"),
+        offset: z.number().optional().describe("Offset for pagination"),
       }),
     },
     async (args) => {
-      const { cursor, limit, status } = args;
-
-      const result = listTasks({ cursor, limit, status });
+      const { limit, offset } = args;
+      const executions = await listExecutions({ limit, offset });
 
       return {
-        content: [{ type: "text", text: JSON.stringify(result) }],
+        content: [{ type: "text", text: JSON.stringify({ executions }) }],
         structuredContent: {
-          tasks: result.tasks.map((t) => ({
-            taskId: t.taskId,
-            status: t.status,
-            statusMessage: t.statusMessage,
-            createdAt: t.createdAt,
-            lastUpdatedAt: t.lastUpdatedAt,
-            ttl: t.ttl,
-            pollInterval: t.pollInterval,
+          executions: executions.map((e) => ({
+            id: e.id,
+            workflow_id: e.workflow_id,
+            status: e.status,
+            created_at: e.created_at,
           })),
-          nextCursor: result.nextCursor,
         },
-      };
-    },
-  );
-
-  server.registerTool(
-    "TASK_CANCEL",
-    {
-      title: "Cancel Task",
-      description: "Cancel a running task (MCP Tasks: tasks/cancel)",
-      inputSchema: z.object({
-        taskId: z.string().describe("Task ID to cancel"),
-      }),
-    },
-    async (args) => {
-      const { taskId } = args;
-      const task = cancelTaskInStorage(taskId);
-
-      if (!task) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                error: "Task not found or already terminal",
-              }),
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          { type: "text", text: JSON.stringify({ success: true, taskId }) },
-        ],
-        structuredContent: { success: true, taskId },
       };
     },
   );
@@ -1118,7 +892,7 @@ async function main() {
       inputSchema: z.object({}),
     },
     async () => {
-      const workflows = listWorkflows();
+      const workflows = await listWorkflows();
       return {
         content: [{ type: "text", text: JSON.stringify({ workflows }) }],
         structuredContent: {
@@ -1145,7 +919,7 @@ async function main() {
     },
     async (args) => {
       const { workflowId } = args;
-      const workflow = loadWorkflow(workflowId);
+      const workflow = await loadWorkflow(workflowId);
 
       if (!workflow) {
         return {
@@ -1190,7 +964,7 @@ async function main() {
     },
     async (args) => {
       const workflow = args;
-      saveWorkflow(workflow as any);
+      await saveWorkflow(workflow as any);
 
       return {
         content: [
@@ -1204,22 +978,38 @@ async function main() {
     },
   );
 
-  // ==========================================================================
-  // Task Statistics
-  // ==========================================================================
-
   server.registerTool(
-    "TASK_STATS",
+    "WORKFLOW_DUPLICATE",
     {
-      title: "Task Statistics",
-      description: "Get task statistics",
-      inputSchema: z.object({}),
+      title: "Duplicate Workflow",
+      description:
+        "Create an editable copy of a workflow (useful for customizing file-based workflows)",
+      inputSchema: z.object({
+        workflowId: z.string().describe("Workflow ID to duplicate"),
+        newId: z.string().optional().describe("New workflow ID"),
+        newTitle: z.string().optional().describe("New workflow title"),
+      }),
     },
-    async () => {
-      const stats = getTaskStats();
+    async (args) => {
+      const { workflowId, newId, newTitle } = args;
+      const resultId = await duplicateWorkflow(workflowId, newId, newTitle);
+
       return {
-        content: [{ type: "text", text: JSON.stringify(stats) }],
-        structuredContent: stats,
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              original: workflowId,
+              duplicate: resultId,
+            }),
+          },
+        ],
+        structuredContent: {
+          success: true,
+          original: workflowId,
+          duplicate: resultId,
+        },
       };
     },
   );
@@ -1251,6 +1041,21 @@ async function main() {
 
       const results: Record<string, { success: boolean; error?: string }> = {};
 
+      // Check if system is initialized (guard against race condition)
+      if (!hasStudioClient()) {
+        console.error(
+          "[pilot] ON_EVENTS: System not initialized yet, deferring events",
+        );
+        // Request retry after 5 seconds
+        for (const event of events) {
+          results[event.id] = { success: false, error: "System not ready" };
+        }
+        return {
+          content: [{ type: "text", text: "System not ready, retry later" }],
+          structuredContent: { results },
+        };
+      }
+
       for (const event of events) {
         try {
           if (event.type === EVENT_TYPES.USER_MESSAGE) {
@@ -1277,13 +1082,22 @@ async function main() {
             );
             results[event.id] = { success: true };
           } else {
-            // Route to mapped workflow or default - also async
-            const workflowId = getWorkflowForEvent(event.type);
-            startWorkflow(
-              workflowId,
-              event.data as Record<string, unknown>,
-              event.source,
-            ).catch((error) => {
+            // Other events - run mapped workflow asynchronously
+            const workflowId =
+              eventWorkflowMap.get(event.type) || config.threadWorkflow;
+
+            runWorkflow(workflowId, event.data as Record<string, unknown>, {
+              config: {
+                fastModel: config.fastModel,
+                smartModel: config.smartModel,
+                onProgress: (step, msg) =>
+                  console.error(`[pilot] [${step}] ${msg}`),
+              },
+              callLLM,
+              callMeshTool,
+              listConnections: listMeshConnections,
+              publishEvent,
+            }).catch((error) => {
               console.error(
                 `[pilot] Background workflow failed for event ${event.id}:`,
                 error,

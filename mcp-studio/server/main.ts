@@ -8,6 +8,7 @@
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
+import { initFileWorkflows } from "./db/file-workflows.ts";
 import {
   ensureAssistantsTable,
   ensurePromptsTable,
@@ -38,6 +39,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
+      // Initialize file-based workflows (from WORKFLOWS_DIRS env var)
+      initFileWorkflows();
+
       await ensureIndexes(env);
       await ensureCollections(env);
       await ensureAssistantsTable(env);
