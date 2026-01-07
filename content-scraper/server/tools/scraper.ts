@@ -24,7 +24,8 @@ export const scrapeContentTool = (env: Env) =>
     }),
     execute: async ({ context: input }) => {
       try {
-        const { n8nWebhookUrl } = env.DECO_CHAT_REQUEST_CONTEXT.state;
+        const n8nWebhookUrl =
+          env.DECO_CHAT_REQUEST_CONTEXT.state.n8nWebhookUrl ?? "";
         const url = new URL(n8nWebhookUrl);
         url.searchParams.set("url", input.url);
 
