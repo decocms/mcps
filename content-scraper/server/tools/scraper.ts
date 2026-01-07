@@ -5,13 +5,10 @@ import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 
-const N8N_WEBHOOK_URL =
-  "https://ventura29.app.n8n.cloud/webhook-test/get-content-scrape";
-
 /**
  * Call the n8n webhook to scrape content from a URL.
  */
-export const scrapeContentTool = (_env: Env) =>
+export const scrapeContentTool = (env: Env) =>
   createPrivateTool({
     id: "scrape_content",
     description:
@@ -27,7 +24,8 @@ export const scrapeContentTool = (_env: Env) =>
     }),
     execute: async ({ context: input }) => {
       try {
-        const url = new URL(N8N_WEBHOOK_URL);
+        const { n8nWebhookUrl } = env.DECO_CHAT_REQUEST_CONTEXT.state;
+        const url = new URL(n8nWebhookUrl);
         url.searchParams.set("url", input.url);
 
         const response = await fetch(url.toString());
