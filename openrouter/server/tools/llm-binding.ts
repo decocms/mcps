@@ -9,11 +9,7 @@
  * - LLM_DO_GENERATE: Generates complete non-streaming responses
  */
 
-import type {
-  APICallError,
-  LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
-} from "@ai-sdk/provider";
+import type { APICallError, LanguageModelV2StreamPart } from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_BINDING,
   type ModelCollectionEntitySchema,
