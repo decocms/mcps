@@ -9,10 +9,10 @@
  * - LLM_DO_GENERATE: Generates complete non-streaming responses
  */
 
-import {
+import type {
   APICallError,
-  type LanguageModelV2CallOptions,
-  type LanguageModelV2StreamPart,
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
 } from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_BINDING,
@@ -25,7 +25,7 @@ import {
 } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
-import { z } from "zod";
+import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
 import { getBaseUrl } from "./models/utils.ts";
@@ -483,8 +483,7 @@ export const createLLMStreamTool = (env: Env) =>
     description:
       "Stream a language model response in real-time using OpenRouter. " +
       "Returns a streaming response for interactive chat experiences.",
-    // inputSchema: STREAM_BINDING.inputSchema,
-    inputSchema: z.object({}),
+    inputSchema: STREAM_BINDING.inputSchema,
     execute: async ({ context }) => {
       const {
         modelId,
@@ -499,10 +498,12 @@ export const createLLMStreamTool = (env: Env) =>
 
       try {
         const callResponse = await model.doStream(
-          callOptions as LanguageModelV2CallOptions,
+          callOptions as Parameters<(typeof model)["doStream"]>[0],
         );
 
-        const [_, stream] = getUsageFromStream(callResponse.stream);
+        const [_, stream] = getUsageFromStream(
+          callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
+        );
         const response = streamToResponse(stream);
 
         // Return the data stream response
@@ -653,7 +654,7 @@ export const createLLMGenerateTool = (env: Env) =>
 
       // Use doGenerate directly (consistent with doStream pattern)
       const result = await model.doGenerate(
-        callOptions as LanguageModelV2CallOptions,
+        callOptions as Parameters<(typeof model)["doGenerate"]>[0],
       );
 
       // Transform the result to match the binding schema
