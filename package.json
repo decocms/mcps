@@ -21,6 +21,7 @@
   },
   "workspaces": [
     "apify",
+    "content-scraper",
     "data-for-seo",
     "datajud",
     "gemini-pro-vision",
