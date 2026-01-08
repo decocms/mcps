@@ -135,7 +135,6 @@ function validateStepRefs(
   step: Step,
   availableSteps: Map<string, number>,
   stepOutputSchemas: Map<string, Record<string, unknown>>,
-  workflowInputSchema?: Record<string, unknown>,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -190,43 +189,6 @@ function validateStepRefs(
                   : "none"
               }`,
             });
-          }
-        }
-        break;
-      }
-
-      case "input": {
-        // Validate path exists in workflow input schema
-        if (parsed.path) {
-          // If no input schema is defined at all, that's an error
-          if (!workflowInputSchema) {
-            errors.push({
-              type: "schema_mismatch",
-              step: step.name,
-              field: "input",
-              ref,
-              message: `Step references '${ref}' but workflow has no input schema defined. Add an 'input' object with a JSON Schema that includes '${parsed.path}' property.`,
-            });
-          } else {
-            const pathSchema = getSchemaPropertyByPath(
-              workflowInputSchema,
-              parsed.path,
-            );
-            if (!pathSchema) {
-              const availableProps = workflowInputSchema.properties
-                ? Object.keys(workflowInputSchema.properties as object)
-                : [];
-              errors.push({
-                type: "schema_mismatch",
-                step: step.name,
-                field: "input",
-                ref,
-                message:
-                  availableProps.length > 0
-                    ? `Path '${parsed.path}' not found in workflow input schema. Available properties: ${availableProps.join(", ")}`
-                    : `Path '${parsed.path}' not found in workflow input schema. The input schema has no properties defined. Add 'properties' to your input schema with a '${parsed.path}' property.`,
-              });
-            }
           }
         }
         break;
@@ -500,15 +462,7 @@ export async function validateWorkflow(
     }
 
     // Validate @refs in step input against available schemas
-    // workflow.input may exist on WorkflowCollection but not all Workflow types
-    const workflowInput = (workflow as { input?: Record<string, unknown> })
-      .input;
-    const refErrors = validateStepRefs(
-      step,
-      availableSteps,
-      stepOutputSchemas,
-      workflowInput,
-    );
+    const refErrors = validateStepRefs(step, availableSteps, stepOutputSchemas);
     errors.push(...refErrors);
 
     // Make this step available for subsequent steps to reference
