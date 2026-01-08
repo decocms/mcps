@@ -1,7 +1,7 @@
 {
   "scopeName": "grain",
   "name": "grain-mcp",
-  "friendlyName": "Grain Official",
+  "friendlyName": "Grain",
   "category": "Collaboration",
   "connection": {
     "type": "HTTP",

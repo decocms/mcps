@@ -1,7 +1,7 @@
 {
   "scopeName": "mercadolibre",
   "name": "mercadopago-mcp",
-  "friendlyName": "Mercado Pago Official",
+  "friendlyName": "Mercado Pago",
   "category": "Payments",
   "connection": {
     "type": "HTTP",

@@ -1,7 +1,7 @@
 {
   "scopeName": "digitalocean",
   "name": "digitalocean-databases-mcp",
-  "friendlyName": "DigitalOcean Databases Official",
+  "friendlyName": "DigitalOcean Databases",
   "category": "Database",
   "connection": {
     "type": "HTTP",
