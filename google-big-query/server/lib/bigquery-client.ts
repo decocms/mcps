@@ -222,6 +222,7 @@ export class BigQueryClient {
         projectId: string;
         datasetId: string;
       };
+      maxWaitMs?: number;
     },
   ): Promise<{
     schema: TableSchema;
@@ -234,8 +235,20 @@ export class BigQueryClient {
     let response = await this.query(projectId, options);
 
     // Wait for job completion if not complete
+    const maxWaitMs = options.maxWaitMs ?? 300000; // 5 minutes default
+    const pollIntervalMs = 1000;
+    const startTime = Date.now();
+
     while (!response.jobComplete && response.jobReference) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Check if we've exceeded the maximum wait time
+      if (Date.now() - startTime > maxWaitMs) {
+        throw new Error(
+          `Query timeout: Job did not complete within ${maxWaitMs / 1000} seconds. ` +
+            `Job ID: ${response.jobReference.jobId}`,
+        );
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
       const results = await this.getQueryResults(
         projectId,
         response.jobReference.jobId,
