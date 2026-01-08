@@ -1,5 +1,5 @@
 {
-  "scopeName": "official",
+  "scopeName": "google-bigquery",
   "name": "google-bigquery-mcp",
   "frandryName": "Google BigQuery Official",
   "category": "Data Analysis",
