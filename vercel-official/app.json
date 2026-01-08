@@ -1,7 +1,7 @@
 {
   "scopeName": "vercel",
   "name": "vercel-mcp",
-  "frandryName": "Vercel Official",
+  "friendly_name": "Vercel Official",
   "category": "Software Development",
   "connection": {
     "type": "HTTP",
