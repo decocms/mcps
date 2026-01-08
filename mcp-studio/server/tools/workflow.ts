@@ -201,9 +201,7 @@ export async function insertWorkflowCollectionItem(
     }
 
     return {
-      item: {
-        ...workflow,
-      },
+      item: WorkflowSchema.parse(result[0]),
     };
   } catch (error) {
     console.error("Error creating workflow:", error);
@@ -255,13 +253,7 @@ Example workflow with a step that references the output of another step:
           .describe("The description of the workflow"),
       }),
     }),
-    outputSchema: z
-      .object({
-        item: z.object({
-          id: z.string(),
-        }),
-      })
-      .describe("The ID of the created workflow"),
+    // outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       const { data } = context;
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
@@ -276,11 +268,15 @@ Example workflow with a step that references the output of another step:
         updated_by: user?.id || undefined,
         gateway_id: data.gateway_id,
       };
-      await insertWorkflowCollectionItem(env, workflow);
+      const { item } = await insertWorkflowCollectionItem(env, workflow);
+      const result = WorkflowSchema.parse(item);
       return {
         item: {
-          ...data,
-          id: workflow.id,
+          ...result,
+          steps: result.steps.map((s) => ({
+            ...s,
+            outputSchema: undefined,
+          })),
         },
       };
     },
