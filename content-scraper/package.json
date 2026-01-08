@@ -14,7 +14,7 @@
     "build": "bun run build:server"
   },
   "dependencies": {
-    "@decocms/runtime": "^1.1.0",
+    "@decocms/runtime": "^1.1.2",
     "@supabase/supabase-js": "^2.49.0",
     "zod": "^4.0.0"
   },
