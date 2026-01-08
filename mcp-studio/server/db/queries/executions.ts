@@ -37,9 +37,9 @@ export async function claimExecution(
 
   // Atomic claim: only succeeds if status is 'enqueued'
   // Join with workflow table to get steps and gateway_id
-  const result =
-    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql: `
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    `
       UPDATE workflow_execution
       SET 
         status = 'running',
@@ -47,12 +47,10 @@ export async function claimExecution(
       WHERE id = ? AND (status = 'enqueued')
       RETURNING *
     `,
-      params: [now, executionId],
-    });
+    [now, executionId],
+  );
 
-  const executionRow = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
+  const executionRow = result[0];
 
   if (!executionRow) {
     return null;
@@ -95,15 +93,13 @@ export async function getExecution(
   env: Env,
   id: string,
 ): Promise<(WorkflowExecution & { workflow_id: string }) | null> {
-  const result =
-    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql: "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
-      params: [id],
-    });
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    "SELECT * FROM workflow_execution WHERE id = ? LIMIT 1",
+    [id],
+  );
 
-  const row = result?.result?.[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
+  const row = result[0] as Record<string, unknown> | undefined;
   return row
     ? {
         ...transformDbRowToExecution(row),
@@ -112,24 +108,16 @@ export async function getExecution(
     : null;
 }
 
-/**
- * Get execution with workflow steps and completed step IDs in a single query
- */
 export async function getExecutionFull(
   env: Env,
   id: string,
 ): Promise<{
-  execution: WorkflowExecution & { workflow_id: string };
-  completed_steps: {
-    success: string[];
-    error: string[];
-  };
+  execution: WorkflowExecution;
 } | null> {
   const result = await runSQL<Record<string, unknown>>(
     env,
     `SELECT 
       we.*,
-      w.steps as workflow_steps,
       COALESCE(
         (SELECT array_agg(step_id) 
          FROM workflow_execution_step_result 
@@ -143,7 +131,6 @@ export async function getExecutionFull(
         ARRAY[]::text[]
       ) as error_steps
     FROM workflow_execution we
-    JOIN workflow w ON we.workflow_id = w.id
     WHERE we.id = ?`,
     [id],
   );
@@ -151,61 +138,8 @@ export async function getExecutionFull(
   const row = result[0];
   if (!row) return null;
 
-  const steps: Step[] =
-    typeof row.workflow_steps === "string"
-      ? JSON.parse(row.workflow_steps)
-      : (row.workflow_steps as Step[]);
-
-  const successSteps = row.success_steps as string[];
-  const errorSteps = row.error_steps as string[];
-
   return {
-    execution: {
-      ...transformDbRowToExecution(row),
-      workflow_id: row.workflow_id as string,
-      steps:
-        steps.map((s) => ({
-          ...s,
-          outputSchema: {},
-        })) ?? [],
-    },
-    completed_steps: {
-      success: successSteps,
-      error: errorSteps,
-    },
-  };
-}
-
-export async function getExecutionWorkflow(env: Env, id: string) {
-  const result =
-    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql: "SELECT * FROM workflow WHERE id = ? LIMIT 1",
-      params: [id],
-    });
-  const row = result.result[0]?.results?.[0] as
-    | Record<string, unknown>
-    | undefined;
-  return row ? transformDbRowToWorkflow(row) : null;
-}
-
-function transformDbRowToWorkflow(row: Record<string, unknown>): {
-  id: string;
-  workflow_collection_id: string | null;
-  steps: Step[];
-  input: Record<string, unknown> | null;
-  gateway_id: string;
-  created_at_epoch_ms: number;
-  created_by: string | undefined;
-} {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    workflow_collection_id: r.workflow_collection_id as string | null,
-    steps: r.steps as Step[],
-    input: r.input as Record<string, unknown> | null,
-    gateway_id: r.gateway_id as string,
-    created_at_epoch_ms: Number(r.created_at_epoch_ms),
-    created_by: r.created_by as string | undefined,
+    execution: transformDbRowToExecution(row),
   };
 }
 
@@ -302,15 +236,7 @@ export async function createExecution(
     start_at_epoch_ms?: number | null;
     workflow_collection_id?: string | null;
   },
-): Promise<{ id: string; workflow_id: string }> {
-  console.log(`[EXECUTION] Creating execution with data:`, {
-    gateway_id: data.gateway_id,
-    hasInput: !!data.input,
-    stepsCount: data.steps?.length ?? 0,
-    steps: data.steps?.map((s) => s.name) ?? [],
-    workflow_collection_id: data.workflow_collection_id,
-  });
-
+): Promise<{ id: string }> {
   const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = Date.now();
 
@@ -349,7 +275,7 @@ export async function createExecution(
     throw new Error(`Failed to create workflow execution`);
   }
 
-  return { id: result[0].id, workflow_id: workflowId };
+  return { id: result[0].id };
 }
 
 /**
@@ -443,9 +369,9 @@ export async function cancelExecution(
   const now = Date.now();
 
   // Only cancel if currently enqueued or running
-  const result =
-    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql: `
+  const result = await runSQL<{ id: string }>(
+    env,
+    `
       UPDATE workflow_execution
       SET 
         status = 'cancelled',
@@ -453,29 +379,21 @@ export async function cancelExecution(
       WHERE id = ? AND status IN ('enqueued', 'running')
       RETURNING id
     `,
-      // error column is JSONB, so serialize it
-      params: [now, executionId],
-    });
+    // error column is JSONB, so serialize it
+    [now, executionId],
+  );
 
-  const id = result.result[0]?.results?.[0] as string | undefined;
-
-  if (!id) {
-    // Check if execution exists but wasn't in cancellable state
-    return null;
-  }
-
-  return id;
+  return result[0]?.id ?? null;
 }
 
 /**
  * Resume a cancelled execution.
  *
- * Sets status back to 'pending' so it can be re-queued.
+ * Sets status back to 'enqueued' so it can be re-queued.
+ * Clears any claimed-but-not-completed steps so they can be retried.
  *
  * @param env - Environment with database access
- * @param scheduler - Scheduler for re-queuing
  * @param executionId - The execution ID to resume
- * @param options - Optional settings
  * @returns The updated execution or null if not found/resumable
  */
 export async function resumeExecution(
@@ -483,6 +401,15 @@ export async function resumeExecution(
   executionId: string,
 ): Promise<WorkflowExecution | null> {
   const now = Date.now();
+
+  // Clear any claimed-but-not-completed step results
+  // These steps were interrupted when the execution was cancelled
+  await runSQL(
+    env,
+    `DELETE FROM workflow_execution_step_result 
+     WHERE execution_id = ? AND completed_at_epoch_ms IS NULL`,
+    [executionId],
+  );
 
   const result = await runSQL<WorkflowExecution>(
     env,
@@ -525,8 +452,16 @@ export async function listExecutions(
     env,
     `
       SELECT 
-        we.*,
-        w.steps,
+        we.id,
+        we.status,
+        we.created_at,
+        we.updated_at,
+        we.start_at_epoch_ms,
+        we.started_at_epoch_ms,
+        we.completed_at_epoch_ms,
+        we.timeout_ms,
+        we.deadline_at_epoch_ms,
+        we.created_by,
         w.gateway_id,
         COALESCE(wc.title, 'Workflow Execution') as title
       FROM workflow_execution we
@@ -572,6 +507,87 @@ export async function getStepResults(
 }
 
 /**
+ * Get full execution context in a single query.
+ * Returns execution status, workflow definition, and all step results.
+ * This is the optimized path for step completion handling.
+ */
+export async function getExecutionContext(
+  env: Env,
+  executionId: string,
+): Promise<{
+  execution: { id: string; status: string; workflow_id: string };
+  workflow: {
+    steps: Step[];
+    input: Record<string, unknown> | null;
+    gateway_id: string;
+  };
+  stepResults: WorkflowExecutionStepResult[];
+} | null> {
+  // Single query with JOINs - gets everything we need
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    `
+    SELECT 
+      e.id as execution_id,
+      e.status,
+      e.workflow_id,
+      w.steps,
+      w.input as workflow_input,
+      w.gateway_id,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'step_id', sr.step_id,
+            'execution_id', sr.execution_id,
+            'started_at_epoch_ms', sr.started_at_epoch_ms,
+            'completed_at_epoch_ms', sr.completed_at_epoch_ms,
+            'output', sr.output,
+            'error', sr.error
+          )
+        ) FILTER (WHERE sr.step_id IS NOT NULL),
+        '[]'::json
+      ) as step_results
+    FROM workflow_execution e
+    JOIN workflow w ON e.workflow_id = w.id
+    LEFT JOIN workflow_execution_step_result sr ON sr.execution_id = e.id
+    WHERE e.id = ?
+    GROUP BY e.id, w.id
+    `,
+    [executionId],
+  );
+
+  const row = result[0];
+  if (!row) return null;
+
+  const stepResultsRaw =
+    typeof row.step_results === "string"
+      ? JSON.parse(row.step_results)
+      : row.step_results;
+
+  return {
+    execution: {
+      id: row.execution_id as string,
+      status: row.status as string,
+      workflow_id: row.workflow_id as string,
+    },
+    workflow: {
+      steps:
+        typeof row.steps === "string"
+          ? JSON.parse(row.steps)
+          : (row.steps as Step[]),
+      input:
+        typeof row.workflow_input === "string"
+          ? JSON.parse(row.workflow_input)
+          : (row.workflow_input as Record<string, unknown> | null),
+      gateway_id: row.gateway_id as string,
+    },
+    stepResults: (stepResultsRaw as Record<string, unknown>[]).map((sr) =>
+      transformDbRowToStepResult(sr),
+    ),
+  };
+}
+
+/**
  * Get a specific step result
  */
 export async function getStepResult(
@@ -586,6 +602,43 @@ export async function getStepResult(
   );
 
   return result[0] ?? null;
+}
+
+/**
+ * Get step completion status (lightweight query for orchestration).
+ * Returns which steps are completed vs still running.
+ * Fast: only fetches step_id + completion flag, no output data.
+ */
+export async function getStepCompletionStatus(
+  env: Env,
+  executionId: string,
+): Promise<{
+  completedSteps: string[];
+  runningSteps: string[];
+}> {
+  const result = await runSQL<{
+    step_id: string;
+    completed_at_epoch_ms: number | null;
+  }>(
+    env,
+    `SELECT step_id, completed_at_epoch_ms 
+     FROM workflow_execution_step_result 
+     WHERE execution_id = ?`,
+    [executionId],
+  );
+
+  const completedSteps: string[] = [];
+  const runningSteps: string[] = [];
+
+  for (const row of result) {
+    if (row.completed_at_epoch_ms) {
+      completedSteps.push(row.step_id);
+    } else {
+      runningSteps.push(row.step_id);
+    }
+  }
+
+  return { completedSteps, runningSteps };
 }
 
 /**

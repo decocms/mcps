@@ -87,6 +87,7 @@ function getReadySteps(
  * Handle workflow.execution.created event
  *
  * Claims the execution and dispatches events for all ready steps.
+ * If resuming a cancelled execution, continues from where it left off.
  */
 export async function handleExecutionCreated(
   env: Env,
@@ -130,20 +131,86 @@ export async function handleExecutionCreated(
       ? JSON.parse(execution.input)
       : (execution.input ?? {});
 
-  // Find steps with no dependencies (level 0)
-  const readySteps = getReadySteps(steps, new Set(), new Set());
+  // Check for existing step results (for resumed executions)
+  const stepResults = await getStepResults(env, executionId);
+  const completedStepNames = new Set<string>();
+  const claimedStepNames = new Set<string>();
+  const stepOutputs = new Map<string, unknown>();
+  let failedStep: { stepId: string; error: string } | undefined;
+
+  for (const result of stepResults) {
+    if (result.completed_at_epoch_ms) {
+      completedStepNames.add(result.step_id);
+      stepOutputs.set(result.step_id, result.output);
+      // Track the first failed step (if any)
+      if (result.error && !failedStep) {
+        failedStep = { stepId: result.step_id, error: String(result.error) };
+      }
+    } else {
+      claimedStepNames.add(result.step_id);
+    }
+  }
+
+  // If a step failed, mark the workflow as error
+  if (failedStep) {
+    await updateExecution(
+      env,
+      executionId,
+      {
+        status: "error",
+        error: `Step "${failedStep.stepId}" failed: ${failedStep.error}`,
+        completed_at_epoch_ms: Date.now(),
+      },
+      { onlyIfStatus: "running" },
+    );
+
+    console.log(
+      `[ORCHESTRATOR] Workflow ${executionId} failed (resumed): step ${failedStep.stepId} had error`,
+    );
+    return;
+  }
+
+  // Find ready steps (respecting already completed/claimed steps)
+  const readySteps = getReadySteps(steps, completedStepNames, claimedStepNames);
+
+  // Check if workflow is already complete
+  if (readySteps.length === 0 && completedStepNames.size === steps.length) {
+    const lastStep = steps[steps.length - 1];
+    const lastOutput = stepOutputs.get(lastStep.name);
+
+    await updateExecution(
+      env,
+      executionId,
+      {
+        status: "success",
+        output: lastOutput,
+        completed_at_epoch_ms: Date.now(),
+      },
+      { onlyIfStatus: "running" },
+    );
+
+    console.log(`[ORCHESTRATOR] Workflow ${executionId} already completed`);
+    return;
+  }
+
+  if (readySteps.length === 0) {
+    console.log(
+      `[ORCHESTRATOR] No ready steps found, waiting for in-flight steps`,
+    );
+    return;
+  }
 
   console.log(
-    `[ORCHESTRATOR] Dispatching ${readySteps.length} initial steps:`,
+    `[ORCHESTRATOR] Dispatching ${readySteps.length} ready steps:`,
     readySteps.map((s) => s.name),
   );
 
   // Dispatch step.execute events for all ready steps
   for (const step of readySteps) {
-    // Resolve input refs (only workflow input available at this point)
+    // Resolve input refs using completed step outputs
     const { resolved } = resolveAllRefs(step.input, {
       workflowInput,
-      stepOutputs: new Map(),
+      stepOutputs,
     });
 
     await publishEvent(env, "workflow.step.execute", executionId, {

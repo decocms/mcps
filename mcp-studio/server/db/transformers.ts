@@ -11,6 +11,7 @@ import {
   type WorkflowExecution,
   WorkflowExecutionSchema,
 } from "@decocms/bindings/workflow";
+import z from "zod";
 
 // ============================================================================
 // Utility Helpers
@@ -67,14 +68,10 @@ export function transformDbRowToExecution(
     // The actual values will be joined from the workflow table when needed
     workflow_id: row.workflow_id as string,
     title: row.title ?? "",
-    steps: row.steps ?? [],
-    completed_steps: row.completed_steps
-      ? {
-          success: (row.completed_steps as { success: string[] }) ?? [],
-          error: (row.completed_steps as { error: string[] }) ?? [],
-        }
-      : undefined,
     gateway_id: row.gateway_id ?? "",
+    completed_steps: { success: [], error: [] } as unknown as
+      | { success: string[]; error: string[] }
+      | undefined,
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
     started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
     timeout_ms: toNumberOrNull(row.timeout_ms),
@@ -85,16 +82,25 @@ export function transformDbRowToExecution(
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
     // error is required by WorkflowExecutionSchema - always include it, use null if not present
-    error: safeJsonParse(row.error) ?? null,
+    error: safeJsonParse(row.error) ?? undefined,
   };
-  const parsed = WorkflowExecutionSchema.parse(transformed);
-  return {
-    ...parsed,
-    steps: parsed.steps.map((s) => ({
-      ...s,
-      outputSchema: {},
-    })),
-  };
+
+  if (row.success_steps) {
+    transformed.completed_steps!.success = row.success_steps as never[];
+  }
+  if (row.error_steps) {
+    transformed.completed_steps!.error = row.error_steps as never[];
+  }
+  if (
+    !transformed.completed_steps!.success.length &&
+    !transformed.completed_steps!.error.length
+  ) {
+    transformed.completed_steps = undefined;
+  }
+  const parsed = WorkflowExecutionSchema.extend({
+    workflow_id: z.string().optional(),
+  }).parse(transformed);
+  return parsed;
 }
 
 export interface WorkflowExecutionStepResult {
