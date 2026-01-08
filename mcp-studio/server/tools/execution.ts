@@ -151,7 +151,13 @@ export const createCreateTool = (env: Env) =>
           context.workflow_collection_id,
         );
 
-        const steps = workflowCollection?.steps ?? [];
+        if (!workflowCollection) {
+          throw new Error(
+            `Workflow collection not found: ${context.workflow_collection_id}`,
+          );
+        }
+
+        const steps = workflowCollection.steps ?? [];
 
         const { id: executionId } = await createExecution(env, {
           input: context.input,

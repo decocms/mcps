@@ -143,37 +143,6 @@ export async function getExecutionFull(
   };
 }
 
-export async function getExecutionWorkflow(env: Env, id: string) {
-  const result = await runSQL<Record<string, unknown>>(
-    env,
-    "SELECT * FROM workflow WHERE id = ? LIMIT 1",
-    [id],
-  );
-  const row = result[0] as Record<string, unknown> | undefined;
-  return row ? transformDbRowToWorkflow(row) : null;
-}
-
-function transformDbRowToWorkflow(row: Record<string, unknown>): {
-  id: string;
-  workflow_id: string;
-  steps: Step[];
-  input: Record<string, unknown> | null;
-  gateway_id: string;
-  created_at_epoch_ms: number;
-  created_by: string | undefined;
-} {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    workflow_id: r.workflow_id as string,
-    steps: r.steps as Step[],
-    input: r.input as Record<string, unknown> | null,
-    gateway_id: r.gateway_id as string,
-    created_at_epoch_ms: Number(r.created_at_epoch_ms),
-    created_by: r.created_by as string | undefined,
-  };
-}
-
 /**
  * Create an immutable workflow record (snapshot of the workflow definition)
  */

@@ -286,9 +286,19 @@ function typeToJsonSchema(
     const typeProperties = type.getProperties();
     for (const prop of typeProperties) {
       const propName = prop.getName();
-      const propType = prop.getTypeAtLocation(
-        prop.getValueDeclaration() ?? prop.getDeclarations()[0],
-      );
+
+      // Get property type safely - handle cases where declarations might be empty
+      const valueDecl = prop.getValueDeclaration();
+      const declarations = prop.getDeclarations();
+      const location = valueDecl ?? declarations[0];
+
+      // Skip properties without any declarations (e.g., built-in types)
+      if (!location) {
+        properties[propName] = {};
+        continue;
+      }
+
+      const propType = prop.getTypeAtLocation(location);
       const isOptional = prop.isOptional();
 
       properties[propName] = typeToJsonSchema(propType, new Set(visited));

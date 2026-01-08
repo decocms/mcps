@@ -136,14 +136,38 @@ export async function handleExecutionCreated(
   const completedStepNames = new Set<string>();
   const claimedStepNames = new Set<string>();
   const stepOutputs = new Map<string, unknown>();
+  let failedStep: { stepId: string; error: string } | undefined;
 
   for (const result of stepResults) {
     if (result.completed_at_epoch_ms) {
       completedStepNames.add(result.step_id);
       stepOutputs.set(result.step_id, result.output);
+      // Track the first failed step (if any)
+      if (result.error && !failedStep) {
+        failedStep = { stepId: result.step_id, error: String(result.error) };
+      }
     } else {
       claimedStepNames.add(result.step_id);
     }
+  }
+
+  // If a step failed, mark the workflow as error
+  if (failedStep) {
+    await updateExecution(
+      env,
+      executionId,
+      {
+        status: "error",
+        error: `Step "${failedStep.stepId}" failed: ${failedStep.error}`,
+        completed_at_epoch_ms: Date.now(),
+      },
+      { onlyIfStatus: "running" },
+    );
+
+    console.log(
+      `[ORCHESTRATOR] Workflow ${executionId} failed (resumed): step ${failedStep.stepId} had error`,
+    );
+    return;
   }
 
   // Find ready steps (respecting already completed/claimed steps)

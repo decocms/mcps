@@ -82,7 +82,7 @@ export function transformDbRowToExecution(
     input: safeJsonParse(row.input),
     output: safeJsonParse(row.output),
     // error is required by WorkflowExecutionSchema - always include it, use null if not present
-    error: safeJsonParse(row.error),
+    error: safeJsonParse(row.error) ?? undefined,
   };
 
   if (row.success_steps) {

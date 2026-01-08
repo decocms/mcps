@@ -109,11 +109,11 @@ export const createListTool = (env: Env) =>
           LIMIT ? OFFSET ?
         `;
 
-      const itemsResult: any =
-        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-          sql,
-          params: [...params, limit, offset],
-        });
+      const itemsResult = await runSQL<Record<string, unknown>>(env, sql, [
+        ...params,
+        limit,
+        offset,
+      ]);
 
       const countQuery = `SELECT COUNT(*) as count FROM workflow_collection ${whereClause}`;
       const countResult = await runSQL<{ count: string }>(
@@ -196,7 +196,7 @@ export async function insertWorkflowCollectionItem(
       ],
     );
 
-    if (!result) {
+    if (!result?.length) {
       throw new Error("Failed to create workflow collection item");
     }
 
@@ -456,15 +456,24 @@ export const createUpdateStepsTool = (env: Env) =>
         throw new Error(`Workflow with id ${id} not found`);
       }
 
-      const newSteps = steps.map((step) => {
+      // Validate that all steps to update exist in the workflow
+      for (const step of steps) {
         const existingStep = workflow.steps?.find((s) => s.name === step.name);
         if (!existingStep) {
           throw new Error(`Step with name ${step.name} not found in workflow`);
         }
-        return {
-          ...existingStep,
-          ...step,
-        };
+      }
+
+      // Map over all existing steps, applying updates where names match
+      const newSteps = workflow.steps.map((existingStep) => {
+        const stepUpdate = steps.find((s) => s.name === existingStep.name);
+        if (stepUpdate) {
+          return {
+            ...existingStep,
+            ...stepUpdate,
+          };
+        }
+        return existingStep;
       });
 
       await validateWorkflow(
