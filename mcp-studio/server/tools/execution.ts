@@ -143,8 +143,6 @@ export const createCreateTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        console.log("creating execution");
-
         // Fetch the full workflow collection to get steps and input schema
         const workflowCollection = await getWorkflowCollection(
           env,
@@ -156,7 +154,6 @@ export const createCreateTool = (env: Env) =>
             `Workflow collection not found: ${context.workflow_collection_id}`,
           );
         }
-
         const steps = workflowCollection.steps ?? [];
 
         const { id: executionId } = await createExecution(env, {
@@ -166,7 +163,6 @@ export const createCreateTool = (env: Env) =>
           workflow_collection_id: context.workflow_collection_id,
           steps,
         });
-        console.log("publishing event");
         await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
           type: "workflow.execution.created",
           subject: executionId,
