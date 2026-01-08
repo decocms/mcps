@@ -1,0 +1,15 @@
+{
+  "scopeName": "digitalocean-apps",
+  "name": "digitalocean-apps-mcp",
+  "frandryName": "DigitalOcean Apps Official",
+  "category": "Software Development",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://apps.mcp.digitalocean.com/mcp"
+  },
+  "description": "DigitalOcean Apps MCP Server Official - Manage your DigitalOcean applications through natural language. Deploy, monitor, and scale your apps with AI assistance. This is the official MCP server from DigitalOcean.",
+  "icon": "https://www.digitalocean.com/_next/static/media/logo.0f4b57fd.svg",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "github",
+  "name": "github-mcp-server",
+  "frandryName": "GitHub Official",
+  "category": "Developer Tools",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://api.githubcopilot.com/mcp/"
+  },
+  "description": "GitHub MCP Server Official - Interact with GitHub platform through natural language. Manage repositories, issues, pull requests, analyze code, and automate workflows. This is the official MCP server from GitHub.",
+  "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "mercadopago",
+  "name": "mercadopago-mcp",
+  "frandryName": "Mercado Pago Official",
+  "category": "Payments",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.mercadopago.com/mcp"
+  },
+  "description": "Mercado Pago MCP Server Official - Process payments and manage financial operations. Handle transactions, refunds, subscriptions, and payment analytics through natural language. This is the official MCP server from Mercado Pago.",
+  "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "google-gke",
+  "name": "google-gke-mcp",
+  "frandryName": "Google GKE Official",
+  "category": "Developer Tools",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://container.googleapis.com/mcp"
+  },
+  "description": "Google GKE MCP Server Official - Manage Kubernetes clusters on Google Cloud. Deploy, scale, and monitor containerized applications through natural language. This is the official MCP server from Google.",
+  "icon": "https://www.gstatic.com/images/branding/product/2x/gke_64dp.png",
+  "unlisted": false,
+  "official": true
+}
+

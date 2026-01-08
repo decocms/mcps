@@ -1,0 +1,15 @@
+{
+  "scopeName": "jam",
+  "name": "jam-dev-mcp",
+  "frandryName": "Jam Official",
+  "category": "Software Development",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.jam.dev/mcp"
+  },
+  "description": "Jam MCP Server Official - Debug faster with instant bug reports. Capture, share, and track bugs with screenshots, console logs, and network data. This is the official MCP server from Jam.",
+  "icon": "https://jam.dev/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

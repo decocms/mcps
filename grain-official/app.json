@@ -1,6 +1,8 @@
 {
   "scopeName": "grain",
-  "name": "Grain mcp",
+  "name": "grain-mcp",
+  "frandryName":"Grain Official",
+  "category": "Collaboration",
   "connection": {
     "type": "HTTP",
     "url": "https://api.grain.com/_/mcp"

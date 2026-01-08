@@ -1,0 +1,15 @@
+{
+  "scopeName": "cloudflare-observability",
+  "name": "cloudflare-observability-mcp",
+  "frandryName": "Cloudflare Observability Official",
+  "category": "Observability",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://observability.mcp.cloudflare.com/sse"
+  },
+  "description": "Cloudflare Observability MCP Server Official - Monitor and analyze your Cloudflare services. Access logs, metrics, analytics, and traces through natural language. This is the official MCP server from Cloudflare.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+
