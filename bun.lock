@@ -115,6 +115,20 @@
         "wrangler": "^4.28.0",
       },
     },
+    "google-big-query": {
+      "name": "google-big-query",
+      "version": "1.0.0",
+      "dependencies": {
+        "@decocms/runtime": "^1.1.0",
+        "zod": "^4.0.0",
+      },
+      "devDependencies": {
+        "@decocms/mcps-shared": "workspace:*",
+        "@modelcontextprotocol/sdk": "1.25.1",
+        "deco-cli": "^0.28.0",
+        "typescript": "^5.7.2",
+      },
+    },
     "google-calendar": {
       "name": "google-calendar",
       "version": "1.0.0",
@@ -1844,6 +1858,8 @@
     "glob-to-regexp": ["glob-to-regexp@0.4.1", "", {}, "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw=="],
 
     "goober": ["goober@2.1.18", "", { "peerDependencies": { "csstype": "^3.0.10" } }, "sha512-2vFqsaDVIT9Gz7N6kAL++pLpp41l3PfDuusHcjnGLfR6+huZkl6ziX+zgVC3ZxpqWhzH6pyDdGrCeDhMIvwaxw=="],
+
+    "google-big-query": ["google-big-query@workspace:google-big-query"],
 
     "google-calendar": ["google-calendar@workspace:google-calendar"],
 
