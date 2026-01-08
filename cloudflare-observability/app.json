@@ -1,5 +1,5 @@
 {
-  "scopeName": "cloudflare-observability",
+  "scopeName": "official",
   "name": "cloudflare-observability-mcp",
   "frandryName": "Cloudflare Observability Official",
   "category": "Observability",
