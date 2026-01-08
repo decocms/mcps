@@ -1,5 +1,5 @@
 {
-  "scopeName": "official",
+  "scopeName": "digitalocean-databases",
   "name": "digitalocean-databases-mcp",
   "frandryName": "DigitalOcean Databases Official",
   "category": "Database",

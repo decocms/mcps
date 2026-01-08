@@ -1,5 +1,5 @@
 {
-  "scopeName": "official",
+  "scopeName": "google-gke",
   "name": "google-gke-mcp",
   "frandryName": "Google GKE Official",
   "category": "Developer Tools",
