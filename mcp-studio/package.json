@@ -16,7 +16,7 @@
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.1",
     "@decocms/bindings": "^1.0.7",
-    "@decocms/runtime": "^1.1.0",
+    "@decocms/runtime": "^1.1.2",
     "@jitl/quickjs-singlefile-cjs-release-sync": "^0.31.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@radix-ui/react-collapsible": "^1.1.12",
