@@ -10,7 +10,6 @@ import { withRuntime } from "@decocms/runtime";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
-import { createPrompts } from "./prompts.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 
@@ -35,9 +34,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
-      await ensureIndexes(env);
+      // Create tables first, then indexes
       await ensureCollections(env);
       await ensurePromptsTable(env);
+      await ensureIndexes(env);
     },
     scopes: [
       "DATABASE::DATABASES_RUN_SQL",
@@ -48,7 +48,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     state: StateSchema,
   },
   tools,
-  prompts: createPrompts,
+  prompts: [],
 });
 
 serve(runtime.fetch);

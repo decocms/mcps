@@ -8,7 +8,6 @@ const postgresWorkflowCollectionTableIdempotentQuery = `
   CREATE TABLE IF NOT EXISTS workflow_collection (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    input JSONB,
     gateway_id TEXT NOT NULL,
     description TEXT,
     steps JSONB NOT NULL DEFAULT '{}',
@@ -31,7 +30,7 @@ const postgresWorkflowTableIdempotentQuery = `
     workflow_collection_id TEXT,
     steps JSONB NOT NULL DEFAULT '{}',
     input JSONB,
-    gateway_id TEXT NOT NULL,
+    gateway_id TEXT NOT NULL,    
     created_at_epoch_ms BIGINT NOT NULL,
     created_by TEXT
   )

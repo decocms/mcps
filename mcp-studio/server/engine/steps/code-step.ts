@@ -6,12 +6,13 @@
  * Features:
  * - TypeScript transpilation to JavaScript (using sucrase for edge compatibility)
  * - Deterministic sandbox execution (no Date, Math.random, etc.)
- * - Input/Output interface extraction for validation
+ * - Input/Output interface extraction for validation (using ts-morph)
  *
  * @see docs/WORKFLOW_SCHEMA_DESIGN.md
  */
 
 import { transform } from "sucrase";
+import { Project, type InterfaceDeclaration, type Type } from "ts-morph";
 import {
   callFunction,
   createSandboxRuntime,
@@ -183,33 +184,126 @@ export function injectInputInterface(
   return `${inputInterface}\n\n${withTypedParam}`;
 }
 
-export function extractSchemas(code: string): {
-  input: Record<string, unknown>;
-  output: Record<string, unknown>;
-} {
-  const inputMatch = code.match(/interface\s+Input\s*\{([^}]*)\}/);
-  const outputMatch = code.match(/interface\s+Output\s*\{([^}]*)\}/);
+// Reusable ts-morph project for schema extraction (avoids re-creating for each call)
+let tsMorphProject: Project | null = null;
 
-  const parseInterfaceBody = (body: string): Record<string, unknown> => {
-    if (!body.trim()) return { type: "object" };
+function getProject(): Project {
+  if (!tsMorphProject) {
+    tsMorphProject = new Project({
+      useInMemoryFileSystem: true,
+      compilerOptions: {
+        strict: true,
+        target: 99, // ESNext
+        module: 99, // ESNext
+      },
+    });
+  }
+  return tsMorphProject;
+}
 
+/**
+ * Convert a ts-morph Type to JSON Schema
+ */
+function typeToJsonSchema(
+  type: Type,
+  visited = new Set<string>(),
+): Record<string, unknown> {
+  // Handle circular references
+  const typeText = type.getText();
+  if (visited.has(typeText) && type.isObject()) {
+    return { type: "object" };
+  }
+  visited.add(typeText);
+
+  // Handle union types
+  if (type.isUnion()) {
+    const unionTypes = type.getUnionTypes();
+    // Check if it's a simple nullable type (T | null | undefined)
+    const nonNullTypes = unionTypes.filter(
+      (t) => !t.isNull() && !t.isUndefined(),
+    );
+    if (nonNullTypes.length === 1) {
+      return typeToJsonSchema(nonNullTypes[0], new Set(visited));
+    }
+    return {
+      anyOf: unionTypes
+        .filter((t) => !t.isUndefined()) // Remove undefined from unions
+        .map((t) => typeToJsonSchema(t, new Set(visited))),
+    };
+  }
+
+  // Handle intersection types
+  if (type.isIntersection()) {
+    return {
+      allOf: type
+        .getIntersectionTypes()
+        .map((t) => typeToJsonSchema(t, new Set(visited))),
+    };
+  }
+
+  // Primitives
+  if (type.isString()) return { type: "string" };
+  if (type.isNumber()) return { type: "number" };
+  if (type.isBoolean()) return { type: "boolean" };
+  if (type.isNull()) return { type: "null" };
+  if (type.isUndefined()) return {};
+  if (type.isAny() || type.isUnknown()) return {};
+
+  // Literal types
+  if (type.isStringLiteral())
+    return { type: "string", const: type.getLiteralValue() };
+  if (type.isNumberLiteral())
+    return { type: "number", const: type.getLiteralValue() };
+  if (type.isBooleanLiteral())
+    return { type: "boolean", const: type.getLiteralValue() };
+
+  // Array types
+  if (type.isArray()) {
+    const elementType = type.getArrayElementType();
+    return {
+      type: "array",
+      items: elementType ? typeToJsonSchema(elementType, new Set(visited)) : {},
+    };
+  }
+
+  // Tuple types
+  if (type.isTuple()) {
+    const tupleTypes = type.getTupleElements();
+    return {
+      type: "array",
+      items: tupleTypes.map((t) => typeToJsonSchema(t, new Set(visited))),
+      minItems: tupleTypes.length,
+      maxItems: tupleTypes.length,
+    };
+  }
+
+  // Object/Interface types
+  if (type.isObject()) {
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
-    // Parse simple property declarations
-    const propRegex = /(\w+)(\?)?\s*:\s*([^;]+);/g;
-    let match: RegExpExecArray | null = propRegex.exec(body);
+    // Get properties from the type
+    const typeProperties = type.getProperties();
+    for (const prop of typeProperties) {
+      const propName = prop.getName();
+      const propType = prop.getTypeAtLocation(
+        prop.getValueDeclaration() ?? prop.getDeclarations()[0],
+      );
+      const isOptional = prop.isOptional();
 
-    while (match !== null) {
-      const [, name, optional, typeStr] = match;
-      const type = typeStr.trim();
-
-      if (!optional) {
-        required.push(name);
+      properties[propName] = typeToJsonSchema(propType, new Set(visited));
+      if (!isOptional) {
+        required.push(propName);
       }
+    }
 
-      properties[name] = parseTypeToSchema(type);
-      match = propRegex.exec(body);
+    // Handle index signatures (e.g., { [key: string]: unknown })
+    const indexType = type.getStringIndexType();
+    if (indexType && Object.keys(properties).length === 0) {
+      return {
+        type: "object",
+        additionalProperties: typeToJsonSchema(indexType, new Set(visited)),
+      };
     }
 
     return {
@@ -217,55 +311,93 @@ export function extractSchemas(code: string): {
       properties,
       ...(required.length > 0 ? { required } : {}),
     };
-  };
+  }
 
-  const parseTypeToSchema = (type: string): Record<string, unknown> => {
-    type = type.trim();
+  // Fallback
+  return { type: "object" };
+}
 
-    // Array types
-    if (type.endsWith("[]")) {
-      return {
-        type: "array",
-        items: parseTypeToSchema(type.slice(0, -2)),
-      };
-    }
-    if (type.startsWith("Array<") && type.endsWith(">")) {
-      return {
-        type: "array",
-        items: parseTypeToSchema(type.slice(6, -1)),
-      };
-    }
+/**
+ * Extract JSON Schema from an interface declaration
+ */
+function interfaceToJsonSchema(
+  iface: InterfaceDeclaration,
+): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
 
-    // Object type with inline properties
-    if (type.startsWith("{") && type.endsWith("}")) {
-      return parseInterfaceBody(type.slice(1, -1));
-    }
+  for (const prop of iface.getProperties()) {
+    const propName = prop.getName();
+    const propType = prop.getType();
+    const isOptional = prop.hasQuestionToken();
 
-    // Primitive types
-    switch (type) {
-      case "string":
-        return { type: "string" };
-      case "number":
-        return { type: "number" };
-      case "boolean":
-        return { type: "boolean" };
-      case "null":
-        return { type: "null" };
-      case "unknown":
-      case "any":
-        return {};
-      default:
-        // For complex types, just return object
-        return { type: "object" };
+    properties[propName] = typeToJsonSchema(propType);
+    if (!isOptional) {
+      required.push(propName);
     }
-  };
+  }
+
+  // Handle index signatures
+  const indexSignatures = iface.getIndexSignatures();
+  if (indexSignatures.length > 0 && Object.keys(properties).length === 0) {
+    const indexSig = indexSignatures[0];
+    return {
+      type: "object",
+      additionalProperties: typeToJsonSchema(indexSig.getReturnType()),
+    };
+  }
 
   return {
-    input: inputMatch ? parseInterfaceBody(inputMatch[1]) : { type: "object" },
-    output: outputMatch
-      ? parseInterfaceBody(outputMatch[1])
-      : { type: "object" },
+    type: "object",
+    properties,
+    ...(required.length > 0 ? { required } : {}),
   };
+}
+
+/**
+ * Extract Input and Output schemas from TypeScript transform code using ts-morph.
+ * This properly handles nested types, unions, generics, etc.
+ */
+export function extractSchemas(code: string): {
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+} {
+  const project = getProject();
+
+  // Create a unique filename to avoid conflicts
+  const fileName = `transform-${Date.now()}-${Math.random().toString(36).slice(2)}.ts`;
+  const sourceFile = project.createSourceFile(fileName, code, {
+    overwrite: true,
+  });
+
+  try {
+    const inputInterface = sourceFile.getInterface("Input");
+    const outputInterface = sourceFile.getInterface("Output");
+
+    // Also check for type aliases (type Input = ...)
+    const inputTypeAlias = sourceFile.getTypeAlias("Input");
+    const outputTypeAlias = sourceFile.getTypeAlias("Output");
+
+    let inputSchema: Record<string, unknown> = { type: "object" };
+    let outputSchema: Record<string, unknown> = { type: "object" };
+
+    if (inputInterface) {
+      inputSchema = interfaceToJsonSchema(inputInterface);
+    } else if (inputTypeAlias) {
+      inputSchema = typeToJsonSchema(inputTypeAlias.getType());
+    }
+
+    if (outputInterface) {
+      outputSchema = interfaceToJsonSchema(outputInterface);
+    } else if (outputTypeAlias) {
+      outputSchema = typeToJsonSchema(outputTypeAlias.getType());
+    }
+
+    return { input: inputSchema, output: outputSchema };
+  } finally {
+    // Clean up the source file to prevent memory leaks
+    project.removeSourceFile(sourceFile);
+  }
 }
 
 /**

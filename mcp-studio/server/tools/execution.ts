@@ -3,20 +3,21 @@ import type { Env } from "../types/env.ts";
 import { z } from "zod";
 import {
   StepSchema,
-  Workflow,
   WORKFLOW_BINDING,
   WorkflowExecutionSchema,
 } from "@decocms/bindings/workflow";
 import {
   cancelExecution,
   createExecution,
+  getExecution,
   getExecutionFull,
   getStepResult,
+  getWorkflow,
   listExecutions,
   resumeExecution,
 } from "../db/queries/executions.ts";
-import { validateWorkflow } from "../utils/validator.ts";
 import { getWorkflowCollection } from "./workflow.ts";
+import { createCollectionGetOutputSchema } from "@decocms/bindings/collections";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_EXECUTION_LIST",
@@ -114,87 +115,50 @@ export const createCreateTool = (env: Env) =>
     id: CREATE_BINDING?.name,
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
-      input: z.record(z.string(), z.unknown()),
-      steps: z
-        .array(
-          z
-            .object(StepSchema.omit({ outputSchema: true }).shape)
-            .describe(
-              "The steps to execute - need to provide this or the workflow_collection_id",
-            ),
-        )
-        .optional(),
+      input: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe(
+          "The input to the workflow execution. Required only if the workflow has steps that reference the input with the @input.field syntax.",
+        ),
       gateway_id: z
         .string()
         .describe("The gateway ID to use for the execution"),
       start_at_epoch_ms: z
         .number()
         .optional()
-        .describe("The start time for the execution"),
-      timeout_ms: z
-        .number()
-        .optional()
-        .describe("The timeout for the execution"),
+        .describe(
+          "The timestamp in milliseconds of when the execution should start. If not provided, the execution will start immediately.",
+        ),
       workflow_collection_id: z
         .string()
-        .optional()
         .describe(
-          "The workflow collection ID to use for the execution - need to provide this or the steps",
+          "The id of the workflow collection item to use for the execution",
         ),
     }),
     outputSchema: z.object({
-      id: z.string(),
-      workflow_id: z.string(),
+      item: z.object({
+        id: z.string(),
+      }),
     }),
     execute: async ({ context }) => {
       try {
         console.log("creating execution");
 
-        if (!context.steps && !context.workflow_collection_id) {
-          throw new Error(
-            "Either steps or workflow_collection_id must be provided",
-          );
-        }
-
-        let steps = context.steps;
-        let workflowInput: Record<string, unknown> | undefined;
-
-        if (context.workflow_collection_id) {
-          // Fetch the full workflow collection to get steps and input schema
-          const workflowCollection = await getWorkflowCollection(
-            env,
-            context.workflow_collection_id,
-          );
-          if (workflowCollection) {
-            steps = steps ?? workflowCollection.steps;
-            workflowInput = (
-              workflowCollection as { input?: Record<string, unknown> }
-            ).input;
-          }
-        }
-
-        steps = steps ?? [];
-
-        // Validate workflow before creating execution
-        await validateWorkflow(
-          {
-            id: "temp-validation",
-            title: "Execution Workflow",
-            steps,
-            input: workflowInput,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          } as Workflow & { input?: Record<string, unknown> },
+        // Fetch the full workflow collection to get steps and input schema
+        const workflowCollection = await getWorkflowCollection(
           env,
+          context.workflow_collection_id,
         );
 
-        const { id: executionId, workflow_id } = await createExecution(env, {
+        const steps = workflowCollection?.steps ?? [];
+
+        const { id: executionId } = await createExecution(env, {
           input: context.input,
           gateway_id: context.gateway_id,
           start_at_epoch_ms: context.start_at_epoch_ms,
-          timeout_ms: context.timeout_ms,
-          steps,
           workflow_collection_id: context.workflow_collection_id,
+          steps,
         });
         console.log("publishing event");
         await env.MESH_REQUEST_CONTEXT.state.EVENT_BUS.EVENT_PUBLISH({
@@ -202,8 +166,9 @@ export const createCreateTool = (env: Env) =>
           subject: executionId,
         });
         return {
-          id: executionId,
-          workflow_id,
+          item: {
+            id: executionId,
+          },
         };
       } catch (error) {
         console.error("🚀 ~ Error creating and queueing execution:", error);
@@ -215,33 +180,69 @@ export const createCreateTool = (env: Env) =>
 export const createGetTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_EXECUTION_GET",
-    description: "Get a single workflow execution by ID with step results",
-    inputSchema: GET_BINDING.inputSchema,
-    outputSchema: GET_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof GET_BINDING.inputSchema>;
-    }) => {
+    description: "Get a single workflow execution by ID with step results.",
+    inputSchema: z.object({
+      id: z.string().describe("The ID of the workflow execution to get"),
+    }),
+    outputSchema: createCollectionGetOutputSchema(WorkflowExecutionSchema),
+    execute: async ({ context }) => {
       const { id } = context;
 
       const result = await getExecutionFull(env, id);
       if (!result) {
         throw new Error("Execution not found");
       }
-
-      // Destructure to exclude workflow_id which is not in the output schema
-      const { workflow_id: _, ...execution } = result.execution;
-
-      // Parse through schema to strip any additional properties that might cause
-      // JSON Schema validation to fail (e.g. extra fields from SQL query or stored JSON)
-      const validatedItem = WorkflowExecutionSchema.parse({
-        ...execution,
-        completed_steps: result.completed_steps,
-      });
+      const execution = result.execution;
+      if (!execution) {
+        throw new Error("Execution not found");
+      }
 
       return {
-        item: validatedItem,
+        item: execution,
+      };
+    },
+  });
+
+export const createGetExecutionWorkflowTool = (env: Env) =>
+  createPrivateTool({
+    id: "WORKFLOW_EXECUTION_GET_WORKFLOW",
+    description:
+      "Get the immutable workflow associated with a workflow execution",
+    inputSchema: z.object({
+      executionId: z
+        .string()
+        .describe("The ID of the workflow execution to get the workflow for"),
+    }),
+    outputSchema: z.object({
+      steps: z.array(StepSchema.omit({ outputSchema: true })),
+      input: z.record(z.string(), z.unknown()).nullish(),
+      gateway_id: z.string(),
+      created_at_epoch_ms: z.number(),
+      id: z.string(),
+      workflow_collection_id: z.string().nullish(),
+    }),
+    execute: async ({ context }) => {
+      const { executionId } = context;
+      const execution = await getExecution(env, executionId);
+      if (!execution) {
+        throw new Error("Execution not found");
+      }
+
+      const workflow = await getWorkflow(env, execution.workflow_id);
+      if (!workflow) {
+        throw new Error("Workflow not found");
+      }
+
+      return {
+        id: workflow.id,
+        workflow_collection_id: workflow.workflow_collection_id,
+        steps: workflow.steps.map((step) => ({
+          ...step,
+          outputSchema: undefined,
+        })),
+        input: workflow.input,
+        gateway_id: workflow.gateway_id,
+        created_at_epoch_ms: workflow.created_at_epoch_ms,
       };
     },
   });
@@ -310,6 +311,7 @@ export const createListTool = (env: Env) =>
 export const workflowExecutionCollectionTools = [
   createListTool,
   createGetTool,
+  createGetExecutionWorkflowTool,
   createGetStepResultTool,
   createCreateTool,
 ];
