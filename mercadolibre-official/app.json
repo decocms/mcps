@@ -1,0 +1,15 @@
+{
+  "scopeName": "mercadolibre",
+  "name": "mercadolibre-mcp",
+  "frandryName": "Mercado Libre Official",
+  "category": "E-Commerce",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.mercadolibre.com/mcp"
+  },
+  "description": "Mercado Libre MCP Server Official - Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language. This is the official MCP server from Mercado Libre.",
+  "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
+  "unlisted": false,
+  "official": true
+}
+

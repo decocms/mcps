@@ -1,0 +1,15 @@
+{
+  "scopeName": "hubspot",
+  "name": "hubspot-mcp",
+  "frandryName": "HubSpot Official",
+  "category": "CRM",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://app.hubspot.com/mcp/v1/http"
+  },
+  "description": "HubSpot MCP Server Official - Manage your CRM, marketing, sales, and service operations. Create contacts, deals, tickets, and automate workflows through natural language. This is the official MCP server from HubSpot.",
+  "icon": "https://www.hubspot.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "vercel",
+  "name": "vercel-mcp",
+  "frandryName": "Vercel Official",
+  "category": "Software Development",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.vercel.com/"
+  },
+  "description": "Vercel MCP Server Official - Deploy and manage your frontend applications. Interact with projects, deployments, domains, and serverless functions through natural language. This is the official MCP server from Vercel.",
+  "icon": "https://vercel.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

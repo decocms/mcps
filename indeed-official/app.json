@@ -1,0 +1,15 @@
+{
+  "scopeName": "indeed",
+  "name": "indeed-mcp",
+  "frandryName": "Indeed Official",
+  "category": "Job Board",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.indeed.com/claude/mcp"
+  },
+  "description": "Indeed MCP Server Official - Search and interact with job listings through natural language. Access millions of jobs, post listings, and manage recruitment. This is the official MCP server from Indeed.",
+  "icon": "https://www.indeed.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "digitalocean-databases",
+  "name": "digitalocean-databases-mcp",
+  "frandryName": "DigitalOcean Databases Official",
+  "category": "Database",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://databases.mcp.digitalocean.com/mcp"
+  },
+  "description": "DigitalOcean Databases MCP Server Official - Manage your DigitalOcean managed databases through natural language. Create, configure, and monitor PostgreSQL, MySQL, Redis, and MongoDB databases with AI assistance. This is the official MCP server from DigitalOcean.",
+  "icon": "https://www.digitalocean.com/_next/static/media/logo.0f4b57fd.svg",
+  "unlisted": false,
+  "official": true
+}
+
