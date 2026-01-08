@@ -1,0 +1,13 @@
+{
+  "scopeName": "deco",
+  "name": "google-big-query",
+  "friendlyName": "Google BigQuery",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-big-query.decocache.com/mcp"
+  },
+  "description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, and explore table schemas.",
+  "icon": "https://cdn.worldvectorlogo.com/logos/google-bigquery-logo-1.svg",
+  "unlisted": false
+}
+
