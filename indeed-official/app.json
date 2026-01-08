@@ -1,7 +1,7 @@
 {
   "scopeName": "indeed",
   "name": "indeed-mcp",
-  "frandryName": "Indeed Official",
+  "friendly_name": "Indeed Official",
   "category": "Job Board",
   "connection": {
     "type": "HTTP",

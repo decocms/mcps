@@ -1,7 +1,7 @@
 {
-  "scopeName": "digitalocean-apps",
+  "scopeName": "digitalocean",
   "name": "digitalocean-apps-mcp",
-  "frandryName": "DigitalOcean Apps Official",
+  "friendly_name": "DigitalOcean Apps Official",
   "category": "Software Development",
   "connection": {
     "type": "HTTP",
