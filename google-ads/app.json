@@ -1,0 +1,13 @@
+{
+  "scopeName": "deco",
+  "name": "google-ads",
+  "friendlyName": "Google Ads",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-ads.decocache.com/mcp"
+  },
+  "description": "Manage Google Ads campaigns, ad groups, ads, keywords, and get performance reports via API.",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Google_Ads_logo.svg/1200px-Google_Ads_logo.svg.png",
+  "unlisted": false
+}
+
