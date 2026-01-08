@@ -1,7 +1,7 @@
 {
   "scopeName": "google",
   "name": "google-gke-mcp",
-  "friendly_name": "Google GKE Official",
+  "friendlyName": "Google GKE Official",
   "category": "Developer Tools",
   "connection": {
     "type": "HTTP",

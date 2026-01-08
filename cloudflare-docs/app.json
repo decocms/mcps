@@ -1,7 +1,7 @@
 {
   "scopeName": "cloudflare",
   "name": "cloudflare-docs-mcp",
-  "friendly_name": "Cloudflare Docs Official",
+  "friendlyName": "Cloudflare Docs Official",
   "category": "Documentation",
   "connection": {
     "type": "HTTP",
