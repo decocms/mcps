@@ -182,7 +182,7 @@ export async function insertWorkflowCollectionItem(
     const result = await runSQL<{ id: string }>(
       env,
       `INSERT INTO workflow_collection (id, title, gateway_id, description, steps, created_at, updated_at, created_by, updated_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
       [
         workflow.id,
         workflow.title,
@@ -312,9 +312,9 @@ async function updateWorkflowCollection(
     setClauses.push(`description = ?`);
     params.push(data.description);
   }
-  if (data.steps !== undefined) {
+  if (data.steps && data.steps.length > 0) {
     setClauses.push(`steps = ?`);
-    params.push(JSON.stringify(data.steps || []));
+    params.push(JSON.stringify(data.steps));
   }
 
   params.push(id);
@@ -348,6 +348,10 @@ export const createUpdateTool = (env: Env) =>
       data: z
         .object({
           title: z.string().optional().describe("The title of the workflow"),
+          steps: z
+            .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+            .optional()
+            .describe("The steps of the workflow"),
           gateway_id: z
             .string()
             .optional()
