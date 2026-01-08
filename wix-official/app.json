@@ -1,0 +1,15 @@
+{
+  "scopeName": "wix",
+  "name": "wix-mcp",
+  "frandryName": "Wix Official",
+  "category": "CMS",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.wix.com/sse"
+  },
+  "description": "Wix MCP Server Official - Build and manage websites through natural language. Create pages, manage content, customize designs, and handle e-commerce. This is the official MCP server from Wix.",
+  "icon": "https://www.wix.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "google-bigquery",
+  "name": "google-bigquery-mcp",
+  "frandryName": "Google BigQuery Official",
+  "category": "Data Analysis",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://bigquery.googleapis.com/mcp"
+  },
+  "description": "Google BigQuery MCP Server Official - Analyze massive datasets with serverless data warehouse. Run SQL queries, manage datasets, and perform analytics through natural language. This is the official MCP server from Google.",
+  "icon": "https://www.gstatic.com/images/branding/product/2x/bigquery_64dp.png",
+  "unlisted": false,
+  "official": true
+}
+

@@ -1,0 +1,15 @@
+{
+  "scopeName": "google-maps",
+  "name": "google-maps-mcp",
+  "frandryName": "Google Maps Official",
+  "category": "Mapping",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mapstools.googleapis.com/mcp"
+  },
+  "description": "Google Maps MCP Server Official - Access Google Maps APIs through natural language. Get directions, geocoding, places data, and mapping services. This is the official MCP server from Google.",
+  "icon": "https://www.gstatic.com/images/branding/product/2x/maps_64dp.png",
+  "unlisted": false,
+  "official": true
+}
+

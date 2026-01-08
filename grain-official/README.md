@@ -1,42 +1,42 @@
 # Grain Official MCP
 
-Este é o **MCP oficial do Grain**, fornecido diretamente pela equipe do Grain para integração com a plataforma de gravação e análise de reuniões.
+This is the **official Grain MCP**, provided directly by the Grain team for integration with the meeting recording and analysis platform.
 
-## Sobre o Grain
+## About Grain
 
-O Grain é uma plataforma poderosa para gravação, transcrição e análise de reuniões. Com este MCP oficial, você pode:
+Grain is a powerful platform for recording, transcribing, and analyzing meetings. With this official MCP, you can:
 
-- 📹 **Acessar suas gravações** - Recupere e gerencie suas reuniões gravadas
-- 📝 **Consultar transcrições** - Acesse transcrições completas de suas reuniões
-- 💡 **Extrair insights** - Obtenha insights e análises de suas reuniões
-- 🔍 **Buscar conteúdo** - Pesquise através de todas as suas reuniões e transcrições
-- 🤝 **Integração oficial** - Suporte direto e funcionalidades mantidas pela equipe Grain
+- 📹 **Access your recordings** - Retrieve and manage your recorded meetings
+- 📝 **Query transcripts** - Access complete transcripts of your meetings
+- 💡 **Extract insights** - Get insights and analysis from your meetings
+- 🔍 **Search content** - Search through all your meetings and transcripts
+- 🤝 **Official integration** - Direct support and features maintained by the Grain team
 
-## Conexão
+## Connection
 
-Este MCP se conecta ao servidor oficial do Grain em:
+This MCP connects to the official Grain server at:
 
 ```
 https://api.grain.com/_/mcp
 ```
 
-## Como Usar
+## How to Use
 
-1. Instale este MCP através do registry
-2. Configure suas credenciais do Grain quando solicitado
-3. Comece a usar as ferramentas disponibilizadas pelo Grain
+1. Install this MCP through the registry
+2. Configure your Grain credentials when prompted
+3. Start using the tools provided by Grain
 
-## Recursos Oficiais
+## Official Resources
 
 - 🌐 Website: [grain.com](https://grain.com)
-- 📚 Documentação: [docs.grain.com](https://docs.grain.com)
-- 🆘 Suporte: Entre em contato através do suporte oficial do Grain
+- 📚 Documentation: [docs.grain.com](https://docs.grain.com)
+- 🆘 Support: Contact through official Grain support
 
 ## Status
 
-✅ **MCP Oficial** - Este é o MCP oficial mantido pela equipe do Grain.
+✅ **Official MCP** - This is the official MCP maintained by the Grain team.
 
 ---
 
-*Este MCP requer uma conta ativa no Grain para funcionar.*
+*This MCP requires an active Grain account to function.*
 

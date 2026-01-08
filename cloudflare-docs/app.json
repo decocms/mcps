@@ -1,0 +1,15 @@
+{
+  "scopeName": "cloudflare-docs",
+  "name": "cloudflare-docs-mcp",
+  "frandryName": "Cloudflare Docs Official",
+  "category": "Documentation",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://docs.mcp.cloudflare.com/sse"
+  },
+  "description": "Cloudflare Docs MCP Server Official - Access Cloudflare's comprehensive documentation through natural language. Search, query, and get help with Cloudflare products and APIs. This is the official MCP server from Cloudflare.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

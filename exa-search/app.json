@@ -1,0 +1,15 @@
+{
+  "scopeName": "exa-search",
+  "name": "exa-search-mcp",
+  "frandryName": "Exa Search Official",
+  "category": "Search",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.exa.ai/mcp"
+  },
+  "description": "Exa Search MCP Server Official - AI-powered search engine for finding high-quality content. Search the web with semantic understanding and get relevant results. This is the official MCP server from Exa.",
+  "icon": "https://exa.ai/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+

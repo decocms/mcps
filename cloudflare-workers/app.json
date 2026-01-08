@@ -1,0 +1,15 @@
+{
+  "scopeName": "cloudflare-workers",
+  "name": "cloudflare-workers-mcp",
+  "frandryName": "Cloudflare Workers Official",
+  "category": "Software Development",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://bindings.mcp.cloudflare.com/sse"
+  },
+  "description": "Cloudflare Workers MCP Server Official - Deploy and manage serverless functions at the edge. Interact with Workers, KV, Durable Objects, and bindings through natural language. This is the official MCP server from Cloudflare.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true
+}
+
