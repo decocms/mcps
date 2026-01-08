@@ -1,7 +1,7 @@
 {
   "scopeName": "hubspot",
   "name": "hubspot-mcp",
-  "friendly_name": "HubSpot Official",
+  "friendlyName": "HubSpot Official",
   "category": "CRM",
   "connection": {
     "type": "HTTP",

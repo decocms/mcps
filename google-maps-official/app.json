@@ -1,7 +1,7 @@
 {
   "scopeName": "google",
   "name": "google-maps-mcp",
-  "friendly_name": "Google Maps Official",
+  "friendlyName": "Google Maps Official",
   "category": "Mapping",
   "connection": {
     "type": "HTTP",
