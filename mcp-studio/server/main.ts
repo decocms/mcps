@@ -21,9 +21,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       events: [...WORKFLOW_EVENTS] as string[],
       handler: async ({ events }, env) => {
         try {
-          console.log("handling events", events);
           handleWorkflowEvents(events, env as unknown as Env);
-          console.log("events handled");
           return { success: true };
         } catch (error) {
           console.error(`[MAIN] Error handling events: ${error}`);
@@ -48,7 +46,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     state: StateSchema,
   },
   tools,
-  prompts: [],
+  prompts: [], // removed because this was making a call to the database for every request to the MCP server
 });
 
 serve(runtime.fetch);
