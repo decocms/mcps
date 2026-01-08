@@ -1,7 +1,7 @@
 {
   "scopeName": "jam",
   "name": "jam-dev-mcp",
-  "friendlyName": "Jam Official",
+  "friendlyName": "Jam",
   "category": "Software Development",
   "connection": {
     "type": "HTTP",

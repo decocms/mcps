@@ -1,7 +1,7 @@
 {
   "scopeName": "cloudflare",
   "name": "cloudflare workers",
-  "friendlyName": "Cloudflare Workers Official",
+  "friendlyName": "Cloudflare Workers",
   "category": "Software Development",
   "connection": {
     "type": "HTTP",

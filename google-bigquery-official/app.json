@@ -1,7 +1,7 @@
 {
   "scopeName": "google",
   "name": "google-bigquery-mcp",
-  "friendlyName": "Google BigQuery Official",
+  "friendlyName": "Google BigQuery",
   "category": "Data Analysis",
   "connection": {
     "type": "HTTP",

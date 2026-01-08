@@ -1,7 +1,7 @@
 {
   "scopeName": "wix",
   "name": "wix-mcp",
-  "friendlyName": "Wix Official",
+  "friendlyName": "Wix",
   "category": "CMS",
   "connection": {
     "type": "HTTP",

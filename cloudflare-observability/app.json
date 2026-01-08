@@ -1,7 +1,7 @@
 {
   "scopeName": "cloudflare",
   "name": "cloudflare-observability-mcp",
-  "friendlyName": "Cloudflare Observability Official",
+  "friendlyName": "Cloudflare Observability",
   "category": "Observability",
   "connection": {
     "type": "HTTP",
