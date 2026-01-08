@@ -1,5 +1,5 @@
 {
-  "scopeName": "official",
+  "scopeName": "cloudflare-workers",
   "name": "cloudflare-workers-mcp",
   "frandryName": "Cloudflare Workers Official",
   "category": "Software Development",
