@@ -1,7 +1,7 @@
 {
   "scopeName": "mercadolibre",
   "name": "mercadolibre-mcp",
-  "frandryName": "Mercado Libre Official",
+  "friendly_name": "Mercado Libre Official",
   "category": "E-Commerce",
   "connection": {
     "type": "HTTP",

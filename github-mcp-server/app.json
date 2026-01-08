@@ -1,7 +1,7 @@
 {
   "scopeName": "github",
   "name": "github-mcp-server",
-  "frandryName": "GitHub Official",
+  "friendly_name": "GitHub Official",
   "category": "Developer Tools",
   "connection": {
     "type": "HTTP",

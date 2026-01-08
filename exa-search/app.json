@@ -1,7 +1,7 @@
 {
   "scopeName": "exa-search",
   "name": "exa-search-mcp",
-  "frandryName": "Exa Search Official",
+  "friendly_name": "Exa Search Official",
   "category": "Search",
   "connection": {
     "type": "HTTP",
