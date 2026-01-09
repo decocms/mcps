@@ -1,0 +1,84 @@
+// Generated types for Google Ads MCP
+
+import { z } from "zod";
+
+/**
+ * User state configuration
+ */
+export interface State {
+  /** Google Ads Developer Token */
+  developerToken: string;
+}
+
+/**
+ * Mesh request context injected by the Deco runtime
+ * Contains authentication and metadata for the current request
+ */
+export interface MeshRequestContext {
+  /** OAuth access token from Google */
+  authorization?: string;
+  /** User state configuration */
+  state?: State;
+  /** JWT token for the request */
+  token?: string;
+  /** URL of the mesh server */
+  meshUrl?: string;
+  /** Connection ID for this session */
+  connectionId?: string;
+  /** Function to ensure user is authenticated */
+  ensureAuthenticated?: () => Promise<void>;
+}
+
+/**
+ * Environment type for Google Ads MCP
+ * Extends process env with Deco runtime context
+ */
+export interface Env {
+  /** Google OAuth Client ID */
+  GOOGLE_CLIENT_ID: string;
+  /** Google OAuth Client Secret */
+  GOOGLE_CLIENT_SECRET: string;
+  /** Mesh request context injected by runtime */
+  MESH_REQUEST_CONTEXT: MeshRequestContext;
+  /** Self-reference MCP (if needed) */
+  SELF?: Record<string, never>;
+  /** Whether running locally */
+  IS_LOCAL?: boolean;
+}
+
+/**
+ * State schema for OAuth flow validation and Google Ads API configuration
+ */
+export const StateSchema = z.object({
+  /**
+   * Google Ads Developer Token
+   * Required for API access. Get it from: https://ads.google.com/aw/apicenter
+   */
+  developerToken: z
+    .string()
+    .describe("Google Ads Developer Token (from API Center)"),
+});
+
+/**
+ * MCP type helper for typed tool definitions
+ */
+export type Mcp<
+  T extends Record<
+    string,
+    (input: Record<string, never>) => Promise<Record<string, never>>
+  >,
+> = {
+  [K in keyof T]: ((
+    input: Parameters<T[K]>[0],
+  ) => Promise<Awaited<ReturnType<T[K]>>>) & {
+    asTool: () => Promise<{
+      inputSchema: z.ZodType<Parameters<T[K]>[0]>;
+      outputSchema?: z.ZodType<Awaited<ReturnType<T[K]>>>;
+      description: string;
+      id: string;
+      execute: (
+        input: Parameters<T[K]>[0],
+      ) => Promise<Awaited<ReturnType<T[K]>>>;
+    }>;
+  };
+};

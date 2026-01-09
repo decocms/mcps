@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-ads",
+  "friendlyName": "Google Ads",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-ads.decocache.com/mcp"
+  },
+  "description": "Manage Google Ads campaigns, ad groups, ads, keywords, and get performance reports via API.",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Google_Ads_logo.svg/1200px-Google_Ads_logo.svg.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Advertising"],
+    "official": false,
+    "tags": ["google", "ads", "advertising", "ppc", "campaigns", "marketing", "sem"],
+    "short_description": "Manage Google Ads campaigns, ad groups, ads, keywords, and get performance reports via API.",
+    "mesh_description": "The Google Ads MCP provides comprehensive integration with Google Ads API, enabling programmatic management of advertising campaigns at scale. This MCP allows AI agents and automation systems to create, read, update, and manage Google Ads resources including campaigns, ad groups, ads, keywords, and bidding strategies. It supports complete campaign management workflows, from creating new campaigns with targeting settings to monitoring performance with detailed reporting. The integration enables automated campaign optimization, bulk ad operations, keyword research and management, budget allocation, and performance analytics. Perfect for marketing agencies, advertisers, and businesses who need to manage advertising at scale, automate campaign operations across multiple accounts, or integrate Google Ads management into their marketing automation workflows. Supports all major Google Ads resource types and enables advanced automation scenarios for campaign optimization, A/B testing, and ROI tracking."
+  }
+}
+
