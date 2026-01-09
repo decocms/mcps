@@ -2,14 +2,18 @@
   "scopeName": "wix",
   "name": "wix-mcp",
   "friendlyName": "Wix",
-  "category": "CMS",
   "connection": {
     "type": "HTTP",
     "url": "https://mcp.wix.com/sse"
   },
-  "description": "Wix MCP Server Official - Build and manage websites through natural language. Create pages, manage content, customize designs, and handle e-commerce. This is the official MCP server from Wix.",
+  "description": "Build and manage websites through natural language with Wix's powerful CMS. Create pages, manage content, customize designs, and handle e-commerce operations.",
   "icon": "https://www.wix.com/favicon.ico",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "CMS",
+    "official": true,
+    "tags": ["website-builder", "cms", "e-commerce", "no-code", "wix", "drag-and-drop", "templates", "blogging", "online-store"],
+    "short_description": "Build and manage websites with Wix's powerful no-code platform",
+    "mesh_description": "Wix is a leading website builder platform with over 200 million users worldwide, offering powerful tools for creating professional websites without coding. This official MCP provides natural language access to Wix's comprehensive features including creating and editing pages with drag-and-drop functionality, managing site structure and navigation, and customizing designs with thousands of templates. Build complete e-commerce stores with product catalogs, inventory management, shopping cart, checkout process, and payment gateway integrations including PayPal, Stripe, and Wix Payments. Create and manage blog content with SEO optimization, scheduling, categories, and social media integration. Use Wix's CMS capabilities to create custom databases and dynamic pages for portfolios, directories, and content-rich sites. Add interactive elements like forms, galleries, video backgrounds, animations, and custom interactions without coding. Configure SEO settings including meta tags, structured data, sitemaps, and mobile optimization for better search rankings. Manage domain names, SSL certificates, and email accounts directly from the platform. Use Wix Apps marketplace to extend functionality with thousands of integrations for marketing, analytics, bookings, events, and more. Create member areas with user authentication, roles, and permissions. Implement marketing tools including email campaigns, social media integration, and marketing automation. Access analytics and insights on visitor behavior, conversion rates, and site performance. Perfect for small businesses, entrepreneurs, and creatives building their online presence."
+  }
 }
-

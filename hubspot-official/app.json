@@ -2,14 +2,18 @@
   "scopeName": "hubspot",
   "name": "hubspot-mcp",
   "friendlyName": "HubSpot",
-  "category": "CRM",
   "connection": {
     "type": "HTTP",
     "url": "https://app.hubspot.com/mcp/v1/http"
   },
-  "description": "HubSpot MCP Server Official - Manage your CRM, marketing, sales, and service operations. Create contacts, deals, tickets, and automate workflows through natural language. This is the official MCP server from HubSpot.",
+  "description": "Manage your CRM, marketing, sales, and service operations with HubSpot. Create contacts, deals, tickets, and automate workflows through natural language.",
   "icon": "https://www.hubspot.com/favicon.ico",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "CRM",
+    "official": true,
+    "tags": ["crm", "marketing", "sales", "customer-service", "automation", "hubspot", "email-marketing", "lead-generation", "analytics"],
+    "short_description": "Manage your CRM, marketing, sales, and service operations with HubSpot",
+    "mesh_description": "HubSpot is a comprehensive customer relationship management (CRM) platform that combines marketing, sales, customer service, and content management tools in one unified system. This official MCP provides natural language access to HubSpot's powerful features, enabling you to manage the entire customer lifecycle from first touch to loyal advocate. Create and update contacts, companies, and deals with custom properties and associations. Build and manage your sales pipeline with deal stages, forecasting, and revenue tracking. Design and execute email marketing campaigns with personalization, A/B testing, and automated follow-ups. Create landing pages, forms, and CTAs to capture leads and drive conversions. Set up sophisticated workflow automation for lead nurturing, task creation, and data enrichment. Manage customer support with ticketing system, knowledge base, and live chat integration. Access detailed analytics and reports on marketing performance, sales activities, and customer satisfaction metrics. Configure lead scoring rules to prioritize high-value prospects, create custom dashboards for team visibility, and set up sequences for automated email outreach. Integrate with hundreds of apps through HubSpot's App Marketplace. Perfect for growing businesses that need an all-in-one platform to attract, engage, and delight customers at scale."
+  }
 }
-

@@ -2,14 +2,18 @@
   "scopeName": "jam",
   "name": "jam-dev-mcp",
   "friendlyName": "Jam",
-  "category": "Software Development",
   "connection": {
     "type": "HTTP",
     "url": "https://mcp.jam.dev/mcp"
   },
-  "description": "Jam MCP Server Official - Debug faster with instant bug reports. Capture, share, and track bugs with screenshots, console logs, and network data. This is the official MCP server from Jam.",
+  "description": "Debug faster with instant bug reports. Capture screenshots, console logs, network data, and browser info automatically for faster bug resolution.",
   "icon": "https://jam.dev/favicon.ico",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Software Development",
+    "official": true,
+    "tags": ["debugging", "bug-tracking", "developer-tools", "qa", "testing", "jam", "screenshots", "browser-extension", "collaboration"],
+    "short_description": "Debug faster with instant comprehensive bug reports",
+    "mesh_description": "Jam is the fastest way to capture and share bugs, automatically including everything developers need to debug - screenshots, console logs, network requests, browser info, and device specs in a single click. This official MCP enables development teams to dramatically reduce time spent reproducing and debugging issues. When a bug is reported through Jam, it automatically captures the current page state including DOM snapshot, JavaScript console errors and warnings, network activity with request/response details, browser and OS information, screen resolution, and installed extensions. Create annotated screenshots and screen recordings with drawing tools to highlight specific issues. Reproduce bugs reliably with session replay that shows exactly what the user did. Integrate seamlessly with issue trackers including Jira, Linear, GitHub Issues, Asana, and ClickUp to create tickets with all debugging context attached. Share bugs via links without requiring recipients to have Jam installed. Use Jam for QA testing, user acceptance testing, production monitoring, and customer support. Collaborate with team members by adding comments and status updates. Track bug resolution progress and gather metrics on common issues. Configure custom templates for bug reports specific to your workflow. Perfect for product teams, QA engineers, and support teams who need to communicate bugs clearly and help developers fix issues faster without lengthy back-and-forth for missing information."
+  }
 }
-

@@ -2,14 +2,18 @@
   "scopeName": "google",
   "name": "google-bigquery-mcp",
   "friendlyName": "Google BigQuery",
-  "category": "Data Analysis",
   "connection": {
     "type": "HTTP",
     "url": "https://bigquery.googleapis.com/mcp"
   },
-  "description": "Google BigQuery MCP Server Official - Analyze massive datasets with serverless data warehouse. Run SQL queries, manage datasets, and perform analytics through natural language. This is the official MCP server from Google.",
+  "description": "Analyze massive datasets with Google BigQuery serverless data warehouse. Run SQL queries, manage datasets, and perform analytics through natural language.",
   "icon": "https://www.gstatic.com/images/branding/product/2x/bigquery_64dp.png",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Data Analysis",
+    "official": true,
+    "tags": ["data-warehouse", "sql", "analytics", "bigdata", "google-cloud", "machine-learning", "bi", "data-science", "petabyte-scale"],
+    "short_description": "Analyze massive datasets with Google BigQuery serverless data warehouse",
+    "mesh_description": "Google BigQuery is a fully managed, serverless data warehouse that enables super-fast SQL queries using the processing power of Google's infrastructure. This official MCP provides natural language access to BigQuery's powerful analytics capabilities, allowing you to analyze petabytes of data in seconds. Create and manage datasets, tables, and views with schema definition and partitioning strategies. Run complex SQL queries with support for standard SQL, geographic functions, machine learning functions, and user-defined functions (UDFs). Load data from various sources including Cloud Storage, Cloud SQL, Sheets, and streaming inserts. Execute federated queries that can join BigQuery data with external data sources like Cloud Storage, Bigtable, or Cloud SQL. Use BigQuery ML to create and execute machine learning models directly in SQL for tasks like classification, regression, forecasting, and recommendation. Access real-time analytics with streaming inserts and automatic table updates. Optimize costs with automatic query caching, materialized views, and partitioned tables. Monitor query performance with execution plans, slot usage, and cost estimates. Set up scheduled queries for automated data refreshes, configure access controls with IAM policies, and export results to various formats for further analysis or visualization."
+  }
 }
-
