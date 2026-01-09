@@ -1,5 +1,9 @@
 import { $ } from "bun";
 
+const FOLDER_OVERRIDES = {
+	vibeMcp: "mcp-studio",
+};
+
 const PKG_NAME_OVERRIDES = {
 	vibemcp: "mcp-studio",
 	openrouter: "@decocms/openrouter",
@@ -28,4 +32,4 @@ if (!pkgToBuild) {
 }
 
 await $`bun run --filter=${pkgToBuild} build`;
-await $`mv ./${pkgToBuild}/dist ./dist`;
+await $`mv ./${FOLDER_OVERRIDES[siteName] || siteName}/dist ./dist`;
