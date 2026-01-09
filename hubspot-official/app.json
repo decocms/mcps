@@ -10,7 +10,7 @@
   "icon": "https://www.hubspot.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "category": "CRM",
+    "categories": "CRM",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["crm", "marketing", "sales", "customer-service", "automation", "hubspot", "email-marketing", "lead-generation", "analytics"],

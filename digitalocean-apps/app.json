@@ -10,7 +10,7 @@
   "icon": "https://www.digitalocean.com/_next/static/media/logo.0f4b57fd.svg",
   "unlisted": false,
   "metadata": {
-    "category": "Software Development",
+    "categories": "Software Development",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["deployment", "paas", "containers", "hosting", "digitalocean", "ci-cd", "scaling", "app-platform", "devops"],

@@ -10,7 +10,7 @@
   "icon": "https://assets.decocache.com/decocms/3638f940-f5b8-463f-8724-f092c82d1f4c/exa.jpeg",
   "unlisted": false,
   "metadata": {
-    "category": "Search",
+    "categories": "Search",
     "official": true,
     "tags": ["search", "ai-search", "semantic-search", "web-search", "research", "exa", "knowledge", "discovery", "nlp"],
     "short_description": "AI-powered semantic search engine for finding high-quality content",

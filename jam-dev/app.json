@@ -10,7 +10,7 @@
   "icon": "https://jam.dev/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "category": "Software Development",
+    "categories": "Software Development",
     "official": true,
     "tags": ["debugging", "bug-tracking", "developer-tools", "qa", "testing", "jam", "screenshots", "browser-extension", "collaboration"],
     "short_description": "Debug faster with instant comprehensive bug reports",

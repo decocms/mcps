@@ -10,7 +10,7 @@
   "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
   "unlisted": false,
   "metadata": {
-    "category": "Payments",
+    "categories": "Payments",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["payments", "fintech", "transactions", "latin-america", "mercadopago", "gateway", "subscriptions", "refunds", "checkout"],

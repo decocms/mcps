@@ -10,7 +10,7 @@
   "icon": "https://www.indeed.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "category": "Job Board",
+    "categories": "Job Board",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["jobs", "recruitment", "hiring", "job-search", "indeed", "hr", "talent-acquisition", "careers", "employment"],
