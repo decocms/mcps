@@ -10,7 +10,7 @@
   "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
   "unlisted": false,
   "metadata": {
-    "categories": "E-Commerce",
+    "categories": ["E-Commerce"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["e-commerce", "marketplace", "online-selling", "latin-america", "mercadolibre", "retail", "inventory", "shipping", "sales"],

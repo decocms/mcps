@@ -10,7 +10,7 @@
   "icon": "https://www.cloudflare.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "categories": "Observability",
+    "categories": ["Observability"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["monitoring", "logs", "analytics", "metrics", "tracing", "cloudflare", "observability", "performance", "debugging"],

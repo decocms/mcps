@@ -10,7 +10,7 @@
   "icon": "https://www.cloudflare.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "categories": "Documentation",
+    "categories": ["Documentation"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["documentation", "api-reference", "guides", "tutorials", "cloudflare", "learning", "support", "knowledge-base"],

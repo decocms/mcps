@@ -10,7 +10,7 @@
   "icon": "https://assets.decocache.com/mcp/content-scraper-icon.svg",
   "unlisted": false,
   "metadata": {
-    "categories": "Data Extraction",
+    "categories": ["Data Extraction"],
     "official": false,
     "tags": ["scraping", "web-scraping", "content-extraction", "automation", "n8n", "data-collection"],
     "short_description": "Scrape web content from URLs using n8n workflow automation.",
