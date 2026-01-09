@@ -10,7 +10,7 @@
   "icon": "https://www.cloudflare.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "category": "Software Development",
+    "categories": "Software Development",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["serverless", "edge-computing", "javascript", "workers", "kv", "durable-objects", "cloudflare", "deployment", "functions"],
