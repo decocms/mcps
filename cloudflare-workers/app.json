@@ -12,6 +12,7 @@
   "metadata": {
     "category": "Software Development",
     "official": true,
+    "mesh_unlisted": true,
     "tags": ["serverless", "edge-computing", "javascript", "workers", "kv", "durable-objects", "cloudflare", "deployment", "functions"],
     "short_description": "Deploy and manage serverless functions at the edge with Cloudflare Workers",
     "mesh_description": "Cloudflare Workers is a serverless platform that enables developers to deploy and run code at the edge, across Cloudflare's global network of data centers. With this official MCP, you can manage Workers, interact with Workers KV (key-value storage), configure Durable Objects for stateful applications, and manage bindings between different Cloudflare services. The platform supports JavaScript, TypeScript, Python, and Rust, allowing you to build highly scalable and performant applications that run close to your users. Workers can handle millions of requests per second with sub-millisecond latency, making them ideal for API gateways, middleware, authentication, A/B testing, and edge rendering. The MCP provides natural language access to deployment workflows, environment variables, routes configuration, and real-time monitoring of your Workers performance and usage metrics."
