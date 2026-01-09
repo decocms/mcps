@@ -7,17 +7,20 @@
  * OpenRouter offers a unified API for accessing hundreds of AI models
  * with built-in fallback mechanisms, cost optimization, and provider routing.
  */
-import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import type { Registry } from "@decocms/mcps-shared/registry";
 import { serve } from "@decocms/mcps-shared/serve";
-
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { z } from "zod";
 import { tools } from "./tools/index.ts";
 
+const StateSchema = z.object({});
 /**
  * Environment type combining Deco bindings and Cloudflare Workers context
  */
-export type Env = DefaultEnv;
 
-const runtime = withRuntime<Env>({
+export type Env = DefaultEnv<typeof StateSchema, Registry>;
+
+const runtime = withRuntime<Env, typeof StateSchema>({
   oauth: {
     mode: "PKCE",
     // Used in protected resource metadata to point to the auth server

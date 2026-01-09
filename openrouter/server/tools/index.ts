@@ -10,6 +10,8 @@
  * - llmBinding: LLM binding implementation (metadata, stream, generate, list, get)
  * - modelTools: Model comparison and recommendations (separate utilities)
  */
+import type { Env } from "../main.ts";
+import type { UsageHooks } from "./hooks.ts";
 import {
   createGetLLMTool,
   createListLLMTool,
@@ -22,20 +24,21 @@ import {
   createRecommendModelTool,
 } from "./models/index.ts";
 
-// Export all tools from all modules
-export const tools = [
-  // LLM Binding - implements all 5 required tools:
-  // - COLLECTION_LLM_LIST
-  // - COLLECTION_LLM_GET
-  // - LLM_METADATA
-  // - LLM_DO_STREAM
-  // - LLM_DO_GENERATE
-  createListLLMTool,
-  createGetLLMTool,
-  createLLMMetadataTool,
-  createLLMStreamTool,
-  createLLMGenerateTool,
-  // Additional model utilities (not part of LLM binding)
-  createCompareModelsTool,
-  createRecommendModelTool,
-];
+export const tools = <TEnv extends Env>(env: TEnv, hooks?: UsageHooks) => {
+  return [
+    // LLM Binding - implements all 5 required tools:
+    // - COLLECTION_LLM_LIST
+    // - COLLECTION_LLM_GET
+    // - LLM_METADATA
+    // - LLM_DO_STREAM
+    // - LLM_DO_GENERATE
+    createListLLMTool(env),
+    createGetLLMTool(env),
+    createLLMMetadataTool(env),
+    createLLMStreamTool(hooks)(env),
+    createLLMGenerateTool(hooks)(env),
+    // Additional model utilities (not part of LLM binding)
+    createCompareModelsTool(env),
+    createRecommendModelTool(env),
+  ];
+};

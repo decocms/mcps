@@ -44,7 +44,8 @@
     "template-with-view",
     "veo",
     "whisper",
-    "mcp-studio"
+    "mcp-studio",
+    "deco-llm"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

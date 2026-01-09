@@ -24,6 +24,7 @@ import { getOpenRouterApiKey } from "server/lib/env.ts";
 import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
+import type { UsageHooks } from "./hooks.ts";
 import { getBaseUrl } from "./models/utils.ts";
 import { WELL_KNOWN_MODEL_IDS } from "./models/well-known.ts";
 
@@ -566,7 +567,7 @@ const isAPICallError = (error: unknown): error is APICallError =>
 /**
  * LLM_DO_STREAM - Streams a language model response in real-time
  */
-export const createLLMStreamTool = (env: Env) =>
+export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
   createStreamableTool({
     id: "LLM_DO_STREAM",
     description:
@@ -586,13 +587,18 @@ export const createLLMStreamTool = (env: Env) =>
       const model = openrouter.languageModel(modelId);
 
       try {
+        const hook = await usageHooks?.start?.(
+          await OpenRouterClient.for(apiKey).getModel(modelId),
+          context,
+        );
         const callResponse = await model.doStream(
           callOptions as Parameters<(typeof model)["doStream"]>[0],
         );
 
-        const [_, stream] = getUsageFromStream(
+        const [usage, stream] = getUsageFromStream(
           callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
         );
+        usage.then((usage) => hook?.end?.(usage));
         const response = streamToResponse(stream);
 
         // Return the data stream response
@@ -720,7 +726,7 @@ function transformGenerateResult(result: unknown): Record<string, unknown> {
 /**
  * LLM_DO_GENERATE - Generates a complete response in a single call (non-streaming)
  */
-export const createLLMGenerateTool = (env: Env) =>
+export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
   createPrivateTool({
     id: "LLM_DO_GENERATE",
     description:
@@ -741,10 +747,15 @@ export const createLLMGenerateTool = (env: Env) =>
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
+      const hook = await usageHooks?.start?.(
+        await OpenRouterClient.for(apiKey).getModel(modelId),
+        context,
+      );
       // Use doGenerate directly (consistent with doStream pattern)
       const result = await model.doGenerate(
         callOptions as Parameters<(typeof model)["doGenerate"]>[0],
       );
+      await hook?.end?.(result);
 
       // Transform the result to match the binding schema
       return transformGenerateResult(result) as z.infer<
@@ -752,15 +763,3 @@ export const createLLMGenerateTool = (env: Env) =>
       >;
     },
   });
-
-/**
- * Creates all LLM binding tools for OpenRouter.
- * Returns an array of tools that implement the Language Model binding.
- */
-export const createLLMBinding = (env: Env) => [
-  createListLLMTool(env),
-  createGetLLMTool(env),
-  createLLMMetadataTool(env),
-  createLLMStreamTool(env),
-  createLLMGenerateTool(env),
-];
