@@ -12,6 +12,7 @@
   "metadata": {
     "category": "Software Development",
     "official": true,
+    "mesh_unlisted": true,
     "tags": ["deployment", "paas", "containers", "hosting", "digitalocean", "ci-cd", "scaling", "app-platform", "devops"],
     "short_description": "Deploy and manage applications on DigitalOcean App Platform",
     "mesh_description": "DigitalOcean App Platform is a fully managed Platform as a Service (PaaS) that simplifies deploying and scaling applications. This official MCP enables you to deploy apps directly from GitHub, GitLab, or container registries with automatic builds and deployments. Manage containerized applications, static sites, and backend services with zero infrastructure management. The platform automatically provisions SSL certificates, provides built-in CDN, handles horizontal and vertical scaling, and offers zero-downtime deployments with automatic rollback capabilities. Configure environment variables, secrets, and build parameters through natural language commands. Monitor your applications with real-time metrics, access logs, and performance insights. Set up custom domains with automatic DNS configuration, manage deployment regions across multiple data centers, and configure health checks and alerts. The MCP supports Node.js, Python, Go, PHP, Ruby, and Docker-based applications, with built-in support for popular frameworks like Next.js, Django, Rails, and Laravel. Perfect for developers who want to focus on code rather than infrastructure management."

@@ -12,6 +12,7 @@
   "metadata": {
     "category": "Observability",
     "official": true,
+    "mesh_unlisted": true,
     "tags": ["monitoring", "logs", "analytics", "metrics", "tracing", "cloudflare", "observability", "performance", "debugging"],
     "short_description": "Monitor and analyze your Cloudflare services with comprehensive observability tools",
     "mesh_description": "Cloudflare Observability provides enterprise-grade monitoring and analytics for all Cloudflare services including Workers, CDN, WAF, and Load Balancers. This official MCP enables you to access real-time logs from Workers, HTTP requests, firewall events, and DDoS attacks. Query and analyze performance metrics such as request latency, bandwidth usage, error rates, and cache hit ratios across global data centers. The platform offers distributed tracing capabilities to track requests across your entire application stack, helping identify bottlenecks and optimize performance. Access Web Analytics for visitor insights, GraphQL Analytics API for custom queries, and Logpush integration for streaming logs to external systems. Use natural language to configure alerting rules, create custom dashboards, analyze traffic patterns, investigate security incidents, and generate compliance reports. The MCP simplifies complex queries and provides AI-powered insights to help you understand your application's behavior and user experience."
