@@ -3,7 +3,7 @@
   "name": "cloudflare-workers-mcp",
   "friendlyName": "Cloudflare Workers",
   "connection": {
-    "type": "HTTP",
+    "type": "SSE",
     "url": "https://bindings.mcp.cloudflare.com/sse"
   },
   "description": "Deploy and manage serverless functions at the edge with Cloudflare Workers. Interact with Workers, KV, Durable Objects, and bindings through natural language.",

@@ -3,7 +3,7 @@
   "name": "wix-mcp",
   "friendlyName": "Wix",
   "connection": {
-    "type": "HTTP",
+    "type": "SSE",
     "url": "https://mcp.wix.com/sse"
   },
   "description": "Build and manage websites through natural language with Wix's powerful CMS. Create pages, manage content, customize designs, and handle e-commerce operations.",
