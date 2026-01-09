@@ -278,7 +278,6 @@ export const createListRegistryTool = (_env: Env) =>
           tags,
           categories,
           verified,
-          hasRemote: hasRemote ?? true, // Default: only show servers with remotes
         });
 
         const items = result.servers.map((server) => ({

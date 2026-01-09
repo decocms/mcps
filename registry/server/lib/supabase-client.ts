@@ -186,6 +186,43 @@ function sanitizeSearchInput(input: string): string {
 }
 
 /**
+ * Build a flexible search query that matches any word in the search term
+ * This makes search more forgiving - "github server" will match entries
+ * containing "github" OR "server" in any of the searchable fields
+ */
+function buildSearchFilter(search: string): string {
+  // Split search into words, filter empty ones, and take max 5 words
+  const words = search
+    .toLowerCase()
+    .split(/[\s\-_\/\.]+/)
+    .filter((word) => word.length >= 2)
+    .slice(0, 5);
+
+  if (words.length === 0) {
+    // Fallback to original search if no valid words
+    const sanitized = sanitizeSearchInput(search);
+    return `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%,friendly_name.ilike.%${sanitized}%,short_description.ilike.%${sanitized}%`;
+  }
+
+  // Build OR conditions for each word across all searchable fields
+  const conditions: string[] = [];
+
+  for (const word of words) {
+    const sanitized = sanitizeSearchInput(word);
+    // Text fields - partial match
+    conditions.push(`name.ilike.%${sanitized}%`);
+    conditions.push(`description.ilike.%${sanitized}%`);
+    conditions.push(`friendly_name.ilike.%${sanitized}%`);
+    conditions.push(`short_description.ilike.%${sanitized}%`);
+    // Array fields - exact match (contains)
+    conditions.push(`tags.cs.{${sanitized}}`);
+    conditions.push(`categories.cs.{${sanitized}}`);
+  }
+
+  return conditions.join(",");
+}
+
+/**
  * List servers from Supabase with filters
  */
 export async function listServers(
@@ -233,12 +270,10 @@ export async function listServers(
     query = query.overlaps("categories", categories);
   }
 
-  // Full-text search (sanitize input to prevent PostgREST query injection)
+  // Flexible search - matches any word in any searchable field
   if (search) {
-    const sanitized = sanitizeSearchInput(search);
-    query = query.or(
-      `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%,friendly_name.ilike.%${sanitized}%,short_description.ilike.%${sanitized}%`,
-    );
+    const searchFilter = buildSearchFilter(search);
+    query = query.or(searchFilter);
   }
 
   // Order: verified first, then by name
