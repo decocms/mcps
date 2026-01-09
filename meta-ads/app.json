@@ -10,7 +10,7 @@
   "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_%282019%29.png/1200px-Facebook_Logo_%282019%29.png",
   "unlisted": false,
   "metadata": {
-    "categories": "Marketing",
+    "categories": ["Marketing"],
     "official": false,
     "tags": ["meta", "facebook", "instagram", "ads", "advertising", "analytics", "marketing", "campaigns"],
     "short_description": "Meta Ads Analytics - Analyze performance of Meta/Facebook advertising campaigns with detailed insights and metrics",

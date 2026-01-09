@@ -10,7 +10,7 @@
   "icon": "https://cdn.worldvectorlogo.com/logos/google-bigquery-logo-1.svg",
   "unlisted": false,
   "metadata": {
-    "categories": "Data Analysis",
+    "categories": ["Data Analysis"],
     "official": false,
     "tags": ["google", "bigquery", "sql", "data-warehouse", "analytics", "big-data", "cloud"],
     "short_description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, and explore table schemas.",

@@ -10,7 +10,7 @@
   "icon": "https://vercel.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "categories": "Software Development",
+    "categories": ["Software Development"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["deployment", "frontend", "nextjs", "serverless", "vercel", "jamstack", "cdn", "edge-functions", "ci-cd"],
