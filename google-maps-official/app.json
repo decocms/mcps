@@ -10,7 +10,7 @@
   "icon": "https://www.gstatic.com/images/branding/product/2x/maps_64dp.png",
   "unlisted": false,
   "metadata": {
-    "categories": "Mapping",
+    "categories": ["Mapping"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["maps", "geocoding", "directions", "places", "location", "google-maps", "geospatial", "navigation", "gis"],

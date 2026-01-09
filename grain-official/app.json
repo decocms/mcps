@@ -14,7 +14,7 @@
   "icon": "https://assets.decocache.com/mcp/1bfc7176-e7be-487c-83e6-4b9e970a8e10/Grain.svg",
   "unlisted": false,
   "metadata": {
-    "categories": "Collaboration",
+    "categories": ["Collaboration"],
     "official": true,
     "tags": ["meetings", "transcription", "recording", "video", "collaboration", "grain", "ai-notes", "insights", "productivity"],
     "short_description": "Record, transcribe, and analyze meetings with Grain",

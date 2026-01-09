@@ -10,7 +10,7 @@
   "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
   "unlisted": false,
   "metadata": {
-    "categories": "Developer Tools",
+    "categories": ["Developer Tools"],
     "official": true,
     "tags": ["version-control", "git", "github", "repositories", "code-review", "ci-cd", "collaboration", "open-source", "devops"],
     "short_description": "Interact with GitHub platform through natural language",

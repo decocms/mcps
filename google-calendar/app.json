@@ -10,7 +10,7 @@
   "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
   "unlisted": false,
   "metadata": {
-    "categories": "Productivity",
+    "categories": ["Productivity"],
     "official": false,
     "tags": ["google", "calendar", "scheduling", "events", "meetings", "productivity", "time-management"],
     "short_description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars.",

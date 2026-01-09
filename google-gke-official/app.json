@@ -10,7 +10,7 @@
   "icon": "https://www.gstatic.com/images/branding/product/2x/gke_64dp.png",
   "unlisted": false,
   "metadata": {
-    "categories": "Developer Tools",
+    "categories": ["Developer Tools"],
     "official": true,
     "mesh_unlisted": true,
     "tags": ["kubernetes", "containers", "docker", "orchestration", "google-cloud", "gke", "devops", "microservices", "cloud-native"],
