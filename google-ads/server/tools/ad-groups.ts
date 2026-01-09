@@ -43,9 +43,14 @@ export const createListAdGroupsTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const adGroups = await client.listAdGroups(
         context.customerId,
@@ -98,9 +103,14 @@ export const createGetAdGroupTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const adGroup = await client.getAdGroup(
         context.customerId,
@@ -182,9 +192,14 @@ export const createCreateAdGroupTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.createAdGroup(context.customerId, {
         name: context.name,
@@ -249,9 +264,14 @@ export const createUpdateAdGroupTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.updateAdGroup(context.customerId, {
         resourceName: context.adGroupResourceName,
@@ -294,9 +314,14 @@ export const createPauseAdGroupTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateAdGroupStatus(
         context.customerId,
@@ -335,9 +360,14 @@ export const createEnableAdGroupTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateAdGroupStatus(
         context.customerId,

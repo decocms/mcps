@@ -45,9 +45,14 @@ export const createListKeywordsTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const keywords = await client.listKeywords(
         context.customerId,
@@ -105,9 +110,14 @@ export const createGetKeywordTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const keyword = await client.getKeyword(
         context.customerId,
@@ -188,9 +198,14 @@ export const createCreateKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.createKeyword(context.customerId, {
         adGroup: context.adGroupResourceName,
@@ -250,9 +265,14 @@ export const createCreateNegativeKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.createKeyword(context.customerId, {
         adGroup: context.adGroupResourceName,
@@ -309,9 +329,14 @@ export const createUpdateKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.updateKeyword(context.customerId, {
         resourceName: context.keywordResourceName,
@@ -352,9 +377,14 @@ export const createPauseKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateKeywordStatus(
         context.customerId,
@@ -393,9 +423,14 @@ export const createEnableKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateKeywordStatus(
         context.customerId,
@@ -434,9 +469,14 @@ export const createRemoveKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.removeKeyword(
         context.customerId,

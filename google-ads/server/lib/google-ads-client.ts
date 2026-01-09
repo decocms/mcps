@@ -38,6 +38,7 @@ import type {
 
 export interface GoogleAdsClientConfig {
   accessToken: string;
+  developerToken: string;
 }
 
 /**
@@ -46,9 +47,11 @@ export interface GoogleAdsClientConfig {
  */
 export class GoogleAdsClient {
   private accessToken: string;
+  private developerToken: string;
 
   constructor(config: GoogleAdsClientConfig) {
     this.accessToken = config.accessToken;
+    this.developerToken = config.developerToken;
   }
 
   /**
@@ -59,6 +62,7 @@ export class GoogleAdsClient {
       ...options,
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
+        "developer-token": this.developerToken,
         "Content-Type": "application/json",
         ...options.headers,
       },

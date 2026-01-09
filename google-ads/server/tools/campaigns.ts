@@ -46,9 +46,14 @@ export const createListCampaignsTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const campaigns = await client.listCampaigns(
         context.customerId,
@@ -113,9 +118,14 @@ export const createGetCampaignTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const campaign = await client.getCampaign(
         context.customerId,
@@ -226,9 +236,14 @@ export const createCreateCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       // First, create the campaign budget
       const budgetResponse = await client.createCampaignBudget(
@@ -328,9 +343,14 @@ export const createUpdateCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const networkSettings =
         context.targetGoogleSearch !== undefined ||
@@ -384,9 +404,14 @@ export const createPauseCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateCampaignStatus(
         context.customerId,
@@ -425,9 +450,14 @@ export const createEnableCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       await client.updateCampaignStatus(
         context.customerId,

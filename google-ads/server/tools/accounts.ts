@@ -30,10 +30,17 @@ export const createListAccessibleCustomersTool = (env: Env) =>
       ),
       count: z.number().describe("Number of accessible customers"),
     }),
-    execute: async () => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+      execute: async () => {
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A"; // Hardcoded for testing
+        
+        console.log("Using Developer Token:", developerToken);
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const response = await client.listAccessibleCustomers();
 
@@ -87,6 +94,7 @@ export const createGetCustomerTool = (env: Env) =>
     execute: async ({ context }) => {
       const client = new GoogleAdsClient({
         accessToken: getAccessToken(env),
+        developerToken: env.MESH_REQUEST_CONTEXT?.state?.developerToken || "",
       });
 
       const customer = await client.getCustomer(context.customerId);

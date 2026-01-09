@@ -3,14 +3,22 @@
 import { z } from "zod";
 
 /**
+ * User state configuration
+ */
+export interface State {
+  /** Google Ads Developer Token */
+  developerToken: string;
+}
+
+/**
  * Mesh request context injected by the Deco runtime
  * Contains authentication and metadata for the current request
  */
 export interface MeshRequestContext {
   /** OAuth access token from Google */
   authorization?: string;
-  /** Internal state for OAuth flow */
-  state?: string;
+  /** User state configuration */
+  state?: State;
   /** JWT token for the request */
   token?: string;
   /** URL of the mesh server */
@@ -39,9 +47,17 @@ export interface Env {
 }
 
 /**
- * State schema for OAuth flow validation
+ * State schema for OAuth flow validation and Google Ads API configuration
  */
-export const StateSchema = z.object({});
+export const StateSchema = z.object({
+  /**
+   * Google Ads Developer Token
+   * Required for API access. Get it from: https://ads.google.com/aw/apicenter
+   */
+  developerToken: z
+    .string()
+    .describe("Google Ads Developer Token (from API Center)"),
+});
 
 /**
  * MCP type helper for typed tool definitions

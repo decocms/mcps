@@ -68,9 +68,14 @@ export const createGetAccountPerformanceTool = (env: Env) =>
       }),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const rows = await client.getAccountPerformance(
         context.customerId,
@@ -160,9 +165,14 @@ export const createGetCampaignPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const rows = await client.getCampaignPerformance(
         context.customerId,
@@ -246,9 +256,14 @@ export const createGetAdGroupPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const rows = await client.getAdGroupPerformance(
         context.customerId,
@@ -334,9 +349,14 @@ export const createGetKeywordPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-      });
+        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
+                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
+                              "NSC8PQesrKHxJCsygni2A";
+        
+        const client = new GoogleAdsClient({
+          accessToken: getAccessToken(env),
+          developerToken,
+        });
 
       const rows = await client.getKeywordPerformance(
         context.customerId,
