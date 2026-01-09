@@ -1,0 +1,11 @@
+{
+  "scopeName": "deco",
+  "name": "llm",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-deco-llm.decocache.com/mcp"
+  },
+  "description": "Deco LLM App Connection for LLM uses.",
+  "icon": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  "unlisted": false
+}

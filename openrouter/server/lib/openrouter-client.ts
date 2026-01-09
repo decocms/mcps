@@ -45,6 +45,12 @@ export class OpenRouterClient {
     this.modelCache = new Map();
   }
 
+  static for(apiKey: string) {
+    return new OpenRouterClient({
+      apiKey,
+    });
+  }
+
   /**
    * List all available models
    */
