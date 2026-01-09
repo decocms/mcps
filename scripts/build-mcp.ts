@@ -1,7 +1,7 @@
 import { $ } from "bun";
 
 const FOLDER_OVERRIDES = {
-	vibeMcp: "mcp-studio",
+	vibemcp: "mcp-studio",
 };
 
 const PKG_NAME_OVERRIDES = {
