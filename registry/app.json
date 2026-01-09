@@ -9,7 +9,14 @@
   "repository": {
     "url": "https://github.com/decocms/mcps/tree/main/registry"
   },
-  "description": "A registry translation server that normalizes third-party MCP registries into this system’s format. When no external registry URL is supplied, the server automatically falls back to the official MCP store.",
+  "description": "A registry translation server that normalizes third-party MCP registries into this system's format. When no external registry URL is supplied, the server automatically falls back to the official MCP store.",
   "icon": "https://assets.decocache.com/decocms/cd7ca472-0f72-463a-b0de-6e44bdd0f9b4/mcp.png",
-  "unlisted": false
+  "unlisted": false,
+  "metadata": {
+    "categories": "Developer Tools",
+    "official": false,
+    "tags": ["mcp", "registry", "discovery", "marketplace", "integration", "catalog"],
+    "short_description": "A registry translation server that normalizes third-party MCP registries into this system's format. When no external registry URL is supplied, the server automatically falls back to the official MCP store.",
+    "mesh_description": "The MCP Registry is a centralized discovery and translation service that aggregates and normalizes MCP integrations from multiple sources into a unified format. This MCP acts as a registry gateway, enabling AI agents and applications to discover available MCP integrations, retrieve their metadata and schemas, and connect to them programmatically. It supports querying MCPs by category, tags, capabilities, or search terms, fetching detailed integration documentation, and resolving MCP endpoints. The registry automatically translates between different MCP registry formats, ensuring compatibility across various MCP ecosystems. When no external registry URL is provided, it defaults to the official MCP store. Ideal for building MCP marketplaces, integration discovery tools, or applications that need dynamic MCP loading and connection management. Provides a standardized interface for MCP catalog management and distribution."
+  }
 }

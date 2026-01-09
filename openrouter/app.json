@@ -1,11 +1,19 @@
 {
   "scopeName": "deco",
   "name": "openrouter",
+  "friendlyName": "OpenRouter",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-openrouter.decocache.com/mcp"
   },
   "description": "OpenRouter App Connection for LLM uses.",
   "icon": "https://assets.decocache.com/decocms/b2e2f64f-6025-45f7-9e8c-3b3ebdd073d8/openrouter_logojpg.jpg",
-  "unlisted": false
+  "unlisted": false,
+  "metadata": {
+    "categories": "AI",
+    "official": false,
+    "tags": ["openrouter", "llm", "ai", "language-models", "chat", "completion"],
+    "short_description": "OpenRouter App Connection for LLM uses.",
+    "mesh_description": "The OpenRouter MCP provides a unified gateway to access multiple large language models (LLMs) through a single integration point. OpenRouter aggregates various AI model providers including OpenAI, Anthropic, Google, Meta, and many others, offering a standardized API interface for chat completions and text generation. This MCP enables AI agents to dynamically select and utilize different LLMs based on specific requirements such as cost, speed, capability, or context window size. It supports model routing, fallback strategies, cost tracking, and usage analytics. The integration is perfect for applications that need flexibility in model selection, want to optimize costs by using the most appropriate model for each task, or require high availability through automatic failover between providers. Ideal for developers building AI-powered applications, chatbots, content generation systems, or multi-model comparison tools."
+  }
 }

@@ -7,6 +7,13 @@
         "url": "https://sites-google-tag-manager.decocache.com/mcp"
     },
     "description": "Manage Google Tag Manager resources including accounts, containers, workspaces, tags, triggers and variables via API.",
-    "icon": "https://assets.decocache.com/decocms/9636f785-2d20-4b90-8fd8-6bd8f0b29afb/google-tag-manager.jpg",
-    "unlisted": false
+    "icon": "https://assets.decocache.com/decocms/9636f785-2d20-4b90-8fd8-6bd8-6bd8f0b29afb/google-tag-manager.jpg",
+    "unlisted": false,
+    "metadata": {
+        "categories": "Analytics",
+        "official": false,
+        "tags": ["google", "tag-manager", "gtm", "analytics", "tracking", "marketing"],
+        "short_description": "Manage Google Tag Manager resources including accounts, containers, workspaces, tags, triggers and variables via API.",
+        "mesh_description": "The Google Tag Manager MCP provides comprehensive integration with GTM's API, enabling programmatic management of all aspects of tag management infrastructure. This MCP allows AI agents and automation systems to create, read, update, and delete GTM resources including accounts, containers, workspaces, tags, triggers, and variables. It supports complete workspace management workflows, from creating new workspaces for isolated development to publishing changes to production containers. The integration enables automated tag deployment, bulk tag operations, configuration backups, and cross-container synchronization. Perfect for marketing teams, web analysts, and developers who need to manage tracking implementations at scale, automate tag deployments across multiple properties, or integrate GTM management into their CI/CD pipelines. Supports all GTM resource types and enables advanced automation scenarios for tag governance and compliance."
+    }
 }

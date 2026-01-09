@@ -8,6 +8,13 @@
   },
   "description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars.",
   "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
-  "unlisted": false
+  "unlisted": false,
+  "metadata": {
+    "categories": "Productivity",
+    "official": false,
+    "tags": ["google", "calendar", "scheduling", "events", "meetings", "productivity", "time-management"],
+    "short_description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars.",
+    "mesh_description": "The Google Calendar MCP provides comprehensive integration with Google Calendar, enabling full programmatic control over calendar events, schedules, and availability management. This MCP allows AI agents to create, read, update, and delete calendar events, check user availability across multiple calendars, manage event attendees and invitations, set up recurring events, and configure event reminders and notifications. It supports advanced scheduling features including finding optimal meeting times, managing calendar sharing and permissions, handling multiple calendars, and synchronizing events across different time zones. The integration is perfect for building intelligent scheduling assistants, automated meeting coordinators, calendar-based workflow triggers, and personal productivity tools. Ideal for teams and individuals who need to automate calendar management, integrate scheduling into business processes, or build calendar-aware applications. Provides secure OAuth-based authentication for calendar access."
+  }
 }
 

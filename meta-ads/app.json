@@ -1,12 +1,20 @@
 {
   "scopeName": "deco",
   "name": "meta-ads",
+  "friendlyName": "Meta Ads Analytics",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-meta-ads.decocache.com/mcp"
   },
   "description": "Meta Ads Analytics - Analyze performance of Meta/Facebook advertising campaigns with detailed insights and metrics",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_%282019%29.png/1200px-Facebook_Logo_%282019%29.png",
-  "unlisted": false
+  "unlisted": false,
+  "metadata": {
+    "categories": "Marketing",
+    "official": false,
+    "tags": ["meta", "facebook", "instagram", "ads", "advertising", "analytics", "marketing", "campaigns"],
+    "short_description": "Meta Ads Analytics - Analyze performance of Meta/Facebook advertising campaigns with detailed insights and metrics",
+    "mesh_description": "The Meta Ads Analytics MCP provides deep integration with Meta's advertising platform, offering comprehensive tools to analyze, monitor, and optimize advertising campaigns across Facebook and Instagram. This MCP enables AI agents to retrieve detailed campaign performance metrics, including impressions, clicks, conversions, cost data, and audience engagement statistics. It supports querying campaign hierarchies (campaigns, ad sets, ads), accessing demographic breakdowns, analyzing time-series performance data, and generating custom reports. The integration allows for automated performance monitoring, anomaly detection in ad spend, ROI analysis, and budget optimization recommendations. Ideal for digital marketers, advertising agencies, and data analysts who need to track campaign performance, generate client reports, or build automated optimization workflows. Provides access to Meta's Marketing API for programmatic campaign insights and decision-making support."
+  }
 }
 
