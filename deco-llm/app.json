@@ -1,6 +1,7 @@
 {
   "scopeName": "deco",
   "name": "llm",
+  "friendlyName": "Deco AI Gateway",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-deco-llm.decocache.com/mcp"
