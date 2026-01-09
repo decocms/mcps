@@ -10,7 +10,7 @@
   "icon": "https://www.gstatic.com/images/branding/product/2x/bigquery_64dp.png",
   "unlisted": false,
   "metadata": {
-    "category": "Data Analysis",
+    "categories": "Data Analysis",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["data-warehouse", "sql", "analytics", "bigdata", "google-cloud", "machine-learning", "bi", "data-science", "petabyte-scale"],

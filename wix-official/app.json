@@ -10,7 +10,7 @@
   "icon": "https://www.wix.com/favicon.ico",
   "unlisted": false,
   "metadata": {
-    "category": "CMS",
+    "categories": "CMS",
     "official": true,
     "mesh_unlisted": true,
     "tags": ["website-builder", "cms", "e-commerce", "no-code", "wix", "drag-and-drop", "templates", "blogging", "online-store"],
