@@ -2,14 +2,18 @@
   "scopeName": "digitalocean",
   "name": "digitalocean-apps-mcp",
   "friendlyName": "DigitalOcean Apps",
-  "category": "Software Development",
   "connection": {
     "type": "HTTP",
     "url": "https://apps.mcp.digitalocean.com/mcp"
   },
-  "description": "DigitalOcean Apps MCP Server Official - Manage your DigitalOcean applications through natural language. Deploy, monitor, and scale your apps with AI assistance. This is the official MCP server from DigitalOcean.",
+  "description": "Deploy and manage applications on DigitalOcean App Platform. Deploy, monitor, and scale your apps with AI assistance through natural language.",
   "icon": "https://www.digitalocean.com/_next/static/media/logo.0f4b57fd.svg",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Software Development",
+    "official": true,
+    "tags": ["deployment", "paas", "containers", "hosting", "digitalocean", "ci-cd", "scaling", "app-platform", "devops"],
+    "short_description": "Deploy and manage applications on DigitalOcean App Platform",
+    "mesh_description": "DigitalOcean App Platform is a fully managed Platform as a Service (PaaS) that simplifies deploying and scaling applications. This official MCP enables you to deploy apps directly from GitHub, GitLab, or container registries with automatic builds and deployments. Manage containerized applications, static sites, and backend services with zero infrastructure management. The platform automatically provisions SSL certificates, provides built-in CDN, handles horizontal and vertical scaling, and offers zero-downtime deployments with automatic rollback capabilities. Configure environment variables, secrets, and build parameters through natural language commands. Monitor your applications with real-time metrics, access logs, and performance insights. Set up custom domains with automatic DNS configuration, manage deployment regions across multiple data centers, and configure health checks and alerts. The MCP supports Node.js, Python, Go, PHP, Ruby, and Docker-based applications, with built-in support for popular frameworks like Next.js, Django, Rails, and Laravel. Perfect for developers who want to focus on code rather than infrastructure management."
+  }
 }
-

@@ -2,14 +2,18 @@
   "scopeName": "google",
   "name": "google-maps-mcp",
   "friendlyName": "Google Maps",
-  "category": "Mapping",
   "connection": {
     "type": "HTTP",
     "url": "https://mapstools.googleapis.com/mcp"
   },
-  "description": "Google Maps MCP Server Official - Access Google Maps APIs through natural language. Get directions, geocoding, places data, and mapping services. This is the official MCP server from Google.",
+  "description": "Access Google Maps Platform APIs through natural language. Get directions, geocoding, places data, and mapping services with AI assistance.",
   "icon": "https://www.gstatic.com/images/branding/product/2x/maps_64dp.png",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Mapping",
+    "official": true,
+    "tags": ["maps", "geocoding", "directions", "places", "location", "google-maps", "geospatial", "navigation", "gis"],
+    "short_description": "Access Google Maps Platform APIs through natural language",
+    "mesh_description": "Google Maps Platform provides comprehensive mapping and location services used by millions of applications worldwide. This official MCP gives you natural language access to Google Maps APIs including geocoding for converting addresses to coordinates and reverse geocoding for coordinates to addresses. Get optimal route directions with multiple transportation modes (driving, walking, bicycling, transit) considering real-time traffic conditions, toll roads, and route alternatives. Search and discover places with detailed information including business hours, ratings, reviews, photos, and contact details. Calculate accurate distances and travel times between multiple locations using the Distance Matrix API. Optimize multi-stop routes with the Directions API for efficient delivery and logistics planning. Access detailed place information with the Places API including nearby search, text search, and place details. Use the Geolocation API to determine device location based on cell towers and WiFi access points. Implement time zone services to convert coordinates to time zones and calculate local times. Create custom maps with markers, polylines, polygons, and info windows. Access Street View imagery programmatically for location verification and virtual tours. Utilize Elevation API for topographic data and terrain information. Perfect for location-based applications, delivery services, real estate platforms, and travel apps."
+  }
 }
-

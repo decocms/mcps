@@ -1,15 +1,19 @@
 {
-  "scopeName": "exa-search",
+  "scopeName": "exa",
   "name": "exa-search-mcp",
   "friendlyName": "Exa Search",
-  "category": "Search",
   "connection": {
     "type": "HTTP",
     "url": "https://mcp.exa.ai/mcp"
   },
-  "description": "Exa Search MCP Server Official - AI-powered search engine for finding high-quality content. Search the web with semantic understanding and get relevant results. This is the official MCP server from Exa.",
-  "icon": "https://exa.ai/favicon.ico",
+  "description": "AI-powered semantic search engine for finding high-quality content. Search the web with natural language understanding and get relevant results instantly.",
+  "icon": "https://assets.decocache.com/decocms/3638f940-f5b8-463f-8724-f092c82d1f4c/exa.jpeg",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Search",
+    "official": true,
+    "tags": ["search", "ai-search", "semantic-search", "web-search", "research", "exa", "knowledge", "discovery", "nlp"],
+    "short_description": "AI-powered semantic search engine for finding high-quality content",
+    "mesh_description": "Exa is an AI-powered search engine designed specifically for LLMs and AI applications, providing semantic search capabilities that understand the meaning and context of queries rather than just matching keywords. This official MCP enables you to search the web using natural language queries that understand intent, find similar content based on examples, and discover high-quality articles, research papers, and authoritative sources. Unlike traditional search engines, Exa uses neural embeddings to understand semantic relationships between concepts, allowing you to find content even when the exact keywords don't match. Search by similarity - provide a URL or text sample and find similar content across the web. Filter results by domain, publication date, content type, and authority scores. Access cleaned, structured content without ads, popups, or irrelevant information. Use Exa for research tasks like competitive analysis, market research, academic literature review, and trend discovery. Find expert opinions, technical documentation, case studies, and data-driven articles. The search engine is optimized for factual accuracy and source reliability, making it ideal for AI applications that need trustworthy information. Perfect for building RAG systems, research assistants, content discovery tools, and knowledge management applications that require high-quality web content with semantic understanding."
+  }
 }
-

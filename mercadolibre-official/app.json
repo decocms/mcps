@@ -2,14 +2,18 @@
   "scopeName": "mercadolibre",
   "name": "mercadolibre-mcp",
   "friendlyName": "Mercado Libre",
-  "category": "E-Commerce",
   "connection": {
     "type": "HTTP",
     "url": "https://mcp.mercadolibre.com/mcp"
   },
-  "description": "Mercado Libre MCP Server Official - Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language. This is the official MCP server from Mercado Libre.",
+  "description": "Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language.",
   "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "E-Commerce",
+    "official": true,
+    "tags": ["e-commerce", "marketplace", "online-selling", "latin-america", "mercadolibre", "retail", "inventory", "shipping", "sales"],
+    "short_description": "Manage your e-commerce operations on Latin America's largest marketplace",
+    "mesh_description": "Mercado Libre is Latin America's leading e-commerce platform with over 140 million active users across 18 countries including Argentina, Brazil, Mexico, Chile, Colombia, and Peru. This official MCP enables sellers to create and manage product listings with detailed descriptions, multiple images, specifications, and competitive pricing strategies. Manage your inventory across multiple warehouses and fulfillment centers with real-time stock updates. Process orders from receipt to fulfillment including order confirmation, payment verification, and shipping coordination. Integrate with Mercado Envíos for streamlined shipping with automatic label generation, tracking updates, and delivery confirmation. Handle customer inquiries and questions through the platform's messaging system with automated responses and quick replies. Monitor your seller reputation and performance metrics including response time, shipping accuracy, and customer satisfaction scores. Access detailed sales analytics with revenue reports, best-selling products, traffic sources, and conversion rates. Set up promotional campaigns with discounts, bundles, and special offers to boost sales. Manage returns and refunds efficiently while maintaining high seller ratings. Use the cross-border trade features to sell internationally within Latin America. Configure multiple payment options and installment plans to increase conversion rates. Perfect for sellers looking to grow their business in Latin American markets."
+  }
 }
-

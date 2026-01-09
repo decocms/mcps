@@ -2,14 +2,18 @@
   "scopeName": "vercel",
   "name": "vercel-mcp",
   "friendlyName": "Vercel",
-  "category": "Software Development",
   "connection": {
     "type": "HTTP",
     "url": "https://mcp.vercel.com/"
   },
-  "description": "Vercel MCP Server Official - Deploy and manage your frontend applications. Interact with projects, deployments, domains, and serverless functions through natural language. This is the official MCP server from Vercel.",
+  "description": "Deploy and manage your frontend applications with Vercel. Interact with projects, deployments, domains, and serverless functions through natural language.",
   "icon": "https://vercel.com/favicon.ico",
   "unlisted": false,
-  "official": true
+  "metadata": {
+    "category": "Software Development",
+    "official": true,
+    "tags": ["deployment", "frontend", "nextjs", "serverless", "vercel", "jamstack", "cdn", "edge-functions", "ci-cd"],
+    "short_description": "Deploy and manage your frontend applications with Vercel",
+    "mesh_description": "Vercel is the platform for frontend developers, providing zero-configuration deployments for modern web applications with automatic HTTPS, CDN, and serverless functions. This official MCP enables you to deploy Next.js, React, Vue, Angular, Svelte, and static sites with git integration for automatic deployments on every push. Experience instant rollbacks, preview deployments for every pull request, and production deployments on merge. Manage custom domains with automatic SSL certificate provisioning, DNS configuration, and domain redirects. Configure environment variables per deployment environment (production, preview, development) with encrypted secrets management. Deploy Edge Functions that run on Vercel's global edge network for ultra-low latency, and Serverless Functions for backend API routes with automatic scaling. Access real-time Web Analytics with Core Web Vitals tracking, page performance metrics, and visitor insights without impacting performance. Use Edge Config for ultra-low-latency data access at the edge, and KV for serverless Redis-compatible storage. Configure build settings including framework presets, custom build commands, and output directories. Set up team collaboration with role-based access control, audit logs, and deployment protection rules. Integrate with monitoring tools, implement A/B testing with Edge Middleware, and optimize images automatically with Vercel Image Optimization. Perfect for teams building high-performance web applications."
+  }
 }
-
