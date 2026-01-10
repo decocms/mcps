@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "PORT=3003 bun run --hot server/main.ts",
+    "stdio": "bun server/stdio.ts",
+    "stdio:dev": "bun --watch server/stdio.ts",
+    "start": "bun server/stdio.ts",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "check": "tsc --noEmit",
