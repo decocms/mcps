@@ -7,26 +7,19 @@
  * It publishes incoming WhatsApp webhooks as CloudEvents to the event bus,
  * allowing other MCPs to subscribe and react to WhatsApp messages.
  */
-import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
-import { type EventBusBindingClient } from "@decocms/bindings";
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 
 import { tools } from "./tools/index.ts";
 import type { WebhookPayload } from "./lib/types.ts";
-import z from "zod";
 import { handleChallenge, handleWebhook } from "./webhook.ts";
 import { handleTextMessageEvent } from "./events.ts";
 
-export const StateSchema = z.object({
-  whatsAppBusinessAccountId: z.string(),
-  whatsAppAccessToken: z.string(),
-  EVENT_BUS: BindingOf("@deco/event-bus"),
-});
-
-export type Env = DefaultEnv<typeof StateSchema> & {
-  EVENT_BUS: EventBusBindingClient;
+export type Env = DefaultEnv & {
+  whatsAppBusinessAccountId: string;
+  whatsAppAccessToken: string;
 };
 
-const runtime = withRuntime<Env, typeof StateSchema>({
+const runtime = withRuntime<Env>({
   tools,
   events: {
     handlers: {
@@ -41,10 +34,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       },
       events: ["waba.text.message"],
     },
-  },
-  configuration: {
-    state: StateSchema,
-    scopes: ["EVENT_BUS::*"],
   },
   /**
    * Custom fetch handler for Meta webhook verification and incoming webhooks
