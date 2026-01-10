@@ -1,0 +1,32 @@
+{
+  "id": "research-first",
+  "title": "Research First",
+  "description": "Read context files before responding",
+  "steps": [
+    {
+      "name": "gather_context",
+      "description": "Read relevant context files",
+      "action": {
+        "type": "tool",
+        "toolName": "READ_FILE"
+      },
+      "input": {
+        "path": "@input.contextPath"
+      }
+    },
+    {
+      "name": "respond",
+      "description": "Respond with gathered context",
+      "action": {
+        "type": "llm",
+        "prompt": "Context:\n@gather_context.content\n\nUser message: @input.message",
+        "model": "smart",
+        "tools": "all"
+      },
+      "input": {
+        "message": "@input.message",
+        "context": "@gather_context.content"
+      }
+    }
+  ]
+}

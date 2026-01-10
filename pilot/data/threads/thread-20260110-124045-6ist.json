@@ -1,0 +1,40 @@
+{
+  "id": "thread-20260110-124045-6ist",
+  "source": "cli",
+  "chatId": "cli-1768048836002",
+  "createdAt": "2026-01-10T12:40:45.660Z",
+  "lastActivityAt": "2026-01-10T12:44:24.594Z",
+  "status": "closed",
+  "messages": [
+    {
+      "role": "user",
+      "content": "what is deco cms",
+      "timestamp": "2026-01-10T12:40:45.661Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I am Pilot, an AI assistant connected to MCP Mesh. How can I help you today?",
+      "timestamp": "2026-01-10T12:40:48.664Z"
+    },
+    {
+      "role": "user",
+      "content": "can you search perplexity for that?",
+      "timestamp": "2026-01-10T12:41:00.943Z"
+    },
+    {
+      "role": "assistant",
+      "content": "You asked about \"Deco CMS\". Could you please clarify what you mean by \"Deco CMS\"? Are you referring to:\n\n1.  **Deco.cx (or Deco.run):** A platform for building and managing e-commerce websites and digital experiences, often including CMS functionalities.\n2.  **A specific Content Management System (CMS) named \"Deco\"?**\n3.  **Something else entirely related to \"Deco\" and \"CMS\"?**\n\nKnowing more about what you're looking for will help me provide a more accurate answer.",
+      "timestamp": "2026-01-10T12:41:03.822Z"
+    },
+    {
+      "role": "user",
+      "content": "can you use perplexity to search about deco cms?",
+      "timestamp": "2026-01-10T12:44:21.795Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Desculpe, não consegui processar sua mensagem.",
+      "timestamp": "2026-01-10T12:44:24.594Z"
+    }
+  ]
+}
