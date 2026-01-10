@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
+    "dev:stdio": "bun --watch server/stdio.ts",
+    "stdio": "bun server/stdio.ts",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "check": "tsc --noEmit",
