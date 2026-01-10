@@ -32,10 +32,9 @@ const uploadFile = (env: Env) =>
       uploadSessionId: z.string().describe("The upload session ID"),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
 
       // Step 1: Fetch the file to get metadata and content
@@ -111,10 +110,9 @@ const getUploadStatus = (env: Env) =>
       file_offset: z.number(),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
 
       return client.getUploadStatus({
@@ -147,10 +145,9 @@ const resumeUpload = (env: Env) =>
       handle: z.string().describe("The file handle to use in other API calls"),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
 
       // Fetch the file

@@ -22,6 +22,7 @@ export async function handleWebhook(req: Request, env: Env) {
       return new Response("OK", { status: 200 });
     }
 
+    console.log("payload", payload);
     publishEvent(env, {
       type: "waba.text.message",
       data: payload,

@@ -9,10 +9,9 @@ const listPhoneNumbers = (env: Env) =>
     description: "List all phone numbers for the business account",
     inputSchema: z.object({}),
     execute: async () => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
       return client.listPhoneNumbers();
     },
@@ -28,10 +27,9 @@ const updatePhoneNumberWebhook = (env: Env) =>
       verifyToken: z.string(),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
       return client.updateWebhook(context.phoneNumberId, {
         webhookUrl: context.webhookUrl,
@@ -53,10 +51,9 @@ const createPhoneNumber = (env: Env) =>
       id: z.string(),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
       return client.createPhoneNumber(context);
     },
@@ -77,10 +74,9 @@ const requestCode = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        const state = env.MESH_REQUEST_CONTEXT.state;
         const client = new WhatsAppAPIClient({
-          accessToken: state.whatsAppAccessToken,
-          businessAccountId: state.whatsAppBusinessAccountId,
+          accessToken: env.META_ACCESS_KEY,
+          businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
         });
         return await client.requestCode(context.phoneNumberId, {
           codeMethod: context.codeMethod,
@@ -107,10 +103,9 @@ const verifyCode = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        const state = env.MESH_REQUEST_CONTEXT.state;
         const client = new WhatsAppAPIClient({
-          accessToken: state.whatsAppAccessToken,
-          businessAccountId: state.whatsAppBusinessAccountId,
+          accessToken: env.META_ACCESS_KEY,
+          businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
         });
         return await client.verifyCode(context.phoneNumberId, context.code);
       } catch (error) {
@@ -136,11 +131,10 @@ const registerPhoneNumber = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       try {
         const client = new WhatsAppAPIClient({
-          accessToken: state.whatsAppAccessToken,
-          businessAccountId: state.whatsAppBusinessAccountId,
+          accessToken: env.META_ACCESS_KEY,
+          businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
         });
         const response = await client.registerPhoneNumber(
           context.phoneNumberId,
@@ -195,10 +189,9 @@ const updatePhoneNumberProfile = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
       const client = new WhatsAppAPIClient({
-        accessToken: state.whatsAppAccessToken,
-        businessAccountId: state.whatsAppBusinessAccountId,
+        accessToken: env.META_ACCESS_KEY,
+        businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
       });
       return client.updatePhoneNumberProfile({
         phoneNumberId: context.phoneNumberId,

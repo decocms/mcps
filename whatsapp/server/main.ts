@@ -8,6 +8,7 @@
  * allowing other MCPs to subscribe and react to WhatsApp messages.
  */
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "./tools/index.ts";
 import type { WebhookPayload } from "./lib/types.ts";
@@ -15,8 +16,8 @@ import { handleChallenge, handleWebhook } from "./webhook.ts";
 import { handleTextMessageEvent } from "./events.ts";
 
 export type Env = DefaultEnv & {
-  whatsAppBusinessAccountId: string;
-  whatsAppAccessToken: string;
+  META_BUSINESS_ACCOUNT_ID: string;
+  META_ACCESS_KEY: string;
 };
 
 const runtime = withRuntime<Env>({
@@ -35,24 +36,26 @@ const runtime = withRuntime<Env>({
       events: ["waba.text.message"],
     },
   },
-  /**
-   * Custom fetch handler for Meta webhook verification and incoming webhooks
-   */
-  fetch: async (req, env) => {
-    const url = new URL(req.url);
-    if (url.pathname === "/webhook") {
-      if (req.method === "GET") {
-        return handleChallenge(req);
-      }
-
-      if (req.method === "POST") {
-        return handleWebhook(req, env as unknown as Env);
-      }
-    }
-
-    // Return 404 for unhandled routes
-    return new Response("Not found", { status: 404 });
-  },
 });
 
-export default runtime;
+/**
+ * Wrapped fetch handler that intercepts webhook routes
+ * and delegates MCP requests to the runtime
+ */
+serve(async (req, env, ctx) => {
+  const url = new URL(req.url);
+
+  // Handle Meta webhook verification and incoming webhooks
+  if (url.pathname === "/webhook") {
+    if (req.method === "GET") {
+      return handleChallenge(req);
+    }
+
+    if (req.method === "POST") {
+      return handleWebhook(req, env as Env);
+    }
+  }
+
+  // Delegate all other routes (including MCP protocol) to runtime
+  return runtime.fetch(req, env, ctx);
+});
