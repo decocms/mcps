@@ -1,8 +1,7 @@
 import { publishEvent } from "./events";
-import { WhatsAppAPIClient } from "./lib/client";
+import { getWhatsappClient } from "./lib/whatsapp-client";
 import { WebhookPayload } from "./lib/types";
-import { Env } from "./main";
-import { getKvStore } from "./lib/kv.ts";
+import { readCallbackUrl, readSenderConfig } from "./lib/data";
 
 export function handleChallenge(req: Request) {
   const url = new URL(req.url);
@@ -12,30 +11,6 @@ export function handleChallenge(req: Request) {
     return new Response(challenge, { status: 200 });
   }
   return new Response("Forbidden", { status: 403 });
-}
-
-export interface WhatsAppConnectionConfig {
-  organizationId: string;
-  callbackUrl: string | null;
-  complete: boolean;
-}
-
-async function getSenderConfig(
-  sender: string,
-): Promise<WhatsAppConnectionConfig | null> {
-  const kv = getKvStore();
-  const config = await kv.get<WhatsAppConnectionConfig>(
-    `whatsapp:config:${sender}`,
-  );
-  return config ?? null;
-}
-
-export async function setSenderConfig(
-  sender: string,
-  config: WhatsAppConnectionConfig,
-) {
-  const kv = getKvStore();
-  await kv.set(`whatsapp:config:${sender}`, config);
 }
 
 const isTextMessage = (payload: WebhookPayload) => {
@@ -54,14 +29,6 @@ const getTextMessage = (payload: WebhookPayload) => {
   return { from, phoneNumberId, text };
 };
 
-async function getCallbackUrl(code: string) {
-  const kv = getKvStore();
-  const callbackUrl = (await kv.get(
-    `whatsapp:callback_url:${code}`,
-  )) as string;
-  return callbackUrl;
-}
-
 async function handleVerifyCode({
   from,
   phoneNumberId,
@@ -71,11 +38,15 @@ async function handleVerifyCode({
   phoneNumberId: string;
   text: string;
 }) {
-  const whatsappClient = new WhatsAppAPIClient();
+  const whatsappClient = getWhatsappClient();
   const code = text.split(":")[1];
-  const callbackUrl = await getCallbackUrl(code);
+  const callbackUrl = await readCallbackUrl(code);
   if (!callbackUrl) {
-    return whatsappClient.sendTextMessage(phoneNumberId, from, "Invalid code");
+    return whatsappClient.sendTextMessage({
+      phoneNumberId,
+      to: from,
+      message: "Invalid code",
+    });
   }
   await whatsappClient.sendCallToActionMessage({
     phoneNumberId,
@@ -86,10 +57,10 @@ async function handleVerifyCode({
   });
 }
 
-export async function handleWebhook(payload: WebhookPayload, env: Env) {
+export async function handleWebhook(payload: WebhookPayload) {
   if (!isTextMessage(payload)) return;
   const { from, phoneNumberId, text } = getTextMessage(payload);
-  const whatsappClient = new WhatsAppAPIClient();
+  const whatsappClient = getWhatsappClient();
   const messageId = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
   if (!messageId) {
     throw new Error("Message ID is required");
@@ -109,16 +80,16 @@ export async function handleWebhook(payload: WebhookPayload, env: Env) {
     return handleVerifyCode({ from, phoneNumberId, text });
   }
 
-  const config = await getSenderConfig(from);
+  const config = await readSenderConfig(from);
   if (!config) {
-    return whatsappClient.sendTextMessage(
+    return getWhatsappClient().sendTextMessage({
       phoneNumberId,
-      from,
-      "You are not authorized to use this bot",
-    );
+      to: from,
+      message: "You are not authorized to use this bot",
+    });
   }
 
-  await publishEvent(env, {
+  await publishEvent({
     type: "waba.text.message",
     data: payload,
     organizationId: config.organizationId,

@@ -1,10 +1,11 @@
+import { env } from "./env";
+import { getWhatsappClient } from "./lib/whatsapp-client";
 import type { WebhookPayload } from "./lib/types";
 import { generateResponse } from "./llm";
-import type { Env } from "./main";
-import { sendTextMessage } from "./tools/messages";
+import type { RuntimeEnv } from "./main";
 
 export async function handleTextMessageEvent(
-  env: Env,
+  env: RuntimeEnv,
   event: { data: WebhookPayload; type: string },
 ) {
   try {
@@ -23,8 +24,8 @@ export async function handleTextMessageEvent(
       return generateResponse(env, text.slice(4), from, phoneNumberId);
     }
 
-    sendTextMessage(env, {
-      phoneNumber: from,
+    getWhatsappClient().sendTextMessage({
+      to: from,
       phoneNumberId,
       message: response,
     });
@@ -33,20 +34,17 @@ export async function handleTextMessageEvent(
   }
 }
 
-export async function publishEvent(
-  env: Env,
-  {
-    data,
-    organizationId,
-    type,
-  }: {
-    type: string;
-    data: WebhookPayload;
-    organizationId: string;
-  },
-) {
-  const baseUrl = env.MESH_BASE_URL ?? process.env.MESH_BASE_URL;
-  const url = new URL(`${baseUrl}/org/${organizationId}/events/${type}`);
+export async function publishEvent({
+  data,
+  organizationId,
+  type,
+}: {
+  type: string;
+  data: WebhookPayload;
+  organizationId: string;
+}) {
+  const meshUrl = env.MESH_URL;
+  const url = new URL(`${meshUrl}/org/${organizationId}/events/${type}`);
   await fetch(url, {
     method: "POST",
     headers: {

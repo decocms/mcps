@@ -251,7 +251,6 @@ export const createListRegistryTool = (_env: Env) =>
         tags,
         categories,
         verified,
-        hasRemote,
       } = context;
       try {
         // Get configuration from environment

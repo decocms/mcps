@@ -1,20 +1,19 @@
 import { z } from "zod";
 import { createTool } from "@decocms/runtime/tools";
-import { type Env } from "../main.ts";
-import { WhatsAppAPIClient } from "../lib/client.ts";
+import { getWhatsappClient } from "../lib/whatsapp-client.ts";
 
-const listPhoneNumbers = (env: Env) =>
+const listPhoneNumbers = () =>
   createTool({
     id: "LIST_PHONE_NUMBERS",
     description: "List all phone numbers for the business account",
     inputSchema: z.object({}),
     execute: async () => {
-      const client = new WhatsAppAPIClient(env);
-      return await client.listPhoneNumbers();
+      const client = getWhatsappClient();
+      return client.listPhoneNumbers();
     },
   });
 
-const updatePhoneNumberWebhook = (env: Env) =>
+const updatePhoneNumberWebhook = () =>
   createTool({
     id: "UPDATE_PHONE_NUMBER_WEBHOOK",
     description: "Update the webhook for a phone number",
@@ -24,16 +23,14 @@ const updatePhoneNumberWebhook = (env: Env) =>
       verifyToken: z.string(),
     }),
     execute: async ({ context }) => {
-      const client = new WhatsAppAPIClient(env);
-
-      return client.updateWebhook(context.phoneNumberId, {
+      return getWhatsappClient().updateWebhook(context.phoneNumberId, {
         webhookUrl: context.webhookUrl,
         verifyToken: context.verifyToken,
       });
     },
   });
 
-const createPhoneNumber = (env: Env) =>
+const createPhoneNumber = () =>
   createTool({
     id: "CREATE_PHONE_NUMBER",
     description: "Creates a new phone number for the business account",
@@ -46,12 +43,12 @@ const createPhoneNumber = (env: Env) =>
       id: z.string(),
     }),
     execute: async ({ context }) => {
-      const client = new WhatsAppAPIClient(env);
-      return client.createPhoneNumber(context);
+      const client = getWhatsappClient();
+      return await client.createPhoneNumber(context);
     },
   });
 
-const requestCode = (env: Env) =>
+const requestCode = () =>
   createTool({
     id: "REQUEST_CODE_FOR_PHONE_NUMBER",
     description:
@@ -66,7 +63,7 @@ const requestCode = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        const client = new WhatsAppAPIClient(env);
+        const client = getWhatsappClient();
         const response = await client.requestCode(context.phoneNumberId, {
           codeMethod: context.codeMethod,
           language: context.language,
@@ -79,7 +76,7 @@ const requestCode = (env: Env) =>
     },
   });
 
-const verifyCode = (env: Env) =>
+const verifyCode = () =>
   createTool({
     id: "VERIFY_CODE_FOR_PHONE_NUMBER",
     description:
@@ -93,7 +90,7 @@ const verifyCode = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        const client = new WhatsAppAPIClient(env);
+        const client = getWhatsappClient();
         return await client.verifyCode(context.phoneNumberId, context.code);
       } catch (error) {
         console.error(error);
@@ -102,7 +99,7 @@ const verifyCode = (env: Env) =>
     },
   });
 
-const registerPhoneNumber = (env: Env) =>
+const registerPhoneNumber = () =>
   createTool({
     id: "REGISTER_PHONE_NUMBER",
     description: "Registers a phone number for the business account",
@@ -119,7 +116,7 @@ const registerPhoneNumber = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        const client = new WhatsAppAPIClient(env);
+        const client = getWhatsappClient();
         const response = await client.registerPhoneNumber(
           context.phoneNumberId,
           context.pin,
@@ -132,7 +129,7 @@ const registerPhoneNumber = (env: Env) =>
     },
   });
 
-const updatePhoneNumberProfile = (env: Env) =>
+const updatePhoneNumberProfile = () =>
   createTool({
     id: "UPDATE_PHONE_NUMBER_PROFILE",
     description: "Updates the profile for a phone number",
@@ -173,7 +170,7 @@ const updatePhoneNumberProfile = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-      const client = new WhatsAppAPIClient(env);
+      const client = getWhatsappClient();
       return client.updatePhoneNumberProfile({
         phoneNumberId: context.phoneNumberId,
         about: context.about,

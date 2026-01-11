@@ -1,6 +1,6 @@
 import { jsonSchema, parseJsonEventStream } from "ai";
-import { Env } from "./main";
-import { sendTextMessage } from "./tools/messages";
+import { RuntimeEnv } from "./main";
+import { getWhatsappClient } from "./lib/whatsapp-client";
 
 // Schema for the AI SDK data stream events
 const streamEventSchema = jsonSchema<{
@@ -24,13 +24,12 @@ const streamEventSchema = jsonSchema<{
 const MODEL_ID = "anthropic/claude-3.5-haiku"; // TODO: Get from environment variable
 
 export async function generateResponse(
-  env: Env,
+  env: RuntimeEnv,
   text: string,
   from: string,
   phoneNumberId: string,
 ) {
   console.log("Generating response...");
-  env.MESH_REQUEST_CONTEXT.state.LLM;
   const response = await fetch(
     env.MESH_BASE_URL +
       "/api/" +
@@ -88,11 +87,13 @@ export async function generateResponse(
       fullText += event.value.delta ?? "";
     }
     if (event.value.type === "text-end") {
-      sendTextMessage(env, {
-        phoneNumber: from,
-        phoneNumberId,
-        message: fullText,
-      })
+      const client = getWhatsappClient();
+      client
+        .sendTextMessage({
+          to: from,
+          phoneNumberId,
+          message: fullText,
+        })
         .catch((error) => {
           console.error("[WhatsApp] Error sending text message:", error);
         })

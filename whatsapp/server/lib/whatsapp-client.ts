@@ -1,4 +1,4 @@
-import { Env } from "server/main";
+import { env } from "../env";
 
 const BASE_URL = "https://graph.facebook.com/v23.0";
 
@@ -9,20 +9,8 @@ export interface WhatsAppConfig {
 
 export class WhatsAppAPIClient {
   private config: WhatsAppConfig;
-  constructor(env?: Env) {
-    const accessToken = env?.META_ACCESS_KEY ?? process.env.META_ACCESS_KEY;
-    if (!accessToken) {
-      throw new Error("META_ACCESS_KEY is required");
-    }
-    const businessAccountId =
-      env?.META_BUSINESS_ACCOUNT_ID ?? process.env.META_BUSINESS_ACCOUNT_ID;
-    if (!businessAccountId) {
-      throw new Error("META_BUSINESS_ACCOUNT_ID is required");
-    }
-    this.config = {
-      accessToken,
-      businessAccountId,
-    };
+  constructor(config: WhatsAppConfig) {
+    this.config = config;
   }
 
   private get headers(): HeadersInit {
@@ -182,7 +170,15 @@ export class WhatsAppAPIClient {
   }
 
   // Messages
-  sendTextMessage(phoneNumberId: string, to: string, message: string) {
+  sendTextMessage({
+    phoneNumberId,
+    to,
+    message,
+  }: {
+    phoneNumberId: string;
+    to: string;
+    message: string;
+  }) {
     return this.post<{ messages: { id: string }[] }>(
       `/${phoneNumberId}/messages`,
       {
@@ -316,3 +312,10 @@ export class WhatsAppAPIClient {
     return response.json() as Promise<{ id: string; file_offset: number }>;
   }
 }
+
+export const getWhatsappClient = () => {
+  return new WhatsAppAPIClient({
+    accessToken: env.META_ACCESS_KEY,
+    businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
+  });
+};

@@ -24,4 +24,4 @@ export const getKvStore = (): KVStore => {
       return await redis.get(key);
     },
   };
-}
+};
