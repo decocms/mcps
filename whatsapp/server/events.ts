@@ -45,11 +45,18 @@ export async function publishEvent({
 }) {
   const meshUrl = env.MESH_URL;
   const url = new URL(`${meshUrl}/org/${organizationId}/events/${type}`);
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `Failed to publish event to mesh (${response.status}): ${errorText || response.statusText}`,
+    );
+  }
 }
