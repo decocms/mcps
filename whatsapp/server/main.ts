@@ -15,7 +15,7 @@ import { handleTextMessageEvent } from "./events.ts";
 import { z } from "zod";
 import type { Registry } from "@decocms/mcps-shared/registry";
 // import { tools } from "./tools/index.ts";
-import { getRedisClient } from "./lib/kv.ts";
+import { getKvStore } from "./lib/kv.ts";
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
@@ -120,8 +120,8 @@ serve(async (req, env, ctx) => {
 const PHONE_NUMBER = "552139550877";
 
 async function setCallbackUrl(code: string, callbackUrl: string) {
-  const redis = getRedisClient();
-  await redis.set(`whatsapp:callback_url:${code}`, callbackUrl, {
+  const kv = getKvStore();
+  await kv.set(`whatsapp:callback_url:${code}`, callbackUrl, {
     ex: 120,
   });
 }

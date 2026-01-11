@@ -2,7 +2,7 @@ import { publishEvent } from "./events";
 import { WhatsAppAPIClient } from "./lib/client";
 import { WebhookPayload } from "./lib/types";
 import { Env } from "./main";
-import { getRedisClient } from "./lib/kv.ts";
+import { getKvStore } from "./lib/kv.ts";
 
 export function handleChallenge(req: Request) {
   const url = new URL(req.url);
@@ -23,10 +23,10 @@ export interface WhatsAppConnectionConfig {
 async function getSenderConfig(
   sender: string,
 ): Promise<WhatsAppConnectionConfig | null> {
-  const redis = getRedisClient();
-  const config = (await redis.get(
+  const kv = getKvStore();
+  const config = await kv.get<WhatsAppConnectionConfig>(
     `whatsapp:config:${sender}`,
-  )) as WhatsAppConnectionConfig;
+  );
   return config ?? null;
 }
 
@@ -34,8 +34,8 @@ export async function setSenderConfig(
   sender: string,
   config: WhatsAppConnectionConfig,
 ) {
-  const redis = getRedisClient();
-  await redis.set(`whatsapp:config:${sender}`, config);
+  const kv = getKvStore();
+  await kv.set(`whatsapp:config:${sender}`, config);
 }
 
 const isTextMessage = (payload: WebhookPayload) => {
@@ -55,8 +55,8 @@ const getTextMessage = (payload: WebhookPayload) => {
 };
 
 async function getCallbackUrl(code: string) {
-  const redis = getRedisClient();
-  const callbackUrl = (await redis.get(
+  const kv = getKvStore();
+  const callbackUrl = (await kv.get(
     `whatsapp:callback_url:${code}`,
   )) as string;
   return callbackUrl;
