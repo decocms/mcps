@@ -132,10 +132,14 @@ async function handleVerifyCode({
   const authToken = crypto.randomUUID();
   await saveAuthToken(authToken, from);
 
+  // Properly construct URL with code parameter
+  const redirectUrl = new URL(callbackUrl);
+  redirectUrl.searchParams.set("code", authToken);
+
   await whatsappClient.sendCallToActionMessage({
     phoneNumberId,
     to: from,
-    url: callbackUrl + "&code=" + authToken,
+    url: redirectUrl.toString(),
     text: "Click here to connect Deco Mesh to WhatsApp",
     cta_display_text: "Connect",
   });
