@@ -10,6 +10,7 @@ const getRedisClient = () => {
 export interface KVStore {
   set<T>(key: string, value: T, options?: { ex?: number }): Promise<void>;
   get<T>(key: string): Promise<T | null>;
+  delete(key: string): Promise<void>;
 }
 
 export const getKvStore = (): KVStore => {
@@ -22,6 +23,9 @@ export const getKvStore = (): KVStore => {
     },
     get: async (key) => {
       return await redis.get(key);
+    },
+    delete: async (key) => {
+      await redis.del(key);
     },
   };
 };

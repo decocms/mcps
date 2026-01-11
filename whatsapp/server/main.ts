@@ -17,7 +17,12 @@ import type { Registry } from "@decocms/mcps-shared/registry";
 import { env } from "./env.ts";
 import { app } from "./router.ts";
 
-import { saveSenderConfig } from "./lib/data.ts";
+import {
+  saveSenderConfig,
+  readAndDeleteAuthToken,
+  saveAccessToken,
+  readPhoneFromAccessToken,
+} from "./lib/data.ts";
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
@@ -42,7 +47,17 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
       return url.toString();
     },
     exchangeCode: async ({ code }) => {
-      return { access_token: code, token_type: "Bearer" };
+      // code is now the auth_token, not the phone number
+      const phone = await readAndDeleteAuthToken(code);
+      if (!phone) {
+        throw new Error("Invalid or expired auth token");
+      }
+
+      // Generate opaque access token
+      const accessToken = crypto.randomUUID();
+      await saveAccessToken(accessToken, phone);
+
+      return { access_token: accessToken, token_type: "Bearer" };
     },
   },
   events: {
@@ -75,7 +90,12 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
     onChange: async (env) => {
       const { organizationId, authorization } = env.MESH_REQUEST_CONTEXT;
       if (!organizationId || !authorization) return;
-      await saveSenderConfig(authorization, {
+
+      // authorization is now the opaque access_token, resolve to phone
+      const phone = await readPhoneFromAccessToken(authorization);
+      if (!phone) return;
+
+      await saveSenderConfig(phone, {
         organizationId,
         complete: true,
         callbackUrl: null,

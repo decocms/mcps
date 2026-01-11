@@ -244,14 +244,7 @@ export const createListRegistryTool = (_env: Env) =>
     }: {
       context: z.infer<typeof ListInputSchema>;
     }) => {
-      const {
-        limit = 30,
-        cursor,
-        where,
-        tags,
-        categories,
-        verified,
-      } = context;
+      const { limit = 30, cursor, where, tags, categories, verified } = context;
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;

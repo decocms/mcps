@@ -35,3 +35,33 @@ export async function saveSenderConfig(
   const kv = getKvStore();
   await kv.set(`whatsapp:config:${sender}`, config);
 }
+
+// Auth token (short-lived, for OAuth completion) - 5 min TTL
+export async function saveAuthToken(token: string, phone: string) {
+  const kv = getKvStore();
+  await kv.set(`whatsapp:auth_token:${token}`, phone, { ex: 300 });
+}
+
+export async function readAndDeleteAuthToken(
+  token: string,
+): Promise<string | null> {
+  const kv = getKvStore();
+  const phone = await kv.get<string>(`whatsapp:auth_token:${token}`);
+  if (phone) await kv.delete(`whatsapp:auth_token:${token}`);
+  return phone;
+}
+
+// Access token (long-lived, for session) - 30 day TTL
+export async function saveAccessToken(token: string, phone: string) {
+  const kv = getKvStore();
+  await kv.set(`whatsapp:access_token:${token}`, phone, {
+    ex: 60 * 60 * 24 * 30,
+  });
+}
+
+export async function readPhoneFromAccessToken(
+  token: string,
+): Promise<string | null> {
+  const kv = getKvStore();
+  return await kv.get<string>(`whatsapp:access_token:${token}`);
+}
