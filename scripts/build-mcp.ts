@@ -8,7 +8,6 @@ const FOLDER_OVERRIDES = {
 const PKG_NAME_OVERRIDES = {
   vibemcp: "mcp-studio",
   openrouter: "@decocms/openrouter",
-  whatsappagent: "whatsapp",
 };
 
 const getMcpPkgName = (siteName: string) => {
