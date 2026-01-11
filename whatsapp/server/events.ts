@@ -11,10 +11,10 @@ export async function handleTextMessageEvent(
   try {
     const data = event.data;
     const entry = data.entry?.[0];
-    const message = entry?.changes?.[0].value.messages?.[0];
+    const message = entry?.changes?.[0]?.value?.messages?.[0];
     const from = message?.from;
     const text = message?.text?.body;
-    const phoneNumberId = entry?.changes?.[0].value.metadata.phone_number_id;
+    const phoneNumberId = entry?.changes?.[0]?.value?.metadata?.phone_number_id;
     if (!from || !text || !phoneNumberId) {
       throw new Error("Invalid message data");
     }
