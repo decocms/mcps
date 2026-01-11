@@ -13,6 +13,7 @@ import type { WebhookPayload } from "./lib/types.ts";
 import { handleTextMessageEvent } from "./events.ts";
 import { z } from "zod";
 import type { Registry } from "@decocms/mcps-shared/registry";
+import { tools } from "./tools/index.ts";
 
 import { env } from "./env.ts";
 import { app } from "./router.ts";
@@ -37,7 +38,7 @@ const StateSchema = z.object({
 export type RuntimeEnv = DefaultEnv<typeof StateSchema, Registry>;
 
 const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
-  tools: [],
+  tools,
   oauth: {
     mode: "PKCE",
     authorizationServer: "http://wa.me",
