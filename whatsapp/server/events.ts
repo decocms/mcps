@@ -1,4 +1,5 @@
 import type { WebhookPayload } from "./lib/types";
+import { generateResponse } from "./llm";
 import type { Env } from "./main";
 import { sendTextMessage } from "./tools/messages";
 
@@ -16,50 +17,41 @@ export async function handleTextMessageEvent(
     if (!from || !text || !phoneNumberId) {
       throw new Error("Invalid message data");
     }
+    const shouldUseLLM = text.startsWith("/llm");
+    let response = `Successfully received the event: ${event.type}`;
+    if (shouldUseLLM) {
+      return generateResponse(env, text.slice(4), from, phoneNumberId);
+    }
+
     sendTextMessage(env, {
       phoneNumber: from,
       phoneNumberId,
-      message: "You said: " + text,
+      message: response,
     });
   } catch (error) {
     console.error("[WhatsApp] Webhook processing error:", error);
   }
 }
 
-export function publishEvent(
+export async function publishEvent(
   env: Env,
   {
-    type,
     data,
+    organizationId,
+    type,
   }: {
     type: string;
     data: WebhookPayload;
+    organizationId: string;
   },
 ) {
-  const apiKey = env.MESH_API_KEY;
-  const connId = "self";
-  const baseUrl = env.MESH_BASE_URL;
-  fetch(`${baseUrl}/mcp/${connId}`, {
+  const baseUrl = env.MESH_BASE_URL ?? process.env.MESH_BASE_URL;
+  const url = new URL(`${baseUrl}/org/${organizationId}/events/${type}`);
+  await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json, text/event-stream",
-      Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "tools/call",
-      params: {
-        name: "EVENT_PUBLISH",
-        arguments: {
-          type,
-          data,
-        },
-      },
-      id: 1,
-    }),
-  }).catch((error) => {
-    console.error("[WhatsApp] Webhook processing error:", error);
-    return new Response("Error", { status: 500 });
+    body: JSON.stringify(data),
   });
 }

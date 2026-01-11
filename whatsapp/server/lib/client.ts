@@ -1,3 +1,5 @@
+import { Env } from "server/main";
+
 const BASE_URL = "https://graph.facebook.com/v23.0";
 
 export interface WhatsAppConfig {
@@ -6,7 +8,22 @@ export interface WhatsAppConfig {
 }
 
 export class WhatsAppAPIClient {
-  constructor(private config: WhatsAppConfig) {}
+  private config: WhatsAppConfig;
+  constructor(env?: Env) {
+    const accessToken = env?.META_ACCESS_KEY ?? process.env.META_ACCESS_KEY;
+    if (!accessToken) {
+      throw new Error("META_ACCESS_KEY is required");
+    }
+    const businessAccountId =
+      env?.META_BUSINESS_ACCOUNT_ID ?? process.env.META_BUSINESS_ACCOUNT_ID;
+    if (!businessAccountId) {
+      throw new Error("META_BUSINESS_ACCOUNT_ID is required");
+    }
+    this.config = {
+      accessToken,
+      businessAccountId,
+    };
+  }
 
   private get headers(): HeadersInit {
     return {
@@ -175,6 +192,64 @@ export class WhatsAppAPIClient {
         type: "text",
         text: {
           body: message,
+        },
+      },
+    );
+  }
+
+  markMessageAsRead({
+    phoneNumberId,
+    messageId,
+    showTypingIndicator = false,
+  }: {
+    phoneNumberId: string;
+    messageId: string;
+    showTypingIndicator?: boolean;
+  }) {
+    return this.post<{ success: boolean }>(`/${phoneNumberId}/messages`, {
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId,
+      typing_indicator: showTypingIndicator
+        ? {
+            type: "text",
+          }
+        : undefined,
+    });
+  }
+
+  sendCallToActionMessage({
+    phoneNumberId,
+    to,
+    url,
+    text,
+    cta_display_text,
+  }: {
+    phoneNumberId: string;
+    to: string;
+    url: string;
+    text: string;
+    cta_display_text: string;
+  }) {
+    return this.post<{ messages: { id: string }[] }>(
+      `/${phoneNumberId}/messages`,
+      {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "cta_url",
+          body: {
+            text,
+          },
+          action: {
+            name: "cta_url",
+            parameters: {
+              url,
+              display_text: cta_display_text,
+            },
+          },
         },
       },
     );

@@ -7,11 +7,8 @@ export async function sendTextMessage(
   env: Env,
   context: { phoneNumber: string; phoneNumberId: string; message: string },
 ) {
-  const client = new WhatsAppAPIClient({
-    accessToken: env.META_ACCESS_KEY,
-    businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
-  });
-  return client.sendTextMessage(
+  const client = new WhatsAppAPIClient(env);
+  return await client.sendTextMessage(
     context.phoneNumberId,
     context.phoneNumber,
     context.message,
