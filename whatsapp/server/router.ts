@@ -35,7 +35,16 @@ app.get("/oauth/custom", async (c) => {
   }
 
   // Validate callback URL against MESH_URL to prevent open redirect attacks
-  if (!callbackUrl.startsWith(env.MESH_URL)) {
+  // Using origin comparison instead of startsWith to prevent bypass via domains like
+  // https://mesh.example.com.attacker.com (which would pass a startsWith check)
+  try {
+    const callbackUrlParsed = new URL(callbackUrl);
+    const meshUrlParsed = new URL(env.MESH_URL);
+
+    if (callbackUrlParsed.origin !== meshUrlParsed.origin) {
+      return c.json({ error: "Invalid callback URL" }, 400);
+    }
+  } catch {
     return c.json({ error: "Invalid callback URL" }, 400);
   }
 
