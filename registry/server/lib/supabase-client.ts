@@ -194,7 +194,7 @@ function buildSearchFilter(search: string): string {
   // Split search into words, filter empty ones, and take max 5 words
   const words = search
     .toLowerCase()
-    .split(/[\s\-_\/\.]+/)
+    .split(/[\s\-_/.]+/)
     .filter((word) => word.length >= 2)
     .slice(0, 5);
 

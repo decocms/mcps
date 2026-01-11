@@ -1,0 +1,28 @@
+{
+  "name": "whatsapp",
+  "version": "1.0.0",
+  "description": "WhatsApp MCP",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "dev:server": "PORT=8003 bun run --hot server/main.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.0.8",
+    "@decocms/runtime": "^1.1.3",
+    "@upstash/redis": "^1.36.1",
+    "ai": "^6.0.27",
+    "hono": "^4.11.3",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "deco-cli": "0.28.5",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
