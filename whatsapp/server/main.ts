@@ -14,11 +14,17 @@ import { handleWebhook, setSenderConfig, handleChallenge } from "./webhook.ts";
 import { handleTextMessageEvent } from "./events.ts";
 import { z } from "zod";
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { tools } from "./tools/index.ts";
+// import { tools } from "./tools/index.ts";
 import { getRedisClient } from "./lib/kv.ts";
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
+  LLM: BindingOf("@deco/llm"),
+  AGENT_ID: z
+    .string()
+    .describe(
+      "The ID of the agent that will attend when you message DecoCMS on WhatsApp",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry> & {
@@ -26,12 +32,13 @@ export type Env = DefaultEnv<typeof StateSchema, Registry> & {
   META_BUSINESS_ACCOUNT_ID: string;
   UPSTASH_REDIS_REST_URL: string;
   UPSTASH_REDIS_REST_TOKEN: string;
+  AGENT_ID: string;
 };
 
 const SELF_URL = process.env.SELF_URL ?? "http://localhost:8003";
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
-  tools,
+  tools: [],
   oauth: {
     mode: "PKCE",
     authorizationServer: "http://wa.me",

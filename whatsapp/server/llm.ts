@@ -22,8 +22,6 @@ const streamEventSchema = jsonSchema<{
 });
 
 const MODEL_ID = "anthropic/claude-3.5-haiku"; // TODO: Get from environment variable
-const CONNECTION_ID = "conn_92HRT1twoyIOz3ewIRzCC"; // TODO: Get from environment variable
-const GATEWAY_ID = "gw_HWyQOUGgFkatkBTRAEk11"; // TODO: Get from environment variable
 
 export async function generateResponse(
   env: Env,
@@ -32,6 +30,7 @@ export async function generateResponse(
   phoneNumberId: string,
 ) {
   console.log("Generating response...");
+  env.MESH_REQUEST_CONTEXT.state.LLM;
   const response = await fetch(
     env.MESH_BASE_URL +
       "/api/" +
@@ -46,11 +45,11 @@ export async function generateResponse(
       },
       body: JSON.stringify({
         model: {
-          connectionId: CONNECTION_ID,
+          connectionId: env.MESH_REQUEST_CONTEXT.state.LLM.value,
           id: MODEL_ID,
         },
         gateway: {
-          id: GATEWAY_ID,
+          id: env.MESH_REQUEST_CONTEXT.state.AGENT_ID,
         },
         messages: [
           {
