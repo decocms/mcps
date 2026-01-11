@@ -79,7 +79,12 @@ export async function verifyWebhook(
     return { verified, payload: null };
   }
 
-  return { verified, payload: JSON.parse(rawBody) as WebhookPayload };
+  try {
+    return { verified, payload: JSON.parse(rawBody) as WebhookPayload };
+  } catch {
+    console.error("[WhatsApp] Failed to parse webhook payload as JSON");
+    return { verified: false, payload: null };
+  }
 }
 
 export function handleChallenge(req: Request) {
