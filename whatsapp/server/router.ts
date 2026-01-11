@@ -40,8 +40,12 @@ app.get("/oauth/custom", async (c) => {
   try {
     const callbackUrlParsed = new URL(callbackUrl);
     const meshUrlParsed = new URL(env.MESH_URL);
+    const selfUrlParsed = new URL(env.SELF_URL);
 
-    if (callbackUrlParsed.origin !== meshUrlParsed.origin) {
+    if (
+      callbackUrlParsed.origin !== meshUrlParsed.origin &&
+      callbackUrlParsed.origin !== selfUrlParsed.origin
+    ) {
       return c.json({ error: "Invalid callback URL" }, 400);
     }
   } catch {
