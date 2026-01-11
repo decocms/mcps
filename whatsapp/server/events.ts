@@ -24,7 +24,7 @@ export async function handleTextMessageEvent(
       return generateResponse(env, text.slice(4), from, phoneNumberId);
     }
 
-    getWhatsappClient().sendTextMessage({
+    await getWhatsappClient().sendTextMessage({
       to: from,
       phoneNumberId,
       message: response,

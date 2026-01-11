@@ -67,7 +67,7 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
         handler: async ({ events }, runtimeEnv) => {
           for (const event of events) {
             if (event.type === "public:waba.text.message") {
-              handleTextMessageEvent(
+              await handleTextMessageEvent(
                 runtimeEnv,
                 event as { data: WebhookPayload; type: string },
               );
