@@ -83,6 +83,13 @@ export async function generateResponse(
     },
   );
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
+    );
+  }
+
   if (!response.body) {
     throw new Error("No response body");
   }
