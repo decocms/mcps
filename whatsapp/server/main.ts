@@ -43,7 +43,8 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
     mode: "PKCE",
     authorizationServer: "http://wa.me",
     authorizationUrl: (callbackUrl: string) => {
-      const url = new URL(env.SELF_URL + "/oauth/custom");
+      const url = new URL(env.SELF_URL);
+      url.pathname = "/oauth/custom";
       url.searchParams.set("callback_url", callbackUrl);
       return url.toString();
     },
