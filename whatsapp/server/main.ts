@@ -65,14 +65,16 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
     handlers: {
       EVENT_BUS: {
         handler: async ({ events }, runtimeEnv) => {
-          for (const event of events) {
-            if (event.type === "public:waba.text.message") {
-              await handleTextMessageEvent(
-                runtimeEnv,
-                event as { data: WebhookPayload; type: string },
-              );
-            }
-          }
+          await Promise.all(
+            events.map(async (event) => {
+              if (event.type === "public:waba.text.message") {
+                await handleTextMessageEvent(
+                  runtimeEnv,
+                  event as { data: WebhookPayload; type: string },
+                );
+              }
+            }),
+          );
           return { success: true };
         },
         events: ["public:waba.text.message"],
