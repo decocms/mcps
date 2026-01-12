@@ -15,7 +15,10 @@ export const scrapeContentTool = (env: Env) =>
       "Scrape content from a URL using the n8n workflow. " +
       "Extracts and processes web content through an automated pipeline.",
     inputSchema: z.object({
-      urls: z.array(z.string()).describe("URLs to scrape content from"),
+      urls: z
+        .union([z.string(), z.array(z.string())])
+        .transform((val) => (Array.isArray(val) ? val : [val]))
+        .describe("URL or URLs to scrape content from"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
