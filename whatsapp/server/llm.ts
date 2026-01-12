@@ -66,12 +66,17 @@ export async function generateResponse(
       console.error("[WhatsApp] Error marking message as read:", error);
     });
 
+  console.log("Appending user message to thread...");
   // 1. Persist user message to thread
-  await appendUserMessage(from, text);
+  await appendUserMessage(from, text).catch((error) => {
+    console.error("[WhatsApp] Error appending user message to thread:", error);
+  });
 
+  console.log("Getting full thread history for context...");
   // 2. Get full thread history for context
   const messages = await getThreadMessages(from);
 
+  console.log({ messages });
   // 3. Call mesh API with full history
   const response = await fetch(
     getMeshBaseUrl(env) +
@@ -99,6 +104,8 @@ export async function generateResponse(
       }),
     },
   );
+
+  console.log("Mesh API response:", response);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -166,6 +173,8 @@ export async function generateResponse(
       if (collectedParts.length > 0) {
         await appendAssistantMessage(from, collectedParts);
       }
+
+      console.log("Appending assistant message to thread...");
 
       // Send WhatsApp response with text content
       if (textContent) {

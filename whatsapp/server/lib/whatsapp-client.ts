@@ -1,6 +1,8 @@
 import { env } from "../env";
 
 const BASE_URL = "https://graph.facebook.com/v23.0";
+const CTA_HEADER_IMAGE_URL =
+  "https://assets.decocache.com/decocms/8c4da0ff-9be6-4aa3-ad53-895f87756911/blog1.png";
 
 export interface WhatsAppConfig {
   accessToken: string;
@@ -236,6 +238,12 @@ export class WhatsAppAPIClient {
         type: "interactive",
         interactive: {
           type: "cta_url",
+          header: {
+            type: "image",
+            image: {
+              link: CTA_HEADER_IMAGE_URL,
+            },
+          },
           body: {
             text,
           },

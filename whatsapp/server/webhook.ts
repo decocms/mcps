@@ -145,8 +145,8 @@ async function handleVerifyCode({
     phoneNumberId,
     to: from,
     url: redirectUrl.toString(),
-    text: "Click here to connect Deco Mesh to WhatsApp",
-    cta_display_text: "Connect",
+    text: "Just a few more steps.",
+    cta_display_text: "Head to Mesh",
   });
 }
 
