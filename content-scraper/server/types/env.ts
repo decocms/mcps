@@ -7,7 +7,7 @@ import { z } from "zod";
 export const StateSchema = z.object({
   n8nWebhookUrl: z.string().describe("URL do webhook N8N para scraping"),
   urlFields: z.object({
-    urls: z.array(z.string()).describe("URLs to scrape content from"),
+    urls: z.string().describe("URLs to scrape content from (comma-separated)"),
   }),
 });
 
