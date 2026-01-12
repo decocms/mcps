@@ -168,6 +168,10 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
       message: "You are not authorized to use this bot",
     });
   }
+
+  if (text.includes("[VERIFY_CODE]") && !config.complete) {
+    return await handleVerifyCode({ from, phoneNumberId, text });
+  }
   const thread = await appendUserMessage(from, text);
 
   publishEvent({
@@ -184,8 +188,4 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
       showTypingIndicator: true,
     });
   });
-
-  if (text.includes("[VERIFY_CODE]") && !config.complete) {
-    await handleVerifyCode({ from, phoneNumberId, text });
-  }
 }
