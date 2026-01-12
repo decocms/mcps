@@ -15,7 +15,7 @@ export const scrapeContentTool = (env: Env) =>
       "Scrape content from a URL using the n8n workflow. " +
       "Extracts and processes web content through an automated pipeline.",
     inputSchema: z.object({
-      url: z.string().url().describe("The URL to scrape content from"),
+      urls: z.array(z.string()).describe("URLs to scrape content from"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -26,10 +26,14 @@ export const scrapeContentTool = (env: Env) =>
       try {
         const n8nWebhookUrl =
           env.MESH_REQUEST_CONTEXT?.state?.n8nWebhookUrl ?? "";
-        const url = new URL(n8nWebhookUrl);
-        url.searchParams.set("url", input.url);
 
-        const response = await fetch(url.toString());
+        const response = await fetch(n8nWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ urls: input.urls }),
+        });
 
         if (!response.ok) {
           return {
