@@ -20,9 +20,9 @@ interface WorkflowEvent {
 }
 
 export const WORKFLOW_EVENTS = [
-  "SELF::workflow.execution.created",
-  "SELF::workflow.step.execute",
-  "SELF::workflow.step.completed",
+  "workflow.execution.created",
+  "workflow.step.execute",
+  "workflow.step.completed",
 ] as const;
 
 /**
