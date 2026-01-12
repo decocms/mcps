@@ -89,7 +89,7 @@ export async function generateResponse(
         model: {
           connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER.value,
           id:
-            env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL.value ??
+            env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL.value.id ??
             DEFAULT_LANGUAGE_MODEL,
         },
         gateway: {

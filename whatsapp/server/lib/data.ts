@@ -51,11 +51,10 @@ export async function readAndDeleteAuthToken(
   return phone;
 }
 
-// Access token (long-lived, for session) - 30 day TTL
 export async function saveAccessToken(token: string, phone: string) {
   const kv = getKvStore();
   await kv.set(`whatsapp:access_token:${token}`, phone, {
-    ex: 60 * 60 * 24 * 30,
+    ex: 60,
   });
 }
 
