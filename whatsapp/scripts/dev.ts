@@ -26,7 +26,7 @@ const colors = {
 
 const c = colors;
 
-function printBanner() {
+function _printBanner() {
   console.log(`
 ${c.green}${c.bold}
   ╦ ╦┬ ┬┌─┐┌┬┐┌─┐╔═╗┌─┐┌─┐  ╔╦╗╔═╗╔═╗
@@ -63,7 +63,7 @@ async function main() {
   process.on("SIGTERM", cleanup);
 
   try {
-    printBanner();
+    // printBanner();
 
     // Keep the process running
     await serverProcess.exited;

@@ -27,8 +27,17 @@ import {
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
-  LLM: BindingOf("@deco/llm"),
-  AGENT: BindingOf("@deco/agent"),
+  MODEL_PROVIDER: BindingOf("@deco/llm"),
+  AGENT: BindingOf("@deco/agent").describe("Toolset, resources and prompts."),
+  LANGUAGE_MODEL: z.object({
+    __type: z.literal("@deco/language-model"),
+    value: z
+      .object({
+        id: z.string(),
+      })
+      .loose()
+      .describe("The language model to be used."),
+  }),
 });
 
 export type RuntimeEnv = DefaultEnv<typeof StateSchema, Registry>;
@@ -109,16 +118,9 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
  * and delegates MCP requests to the runtime
  */
 serve(async (req, env, ctx) => {
-  // console.time("fetch");
   const response = await app.fetch(req, env, ctx);
   if (response.status === 404) {
-    // console.timeEnd("fetch");
-    // console.time("mcpRuntime.fetch");
     return mcpRuntime.fetch(req, env, ctx);
-    // .finally(() => {
-    //   // console.timeEnd("mcpRuntime.fetch");
-    // });
   }
-  // console.timeEnd("fetch");
   return response;
 });

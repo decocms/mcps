@@ -41,7 +41,7 @@ const streamEventSchema = jsonSchema<{
   required: ["type"],
 });
 
-const MODEL_ID = "anthropic/claude-4.5-sonnet"; // TODO: Get from environment variable
+const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-4.5-sonnet";
 
 const getMeshBaseUrl = (_env: RuntimeEnv) => {
   // return env.MESH_BASE_URL;
@@ -87,8 +87,10 @@ export async function generateResponse(
       },
       body: JSON.stringify({
         model: {
-          connectionId: env.MESH_REQUEST_CONTEXT.state.LLM.value,
-          id: MODEL_ID,
+          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER.value,
+          id:
+            env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL.value ??
+            DEFAULT_LANGUAGE_MODEL,
         },
         gateway: {
           id: env.MESH_REQUEST_CONTEXT.state.AGENT.value,
