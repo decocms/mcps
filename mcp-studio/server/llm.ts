@@ -1,12 +1,39 @@
 import { jsonSchema, parseJsonEventStream } from "ai";
-import { RuntimeEnv } from "./main";
-import { getWhatsappClient } from "./lib/whatsapp-client";
-import {
-  appendAssistantMessage,
-  appendUserMessage,
-  getThreadMessages,
-  type MessagePart,
-} from "./lib/thread";
+import { Env } from "./types/env";
+
+export interface TextPart {
+  type: "text";
+  text: string;
+}
+
+export interface ToolCallPart {
+  type: "tool-call";
+  toolCallId: string;
+  toolName: string;
+  input: string; // JSON string
+}
+
+export interface ToolResultPart {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  output: unknown;
+  result: unknown;
+}
+
+export type MessagePart = TextPart | ToolCallPart | ToolResultPart;
+
+export interface ThreadMessage {
+  role: "user" | "assistant";
+  parts: MessagePart[];
+  timestamp: number;
+}
+
+export interface Thread {
+  threadId: string;
+  messages: ThreadMessage[];
+  lastActivity: number;
+}
 
 // Schema for the AI SDK data stream events including tool calls and results
 const streamEventSchema = jsonSchema<{
@@ -43,43 +70,21 @@ const streamEventSchema = jsonSchema<{
 
 const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-4.5-sonnet";
 
-const getMeshBaseUrl = (_env: RuntimeEnv) => {
-  // return env.MESH_BASE_URL;
-  return "https://mesh-admin.decocms.com"; // quick fix attempt haha !!!!!!!
-};
+const systemPrompt = `
+If the user says you are dumb because you dont remember something, explain that you currently cannot remember tool calls, only text.
+`;
 
-export async function generateResponse(
-  env: RuntimeEnv,
-  text: string,
-  from: string,
-  phoneNumberId: string,
-  messageId: string,
+export async function generateResponseForEvent(
+  env: Env,
+  messages: ThreadMessage[],
+  subject: string,
 ) {
-  console.log("Generating response...");
-  const client = getWhatsappClient();
-  client
-    .markMessageAsRead({
-      phoneNumberId,
-      messageId: messageId,
-    })
-    .catch((error) => {
-      console.error("[WhatsApp] Error marking message as read:", error);
-    });
-
-  console.log("Appending user message to thread...");
-  // 1. Persist user message to thread
-  await appendUserMessage(from, text).catch((error) => {
-    console.error("[WhatsApp] Error appending user message to thread:", error);
-  });
-
-  console.log("Getting full thread history for context...");
-  // 2. Get full thread history for context
-  const messages = await getThreadMessages(from);
-
-  console.log({ messages });
-  // 3. Call mesh API with full history
+  const organizationId = env.MESH_REQUEST_CONTEXT.organizationId;
+  if (!organizationId) {
+    throw new Error("No organizationId found");
+  }
   const response = await fetch(
-    getMeshBaseUrl(env) +
+    (env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL) +
       "/api/" +
       env.MESH_REQUEST_CONTEXT.organizationId +
       "/models/stream",
@@ -100,12 +105,16 @@ export async function generateResponse(
         gateway: {
           id: env.MESH_REQUEST_CONTEXT.state.AGENT.value,
         },
-        messages,
+        messages: [
+          {
+            role: "system",
+            parts: [{ type: "text", text: systemPrompt }],
+          },
+          ...messages,
+        ],
       }),
     },
   );
-
-  console.log("Mesh API response:", response);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -163,34 +172,65 @@ export async function generateResponse(
         output: event.value.output,
         result: event.value.result,
       });
-    } else if (type === "finish") {
-      // Add text part at the beginning if any text was collected
+    } else if (type === "text-end") {
       if (textContent) {
         collectedParts.unshift({ type: "text", text: textContent });
       }
-
-      // Persist assistant message with all collected parts
-      if (collectedParts.length > 0) {
-        await appendAssistantMessage(from, collectedParts);
-      }
-
-      console.log("Appending assistant message to thread...");
-
-      // Send WhatsApp response with text content
-      if (textContent) {
-        client
-          .sendTextMessage({
-            to: from,
-            phoneNumberId,
-            message: textContent,
-          })
-          .catch((error) => {
-            console.error("[WhatsApp] Error sending text message:", error);
-          });
-      }
-
-      // Exit the loop after handling finish event
+      publishEvent({
+        data: {
+          text: textContent,
+        },
+        organizationId,
+        type: "operator.text.completed",
+        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL,
+        subject,
+      });
+      textContent = "";
+    } else if (type === "finish") {
+      publishEvent({
+        data: {
+          messageParts: collectedParts,
+        },
+        organizationId,
+        type: "operator.generation.completed",
+        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL,
+        subject,
+      });
       break;
     }
+  }
+}
+
+export async function publishEvent({
+  data,
+  organizationId,
+  type,
+  meshUrl,
+  subject,
+}: {
+  type: string;
+  data: unknown;
+  organizationId: string;
+  meshUrl: string;
+  subject?: string;
+}) {
+  const url = new URL(
+    `${meshUrl}/org/${organizationId}/events/${type}?subject=${subject}`,
+  );
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `Failed to publish event to mesh (${response.status}): ${
+        errorText || response.statusText
+      }`,
+    );
   }
 }

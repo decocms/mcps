@@ -3,6 +3,8 @@ import { getWhatsappClient } from "./lib/whatsapp-client";
 import { WebhookPayload } from "./lib/types";
 import { readCallbackUrl, readSenderConfig, saveAuthToken } from "./lib/data";
 import { env } from "./env";
+import { FIREABLE_EVENT_TYPES } from "./main";
+import { appendUserMessage } from "./lib/thread";
 
 /**
  * Verifies the webhook signature from Meta using HMAC-SHA256.
@@ -153,24 +155,9 @@ async function handleVerifyCode({
 export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
   if (!isTextMessage(payload)) return;
   const { from, phoneNumberId, text } = getTextMessage(payload);
-  const whatsappClient = getWhatsappClient();
   const messageId = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
   if (!messageId) {
     throw new Error("Message ID is required");
-  }
-
-  whatsappClient
-    .markMessageAsRead({
-      phoneNumberId,
-      messageId,
-      showTypingIndicator: true,
-    })
-    .catch((error) => {
-      console.error("[WhatsApp] Error marking message as read:", error);
-    });
-
-  if (text.includes("[VERIFY_CODE]")) {
-    return handleVerifyCode({ from, phoneNumberId, text });
   }
 
   const config = await readSenderConfig(from);
@@ -181,10 +168,24 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
       message: "You are not authorized to use this bot",
     });
   }
+  const thread = await appendUserMessage(from, text);
 
-  await publishEvent({
-    type: "waba.text.message",
-    data: payload,
+  publishEvent({
+    type: FIREABLE_EVENT_TYPES.OPERATOR_GENERATE,
+    data: {
+      messages: thread.messages.slice(-10),
+    },
+    subject: from,
     organizationId: config.organizationId,
+  }).finally(() => {
+    getWhatsappClient().markMessageAsRead({
+      phoneNumberId,
+      messageId,
+      showTypingIndicator: true,
+    });
   });
+
+  if (text.includes("[VERIFY_CODE]") && !config.complete) {
+    await handleVerifyCode({ from, phoneNumberId, text });
+  }
 }

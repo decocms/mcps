@@ -12,21 +12,48 @@ import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
+import { generateResponseForEvent, ThreadMessage } from "./llm.ts";
 
 export { StateSchema };
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   events: {
     handlers: {
-      events: [...WORKFLOW_EVENTS] as string[],
-      handler: async ({ events }, env) => {
-        try {
-          handleWorkflowEvents(events, env as unknown as Env);
+      SELF: {
+        events: [...WORKFLOW_EVENTS] as string[],
+        handler: async ({ events }, env) => {
+          try {
+            handleWorkflowEvents(events, env as unknown as Env);
+            return { success: true };
+          } catch (error) {
+            console.error(`[MAIN] Error handling events: ${error}`);
+            return { success: false };
+          }
+        },
+      },
+      EVENT_BUS: {
+        handler: async ({ events }, env) => {
+          try {
+            for (const event of events) {
+              if (event.type === "public:operator.generate") {
+                const { messages } = event.data as {
+                  messages: ThreadMessage[];
+                };
+                if (!messages) {
+                  console.error("[Mesh Operator] No messages found in event");
+                  continue;
+                }
+                const subject = event.subject ?? crypto.randomUUID();
+                generateResponseForEvent(env, messages, subject);
+              }
+            }
+          } catch (error) {
+            console.error("[WhatsApp] Error handling events:", error);
+            return { success: false };
+          }
           return { success: true };
-        } catch (error) {
-          console.error(`[MAIN] Error handling events: ${error}`);
-          return { success: false };
-        }
+        },
+        events: ["public:operator.generate"],
       },
     },
   },

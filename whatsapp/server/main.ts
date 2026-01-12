@@ -9,8 +9,6 @@
  */
 import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import type { WebhookPayload } from "./lib/types.ts";
-import { handleTextMessageEvent } from "./events.ts";
 import { z } from "zod";
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { tools } from "./tools/index.ts";
@@ -24,23 +22,27 @@ import {
   saveAccessToken,
   readPhoneFromAccessToken,
 } from "./lib/data.ts";
+import { getWhatsappClient } from "./lib/whatsapp-client.ts";
+import { appendAssistantMessage, MessagePart } from "./lib/thread.ts";
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
-  MODEL_PROVIDER: BindingOf("@deco/llm"),
-  AGENT: BindingOf("@deco/agent").describe("Toolset, resources and prompts."),
-  LANGUAGE_MODEL: z.object({
-    __type: z.literal("@deco/language-model"),
-    value: z
-      .object({
-        id: z.string(),
-      })
-      .loose()
-      .describe("The language model to be used."),
-  }),
 });
 
 export type RuntimeEnv = DefaultEnv<typeof StateSchema, Registry>;
+
+export const SUBSCRIBED_EVENT_TYPES = {
+  OPERATOR_TEXT_COMPLETED: "public:operator.text.completed",
+  OPERATOR_GENERATION_COMPLETED: "public:operator.generation.completed",
+};
+
+export const FIREABLE_EVENT_TYPES = {
+  OPERATOR_GENERATE: "operator.generate",
+};
+
+const ALL_SUBSCRIBED_EVENT_TYPES = Object.values(SUBSCRIBED_EVENT_TYPES);
+
+const LAZY_DEFAULT_PHONE_NUMBER_ID = "957005920822800"; // lmao
 
 const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
   tools,
@@ -70,26 +72,53 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
   events: {
     handlers: {
       EVENT_BUS: {
-        handler: async ({ events }, runtimeEnv) => {
-          await Promise.all(
-            events.map(async (event) => {
-              if (event.type === "public:waba.text.message") {
-                await handleTextMessageEvent(
-                  runtimeEnv,
-                  event as { data: WebhookPayload; type: string },
-                );
+        handler: async ({ events }) => {
+          for (const event of events) {
+            if (event.type === SUBSCRIBED_EVENT_TYPES.OPERATOR_TEXT_COMPLETED) {
+              try {
+                const { text } = event.data as { text: string };
+                const subject = event.subject;
+                if (!subject) {
+                  console.error("No subject found in event");
+                  continue;
+                }
+                getWhatsappClient().sendTextMessage({
+                  phoneNumberId:
+                    env.PHONE_NUMBER_ID ?? LAZY_DEFAULT_PHONE_NUMBER_ID,
+                  to: subject,
+                  message: text,
+                });
+              } catch (error) {
+                console.error("Error sending text message:", error);
               }
-            }),
-          );
+            } else if (
+              event.type ===
+              SUBSCRIBED_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED
+            ) {
+              try {
+                const { messageParts } = event.data as {
+                  messageParts: MessagePart[];
+                };
+                const subject = event.subject;
+                if (!subject) {
+                  console.error("No subject found in event");
+                  continue;
+                }
+                await appendAssistantMessage(subject, messageParts);
+              } catch (error) {
+                console.error("Error appending assistant message:", error);
+              }
+            }
+          }
           return { success: true };
         },
-        events: ["public:waba.text.message"],
+        events: ALL_SUBSCRIBED_EVENT_TYPES,
       },
       SELF: {
         handler: async () => {
           return { success: true };
         },
-        events: ["public:waba.text.message"],
+        events: ALL_SUBSCRIBED_EVENT_TYPES,
       },
     },
   },
@@ -98,9 +127,11 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
     state: StateSchema,
     onChange: async (env) => {
       const { organizationId, authorization } = env.MESH_REQUEST_CONTEXT;
+      if (!organizationId) {
+        console.error("No organizationId found");
+        return;
+      }
       if (!organizationId || !authorization) return;
-
-      // authorization is now the opaque access_token, resolve to phone
       const phone = await readPhoneFromAccessToken(authorization);
       if (!phone) return;
 
