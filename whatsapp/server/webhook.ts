@@ -159,7 +159,9 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
   if (!messageId) {
     throw new Error("Message ID is required");
   }
-
+  if (text.includes("[VERIFY_CODE]")) {
+    return await handleVerifyCode({ from, phoneNumberId, text });
+  }
   const config = await readSenderConfig(from);
   if (!config) {
     return getWhatsappClient().sendTextMessage({
@@ -169,9 +171,6 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
     });
   }
 
-  if (text.includes("[VERIFY_CODE]") && !config.complete) {
-    return await handleVerifyCode({ from, phoneNumberId, text });
-  }
   const thread = await appendUserMessage(from, text);
 
   publishEvent({
