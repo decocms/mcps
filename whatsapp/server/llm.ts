@@ -2,8 +2,8 @@ import { jsonSchema, parseJsonEventStream } from "ai";
 import { RuntimeEnv } from "./main";
 import { getWhatsappClient } from "./lib/whatsapp-client";
 import {
-  appendUserMessage,
   appendAssistantMessage,
+  appendUserMessage,
   getThreadMessages,
   type MessagePart,
 } from "./lib/thread";
@@ -43,6 +43,11 @@ const streamEventSchema = jsonSchema<{
 
 const MODEL_ID = "anthropic/claude-4.5-sonnet"; // TODO: Get from environment variable
 
+const getMeshBaseUrl = (_env: RuntimeEnv) => {
+  // return env.MESH_BASE_URL;
+  return "https://mesh-admin.decocms.com"; // quick fix attempt haha !!!!!!!
+};
+
 export async function generateResponse(
   env: RuntimeEnv,
   text: string,
@@ -59,7 +64,7 @@ export async function generateResponse(
 
   // 3. Call mesh API with full history
   const response = await fetch(
-    env.MESH_BASE_URL +
+    getMeshBaseUrl(env) +
       "/api/" +
       env.MESH_REQUEST_CONTEXT.organizationId +
       "/models/stream",
@@ -86,7 +91,9 @@ export async function generateResponse(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
+      `Mesh API error (${response.status}): ${
+        errorText || response.statusText
+      }`,
     );
   }
 
