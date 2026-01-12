@@ -52,18 +52,10 @@ async function main() {
   await Bun.sleep(1000);
   console.log(`  ${c.dim}Server started on port ${PORT}${c.reset}\n`);
 
-  // Start Deco Link
-  const decoLinkProcess = spawn({
-    cmd: ["deco", "link", "-p", String(PORT)],
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
   // Handle cleanup
   const cleanup = () => {
     console.log(`\n  ${c.dim}Shutting down...${c.reset}\n`);
     serverProcess.kill();
-    decoLinkProcess.kill();
     process.exit(0);
   };
 
@@ -71,11 +63,10 @@ async function main() {
   process.on("SIGTERM", cleanup);
 
   try {
-    console.clear();
     printBanner();
 
     // Keep the process running
-    await Promise.all([serverProcess.exited, decoLinkProcess.exited]);
+    await serverProcess.exited;
   } catch (error) {
     console.error(
       `\n  ${c.bold}${c.yellow}⚠${c.reset} ${error instanceof Error ? error.message : error}`,

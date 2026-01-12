@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run scripts/dev.ts",
-    "dev:server": "PORT=8003 bun run --hot server/main.ts",
+    "dev:link": "deco link -p 8003 -- PORT=8003 bun run dev",
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server"

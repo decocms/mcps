@@ -41,7 +41,7 @@ const streamEventSchema = jsonSchema<{
   required: ["type"],
 });
 
-const MODEL_ID = "anthropic/claude-3.5-haiku"; // TODO: Get from environment variable
+const MODEL_ID = "anthropic/claude-4.5-sonnet"; // TODO: Get from environment variable
 
 export async function generateResponse(
   env: RuntimeEnv,
@@ -76,7 +76,7 @@ export async function generateResponse(
           id: MODEL_ID,
         },
         gateway: {
-          id: env.MESH_REQUEST_CONTEXT.state.AGENT_ID,
+          id: env.MESH_REQUEST_CONTEXT.state.AGENT.value,
         },
         messages,
       }),
@@ -109,7 +109,6 @@ export async function generateResponse(
     const { done, value: event } = await reader.read();
     if (done) break;
     if (!event.success) continue;
-    console.log({ eventType: event.value.type });
 
     const { type } = event.value;
 
@@ -138,7 +137,7 @@ export async function generateResponse(
         output: event.value.output,
         result: event.value.result,
       });
-    } else if (type === "finish" || type === "text-end") {
+    } else if (type === "finish") {
       // Add text part at the beginning if any text was collected
       if (textContent) {
         collectedParts.unshift({ type: "text", text: textContent });
@@ -162,6 +161,9 @@ export async function generateResponse(
             console.error("[WhatsApp] Error sending text message:", error);
           });
       }
+
+      // Exit the loop after handling finish event
+      break;
     }
   }
 }

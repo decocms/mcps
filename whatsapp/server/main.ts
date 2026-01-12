@@ -28,11 +28,7 @@ import {
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
   LLM: BindingOf("@deco/llm"),
-  AGENT_ID: z
-    .string()
-    .describe(
-      "The ID of the agent that will attend when you message DecoCMS on WhatsApp",
-    ),
+  AGENT: BindingOf("@deco/agent"),
 });
 
 export type RuntimeEnv = DefaultEnv<typeof StateSchema, Registry>;
@@ -113,9 +109,16 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
  * and delegates MCP requests to the runtime
  */
 serve(async (req, env, ctx) => {
+  // console.time("fetch");
   const response = await app.fetch(req, env, ctx);
   if (response.status === 404) {
+    // console.timeEnd("fetch");
+    // console.time("mcpRuntime.fetch");
     return mcpRuntime.fetch(req, env, ctx);
+    // .finally(() => {
+    //   // console.timeEnd("mcpRuntime.fetch");
+    // });
   }
+  // console.timeEnd("fetch");
   return response;
 });
