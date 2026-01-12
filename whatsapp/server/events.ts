@@ -1,5 +1,4 @@
 import { env } from "./env";
-import { getWhatsappClient } from "./lib/whatsapp-client";
 import type { WebhookPayload } from "./lib/types";
 import { generateResponse } from "./llm";
 import type { RuntimeEnv } from "./main";
@@ -15,20 +14,11 @@ export async function handleTextMessageEvent(
     const from = message?.from;
     const text = message?.text?.body;
     const phoneNumberId = entry?.changes?.[0]?.value?.metadata?.phone_number_id;
-    if (!from || !text || !phoneNumberId) {
+    const messageId = message?.id;
+    if (!from || !text || !phoneNumberId || !messageId) {
       throw new Error("Invalid message data");
     }
-    const shouldUseLLM = text.startsWith("/llm");
-    let response = `Successfully received the event: ${event.type}`;
-    if (shouldUseLLM) {
-      return generateResponse(env, text.slice(4), from, phoneNumberId);
-    }
-
-    await getWhatsappClient().sendTextMessage({
-      to: from,
-      phoneNumberId,
-      message: response,
-    });
+    return generateResponse(env, text, from, phoneNumberId, messageId);
   } catch (error) {
     console.error("[WhatsApp] Webhook processing error:", error);
   }

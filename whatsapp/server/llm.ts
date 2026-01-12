@@ -53,8 +53,18 @@ export async function generateResponse(
   text: string,
   from: string,
   phoneNumberId: string,
+  messageId: string,
 ) {
   console.log("Generating response...");
+  const client = getWhatsappClient();
+  client
+    .markMessageAsRead({
+      phoneNumberId,
+      messageId: messageId,
+    })
+    .catch((error) => {
+      console.error("[WhatsApp] Error marking message as read:", error);
+    });
 
   // 1. Persist user message to thread
   await appendUserMessage(from, text);
@@ -157,7 +167,6 @@ export async function generateResponse(
 
       // Send WhatsApp response with text content
       if (textContent) {
-        const client = getWhatsappClient();
         client
           .sendTextMessage({
             to: from,
