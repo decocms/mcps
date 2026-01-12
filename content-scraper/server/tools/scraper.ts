@@ -24,11 +24,7 @@ export const scrapeContentTool = (env: Env) =>
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
         const n8nWebhookUrl = state?.n8nWebhookUrl ?? "";
-        const urlsString = state?.urlFields?.urls ?? "";
-        const urls = urlsString
-          .split(",")
-          .map((url) => url.trim())
-          .filter((url) => url.length > 0);
+        const urls = state?.urlFields?.urls ?? [];
 
         const response = await fetch(n8nWebhookUrl, {
           method: "POST",
