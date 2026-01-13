@@ -48,6 +48,11 @@ export const createSetupDatabaseTool = (env: Env) =>
         await runSQL(env, discordQueries.messages.indexes);
         results.push("✓ discord_message table created");
 
+        // Run migrations for existing tables (add new columns)
+        console.log("[Setup] Running migrations...");
+        await runSQL(env, discordQueries.messages.migration);
+        results.push("✓ discord_message migrations applied");
+
         // Create reactions table (depends on messages)
         console.log("[Setup] Creating discord_message_reaction table...");
         await runSQL(env, discordQueries.reactions.idempotent);

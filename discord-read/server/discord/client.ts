@@ -20,7 +20,13 @@ import {
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
-import { indexMessage, processCommand } from "./handlers/messageHandler.ts";
+import {
+  indexMessage,
+  processCommand,
+  handleMessageDelete,
+  handleMessageDeleteBulk,
+  handleMessageUpdate,
+} from "./handlers/messageHandler.ts";
 import {
   handleReactionAdd,
   handleReactionRemove,
@@ -336,6 +342,35 @@ function registerEventHandlers(client: Client, env: Env): void {
       }
     },
   );
+
+  // Message delete event
+  client.on("messageDelete", async (message) => {
+    if (!message.guild) return;
+    try {
+      await handleMessageDelete(message);
+    } catch (error) {
+      console.error("[Discord] Error handling message delete:", error);
+    }
+  });
+
+  // Bulk message delete event
+  client.on("messageDeleteBulk", async (messages) => {
+    try {
+      await handleMessageDeleteBulk(messages);
+    } catch (error) {
+      console.error("[Discord] Error handling bulk message delete:", error);
+    }
+  });
+
+  // Message update/edit event
+  client.on("messageUpdate", async (oldMessage, newMessage) => {
+    if (!newMessage.guild) return;
+    try {
+      await handleMessageUpdate(oldMessage, newMessage);
+    } catch (error) {
+      console.error("[Discord] Error handling message update:", error);
+    }
+  });
 
   // Error handling
   client.on("error", (error) => {

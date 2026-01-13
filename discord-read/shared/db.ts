@@ -95,6 +95,11 @@ export async function getGuild(id: string): Promise<GuildData | null> {
 // Message Operations
 // ============================================================================
 
+export interface MessageEditHistoryEntry {
+  content: string | null;
+  edited_at: string;
+}
+
 export interface MessageData {
   id: string;
   guild_id: string;
@@ -111,6 +116,10 @@ export interface MessageData {
   type: number;
   pinned: boolean;
   tts: boolean;
+  flags?: number;
+  webhook_id?: string | null;
+  application_id?: string | null;
+  interaction?: unknown | null;
   mention_everyone: boolean;
   mention_users?: string[] | null;
   mention_roles?: string[] | null;
@@ -120,6 +129,13 @@ export interface MessageData {
   stickers?: unknown | null;
   components?: unknown | null;
   reply_to_id?: string | null;
+  message_reference?: unknown | null;
+  edit_history?: MessageEditHistoryEntry[] | null;
+  deleted?: boolean;
+  deleted_at?: Date | null;
+  deleted_by_id?: string | null;
+  deleted_by_username?: string | null;
+  bulk_deleted?: boolean;
   created_at: Date;
   edited_at?: Date | null;
 }
@@ -129,11 +145,14 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
     `INSERT INTO discord_message (
       id, guild_id, channel_id, channel_name, thread_id,
       author_id, author_username, author_global_name, author_avatar, author_bot,
-      content, content_clean, type, pinned, tts,
+      content, content_clean, type, pinned, tts, flags,
+      webhook_id, application_id, interaction,
       mention_everyone, mention_users, mention_roles, mention_channels,
       attachments, embeds, stickers, components,
-      reply_to_id, created_at, edited_at, indexed_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      reply_to_id, message_reference, edit_history,
+      deleted, deleted_at, deleted_by_id, deleted_by_username, bulk_deleted,
+      created_at, edited_at, indexed_at, last_updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ON CONFLICT (id) DO UPDATE SET
       content = EXCLUDED.content,
       content_clean = EXCLUDED.content_clean,
@@ -141,7 +160,13 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       edited_at = EXCLUDED.edited_at,
       attachments = EXCLUDED.attachments,
       embeds = EXCLUDED.embeds,
-      components = EXCLUDED.components`,
+      components = EXCLUDED.components,
+      flags = EXCLUDED.flags,
+      edit_history = COALESCE(
+        discord_message.edit_history || EXCLUDED.edit_history,
+        EXCLUDED.edit_history
+      ),
+      last_updated_at = NOW()`,
     [
       msg.id,
       msg.guild_id,
@@ -158,6 +183,10 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       msg.type,
       msg.pinned,
       msg.tts,
+      msg.flags || 0,
+      msg.webhook_id || null,
+      msg.application_id || null,
+      msg.interaction ? JSON.stringify(msg.interaction) : null,
       msg.mention_everyone,
       msg.mention_users ? JSON.stringify(msg.mention_users) : null,
       msg.mention_roles ? JSON.stringify(msg.mention_roles) : null,
@@ -167,6 +196,13 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       msg.stickers ? JSON.stringify(msg.stickers) : null,
       msg.components ? JSON.stringify(msg.components) : null,
       msg.reply_to_id || null,
+      msg.message_reference ? JSON.stringify(msg.message_reference) : null,
+      msg.edit_history ? JSON.stringify(msg.edit_history) : null,
+      msg.deleted || false,
+      msg.deleted_at?.toISOString() || null,
+      msg.deleted_by_id || null,
+      msg.deleted_by_username || null,
+      msg.bulk_deleted || false,
       msg.created_at.toISOString(),
       msg.edited_at?.toISOString() || null,
     ],
@@ -186,7 +222,7 @@ export async function getRecentMessages(
   limit: number = 10,
   beforeId?: string,
 ): Promise<MessageData[]> {
-  let sql = `SELECT * FROM discord_message WHERE channel_id = ?`;
+  let sql = `SELECT * FROM discord_message WHERE channel_id = ? AND deleted = FALSE`;
   const params: unknown[] = [channelId];
 
   if (beforeId) {
@@ -199,6 +235,111 @@ export async function getRecentMessages(
 
   const result = await runSQL<MessageData>(sql, params);
   return result.reverse(); // Return in chronological order
+}
+
+/**
+ * Mark a message as deleted (soft delete - keeps history)
+ */
+export async function markMessageDeleted(
+  messageId: string,
+  deletedById?: string | null,
+  deletedByUsername?: string | null,
+  bulkDeleted: boolean = false,
+): Promise<void> {
+  await runSQL(
+    `UPDATE discord_message SET
+      deleted = TRUE,
+      deleted_at = NOW(),
+      deleted_by_id = ?,
+      deleted_by_username = ?,
+      bulk_deleted = ?,
+      last_updated_at = NOW()
+    WHERE id = ?`,
+    [deletedById || null, deletedByUsername || null, bulkDeleted, messageId],
+  );
+}
+
+/**
+ * Mark multiple messages as deleted (bulk delete)
+ */
+export async function markMessagesDeleted(
+  messageIds: string[],
+  deletedById?: string | null,
+  deletedByUsername?: string | null,
+): Promise<void> {
+  if (messageIds.length === 0) return;
+
+  // Use ANY for array matching
+  await runSQL(
+    `UPDATE discord_message SET
+      deleted = TRUE,
+      deleted_at = NOW(),
+      deleted_by_id = ?,
+      deleted_by_username = ?,
+      bulk_deleted = TRUE,
+      last_updated_at = NOW()
+    WHERE id = ANY(?)`,
+    [deletedById || null, deletedByUsername || null, messageIds],
+  );
+}
+
+/**
+ * Update message content and add to edit history
+ */
+export async function updateMessageContent(
+  messageId: string,
+  newContent: string | null,
+  editedAt: Date,
+): Promise<void> {
+  // First get the current content to add to history
+  const current = await getMessage(messageId);
+  if (!current) return;
+
+  const historyEntry: MessageEditHistoryEntry = {
+    content: current.content || null,
+    edited_at: new Date().toISOString(),
+  };
+
+  // Get existing history or create new array
+  const existingHistory =
+    (current.edit_history as MessageEditHistoryEntry[]) || [];
+  const newHistory = [...existingHistory, historyEntry];
+
+  await runSQL(
+    `UPDATE discord_message SET
+      content = ?,
+      edited_at = ?,
+      edit_history = ?,
+      last_updated_at = NOW()
+    WHERE id = ?`,
+    [newContent, editedAt.toISOString(), JSON.stringify(newHistory), messageId],
+  );
+}
+
+/**
+ * Get deleted messages in a channel (for audit/moderation)
+ */
+export async function getDeletedMessages(
+  channelId: string,
+  limit: number = 50,
+): Promise<MessageData[]> {
+  return runSQL<MessageData>(
+    `SELECT * FROM discord_message 
+     WHERE channel_id = ? AND deleted = TRUE
+     ORDER BY deleted_at DESC
+     LIMIT ?`,
+    [channelId, limit],
+  );
+}
+
+/**
+ * Get message edit history
+ */
+export async function getMessageEditHistory(
+  messageId: string,
+): Promise<MessageEditHistoryEntry[]> {
+  const msg = await getMessage(messageId);
+  return (msg?.edit_history as MessageEditHistoryEntry[]) || [];
 }
 
 // ============================================================================

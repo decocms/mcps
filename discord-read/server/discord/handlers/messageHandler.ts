@@ -77,7 +77,7 @@ export async function indexMessage(message: Message): Promise<void> {
       owner_id: message.guild.ownerId,
     });
 
-    // Index the message
+    // Index the message with all available data
     await db.upsertMessage({
       id: message.id,
       guild_id: message.guild.id,
@@ -94,6 +94,17 @@ export async function indexMessage(message: Message): Promise<void> {
       type: message.type,
       pinned: message.pinned,
       tts: message.tts,
+      flags: message.flags?.bitfield || 0,
+      webhook_id: message.webhookId || null,
+      application_id: message.applicationId || null,
+      interaction: message.interaction
+        ? {
+            id: message.interaction.id,
+            type: message.interaction.type,
+            name: message.interaction.commandName,
+            user_id: message.interaction.user.id,
+          }
+        : null,
       mention_everyone: message.mentions.everyone,
       mention_users: message.mentions.users.map((u) => u.id),
       mention_roles: message.mentions.roles.map((r) => r.id),
@@ -118,6 +129,14 @@ export async function indexMessage(message: Message): Promise<void> {
       })),
       components: message.components.map((c) => c.toJSON()),
       reply_to_id: message.reference?.messageId || null,
+      message_reference: message.reference
+        ? {
+            message_id: message.reference.messageId,
+            channel_id: message.reference.channelId,
+            guild_id: message.reference.guildId,
+          }
+        : null,
+      deleted: false,
       created_at: message.createdAt,
       edited_at: message.editedAt,
     });
@@ -834,5 +853,106 @@ async function handleAgent(
         message,
         `❓ Unknown subcommand: \`${subcommand}\`\n\nUse \`${displayPrefix}agent help\` for available commands.`,
       );
+  }
+}
+
+// ============================================================================
+// Message Delete Handler
+// ============================================================================
+
+/**
+ * Handle message deletion - marks the message as deleted in the database
+ * Note: Discord doesn't always provide who deleted the message
+ */
+export async function handleMessageDelete(
+  message: Message | { id: string; guild?: { id: string } | null },
+): Promise<void> {
+  if (!message.guild) return;
+
+  console.log(`[Message] Deleted: ${message.id}`);
+
+  try {
+    const db = await import("../../../shared/db.ts");
+
+    // Mark the message as deleted (soft delete)
+    await db.markMessageDeleted(message.id);
+  } catch (error) {
+    // Log but don't throw - message might not exist in DB
+    console.log(
+      "[Message] Could not mark as deleted (may not be indexed):",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+// ============================================================================
+// Bulk Message Delete Handler
+// ============================================================================
+
+/**
+ * Handle bulk message deletion (e.g., from mod actions or prune)
+ */
+export async function handleMessageDeleteBulk(
+  messages: Map<
+    string,
+    Message | { id: string; guild?: { id: string } | null }
+  >,
+): Promise<void> {
+  const messageIds = Array.from(messages.keys());
+  if (messageIds.length === 0) return;
+
+  console.log(`[Message] Bulk deleted: ${messageIds.length} messages`);
+
+  try {
+    const db = await import("../../../shared/db.ts");
+
+    // Mark all messages as deleted with bulk_deleted flag
+    await db.markMessagesDeleted(messageIds);
+  } catch (error) {
+    console.log(
+      "[Message] Could not mark bulk deleted:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+// ============================================================================
+// Message Update Handler
+// ============================================================================
+
+/**
+ * Handle message edit - updates content and stores edit history
+ */
+export async function handleMessageUpdate(
+  oldMessage: Message | { id: string; content?: string | null },
+  newMessage:
+    | Message
+    | { id: string; content?: string | null; editedAt?: Date | null },
+): Promise<void> {
+  // Skip if no content change (could be embed update, etc.)
+  if (oldMessage.content === newMessage.content) return;
+
+  console.log(`[Message] Edited: ${newMessage.id}`);
+
+  try {
+    const db = await import("../../../shared/db.ts");
+
+    // Get editedAt from newMessage if it's a full Message object
+    const editedAt =
+      "editedAt" in newMessage && newMessage.editedAt
+        ? newMessage.editedAt
+        : new Date();
+
+    // Update the message content and add to edit history
+    await db.updateMessageContent(
+      newMessage.id,
+      newMessage.content || null,
+      editedAt,
+    );
+  } catch (error) {
+    console.log(
+      "[Message] Could not update edited message:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }

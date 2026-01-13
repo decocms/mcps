@@ -32,6 +32,12 @@ CREATE TABLE IF NOT EXISTS discord_message (
   type INTEGER NOT NULL DEFAULT 0,
   pinned BOOLEAN DEFAULT FALSE,
   tts BOOLEAN DEFAULT FALSE,
+  flags INTEGER DEFAULT 0,
+  
+  -- Webhook/Application/Interaction
+  webhook_id TEXT,
+  application_id TEXT,
+  interaction JSONB,
   
   -- Mentions
   mention_everyone BOOLEAN DEFAULT FALSE,
@@ -45,13 +51,25 @@ CREATE TABLE IF NOT EXISTS discord_message (
   stickers JSONB,
   components JSONB,
   
-  -- Reply/Thread
+  -- Reply/Thread/Reference
   reply_to_id TEXT,
+  message_reference JSONB,
+  
+  -- Edit tracking
+  edit_history JSONB,
+  
+  -- Delete tracking
+  deleted BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ,
+  deleted_by_id TEXT,
+  deleted_by_username TEXT,
+  bulk_deleted BOOLEAN DEFAULT FALSE,
   
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL,
   edited_at TIMESTAMPTZ,
-  indexed_at TIMESTAMPTZ DEFAULT NOW()
+  indexed_at TIMESTAMPTZ DEFAULT NOW(),
+  last_updated_at TIMESTAMPTZ DEFAULT NOW()
 )
 `;
 
@@ -62,6 +80,9 @@ CREATE INDEX IF NOT EXISTS idx_discord_message_author ON discord_message(author_
 CREATE INDEX IF NOT EXISTS idx_discord_message_created ON discord_message(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_discord_message_thread ON discord_message(thread_id);
 CREATE INDEX IF NOT EXISTS idx_discord_message_reply ON discord_message(reply_to_id);
+CREATE INDEX IF NOT EXISTS idx_discord_message_deleted ON discord_message(deleted) WHERE deleted = TRUE;
+CREATE INDEX IF NOT EXISTS idx_discord_message_webhook ON discord_message(webhook_id) WHERE webhook_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_discord_message_edited ON discord_message(edited_at) WHERE edited_at IS NOT NULL;
 `;
 
 // ============================================================================
@@ -228,6 +249,88 @@ CREATE INDEX IF NOT EXISTS idx_discord_command_log_started ON discord_command_lo
 `;
 
 // ============================================================================
+// Migration Query (add new columns to existing tables)
+// ============================================================================
+
+export const messagesMigrationQuery = `
+-- Add new columns if they don't exist (idempotent)
+DO $$ 
+BEGIN
+  -- Add flags column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'flags') THEN
+    ALTER TABLE discord_message ADD COLUMN flags INTEGER DEFAULT 0;
+  END IF;
+  
+  -- Add webhook_id column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'webhook_id') THEN
+    ALTER TABLE discord_message ADD COLUMN webhook_id TEXT;
+  END IF;
+  
+  -- Add application_id column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'application_id') THEN
+    ALTER TABLE discord_message ADD COLUMN application_id TEXT;
+  END IF;
+  
+  -- Add interaction column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'interaction') THEN
+    ALTER TABLE discord_message ADD COLUMN interaction JSONB;
+  END IF;
+  
+  -- Add message_reference column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'message_reference') THEN
+    ALTER TABLE discord_message ADD COLUMN message_reference JSONB;
+  END IF;
+  
+  -- Add edit_history column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'edit_history') THEN
+    ALTER TABLE discord_message ADD COLUMN edit_history JSONB;
+  END IF;
+  
+  -- Add deleted column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'deleted') THEN
+    ALTER TABLE discord_message ADD COLUMN deleted BOOLEAN DEFAULT FALSE;
+  END IF;
+  
+  -- Add deleted_at column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'deleted_at') THEN
+    ALTER TABLE discord_message ADD COLUMN deleted_at TIMESTAMPTZ;
+  END IF;
+  
+  -- Add deleted_by_id column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'deleted_by_id') THEN
+    ALTER TABLE discord_message ADD COLUMN deleted_by_id TEXT;
+  END IF;
+  
+  -- Add deleted_by_username column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'deleted_by_username') THEN
+    ALTER TABLE discord_message ADD COLUMN deleted_by_username TEXT;
+  END IF;
+  
+  -- Add bulk_deleted column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'bulk_deleted') THEN
+    ALTER TABLE discord_message ADD COLUMN bulk_deleted BOOLEAN DEFAULT FALSE;
+  END IF;
+  
+  -- Add last_updated_at column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'last_updated_at') THEN
+    ALTER TABLE discord_message ADD COLUMN last_updated_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
+END $$;
+`;
+
+// ============================================================================
 // Export All Queries
 // ============================================================================
 
@@ -235,6 +338,7 @@ export const discordQueries = {
   messages: {
     idempotent: messagesTableIdempotentQuery,
     indexes: messagesTableIndexesQuery,
+    migration: messagesMigrationQuery,
   },
   reactions: {
     idempotent: reactionsTableIdempotentQuery,
