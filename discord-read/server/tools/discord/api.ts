@@ -5,6 +5,7 @@
  */
 
 import type { Env } from "../../types/env.ts";
+import { getCurrentEnv } from "../../bot-manager.ts";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 
@@ -22,10 +23,19 @@ export async function discordAPI<T>(
   endpoint: string,
   options: DiscordAPIOptions = {},
 ): Promise<T> {
-  const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+  // Try to get token from passed env first, then fall back to global env
+  let botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
 
   if (!botToken) {
-    throw new Error("BOT_TOKEN not configured");
+    // Fallback: try to get from global env (set when Discord bot started)
+    const globalEnv = getCurrentEnv();
+    botToken = globalEnv?.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+  }
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN not configured. Make sure the Discord bot is initialized.",
+    );
   }
 
   const headers: Record<string, string> = {
