@@ -193,6 +193,91 @@ export const createGetGuildMembersTool = (env: Env) =>
   });
 
 // ============================================================================
+// Search Members by Name
+// ============================================================================
+
+export const createSearchMembersTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_SEARCH_MEMBERS",
+    description:
+      "Search guild members by username or nickname. Returns members whose username or nickname starts with the query.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        query: z
+          .string()
+          .min(1)
+          .describe("Username or nickname to search (prefix match)"),
+        limit: z
+          .number()
+          .min(1)
+          .max(1000)
+          .default(100)
+          .describe("Max members to return"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        members: z.array(
+          z.object({
+            user_id: z.string(),
+            username: z.string(),
+            global_name: z.string().nullable(),
+            nick: z.string().nullable(),
+            avatar: z.string().nullable(),
+            roles: z.array(z.string()),
+            joined_at: z.string(),
+            bot: z.boolean(),
+          }),
+        ),
+        count: z.number(),
+        query: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        query: string;
+        limit: number;
+      };
+
+      const params = new URLSearchParams();
+      params.set("query", input.query);
+      params.set("limit", String(input.limit));
+
+      const members = await discordAPI<
+        Array<{
+          user: {
+            id: string;
+            username: string;
+            global_name: string | null;
+            avatar: string | null;
+            bot?: boolean;
+          };
+          nick: string | null;
+          roles: string[];
+          joined_at: string;
+        }>
+      >(env, `/guilds/${input.guild_id}/members/search?${params.toString()}`);
+
+      return {
+        members: members.map((m) => ({
+          user_id: m.user.id,
+          username: m.user.username,
+          global_name: m.user.global_name,
+          nick: m.nick,
+          avatar: m.user.avatar,
+          roles: m.roles,
+          joined_at: m.joined_at,
+          bot: m.user.bot ?? false,
+        })),
+        count: members.length,
+        query: input.query,
+      };
+    },
+  });
+
+// ============================================================================
 // Get User (global info only)
 // ============================================================================
 
@@ -939,6 +1024,7 @@ export const discordGuildTools = [
   createGetGuildTool,
   createListBotGuildsTool,
   createGetGuildMembersTool,
+  createSearchMembersTool,
   createGetUserTool,
   createGetMemberTool,
   createGetCurrentUserTool,

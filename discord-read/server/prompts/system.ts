@@ -144,10 +144,13 @@ Before assigning or removing roles:
 | "Show user's global profile" | \`DISCORD_GET_USER\` | - |
 | "List all members" | \`DISCORD_GET_MEMBERS\` (with limit) | - |
 | "Who is online?" | \`DISCORD_GET_MEMBERS\` | - |
+| "Find user by name" | \`DISCORD_SEARCH_MEMBERS\` (query) | \`DISCORD_GET_MEMBERS\` |
+| "Search for john" | \`DISCORD_SEARCH_MEMBERS\` (query: "john") | - |
 
 **⚠️ IMPORTANT**: 
 - \`DISCORD_GET_USER\` = Global user info only (NO roles, NO nickname, NO join date)
 - \`DISCORD_GET_MEMBER\` = Server-specific info (roles, nickname, join date) - **USE THIS FOR ROLES!**
+- \`DISCORD_SEARCH_MEMBERS\` = Search by username or nickname (prefix match) - **USE THIS TO FIND USERS BY NAME!**
 
 #### **Messages**
 
