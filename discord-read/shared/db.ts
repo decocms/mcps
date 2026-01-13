@@ -105,6 +105,8 @@ export interface MessageData {
   guild_id: string;
   channel_id: string;
   channel_name?: string | null;
+  channel_type?: number | null;
+  parent_channel_id?: string | null;
   thread_id?: string | null;
   author_id: string;
   author_username: string;
@@ -143,7 +145,7 @@ export interface MessageData {
 export async function upsertMessage(msg: MessageData): Promise<void> {
   await runSQL(
     `INSERT INTO discord_message (
-      id, guild_id, channel_id, channel_name, thread_id,
+      id, guild_id, channel_id, channel_name, channel_type, parent_channel_id, thread_id,
       author_id, author_username, author_global_name, author_avatar, author_bot,
       content, content_clean, type, pinned, tts, flags,
       webhook_id, application_id, interaction,
@@ -152,7 +154,7 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       reply_to_id, message_reference, edit_history,
       deleted, deleted_at, deleted_by_id, deleted_by_username, bulk_deleted,
       created_at, edited_at, indexed_at, last_updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ON CONFLICT (id) DO UPDATE SET
       content = EXCLUDED.content,
       content_clean = EXCLUDED.content_clean,
@@ -162,6 +164,8 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       embeds = EXCLUDED.embeds,
       components = EXCLUDED.components,
       flags = EXCLUDED.flags,
+      channel_type = COALESCE(EXCLUDED.channel_type, discord_message.channel_type),
+      parent_channel_id = COALESCE(EXCLUDED.parent_channel_id, discord_message.parent_channel_id),
       edit_history = COALESCE(
         discord_message.edit_history || EXCLUDED.edit_history,
         EXCLUDED.edit_history
@@ -172,6 +176,8 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       msg.guild_id,
       msg.channel_id,
       msg.channel_name || null,
+      msg.channel_type ?? null,
+      msg.parent_channel_id || null,
       msg.thread_id || null,
       msg.author_id,
       msg.author_username,
@@ -766,3 +772,187 @@ CREATE TABLE IF NOT EXISTS guilds (
 export const guildsTableIndexesQuery = `
 CREATE INDEX IF NOT EXISTS idx_guilds_owner ON guilds(owner_id);
 `;
+
+// ============================================================================
+// Channel Operations
+// ============================================================================
+
+export interface ChannelData {
+  id: string;
+  guild_id: string;
+  name: string;
+  type: number;
+  position?: number | null;
+  parent_id?: string | null;
+  category_name?: string | null;
+  owner_id?: string | null;
+  message_count?: number | null;
+  member_count?: number | null;
+  topic?: string | null;
+  nsfw?: boolean;
+  rate_limit_per_user?: number | null;
+  archived?: boolean;
+  archived_at?: Date | null;
+  auto_archive_duration?: number | null;
+  locked?: boolean;
+  permission_overwrites?: unknown | null;
+  deleted?: boolean;
+  deleted_at?: Date | null;
+  created_at?: Date | null;
+}
+
+export async function upsertChannel(channel: ChannelData): Promise<void> {
+  await runSQL(
+    `INSERT INTO discord_channel (
+      id, guild_id, name, type, position, parent_id, category_name,
+      owner_id, message_count, member_count, topic, nsfw, rate_limit_per_user,
+      archived, archived_at, auto_archive_duration, locked,
+      permission_overwrites, deleted, deleted_at, created_at, indexed_at, last_updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      position = EXCLUDED.position,
+      parent_id = EXCLUDED.parent_id,
+      category_name = EXCLUDED.category_name,
+      message_count = EXCLUDED.message_count,
+      member_count = EXCLUDED.member_count,
+      topic = EXCLUDED.topic,
+      nsfw = EXCLUDED.nsfw,
+      archived = EXCLUDED.archived,
+      archived_at = EXCLUDED.archived_at,
+      locked = EXCLUDED.locked,
+      permission_overwrites = EXCLUDED.permission_overwrites,
+      deleted = EXCLUDED.deleted,
+      deleted_at = EXCLUDED.deleted_at,
+      last_updated_at = NOW()`,
+    [
+      channel.id,
+      channel.guild_id,
+      channel.name,
+      channel.type,
+      channel.position ?? null,
+      channel.parent_id || null,
+      channel.category_name || null,
+      channel.owner_id || null,
+      channel.message_count ?? null,
+      channel.member_count ?? null,
+      channel.topic || null,
+      channel.nsfw ?? false,
+      channel.rate_limit_per_user ?? null,
+      channel.archived ?? false,
+      channel.archived_at?.toISOString() || null,
+      channel.auto_archive_duration ?? null,
+      channel.locked ?? false,
+      channel.permission_overwrites
+        ? JSON.stringify(channel.permission_overwrites)
+        : null,
+      channel.deleted ?? false,
+      channel.deleted_at?.toISOString() || null,
+      channel.created_at?.toISOString() || null,
+    ],
+  );
+}
+
+export async function getChannel(id: string): Promise<ChannelData | null> {
+  const result = await runSQL<ChannelData>(
+    `SELECT * FROM discord_channel WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  return result[0] || null;
+}
+
+export async function markChannelDeleted(channelId: string): Promise<void> {
+  await runSQL(
+    `UPDATE discord_channel SET
+      deleted = TRUE,
+      deleted_at = NOW(),
+      last_updated_at = NOW()
+    WHERE id = ?`,
+    [channelId],
+  );
+}
+
+// ============================================================================
+// Member Operations
+// ============================================================================
+
+export interface MemberData {
+  guild_id: string;
+  user_id: string;
+  username: string;
+  global_name?: string | null;
+  avatar?: string | null;
+  bot?: boolean;
+  nickname?: string | null;
+  display_avatar?: string | null;
+  roles?: string[] | null;
+  permissions?: string | null;
+  joined_at?: Date | null;
+  left_at?: Date | null;
+  is_member?: boolean;
+  timed_out_until?: Date | null;
+}
+
+export async function upsertMember(member: MemberData): Promise<void> {
+  await runSQL(
+    `INSERT INTO discord_member (
+      guild_id, user_id, username, global_name, avatar, bot,
+      nickname, display_avatar, roles, permissions,
+      joined_at, left_at, is_member, timed_out_until,
+      indexed_at, last_updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ON CONFLICT (guild_id, user_id) DO UPDATE SET
+      username = EXCLUDED.username,
+      global_name = EXCLUDED.global_name,
+      avatar = EXCLUDED.avatar,
+      nickname = EXCLUDED.nickname,
+      display_avatar = EXCLUDED.display_avatar,
+      roles = EXCLUDED.roles,
+      permissions = EXCLUDED.permissions,
+      is_member = EXCLUDED.is_member,
+      timed_out_until = EXCLUDED.timed_out_until,
+      left_at = EXCLUDED.left_at,
+      last_updated_at = NOW()`,
+    [
+      member.guild_id,
+      member.user_id,
+      member.username,
+      member.global_name || null,
+      member.avatar || null,
+      member.bot ?? false,
+      member.nickname || null,
+      member.display_avatar || null,
+      member.roles ? JSON.stringify(member.roles) : null,
+      member.permissions || null,
+      member.joined_at?.toISOString() || null,
+      member.left_at?.toISOString() || null,
+      member.is_member ?? true,
+      member.timed_out_until?.toISOString() || null,
+    ],
+  );
+}
+
+export async function getMember(
+  guildId: string,
+  userId: string,
+): Promise<MemberData | null> {
+  const result = await runSQL<MemberData>(
+    `SELECT * FROM discord_member WHERE guild_id = ? AND user_id = ? LIMIT 1`,
+    [guildId, userId],
+  );
+  return result[0] || null;
+}
+
+export async function markMemberLeft(
+  guildId: string,
+  userId: string,
+): Promise<void> {
+  await runSQL(
+    `UPDATE discord_member SET
+      is_member = FALSE,
+      left_at = NOW(),
+      last_updated_at = NOW()
+    WHERE guild_id = ? AND user_id = ?`,
+    [guildId, userId],
+  );
+}

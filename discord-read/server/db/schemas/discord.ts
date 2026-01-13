@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS discord_message (
   guild_id TEXT NOT NULL,
   channel_id TEXT NOT NULL,
   channel_name TEXT,
+  channel_type INTEGER,
+  parent_channel_id TEXT,
   thread_id TEXT,
   
   -- Author info
@@ -83,6 +85,187 @@ CREATE INDEX IF NOT EXISTS idx_discord_message_reply ON discord_message(reply_to
 CREATE INDEX IF NOT EXISTS idx_discord_message_deleted ON discord_message(deleted) WHERE deleted = TRUE;
 CREATE INDEX IF NOT EXISTS idx_discord_message_webhook ON discord_message(webhook_id) WHERE webhook_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discord_message_edited ON discord_message(edited_at) WHERE edited_at IS NOT NULL;
+`;
+
+// ============================================================================
+// Channels/Threads Table
+// ============================================================================
+
+export const channelsTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS discord_channel (
+  id TEXT PRIMARY KEY,
+  guild_id TEXT NOT NULL,
+  
+  -- Channel info
+  name TEXT NOT NULL,
+  type INTEGER NOT NULL,
+  position INTEGER,
+  
+  -- Hierarchy
+  parent_id TEXT,
+  category_name TEXT,
+  
+  -- Thread specific
+  owner_id TEXT,
+  message_count INTEGER,
+  member_count INTEGER,
+  
+  -- Forum/Thread metadata
+  topic TEXT,
+  nsfw BOOLEAN DEFAULT FALSE,
+  rate_limit_per_user INTEGER,
+  
+  -- Archiving (for threads)
+  archived BOOLEAN DEFAULT FALSE,
+  archived_at TIMESTAMPTZ,
+  auto_archive_duration INTEGER,
+  locked BOOLEAN DEFAULT FALSE,
+  
+  -- Permissions
+  permission_overwrites JSONB,
+  
+  -- Status
+  deleted BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ,
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ,
+  indexed_at TIMESTAMPTZ DEFAULT NOW(),
+  last_updated_at TIMESTAMPTZ DEFAULT NOW()
+)
+`;
+
+export const channelsTableIndexesQuery = `
+CREATE INDEX IF NOT EXISTS idx_discord_channel_guild ON discord_channel(guild_id);
+CREATE INDEX IF NOT EXISTS idx_discord_channel_parent ON discord_channel(parent_id);
+CREATE INDEX IF NOT EXISTS idx_discord_channel_type ON discord_channel(type);
+CREATE INDEX IF NOT EXISTS idx_discord_channel_deleted ON discord_channel(deleted) WHERE deleted = TRUE;
+`;
+
+// Channel types for reference:
+// 0 = GUILD_TEXT, 1 = DM, 2 = GUILD_VOICE, 4 = GUILD_CATEGORY
+// 5 = GUILD_ANNOUNCEMENT, 10 = ANNOUNCEMENT_THREAD, 11 = PUBLIC_THREAD
+// 12 = PRIVATE_THREAD, 13 = GUILD_STAGE_VOICE, 14 = GUILD_DIRECTORY
+// 15 = GUILD_FORUM, 16 = GUILD_MEDIA
+
+// ============================================================================
+// Guild Members Table
+// ============================================================================
+
+export const membersTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS discord_member (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  
+  -- User info snapshot
+  username TEXT NOT NULL,
+  global_name TEXT,
+  avatar TEXT,
+  bot BOOLEAN DEFAULT FALSE,
+  
+  -- Member info
+  nickname TEXT,
+  display_avatar TEXT,
+  roles JSONB,
+  
+  -- Permissions
+  permissions TEXT,
+  
+  -- Status
+  joined_at TIMESTAMPTZ,
+  left_at TIMESTAMPTZ,
+  is_member BOOLEAN DEFAULT TRUE,
+  
+  -- Moderation
+  timed_out_until TIMESTAMPTZ,
+  
+  -- Timestamps
+  indexed_at TIMESTAMPTZ DEFAULT NOW(),
+  last_updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(guild_id, user_id)
+)
+`;
+
+export const membersTableIndexesQuery = `
+CREATE INDEX IF NOT EXISTS idx_discord_member_guild ON discord_member(guild_id);
+CREATE INDEX IF NOT EXISTS idx_discord_member_user ON discord_member(user_id);
+CREATE INDEX IF NOT EXISTS idx_discord_member_active ON discord_member(is_member) WHERE is_member = TRUE;
+CREATE INDEX IF NOT EXISTS idx_discord_member_joined ON discord_member(joined_at DESC);
+`;
+
+// ============================================================================
+// Voice States Table (who's in voice channels)
+// ============================================================================
+
+export const voiceStatesTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS discord_voice_state (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  guild_id TEXT NOT NULL,
+  channel_id TEXT,
+  user_id TEXT NOT NULL,
+  
+  -- State
+  session_id TEXT,
+  deaf BOOLEAN DEFAULT FALSE,
+  mute BOOLEAN DEFAULT FALSE,
+  self_deaf BOOLEAN DEFAULT FALSE,
+  self_mute BOOLEAN DEFAULT FALSE,
+  self_video BOOLEAN DEFAULT FALSE,
+  self_stream BOOLEAN DEFAULT FALSE,
+  suppress BOOLEAN DEFAULT FALSE,
+  
+  -- Timestamps
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  left_at TIMESTAMPTZ,
+  
+  -- Is currently in channel
+  active BOOLEAN DEFAULT TRUE
+)
+`;
+
+export const voiceStatesTableIndexesQuery = `
+CREATE INDEX IF NOT EXISTS idx_discord_voice_guild ON discord_voice_state(guild_id);
+CREATE INDEX IF NOT EXISTS idx_discord_voice_channel ON discord_voice_state(channel_id);
+CREATE INDEX IF NOT EXISTS idx_discord_voice_user ON discord_voice_state(user_id);
+CREATE INDEX IF NOT EXISTS idx_discord_voice_active ON discord_voice_state(active) WHERE active = TRUE;
+`;
+
+// ============================================================================
+// Audit Log Table (moderation actions)
+// ============================================================================
+
+export const auditLogTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS discord_audit_log (
+  id TEXT PRIMARY KEY,
+  guild_id TEXT NOT NULL,
+  
+  -- Action info
+  action_type INTEGER NOT NULL,
+  target_id TEXT,
+  target_type TEXT,
+  
+  -- Executor (who did it)
+  executor_id TEXT,
+  executor_username TEXT,
+  
+  -- Changes
+  changes JSONB,
+  reason TEXT,
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL,
+  indexed_at TIMESTAMPTZ DEFAULT NOW()
+)
+`;
+
+export const auditLogTableIndexesQuery = `
+CREATE INDEX IF NOT EXISTS idx_discord_audit_guild ON discord_audit_log(guild_id);
+CREATE INDEX IF NOT EXISTS idx_discord_audit_action ON discord_audit_log(action_type);
+CREATE INDEX IF NOT EXISTS idx_discord_audit_executor ON discord_audit_log(executor_id);
+CREATE INDEX IF NOT EXISTS idx_discord_audit_target ON discord_audit_log(target_id);
+CREATE INDEX IF NOT EXISTS idx_discord_audit_created ON discord_audit_log(created_at DESC);
 `;
 
 // ============================================================================
@@ -327,6 +510,18 @@ BEGIN
     WHERE table_name = 'discord_message' AND column_name = 'last_updated_at') THEN
     ALTER TABLE discord_message ADD COLUMN last_updated_at TIMESTAMPTZ DEFAULT NOW();
   END IF;
+  
+  -- Add channel_type column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'channel_type') THEN
+    ALTER TABLE discord_message ADD COLUMN channel_type INTEGER;
+  END IF;
+  
+  -- Add parent_channel_id column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'parent_channel_id') THEN
+    ALTER TABLE discord_message ADD COLUMN parent_channel_id TEXT;
+  END IF;
 END $$;
 `;
 
@@ -339,6 +534,22 @@ export const discordQueries = {
     idempotent: messagesTableIdempotentQuery,
     indexes: messagesTableIndexesQuery,
     migration: messagesMigrationQuery,
+  },
+  channels: {
+    idempotent: channelsTableIdempotentQuery,
+    indexes: channelsTableIndexesQuery,
+  },
+  members: {
+    idempotent: membersTableIdempotentQuery,
+    indexes: membersTableIndexesQuery,
+  },
+  voiceStates: {
+    idempotent: voiceStatesTableIdempotentQuery,
+    indexes: voiceStatesTableIndexesQuery,
+  },
+  auditLog: {
+    idempotent: auditLogTableIdempotentQuery,
+    indexes: auditLogTableIndexesQuery,
   },
   reactions: {
     idempotent: reactionsTableIdempotentQuery,

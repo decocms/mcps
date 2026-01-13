@@ -77,13 +77,22 @@ export async function indexMessage(message: Message): Promise<void> {
       owner_id: message.guild.ownerId,
     });
 
+    // Get channel info for type and parent
+    const channel = message.channel;
+    const isThread = channel.isThread();
+    const parentId = isThread ? channel.parentId : null;
+    const categoryId =
+      "parentId" in channel && !isThread ? channel.parentId : null;
+
     // Index the message with all available data
     await db.upsertMessage({
       id: message.id,
       guild_id: message.guild.id,
       channel_id: message.channel.id,
       channel_name: (message.channel as TextChannel).name || null,
-      thread_id: message.thread?.id || null,
+      channel_type: channel.type,
+      parent_channel_id: parentId || categoryId || null,
+      thread_id: isThread ? channel.id : message.thread?.id || null,
       author_id: message.author.id,
       author_username: message.author.username,
       author_global_name: message.author.globalName || null,

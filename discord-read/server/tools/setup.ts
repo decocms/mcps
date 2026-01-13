@@ -53,6 +53,30 @@ export const createSetupDatabaseTool = (env: Env) =>
         await runSQL(env, discordQueries.messages.migration);
         results.push("✓ discord_message migrations applied");
 
+        // Create channels table
+        console.log("[Setup] Creating discord_channel table...");
+        await runSQL(env, discordQueries.channels.idempotent);
+        await runSQL(env, discordQueries.channels.indexes);
+        results.push("✓ discord_channel table created");
+
+        // Create members table
+        console.log("[Setup] Creating discord_member table...");
+        await runSQL(env, discordQueries.members.idempotent);
+        await runSQL(env, discordQueries.members.indexes);
+        results.push("✓ discord_member table created");
+
+        // Create voice states table
+        console.log("[Setup] Creating discord_voice_state table...");
+        await runSQL(env, discordQueries.voiceStates.idempotent);
+        await runSQL(env, discordQueries.voiceStates.indexes);
+        results.push("✓ discord_voice_state table created");
+
+        // Create audit log table
+        console.log("[Setup] Creating discord_audit_log table...");
+        await runSQL(env, discordQueries.auditLog.idempotent);
+        await runSQL(env, discordQueries.auditLog.indexes);
+        results.push("✓ discord_audit_log table created");
+
         // Create reactions table (depends on messages)
         console.log("[Setup] Creating discord_message_reaction table...");
         await runSQL(env, discordQueries.reactions.idempotent);

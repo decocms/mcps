@@ -28,6 +28,18 @@ import {
   handleMessageUpdate,
 } from "./handlers/messageHandler.ts";
 import {
+  handleThreadCreate,
+  handleThreadDelete,
+  handleThreadUpdate,
+  handleChannelCreate,
+  handleChannelDelete,
+} from "./handlers/channelHandler.ts";
+import {
+  handleMemberJoin,
+  handleMemberLeave,
+  handleMemberUpdate,
+} from "./handlers/memberHandler.ts";
+import {
   handleReactionAdd,
   handleReactionRemove,
   handleReactionRemoveAll,
@@ -369,6 +381,83 @@ function registerEventHandlers(client: Client, env: Env): void {
       await handleMessageUpdate(oldMessage, newMessage);
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
+    }
+  });
+
+  // Thread create event
+  client.on("threadCreate", async (thread) => {
+    if (!thread.guild) return;
+    try {
+      await handleThreadCreate(thread);
+    } catch (error) {
+      console.error("[Discord] Error handling thread create:", error);
+    }
+  });
+
+  // Thread delete event
+  client.on("threadDelete", async (thread) => {
+    if (!thread.guild) return;
+    try {
+      await handleThreadDelete(thread);
+    } catch (error) {
+      console.error("[Discord] Error handling thread delete:", error);
+    }
+  });
+
+  // Thread update event
+  client.on("threadUpdate", async (oldThread, newThread) => {
+    if (!newThread.guild) return;
+    try {
+      await handleThreadUpdate(newThread);
+    } catch (error) {
+      console.error("[Discord] Error handling thread update:", error);
+    }
+  });
+
+  // Member join event
+  client.on("guildMemberAdd", async (member) => {
+    try {
+      await handleMemberJoin(member);
+    } catch (error) {
+      console.error("[Discord] Error handling member join:", error);
+    }
+  });
+
+  // Member leave event
+  client.on("guildMemberRemove", async (member) => {
+    try {
+      await handleMemberLeave(member);
+    } catch (error) {
+      console.error("[Discord] Error handling member leave:", error);
+    }
+  });
+
+  // Member update event
+  client.on("guildMemberUpdate", async (oldMember, newMember) => {
+    try {
+      await handleMemberUpdate(newMember);
+    } catch (error) {
+      console.error("[Discord] Error handling member update:", error);
+    }
+  });
+
+  // Channel create event
+  client.on("channelCreate", async (channel) => {
+    if (!("guild" in channel) || !channel.guild) return;
+    try {
+      await handleChannelCreate(channel);
+    } catch (error) {
+      console.error("[Discord] Error handling channel create:", error);
+    }
+  });
+
+  // Channel delete event
+  client.on("channelDelete", async (channel) => {
+    if (!("guild" in channel) || !channel.guild) return;
+    try {
+      await handleChannelDelete(channel);
+    } catch (error) {
+      console.error("[Discord] Error handling channel delete:", error);
     }
   });
 
