@@ -29,7 +29,7 @@ const runtime = withRuntime<Env>({
   },
 });
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 3000;
 
 serve(runtime.fetch);
 
