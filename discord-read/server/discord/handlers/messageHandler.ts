@@ -264,12 +264,19 @@ async function handleDefaultAgent(
     `[Agent] Processing [${channelInfo}]: "${userInput.slice(0, 50)}..."`,
   );
 
-  // Show typing indicator
-  try {
-    if ("sendTyping" in message.channel) {
-      await message.channel.sendTyping();
-    }
-  } catch {}
+  // Show typing indicator with continuous loop (Discord typing expires after ~10s)
+  let typingInterval: ReturnType<typeof setInterval> | null = null;
+  const startTyping = async () => {
+    try {
+      if ("sendTyping" in message.channel) {
+        await message.channel.sendTyping();
+      }
+    } catch {}
+  };
+
+  // Start typing immediately and keep it active every 8 seconds
+  await startTyping();
+  typingInterval = setInterval(startTyping, 8000);
 
   try {
     // Import LLM module
@@ -406,11 +413,22 @@ async function handleDefaultAgent(
         `⚠️ **Banco de dados não inicializado!**\n\n` +
           `Use o comando no Mesh: \`DISCORD_START_BOT\` ou clique em "Save" na config.`,
       );
+    } else if (errorMsg.includes("timed out")) {
+      await safeReply(
+        message,
+        `⏱️ **Timeout!** A requisição demorou muito.\n\n` +
+          `Isso pode acontecer se o modelo estiver sobrecarregado. Tente novamente.`,
+      );
     } else {
       await safeReply(
         message,
         `❌ Erro ao processar sua mensagem.\n\n\`\`\`${errorMsg}\`\`\``,
       );
+    }
+  } finally {
+    // Always stop the typing indicator
+    if (typingInterval) {
+      clearInterval(typingInterval);
     }
   }
 }
