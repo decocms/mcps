@@ -86,6 +86,10 @@ export async function generateResponse(
 
   // If Agent is configured, try with Agent first
   if (agentId) {
+    console.log(`\n🤖 [LLM] Sending message to AGENT: ${agentId}`);
+    console.log(`   Model: ${modelId}`);
+    console.log(`   Messages: ${meshMessages.length} message(s)\n`);
+
     try {
       const result = await callWithAgent(
         meshUrl,
@@ -96,19 +100,24 @@ export async function generateResponse(
         agentId,
         meshMessages,
       );
+      console.log(`✅ [LLM] Agent response received successfully`);
       return { content: result, model: modelId, usedFallback: false };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.log(`[LLM] Agent call failed: ${errorMsg}`);
-      console.log(`[LLM] Falling back to direct LLM call...`);
+      console.log(`❌ [LLM] Agent call failed: ${errorMsg}`);
+      console.log(`🔄 [LLM] Falling back to direct LLM call...`);
 
       // Fall through to direct LLM call
     }
   } else {
-    console.log(`[LLM] No Agent configured, using direct LLM call`);
+    console.log(`\n⚠️ [LLM] No Agent configured`);
   }
 
   // Fallback: Direct LLM call without Agent
+  console.log(`\n💬 [LLM] Sending message directly to LLM (no Agent/tools)`);
+  console.log(`   Model: ${modelId}`);
+  console.log(`   Messages: ${meshMessages.length} message(s)\n`);
+
   const result = await callDirectLLM(
     meshUrl,
     organizationId,
@@ -118,6 +127,7 @@ export async function generateResponse(
     meshMessages,
   );
 
+  console.log(`✅ [LLM] Direct LLM response received successfully`);
   return { content: result, model: modelId, usedFallback: true };
 }
 
