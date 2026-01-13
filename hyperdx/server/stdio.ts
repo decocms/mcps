@@ -28,6 +28,7 @@ if (!HYPERDX_API_KEY) {
   console.error("Error: HYPERDX_API_KEY environment variable is required");
   process.exit(1);
 }
+const apiKey: string = HYPERDX_API_KEY;
 
 // ============================================================================
 // MCP Server Setup
@@ -39,7 +40,7 @@ async function main() {
     version: "1.0.0",
   });
 
-  const client = createHyperDXClient({ apiKey: HYPERDX_API_KEY });
+  const client = createHyperDXClient({ apiKey });
 
   // ============================================================================
   // SEARCH_LOGS - Simple log search tool
