@@ -1,0 +1,22 @@
+{
+  "id": "direct-execution",
+  "title": "Direct Execution",
+  "description": "Skip routing, execute directly with all available tools",
+  "steps": [
+    {
+      "name": "execute",
+      "description": "Direct execution with smart model",
+      "action": {
+        "type": "llm",
+        "prompt": "@input.message",
+        "model": "smart",
+        "tools": "all",
+        "maxIterations": 30
+      },
+      "input": {
+        "message": "@input.message",
+        "history": "@input.history"
+      }
+    }
+  ]
+}

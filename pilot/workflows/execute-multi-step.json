@@ -1,0 +1,41 @@
+{
+  "id": "execute-multi-step",
+  "title": "Execute Multi-Step Task",
+  "description": "Two-phase workflow for complex tasks: FAST plans the approach, SMART executes. Use when no specific workflow matches.",
+  "steps": [
+    {
+      "name": "plan",
+      "description": "Analyze the task and plan the approach",
+      "action": {
+        "type": "llm",
+        "prompt": "@input.message",
+        "model": "fast",
+        "systemPrompt": "You are PILOT PLANNER. Analyze the task and create an execution plan.\n\n## YOUR JOB\n\n1. Understand what the user wants to accomplish\n2. Discover what tools are available\n3. Create a clear plan for SMART to execute\n\n## DISCOVERY TOOLS\n\n- `list_mesh_tools()` - List API tools from Mesh connections\n- `list_local_tools()` - List file/shell/local tools\n- `LIST_FILES` - Browse directories to find relevant files\n\n## OUTPUT FORMAT\n\nAfter discovering tools, output:\n```json\n{\n  \"response\": \"I'll [brief description of plan]\",\n  \"taskForSmartAgent\": \"Detailed step-by-step instructions for execution\",\n  \"toolsForSmartAgent\": [\"TOOL1\", \"TOOL2\", \"TOOL3\"]\n}\n```\n\nBe specific in taskForSmartAgent - include:\n- Exact steps to perform\n- File paths discovered\n- Tool parameters needed\n- Expected outputs",
+        "tools": "discover",
+        "maxIterations": 10
+      },
+      "input": {
+        "message": "@input.message"
+      }
+    },
+    {
+      "name": "execute",
+      "description": "Execute the plan (only runs if tools are available)",
+      "action": {
+        "type": "llm",
+        "prompt": "@plan.taskForSmartAgent",
+        "model": "smart",
+        "systemPrompt": "You are PILOT EXECUTOR. The planning step has prepared everything you need.\n\n## YOUR JOB\n\nExecute the task step-by-step using the provided tools.\n\n## RULES\n\n1. Follow the plan from the planning step\n2. Use function calling for ALL tool invocations\n3. Read files BEFORE using their content\n4. Write actual content, never placeholders\n5. Handle errors gracefully\n6. Complete the entire task before responding\n\n## OUTPUT\n\nProvide a clear summary of:\n- What you accomplished\n- Any results, links, or outputs\n- Any issues encountered",
+        "tools": "@plan.toolsForSmartAgent",
+        "maxIterations": 50
+      },
+      "input": {
+        "task": "@plan.taskForSmartAgent",
+        "tools": "@plan.toolsForSmartAgent"
+      },
+      "config": {
+        "skipIf": "empty:@plan.toolsForSmartAgent"
+      }
+    }
+  ]
+}
