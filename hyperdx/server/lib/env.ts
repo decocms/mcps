@@ -19,6 +19,7 @@ export const getHyperDXApiKey = (env?: Env) => {
 
   // Priority 2: Bearer token from Mesh request context (HTTP mode)
   const authorization = env?.MESH_REQUEST_CONTEXT?.authorization;
+  console.log("[HyperDX] Authorization:", authorization);
   if (authorization) {
     console.log("[HyperDX] Using API key from authorization header");
     // Strip "Bearer " prefix if present

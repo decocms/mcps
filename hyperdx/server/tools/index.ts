@@ -1,7 +1,18 @@
 /**
  * Central export point for all tools organized by domain.
+ *
+ * Exporta array de funções (createTool).
+ * O runtime chama cada função com env para criar as tools.
  */
-import { hyperdxTools } from "./hyperdx.ts";
+import {
+  createSearchLogsTool,
+  createGetLogDetailsTool,
+  createQueryChartDataTool,
+} from "./hyperdx.ts";
 
-// Export all tools from all domains
-export const tools = [...hyperdxTools];
+// Export array of tool creator functions (same pattern as registry)
+export const tools = [
+  createSearchLogsTool,
+  createGetLogDetailsTool,
+  createQueryChartDataTool,
+];
