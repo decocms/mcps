@@ -92,6 +92,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     scopes: [
       "DATABASE::DATABASES_RUN_SQL",
       "EVENT_BUS::*",
+      "CONNECTION::*",
       "MODEL_PROVIDER::*",
       "AGENT::*",
       "*",
