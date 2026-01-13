@@ -23,3 +23,5 @@ count.txt
 
 # SpecStory development history
 .specstory/
+
+pilot/data*

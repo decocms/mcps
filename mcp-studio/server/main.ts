@@ -8,7 +8,11 @@
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
-import { ensurePromptsTable } from "./db/schemas/agents.ts";
+import { initFileWorkflows } from "./db/file-workflows.ts";
+import {
+  ensureAssistantsTable,
+  ensurePromptsTable,
+} from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
@@ -59,10 +63,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
-      // Create tables first, then indexes
-      await ensureCollections(env);
-      await ensurePromptsTable(env);
+      // Initialize file-based workflows (from WORKFLOWS_DIRS env var)
+      initFileWorkflows();
+
       await ensureIndexes(env);
+      await ensureCollections(env);
+      await ensureAssistantsTable(env);
+      await ensurePromptsTable(env);
     },
     scopes: [
       "DATABASE::DATABASES_RUN_SQL",
@@ -73,7 +80,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     state: StateSchema,
   },
   tools,
-  prompts: [], // removed because this was making a call to the database for every request to the MCP server
+  prompts: [],
 });
 
 serve(runtime.fetch);

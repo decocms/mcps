@@ -1,10 +1,11 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: complicated types */
 import { createCollectionListOutputSchema } from "@decocms/bindings/collections";
 import {
-  StepSchema,
-  type Workflow,
+  createDefaultWorkflow,
   WORKFLOW_BINDING,
+  type Workflow,
   WorkflowSchema,
+  StepSchema,
 } from "@decocms/bindings/workflow";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
@@ -12,6 +13,12 @@ import { runSQL } from "../db/postgres.ts";
 import type { Env } from "../types/env.ts";
 import { validateWorkflow } from "../utils/validator.ts";
 import { buildOrderByClause, buildWhereClause } from "./_helpers.ts";
+import {
+  getFileWorkflows,
+  getFileWorkflow,
+  isFileWorkflow,
+  type FileWorkflow,
+} from "../db/file-workflows.ts";
 
 const LIST_BINDING = WORKFLOW_BINDING.find(
   (b) => b.name === "COLLECTION_WORKFLOW_LIST",
@@ -56,14 +63,27 @@ if (!DELETE_BINDING?.inputSchema || !DELETE_BINDING?.outputSchema) {
   );
 }
 
-function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
+/** Extended workflow with readonly flag */
+interface WorkflowWithMeta extends Workflow {
+  readonly?: boolean;
+  source_file?: string;
+}
+
+function transformDbRowToWorkflowCollectionItem(
+  row: unknown,
+): WorkflowWithMeta {
   const r = row as Record<string, unknown>;
 
   // Parse steps - handle both old { phases: [...] } format and new direct array format
   let steps: unknown = [];
   if (r.steps) {
     const parsed = typeof r.steps === "string" ? JSON.parse(r.steps) : r.steps;
-    steps = parsed;
+    // Handle legacy { phases: [...] } format
+    if (parsed && typeof parsed === "object" && "phases" in parsed) {
+      steps = (parsed as { phases: unknown }).phases;
+    } else {
+      steps = parsed;
+    }
   }
 
   return {
@@ -75,6 +95,7 @@ function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
     updated_at: r.updated_at as string,
     created_by: r.created_by as string | undefined,
     updated_by: r.updated_by as string | undefined,
+    readonly: false, // DB workflows are editable
   };
 }
 
@@ -82,7 +103,7 @@ export const createListTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_LIST",
     description:
-      "List workflows with filtering, sorting, and pagination. This does not include the steps of the workflows, use the GET tool to check the list of steps.",
+      "List workflows with filtering, sorting, and pagination. Includes file-based workflows (readonly) from WORKFLOWS_DIRS.",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: createCollectionListOutputSchema(WorkflowSchema),
     execute: async ({
@@ -109,27 +130,53 @@ export const createListTool = (env: Env) =>
           LIMIT ? OFFSET ?
         `;
 
-      const itemsResult = await runSQL<Record<string, unknown>>(env, sql, [
-        ...params,
-        limit,
-        offset,
-      ]);
+      const itemsResult: any =
+        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE?.DATABASES_RUN_SQL({
+          sql,
+          params: [...params, limit, offset],
+        });
+
+      if (!itemsResult?.result?.[0]?.results) {
+        throw new Error("Database query failed or returned invalid result");
+      }
 
       const countQuery = `SELECT COUNT(*) as count FROM workflow_collection ${whereClause}`;
-      const countResult = await runSQL<{ count: string }>(
-        env,
-        countQuery,
-        params,
+      const countResult =
+        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE?.DATABASES_RUN_SQL({
+          sql: countQuery,
+          params,
+        });
+      const dbTotalCount = parseInt(
+        (countResult?.result?.[0]?.results?.[0] as { count: string })?.count ||
+          "0",
+        10,
       );
-      const totalCount = parseInt(countResult[0]?.count || "0", 10);
+
+      // Get DB workflows
+      const dbWorkflows: WorkflowWithMeta[] = itemsResult.result[0].results.map(
+        (item: Record<string, unknown>) =>
+          transformDbRowToWorkflowCollectionItem(item),
+      );
+
+      // Get file-based workflows (always included, marked readonly)
+      const fileWorkflows = getFileWorkflows();
+
+      // Get IDs of DB workflows to avoid duplicates
+      const dbIds = new Set(dbWorkflows.map((w) => w.id));
+
+      // Filter file workflows to exclude those with same ID as DB (DB takes precedence)
+      const uniqueFileWorkflows = fileWorkflows.filter(
+        (fw) => !dbIds.has(fw.id),
+      );
+
+      // Merge: DB workflows first, then file workflows
+      const allWorkflows = [...dbWorkflows, ...uniqueFileWorkflows];
+      const totalCount = dbTotalCount + uniqueFileWorkflows.length;
 
       return {
-        items: itemsResult?.map((item: Record<string, unknown>) => ({
-          ...transformDbRowToWorkflowCollectionItem(item),
-          steps: [],
-        })),
+        items: allWorkflows,
         totalCount,
-        hasMore: offset + (itemsResult?.length || 0) < totalCount,
+        hasMore: offset + dbWorkflows.length < dbTotalCount,
       };
     },
   });
@@ -137,13 +184,28 @@ export const createListTool = (env: Env) =>
 export async function getWorkflowCollection(
   env: Env,
   id: string,
-): Promise<Workflow | null> {
-  const result = await runSQL<Record<string, unknown>>(
-    env,
-    "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
-    [id],
-  );
-  return result[0] ? transformDbRowToWorkflowCollectionItem(result[0]) : null;
+): Promise<WorkflowWithMeta | null> {
+  // First check DB
+  const result =
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE?.DATABASES_RUN_SQL({
+      sql: "SELECT * FROM workflow_collection WHERE id = ? LIMIT 1",
+      params: [id],
+    });
+  const item = result?.result?.[0]?.results?.[0] || null;
+
+  if (item) {
+    return transformDbRowToWorkflowCollectionItem(
+      item as Record<string, unknown>,
+    );
+  }
+
+  // Fall back to file-based workflows
+  const fileWorkflow = getFileWorkflow(id);
+  if (fileWorkflow) {
+    return fileWorkflow as WorkflowWithMeta;
+  }
+
+  return null;
 }
 
 export const createGetTool = (env: Env) =>
@@ -166,42 +228,51 @@ export const createGetTool = (env: Env) =>
     },
   });
 
-export async function insertWorkflowCollectionItem(
-  env: Env,
-  workflow: Workflow & { gateway_id: string },
-) {
+export async function insertWorkflowCollection(env: Env, data?: Workflow) {
   try {
+    const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
+    const now = new Date().toISOString();
+
+    const workflow: Workflow = {
+      ...createDefaultWorkflow(),
+      ...data,
+    };
     await validateWorkflow(workflow, env);
+
     const stepsJson = JSON.stringify(
-      workflow.steps?.map((s) => ({
+      workflow.steps.map((s) => ({
         ...s,
         name: s.name.trim().replaceAll(/\s+/g, "_"),
       })) || [],
     );
 
-    const result = await runSQL<{ id: string }>(
+    // Note: gateway_id should come from workflow data, not hard-coded
+    const gatewayId = (workflow as any).gateway_id ?? "";
+
+    const result = await runSQL<Record<string, unknown>>(
       env,
-      `INSERT INTO workflow_collection (id, title, gateway_id, description, steps, created_at, updated_at, created_by, updated_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO workflow_collection (id, title, input, gateway_id, description, steps, created_at, updated_at, created_by, updated_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
       [
         workflow.id,
         workflow.title,
-        workflow.gateway_id,
+        JSON.stringify((workflow as any).input ?? null),
+        gatewayId,
         workflow.description || null,
         stepsJson,
-        workflow.created_at,
-        workflow.updated_at,
-        workflow.created_by,
-        workflow.updated_by,
+        now,
+        now,
+        user?.id || null,
+        user?.id || null,
       ],
     );
 
-    if (!result?.length) {
-      throw new Error("Failed to create workflow collection item");
+    if (!result.length) {
+      throw new Error("Failed to create workflow collection");
     }
 
     return {
-      item: WorkflowSchema.parse(result[0]),
+      item: workflow,
     };
   } catch (error) {
     console.error("Error creating workflow:", error);
@@ -212,15 +283,11 @@ export async function insertWorkflowCollectionItem(
 export const createInsertTool = (env: Env) =>
   createPrivateTool({
     id: CREATE_BINDING.name,
-    description: `Creates a template/definition for a workflow. This entity is not executable, but can be used to create executions.
-    This is ideal for storing and reusing workflows. You may also want to use this tool to iterate on a workflow before creating executions. You may start with an empty array of steps and add steps gradually.
+    description: `Create a workflow: a sequence of steps that execute automatically with data flowing between them.
 
 Key concepts:
 - Steps run in parallel unless they reference each other's outputs via @ref
-- Use @ref syntax to wire data:
-    - @input.field - From the execution input
-    - @stepName.field - From the output of a step
-You can also put many refs inside a single string, for example: "Hello @input.name, your order @input.order_id is ready".
+- Use @ref syntax to wire data: @input.field, @stepName.field, @item (in loops)
 - Execution order is auto-determined from @ref dependencies
 
 Example workflow with 2 parallel steps:
@@ -228,57 +295,58 @@ Example workflow with 2 parallel steps:
   { "name": "fetch_users", "action": { "toolName": "GET_USERS" } },
   { "name": "fetch_orders", "action": { "toolName": "GET_ORDERS" } },
 ]}
- 
+
 Example workflow with a step that references the output of another step:
-{ "title": "Fetch a user by email and then fetch orders", "steps": [
-  { "name": "fetch_user", "action": { "toolName": "GET_USER" }, "input": { "email": "@input.user_email" } },
-  { "name": "fetch_orders", "action": { "toolName": "GET_USER_ORDERS" }, "input": { "user_id": "@fetch_user.user.id" } },
+{ "title": "Get first user and then fetch orders", "steps": [
+  { "name": "fetch_users", "action": { "toolName": "GET_USERS" }, "input": { "all": true }, "transformCode": "export default async (i) => i[0]" },
+  { "name": "fetch_orders", "action": { "toolName": "GET_ORDERS" }, "input": { "user": "@fetch_users.user" } },
 ]}
 `,
     inputSchema: z.object({
-      data: z.object({
-        title: z.string(),
-        steps: z
-          .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
-          .optional(),
-        gateway_id: z
-          .string()
-          .default("")
-          .describe(
-            "The gateway ID to use for the workflow execution. The execution will only be able to use tools from this gateway.",
-          ),
-        description: z
-          .string()
-          .optional()
-          .describe("The description of the workflow"),
-      }),
+      data: z
+        .object({
+          title: z.string().optional().describe("The title of the workflow"),
+          steps: z
+            .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+            .optional()
+            .describe(
+              "The steps to execute - need to provide this or the workflow_collection_id",
+            ),
+          input: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .describe("The input to the workflow"),
+          gateway_id: z
+            .string()
+            .optional()
+            .describe("The gateway ID to use for the workflow"),
+          description: z
+            .string()
+            .optional()
+            .describe("The description of the workflow"),
+          created_by: z
+            .string()
+            .optional()
+            .describe("The created by user of the workflow"),
+        })
+        .optional()
+        .describe("The data for the workflow"),
     }),
-    // outputSchema: CREATE_BINDING.outputSchema,
+    outputSchema: z
+      .object({})
+      .catchall(z.unknown())
+      .describe("The ID of the created workflow"),
     execute: async ({ context }) => {
       const { data } = context;
-      const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
-      const workflow: Workflow & { gateway_id: string } = {
+      const workflow = {
         id: crypto.randomUUID(),
-        title: data.title,
-        description: data.description,
+        title: data?.title ?? `Workflow ${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        steps: data.steps ?? [],
-        created_by: user?.id || undefined,
-        updated_by: user?.id || undefined,
-        gateway_id: data.gateway_id,
+        steps: data?.steps ?? [],
+        ...data,
       };
-      const { item } = await insertWorkflowCollectionItem(env, workflow);
-      const result = WorkflowSchema.parse(item);
-      return {
-        item: {
-          ...result,
-          steps: result.steps.map((s) => ({
-            ...s,
-            outputSchema: undefined,
-          })),
-        },
-      };
+      return await insertWorkflowCollection(env, workflow);
     },
   });
 
@@ -286,9 +354,17 @@ async function updateWorkflowCollection(
   env: Env,
   context: { id: string; data: Workflow },
 ) {
+  const { id, data } = context;
+
+  // Check if this is a file-based workflow (readonly)
+  if (isFileWorkflow(id)) {
+    throw new Error(
+      `Cannot update workflow "${id}" - it is a file-based workflow (readonly). Use COLLECTION_WORKFLOW_DUPLICATE to create an editable copy.`,
+    );
+  }
+
   const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = new Date().toISOString();
-  const { id, data } = context;
   await validateWorkflow(data, env);
 
   const setClauses: string[] = [];
@@ -308,9 +384,9 @@ async function updateWorkflowCollection(
     setClauses.push(`description = ?`);
     params.push(data.description);
   }
-  if (data.steps && data.steps.length > 0) {
+  if (data.steps !== undefined) {
     setClauses.push(`steps = ?`);
-    params.push(JSON.stringify(data.steps));
+    params.push(JSON.stringify(data.steps || []));
   }
 
   params.push(id);
@@ -322,15 +398,19 @@ async function updateWorkflowCollection(
         RETURNING *
       `;
 
-  const result = await runSQL<Record<string, unknown>>(env, sql, params);
+  const result =
+    await env.MESH_REQUEST_CONTEXT?.state?.DATABASE?.DATABASES_RUN_SQL({
+      sql,
+      params,
+    });
 
-  if (result?.length === 0) {
+  if (!result?.result?.[0]?.results || result.result[0].results.length === 0) {
     throw new Error(`Workflow collection with id ${id} not found`);
   }
 
   return {
     item: transformDbRowToWorkflowCollectionItem(
-      result[0] as Record<string, unknown>,
+      result.result[0].results[0] as Record<string, unknown>,
     ),
   };
 }
@@ -347,7 +427,13 @@ export const createUpdateTool = (env: Env) =>
           steps: z
             .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
             .optional()
-            .describe("The steps of the workflow"),
+            .describe(
+              "The steps to execute - need to provide this or the workflow_collection_id",
+            ),
+          input: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .describe("The input to the workflow"),
           gateway_id: z
             .string()
             .optional()
@@ -356,10 +442,10 @@ export const createUpdateTool = (env: Env) =>
             .string()
             .optional()
             .describe("The description of the workflow"),
-          updated_by: z
+          created_by: z
             .string()
             .optional()
-            .describe("The updated by user of the workflow"),
+            .describe("The created by user of the workflow"),
         })
         .optional()
         .describe("The data for the workflow"),
@@ -367,11 +453,10 @@ export const createUpdateTool = (env: Env) =>
     outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {
-        const result = await updateWorkflowCollection(env, {
+        return await updateWorkflowCollection(env, {
           id: context.id as string,
           data: context.data as Workflow,
         });
-        return result;
       } catch (error) {
         console.error("Error updating workflow:", error);
         throw new Error(
@@ -381,129 +466,22 @@ export const createUpdateTool = (env: Env) =>
     },
   });
 
-export const createAppendStepTool = (env: Env) =>
-  createPrivateTool({
-    id: "COLLECTION_WORKFLOW_APPEND_STEP",
-    description: "Append a new step to an existing workflow",
-    inputSchema: z.object({
-      id: z.string().describe("The ID of the workflow to append the step to"),
-      step: z
-        .object(StepSchema.omit({ outputSchema: true }).shape)
-        .describe("The step to append"),
-    }),
-    outputSchema: z.object({
-      success: z
-        .boolean()
-        .describe("Whether the step was appended successfully"),
-    }),
-    execute: async ({ context }) => {
-      const { id, step } = context;
-
-      const workflow = await getWorkflowCollection(env, id as string);
-
-      if (!workflow) {
-        throw new Error(`Workflow with id ${id} not found`);
-      }
-
-      await validateWorkflow(
-        {
-          ...workflow,
-          steps: [...workflow.steps, step],
-        },
-        env,
-      );
-      await updateWorkflowCollection(env, {
-        id,
-        data: {
-          ...workflow,
-          steps: [...workflow.steps, step],
-        },
-      });
-      return {
-        success: true,
-      };
-    },
-  });
-
-export const createUpdateStepsTool = (env: Env) =>
-  createPrivateTool({
-    id: "COLLECTION_WORKFLOW_UPDATE_STEPS",
-    description: "Update one or more steps of a workflow",
-    inputSchema: z.object({
-      steps: z
-        .array(
-          z.object(StepSchema.omit({ outputSchema: true }).shape).partial(),
-        )
-        .optional()
-        .describe("The steps to update"),
-      id: z.string().describe("The ID of the workflow to update"),
-    }),
-    outputSchema: z.object({
-      success: z
-        .boolean()
-        .describe("Whether the step was updated successfully"),
-    }),
-    execute: async ({ context }) => {
-      const { steps, id } = context;
-
-      if (!steps) {
-        throw new Error("No steps provided");
-      }
-
-      const workflow = await getWorkflowCollection(env, id as string);
-
-      if (!workflow) {
-        throw new Error(`Workflow with id ${id} not found`);
-      }
-
-      // Validate that all steps to update exist in the workflow
-      for (const step of steps) {
-        const existingStep = workflow.steps?.find((s) => s.name === step.name);
-        if (!existingStep) {
-          throw new Error(`Step with name ${step.name} not found in workflow`);
-        }
-      }
-
-      // Map over all existing steps, applying updates where names match
-      const newSteps = workflow.steps.map((existingStep) => {
-        const stepUpdate = steps.find((s) => s.name === existingStep.name);
-        if (stepUpdate) {
-          return {
-            ...existingStep,
-            ...stepUpdate,
-          };
-        }
-        return existingStep;
-      });
-
-      await validateWorkflow(
-        {
-          ...workflow,
-          steps: newSteps,
-        },
-        env,
-      );
-      await updateWorkflowCollection(env, {
-        id,
-        data: {
-          ...workflow,
-          steps: newSteps,
-        },
-      });
-      return {
-        success: true,
-      };
-    },
-  });
-
 export const createDeleteTool = (env: Env) =>
   createPrivateTool({
     id: "COLLECTION_WORKFLOW_DELETE",
-    description: "Delete a workflow by ID",
+    description:
+      "Delete a workflow by ID. Cannot delete file-based workflows (readonly).",
     inputSchema: DELETE_BINDING.inputSchema,
     outputSchema: DELETE_BINDING.outputSchema,
     execute: async ({ context }) => {
       const { id } = context;
+
+      // Check if this is a file-based workflow (readonly)
+      if (isFileWorkflow(id)) {
+        throw new Error(
+          `Cannot delete workflow "${id}" - it is a file-based workflow (readonly). Remove the JSON file from the WORKFLOWS_DIRS directory to delete it.`,
+        );
+      }
 
       const result = await runSQL<Record<string, unknown>>(
         env,
@@ -521,12 +499,70 @@ export const createDeleteTool = (env: Env) =>
     },
   });
 
+export const createDuplicateTool = (env: Env) =>
+  createPrivateTool({
+    id: "COLLECTION_WORKFLOW_DUPLICATE",
+    description:
+      "Duplicate a workflow (file-based or DB) to create an editable copy in PostgreSQL. Use this to customize file-based workflows.",
+    inputSchema: z.object({
+      id: z.string().describe("The ID of the workflow to duplicate"),
+      new_id: z
+        .string()
+        .optional()
+        .describe("Optional new ID for the duplicate. Defaults to id-copy."),
+      new_title: z
+        .string()
+        .optional()
+        .describe(
+          "Optional new title for the duplicate. Defaults to original title + (Copy).",
+        ),
+    }),
+    outputSchema: z.object({
+      item: WorkflowSchema,
+    }),
+    execute: async ({ context }) => {
+      const { id, new_id, new_title } = context;
+
+      // Get the source workflow (from DB or file)
+      const sourceWorkflow = await getWorkflowCollection(env, id);
+      if (!sourceWorkflow) {
+        throw new Error(`Workflow "${id}" not found`);
+      }
+
+      // Create a copy with new ID
+      const copyId = new_id || `${id}-copy`;
+      const copyTitle = new_title || `${sourceWorkflow.title} (Copy)`;
+
+      // Check if the new ID already exists in DB
+      const existingResult =
+        await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+          sql: "SELECT id FROM workflow_collection WHERE id = ? LIMIT 1",
+          params: [copyId],
+        });
+
+      if (existingResult.result[0]?.results?.length > 0) {
+        throw new Error(`Workflow with ID "${copyId}" already exists`);
+      }
+
+      // Create the duplicate
+      const duplicateWorkflow: Workflow = {
+        id: copyId,
+        title: copyTitle,
+        description: sourceWorkflow.description,
+        steps: sourceWorkflow.steps,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      return await insertWorkflowCollection(env, duplicateWorkflow);
+    },
+  });
+
 export const workflowCollectionTools = [
   createListTool,
   createGetTool,
   createInsertTool,
   createUpdateTool,
-  createUpdateStepsTool,
-  createAppendStepTool,
   createDeleteTool,
+  createDuplicateTool,
 ];

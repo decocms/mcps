@@ -575,10 +575,12 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
       "Returns a streaming response for interactive chat experiences.",
     inputSchema: STREAM_BINDING.inputSchema,
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
@@ -735,10 +737,12 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
     inputSchema: GENERATE_BINDING.inputSchema,
     outputSchema: GENERATE_BINDING.outputSchema,
     execute: async ({ context }) => {
-      const {
-        modelId,
-        callOptions: { abortSignal: _abortSignal, ...callOptions },
-      } = context;
+      const { modelId, callOptions: rawCallOptions } = context;
+
+      // Handle null/undefined callOptions gracefully
+      const { abortSignal: _abortSignal, ...callOptions } =
+        rawCallOptions ?? {};
+
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const apiKey = getOpenRouterApiKey(env);
