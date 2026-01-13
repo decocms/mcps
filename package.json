@@ -24,12 +24,15 @@
     "content-scraper",
     "data-for-seo",
     "datajud",
+    "deco-llm",
+    "discord-read",
     "gemini-pro-vision",
+    "google-big-query",
     "google-calendar",
     "google-tag-manager",
-    "google-big-query",
-    "meta-ads",
     "hyperdx",
+    "mcp-studio",
+    "meta-ads",
     "nanobanana",
     "object-storage",
     "openrouter",
@@ -43,10 +46,8 @@
     "template-minimal",
     "template-with-view",
     "veo",
-    "whisper",
     "whatsapp",
-    "mcp-studio",
-    "deco-llm"
+    "whisper"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"
