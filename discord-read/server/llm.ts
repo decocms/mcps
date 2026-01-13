@@ -41,15 +41,30 @@ export async function generateResponse(
     discordContext?: DiscordContext;
   },
 ): Promise<GenerateResponse> {
+  // Import getCurrentEnv to check if we have a more complete env stored
+  const { getCurrentEnv } = await import("./bot-manager.ts");
+  const storedEnv = getCurrentEnv();
+
+  // Try to use the env with the most complete MESH_REQUEST_CONTEXT
+  // This handles the case where bot was started with env vars but Mesh updated config later
+  const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
+    ? env
+    : storedEnv?.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
+      ? storedEnv
+      : env;
+
   // Access MESH_REQUEST_CONTEXT directly like mcp-studio does
-  const organizationId = env.MESH_REQUEST_CONTEXT.organizationId;
+  const organizationId = effectiveEnv.MESH_REQUEST_CONTEXT?.organizationId;
   if (!organizationId) {
-    throw new Error("No organizationId found in MESH_REQUEST_CONTEXT");
+    throw new Error(
+      "No organizationId found. Please open Mesh Dashboard and click 'Save' on this MCP to refresh the connection.",
+    );
   }
 
-  const meshUrl = env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL;
-  const token = env.MESH_REQUEST_CONTEXT.token;
-  const state = env.MESH_REQUEST_CONTEXT.state;
+  const meshUrl =
+    effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
+  const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
+  const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
 
   // Get values directly from state (like mcp-studio)
   const connectionId = state?.MODEL_PROVIDER?.value;
@@ -74,7 +89,13 @@ export async function generateResponse(
   // Validate required fields
   if (!connectionId) {
     throw new Error(
-      "MODEL_PROVIDER not configured. Please configure it in Mesh.",
+      "MODEL_PROVIDER not configured.\n\n" +
+        "🔧 **How to fix:**\n" +
+        "1. Open **Mesh Dashboard**\n" +
+        "2. Go to this MCP's configuration\n" +
+        "3. Configure **MODEL_PROVIDER** (e.g., OpenRouter, OpenAI)\n" +
+        "4. Click **Save** to apply\n\n" +
+        "The bot needs an AI model connection to respond.",
     );
   }
 
