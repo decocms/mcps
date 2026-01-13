@@ -124,10 +124,26 @@ async function doInitialize(env: Env): Promise<Client> {
   // Register event handlers
   registerEventHandlers(client, env);
 
-  // Login
+  // Login and wait for ready
   await client.login(token);
-
   console.log(`[Discord] Logged in as ${client.user?.tag}`);
+
+  // Wait for the client to be fully ready
+  if (client && !client.isReady()) {
+    console.log(`[Discord] Waiting for ready event...`);
+    const c = client; // Capture reference for closure
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        console.log(`[Discord] Ready timeout, continuing anyway...`);
+        resolve();
+      }, 10000); // 10 second timeout
+
+      c.once("clientReady", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+  }
 
   // Register slash commands
   await registerSlashCommands(client, token, env);
@@ -187,8 +203,8 @@ function registerEventHandlers(client: Client, env: Env): void {
   }
   eventsRegistered = true;
   console.log("[Discord] Registering event handlers...");
-  // Ready event (use 'clientReady' to avoid deprecation warning in v15)
-  client.once("ready", () => {
+  // Ready event (use 'clientReady' for Discord.js v15+)
+  client.once("clientReady", () => {
     const prefix = env.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
     console.log(`[Discord] Bot is ready!`);
     console.log(`[Discord] - Guilds: ${client.guilds.cache.size}`);
@@ -427,7 +443,9 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Bulk message delete event
   client.on("messageDeleteBulk", async (messages) => {
     try {
-      await handleMessageDeleteBulk(messages);
+      // Convert ReadonlyCollection to Map for the handler
+      const messagesMap = new Map(messages.entries());
+      await handleMessageDeleteBulk(messagesMap);
     } catch (error) {
       console.error("[Discord] Error handling bulk message delete:", error);
     }
