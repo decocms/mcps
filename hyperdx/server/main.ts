@@ -5,6 +5,7 @@
  * The HyperDX API key is passed as a Bearer token in the connection settings.
  */
 
+import { serve } from "@decocms/mcps-shared/serve";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
 
@@ -28,18 +29,12 @@ const runtime = withRuntime<Env>({
   },
 });
 
-// Dev mode: print MCP URL and copy to clipboard
-if (process.env.NODE_ENV !== "production") {
-  const port = process.env.PORT || 8001;
-  const mcpUrl = `http://localhost:${port}/mcp`;
+const PORT = process.env.PORT || 8001;
 
-  // Copy to clipboard (macOS) - using dynamic import to avoid type issues
-  import("child_process").then(({ exec }) => {
-    exec(`echo -n "${mcpUrl}" | pbcopy`);
-  });
+serve(runtime.fetch);
 
-  console.log(`\n🚀 HyperDX MCP: ${mcpUrl}`);
-  console.log(`📋 Copied to clipboard!\n`);
-}
+console.log(`\n🚀 HyperDX MCP: http://localhost:${PORT}/mcp`);
+console.log(`📋 Server ready!\n`);
 
+// Export for Cloudflare Workers deployment
 export default runtime;
