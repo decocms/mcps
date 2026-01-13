@@ -121,6 +121,11 @@ async function doInitialize(env: Env): Promise<Client> {
     partials: [Partials.Message, Partials.Reaction, Partials.User],
   });
 
+  // Set database env BEFORE registering handlers
+  setDatabaseEnv(env);
+  // Also update global env
+  updateEnv(env);
+
   // Register event handlers
   registerEventHandlers(client, env);
 
@@ -291,13 +296,19 @@ function registerEventHandlers(client: Client, env: Env): void {
     );
 
     // Re-set database env (ensures it's available for this message)
-    setDatabaseEnv(currentEnv);
+    // Only set if we have a valid MESH_REQUEST_CONTEXT
+    if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
+      setDatabaseEnv(currentEnv);
+    }
 
     try {
       // Index the message (non-blocking, errors are logged but don't stop processing)
-      indexMessage(message, isDM).catch((e) =>
-        console.log("[Discord] Index failed (non-critical):", e.message),
-      );
+      // Only index if database is configured
+      if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
+        indexMessage(message, isDM).catch((e) =>
+          console.log("[Message] Failed to index:", e.message),
+        );
+      }
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
