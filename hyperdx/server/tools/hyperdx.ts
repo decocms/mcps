@@ -55,8 +55,6 @@ export const createSearchLogsTool = (env: Env) =>
       total: z.number(),
     }),
     execute: async ({ context }) => {
-      console.log("[SEARCH_LOGS] Query:", context.query);
-
       const apiKey = getHyperDXApiKey(env);
       const client = createHyperDXClient({ apiKey });
 
@@ -74,19 +72,18 @@ export const createSearchLogsTool = (env: Env) =>
       });
 
       // Transform response: extract body from group and count from series_0.data
-      const logs = (response.data ?? [])
+      type LogEntry = { message: string; count: number };
+      const logs: LogEntry[] = (response.data ?? [])
         .map((item: Record<string, unknown>) => ({
           message: (item.group as string[])?.[0] ?? "",
           count: (item["series_0.data"] as number) ?? 0,
         }))
-        .sort((a, b) => b.count - a.count)
+        .sort((a: LogEntry, b: LogEntry) => b.count - a.count)
         .slice(0, context.limit);
-
-      console.log("[SEARCH_LOGS] Found", logs.length, "distinct messages");
 
       return {
         logs,
-        total: logs.reduce((sum, l) => sum + l.count, 0),
+        total: logs.reduce((sum: number, l: LogEntry) => sum + l.count, 0),
       };
     },
   });
@@ -140,13 +137,6 @@ export const createGetLogDetailsTool = (env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      console.log(
-        "[GET_LOG_DETAILS] Query:",
-        context.query,
-        "groupBy:",
-        context.groupBy,
-      );
-
       const apiKey = getHyperDXApiKey(env);
       const client = createHyperDXClient({ apiKey });
 
@@ -170,8 +160,6 @@ export const createGetLogDetailsTool = (env: Env) =>
         }))
         .slice(0, context.limit);
 
-      console.log("[GET_LOG_DETAILS] Found", entries.length, "entries");
-
       return {
         fields: context.groupBy,
         entries,
@@ -190,19 +178,12 @@ export const createQueryChartDataTool = (env: Env) =>
     inputSchema: queryChartDataInputSchema,
     outputSchema: queryChartDataOutputSchema,
     execute: async ({ context }) => {
-      console.log("[QUERY_CHART_DATA] Starting execution");
-      console.log(
-        "[QUERY_CHART_DATA] Input:",
-        JSON.stringify(context, null, 2),
-      );
-
       const apiKey = getHyperDXApiKey(env);
       const client = createHyperDXClient({ apiKey });
 
       const { startTime, endTime, granularity, series, seriesReturnType } =
         context;
 
-      console.log("[QUERY_CHART_DATA] Querying HyperDX API...");
       const response = await client.queryChartSeries({
         startTime,
         endTime,
@@ -217,12 +198,6 @@ export const createQueryChartDataTool = (env: Env) =>
         })),
         seriesReturnType,
       });
-
-      console.log(
-        "[QUERY_CHART_DATA] Got response with",
-        response.data?.length ?? 0,
-        "data points",
-      );
 
       return {
         data: response.data ?? [],

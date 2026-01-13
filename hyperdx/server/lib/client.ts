@@ -2,6 +2,7 @@
  * HyperDX API Client
  */
 
+import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 import type { QueryBody } from "./types.ts";
 
 const HYPERDX_API = "https://api.hyperdx.io/api/v1";
@@ -16,24 +17,21 @@ export interface HyperDXClientConfig {
 export async function queryChartSeries(
   config: HyperDXClientConfig,
   queryBody: QueryBody,
-): Promise<any> {
+): Promise<{ data?: Record<string, unknown>[] }> {
   const url = `${HYPERDX_API}/charts/series`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
+  return makeApiRequest(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(queryBody),
     },
-    body: JSON.stringify(queryBody),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`HyperDX API error (${response.status}): ${text}`);
-  }
-
-  return response.json();
+    "HyperDX",
+  );
 }
 
 export const createHyperDXClient = (config: HyperDXClientConfig) => ({
