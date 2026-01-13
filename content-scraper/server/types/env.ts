@@ -10,13 +10,19 @@ export const StateSchema = z.object({
     urls: z.array(z.string()).describe("URLs to scrape content from"),
   }),
   redditFields: z.object({
-    subreddit: z.string().describe("Subreddit to scrape content from"),
+    RedditTopicsToScrape: z
+      .array(z.string())
+      .describe("Subreddits topics to scrape content from"),
   }),
   linkedinFields: z.object({
-    topics: z.array(z.string()).describe("URLs to scrape content from"),
+    LinkedInTopics: z
+      .array(z.string())
+      .describe("LinkedIn topics to scrape content from"),
   }),
   twitterFields: z.object({
-    topics: z.array(z.string()).describe("Topics to scrape content from"),
+    TwitterTopics: z
+      .array(z.string())
+      .describe("Twitter topics to scrape content from"),
   }),
 });
 
