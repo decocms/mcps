@@ -8,7 +8,6 @@
 import { updateEnv } from "../bot-manager.ts";
 import type { Env } from "../types/env.ts";
 import type { ToolFactory, ToolCollection } from "../types/tools.ts";
-import { agentTools } from "./agents.ts";
 import { messageTools } from "./messages.ts";
 import { setupTools } from "./setup.ts";
 import { allDiscordTools } from "./discord/index.ts";
@@ -24,13 +23,11 @@ function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
 
 // Wrap all tools
 const wrappedSetupTools = setupTools.map(wrapWithEnvUpdate);
-const wrappedAgentTools = agentTools.map(wrapWithEnvUpdate);
 const wrappedMessageTools = messageTools.map(wrapWithEnvUpdate);
 const wrappedDiscordTools = allDiscordTools.map(wrapWithEnvUpdate);
 
 export const tools: ToolCollection<Env> = [
   ...wrappedSetupTools,
-  ...wrappedAgentTools,
   ...wrappedMessageTools,
   ...wrappedDiscordTools,
 ];

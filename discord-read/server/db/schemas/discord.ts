@@ -572,16 +572,4 @@ export const discordQueries = {
     idempotent: reactionsTableIdempotentQuery,
     indexes: reactionsTableIndexesQuery,
   },
-  agentConfig: {
-    idempotent: agentConfigTableIdempotentQuery,
-    indexes: agentConfigTableIndexesQuery,
-  },
-  agentPermission: {
-    idempotent: agentPermissionTableIdempotentQuery,
-    indexes: agentPermissionTableIndexesQuery,
-  },
-  commandLog: {
-    idempotent: commandLogTableIdempotentQuery,
-    indexes: commandLogTableIndexesQuery,
-  },
 };

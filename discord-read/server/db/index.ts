@@ -30,18 +30,6 @@ const collectionsQueries = {
     idempotent: discordQueries.reactions.idempotent,
     indexes: discordQueries.reactions.indexes,
   },
-  agentConfig: {
-    idempotent: discordQueries.agentConfig.idempotent,
-    indexes: discordQueries.agentConfig.indexes,
-  },
-  agentPermission: {
-    idempotent: discordQueries.agentPermission.idempotent,
-    indexes: discordQueries.agentPermission.indexes,
-  },
-  commandLog: {
-    idempotent: discordQueries.commandLog.idempotent,
-    indexes: discordQueries.commandLog.indexes,
-  },
 };
 
 /**
