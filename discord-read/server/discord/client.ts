@@ -8,14 +8,11 @@ import {
   Client,
   GatewayIntentBits,
   Partials,
-  REST,
-  Routes,
   type Message,
   type MessageReaction,
   type User,
   type PartialMessageReaction,
   type PartialUser,
-  type Interaction,
 } from "discord.js";
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
@@ -45,7 +42,6 @@ import {
   handleReactionRemoveAll,
   handleReactionRemoveEmoji,
 } from "./handlers/reactionHandler.ts";
-import { agentCommand, handleAgentCommand } from "./commands/agent.ts";
 
 let client: Client | null = null;
 let eventsRegistered = false;
@@ -150,9 +146,6 @@ async function doInitialize(env: Env): Promise<Client> {
     });
   }
 
-  // Register slash commands
-  await registerSlashCommands(client, token, env);
-
   return client;
 }
 
@@ -161,40 +154,6 @@ async function doInitialize(env: Env): Promise<Client> {
  */
 export function getDiscordClient(): Client | null {
   return client;
-}
-
-/**
- * Register slash commands with Discord
- */
-async function registerSlashCommands(
-  client: Client,
-  token: string,
-  env: Env,
-): Promise<void> {
-  const rest = new REST({ version: "10" }).setToken(token);
-
-  const commands = [agentCommand.toJSON()];
-
-  try {
-    const guildId = env.MESH_REQUEST_CONTEXT?.state?.GUILD_ID;
-
-    if (guildId) {
-      // Guild-specific commands (faster updates)
-      await rest.put(
-        Routes.applicationGuildCommands(client.user!.id, guildId),
-        { body: commands },
-      );
-      console.log(`[Discord] Registered ${commands.length} guild commands`);
-    } else {
-      // Global commands
-      await rest.put(Routes.applicationCommands(client.user!.id), {
-        body: commands,
-      });
-      console.log(`[Discord] Registered ${commands.length} global commands`);
-    }
-  } catch (error) {
-    console.error("[Discord] Failed to register slash commands:", error);
-  }
 }
 
 /**
@@ -215,32 +174,6 @@ function registerEventHandlers(client: Client, env: Env): void {
     console.log(`[Discord] - Guilds: ${client.guilds.cache.size}`);
     console.log(`[Discord] - Command prefix: "${prefix}"`);
     console.log(`[Discord] - Listening for messages...`);
-  });
-
-  // Interaction (slash command) handler
-  client.on("interactionCreate", async (interaction: Interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    try {
-      switch (interaction.commandName) {
-        case "agent":
-          await handleAgentCommand(interaction);
-          break;
-        default:
-          console.log(`[Discord] Unknown command: ${interaction.commandName}`);
-      }
-    } catch (error) {
-      console.error(`[Discord] Error handling interaction:`, error);
-      const reply = {
-        content: "Ocorreu um erro ao processar o comando.",
-        ephemeral: true,
-      };
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(reply);
-      } else {
-        await interaction.reply(reply);
-      }
-    }
   });
 
   // Message create event
