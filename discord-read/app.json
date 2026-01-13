@@ -1,0 +1,13 @@
+{
+  "scopeName": "deco",
+  "name": "discord-mcp",
+  "friendlyName": "Discord MCP",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://discord-mcp.decocache.com/mcp"
+  },
+  "description": "Discord bot with message indexing, AI agent commands and reaction tracking",
+  "icon": "https://assets.decocache.com/mcp/discord/app.png",
+  "unlisted": false
+}
+
