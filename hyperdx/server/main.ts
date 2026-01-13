@@ -15,7 +15,9 @@ import { tools } from "./tools/index.ts";
 export type Env = DefaultEnv;
 
 const runtime = withRuntime<Env>({
-  tools,
+  // Same pattern as registry: tools is array of functions, runtime calls each with env
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
+  // Fallback response for non-MCP requests (e.g. accessing / in browser)
   fetch: () => {
     return new Response(
       JSON.stringify({
@@ -31,7 +33,14 @@ const runtime = withRuntime<Env>({
 
 const PORT = process.env.PORT || 3000;
 
-serve(runtime.fetch);
+serve((req: Request) => {
+  // Health check endpoint (useful for deployments)
+  if (new URL(req.url).pathname === "/_healthcheck") {
+    return new Response("OK", { status: 200 });
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: env comes from process.env
+  return runtime.fetch(req, { ...process.env } as any, {});
+});
 
 console.log(`\n🚀 HyperDX MCP: http://localhost:${PORT}/mcp`);
 console.log(`📋 Server ready!\n`);
