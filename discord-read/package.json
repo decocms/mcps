@@ -1,5 +1,5 @@
 {
-  "name": "discord-mcp",
+  "name": "discord-read",
   "version": "1.0.0",
   "type": "module",
   "main": "server/main.ts",
