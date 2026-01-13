@@ -3,11 +3,13 @@
  *
  * Based on mcp-studio/server/llm.ts
  * Calls the Mesh API to generate AI responses using configured model and agent.
+ * Includes fallback to direct LLM call when Agent is not configured or times out.
  */
 
 import type { Env } from "./types/env.ts";
 
 const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-sonnet-4-20250514";
+const REQUEST_TIMEOUT_MS = 60000; // 60 seconds
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -18,6 +20,7 @@ export interface GenerateResponse {
   content: string;
   model: string;
   tokens?: number;
+  usedFallback?: boolean;
 }
 
 export interface DiscordContext {
@@ -28,7 +31,8 @@ export interface DiscordContext {
 }
 
 /**
- * Generate a response using the Mesh API (exactly like mcp-studio)
+ * Generate a response using the Mesh API
+ * Falls back to direct LLM call if Agent is not configured or request fails
  */
 export async function generateResponse(
   env: Env,
@@ -59,7 +63,9 @@ export async function generateResponse(
     `║  Organization:  ${organizationId?.slice(0, 30).padEnd(30)}        ║`,
   );
   console.log(`║  Model:         ${modelId?.slice(0, 30).padEnd(30)}        ║`);
-  console.log(`║  Agent/Gateway: ${agentId?.slice(0, 30).padEnd(30)}        ║`);
+  console.log(
+    `║  Agent/Gateway: ${(agentId || "NOT SET - using fallback")?.slice(0, 30).padEnd(30)}        ║`,
+  );
   console.log(
     `║  Connection:    ${connectionId?.slice(0, 30).padEnd(30)}        ║`,
   );
@@ -71,9 +77,6 @@ export async function generateResponse(
       "MODEL_PROVIDER not configured. Please configure it in Mesh.",
     );
   }
-  if (!agentId) {
-    throw new Error("AGENT not configured. Please configure it in Mesh.");
-  }
 
   // Convert messages to Mesh format
   const meshMessages = messages.map((msg) => ({
@@ -81,7 +84,58 @@ export async function generateResponse(
     parts: [{ type: "text", text: msg.content }],
   }));
 
-  // Build request body exactly like mcp-studio
+  // If Agent is configured, try with Agent first
+  if (agentId) {
+    try {
+      const result = await callWithAgent(
+        meshUrl,
+        organizationId,
+        token,
+        connectionId,
+        modelId,
+        agentId,
+        meshMessages,
+      );
+      return { content: result, model: modelId, usedFallback: false };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`[LLM] Agent call failed: ${errorMsg}`);
+      console.log(`[LLM] Falling back to direct LLM call...`);
+
+      // Fall through to direct LLM call
+    }
+  } else {
+    console.log(`[LLM] No Agent configured, using direct LLM call`);
+  }
+
+  // Fallback: Direct LLM call without Agent
+  const result = await callDirectLLM(
+    meshUrl,
+    organizationId,
+    token,
+    connectionId,
+    modelId,
+    meshMessages,
+  );
+
+  return { content: result, model: modelId, usedFallback: true };
+}
+
+/**
+ * Call Mesh API with Agent/Gateway
+ */
+async function callWithAgent(
+  meshUrl: string,
+  organizationId: string,
+  token: string,
+  connectionId: string,
+  modelId: string,
+  agentId: string,
+  messages: Array<{
+    role: string;
+    parts: Array<{ type: string; text: string }>;
+  }>,
+): Promise<string> {
   const requestBody = {
     model: {
       connectionId,
@@ -90,40 +144,100 @@ export async function generateResponse(
     gateway: {
       id: agentId,
     },
-    messages: meshMessages,
+    messages,
   };
 
-  const response = await fetch(
-    `${meshUrl}/api/${organizationId}/models/stream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "text/event-stream",
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `${meshUrl}/api/${organizationId}/models/stream`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
       },
-      body: JSON.stringify(requestBody),
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(
-      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
     );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `Mesh API error (${response.status}): ${errorText || response.statusText}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new Error("No response body from Mesh API");
+    }
+
+    return await parseStreamResponse(response.body);
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  if (!response.body) {
-    throw new Error("No response body from Mesh API");
-  }
-
-  // Parse SSE stream
-  const content = await parseStreamResponse(response.body);
-
-  return {
-    content,
-    model: modelId,
+/**
+ * Direct LLM call without Agent (fallback)
+ */
+async function callDirectLLM(
+  meshUrl: string,
+  organizationId: string,
+  token: string,
+  connectionId: string,
+  modelId: string,
+  messages: Array<{
+    role: string;
+    parts: Array<{ type: string; text: string }>;
+  }>,
+): Promise<string> {
+  const requestBody = {
+    model: {
+      connectionId,
+      id: modelId,
+    },
+    // No gateway - direct LLM call
+    messages,
   };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `${meshUrl}/api/${organizationId}/models/stream`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `Direct LLM error (${response.status}): ${errorText || response.statusText}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new Error("No response body from Direct LLM");
+    }
+
+    return await parseStreamResponse(response.body);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**
