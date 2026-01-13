@@ -26,27 +26,45 @@ export const scrapeContentTool = (env: Env) =>
         const n8nWebhookUrl = state?.n8nWebhookUrl ?? "";
         const urls = state?.urlFields?.urls ?? [];
 
-        const response = await fetch(n8nWebhookUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ urls }),
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000);
 
-        if (!response.ok) {
+        try {
+          const response = await fetch(n8nWebhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ urls }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            return {
+              success: false,
+              error: `Webhook returned ${response.status}: ${response.statusText}`,
+            };
+          }
+
+          const data = await response.json();
+
           return {
-            success: false,
-            error: `Webhook returned ${response.status}: ${response.statusText}`,
+            success: true,
+            data,
           };
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+
+          if (fetchError instanceof Error && fetchError.name === "AbortError") {
+            return {
+              success: false,
+              error: "Workflow timeout - excedeu 5 minutos de execução",
+            };
+          }
+          throw fetchError;
         }
-
-        const data = await response.json();
-
-        return {
-          success: true,
-          data,
-        };
       } catch (error) {
         return {
           success: false,
