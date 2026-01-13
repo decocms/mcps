@@ -193,13 +193,14 @@ export const createGetGuildMembersTool = (env: Env) =>
   });
 
 // ============================================================================
-// Get User
+// Get User (global info only)
 // ============================================================================
 
 export const createGetUserTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_GET_USER",
-    description: "Get information about a specific Discord user",
+    description:
+      "Get GLOBAL information about a Discord user (no roles/server info). Use DISCORD_GET_MEMBER for server-specific info like roles.",
     inputSchema: z
       .object({
         user_id: z.string().describe("The user ID"),
@@ -237,6 +238,81 @@ export const createGetUserTool = (env: Env) =>
         bot: result.bot ?? false,
         banner: result.banner,
         accent_color: result.accent_color,
+      };
+    },
+  });
+
+// ============================================================================
+// Get Guild Member (with roles and server-specific info)
+// ============================================================================
+
+export const createGetMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GET_MEMBER",
+    description:
+      "Get a member's info in a server INCLUDING their roles, nickname, join date. Use this to check user roles!",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild/server ID"),
+        user_id: z.string().describe("The user ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        user: z.object({
+          id: z.string(),
+          username: z.string(),
+          global_name: z.string().nullable(),
+          avatar: z.string().nullable(),
+          bot: z.boolean(),
+        }),
+        nick: z.string().nullable(),
+        roles: z.array(z.string()),
+        joined_at: z.string(),
+        premium_since: z.string().nullable(),
+        deaf: z.boolean(),
+        mute: z.boolean(),
+        pending: z.boolean().optional(),
+        communication_disabled_until: z.string().nullable().optional(),
+      })
+      .passthrough(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { guild_id: string; user_id: string };
+
+      const result = await discordAPI<{
+        user: {
+          id: string;
+          username: string;
+          global_name: string | null;
+          avatar: string | null;
+          bot?: boolean;
+        };
+        nick: string | null;
+        roles: string[];
+        joined_at: string;
+        premium_since: string | null;
+        deaf: boolean;
+        mute: boolean;
+        pending?: boolean;
+        communication_disabled_until?: string | null;
+      }>(env, `/guilds/${input.guild_id}/members/${input.user_id}`);
+
+      return {
+        user: {
+          id: result.user.id,
+          username: result.user.username,
+          global_name: result.user.global_name,
+          avatar: result.user.avatar,
+          bot: result.user.bot ?? false,
+        },
+        nick: result.nick,
+        roles: result.roles,
+        joined_at: result.joined_at,
+        premium_since: result.premium_since,
+        deaf: result.deaf,
+        mute: result.mute,
+        pending: result.pending,
+        communication_disabled_until: result.communication_disabled_until,
       };
     },
   });
@@ -540,6 +616,7 @@ export const discordGuildTools = [
   createListBotGuildsTool,
   createGetGuildMembersTool,
   createGetUserTool,
+  createGetMemberTool, // New! For getting roles and server-specific info
   createGetCurrentUserTool,
   createBanMemberTool,
   createGetGuildRolesTool,

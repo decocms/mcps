@@ -138,11 +138,16 @@ Before assigning or removing roles:
 
 | User Request | ✅ Correct Tool | ❌ Wrong Tool |
 |-------------|----------------|--------------|
-| "What are MY roles?" | \`DISCORD_GET_USER\` with the user_id from context | \`DISCORD_GET_MEMBERS\` (fetches everyone) |
-| "Show my info" | \`DISCORD_GET_USER\` | \`DISCORD_GET_MEMBERS\` |
-| "What roles does @john have?" | \`DISCORD_GET_USER\` with john's user_id | \`DISCORD_GET_MEMBERS\` |
-| "List all members" | \`DISCORD_GET_MEMBERS\` | - |
-| "Who is online?" | \`DISCORD_GET_MEMBERS\` with presence | - |
+| "What are MY roles?" | \`DISCORD_GET_MEMBER\` (guild_id + user_id) | \`DISCORD_GET_USER\` (no roles!) |
+| "Show my server info" | \`DISCORD_GET_MEMBER\` | \`DISCORD_GET_MEMBERS\` (fetches everyone) |
+| "What roles does @john have?" | \`DISCORD_GET_MEMBER\` with john's user_id | \`DISCORD_GET_USER\` |
+| "Show user's global profile" | \`DISCORD_GET_USER\` | - |
+| "List all members" | \`DISCORD_GET_MEMBERS\` (with limit) | - |
+| "Who is online?" | \`DISCORD_GET_MEMBERS\` | - |
+
+**⚠️ IMPORTANT**: 
+- \`DISCORD_GET_USER\` = Global user info only (NO roles, NO nickname, NO join date)
+- \`DISCORD_GET_MEMBER\` = Server-specific info (roles, nickname, join date) - **USE THIS FOR ROLES!**
 
 #### **Messages**
 
@@ -162,11 +167,12 @@ Before assigning or removing roles:
 
 ### **Decision Rules**
 
-1. **Single user query?** → Use \`DISCORD_GET_USER\` with specific user_id
-2. **Multiple users/list?** → Use \`DISCORD_GET_MEMBERS\` with limit
-3. **Current user (me/my)?** → Use user_id from **Current Context** section
-4. **Real-time data?** → Use Discord API tools
-5. **Historical/logged data?** → Use database tools
+1. **Need roles/nickname/server info?** → Use \`DISCORD_GET_MEMBER\` (guild_id + user_id)
+2. **Need global profile only?** → Use \`DISCORD_GET_USER\` (user_id only)
+3. **Multiple users/list?** → Use \`DISCORD_GET_MEMBERS\` with limit
+4. **Current user (me/my)?** → Use user_id AND guild_id from **Current Context**
+5. **Real-time data?** → Use Discord API tools
+6. **Historical/logged data?** → Use database tools
 
 ### **Important Limits**
 
