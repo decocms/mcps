@@ -105,15 +105,36 @@ export async function generateResponse(
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`❌ [LLM] Agent call failed: ${errorMsg}`);
-      console.log(`🔄 [LLM] Falling back to direct LLM call...`);
 
-      // Fall through to direct LLM call
+      // Don't fallback for authentication errors - they won't work either
+      if (
+        errorMsg.includes("Organization context is required") ||
+        errorMsg.includes("401") ||
+        errorMsg.includes("Unauthorized")
+      ) {
+        throw new Error(
+          "Sessão expirada. Clique em 'Save' no Mesh Dashboard para renovar.",
+        );
+      }
+
+      // Only fallback for timeout/network errors
+      if (
+        errorMsg.includes("aborted") ||
+        errorMsg.includes("timeout") ||
+        errorMsg.includes("ETIMEDOUT")
+      ) {
+        console.log(`🔄 [LLM] Falling back to direct LLM call...`);
+        // Fall through to direct LLM call
+      } else {
+        // For other errors, don't fallback - just throw
+        throw error;
+      }
     }
   } else {
     console.log(`\n⚠️ [LLM] No Agent configured`);
   }
 
-  // Fallback: Direct LLM call without Agent tools
+  // Fallback: Direct LLM call without Agent tools (only for timeout errors)
   console.log(`\n💬 [LLM] Sending message directly to LLM (no tools)`);
   console.log(`   Model: ${modelId}`);
   console.log(`   Gateway: ${agentId || "none"}`);
