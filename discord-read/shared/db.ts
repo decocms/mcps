@@ -102,12 +102,13 @@ export interface MessageEditHistoryEntry {
 
 export interface MessageData {
   id: string;
-  guild_id: string;
+  guild_id?: string | null;
   channel_id: string;
   channel_name?: string | null;
   channel_type?: number | null;
   parent_channel_id?: string | null;
   thread_id?: string | null;
+  is_dm?: boolean;
   author_id: string;
   author_username: string;
   author_global_name?: string | null;
@@ -145,7 +146,7 @@ export interface MessageData {
 export async function upsertMessage(msg: MessageData): Promise<void> {
   await runSQL(
     `INSERT INTO discord_message (
-      id, guild_id, channel_id, channel_name, channel_type, parent_channel_id, thread_id,
+      id, guild_id, channel_id, channel_name, channel_type, parent_channel_id, thread_id, is_dm,
       author_id, author_username, author_global_name, author_avatar, author_bot,
       content, content_clean, type, pinned, tts, flags,
       webhook_id, application_id, interaction,
@@ -154,7 +155,7 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       reply_to_id, message_reference, edit_history,
       deleted, deleted_at, deleted_by_id, deleted_by_username, bulk_deleted,
       created_at, edited_at, indexed_at, last_updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ON CONFLICT (id) DO UPDATE SET
       content = EXCLUDED.content,
       content_clean = EXCLUDED.content_clean,
@@ -173,12 +174,13 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
       last_updated_at = NOW()`,
     [
       msg.id,
-      msg.guild_id,
+      msg.guild_id || null,
       msg.channel_id,
       msg.channel_name || null,
       msg.channel_type ?? null,
       msg.parent_channel_id || null,
       msg.thread_id || null,
+      msg.is_dm ?? false,
       msg.author_id,
       msg.author_username,
       msg.author_global_name || null,

@@ -12,12 +12,13 @@
 export const messagesTableIdempotentQuery = `
 CREATE TABLE IF NOT EXISTS discord_message (
   id TEXT PRIMARY KEY,
-  guild_id TEXT NOT NULL,
+  guild_id TEXT,
   channel_id TEXT NOT NULL,
   channel_name TEXT,
   channel_type INTEGER,
   parent_channel_id TEXT,
   thread_id TEXT,
+  is_dm BOOLEAN DEFAULT FALSE,
   
   -- Author info
   author_id TEXT NOT NULL,
@@ -522,6 +523,15 @@ BEGIN
     WHERE table_name = 'discord_message' AND column_name = 'parent_channel_id') THEN
     ALTER TABLE discord_message ADD COLUMN parent_channel_id TEXT;
   END IF;
+  
+  -- Add is_dm column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'discord_message' AND column_name = 'is_dm') THEN
+    ALTER TABLE discord_message ADD COLUMN is_dm BOOLEAN DEFAULT FALSE;
+  END IF;
+  
+  -- Make guild_id nullable for DMs
+  ALTER TABLE discord_message ALTER COLUMN guild_id DROP NOT NULL;
 END $$;
 `;
 

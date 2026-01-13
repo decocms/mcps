@@ -224,7 +224,7 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Message create event
   client.on("messageCreate", async (message: Message) => {
-    if (!message.guild) return; // Ignore DMs
+    const isDM = !message.guild;
 
     // CRITICAL: Debounce to prevent duplicate processing
     if (processedMessageIds.has(message.id)) {
@@ -235,25 +235,78 @@ function registerEventHandlers(client: Client, env: Env): void {
     // Auto-cleanup after TTL
     setTimeout(() => processedMessageIds.delete(message.id), MESSAGE_CACHE_TTL);
 
-    // Debug: log all messages
-    console.log(
-      `[Discord] Message received: "${message.content}" from ${message.author.username}`,
-    );
-
     // Get the latest env (updated by tool calls from Mesh)
     const currentEnv = getCurrentEnv() || env;
+
+    // Check if DMs are allowed
+    if (isDM) {
+      const allowDM =
+        currentEnv.MESH_REQUEST_CONTEXT?.state?.ALLOW_DM !== false;
+      if (!allowDM) {
+        console.log(`[Discord] DM ignored (disabled in config)`);
+        return;
+      }
+
+      // Check if user is allowed to DM
+      const dmAllowedUsers =
+        currentEnv.MESH_REQUEST_CONTEXT?.state?.DM_ALLOWED_USERS;
+      if (dmAllowedUsers) {
+        const allowedIds = dmAllowedUsers
+          .split(",")
+          .map((id: string) => id.trim());
+        if (!allowedIds.includes(message.author.id)) {
+          console.log(
+            `[Discord] DM from ${message.author.username} not in allowed list`,
+          );
+          await message.reply(
+            "❌ Você não tem permissão para usar o bot via DM.",
+          );
+          return;
+        }
+      }
+    }
+
+    // Debug: log all messages
+    const channelInfo = isDM
+      ? "DM"
+      : `#${(message.channel as { name?: string }).name || "unknown"}`;
+    console.log(
+      `[Discord] Message received [${channelInfo}]: "${message.content}" from ${message.author.username}`,
+    );
 
     // Re-set database env (ensures it's available for this message)
     setDatabaseEnv(currentEnv);
 
     try {
       // Index the message (non-blocking, errors are logged but don't stop processing)
-      indexMessage(message).catch((e) =>
+      indexMessage(message, isDM).catch((e) =>
         console.log("[Discord] Index failed (non-critical):", e.message),
       );
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
+
+      // Check role permissions (only in guild)
+      if (!isDM && message.member) {
+        const allowedRoles =
+          currentEnv.MESH_REQUEST_CONTEXT?.state?.ALLOWED_ROLES;
+        if (allowedRoles) {
+          const roleIds = allowedRoles
+            .split(",")
+            .map((id: string) => id.trim());
+          const memberRoles = message.member.roles.cache.map((r) => r.id);
+          const hasPermission = roleIds.some((roleId: string) =>
+            memberRoles.includes(roleId),
+          );
+          if (!hasPermission) {
+            console.log(
+              `[Discord] User ${message.author.username} doesn't have required roles`,
+            );
+            // Don't respond - just silently ignore
+            return;
+          }
+        }
+      }
 
       const configuredPrefix =
         currentEnv.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
@@ -269,31 +322,37 @@ function registerEventHandlers(client: Client, env: Env): void {
       let prefix: string | null = null;
       let content = message.content;
 
-      // Check bot mention first (higher priority)
-      if (content.startsWith(botMention)) {
-        prefix = botMention;
-        content = content.slice(botMention.length).trim();
-        console.log(`[Discord] Matched bot mention: "${botMention}"`);
-      } else if (content.startsWith(botMentionNick)) {
-        prefix = botMentionNick;
-        content = content.slice(botMentionNick.length).trim();
-        console.log(
-          `[Discord] Matched bot mention (nick): "${botMentionNick}"`,
-        );
-      } else if (content.startsWith(configuredPrefix)) {
-        prefix = configuredPrefix;
-        content = content.slice(configuredPrefix.length).trim();
-        console.log(
-          `[Discord] Matched configured prefix: "${configuredPrefix}"`,
-        );
+      // In DMs, all messages are treated as commands (no prefix needed)
+      if (isDM) {
+        prefix = "DM";
+        console.log(`[Discord] DM detected - processing as command`);
       } else {
-        console.log(`[Discord] No prefix matched`);
+        // Check bot mention first (higher priority)
+        if (content.startsWith(botMention)) {
+          prefix = botMention;
+          content = content.slice(botMention.length).trim();
+          console.log(`[Discord] Matched bot mention: "${botMention}"`);
+        } else if (content.startsWith(botMentionNick)) {
+          prefix = botMentionNick;
+          content = content.slice(botMentionNick.length).trim();
+          console.log(
+            `[Discord] Matched bot mention (nick): "${botMentionNick}"`,
+          );
+        } else if (content.startsWith(configuredPrefix)) {
+          prefix = configuredPrefix;
+          content = content.slice(configuredPrefix.length).trim();
+          console.log(
+            `[Discord] Matched configured prefix: "${configuredPrefix}"`,
+          );
+        } else {
+          console.log(`[Discord] No prefix matched`);
+        }
       }
 
       if (prefix) {
         console.log(`[Discord] Command detected! Content: "${content}"`);
         // Pass the cleaned content without prefix (use currentEnv for latest context)
-        await processCommand(message, prefix, currentEnv, content);
+        await processCommand(message, prefix, currentEnv, content, isDM);
       }
     } catch (error) {
       console.error("[Discord] Error handling message:", error);

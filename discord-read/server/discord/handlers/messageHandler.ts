@@ -59,27 +59,33 @@ async function safeReply(
 /**
  * Index a message to the database.
  */
-export async function indexMessage(message: Message): Promise<void> {
-  if (!message.guild) return;
-
+export async function indexMessage(
+  message: Message,
+  isDM: boolean = false,
+): Promise<void> {
+  const channelInfo = isDM
+    ? "DM"
+    : `#${(message.channel as TextChannel).name || "unknown"}`;
   console.log(
-    `[Message] ${message.author.username}: ${message.content.slice(0, 50)}...`,
+    `[Message] [${channelInfo}] ${message.author.username}: ${message.content.slice(0, 50)}...`,
   );
 
   try {
     const db = await import("../../../shared/db.ts");
 
-    // Upsert guild first
-    await db.upsertGuild({
-      id: message.guild.id,
-      name: message.guild.name,
-      icon: message.guild.iconURL(),
-      owner_id: message.guild.ownerId,
-    });
+    // Upsert guild first (only if not DM)
+    if (message.guild) {
+      await db.upsertGuild({
+        id: message.guild.id,
+        name: message.guild.name,
+        icon: message.guild.iconURL(),
+        owner_id: message.guild.ownerId,
+      });
+    }
 
     // Get channel info for type and parent
     const channel = message.channel;
-    const isThread = channel.isThread();
+    const isThread = "isThread" in channel && channel.isThread();
     const parentId = isThread ? channel.parentId : null;
     const categoryId =
       "parentId" in channel && !isThread ? channel.parentId : null;
@@ -87,12 +93,15 @@ export async function indexMessage(message: Message): Promise<void> {
     // Index the message with all available data
     await db.upsertMessage({
       id: message.id,
-      guild_id: message.guild.id,
+      guild_id: message.guild?.id || null,
       channel_id: message.channel.id,
-      channel_name: (message.channel as TextChannel).name || null,
+      channel_name: isDM
+        ? `DM-${message.author.username}`
+        : (message.channel as TextChannel).name || null,
       channel_type: channel.type,
       parent_channel_id: parentId || categoryId || null,
       thread_id: isThread ? channel.id : message.thread?.id || null,
+      is_dm: isDM,
       author_id: message.author.id,
       author_username: message.author.username,
       author_global_name: message.author.globalName || null,
@@ -163,14 +172,17 @@ export async function indexMessage(message: Message): Promise<void> {
  * @param prefix - The prefix used (for display purposes)
  * @param env - Environment
  * @param cleanContent - Optional pre-cleaned content (without prefix)
+ * @param isDM - Whether this is a DM
  */
 export async function processCommand(
   message: Message,
   prefix: string,
   env: Env,
   cleanContent?: string,
+  isDM: boolean = false,
 ): Promise<void> {
-  if (!message.guild || !message.member) return;
+  // In guilds, we need member info; in DMs, we don't have it
+  if (!isDM && (!message.guild || !message.member)) return;
 
   // Prevent duplicate processing
   const messageKey = `${message.id}-${message.channelId}`;
@@ -237,7 +249,7 @@ async function handleDefaultAgent(
   userInput: string,
   env: Env,
 ): Promise<void> {
-  if (!message.guild) return;
+  const isDM = !message.guild;
 
   // Empty input
   if (!userInput.trim()) {
@@ -245,7 +257,12 @@ async function handleDefaultAgent(
     return;
   }
 
-  console.log(`[Agent] Processing: "${userInput.slice(0, 50)}..."`);
+  const channelInfo = isDM
+    ? `DM with ${message.author.username}`
+    : `#${(message.channel as TextChannel).name || "unknown"}`;
+  console.log(
+    `[Agent] Processing [${channelInfo}]: "${userInput.slice(0, 50)}..."`,
+  );
 
   // Show typing indicator
   try {
@@ -288,10 +305,19 @@ async function handleDefaultAgent(
     }> = [];
 
     // Add context if available
+    const contextLocation = isDM
+      ? `DM com ${message.author.username}`
+      : `canal: #${"name" in message.channel ? message.channel.name : "unknown"}, servidor: ${message.guild?.name}`;
+
     if (contextMessages) {
       llmMessages.push({
         role: "system",
-        content: `Contexto da conversa recente no Discord (canal: #${"name" in message.channel ? message.channel.name : "unknown"}, servidor: ${message.guild?.name}):\n\n${contextMessages}\n\n---\nResponda a mensagem do usuário considerando este contexto.`,
+        content: `Contexto da conversa recente no Discord (${contextLocation}):\n\n${contextMessages}\n\n---\nResponda a mensagem do usuário considerando este contexto.`,
+      });
+    } else if (isDM) {
+      llmMessages.push({
+        role: "system",
+        content: `Esta é uma conversa privada (DM) com ${message.author.username}. Responda de forma pessoal e direta.`,
       });
     }
 
@@ -303,7 +329,7 @@ async function handleDefaultAgent(
 
     const response = await generateResponse(env, llmMessages, {
       discordContext: {
-        guildId: message.guild!.id,
+        guildId: message.guild?.id || "DM",
         channelId: message.channel.id,
         userId: message.author.id,
         userName: message.author.username,

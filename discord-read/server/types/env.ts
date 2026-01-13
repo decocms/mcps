@@ -39,6 +39,24 @@ export const StateSchema = z.object({
     .optional()
     .describe("Guild ID para comandos específicos"),
   LOG_CHANNEL_ID: z.string().optional().describe("Canal para logs do bot"),
+
+  // Permissions
+  ALLOWED_ROLES: z
+    .string()
+    .optional()
+    .describe(
+      "IDs de cargos permitidos a usar o bot (separados por vírgula). Deixe vazio para permitir todos.",
+    ),
+  ALLOW_DM: z
+    .boolean()
+    .default(true)
+    .describe("Permitir mensagens diretas (DM) ao bot"),
+  DM_ALLOWED_USERS: z
+    .string()
+    .optional()
+    .describe(
+      "IDs de usuários permitidos a usar o bot via DM (separados por vírgula). Deixe vazio para permitir todos.",
+    ),
 });
 
 // @ts-expect-error - Runtime expects internal Zod types that differ from project's Zod
