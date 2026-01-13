@@ -48,14 +48,32 @@ export async function generateResponse(
   const state = env.MESH_REQUEST_CONTEXT.state;
 
   // Get values directly from state (like mcp-studio)
-  const connectionId = state.MODEL_PROVIDER.value;
-  const modelId = state.LANGUAGE_MODEL.value.id ?? DEFAULT_LANGUAGE_MODEL;
-  const agentId = state.AGENT.value;
+  const connectionId = state?.MODEL_PROVIDER?.value;
+  const modelId = state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
+  const agentId = state?.AGENT?.value;
 
-  console.log(`[LLM] Calling Mesh API:`);
+  console.log(`\n╔══════════════════════════════════════════════════════════╗`);
+  console.log(`║                   LLM Request                            ║`);
+  console.log(`╠══════════════════════════════════════════════════════════╣`);
   console.log(
-    `[LLM]   org=${organizationId}, model=${modelId}, agent=${agentId}`,
+    `║  Organization:  ${organizationId?.slice(0, 30).padEnd(30)}        ║`,
   );
+  console.log(`║  Model:         ${modelId?.slice(0, 30).padEnd(30)}        ║`);
+  console.log(`║  Agent/Gateway: ${agentId?.slice(0, 30).padEnd(30)}        ║`);
+  console.log(
+    `║  Connection:    ${connectionId?.slice(0, 30).padEnd(30)}        ║`,
+  );
+  console.log(`╚══════════════════════════════════════════════════════════╝\n`);
+
+  // Validate required fields
+  if (!connectionId) {
+    throw new Error(
+      "MODEL_PROVIDER not configured. Please configure it in Mesh.",
+    );
+  }
+  if (!agentId) {
+    throw new Error("AGENT not configured. Please configure it in Mesh.");
+  }
 
   // Convert messages to Mesh format
   const meshMessages = messages.map((msg) => ({
