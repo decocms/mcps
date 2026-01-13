@@ -6,8 +6,14 @@
     "type": "HTTP",
     "url": "https://discord-mcp.decocache.com/mcp"
   },
-  "description": "Discord bot with message indexing, AI agent commands and reaction tracking",
+  "description": "Discord bot with full server management, AI agent commands, message indexing and moderation tools.",
   "icon": "https://assets.decocache.com/mcp/discord/app.png",
-  "unlisted": false
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Communication", "Automation"],
+    "official": false,
+    "tags": ["discord", "bot", "moderation", "ai-agent", "messages", "roles", "members", "server-management", "webhooks", "automation"],
+    "short_description": "Discord bot with full server management, AI agent commands, message indexing and moderation tools.",
+    "mesh_description": "The Discord MCP provides comprehensive integration with Discord servers, enabling AI agents to manage and automate Discord communities. This MCP includes a full-featured Discord bot that indexes messages, tracks reactions, and logs moderation actions to a PostgreSQL database. AI agents can send, edit, and delete messages; search message history; manage channels and threads; create, edit, and assign roles; moderate members (kick, ban, timeout, mute); and execute webhooks. The bot supports both prefix commands and @mentions, works in servers and DMs, and maintains conversation context for natural AI interactions. Built-in tools include member search by username, role management, channel organization, and database queries for historical data including deleted/edited messages. Ideal for community managers, moderators, and developers who want to automate Discord server management, build custom moderation workflows, or create AI-powered community assistants. Supports real-time message indexing, audit logging, and integration with the Mesh platform for AI model selection."
+  }
 }
-
