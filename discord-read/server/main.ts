@@ -153,3 +153,36 @@ console.log(`
 
 ⚠️  Press Ctrl+C to gracefully shutdown the Discord bot.
 `);
+
+// Auto-start Discord bot if BOT_TOKEN is in environment
+const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
+if (envBotToken && !discordInitialized) {
+  console.log(
+    "[STARTUP] BOT_TOKEN found in environment, starting Discord bot...",
+  );
+
+  // Create a minimal env with the token for startup
+  const startupEnv = {
+    MESH_REQUEST_CONTEXT: {
+      state: {
+        BOT_TOKEN: envBotToken,
+        COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
+        GUILD_ID: process.env.GUILD_ID,
+      },
+    },
+  } as Env;
+
+  // Update global env
+  updateEnv(startupEnv);
+  setDatabaseEnv(startupEnv);
+
+  // Initialize Discord client
+  initializeDiscordClient(startupEnv)
+    .then(() => {
+      discordInitialized = true;
+      console.log("[STARTUP] Discord bot started from environment ✓");
+    })
+    .catch((error) => {
+      console.error("[STARTUP] Failed to start Discord bot:", error);
+    });
+}
