@@ -185,8 +185,11 @@ Be a **reliable, secure, and intelligent agent**, capable of:
  * Get the system prompt with optional context
  */
 export function getSystemPrompt(context?: {
+  guildId?: string;
   guildName?: string;
+  channelId?: string;
   channelName?: string;
+  userId?: string;
   userName?: string;
   isDM?: boolean;
 }): string {
@@ -199,21 +202,37 @@ export function getSystemPrompt(context?: {
       contextInfo.push(
         `You are currently in a **private DM conversation** with ${context.userName || "a user"}.`,
       );
+      if (context.userId) {
+        contextInfo.push(`User ID: \`${context.userId}\``);
+      }
     } else {
-      if (context.guildName) {
+      if (context.guildName && context.guildId) {
+        contextInfo.push(
+          `Current server: **${context.guildName}** (guild_id: \`${context.guildId}\`)`,
+        );
+      } else if (context.guildName) {
         contextInfo.push(`Current server: **${context.guildName}**`);
       }
-      if (context.channelName) {
+      if (context.channelName && context.channelId) {
+        contextInfo.push(
+          `Current channel: **#${context.channelName}** (channel_id: \`${context.channelId}\`)`,
+        );
+      } else if (context.channelName) {
         contextInfo.push(`Current channel: **#${context.channelName}**`);
       }
     }
 
-    if (context.userName) {
+    if (context.userName && context.userId) {
+      contextInfo.push(
+        `User talking to you: **${context.userName}** (user_id: \`${context.userId}\`)`,
+      );
+    } else if (context.userName) {
       contextInfo.push(`User talking to you: **${context.userName}**`);
     }
 
     if (contextInfo.length > 0) {
       prompt += `\n\n---\n\n## **Current Context**\n\n${contextInfo.join("\n")}`;
+      prompt += `\n\n⚠️ **IMPORTANT**: When using Discord tools, always use the IDs shown above (e.g., guild_id, channel_id, user_id). Do NOT use names as IDs.`;
     }
   }
 

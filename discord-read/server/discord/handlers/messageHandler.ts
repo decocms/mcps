@@ -316,10 +316,13 @@ async function handleDefaultAgent(
         ? (message.channel.name ?? undefined)
         : undefined;
 
-    // Add system prompt with context
+    // Add system prompt with context (including IDs for tools)
     const systemPrompt = getSystemPrompt({
+      guildId: message.guild?.id,
       guildName: message.guild?.name,
+      channelId: message.channel.id,
       channelName,
+      userId: message.author.id,
       userName: message.author.username,
       isDM,
     });
