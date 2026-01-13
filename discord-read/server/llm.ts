@@ -113,9 +113,10 @@ export async function generateResponse(
     console.log(`\n⚠️ [LLM] No Agent configured`);
   }
 
-  // Fallback: Direct LLM call without Agent
-  console.log(`\n💬 [LLM] Sending message directly to LLM (no Agent/tools)`);
+  // Fallback: Direct LLM call without Agent tools
+  console.log(`\n💬 [LLM] Sending message directly to LLM (no tools)`);
   console.log(`   Model: ${modelId}`);
+  console.log(`   Gateway: ${agentId || "none"}`);
   console.log(`   Messages: ${meshMessages.length} message(s)\n`);
 
   const result = await callDirectLLM(
@@ -125,6 +126,7 @@ export async function generateResponse(
     connectionId,
     modelId,
     meshMessages,
+    agentId, // Pass agent if available, but tools won't be called
   );
 
   console.log(`✅ [LLM] Direct LLM response received successfully`);
@@ -194,6 +196,7 @@ async function callWithAgent(
 
 /**
  * Direct LLM call without Agent (fallback)
+ * Note: Mesh API still requires gateway field, but we pass an empty object
  */
 async function callDirectLLM(
   meshUrl: string,
@@ -205,13 +208,15 @@ async function callDirectLLM(
     role: string;
     parts: Array<{ type: string; text: string }>;
   }>,
+  agentId?: string,
 ): Promise<string> {
   const requestBody = {
     model: {
       connectionId,
       id: modelId,
     },
-    // No gateway - direct LLM call
+    // Mesh API requires gateway field - use the agent if available, otherwise empty object
+    gateway: agentId ? { id: agentId } : {},
     messages,
   };
 
