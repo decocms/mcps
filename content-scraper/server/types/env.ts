@@ -15,9 +15,9 @@ export const StateSchema = z.object({
       .describe("Subreddits topics to scrape content from"),
   }),
   linkedinFields: z.object({
-    LinkedInTopics: z
+    linkedinProfiles: z
       .array(z.string())
-      .describe("LinkedIn topics to scrape content from"),
+      .describe("LinkedIn profiles to scrape content from"),
   }),
   twitterFields: z.object({
     TwitterTopics: z

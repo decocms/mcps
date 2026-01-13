@@ -26,7 +26,7 @@ export const scrapeContentTool = (env: Env) =>
         const n8nWebhookUrl = state?.n8nWebhookUrl ?? "";
         const urls = state?.urlFields?.urls ?? [];
         const redditTopics = state?.redditFields?.RedditTopicsToScrape ?? [];
-        const linkedinTopics = state?.linkedinFields?.LinkedInTopics ?? [];
+        const linkedinProfiles = state?.linkedinFields?.linkedinProfiles ?? [];
         const twitterTopics = state?.twitterFields?.TwitterTopics ?? [];
 
         const controller = new AbortController();
@@ -41,7 +41,7 @@ export const scrapeContentTool = (env: Env) =>
             body: JSON.stringify({
               urls: urls,
               reddit_topics: redditTopics,
-              linkedin_topics: linkedinTopics,
+              linkedin_topics: linkedinProfiles,
               twitter_topics: twitterTopics,
             }),
             signal: controller.signal,
