@@ -25,6 +25,9 @@ export const scrapeContentTool = (env: Env) =>
         const state = env.MESH_REQUEST_CONTEXT?.state;
         const n8nWebhookUrl = state?.n8nWebhookUrl ?? "";
         const urls = state?.urlFields?.urls ?? [];
+        const redditTopics = state?.redditFields?.RedditTopicsToScrape ?? [];
+        const linkedinTopics = state?.linkedinFields?.LinkedInTopics ?? [];
+        const twitterTopics = state?.twitterFields?.TwitterTopics ?? [];
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -35,7 +38,12 @@ export const scrapeContentTool = (env: Env) =>
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ urls }),
+            body: JSON.stringify({
+              urls: urls,
+              reddit_topics: redditTopics,
+              linkedin_topics: linkedinTopics,
+              twitter_topics: twitterTopics,
+            }),
             signal: controller.signal,
           });
 
