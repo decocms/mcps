@@ -16,7 +16,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createS3Client, getPresignedUrlExpiration } from "../lib/s3-client.ts";
@@ -66,7 +66,7 @@ export const createListObjectsTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { prefix, maxKeys, continuationToken } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new ListObjectsV2Command({
         Bucket: state.bucketName,
@@ -107,14 +107,14 @@ export const createGetObjectMetadataTool = (env: Env) =>
       lastModified: z.string().describe("Last modified timestamp"),
       etag: z.string().describe("Entity tag for the object"),
       metadata: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .describe("Custom metadata key-value pairs"),
     }),
     execute: async (ctx: any) => {
       const { key } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new HeadObjectCommand({
         Bucket: state.bucketName,
@@ -159,7 +159,7 @@ export const createGetPresignedUrlTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key, expiresIn } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
       const command = new GetObjectCommand({
@@ -208,7 +208,7 @@ export const createPutPresignedUrlTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key, expiresIn, contentType } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
       const command = new PutObjectCommand({
@@ -245,7 +245,7 @@ export const createDeleteObjectTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { key } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new DeleteObjectCommand({
         Bucket: state.bucketName,
@@ -291,7 +291,7 @@ export const createDeleteObjectsTool = (env: Env) =>
     execute: async (ctx: any) => {
       const { keys } = ctx;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new DeleteObjectsCommand({
         Bucket: state.bucketName,
