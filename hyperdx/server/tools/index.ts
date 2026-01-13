@@ -1,7 +1,16 @@
 /**
  * Central export point for all tools organized by domain.
  */
-import { hyperdxTools } from "./hyperdx.ts";
+import type { Env } from "../main.ts";
+import {
+  createSearchLogsTool,
+  createGetLogDetailsTool,
+  createQueryChartDataTool,
+} from "./hyperdx.ts";
 
-// Export all tools from all domains
-export const tools = [...hyperdxTools];
+// Export all tools as a function that receives env and creates the tools
+export const tools = (env: Env) => [
+  createSearchLogsTool(env),
+  createGetLogDetailsTool(env),
+  createQueryChartDataTool(env),
+];
