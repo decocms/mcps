@@ -24,7 +24,7 @@ export async function discordAPI<T>(
   options: DiscordAPIOptions = {},
 ): Promise<T> {
   // Try to get token from passed env first, then fall back to global env
-  let botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+  let botToken: string | undefined = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
 
   if (!botToken) {
     // Fallback: try to get from global env (set when Discord bot started)

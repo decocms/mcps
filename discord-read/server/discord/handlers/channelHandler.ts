@@ -49,10 +49,10 @@ export async function handleThreadCreate(
       topic: null,
       nsfw: false,
       rate_limit_per_user: thread.rateLimitPerUser,
-      archived: thread.archived,
+      archived: thread.archived ?? undefined,
       archived_at: thread.archivedAt,
       auto_archive_duration: thread.autoArchiveDuration,
-      locked: thread.locked,
+      locked: thread.locked ?? undefined,
       created_at: thread.createdAt,
     });
   } catch (error) {
@@ -112,10 +112,10 @@ export async function handleThreadUpdate(
       message_count: thread.messageCount,
       member_count: thread.memberCount,
       rate_limit_per_user: thread.rateLimitPerUser,
-      archived: thread.archived,
+      archived: thread.archived ?? undefined,
       archived_at: thread.archivedAt,
       auto_archive_duration: thread.autoArchiveDuration,
-      locked: thread.locked,
+      locked: thread.locked ?? undefined,
       created_at: thread.createdAt,
     });
   } catch (error) {
@@ -155,10 +155,12 @@ export async function handleChannelCreate(
       position: channel.position,
       parent_id: "parentId" in channel ? channel.parentId : null,
       category_name: categoryName || null,
-      topic: "topic" in channel ? channel.topic : null,
-      nsfw: "nsfw" in channel ? channel.nsfw : false,
+      topic: "topic" in channel ? (channel.topic as string | null) : null,
+      nsfw: "nsfw" in channel ? (channel.nsfw as boolean) : false,
       rate_limit_per_user:
-        "rateLimitPerUser" in channel ? channel.rateLimitPerUser : null,
+        "rateLimitPerUser" in channel
+          ? (channel.rateLimitPerUser as number | null)
+          : null,
       created_at: channel.createdAt,
     });
   } catch (error) {

@@ -60,6 +60,5 @@ export const StateSchema = z.object({
     ),
 });
 
-// @ts-expect-error - Runtime expects internal Zod types that differ from project's Zod
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
 export type { Registry };

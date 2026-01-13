@@ -231,8 +231,8 @@ export const createGetMessageTool = (env: Env) =>
         author: { id: string; username: string; bot?: boolean };
         timestamp: string;
         edited_timestamp: string | null;
-        attachments: unknown[];
-        embeds: unknown[];
+        attachments: Record<string, unknown>[];
+        embeds: Record<string, unknown>[];
       }>(env, `/channels/${input.channel_id}/messages/${input.message_id}`);
 
       return result;

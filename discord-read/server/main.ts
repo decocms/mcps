@@ -23,7 +23,6 @@ export { StateSchema };
 // Track Discord client state
 let discordInitialized = false;
 
-// @ts-expect-error - Runtime expects internal Zod types that differ from project's Zod
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   events: {
     handlers: {
@@ -98,7 +97,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     ],
     state: StateSchema,
   },
-  tools,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools: tools as any,
   prompts: [],
 });
 
