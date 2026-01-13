@@ -102,7 +102,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   prompts: [],
 });
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT;
 
 // Graceful shutdown handler - destroy Discord client when process exits
 async function gracefulShutdown(signal: string) {

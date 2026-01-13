@@ -4,7 +4,7 @@
   "friendlyName": "Discord MCP",
   "connection": {
     "type": "HTTP",
-    "url": "https://discord-mcp.decocache.com/mcp"
+    "url": "https://sites-discord-read.decocache.com/mcp"
   },
   "description": "Discord bot with full server management, AI agent commands, message indexing and moderation tools.",
   "icon": "https://assets.decocache.com/mcp/discord/app.png",
