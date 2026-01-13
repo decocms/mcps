@@ -7,7 +7,7 @@
     "url": "https://sites-hyperdx.decocache.com/mcp"
   },
   "description": "Query observability data from HyperDX. Search logs, metrics, and traces with time series charts and pattern analysis.",
-  "icon": "https://hyperdx.io/Icon-192.png",
+  "icon": "https://assets.decocache.com/decocms/b98e1c94-659c-4ec1-b7bb-1bf8e1019cd2/download.png",
   "unlisted": false,
   "metadata": {
     "categories": ["Observability"],
