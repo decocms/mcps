@@ -304,20 +304,29 @@ async function handleDefaultAgent(
       content: string;
     }> = [];
 
-    // Add context if available
-    const contextLocation = isDM
-      ? `DM com ${message.author.username}`
-      : `canal: #${"name" in message.channel ? message.channel.name : "unknown"}, servidor: ${message.guild?.name}`;
+    // Import and use the system prompt
+    const { getSystemPrompt } = await import("../../prompts/system.ts");
 
+    const channelName =
+      "name" in message.channel
+        ? (message.channel.name ?? undefined)
+        : undefined;
+
+    // Add system prompt with context
+    const systemPrompt = getSystemPrompt({
+      guildName: message.guild?.name,
+      channelName,
+      userName: message.author.username,
+      isDM,
+    });
+
+    llmMessages.push({ role: "system", content: systemPrompt });
+
+    // Add recent conversation context if available
     if (contextMessages) {
       llmMessages.push({
         role: "system",
-        content: `Contexto da conversa recente no Discord (${contextLocation}):\n\n${contextMessages}\n\n---\nResponda a mensagem do usuário considerando este contexto.`,
-      });
-    } else if (isDM) {
-      llmMessages.push({
-        role: "system",
-        content: `Esta é uma conversa privada (DM) com ${message.author.username}. Responda de forma pessoal e direta.`,
+        content: `## Recent Conversation Context\n\nLast messages in this channel:\n\n${contextMessages}\n\n---\nConsider this context when responding.`,
       });
     }
 
