@@ -94,7 +94,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       "EVENT_BUS::*",
       "CONNECTION::*",
       "MODEL_PROVIDER::*",
-      "AGENT::*",
       "*",
     ],
     state: StateSchema,
