@@ -163,7 +163,22 @@ Before assigning or removing roles:
 |-------------|----------------|--------------|
 | "List server roles" | \`DISCORD_GET_ROLES\` | \`DISCORD_GET_MEMBERS\` |
 | "Create a role" | \`DISCORD_CREATE_ROLE\` | - |
-| "Give me admin" | \`DISCORD_EDIT_ROLE\` or guild member update | - |
+| "Add role to user" | \`DISCORD_ADD_ROLE\` (guild_id + user_id + role_id) | \`DISCORD_EDIT_MEMBER\` |
+| "Remove role from user" | \`DISCORD_REMOVE_ROLE\` (guild_id + user_id + role_id) | - |
+| "Set ALL user's roles" | \`DISCORD_EDIT_MEMBER\` with roles array | - |
+| "Edit a role" | \`DISCORD_EDIT_ROLE\` | - |
+
+#### **Moderation**
+
+| User Request | ✅ Correct Tool | ❌ Wrong Tool |
+|-------------|----------------|--------------|
+| "Kick user" | \`DISCORD_KICK_MEMBER\` | \`DISCORD_BAN_MEMBER\` |
+| "Ban user" | \`DISCORD_BAN_MEMBER\` | - |
+| "Timeout user" | \`DISCORD_TIMEOUT_MEMBER\` (duration_minutes) | \`DISCORD_EDIT_MEMBER\` |
+| "Remove timeout" | \`DISCORD_REMOVE_TIMEOUT\` | - |
+| "Mute in voice" | \`DISCORD_EDIT_MEMBER\` (mute: true) | - |
+| "Deafen in voice" | \`DISCORD_EDIT_MEMBER\` (deaf: true) | - |
+| "Change nickname" | \`DISCORD_EDIT_MEMBER\` (nick: "new") | - |
 
 ### **Decision Rules**
 

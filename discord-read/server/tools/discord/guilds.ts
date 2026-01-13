@@ -608,6 +608,330 @@ export const createDeleteRoleTool = (env: Env) =>
   });
 
 // ============================================================================
+// Add Role to Member
+// ============================================================================
+
+export const createAddRoleToMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_ADD_ROLE",
+    description:
+      "Add a role to a guild member. Requires MANAGE_ROLES permission.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID of the member"),
+        role_id: z.string().describe("The role ID to add"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        role_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}/roles/${input.role_id}`,
+        {
+          method: "PUT",
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `Role ${input.role_id} added to user ${input.user_id}`,
+      };
+    },
+  });
+
+// ============================================================================
+// Remove Role from Member
+// ============================================================================
+
+export const createRemoveRoleFromMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_REMOVE_ROLE",
+    description:
+      "Remove a role from a guild member. Requires MANAGE_ROLES permission.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID of the member"),
+        role_id: z.string().describe("The role ID to remove"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        role_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}/roles/${input.role_id}`,
+        {
+          method: "DELETE",
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `Role ${input.role_id} removed from user ${input.user_id}`,
+      };
+    },
+  });
+
+// ============================================================================
+// Edit Member (nickname, roles, mute, deaf, etc.)
+// ============================================================================
+
+export const createEditMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_EDIT_MEMBER",
+    description:
+      "Edit a guild member's attributes (nickname, roles, mute, deaf, etc.)",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID of the member"),
+        nick: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("New nickname (null to reset)"),
+        roles: z
+          .array(z.string())
+          .optional()
+          .describe("Array of role IDs to set (replaces all roles)"),
+        mute: z.boolean().optional().describe("Mute in voice channels"),
+        deaf: z.boolean().optional().describe("Deafen in voice channels"),
+        channel_id: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Move to voice channel (null to disconnect)"),
+        communication_disabled_until: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Timeout until ISO8601 timestamp (null to remove)"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        nick?: string | null;
+        roles?: string[];
+        mute?: boolean;
+        deaf?: boolean;
+        channel_id?: string | null;
+        communication_disabled_until?: string | null;
+        reason?: string;
+      };
+
+      const body: Record<string, unknown> = {};
+      if (input.nick !== undefined) body.nick = input.nick;
+      if (input.roles !== undefined) body.roles = input.roles;
+      if (input.mute !== undefined) body.mute = input.mute;
+      if (input.deaf !== undefined) body.deaf = input.deaf;
+      if (input.channel_id !== undefined) body.channel_id = input.channel_id;
+      if (input.communication_disabled_until !== undefined) {
+        body.communication_disabled_until = input.communication_disabled_until;
+      }
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}`,
+        {
+          method: "PATCH",
+          body,
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `Member ${input.user_id} updated successfully`,
+      };
+    },
+  });
+
+// ============================================================================
+// Kick Member
+// ============================================================================
+
+export const createKickMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_KICK_MEMBER",
+    description: "Kick a member from a Discord server (they can rejoin).",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID to kick"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}`,
+        {
+          method: "DELETE",
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `User ${input.user_id} kicked from guild ${input.guild_id}`,
+      };
+    },
+  });
+
+// ============================================================================
+// Timeout Member
+// ============================================================================
+
+export const createTimeoutMemberTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_TIMEOUT_MEMBER",
+    description:
+      "Timeout a member (prevent them from interacting) for a specified duration.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID to timeout"),
+        duration_minutes: z
+          .number()
+          .min(1)
+          .max(40320)
+          .describe("Duration in minutes (max 28 days = 40320)"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        timeout_until: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        duration_minutes: number;
+        reason?: string;
+      };
+
+      const timeoutUntil = new Date(
+        Date.now() + input.duration_minutes * 60 * 1000,
+      ).toISOString();
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}`,
+        {
+          method: "PATCH",
+          body: { communication_disabled_until: timeoutUntil },
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `User ${input.user_id} timed out for ${input.duration_minutes} minutes`,
+        timeout_until: timeoutUntil,
+      };
+    },
+  });
+
+// ============================================================================
+// Remove Timeout
+// ============================================================================
+
+export const createRemoveTimeoutTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_REMOVE_TIMEOUT",
+    description: "Remove timeout from a member (allow them to interact again).",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID"),
+        user_id: z.string().describe("The user ID to remove timeout from"),
+        reason: z.string().optional().describe("Reason for audit log"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        user_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/guilds/${input.guild_id}/members/${input.user_id}`,
+        {
+          method: "PATCH",
+          body: { communication_disabled_until: null },
+          reason: input.reason,
+        },
+      );
+
+      return {
+        success: true,
+        message: `Timeout removed from user ${input.user_id}`,
+      };
+    },
+  });
+
+// ============================================================================
 // Export
 // ============================================================================
 
@@ -616,9 +940,15 @@ export const discordGuildTools = [
   createListBotGuildsTool,
   createGetGuildMembersTool,
   createGetUserTool,
-  createGetMemberTool, // New! For getting roles and server-specific info
+  createGetMemberTool,
   createGetCurrentUserTool,
+  createEditMemberTool,
+  createAddRoleToMemberTool,
+  createRemoveRoleFromMemberTool,
+  createKickMemberTool,
   createBanMemberTool,
+  createTimeoutMemberTool,
+  createRemoveTimeoutTool,
   createGetGuildRolesTool,
   createCreateRoleTool,
   createEditRoleTool,
