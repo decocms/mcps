@@ -96,24 +96,6 @@ export const createSetupDatabaseTool = (env: Env) =>
         await runSQL(env, discordQueries.reactions.indexes);
         results.push("✓ discord_message_reaction table created");
 
-        // Create agent config table
-        console.log("[Setup] Creating discord_agent_config table...");
-        await runSQL(env, discordQueries.agentConfig.idempotent);
-        await runSQL(env, discordQueries.agentConfig.indexes);
-        results.push("✓ discord_agent_config table created");
-
-        // Create agent permission table (depends on agent config)
-        console.log("[Setup] Creating discord_agent_permission table...");
-        await runSQL(env, discordQueries.agentPermission.idempotent);
-        await runSQL(env, discordQueries.agentPermission.indexes);
-        results.push("✓ discord_agent_permission table created");
-
-        // Create command log table (depends on agent config)
-        console.log("[Setup] Creating discord_command_log table...");
-        await runSQL(env, discordQueries.commandLog.idempotent);
-        await runSQL(env, discordQueries.commandLog.indexes);
-        results.push("✓ discord_command_log table created");
-
         console.log("[Setup] All tables created successfully!");
 
         return {
