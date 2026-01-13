@@ -58,6 +58,35 @@ export async function ensureCollections(env: Env): Promise<void> {
       throw error;
     }
   }
+
+  // Run migrations after tables are created
+  try {
+    if (discordQueries.messages.migration) {
+      await runSQL(env, discordQueries.messages.migration);
+      console.log(`[DB] Migrations applied`);
+    }
+  } catch (error) {
+    console.error(`[DB] Error running migrations:`, error);
+    // Don't throw - migrations might fail if already applied
+  }
+
+  // Run migration indexes after migrations
+  try {
+    if (discordQueries.messages.migrationIndexes) {
+      const indexStatements = discordQueries.messages.migrationIndexes
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const statement of indexStatements) {
+        await runSQL(env, statement);
+      }
+      console.log(`[DB] Migration indexes applied`);
+    }
+  } catch (error) {
+    console.error(`[DB] Error running migration indexes:`, error);
+    // Don't throw - indexes are not critical
+  }
 }
 
 /**

@@ -53,6 +53,19 @@ export const createSetupDatabaseTool = (env: Env) =>
         await runSQL(env, discordQueries.messages.migration);
         results.push("✓ discord_message migrations applied");
 
+        // Run migration indexes (for new columns)
+        console.log("[Setup] Creating migration indexes...");
+        const migrationIndexStatements =
+          discordQueries.messages.migrationIndexes
+            .split(";")
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+
+        for (const statement of migrationIndexStatements) {
+          await runSQL(env, statement);
+        }
+        results.push("✓ migration indexes created");
+
         // Create channels table
         console.log("[Setup] Creating discord_channel table...");
         await runSQL(env, discordQueries.channels.idempotent);

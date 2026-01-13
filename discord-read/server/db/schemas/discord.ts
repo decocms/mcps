@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS discord_message (
 )
 `;
 
+// Base indexes (columns always exist)
 export const messagesTableIndexesQuery = `
 CREATE INDEX IF NOT EXISTS idx_discord_message_guild ON discord_message(guild_id);
 CREATE INDEX IF NOT EXISTS idx_discord_message_channel ON discord_message(channel_id);
@@ -83,9 +84,14 @@ CREATE INDEX IF NOT EXISTS idx_discord_message_author ON discord_message(author_
 CREATE INDEX IF NOT EXISTS idx_discord_message_created ON discord_message(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_discord_message_thread ON discord_message(thread_id);
 CREATE INDEX IF NOT EXISTS idx_discord_message_reply ON discord_message(reply_to_id);
+`;
+
+// Indexes for migration columns (created after migration runs)
+export const messagesTableMigrationIndexesQuery = `
 CREATE INDEX IF NOT EXISTS idx_discord_message_deleted ON discord_message(deleted) WHERE deleted = TRUE;
 CREATE INDEX IF NOT EXISTS idx_discord_message_webhook ON discord_message(webhook_id) WHERE webhook_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discord_message_edited ON discord_message(edited_at) WHERE edited_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_discord_message_dm ON discord_message(is_dm) WHERE is_dm = TRUE;
 `;
 
 // ============================================================================
@@ -544,6 +550,7 @@ export const discordQueries = {
     idempotent: messagesTableIdempotentQuery,
     indexes: messagesTableIndexesQuery,
     migration: messagesMigrationQuery,
+    migrationIndexes: messagesTableMigrationIndexesQuery,
   },
   channels: {
     idempotent: channelsTableIdempotentQuery,
