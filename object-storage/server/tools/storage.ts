@@ -63,8 +63,8 @@ export const createListObjectsTool = (env: Env) =>
         .boolean()
         .describe("Whether there are more results available"),
     }),
-    execute: async (ctx: any) => {
-      const { prefix, maxKeys, continuationToken } = ctx;
+    execute: async ({ context }) => {
+      const { prefix, maxKeys, continuationToken } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
 
@@ -111,8 +111,8 @@ export const createGetObjectMetadataTool = (env: Env) =>
         .optional()
         .describe("Custom metadata key-value pairs"),
     }),
-    execute: async (ctx: any) => {
-      const { key } = ctx;
+    execute: async ({ context }) => {
+      const { key } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
 
@@ -156,8 +156,8 @@ export const createGetPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async (ctx: any) => {
-      const { key, expiresIn } = ctx;
+    execute: async ({ context }) => {
+      const { key, expiresIn } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
@@ -205,8 +205,8 @@ export const createPutPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async (ctx: any) => {
-      const { key, expiresIn, contentType } = ctx;
+    execute: async ({ context }) => {
+      const { key, expiresIn, contentType } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
@@ -242,8 +242,8 @@ export const createDeleteObjectTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       key: z.string().describe("The key that was deleted"),
     }),
-    execute: async (ctx: any) => {
-      const { key } = ctx;
+    execute: async ({ context }) => {
+      const { key } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
 
@@ -288,8 +288,8 @@ export const createDeleteObjectsTool = (env: Env) =>
         )
         .describe("Array of errors for failed deletions"),
     }),
-    execute: async (ctx: any) => {
-      const { keys } = ctx;
+    execute: async ({ context }) => {
+      const { keys } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
 
