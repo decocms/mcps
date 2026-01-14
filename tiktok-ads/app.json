@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "tiktok-ads",
+  "friendlyName": "TikTok Ads",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-tiktok-ads.decocache.com/mcp"
+  },
+  "description": "Integrate and manage your TikTok Ads campaigns. Create, edit and analyze campaigns, ad groups, ads and performance reports.",
+  "icon": "https://assets.decocache.com/mcp/tiktok-ads-icon.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Marketing", "Advertising"],
+    "official": false,
+    "tags": ["tiktok", "ads", "marketing", "campaigns", "advertising", "social-media", "analytics"],
+    "short_description": "Integrate and manage your TikTok Ads campaigns. Create, edit and analyze campaigns, ad groups, ads and performance reports.",
+    "mesh_description": "The TikTok Ads MCP provides comprehensive integration with TikTok Marketing API, enabling full programmatic control over advertising campaigns. This MCP allows AI agents to create, read, update campaigns, ad groups, and individual ads, analyze performance metrics, manage audiences, and generate detailed reports. It supports advanced advertising features including campaign budget optimization, targeting configuration, bid strategies, and performance tracking across multiple advertisers. The integration is perfect for building intelligent advertising assistants, automated campaign managers, and performance optimization tools. Ideal for marketers and agencies who need to automate TikTok advertising workflows, integrate campaign management into business processes, or build advertising-aware applications. Provides secure authentication for API access."
+  }
+}
+
