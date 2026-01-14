@@ -42,18 +42,22 @@ export const scrapeContentTool = (env: Env) =>
               urls: urlEntries.map((entry) => ({
                 url: entry.url,
                 type: entry.type,
+                authority: entry.authority,
               })),
               reddit_topics: redditEntries.map((entry) => ({
                 topic: entry.topic,
                 type: entry.type,
+                authority: entry.authority,
               })),
               linkedin_topics: linkedinEntries.map((entry) => ({
                 profile: entry.profile,
                 type: entry.type,
+                authority: entry.authority,
               })),
               twitter_topics: twitterEntries.map((entry) => ({
                 topic: entry.topic,
                 type: entry.type,
+                authority: entry.authority,
               })),
             }),
             signal: controller.signal,

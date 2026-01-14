@@ -13,24 +13,36 @@ export const SourceTypeEnum = z.enum([
 
 export type SourceType = z.infer<typeof SourceTypeEnum>;
 
+const AuthoritySchema = z
+  .number()
+  .min(0)
+  .max(1)
+  .describe(
+    "Source credibility score from 0 to 1. Higher values indicate more trustworthy/influential sources (e.g., 0.9 for official docs, 0.5 for blogs, 0.2 for forums)",
+  );
+
 const UrlEntrySchema = z.object({
   url: z.string().describe("URL to scrape"),
   type: SourceTypeEnum.describe("Type/category of this source"),
+  authority: AuthoritySchema,
 });
 
 const RedditEntrySchema = z.object({
   topic: z.string().describe("Subreddit topic to scrape"),
   type: SourceTypeEnum.describe("Type/category of this source"),
+  authority: AuthoritySchema,
 });
 
 const LinkedinEntrySchema = z.object({
   profile: z.string().describe("LinkedIn profile to scrape"),
   type: SourceTypeEnum.describe("Type/category of this source"),
+  authority: AuthoritySchema,
 });
 
 const TwitterEntrySchema = z.object({
   topic: z.string().describe("Twitter topic to scrape"),
   type: SourceTypeEnum.describe("Type/category of this source"),
+  authority: AuthoritySchema,
 });
 
 export const StateSchema = z.object({
