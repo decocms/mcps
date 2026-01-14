@@ -191,7 +191,7 @@ export const createDeleteWebhookTool = (env: Env) =>
 // Execute Webhook
 // ============================================================================
 
-export const createExecuteWebhookTool = (env: Env) =>
+export const createExecuteWebhookTool = () =>
   createPrivateTool({
     id: "DISCORD_EXECUTE_WEBHOOK",
     description: "Send a message through a Discord webhook",

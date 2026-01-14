@@ -8,7 +8,6 @@ import {
   EmbedBuilder,
   type Message,
   type TextChannel,
-  PermissionFlagsBits,
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";

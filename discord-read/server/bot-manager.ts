@@ -15,7 +15,7 @@ import { ensureCollections, ensureIndexes } from "./db/index.ts";
 
 // Global state
 let botInitializing = false;
-let botInitialized = false;
+let _botInitialized = false;
 
 // Store the latest env globally for access in event handlers
 let _currentEnv: Env | null = null;
@@ -80,7 +80,7 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
 
     // Initialize Discord client
     await initializeDiscordClient(env);
-    botInitialized = true;
+    _botInitialized = true;
     console.log("[BotManager] Discord bot started ✓");
 
     return true;
@@ -126,6 +126,6 @@ export function getBotStatus() {
  */
 export async function shutdownBot(): Promise<void> {
   await shutdownDiscordClient();
-  botInitialized = false;
+  _botInitialized = false;
   botInitializing = false;
 }

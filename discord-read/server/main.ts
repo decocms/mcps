@@ -28,7 +28,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     handlers: {
       SELF: {
         events: ["discord.*"],
-        handler: async ({ events }, env) => {
+        handler: async ({ events }) => {
           try {
             for (const event of events) {
               console.log(`[SELF] Event: ${event.type}`);
@@ -41,7 +41,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         },
       },
       EVENT_BUS: {
-        handler: async ({ events }, env) => {
+        handler: async ({ events }) => {
           try {
             for (const event of events) {
               console.log(`[EVENT_BUS] Event: ${event.type}`);

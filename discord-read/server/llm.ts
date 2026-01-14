@@ -37,7 +37,7 @@ export interface DiscordContext {
 export async function generateResponse(
   env: Env,
   messages: ChatMessage[],
-  options?: {
+  _options?: {
     discordContext?: DiscordContext;
   },
 ): Promise<GenerateResponse> {
