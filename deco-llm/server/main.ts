@@ -12,10 +12,17 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { tools } from "@decocms/openrouter/tools";
 import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { z } from "zod";
+import { ensureThreadsTables } from "./db/schemas/threads.ts";
+import {
+  createRetrieveThreadDataTool,
+  createSaveThreadDataTool,
+} from "./tools/threads.ts";
+import { createLLMDoGenerateWithThreadTool } from "./tools/llm-with-thread.ts";
 import { calculatePreAuthAmount, toMicrodollars } from "./usage";
 
 export const StateSchema = z.object({
   WALLET: BindingOf("@deco/wallet"),
+  DATABASE: BindingOf("@deco/postgres"),
 });
 
 /**
@@ -57,7 +64,8 @@ const runtime = withRuntime<
   Registry
 >({
   tools: (env) => {
-    return tools(env, {
+    // Combine LLM tools with thread management tools
+    const llmTools = tools(env, {
       start: async (modelInfo, params) => {
         const amount = calculatePreAuthAmount(modelInfo, params);
 
@@ -91,12 +99,26 @@ const runtime = withRuntime<
         };
       },
     });
+
+    // Add thread management tools
+    const threadTools = [
+      createSaveThreadDataTool(env),
+      createRetrieveThreadDataTool(env),
+      createLLMDoGenerateWithThreadTool(env),
+    ];
+
+    return [...llmTools, ...threadTools];
   },
   configuration: {
+    onChange: async (env) => {
+      // Ensure threads tables exist on configuration change
+      await ensureThreadsTables(env);
+    },
     state: StateSchema,
     scopes: [
       "WALLET::PRE_AUTHORIZE_AMOUNT",
       "WALLET::COMMIT_PRE_AUTHORIZED_AMOUNT",
+      "DATABASE::DATABASES_RUN_SQL",
     ],
   },
 });
