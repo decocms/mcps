@@ -1,10 +1,10 @@
 {
   "scopeName": "deco",
-  "name": "gmail",
-  "friendlyName": "Gmail",
+  "name": "google-gmail",
+  "friendlyName": "Google Gmail",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-gmail.decocache.com/mcp"
+    "url": "https://sites-google-gmail.decocache.com/mcp"
   },
   "description": "Integrate and manage your Gmail. Read, send, search emails, manage labels and drafts.",
   "icon": "https://assets.decocache.com/mcp/gmail-icon.svg",

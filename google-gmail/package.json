@@ -1,7 +1,7 @@
 {
-  "name": "gmail",
+  "name": "google-gmail",
   "version": "1.0.0",
-  "description": "Gmail MCP Server - Read, send and manage emails",
+  "description": "Google Gmail MCP Server - Read, send and manage emails",
   "private": true,
   "type": "module",
   "scripts": {
