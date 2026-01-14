@@ -4,6 +4,28 @@
  */
 
 // ============================================================================
+// Date Range Type
+// ============================================================================
+
+/**
+ * Date range presets for reports
+ */
+export type DateRangePreset =
+  | "TODAY"
+  | "YESTERDAY"
+  | "LAST_7_DAYS"
+  | "LAST_14_DAYS"
+  | "LAST_30_DAYS"
+  | "LAST_90_DAYS"
+  | "THIS_WEEK_SUN_TODAY"
+  | "THIS_WEEK_MON_TODAY"
+  | "LAST_WEEK_SUN_SAT"
+  | "LAST_WEEK_MON_SUN"
+  | "THIS_MONTH"
+  | "LAST_MONTH"
+  | "ALL_TIME";
+
+// ============================================================================
 // Enums and Status Types
 // ============================================================================
 
@@ -903,4 +925,50 @@ export interface ApiErrorResponse {
       errors?: GoogleAdsError["errors"];
     }>;
   };
+}
+
+// ============================================================================
+// Custom Error Classes
+// ============================================================================
+
+/**
+ * Base error for Google Ads API errors
+ */
+export class GoogleAdsApiError extends Error {
+  public readonly code: number;
+  public readonly status: string;
+  public readonly details?: GoogleAdsError;
+
+  constructor(
+    message: string,
+    code: number,
+    status: string,
+    details?: GoogleAdsError,
+  ) {
+    super(message);
+    this.name = "GoogleAdsApiError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
+
+/**
+ * Error for authentication issues
+ */
+export class GoogleAdsAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GoogleAdsAuthError";
+  }
+}
+
+/**
+ * Error for configuration issues
+ */
+export class GoogleAdsConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GoogleAdsConfigError";
+  }
 }

@@ -5,12 +5,13 @@
 /**
  * Google Ads API version
  */
-export const GOOGLE_ADS_API_VERSION = "v18";
+export const GOOGLE_ADS_API_VERSION = "v18" as const;
 
 /**
  * Google Ads API base URL
  */
-export const GOOGLE_ADS_API_BASE = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}`;
+export const GOOGLE_ADS_API_BASE =
+  `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}` as const;
 
 /**
  * API Endpoints for Google Ads
@@ -89,7 +90,7 @@ export const ENDPOINTS = {
 /**
  * Default page size for queries
  */
-export const DEFAULT_PAGE_SIZE = 1000;
+export const DEFAULT_PAGE_SIZE = 1000 as const;
 
 /**
  * Campaign status values
@@ -100,6 +101,10 @@ export const CAMPAIGN_STATUS = {
   REMOVED: "REMOVED",
 } as const;
 
+/** Type for campaign status values */
+export type CampaignStatusValue =
+  (typeof CAMPAIGN_STATUS)[keyof typeof CAMPAIGN_STATUS];
+
 /**
  * Ad group status values
  */
@@ -108,6 +113,10 @@ export const AD_GROUP_STATUS = {
   PAUSED: "PAUSED",
   REMOVED: "REMOVED",
 } as const;
+
+/** Type for ad group status values */
+export type AdGroupStatusValue =
+  (typeof AD_GROUP_STATUS)[keyof typeof AD_GROUP_STATUS];
 
 /**
  * Ad status values
@@ -118,6 +127,9 @@ export const AD_STATUS = {
   REMOVED: "REMOVED",
 } as const;
 
+/** Type for ad status values */
+export type AdStatusValue = (typeof AD_STATUS)[keyof typeof AD_STATUS];
+
 /**
  * Keyword match types
  */
@@ -126,6 +138,10 @@ export const KEYWORD_MATCH_TYPE = {
   PHRASE: "PHRASE",
   BROAD: "BROAD",
 } as const;
+
+/** Type for keyword match type values */
+export type KeywordMatchTypeValue =
+  (typeof KEYWORD_MATCH_TYPE)[keyof typeof KEYWORD_MATCH_TYPE];
 
 /**
  * Advertising channel types
@@ -145,6 +161,10 @@ export const ADVERTISING_CHANNEL_TYPE = {
   DISCOVERY: "DISCOVERY",
 } as const;
 
+/** Type for advertising channel type values */
+export type AdvertisingChannelTypeValue =
+  (typeof ADVERTISING_CHANNEL_TYPE)[keyof typeof ADVERTISING_CHANNEL_TYPE];
+
 /**
  * Bidding strategy types
  */
@@ -161,6 +181,10 @@ export const BIDDING_STRATEGY_TYPE = {
   ENHANCED_CPC: "ENHANCED_CPC",
 } as const;
 
+/** Type for bidding strategy type values */
+export type BiddingStrategyTypeValue =
+  (typeof BIDDING_STRATEGY_TYPE)[keyof typeof BIDDING_STRATEGY_TYPE];
+
 /**
  * Budget delivery methods
  */
@@ -168,6 +192,10 @@ export const BUDGET_DELIVERY_METHOD = {
   STANDARD: "STANDARD",
   ACCELERATED: "ACCELERATED",
 } as const;
+
+/** Type for budget delivery method values */
+export type BudgetDeliveryMethodValue =
+  (typeof BUDGET_DELIVERY_METHOD)[keyof typeof BUDGET_DELIVERY_METHOD];
 
 /**
  * Ad group types
@@ -180,6 +208,10 @@ export const AD_GROUP_TYPE = {
   VIDEO_BUMPER: "VIDEO_BUMPER",
   VIDEO_RESPONSIVE: "VIDEO_RESPONSIVE",
 } as const;
+
+/** Type for ad group type values */
+export type AdGroupTypeValue =
+  (typeof AD_GROUP_TYPE)[keyof typeof AD_GROUP_TYPE];
 
 /**
  * Common GAQL queries
@@ -400,3 +432,12 @@ export const DATE_RANGE_PRESETS = {
   LAST_MONTH: "LAST_MONTH",
   ALL_TIME: "ALL_TIME",
 } as const;
+
+/** Type for date range preset values */
+export type DateRangePresetValue =
+  (typeof DATE_RANGE_PRESETS)[keyof typeof DATE_RANGE_PRESETS];
+
+/** Array of all valid date range preset keys for use in Zod schemas */
+export const DATE_RANGE_PRESET_VALUES = Object.values(
+  DATE_RANGE_PRESETS,
+) as DateRangePresetValue[];

@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { GoogleAdsClient, getAccessToken } from "../lib/google-ads-client.ts";
+import { createGoogleAdsClient } from "../lib/google-ads-client.ts";
 import type { KeywordMatchType, AdGroupCriterionStatus } from "../lib/types.ts";
 
 // ============================================================================
@@ -45,15 +45,7 @@ export const createListKeywordsTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const keywords = await client.listKeywords(
         context.customerId,
         context.adGroupId,
@@ -110,15 +102,7 @@ export const createGetKeywordTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const keyword = await client.getKeyword(
         context.customerId,
         context.adGroupId,
@@ -198,15 +182,7 @@ export const createCreateKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const response = await client.createKeyword(context.customerId, {
         adGroup: context.adGroupResourceName,
         status: (context.status || "ENABLED") as AdGroupCriterionStatus,
@@ -265,15 +241,7 @@ export const createCreateNegativeKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const response = await client.createKeyword(context.customerId, {
         adGroup: context.adGroupResourceName,
         status: "ENABLED",
@@ -329,15 +297,7 @@ export const createUpdateKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const response = await client.updateKeyword(context.customerId, {
         resourceName: context.keywordResourceName,
         status: context.status as AdGroupCriterionStatus | undefined,
@@ -377,15 +337,7 @@ export const createPauseKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       await client.updateKeywordStatus(
         context.customerId,
         context.keywordResourceName,
@@ -423,15 +375,7 @@ export const createEnableKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       await client.updateKeywordStatus(
         context.customerId,
         context.keywordResourceName,
@@ -469,15 +413,7 @@ export const createRemoveKeywordTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       await client.removeKeyword(
         context.customerId,
         context.keywordResourceName,

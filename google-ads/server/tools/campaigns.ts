@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { GoogleAdsClient, getAccessToken } from "../lib/google-ads-client.ts";
+import { createGoogleAdsClient } from "../lib/google-ads-client.ts";
 import type { CampaignStatus, AdvertisingChannelType } from "../lib/types.ts";
 
 // ============================================================================
@@ -46,15 +46,7 @@ export const createListCampaignsTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const campaigns = await client.listCampaigns(
         context.customerId,
         context.statusFilter as CampaignStatus | undefined,
@@ -118,15 +110,7 @@ export const createGetCampaignTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const campaign = await client.getCampaign(
         context.customerId,
         context.campaignId,
@@ -236,14 +220,7 @@ export const createCreateCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
+      const client = createGoogleAdsClient(env);
 
       // First, create the campaign budget
       const budgetResponse = await client.createCampaignBudget(
@@ -343,14 +320,7 @@ export const createUpdateCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
+      const client = createGoogleAdsClient(env);
 
       const networkSettings =
         context.targetGoogleSearch !== undefined ||
@@ -404,15 +374,7 @@ export const createPauseCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       await client.updateCampaignStatus(
         context.customerId,
         context.campaignResourceName,
@@ -450,15 +412,7 @@ export const createEnableCampaignTool = (env: Env) =>
       success: z.boolean(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       await client.updateCampaignStatus(
         context.customerId,
         context.campaignResourceName,

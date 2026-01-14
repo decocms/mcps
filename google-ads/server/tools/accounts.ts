@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { GoogleAdsClient, getAccessToken } from "../lib/google-ads-client.ts";
+import { createGoogleAdsClient } from "../lib/google-ads-client.ts";
 
 // ============================================================================
 // List Accessible Customers Tool
@@ -30,18 +30,8 @@ export const createListAccessibleCustomersTool = (env: Env) =>
       ),
       count: z.number().describe("Number of accessible customers"),
     }),
-      execute: async () => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A"; // Hardcoded for testing
-        
-        console.log("Using Developer Token:", developerToken);
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+    execute: async () => {
+      const client = createGoogleAdsClient(env);
       const response = await client.listAccessibleCustomers();
 
       const customers = (response.resourceNames || []).map((resourceName) => {
@@ -92,11 +82,7 @@ export const createGetCustomerTool = (env: Env) =>
         .nullable(),
     }),
     execute: async ({ context }) => {
-      const client = new GoogleAdsClient({
-        accessToken: getAccessToken(env),
-        developerToken: env.MESH_REQUEST_CONTEXT?.state?.developerToken || "",
-      });
-
+      const client = createGoogleAdsClient(env);
       const customer = await client.getCustomer(context.customerId);
 
       if (!customer) {

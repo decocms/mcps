@@ -7,8 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { GoogleAdsClient, getAccessToken } from "../lib/google-ads-client.ts";
-import { DATE_RANGE_PRESETS } from "../constants.ts";
+import { createGoogleAdsClient } from "../lib/google-ads-client.ts";
 
 // Helper to convert micros to currency string
 const microsToAmount = (micros: string | undefined): string | undefined => {
@@ -68,15 +67,7 @@ export const createGetAccountPerformanceTool = (env: Env) =>
       }),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const rows = await client.getAccountPerformance(
         context.customerId,
         context.dateRange,
@@ -165,15 +156,7 @@ export const createGetCampaignPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const rows = await client.getCampaignPerformance(
         context.customerId,
         context.dateRange,
@@ -256,15 +239,7 @@ export const createGetAdGroupPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const rows = await client.getAdGroupPerformance(
         context.customerId,
         context.dateRange,
@@ -349,15 +324,7 @@ export const createGetKeywordPerformanceTool = (env: Env) =>
       count: z.number(),
     }),
     execute: async ({ context }) => {
-        const developerToken = env.MESH_REQUEST_CONTEXT?.state?.developerToken || 
-                              process.env.GOOGLE_ADS_DEVELOPER_TOKEN ||
-                              "NSC8PQesrKHxJCsygni2A";
-        
-        const client = new GoogleAdsClient({
-          accessToken: getAccessToken(env),
-          developerToken,
-        });
-
+      const client = createGoogleAdsClient(env);
       const rows = await client.getKeywordPerformance(
         context.customerId,
         context.dateRange,

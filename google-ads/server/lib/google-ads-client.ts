@@ -4,36 +4,37 @@
  */
 
 import { ENDPOINTS, DEFAULT_PAGE_SIZE, GAQL_QUERIES } from "../constants.ts";
-import type {
-  Customer,
-  Campaign,
-  CampaignBudget,
-  AdGroup,
-  AdGroupAd,
-  AdGroupCriterion,
-  ListAccessibleCustomersResponse,
-  SearchGoogleAdsResponse,
-  SearchGoogleAdsStreamResponse,
-  GoogleAdsRow,
-  MutateCampaignsResponse,
-  MutateCampaignBudgetsResponse,
-  MutateAdGroupsResponse,
-  MutateAdGroupAdsResponse,
-  MutateAdGroupCriteriaResponse,
-  CreateCampaignInput,
-  UpdateCampaignInput,
-  CreateCampaignBudgetInput,
-  CreateAdGroupInput,
-  UpdateAdGroupInput,
-  CreateResponsiveSearchAdInput,
-  UpdateAdGroupAdInput,
-  CreateKeywordInput,
-  UpdateKeywordInput,
-  ApiErrorResponse,
-  CampaignStatus,
-  AdGroupStatus,
-  AdGroupAdStatus,
-  AdGroupCriterionStatus,
+import {
+  GoogleAdsApiError,
+  type Customer,
+  type Campaign,
+  type AdGroup,
+  type AdGroupAd,
+  type AdGroupCriterion,
+  type ListAccessibleCustomersResponse,
+  type SearchGoogleAdsResponse,
+  type SearchGoogleAdsStreamResponse,
+  type GoogleAdsRow,
+  type MutateCampaignsResponse,
+  type MutateCampaignBudgetsResponse,
+  type MutateAdGroupsResponse,
+  type MutateAdGroupAdsResponse,
+  type MutateAdGroupCriteriaResponse,
+  type CreateCampaignInput,
+  type UpdateCampaignInput,
+  type CreateCampaignBudgetInput,
+  type CreateAdGroupInput,
+  type UpdateAdGroupInput,
+  type CreateResponsiveSearchAdInput,
+  type UpdateAdGroupAdInput,
+  type CreateKeywordInput,
+  type UpdateKeywordInput,
+  type ApiErrorResponse,
+  type GoogleAdsError,
+  type CampaignStatus,
+  type AdGroupStatus,
+  type AdGroupAdStatus,
+  type AdGroupCriterionStatus,
 } from "./types.ts";
 
 export interface GoogleAdsClientConfig {
@@ -56,6 +57,7 @@ export class GoogleAdsClient {
 
   /**
    * Make a request to the Google Ads API
+   * @throws GoogleAdsApiError on API errors with details
    */
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(url, {
@@ -71,15 +73,31 @@ export class GoogleAdsClient {
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `Google Ads API error: ${response.status}`;
+      let errorDetails: GoogleAdsError | undefined;
 
       try {
         const errorData = JSON.parse(errorText) as ApiErrorResponse;
         errorMessage = errorData.error?.message || errorMessage;
+
+        // Extract detailed error information if available
+        if (errorData.error?.details) {
+          const googleAdsDetails = errorData.error.details.find(
+            (d) => d["@type"]?.includes("GoogleAdsFailure") && d.errors,
+          );
+          if (googleAdsDetails?.errors) {
+            errorDetails = { errors: googleAdsDetails.errors };
+          }
+        }
       } catch {
         errorMessage = `${errorMessage} - ${errorText}`;
       }
 
-      throw new Error(errorMessage);
+      throw new GoogleAdsApiError(
+        errorMessage,
+        response.status,
+        response.statusText,
+        errorDetails,
+      );
     }
 
     // Handle 204 No Content
@@ -196,10 +214,8 @@ export class GoogleAdsClient {
     customerId: string,
     statusFilter?: CampaignStatus,
   ): Promise<Campaign[]> {
-    let query = GAQL_QUERIES.LIST_CAMPAIGNS;
-
-    if (statusFilter) {
-      query = `
+    const query = statusFilter
+      ? `
         SELECT
           campaign.id,
           campaign.name,
@@ -214,8 +230,8 @@ export class GoogleAdsClient {
         FROM campaign
         WHERE campaign.status = '${statusFilter}'
         ORDER BY campaign.name
-      `;
-    }
+      `
+      : GAQL_QUERIES.LIST_CAMPAIGNS;
 
     const response = await this.searchStream(customerId, query);
     return response.results
@@ -1015,5 +1031,9 @@ export class GoogleAdsClient {
   }
 }
 
-// Re-export getGoogleAccessToken from env.ts for convenience
-export { getGoogleAccessToken as getAccessToken } from "./env.ts";
+// Re-export helpers from env.ts for convenience
+export {
+  getGoogleAccessToken as getAccessToken,
+  getDeveloperToken,
+  createGoogleAdsClient,
+} from "./env.ts";
