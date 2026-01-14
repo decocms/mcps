@@ -45,6 +45,12 @@ export const createListObjectsTool = (env: Env) =>
         .string()
         .optional()
         .describe("Token for pagination from previous response"),
+      delimiter: z
+        .string()
+        .optional()
+        .describe(
+          "Character to group keys by common prefixes (typically '/'). When set, objects are grouped into CommonPrefixes for folder-like browsing.",
+        ),
     }),
     outputSchema: z.object({
       objects: z.array(
@@ -62,9 +68,15 @@ export const createListObjectsTool = (env: Env) =>
       isTruncated: z
         .boolean()
         .describe("Whether there are more results available"),
+      commonPrefixes: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Common prefixes (folders) when delimiter is specified (e.g., ['folder-a/', 'folder-b/'])",
+        ),
     }),
     execute: async ({ context }) => {
-      const { prefix, maxKeys, continuationToken } = context;
+      const { prefix, maxKeys, continuationToken, delimiter } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
 
@@ -73,6 +85,7 @@ export const createListObjectsTool = (env: Env) =>
         Prefix: prefix,
         MaxKeys: maxKeys,
         ContinuationToken: continuationToken,
+        Delimiter: delimiter,
       });
 
       const response = await s3Client.send(command);
@@ -86,6 +99,9 @@ export const createListObjectsTool = (env: Env) =>
         })),
         nextContinuationToken: response.NextContinuationToken,
         isTruncated: response.IsTruncated ?? false,
+        commonPrefixes: response.CommonPrefixes?.map((cp) => cp.Prefix!).filter(
+          Boolean,
+        ),
       };
     },
   });
