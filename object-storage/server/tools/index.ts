@@ -6,11 +6,8 @@
  * the domain separation.
  */
 import { storageTools } from "./storage.ts";
-import { userTools } from "@decocms/mcps-shared/tools/user";
 
-// Export all tools from all domains
-export const tools = [...userTools, ...storageTools];
+// Export all tools
+export const tools = [...storageTools];
 
-// Re-export domain-specific tools for direct access if needed
 export { storageTools } from "./storage.ts";
-export { userTools } from "@decocms/mcps-shared/tools/user";

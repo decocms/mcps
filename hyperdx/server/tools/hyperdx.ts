@@ -18,7 +18,7 @@ import {
 /**
  * SEARCH_LOGS - Simple log search tool
  */
-export const createSearchLogsTool = (env: Env) =>
+export const createSearchLogsTool = (_env: Env) =>
   createTool({
     id: "SEARCH_LOGS",
     description:
@@ -54,8 +54,9 @@ export const createSearchLogsTool = (env: Env) =>
       ),
       total: z.number(),
     }),
-    execute: async ({ context }) => {
-      const apiKey = getHyperDXApiKey(env);
+    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
+    execute: async ({ context, runtimeContext }) => {
+      const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
       const response = await client.queryChartSeries({
@@ -93,7 +94,7 @@ const DEFAULT_GROUP_BY = ["body", "service", "site"];
 /**
  * GET_LOG_DETAILS - Get detailed log entries with trace context
  */
-export const createGetLogDetailsTool = (env: Env) =>
+export const createGetLogDetailsTool = (_env: Env) =>
   createTool({
     id: "GET_LOG_DETAILS",
     description:
@@ -136,8 +137,9 @@ export const createGetLogDetailsTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
-      const apiKey = getHyperDXApiKey(env);
+    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
+    execute: async ({ context, runtimeContext }) => {
+      const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
       const response = await client.queryChartSeries({
@@ -170,15 +172,16 @@ export const createGetLogDetailsTool = (env: Env) =>
 /**
  * QUERY_CHART_DATA - Query time series chart data from HyperDX
  */
-export const createQueryChartDataTool = (env: Env) =>
+export const createQueryChartDataTool = (_env: Env) =>
   createTool({
     id: "QUERY_CHART_DATA",
     description:
       "Query time series chart data from HyperDX. Returns aggregated metrics over time with support for multiple series, grouping, and various aggregation functions. Use this to analyze logs, spans, and metrics.",
     inputSchema: queryChartDataInputSchema,
     outputSchema: queryChartDataOutputSchema,
-    execute: async ({ context }) => {
-      const apiKey = getHyperDXApiKey(env);
+    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
+    execute: async ({ context, runtimeContext }) => {
+      const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
       const { startTime, endTime, granularity, series, seriesReturnType } =

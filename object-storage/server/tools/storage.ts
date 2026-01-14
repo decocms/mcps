@@ -16,7 +16,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createS3Client, getPresignedUrlExpiration } from "../lib/s3-client.ts";
@@ -45,6 +45,12 @@ export const createListObjectsTool = (env: Env) =>
         .string()
         .optional()
         .describe("Token for pagination from previous response"),
+      delimiter: z
+        .string()
+        .optional()
+        .describe(
+          "Character to group keys by common prefixes (typically '/'). When set, objects are grouped into CommonPrefixes for folder-like browsing.",
+        ),
     }),
     outputSchema: z.object({
       objects: z.array(
@@ -62,17 +68,24 @@ export const createListObjectsTool = (env: Env) =>
       isTruncated: z
         .boolean()
         .describe("Whether there are more results available"),
+      commonPrefixes: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Common prefixes (folders) when delimiter is specified (e.g., ['folder-a/', 'folder-b/'])",
+        ),
     }),
-    execute: async (ctx: any) => {
-      const { prefix, maxKeys, continuationToken } = ctx;
+    execute: async ({ context }) => {
+      const { prefix, maxKeys, continuationToken, delimiter } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new ListObjectsV2Command({
         Bucket: state.bucketName,
         Prefix: prefix,
         MaxKeys: maxKeys,
         ContinuationToken: continuationToken,
+        Delimiter: delimiter,
       });
 
       const response = await s3Client.send(command);
@@ -86,6 +99,9 @@ export const createListObjectsTool = (env: Env) =>
         })),
         nextContinuationToken: response.NextContinuationToken,
         isTruncated: response.IsTruncated ?? false,
+        commonPrefixes: response.CommonPrefixes?.map((cp) => cp.Prefix!).filter(
+          Boolean,
+        ),
       };
     },
   });
@@ -107,14 +123,14 @@ export const createGetObjectMetadataTool = (env: Env) =>
       lastModified: z.string().describe("Last modified timestamp"),
       etag: z.string().describe("Entity tag for the object"),
       metadata: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .describe("Custom metadata key-value pairs"),
     }),
-    execute: async (ctx: any) => {
-      const { key } = ctx;
+    execute: async ({ context }) => {
+      const { key } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new HeadObjectCommand({
         Bucket: state.bucketName,
@@ -156,10 +172,10 @@ export const createGetPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async (ctx: any) => {
-      const { key, expiresIn } = ctx;
+    execute: async ({ context }) => {
+      const { key, expiresIn } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
       const command = new GetObjectCommand({
@@ -205,10 +221,10 @@ export const createPutPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async (ctx: any) => {
-      const { key, expiresIn, contentType } = ctx;
+    execute: async ({ context }) => {
+      const { key, expiresIn, contentType } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
       const expirationSeconds = getPresignedUrlExpiration(env, expiresIn);
 
       const command = new PutObjectCommand({
@@ -242,10 +258,10 @@ export const createDeleteObjectTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       key: z.string().describe("The key that was deleted"),
     }),
-    execute: async (ctx: any) => {
-      const { key } = ctx;
+    execute: async ({ context }) => {
+      const { key } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new DeleteObjectCommand({
         Bucket: state.bucketName,
@@ -288,10 +304,10 @@ export const createDeleteObjectsTool = (env: Env) =>
         )
         .describe("Array of errors for failed deletions"),
     }),
-    execute: async (ctx: any) => {
-      const { keys } = ctx;
+    execute: async ({ context }) => {
+      const { keys } = context;
       const s3Client = createS3Client(env);
-      const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const state = env.MESH_REQUEST_CONTEXT.state;
 
       const command = new DeleteObjectsCommand({
         Bucket: state.bucketName,

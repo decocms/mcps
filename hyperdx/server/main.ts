@@ -5,8 +5,8 @@
  * The HyperDX API key is passed as a Bearer token in the connection settings.
  */
 
-import { serve } from "@decocms/mcps-shared/serve";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 import { tools } from "./tools/index.ts";
 
 /**
@@ -15,26 +15,13 @@ import { tools } from "./tools/index.ts";
 export type Env = DefaultEnv;
 
 const runtime = withRuntime<Env>({
-  tools,
-  fetch: () => {
-    return new Response(
-      JSON.stringify({
-        name: "hyperdx",
-        description: "Query observability data from HyperDX",
-        version: "1.0.0",
-        endpoints: { mcp: "/mcp" },
-      }),
-      { headers: { "Content-Type": "application/json" } },
-    );
-  },
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
-const PORT = process.env.PORT || 8001;
-
-serve(runtime.fetch);
-
-console.log(`\n🚀 HyperDX MCP: http://localhost:${PORT}/mcp`);
-console.log(`📋 Server ready!\n`);
-
-// Export for Cloudflare Workers deployment
-export default runtime;
+serve((req: Request) => {
+  if (new URL(req.url).pathname === "/_healthcheck") {
+    return new Response("OK", { status: 200 });
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: env comes from process.env
+  return runtime.fetch(req, { ...process.env } as any, {});
+});

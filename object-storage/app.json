@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "object-storage",
+  "friendlyName": "Object Storage (S3)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-object-storage.decocache.com/mcp"
+  },
+  "description": "S3-compatible object storage MCP for managing files in AWS S3, Cloudflare R2, Google Cloud Storage, and other S3-compatible providers.",
+  "icon": "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Storage"],
+    "official": false,
+    "tags": ["s3", "storage", "object-storage", "aws", "cloudflare-r2", "gcs", "files", "upload", "download", "presigned-urls"],
+    "short_description": "Manage files in S3-compatible object storage like AWS S3, Cloudflare R2, and Google Cloud Storage",
+    "mesh_description": "The Object Storage MCP provides comprehensive tools for managing files in any S3-compatible object storage service, including AWS S3, Cloudflare R2, Google Cloud Storage, MinIO, and DigitalOcean Spaces. This MCP enables AI agents to list objects in buckets with prefix filtering and pagination, retrieve object metadata without downloading file contents, and generate presigned URLs for secure uploads and downloads. The presigned URL functionality allows temporary access to private objects without exposing credentials, perfect for enabling client-side file uploads and secure file sharing. The MCP supports batch operations for efficiently deleting multiple objects in a single request. Configuration is flexible, allowing connection to any S3-compatible endpoint with custom regions and credentials. Ideal for building file management systems, content delivery workflows, backup automation, and media processing pipelines. The integration supports all standard S3 operations through a unified interface that works across multiple cloud providers."
+  }
+}

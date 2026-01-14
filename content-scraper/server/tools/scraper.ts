@@ -24,10 +24,10 @@ export const scrapeContentTool = (env: Env) =>
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
         const n8nWebhookUrl = state?.n8nWebhookUrl ?? "";
-        const urls = state?.urlFields?.urls ?? [];
-        const redditTopics = state?.redditFields?.RedditTopicsToScrape ?? [];
-        const linkedinProfiles = state?.linkedinFields?.linkedinProfiles ?? [];
-        const twitterTopics = state?.twitterFields?.TwitterTopics ?? [];
+        const urlEntries = state?.urlFields?.urls ?? [];
+        const redditEntries = state?.redditFields?.RedditTopicsToScrape ?? [];
+        const linkedinEntries = state?.linkedinFields?.linkedinProfiles ?? [];
+        const twitterEntries = state?.twitterFields?.TwitterTopics ?? [];
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -39,10 +39,26 @@ export const scrapeContentTool = (env: Env) =>
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              urls: urls,
-              reddit_topics: redditTopics,
-              linkedin_topics: linkedinProfiles,
-              twitter_topics: twitterTopics,
+              urls: urlEntries.map((entry) => ({
+                url: entry.url,
+                type: entry.type,
+                authority: entry.authority,
+              })),
+              reddit_topics: redditEntries.map((entry) => ({
+                topic: entry.topic,
+                type: entry.type,
+                authority: entry.authority,
+              })),
+              linkedin_topics: linkedinEntries.map((entry) => ({
+                profile: entry.profile,
+                type: entry.type,
+                authority: entry.authority,
+              })),
+              twitter_topics: twitterEntries.map((entry) => ({
+                topic: entry.topic,
+                type: entry.type,
+                authority: entry.authority,
+              })),
             }),
             signal: controller.signal,
           });
