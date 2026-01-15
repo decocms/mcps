@@ -1,5 +1,5 @@
 # Google Meet MCP
-
+ 
 MCP Server for Google Meet API. Create and manage video meetings.
 
 ## Features
