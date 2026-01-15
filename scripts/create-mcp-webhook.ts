@@ -45,6 +45,11 @@ const webhookUrl = `https://admin.deco.cx/deco/invoke/deco-sites/admin/actions/g
 // GitHub API endpoint
 const apiUrl = `https://api.github.com/repos/${repository}/hooks`;
 
+// Escape special regex characters to prevent regex injection
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Check if webhook already exists for this MCP
 async function webhookExists(): Promise<boolean> {
   try {
@@ -68,7 +73,9 @@ async function webhookExists(): Promise<boolean> {
     }>;
 
     // Check if any webhook has our exact URL (use regex to match exact site param)
-    const sitePattern = new RegExp(`[?&]site=${mcpName}(?:&|$)`);
+    // Escape mcpName to prevent regex injection from special characters
+    const escapedMcpName = escapeRegex(mcpName);
+    const sitePattern = new RegExp(`[?&]site=${escapedMcpName}(?:&|$)`);
     return hooks.some(
       (hook) => hook.config?.url && sitePattern.test(hook.config.url),
     );
