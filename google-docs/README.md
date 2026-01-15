@@ -1,4 +1,4 @@
-# Google Docs MCP
+# Google Docs MCP 
 
 MCP Server for Google Docs API. Create and edit documents programmatically.
 
