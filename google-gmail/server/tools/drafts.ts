@@ -39,8 +39,9 @@ const ParsedDraftSchema = z.object({
 
 export const createListDraftsTool = (env: Env) =>
   createPrivateTool({
-    id: "list_drafts",
-    description: "List all draft emails in the mailbox.",
+    id: "gmail_list_drafts",
+    description:
+      "List all draft emails saved in Gmail. Drafts are unsent emails that can be edited or sent later.",
     inputSchema: z.object({
       maxResults: z.coerce
         .number()
@@ -83,8 +84,9 @@ export const createListDraftsTool = (env: Env) =>
 
 export const createGetDraftTool = (env: Env) =>
   createPrivateTool({
-    id: "get_draft",
-    description: "Get a specific draft with its full content.",
+    id: "gmail_get_draft",
+    description:
+      "Get a specific draft email with its full content including recipient, subject, and body.",
     inputSchema: z.object({
       id: z.string().describe("Draft ID"),
     }),
@@ -119,9 +121,9 @@ export const createGetDraftTool = (env: Env) =>
 
 export const createCreateDraftTool = (env: Env) =>
   createPrivateTool({
-    id: "create_draft",
+    id: "gmail_create_draft",
     description:
-      "Create a new draft email. The draft will be saved but not sent until you use send_draft.",
+      "Create a new draft email in Gmail. The draft will be saved but not sent until you use gmail_send_draft.",
     inputSchema: z.object({
       to: z.string().describe("Recipient email address (required)"),
       subject: z.string().describe("Email subject (required)"),
@@ -171,8 +173,9 @@ export const createCreateDraftTool = (env: Env) =>
 
 export const createUpdateDraftTool = (env: Env) =>
   createPrivateTool({
-    id: "update_draft",
-    description: "Update an existing draft's content.",
+    id: "gmail_update_draft",
+    description:
+      "Update an existing draft email's content including recipient, subject, and body.",
     inputSchema: z.object({
       id: z.string().describe("Draft ID to update"),
       to: z.string().describe("Recipient email address (required)"),
@@ -217,9 +220,9 @@ export const createUpdateDraftTool = (env: Env) =>
 
 export const createSendDraftTool = (env: Env) =>
   createPrivateTool({
-    id: "send_draft",
+    id: "gmail_send_draft",
     description:
-      "Send an existing draft. The draft will be moved from Drafts to Sent.",
+      "Send an existing draft email. The draft will be sent and moved from Drafts folder to Sent folder.",
     inputSchema: z.object({
       id: z.string().describe("Draft ID to send"),
     }),
@@ -249,8 +252,9 @@ export const createSendDraftTool = (env: Env) =>
 
 export const createDeleteDraftTool = (env: Env) =>
   createPrivateTool({
-    id: "delete_draft",
-    description: "Permanently delete a draft. This cannot be undone.",
+    id: "gmail_delete_draft",
+    description:
+      "Permanently delete a draft email from Gmail. This cannot be undone.",
     inputSchema: z.object({
       id: z.string().describe("Draft ID to delete"),
     }),

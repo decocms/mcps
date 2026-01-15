@@ -45,17 +45,17 @@ const ParsedMessageSchema = z.object({
 
 export const createListMessagesTool = (env: Env) =>
   createPrivateTool({
-    id: "list_messages",
+    id: "gmail_list_emails",
     description:
-      "List messages in the mailbox. Returns message IDs and thread IDs. Use get_message to fetch full details.",
+      "List emails from Gmail inbox with subject, sender, and recipient information. Perfect for checking recent emails or filtering by labels.",
     inputSchema: z.object({
       maxResults: z.coerce
         .number()
         .int()
         .min(1)
-        .max(500)
+        .max(100)
         .optional()
-        .describe("Maximum number of messages to return (default: 50)"),
+        .describe("Maximum number of emails to return (default: 20, max: 100)"),
       pageToken: z.string().optional().describe("Token for pagination"),
       q: z
         .string()
@@ -70,21 +70,28 @@ export const createListMessagesTool = (env: Env) =>
       includeSpamTrash: z
         .boolean()
         .optional()
-        .describe("Include messages from SPAM and TRASH"),
+        .describe("Include emails from SPAM and TRASH"),
     }),
     outputSchema: z.object({
-      messages: z
+      emails: z
         .array(
           z.object({
-            id: z.string().describe("Message ID"),
-            threadId: z.string().describe("Thread ID"),
+            id: z.string().describe("Email ID (use this to get full details)"),
+            threadId: z.string().describe("Conversation thread ID"),
+            subject: z.string().describe("Email subject line"),
+            from: z.string().describe("Sender email address and name"),
+            to: z.string().describe("Recipient email address"),
+            date: z.string().describe("Date the email was sent"),
+            snippet: z.string().describe("Preview of the email content"),
+            isUnread: z.boolean().describe("Whether the email is unread"),
           }),
         )
-        .describe("List of message references"),
+        .describe("List of emails with basic information"),
       nextPageToken: z
         .string()
         .optional()
         .describe("Token for fetching the next page"),
+      totalEmails: z.number().describe("Number of emails returned"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -92,16 +99,39 @@ export const createListMessagesTool = (env: Env) =>
       });
 
       const result = await client.listMessages({
-        maxResults: context.maxResults,
+        maxResults: context.maxResults || 20,
         pageToken: context.pageToken,
         q: context.q,
         labelIds: context.labelIds,
         includeSpamTrash: context.includeSpamTrash,
       });
 
+      // Fetch details for each message to get subject, from, to
+      const messageRefs = result.messages || [];
+      const emails = await Promise.all(
+        messageRefs.map(async (m) => {
+          const full = await client.getMessage({
+            id: m.id,
+            format: "metadata",
+          });
+          const parsed = client.parseMessage(full);
+          return {
+            id: parsed.id,
+            threadId: parsed.threadId,
+            subject: parsed.subject || "(No subject)",
+            from: parsed.from || "Unknown sender",
+            to: parsed.to || "",
+            date: parsed.date || "",
+            snippet: parsed.snippet || "",
+            isUnread: parsed.labelIds?.includes("UNREAD") || false,
+          };
+        }),
+      );
+
       return {
-        messages: result.messages,
+        emails,
         nextPageToken: result.nextPageToken,
+        totalEmails: emails.length,
       };
     },
   });
@@ -112,20 +142,22 @@ export const createListMessagesTool = (env: Env) =>
 
 export const createGetMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "get_message",
+    id: "gmail_get_email_details",
     description:
-      "Get full details of a specific message including headers, body, and attachments.",
+      "Get the full content of a specific email including subject, body text, HTML, sender, recipients, and attachments. Use the email ID from gmail_list_emails.",
     inputSchema: z.object({
-      id: z.string().describe("Message ID"),
+      id: z.string().describe("Email ID (from gmail_list_emails)"),
       format: z
         .enum(["minimal", "full", "raw", "metadata"])
         .optional()
         .describe(
-          "Response format: minimal (IDs only), full (parsed), raw (RFC 2822), metadata (headers only)",
+          "Response format: minimal (IDs only), full (complete email with body), raw (RFC 2822), metadata (headers only)",
         ),
     }),
     outputSchema: z.object({
-      message: ParsedMessageSchema.describe("Parsed message details"),
+      email: ParsedMessageSchema.describe(
+        "Full email details including body and attachments",
+      ),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -139,7 +171,7 @@ export const createGetMessageTool = (env: Env) =>
 
       const message = client.parseMessage(rawMessage);
 
-      return { message };
+      return { email: message };
     },
   });
 
@@ -149,30 +181,40 @@ export const createGetMessageTool = (env: Env) =>
 
 export const createSendMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "send_message",
-    description: "Send a new email message.",
+    id: "gmail_send_email",
+    description:
+      "Send a new email from Gmail. Supports HTML content, CC, BCC, and replies to existing conversations.",
     inputSchema: z.object({
-      to: z.string().describe("Recipient email address (required)"),
-      subject: z.string().describe("Email subject (required)"),
+      to: z
+        .string()
+        .describe("Recipient email address (e.g., 'john@example.com')"),
+      subject: z.string().describe("Email subject line"),
       body: z
         .string()
-        .describe("Email body content (HTML supported, required)"),
-      cc: z.string().optional().describe("CC recipients (comma-separated)"),
-      bcc: z.string().optional().describe("BCC recipients (comma-separated)"),
+        .describe("Email body content (HTML is supported for rich formatting)"),
+      cc: z
+        .string()
+        .optional()
+        .describe("CC recipients (comma-separated emails)"),
+      bcc: z
+        .string()
+        .optional()
+        .describe("BCC recipients (comma-separated emails)"),
       replyTo: z.string().optional().describe("Reply-To email address"),
       threadId: z
         .string()
         .optional()
-        .describe("Thread ID to add this message to (for replies)"),
+        .describe("Thread ID to reply to an existing conversation"),
       inReplyTo: z
         .string()
         .optional()
-        .describe("Message-ID being replied to (for threading)"),
+        .describe("Message-ID being replied to (for proper email threading)"),
     }),
     outputSchema: z.object({
-      messageId: z.string().describe("ID of the sent message"),
-      threadId: z.string().describe("Thread ID of the sent message"),
-      success: z.boolean().describe("Whether sending was successful"),
+      emailId: z.string().describe("ID of the sent email"),
+      threadId: z.string().describe("Conversation thread ID"),
+      success: z.boolean().describe("Whether the email was sent successfully"),
+      message: z.string().describe("Confirmation message"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -191,9 +233,10 @@ export const createSendMessageTool = (env: Env) =>
       });
 
       return {
-        messageId: result.id,
+        emailId: result.id,
         threadId: result.threadId,
         success: true,
+        message: `Email sent successfully to ${context.to} with subject "${context.subject}"`,
       };
     },
   });
@@ -204,38 +247,42 @@ export const createSendMessageTool = (env: Env) =>
 
 export const createSearchMessagesTool = (env: Env) =>
   createPrivateTool({
-    id: "search_messages",
-    description: `Search messages using Gmail's powerful query syntax.
+    id: "gmail_search_emails",
+    description: `Search emails in Gmail using powerful query syntax. Returns full email details including subject, sender, body, and attachments.
 
-Examples:
-- "is:unread" - Unread messages
+Search Examples:
+- "is:unread" - Unread emails
 - "from:john@example.com" - From specific sender
 - "to:me" - Sent to me
 - "subject:meeting" - Subject contains 'meeting'
 - "has:attachment" - Has attachments
-- "after:2024/01/01" - After date
-- "before:2024/12/31" - Before date
+- "after:2024/01/01" - After specific date
+- "before:2024/12/31" - Before specific date
 - "label:work" - Has label 'work'
-- "is:starred" - Starred messages
+- "is:starred" - Starred emails
 - "in:inbox" - In inbox
-- Combine with AND/OR: "from:john subject:meeting"`,
+- Combine queries: "from:john subject:meeting is:unread"`,
     inputSchema: z.object({
-      query: z.string().describe("Gmail search query (required)"),
+      query: z
+        .string()
+        .describe(
+          "Gmail search query (e.g., 'is:unread from:boss@company.com')",
+        ),
       maxResults: z.coerce
         .number()
         .int()
         .min(1)
-        .max(500)
+        .max(100)
         .optional()
-        .describe("Maximum results (default: 50)"),
+        .describe("Maximum results (default: 20, max: 100)"),
       pageToken: z.string().optional().describe("Token for pagination"),
     }),
     outputSchema: z.object({
-      messages: z
+      emails: z
         .array(ParsedMessageSchema)
-        .describe("List of matching messages with full details"),
+        .describe("List of matching emails with full details"),
       nextPageToken: z.string().optional().describe("Token for next page"),
-      totalResults: z.number().describe("Number of results returned"),
+      totalResults: z.number().describe("Number of emails found"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -245,13 +292,13 @@ Examples:
       // First, list message IDs matching the query
       const listResult = await client.listMessages({
         q: context.query,
-        maxResults: context.maxResults || 50,
+        maxResults: context.maxResults || 20,
         pageToken: context.pageToken,
       });
 
       // Then fetch full details for each message (handle empty results)
       const messageRefs = listResult.messages || [];
-      const messages = await Promise.all(
+      const emails = await Promise.all(
         messageRefs.map(async (m) => {
           const full = await client.getMessage({ id: m.id, format: "full" });
           return client.parseMessage(full);
@@ -259,9 +306,9 @@ Examples:
       );
 
       return {
-        messages,
+        emails,
         nextPageToken: listResult.nextPageToken,
-        totalResults: messages.length,
+        totalResults: emails.length,
       };
     },
   });
@@ -272,14 +319,15 @@ Examples:
 
 export const createTrashMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "trash_message",
-    description: "Move a message to the trash. Can be recovered later.",
+    id: "gmail_move_email_to_trash",
+    description:
+      "Move an email to the Gmail trash. The email can be recovered later from trash.",
     inputSchema: z.object({
-      id: z.string().describe("Message ID to trash"),
+      id: z.string().describe("Email ID to move to trash"),
     }),
     outputSchema: z.object({
-      success: z.boolean().describe("Whether operation was successful"),
-      message: z.string().describe("Result message"),
+      success: z.boolean().describe("Whether the email was moved to trash"),
+      message: z.string().describe("Confirmation message"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -290,7 +338,7 @@ export const createTrashMessageTool = (env: Env) =>
 
       return {
         success: true,
-        message: `Message ${context.id} moved to trash`,
+        message: `Email moved to trash successfully`,
       };
     },
   });
@@ -301,14 +349,14 @@ export const createTrashMessageTool = (env: Env) =>
 
 export const createUntrashMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "untrash_message",
-    description: "Remove a message from trash and restore it.",
+    id: "gmail_restore_email_from_trash",
+    description: "Restore an email from Gmail trash back to the inbox.",
     inputSchema: z.object({
-      id: z.string().describe("Message ID to restore from trash"),
+      id: z.string().describe("Email ID to restore from trash"),
     }),
     outputSchema: z.object({
-      success: z.boolean().describe("Whether operation was successful"),
-      message: z.string().describe("Result message"),
+      success: z.boolean().describe("Whether the email was restored"),
+      message: z.string().describe("Confirmation message"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -319,7 +367,7 @@ export const createUntrashMessageTool = (env: Env) =>
 
       return {
         success: true,
-        message: `Message ${context.id} restored from trash`,
+        message: `Email restored from trash successfully`,
       };
     },
   });
@@ -330,15 +378,15 @@ export const createUntrashMessageTool = (env: Env) =>
 
 export const createDeleteMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "delete_message",
+    id: "gmail_permanently_delete_email",
     description:
-      "Permanently delete a message. This cannot be undone! Use trash_message instead if you want to recover later.",
+      "PERMANENTLY delete an email from Gmail. WARNING: This cannot be undone! Use gmail_move_email_to_trash instead if you might need to recover the email later.",
     inputSchema: z.object({
-      id: z.string().describe("Message ID to permanently delete"),
+      id: z.string().describe("Email ID to permanently delete"),
     }),
     outputSchema: z.object({
-      success: z.boolean().describe("Whether deletion was successful"),
-      message: z.string().describe("Result message"),
+      success: z.boolean().describe("Whether the email was deleted"),
+      message: z.string().describe("Confirmation message"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -349,7 +397,7 @@ export const createDeleteMessageTool = (env: Env) =>
 
       return {
         success: true,
-        message: `Message ${context.id} permanently deleted`,
+        message: `Email permanently deleted`,
       };
     },
   });
@@ -360,17 +408,19 @@ export const createDeleteMessageTool = (env: Env) =>
 
 export const createModifyMessageTool = (env: Env) =>
   createPrivateTool({
-    id: "modify_message",
-    description:
-      "Add or remove labels from a message. Use this to mark as read/unread, star, archive, etc.",
+    id: "gmail_update_email_labels",
+    description: `Add or remove labels from an email. Use this to:
+- Mark as read: remove 'UNREAD' label
+- Mark as unread: add 'UNREAD' label
+- Star email: add 'STARRED' label
+- Archive: remove 'INBOX' label
+- Mark important: add 'IMPORTANT' label`,
     inputSchema: z.object({
-      id: z.string().describe("Message ID"),
+      id: z.string().describe("Email ID to modify"),
       addLabelIds: z
         .array(z.string())
         .optional()
-        .describe(
-          "Labels to add (e.g., ['STARRED', 'IMPORTANT'] or custom label IDs)",
-        ),
+        .describe("Labels to add (e.g., ['STARRED', 'IMPORTANT', 'UNREAD'])"),
       removeLabelIds: z
         .array(z.string())
         .optional()
@@ -379,8 +429,11 @@ export const createModifyMessageTool = (env: Env) =>
         ),
     }),
     outputSchema: z.object({
-      success: z.boolean().describe("Whether operation was successful"),
-      labelIds: z.array(z.string()).describe("Updated list of labels"),
+      success: z.boolean().describe("Whether the labels were updated"),
+      currentLabels: z
+        .array(z.string())
+        .describe("Updated list of labels on the email"),
+      message: z.string().describe("Confirmation message"),
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
@@ -395,7 +448,8 @@ export const createModifyMessageTool = (env: Env) =>
 
       return {
         success: true,
-        labelIds: result.labelIds || [],
+        currentLabels: result.labelIds || [],
+        message: `Email labels updated successfully`,
       };
     },
   });
