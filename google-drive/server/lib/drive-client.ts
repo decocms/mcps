@@ -180,7 +180,8 @@ export class DriveClient {
       headers: { Authorization: `Bearer ${this.accessToken}` },
     });
     if (!response.ok) {
-      throw new Error(`Export failed: ${response.status}`);
+      const error = await response.text();
+      throw new Error(`Drive export error: ${response.status} - ${error}`);
     }
     return response.text();
   }

@@ -15,7 +15,10 @@ export const createInsertTextTool = (env: Env) =>
     inputSchema: z.object({
       documentId: z.string().describe("Document ID"),
       text: z.string().describe("Text to insert"),
-      index: z.coerce.number().describe("Position to insert (1 = beginning)"),
+      index: z.coerce
+        .number()
+        .min(1)
+        .describe("Position to insert (1 = beginning)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -35,11 +38,15 @@ export const createDeleteContentTool = (env: Env) =>
   createPrivateTool({
     id: "delete_content",
     description: "Delete content from a range in the document.",
-    inputSchema: z.object({
-      documentId: z.string().describe("Document ID"),
-      startIndex: z.coerce.number().describe("Start position"),
-      endIndex: z.coerce.number().describe("End position (exclusive)"),
-    }),
+    inputSchema: z
+      .object({
+        documentId: z.string().describe("Document ID"),
+        startIndex: z.coerce.number().min(1).describe("Start position (min 1)"),
+        endIndex: z.coerce.number().min(2).describe("End position (exclusive)"),
+      })
+      .refine((data) => data.startIndex < data.endIndex, {
+        message: "startIndex must be less than endIndex",
+      }),
     outputSchema: z.object({
       success: z.boolean(),
       message: z.string(),

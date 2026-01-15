@@ -15,7 +15,7 @@ export const createInsertTableTool = (env: Env) =>
       documentId: z.string().describe("Document ID"),
       rows: z.coerce.number().min(1).describe("Number of rows"),
       columns: z.coerce.number().min(1).describe("Number of columns"),
-      index: z.coerce.number().describe("Position to insert"),
+      index: z.coerce.number().min(1).describe("Position to insert (min 1)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -46,7 +46,7 @@ export const createInsertImageTool = (env: Env) =>
         .string()
         .url()
         .describe("Image URL (must be publicly accessible)"),
-      index: z.coerce.number().describe("Position to insert"),
+      index: z.coerce.number().min(1).describe("Position to insert (min 1)"),
       width: z.coerce.number().optional().describe("Width in points"),
       height: z.coerce.number().optional().describe("Height in points"),
     }),
@@ -73,7 +73,7 @@ export const createInsertPageBreakTool = (env: Env) =>
     description: "Insert a page break at a specific position.",
     inputSchema: z.object({
       documentId: z.string().describe("Document ID"),
-      index: z.coerce.number().describe("Position to insert"),
+      index: z.coerce.number().min(1).describe("Position to insert (min 1)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),

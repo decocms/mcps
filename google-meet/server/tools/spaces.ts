@@ -134,6 +134,7 @@ export const createUpdateMeetingTool = (env: Env) =>
           meetingCode: space.meetingCode,
           accessType: space.config?.accessType,
           entryPointAccess: space.config?.entryPointAccess,
+          activeConference: space.activeConference?.conferenceRecord,
         },
         success: true,
       };
