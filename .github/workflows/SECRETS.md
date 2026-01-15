@@ -9,6 +9,20 @@ This document lists all secrets required to deploy MCPs via GitHub Actions.
 - **Description**: Authentication token for Deco CLI
 - **How to obtain**: Generated via Deco CLI or dashboard
 
+### `DECO_WEBHOOK_SECRET`
+- **Used by**: Webhook setup workflow
+- **Description**: Secret used to validate webhook payloads from GitHub to Deco
+- **How to obtain**: Generate a secure random string (e.g., `openssl rand -hex 32`)
+- **Note**: This is the same secret for all MCP webhooks
+
+### `WEBHOOK_ADMIN_TOKEN`
+- **Used by**: Webhook setup workflow
+- **Description**: GitHub Personal Access Token (PAT) with `admin:repo_hook` permission to create webhooks
+- **How to obtain**: 
+  1. Go to GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens
+  2. Generate a new token with **Repository permissions: Webhooks (Read and write)**
+  3. Or use a classic token with `admin:repo_hook` scope
+
 ## Optional Secrets (per MCP)
 
 ### MCP: `sora`
