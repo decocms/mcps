@@ -43,9 +43,9 @@ const LabelSchema = z.object({
 
 export const createListLabelsTool = (env: Env) =>
   createPrivateTool({
-    id: "list_labels",
+    id: "gmail_list_labels",
     description:
-      "List all labels in the mailbox, including system labels (INBOX, SENT, etc.) and user-created labels.",
+      "List all Gmail labels including system labels (INBOX, SENT, TRASH, etc.) and custom user-created labels.",
     inputSchema: z.object({}),
     outputSchema: z.object({
       labels: z.array(LabelSchema).describe("List of all labels"),
@@ -78,9 +78,9 @@ export const createListLabelsTool = (env: Env) =>
 
 export const createGetLabelTool = (env: Env) =>
   createPrivateTool({
-    id: "get_label",
+    id: "gmail_get_label_details",
     description:
-      "Get details of a specific label including message counts and visibility settings.",
+      "Get details of a specific Gmail label including message counts, unread counts, and visibility settings.",
     inputSchema: z.object({
       id: z.string().describe("Label ID (e.g., 'INBOX', 'SENT', or custom ID)"),
     }),
@@ -104,8 +104,9 @@ export const createGetLabelTool = (env: Env) =>
 
 export const createCreateLabelTool = (env: Env) =>
   createPrivateTool({
-    id: "create_label",
-    description: "Create a new custom label for organizing emails.",
+    id: "gmail_create_label",
+    description:
+      "Create a new custom Gmail label for organizing emails. You can set colors and visibility options.",
     inputSchema: z.object({
       name: z.string().describe("Label name (required)"),
       messageListVisibility: z
@@ -163,9 +164,9 @@ export const createCreateLabelTool = (env: Env) =>
 
 export const createUpdateLabelTool = (env: Env) =>
   createPrivateTool({
-    id: "update_label",
+    id: "gmail_update_label",
     description:
-      "Update a label's name, color, or visibility settings. Only user-created labels can be modified.",
+      "Update a Gmail label's name, color, or visibility settings. Note: Only custom user-created labels can be modified, not system labels.",
     inputSchema: z.object({
       id: z.string().describe("Label ID to update"),
       name: z.string().optional().describe("New label name"),
@@ -219,9 +220,9 @@ export const createUpdateLabelTool = (env: Env) =>
 
 export const createDeleteLabelTool = (env: Env) =>
   createPrivateTool({
-    id: "delete_label",
+    id: "gmail_delete_label",
     description:
-      "Delete a user-created label. System labels cannot be deleted. Messages with this label will keep their content but lose the label association.",
+      "Delete a custom Gmail label. Note: System labels (INBOX, SENT, etc.) cannot be deleted. Emails with this label will keep their content but lose the label.",
     inputSchema: z.object({
       id: z.string().describe("Label ID to delete"),
     }),

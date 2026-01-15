@@ -41,9 +41,9 @@ const ThreadSchema = z.object({
 
 export const createListThreadsTool = (env: Env) =>
   createPrivateTool({
-    id: "list_threads",
+    id: "gmail_list_conversations",
     description:
-      "List email threads (conversations). A thread groups related messages together.",
+      "List email conversations (threads) from Gmail. A conversation groups all related emails together (replies, forwards, etc.).",
     inputSchema: z.object({
       maxResults: z.coerce
         .number()
@@ -106,9 +106,9 @@ export const createListThreadsTool = (env: Env) =>
 
 export const createGetThreadTool = (env: Env) =>
   createPrivateTool({
-    id: "get_thread",
+    id: "gmail_get_conversation",
     description:
-      "Get a complete thread with all its messages. Perfect for viewing entire email conversations.",
+      "Get a complete email conversation with all messages in the thread. Perfect for viewing entire email exchanges.",
     inputSchema: z.object({
       id: z.string().describe("Thread ID"),
       format: z
@@ -162,9 +162,9 @@ export const createGetThreadTool = (env: Env) =>
 
 export const createTrashThreadTool = (env: Env) =>
   createPrivateTool({
-    id: "trash_thread",
+    id: "gmail_move_conversation_to_trash",
     description:
-      "Move an entire thread (all messages in the conversation) to trash.",
+      "Move an entire email conversation (all messages in the thread) to trash.",
     inputSchema: z.object({
       id: z.string().describe("Thread ID to trash"),
     }),
@@ -192,8 +192,9 @@ export const createTrashThreadTool = (env: Env) =>
 
 export const createUntrashThreadTool = (env: Env) =>
   createPrivateTool({
-    id: "untrash_thread",
-    description: "Restore an entire thread from trash.",
+    id: "gmail_restore_conversation_from_trash",
+    description:
+      "Restore an entire email conversation from trash back to inbox.",
     inputSchema: z.object({
       id: z.string().describe("Thread ID to restore"),
     }),
@@ -221,9 +222,9 @@ export const createUntrashThreadTool = (env: Env) =>
 
 export const createModifyThreadTool = (env: Env) =>
   createPrivateTool({
-    id: "modify_thread",
+    id: "gmail_update_conversation_labels",
     description:
-      "Add or remove labels from an entire thread. Useful for archiving, marking as read, or organizing conversations.",
+      "Add or remove labels from an entire email conversation. Use to archive, mark as read/unread, star, or organize conversations.",
     inputSchema: z.object({
       id: z.string().describe("Thread ID"),
       addLabelIds: z
@@ -265,9 +266,9 @@ export const createModifyThreadTool = (env: Env) =>
 
 export const createDeleteThreadTool = (env: Env) =>
   createPrivateTool({
-    id: "delete_thread",
+    id: "gmail_permanently_delete_conversation",
     description:
-      "Permanently delete an entire thread. This cannot be undone! Use trash_thread instead if you want to recover later.",
+      "PERMANENTLY delete an entire email conversation. WARNING: This cannot be undone! Use gmail_move_conversation_to_trash instead if you might need to recover later.",
     inputSchema: z.object({
       id: z.string().describe("Thread ID to permanently delete"),
     }),
