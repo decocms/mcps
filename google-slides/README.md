@@ -1,4 +1,4 @@
-# Google Slides MCP
+# Google Slides MCP 
 
 MCP Server for Google Slides API. Create and edit presentations programmatically.
 
