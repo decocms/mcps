@@ -118,23 +118,25 @@ export class GmailClient {
   }
 
   /**
-   * Decode base64url encoded string
+   * Decode base64url encoded string (UTF-8 safe)
    */
   private decodeBase64(data: string): string {
     // Convert base64url to base64
     const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
     try {
-      return atob(base64);
+      // Use Buffer for proper UTF-8 decoding
+      return Buffer.from(base64, "base64").toString("utf-8");
     } catch {
       return "";
     }
   }
 
   /**
-   * Encode string to base64url
+   * Encode string to base64url (UTF-8 safe)
    */
   private encodeBase64(data: string): string {
-    const base64 = btoa(data);
+    // Use Buffer for proper UTF-8 encoding
+    const base64 = Buffer.from(data, "utf-8").toString("base64");
     return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
@@ -464,13 +466,21 @@ export class GmailClient {
       body: input.body,
       cc: input.cc,
       bcc: input.bcc,
+      replyTo: input.replyTo,
+      inReplyTo: input.inReplyTo,
+      references: input.references,
     });
+
+    const body: any = {
+      message: { raw },
+    };
+    if (input.threadId) {
+      body.message.threadId = input.threadId;
+    }
 
     return this.request<Draft>(ENDPOINTS.DRAFT(draftId), {
       method: "PUT",
-      body: JSON.stringify({
-        message: { raw },
-      }),
+      body: JSON.stringify(body),
     });
   }
 

@@ -11,38 +11,57 @@ export const createAddQuestionTool = (env: Env) =>
   createPrivateTool({
     id: "add_question",
     description: "Add a question to the form.",
-    inputSchema: z.object({
-      formId: z.string().describe("Form ID"),
-      title: z.string().describe("Question text"),
-      type: z
-        .enum([
-          "text",
-          "paragraph",
-          "radio",
-          "checkbox",
-          "dropdown",
-          "scale",
-          "date",
-          "time",
-        ])
-        .describe("Question type"),
-      choices: z
-        .array(z.string())
-        .optional()
-        .describe("Options for radio/checkbox/dropdown"),
-      required: z.boolean().optional().describe("Is the question required"),
-      low: z.coerce.number().optional().describe("Scale low value (default 1)"),
-      high: z.coerce
-        .number()
-        .optional()
-        .describe("Scale high value (default 5)"),
-      lowLabel: z.string().optional().describe("Scale low label"),
-      highLabel: z.string().optional().describe("Scale high label"),
-      index: z.coerce
-        .number()
-        .optional()
-        .describe("Position to insert (0 = first)"),
-    }),
+    inputSchema: z
+      .object({
+        formId: z.string().describe("Form ID"),
+        title: z.string().describe("Question text"),
+        type: z
+          .enum([
+            "text",
+            "paragraph",
+            "radio",
+            "checkbox",
+            "dropdown",
+            "scale",
+            "date",
+            "time",
+          ])
+          .describe("Question type"),
+        choices: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Options for radio/checkbox/dropdown (required for these types)",
+          ),
+        required: z.boolean().optional().describe("Is the question required"),
+        low: z.coerce
+          .number()
+          .optional()
+          .describe("Scale low value (default 1)"),
+        high: z.coerce
+          .number()
+          .optional()
+          .describe("Scale high value (default 5)"),
+        lowLabel: z.string().optional().describe("Scale low label"),
+        highLabel: z.string().optional().describe("Scale high label"),
+        index: z.coerce
+          .number()
+          .optional()
+          .describe("Position to insert (0 = first)"),
+      })
+      .refine(
+        (data) => {
+          const choiceTypes = ["radio", "checkbox", "dropdown"];
+          if (choiceTypes.includes(data.type)) {
+            return data.choices && data.choices.length > 0;
+          }
+          return true;
+        },
+        {
+          message:
+            "choices is required for radio, checkbox, and dropdown question types",
+        },
+      ),
     outputSchema: z.object({
       success: z.boolean(),
       message: z.string(),
@@ -71,12 +90,19 @@ export const createUpdateQuestionTool = (env: Env) =>
   createPrivateTool({
     id: "update_question",
     description: "Update a question's title or required status.",
-    inputSchema: z.object({
-      formId: z.string().describe("Form ID"),
-      index: z.coerce.number().describe("Question index (0-based)"),
-      title: z.string().optional().describe("New question text"),
-      required: z.boolean().optional().describe("Is the question required"),
-    }),
+    inputSchema: z
+      .object({
+        formId: z.string().describe("Form ID"),
+        index: z.coerce.number().describe("Question index (0-based)"),
+        title: z.string().optional().describe("New question text"),
+        required: z.boolean().optional().describe("Is the question required"),
+      })
+      .refine(
+        (data) => data.title !== undefined || data.required !== undefined,
+        {
+          message: "At least one of title or required must be provided",
+        },
+      ),
     outputSchema: z.object({
       success: z.boolean(),
       message: z.string(),

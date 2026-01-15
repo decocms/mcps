@@ -60,11 +60,7 @@ const runtime = withRuntime<Env>({
     },
 
     // Exchanges the authorization code for access token
-    exchangeCode: async ({
-      code,
-      code_verifier,
-      code_challenge_method,
-    }: any) => {
+    exchangeCode: async ({ code, code_verifier }: any) => {
       // Use the stored redirect_uri from authorizationUrl
       const cleanRedirectUri = lastRedirectUri;
 
@@ -82,12 +78,9 @@ const runtime = withRuntime<Env>({
         redirect_uri: cleanRedirectUri,
       });
 
-      // Add PKCE verifier if provided
+      // Add PKCE verifier if provided (code_challenge_method is only needed in auth request, not token exchange)
       if (code_verifier) {
         params.set("code_verifier", code_verifier);
-      }
-      if (code_challenge_method) {
-        params.set("code_challenge_method", code_challenge_method);
       }
 
       const response = await fetch("https://oauth2.googleapis.com/token", {

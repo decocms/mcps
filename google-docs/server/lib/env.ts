@@ -1,5 +1,8 @@
 import type { Env } from "../../shared/deco.gen.ts";
 
+/**
+ * Get Google OAuth access token (without Bearer prefix)
+ */
 export const getAccessToken = (env: Env): string => {
   const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
   if (!authorization) {
@@ -7,5 +10,6 @@ export const getAccessToken = (env: Env): string => {
       "Not authenticated. Please authorize with Google Docs first.",
     );
   }
-  return authorization;
+  // Remove "Bearer " prefix if present to avoid double prefix in client
+  return authorization.replace(/^Bearer\s+/i, "");
 };

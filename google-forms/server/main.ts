@@ -38,11 +38,7 @@ const runtime = withRuntime<Env>({
       if (state) url.searchParams.set("state", state);
       return url.toString();
     },
-    exchangeCode: async ({
-      code,
-      code_verifier,
-      code_challenge_method,
-    }: any) => {
+    exchangeCode: async ({ code, code_verifier }: any) => {
       if (!lastRedirectUri) {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
@@ -56,8 +52,6 @@ const runtime = withRuntime<Env>({
         redirect_uri: lastRedirectUri,
       });
       if (code_verifier) params.set("code_verifier", code_verifier);
-      if (code_challenge_method)
-        params.set("code_challenge_method", code_challenge_method);
 
       const response = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",

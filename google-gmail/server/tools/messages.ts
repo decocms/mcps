@@ -249,9 +249,10 @@ Examples:
         pageToken: context.pageToken,
       });
 
-      // Then fetch full details for each message
+      // Then fetch full details for each message (handle empty results)
+      const messageRefs = listResult.messages || [];
       const messages = await Promise.all(
-        listResult.messages.map(async (m) => {
+        messageRefs.map(async (m) => {
           const full = await client.getMessage({ id: m.id, format: "full" });
           return client.parseMessage(full);
         }),

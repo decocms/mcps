@@ -46,38 +46,54 @@ export const createCreatePermissionTool = (env: Env) =>
     id: "create_permission",
     description:
       "Share a file/folder with a user, group, domain, or make it public.",
-    inputSchema: z.object({
-      fileId: z.string().describe("File or folder ID"),
-      type: z
-        .enum(["user", "group", "domain", "anyone"])
-        .describe("Who to share with"),
-      role: z
-        .enum([
-          "owner",
-          "organizer",
-          "fileOrganizer",
-          "writer",
-          "commenter",
-          "reader",
-        ])
-        .describe("Permission level"),
-      emailAddress: z
-        .string()
-        .optional()
-        .describe("Email (required for user/group type)"),
-      domain: z
-        .string()
-        .optional()
-        .describe("Domain (required for domain type)"),
-      sendNotification: z
-        .boolean()
-        .optional()
-        .describe("Send email notification (default true)"),
-      emailMessage: z
-        .string()
-        .optional()
-        .describe("Custom message for notification email"),
-    }),
+    inputSchema: z
+      .object({
+        fileId: z.string().describe("File or folder ID"),
+        type: z
+          .enum(["user", "group", "domain", "anyone"])
+          .describe("Who to share with"),
+        role: z
+          .enum([
+            "owner",
+            "organizer",
+            "fileOrganizer",
+            "writer",
+            "commenter",
+            "reader",
+          ])
+          .describe("Permission level"),
+        emailAddress: z
+          .string()
+          .optional()
+          .describe("Email (required for user/group type)"),
+        domain: z
+          .string()
+          .optional()
+          .describe("Domain (required for domain type)"),
+        sendNotification: z
+          .boolean()
+          .optional()
+          .describe("Send email notification (default true)"),
+        emailMessage: z
+          .string()
+          .optional()
+          .describe("Custom message for notification email"),
+      })
+      .refine(
+        (data) => {
+          if (data.type === "user" || data.type === "group") {
+            return !!data.emailAddress;
+          }
+          if (data.type === "domain") {
+            return !!data.domain;
+          }
+          return true;
+        },
+        {
+          message:
+            "emailAddress is required for user/group type, domain is required for domain type",
+        },
+      ),
     outputSchema: z.object({
       permission: PermissionSchema,
       success: z.boolean(),

@@ -46,11 +46,10 @@ export const createListFolderContentsTool = (env: Env) =>
     id: "list_folder_contents",
     description: "List all files and folders inside a specific folder.",
     inputSchema: z.object({
-      folderId: z.string().describe("Folder ID (use 'root' for root folder)"),
-      includeSubfolders: z
-        .boolean()
-        .optional()
-        .describe("Include items in subfolders"),
+      folderId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]+$|^root$/, "Invalid folder ID format")
+        .describe("Folder ID (use 'root' for root folder)"),
       fileType: z
         .enum(["all", "folders", "files"])
         .optional()
@@ -63,7 +62,9 @@ export const createListFolderContentsTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new DriveClient({ accessToken: getAccessToken(env) });
-      let query = `'${context.folderId}' in parents and trashed = false`;
+      // Escape single quotes in folderId to prevent query injection
+      const safeFolderId = context.folderId.replace(/'/g, "\\'");
+      let query = `'${safeFolderId}' in parents and trashed = false`;
       if (context.fileType === "folders") {
         query += ` and mimeType = '${MIME_TYPES.FOLDER}'`;
       } else if (context.fileType === "files") {

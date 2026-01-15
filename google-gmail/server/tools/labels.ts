@@ -134,8 +134,9 @@ export const createCreateLabelTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      // Gmail API requires BOTH textColor and backgroundColor when setting colors
       const color =
-        context.backgroundColor || context.textColor
+        context.backgroundColor && context.textColor
           ? {
               backgroundColor: context.backgroundColor,
               textColor: context.textColor,
@@ -188,8 +189,9 @@ export const createUpdateLabelTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      // Gmail API requires BOTH textColor and backgroundColor when setting colors
       const color =
-        context.backgroundColor || context.textColor
+        context.backgroundColor && context.textColor
           ? {
               backgroundColor: context.backgroundColor,
               textColor: context.textColor,
