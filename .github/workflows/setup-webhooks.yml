@@ -63,8 +63,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Create webhook for ${{ matrix.mcp }}
-        run: bun run scripts/create-mcp-webhook.ts ${{ matrix.mcp }}
+        run: bun run scripts/create-mcp-webhook.ts "$MCP_NAME"
         env:
+          MCP_NAME: ${{ matrix.mcp }}
           GITHUB_TOKEN: ${{ secrets.WEBHOOK_ADMIN_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           DECO_WEBHOOK_SECRET: ${{ secrets.DECO_WEBHOOK_SECRET }}

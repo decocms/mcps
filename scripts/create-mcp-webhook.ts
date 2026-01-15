@@ -67,8 +67,11 @@ async function webhookExists(): Promise<boolean> {
       config?: { url?: string };
     }>;
 
-    // Check if any webhook has our URL
-    return hooks.some((hook) => hook.config?.url?.includes(`site=${mcpName}`));
+    // Check if any webhook has our exact URL (use regex to match exact site param)
+    const sitePattern = new RegExp(`[?&]site=${mcpName}(?:&|$)`);
+    return hooks.some(
+      (hook) => hook.config?.url && sitePattern.test(hook.config.url),
+    );
   } catch (error) {
     console.error(`⚠️ Warning: Error checking existing webhooks:`, error);
     return false;

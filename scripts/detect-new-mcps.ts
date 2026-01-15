@@ -54,57 +54,62 @@ function getCurrentMcps(): string[] {
 
 // Get MCPs that existed in the base ref
 async function getMcpsAtRef(ref: string): Promise<string[]> {
-  try {
-    // List directories at the given ref that have package.json or app.json
-    const result = await $`git ls-tree --name-only ${ref}`.text();
-    const entries = result.trim().split("\n").filter(Boolean);
+  // List directories at the given ref that have package.json or app.json
+  const result = await $`git ls-tree --name-only ${ref}`.text();
+  const entries = result.trim().split("\n").filter(Boolean);
 
-    const mcps: string[] = [];
+  const mcps: string[] = [];
 
-    for (const entry of entries) {
-      // Skip special directories
-      if (
-        [
-          ".git",
-          ".github",
-          "node_modules",
-          "scripts",
-          "shared",
-          "dist",
-          "template-with-view",
-          "template-minimal",
-        ].includes(entry)
-      )
-        continue;
+  for (const entry of entries) {
+    // Skip special directories
+    if (
+      [
+        ".git",
+        ".github",
+        "node_modules",
+        "scripts",
+        "shared",
+        "dist",
+        "template-with-view",
+        "template-minimal",
+      ].includes(entry)
+    )
+      continue;
 
-      // Check if this entry has package.json or app.json in the base ref
-      try {
-        await $`git cat-file -e ${ref}:${entry}/package.json`.quiet();
-        mcps.push(entry);
-        continue;
-      } catch {
-        // No package.json, check for app.json
-      }
-
-      try {
-        await $`git cat-file -e ${ref}:${entry}/app.json`.quiet();
-        mcps.push(entry);
-      } catch {
-        // No app.json either, skip
-      }
+    // Check if this entry has package.json or app.json in the base ref
+    try {
+      await $`git cat-file -e ${ref}:${entry}/package.json`.quiet();
+      mcps.push(entry);
+      continue;
+    } catch {
+      // No package.json, check for app.json
     }
 
-    return mcps;
-  } catch (error) {
-    console.error(`Error getting MCPs at ref ${ref}:`, error);
-    return [];
+    try {
+      await $`git cat-file -e ${ref}:${entry}/app.json`.quiet();
+      mcps.push(entry);
+    } catch {
+      // No app.json either, skip
+    }
   }
+
+  return mcps;
 }
 
 // Determine which MCPs are new
 async function getNewMcps(): Promise<string[]> {
   const currentMcps = getCurrentMcps();
-  const previousMcps = await getMcpsAtRef(baseRef);
+
+  let previousMcps: string[];
+  try {
+    previousMcps = await getMcpsAtRef(baseRef);
+  } catch (error) {
+    console.error(`❌ Fatal: Failed to get MCPs at ref ${baseRef}:`, error);
+    console.error(
+      "Cannot safely determine new MCPs - aborting to prevent mass webhook creation",
+    );
+    process.exit(1);
+  }
 
   // Find MCPs that exist now but didn't exist before
   const newMcps = currentMcps.filter((mcp) => !previousMcps.includes(mcp));
