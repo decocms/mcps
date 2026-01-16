@@ -48,17 +48,12 @@ const TwitterEntrySchema = z.object({
 export const StateSchema = z.object({
   n8nWebhookUrl: z.string().describe("URL do webhook N8N para scraping"),
   database: z.object({
-    url: z
+    apiUrl: z
       .string()
       .describe(
-        "URL do banco de dados SQLite/Turso (ex: libsql://seu-banco.turso.io ou file:local.db)",
+        "URL da API do MCP para executar queries SQL (ex: https://api.decocms.com/org/project/mcp/tool/DATABASES_RUN_SQL)",
       ),
-    authToken: z
-      .string()
-      .optional()
-      .describe(
-        "Token de autenticação para Turso (opcional para SQLite local)",
-      ),
+    token: z.string().describe("Token de autenticação Bearer para a API"),
   }),
   urlFields: z.object({
     urls: z.array(UrlEntrySchema).describe("URLs to scrape content from"),

@@ -41,11 +41,11 @@ async function queryTable(
   const query = `
     SELECT * FROM ${tableName}
     ORDER BY id
-    LIMIT $1
-    OFFSET $2
+    LIMIT ${limit}
+    OFFSET ${offset}
   `;
 
-  const result = await client.query(query, [limit, offset]);
+  const result = await client.query(query);
 
   return {
     table: tableName,
@@ -112,13 +112,20 @@ export const getContentScrapeTool = (env: Env) =>
 
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
-        const databaseUrl = state?.database?.url ?? "";
-        const authToken = state?.database?.authToken;
+        const apiUrl = state?.database?.apiUrl ?? "";
+        const token = state?.database?.token ?? "";
 
-        if (!databaseUrl) {
+        if (!apiUrl) {
           return {
             success: false,
-            error: "Database URL not configured",
+            error: "Database API URL not configured",
+          };
+        }
+
+        if (!token) {
+          return {
+            success: false,
+            error: "Database token not configured",
           };
         }
 
@@ -133,7 +140,7 @@ export const getContentScrapeTool = (env: Env) =>
         // Create database client
         let client: DatabaseClient;
         try {
-          client = createDatabaseClient(databaseUrl, authToken);
+          client = createDatabaseClient(apiUrl, token);
         } catch (error) {
           const message =
             error instanceof Error ? error.message : String(error);
