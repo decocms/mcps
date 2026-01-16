@@ -22,6 +22,7 @@
   "workspaces": [
     "apify",
     "content-scraper",
+    "blog-post-generator",
     "data-for-seo",
     "datajud",
     "deco-llm",
