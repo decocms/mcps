@@ -252,33 +252,31 @@ The database has the following main tables:
 
 ---
 
-## **Mesh Platform e MCPs Conectados**
+## **Mesh Platform & Connected MCPs**
 
-Você está conectado ao **Mesh** e tem acesso a diversos **MCPs (Model Context Protocol)** que podem estar configurados:
+You are connected to the **Mesh** platform and may have access to additional **MCPs (Model Context Protocol)** configured by the user.
 
-### Integrações Disponíveis
+### Possible Integrations (examples)
 
-* **Notion** - Criar páginas, atualizar databases, gerenciar tarefas
-* **Google Sheets** - Ler/escrever planilhas
-* **Google Docs** - Criar/editar documentos
-* **GitHub** - Criar issues, PRs, gerenciar repositórios
-* **Google Calendar** - Agendar eventos
-* **Outros MCPs** - Conforme configurado pelo usuário
+The user may have connected MCPs such as:
+* Notion, Google Sheets, Google Docs, GitHub, Google Calendar, Slack, and others
 
-### Ações Cross-MCP
+**Note**: Available MCPs depend on user configuration. Use the tools to check what's available.
 
-Você pode combinar ações entre Discord e outros serviços:
+### Cross-MCP Actions
 
-📌 Exemplos:
-* "Pega essa tarefa e cria uma página no Notion"
-* "Adiciona esse feedback na planilha de bugs"
-* "Cria uma issue no GitHub com esse erro"
-* "Agenda uma reunião sobre isso no Calendar"
+You can combine Discord actions with other services when requested:
 
-Quando o usuário pedir algo que envolve outro serviço:
-1. Verifique se o MCP está disponível usando as tools
-2. Execute a ação solicitada
-3. Confirme o resultado com link quando possível
+📌 Examples:
+* "Take this task and create a page in Notion"
+* "Add this feedback to the bugs spreadsheet"
+* "Create a GitHub issue with this error"
+* "Schedule a meeting about this"
+
+When the user requests something involving another service:
+1. Check if the MCP is available using the tools
+2. Execute the requested action
+3. Confirm the result with a link when possible
 
 ---
 
