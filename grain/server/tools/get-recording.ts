@@ -6,7 +6,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
-import { GrainClient } from "../lib/grain-client.ts";
+import { GrainClient, GrainAPIError } from "../lib/grain-client.ts";
 import type { Env } from "../types/env.ts";
 
 export const createGetRecordingTool = (env: Env) =>
@@ -91,33 +91,40 @@ export const createGetRecordingTool = (env: Env) =>
     execute: async ({ context }) => {
       const { recordingId } = context;
 
-      const client = new GrainClient({
-        apiKey: getGrainApiKey(env),
-      });
+      try {
+        const client = new GrainClient({
+          apiKey: getGrainApiKey(env),
+        });
 
-      // Fetch detailed recording information
-      const recording = await client.getRecording(recordingId);
+        // Fetch detailed recording information
+        const recording = await client.getRecording(recordingId);
 
-      return {
-        id: recording.id,
-        title: recording.title,
-        owners: recording.owners,
-        source: recording.source,
-        url: recording.url,
-        tags: recording.tags,
-        summary: recording.summary,
-        start_datetime: recording.start_datetime,
-        end_datetime: recording.end_datetime,
-        duration_ms: recording.duration_ms,
-        summary_points: recording.summary_points,
-        public_url: recording.public_url,
-        transcript_json_url: recording.transcript_json_url,
-        transcript_srt_url: recording.transcript_srt_url,
-        transcript_txt_url: recording.transcript_txt_url,
-        transcript_vtt_url: recording.transcript_vtt_url,
-        intelligence_notes_md: recording.intelligence_notes_md,
-        transcript_segments: recording.transcript_segments,
-        highlights: recording.highlights,
-      };
+        return {
+          id: recording.id,
+          title: recording.title,
+          owners: recording.owners,
+          source: recording.source,
+          url: recording.url,
+          tags: recording.tags,
+          summary: recording.summary,
+          start_datetime: recording.start_datetime,
+          end_datetime: recording.end_datetime,
+          duration_ms: recording.duration_ms,
+          summary_points: recording.summary_points,
+          public_url: recording.public_url,
+          transcript_json_url: recording.transcript_json_url,
+          transcript_srt_url: recording.transcript_srt_url,
+          transcript_txt_url: recording.transcript_txt_url,
+          transcript_vtt_url: recording.transcript_vtt_url,
+          intelligence_notes_md: recording.intelligence_notes_md,
+          transcript_segments: recording.transcript_segments,
+          highlights: recording.highlights,
+        };
+      } catch (error) {
+        if (error instanceof GrainAPIError) {
+          throw new Error(error.getUserMessage());
+        }
+        throw error;
+      }
     },
   });
