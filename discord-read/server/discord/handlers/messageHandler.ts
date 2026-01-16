@@ -207,14 +207,16 @@ export async function processCommand(
   // Parse command and args from clean content or original message
   const contentToParse =
     cleanContent ?? message.content.slice(prefix.length).trim();
-  const args = contentToParse.split(/\s+/);
+  const args = contentToParse.split(/\s+/).filter((a) => a.length > 0);
   const commandName = args.shift()?.toLowerCase();
 
-  if (!commandName) return;
-
+  // Debug: log raw parsing details
+  console.log(`[Command] Raw content: "${contentToParse}"`);
   console.log(
-    `[Command] Processing: ${commandName} with args: ${args.join(", ")}`,
+    `[Command] Parsed command: "${commandName}" | Args: [${args.join(", ")}]`,
   );
+
+  if (!commandName) return;
 
   // ============================================================================
   // Built-in Commands
@@ -222,20 +224,27 @@ export async function processCommand(
 
   switch (commandName) {
     case "help":
+      console.log(`[Command] Executing: help`);
       await handleHelp(message, prefix);
       break;
     case "ping":
+      console.log(`[Command] Executing: ping`);
       await handlePing(message);
       break;
     case "status":
+      console.log(`[Command] Executing: status`);
       await handleStatus(message, prefix);
       break;
     case "prompt":
+      console.log(`[Command] Executing: prompt`);
       await handlePromptCommand(message, args, env);
       break;
     default:
       // Everything else goes to the default AI agent (via Mesh binding)
       // Re-join the command name with args for the full message
+      console.log(
+        `[Command] Executing: default (AI agent) for "${commandName}"`,
+      );
       const fullInput = [commandName, ...args].join(" ");
       await handleDefaultAgent(message, fullInput, env, replyToMessage);
       break;
@@ -612,6 +621,8 @@ async function handlePromptCommand(
   args: string[],
   env: Env,
 ): Promise<void> {
+  console.log(`[Prompt] Command called with args: [${args.join(", ")}]`);
+
   const subcommand = args[0]?.toLowerCase();
   const guildId = message.guild?.id;
   const channelId = message.channel.id;
