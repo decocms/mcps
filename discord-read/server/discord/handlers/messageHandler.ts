@@ -207,14 +207,16 @@ export async function processCommand(
   // Parse command and args from clean content or original message
   const contentToParse =
     cleanContent ?? message.content.slice(prefix.length).trim();
-  const args = contentToParse.split(/\s+/);
+  const args = contentToParse.split(/\s+/).filter((a) => a.length > 0);
   const commandName = args.shift()?.toLowerCase();
 
-  if (!commandName) return;
-
+  // Debug: log raw parsing details
+  console.log(`[Command] Raw content: "${contentToParse}"`);
   console.log(
-    `[Command] Processing: ${commandName} with args: ${args.join(", ")}`,
+    `[Command] Parsed command: "${commandName}" | Args: [${args.join(", ")}]`,
   );
+
+  if (!commandName) return;
 
   // ============================================================================
   // Built-in Commands
@@ -222,20 +224,27 @@ export async function processCommand(
 
   switch (commandName) {
     case "help":
+      console.log(`[Command] Executing: help`);
       await handleHelp(message, prefix);
       break;
     case "ping":
+      console.log(`[Command] Executing: ping`);
       await handlePing(message);
       break;
     case "status":
+      console.log(`[Command] Executing: status`);
       await handleStatus(message, prefix);
       break;
     case "prompt":
+      console.log(`[Command] Executing: prompt`);
       await handlePromptCommand(message, args, env);
       break;
     default:
       // Everything else goes to the default AI agent (via Mesh binding)
       // Re-join the command name with args for the full message
+      console.log(
+        `[Command] Executing: default (AI agent) for "${commandName}"`,
+      );
       const fullInput = [commandName, ...args].join(" ");
       await handleDefaultAgent(message, fullInput, env, replyToMessage);
       break;
@@ -391,9 +400,21 @@ async function handleDefaultAgent(
       },
     });
 
-    const responseContent =
+    let responseContent =
       response.content || "Desculpe, não consegui gerar uma resposta.";
     const durationMs = Date.now() - startTime;
+
+    // Process channel prompt markers if present
+    if (message.guild?.id) {
+      responseContent = await processPromptMarkers(
+        responseContent,
+        message.guild.id,
+        message.channel.id,
+        channelName,
+        message.author.id,
+        message.author.username,
+      );
+    }
 
     // Send response (split if needed for Discord's 2000 char limit)
     const maxLength = 2000;
@@ -470,6 +491,76 @@ async function handleDefaultAgent(
       clearInterval(typingInterval);
     }
   }
+}
+
+// ============================================================================
+// Prompt Marker Processing
+// ============================================================================
+
+/**
+ * Process [SAVE_CHANNEL_PROMPT] and [CLEAR_CHANNEL_PROMPT] markers in LLM response
+ * Extracts the prompt content, saves to database, and removes markers from response
+ */
+async function processPromptMarkers(
+  content: string,
+  guildId: string,
+  channelId: string,
+  channelName: string | undefined,
+  authorId: string,
+  authorUsername: string,
+): Promise<string> {
+  const db = await import("../../../shared/db.ts");
+
+  // Check for SAVE_CHANNEL_PROMPT marker
+  const saveMatch = content.match(
+    /\[SAVE_CHANNEL_PROMPT\]([\s\S]*?)\[\/SAVE_CHANNEL_PROMPT\]/i,
+  );
+
+  if (saveMatch) {
+    const promptToSave = saveMatch[1].trim();
+
+    if (promptToSave) {
+      try {
+        await db.upsertChannelContext({
+          guild_id: guildId,
+          channel_id: channelId,
+          channel_name: channelName || null,
+          system_prompt: promptToSave,
+          created_by_id: authorId,
+          created_by_username: authorUsername,
+        });
+        console.log(
+          `[Agent] Channel prompt saved for #${channelName || channelId} (${promptToSave.length} chars)`,
+        );
+      } catch (error) {
+        console.error(`[Agent] Failed to save channel prompt:`, error);
+      }
+    }
+
+    // Remove the marker from the response (user won't see it)
+    content = content.replace(
+      /\[SAVE_CHANNEL_PROMPT\][\s\S]*?\[\/SAVE_CHANNEL_PROMPT\]/gi,
+      "",
+    );
+  }
+
+  // Check for CLEAR_CHANNEL_PROMPT marker
+  if (content.includes("[CLEAR_CHANNEL_PROMPT]")) {
+    try {
+      await db.deleteChannelContext(guildId, channelId);
+      console.log(
+        `[Agent] Channel prompt cleared for #${channelName || channelId}`,
+      );
+    } catch (error) {
+      console.error(`[Agent] Failed to clear channel prompt:`, error);
+    }
+
+    // Remove the marker from the response
+    content = content.replace(/\[CLEAR_CHANNEL_PROMPT\]/gi, "");
+  }
+
+  // Clean up any extra whitespace left by marker removal
+  return content.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // ============================================================================
@@ -612,6 +703,8 @@ async function handlePromptCommand(
   args: string[],
   env: Env,
 ): Promise<void> {
+  console.log(`[Prompt] Command called with args: [${args.join(", ")}]`);
+
   const subcommand = args[0]?.toLowerCase();
   const guildId = message.guild?.id;
   const channelId = message.channel.id;
