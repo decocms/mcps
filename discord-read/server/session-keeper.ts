@@ -11,9 +11,6 @@ import type { Env } from "./types/env.ts";
 // Intervalo do heartbeat (3 minutos - antes dos 5 min de timeout)
 const HEARTBEAT_INTERVAL_MS = 3 * 60 * 1000;
 
-// Intervalo de retry quando falha (30 segundos)
-const RETRY_INTERVAL_MS = 30 * 1000;
-
 // Máximo de falhas consecutivas antes de parar
 const MAX_CONSECUTIVE_FAILURES = 5;
 
