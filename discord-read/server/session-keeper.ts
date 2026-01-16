@@ -11,9 +11,6 @@ import type { Env } from "./types/env.ts";
 // Intervalo do heartbeat (3 minutos - antes dos 5 min de timeout)
 const HEARTBEAT_INTERVAL_MS = 3 * 60 * 1000;
 
-// Intervalo de retry quando falha (30 segundos)
-const RETRY_INTERVAL_MS = 30 * 1000;
-
 // Máximo de falhas consecutivas antes de parar
 const MAX_CONSECUTIVE_FAILURES = 5;
 
@@ -36,8 +33,11 @@ async function checkSession(env: Env): Promise<boolean> {
     const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
 
     if (!meshUrl || !token || !organizationId) {
-      console.log("[SessionKeeper] Missing mesh credentials - session invalid");
-      return false;
+      // No Mesh credentials - can't verify, assume valid (bot may work without Mesh)
+      console.log(
+        "[SessionKeeper] No Mesh credentials to verify - skipping check",
+      );
+      return true;
     }
 
     // Faz uma requisição leve para verificar se o token ainda é válido
