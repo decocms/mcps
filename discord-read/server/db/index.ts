@@ -30,6 +30,10 @@ const collectionsQueries = {
     idempotent: discordQueries.reactions.idempotent,
     indexes: discordQueries.reactions.indexes,
   },
+  channelContext: {
+    idempotent: discordQueries.channelContext.idempotent,
+    indexes: discordQueries.channelContext.indexes,
+  },
 };
 
 /**

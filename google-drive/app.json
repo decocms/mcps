@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-drive",
+  "friendlyName": "Google Drive",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-drive.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Drive. Upload, download, search files, manage folders and permissions.",
+  "icon": "https://assets.decocache.com/decocms/e5fa83e1-69f2-4ee5-aa46-3d865b205545/Google-Drive-logo.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Storage"],
+    "official": false,
+    "tags": ["google", "drive", "files", "storage", "cloud", "sharing", "folders"],
+    "short_description": "Integrate and manage Google Drive. Upload, download, search files, manage folders and permissions.",
+    "mesh_description": "The Google Drive MCP provides comprehensive integration with Google Drive API, enabling full programmatic control over cloud storage. This MCP allows AI agents to list, search, create, update, and delete files and folders, manage permissions and sharing, and organize content. The integration is perfect for building file management systems, automated backup solutions, and document workflows. Provides secure OAuth-based authentication."
+  }
+}
+

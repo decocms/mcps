@@ -1,0 +1,80 @@
+name: Setup Webhooks for New MCPs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-new-mcps:
+    runs-on: ubuntu-latest
+    outputs:
+      mcps: ${{ steps.detect.outputs.mcps }}
+      has_new_mcps: ${{ steps.detect.outputs.has_new_mcps }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history to compare commits
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Detect new MCPs
+        id: detect
+        run: |
+          # Get the previous commit to compare against
+          PREVIOUS_COMMIT="${{ github.event.before }}"
+          
+          # Handle case where there's no previous commit (first push)
+          if [ "$PREVIOUS_COMMIT" = "0000000000000000000000000000000000000000" ]; then
+            echo "First push detected, checking all MCPs as new"
+            PREVIOUS_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          # Detect new MCPs
+          NEW_MCPS=$(bun run scripts/detect-new-mcps.ts "$PREVIOUS_COMMIT" HEAD)
+          echo "New MCPs: $NEW_MCPS"
+          
+          # Set outputs
+          echo "mcps=$NEW_MCPS" >> $GITHUB_OUTPUT
+          
+          # Check if array is not empty
+          if [ "$NEW_MCPS" = "[]" ]; then
+            echo "has_new_mcps=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_new_mcps=true" >> $GITHUB_OUTPUT
+          fi
+
+  create-webhooks:
+    needs: detect-new-mcps
+    if: needs.detect-new-mcps.outputs.has_new_mcps == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mcp: ${{ fromJSON(needs.detect-new-mcps.outputs.mcps) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Create webhook for ${{ matrix.mcp }}
+        run: bun run scripts/create-mcp-webhook.ts "$MCP_NAME"
+        env:
+          MCP_NAME: ${{ matrix.mcp }}
+          GITHUB_TOKEN: ${{ secrets.WEBHOOK_ADMIN_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DECO_WEBHOOK_SECRET: ${{ secrets.DECO_WEBHOOK_SECRET }}
+
+      - name: Notify success
+        if: success()
+        run: echo "✅ Successfully created webhook for ${{ matrix.mcp }}"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "❌ Failed to create webhook for ${{ matrix.mcp }}"
+

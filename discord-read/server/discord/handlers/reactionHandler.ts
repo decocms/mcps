@@ -80,7 +80,7 @@ export async function handleReactionRemove(
   if (reaction.partial) {
     try {
       reaction = await reaction.fetch();
-    } catch (error) {
+    } catch {
       // Reaction might be completely removed
       console.log("[Reaction] Reaction already removed, cleaning up");
       await deleteReaction(

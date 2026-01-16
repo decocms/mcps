@@ -8,10 +8,10 @@ import {
   EmbedBuilder,
   type Message,
   type TextChannel,
-  PermissionFlagsBits,
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";
+import { getMeshSessionStatus } from "../../bot-manager.ts";
 
 // Super Admins - always have full permissions everywhere
 const SUPER_ADMINS = [
@@ -173,6 +173,7 @@ export async function indexMessage(
  * @param env - Environment
  * @param cleanContent - Optional pre-cleaned content (without prefix)
  * @param isDM - Whether this is a DM
+ * @param replyToMessage - Content of the bot's message being replied to (if any)
  */
 export async function processCommand(
   message: Message,
@@ -180,6 +181,7 @@ export async function processCommand(
   env: Env,
   cleanContent?: string,
   isDM: boolean = false,
+  replyToMessage?: string,
 ): Promise<void> {
   // In guilds, we need member info; in DMs, we don't have it
   if (!isDM && (!message.guild || !message.member)) return;
@@ -205,14 +207,16 @@ export async function processCommand(
   // Parse command and args from clean content or original message
   const contentToParse =
     cleanContent ?? message.content.slice(prefix.length).trim();
-  const args = contentToParse.split(/\s+/);
+  const args = contentToParse.split(/\s+/).filter((a) => a.length > 0);
   const commandName = args.shift()?.toLowerCase();
 
-  if (!commandName) return;
-
+  // Debug: log raw parsing details
+  console.log(`[Command] Raw content: "${contentToParse}"`);
   console.log(
-    `[Command] Processing: ${commandName} with args: ${args.join(", ")}`,
+    `[Command] Parsed command: "${commandName}" | Args: [${args.join(", ")}]`,
   );
+
+  if (!commandName) return;
 
   // ============================================================================
   // Built-in Commands
@@ -220,19 +224,29 @@ export async function processCommand(
 
   switch (commandName) {
     case "help":
+      console.log(`[Command] Executing: help`);
       await handleHelp(message, prefix);
       break;
     case "ping":
+      console.log(`[Command] Executing: ping`);
       await handlePing(message);
       break;
     case "status":
+      console.log(`[Command] Executing: status`);
       await handleStatus(message, prefix);
+      break;
+    case "prompt":
+      console.log(`[Command] Executing: prompt`);
+      await handlePromptCommand(message, args, env);
       break;
     default:
       // Everything else goes to the default AI agent (via Mesh binding)
       // Re-join the command name with args for the full message
+      console.log(
+        `[Command] Executing: default (AI agent) for "${commandName}"`,
+      );
       const fullInput = [commandName, ...args].join(" ");
-      await handleDefaultAgent(message, fullInput, env);
+      await handleDefaultAgent(message, fullInput, env, replyToMessage);
       break;
   }
 }
@@ -245,6 +259,7 @@ async function handleDefaultAgent(
   message: Message,
   userInput: string,
   env: Env,
+  replyToMessage?: string,
 ): Promise<void> {
   const isDM = !message.guild;
 
@@ -253,6 +268,10 @@ async function handleDefaultAgent(
     await safeReply(message, "👋 Olá! Como posso ajudar você hoje?");
     return;
   }
+
+  // Note: We don't block here based on session status anymore.
+  // The LLM call will fail with a clear error if the session is expired,
+  // and that error is already handled in the catch block below.
 
   const channelInfo = isDM
     ? `DM with ${message.author.username}`
@@ -310,11 +329,31 @@ async function handleDefaultAgent(
 
     // Import and use the system prompt
     const { getSystemPrompt } = await import("../../prompts/system.ts");
+    const db = await import("../../../shared/db.ts");
 
     const channelName =
       "name" in message.channel
         ? (message.channel.name ?? undefined)
         : undefined;
+
+    // Fetch channel-specific prompt if configured
+    let channelPrompt: string | undefined;
+    if (message.guild?.id) {
+      try {
+        const channelContext = await db.getChannelContext(
+          message.guild.id,
+          message.channel.id,
+        );
+        if (channelContext?.system_prompt) {
+          channelPrompt = channelContext.system_prompt;
+          console.log(
+            `[Agent] Using channel context for #${channelName || message.channel.id}`,
+          );
+        }
+      } catch (e) {
+        console.log(`[Agent] Could not fetch channel context:`, e);
+      }
+    }
 
     // Add system prompt with context (including IDs for tools)
     const systemPrompt = getSystemPrompt({
@@ -325,6 +364,7 @@ async function handleDefaultAgent(
       userId: message.author.id,
       userName: message.author.username,
       isDM,
+      channelPrompt,
     });
 
     llmMessages.push({ role: "system", content: systemPrompt });
@@ -334,6 +374,14 @@ async function handleDefaultAgent(
       llmMessages.push({
         role: "system",
         content: `## Recent Conversation Context\n\nLast messages in this channel:\n\n${contextMessages}\n\n---\nConsider this context when responding.`,
+      });
+    }
+
+    // Add reply context if this is a reply to the bot
+    if (replyToMessage) {
+      llmMessages.push({
+        role: "system",
+        content: `## Contexto do Reply\n\nO usuário está respondendo diretamente a esta sua mensagem anterior:\n\n> ${replyToMessage}\n\nResponda considerando esse contexto e mantenha a continuidade da conversa.`,
       });
     }
 
@@ -352,9 +400,21 @@ async function handleDefaultAgent(
       },
     });
 
-    const responseContent =
+    let responseContent =
       response.content || "Desculpe, não consegui gerar uma resposta.";
     const durationMs = Date.now() - startTime;
+
+    // Process channel prompt markers if present
+    if (message.guild?.id) {
+      responseContent = await processPromptMarkers(
+        responseContent,
+        message.guild.id,
+        message.channel.id,
+        channelName,
+        message.author.id,
+        message.author.username,
+      );
+    }
 
     // Send response (split if needed for Discord's 2000 char limit)
     const maxLength = 2000;
@@ -434,6 +494,76 @@ async function handleDefaultAgent(
 }
 
 // ============================================================================
+// Prompt Marker Processing
+// ============================================================================
+
+/**
+ * Process [SAVE_CHANNEL_PROMPT] and [CLEAR_CHANNEL_PROMPT] markers in LLM response
+ * Extracts the prompt content, saves to database, and removes markers from response
+ */
+async function processPromptMarkers(
+  content: string,
+  guildId: string,
+  channelId: string,
+  channelName: string | undefined,
+  authorId: string,
+  authorUsername: string,
+): Promise<string> {
+  const db = await import("../../../shared/db.ts");
+
+  // Check for SAVE_CHANNEL_PROMPT marker
+  const saveMatch = content.match(
+    /\[SAVE_CHANNEL_PROMPT\]([\s\S]*?)\[\/SAVE_CHANNEL_PROMPT\]/i,
+  );
+
+  if (saveMatch) {
+    const promptToSave = saveMatch[1].trim();
+
+    if (promptToSave) {
+      try {
+        await db.upsertChannelContext({
+          guild_id: guildId,
+          channel_id: channelId,
+          channel_name: channelName || null,
+          system_prompt: promptToSave,
+          created_by_id: authorId,
+          created_by_username: authorUsername,
+        });
+        console.log(
+          `[Agent] Channel prompt saved for #${channelName || channelId} (${promptToSave.length} chars)`,
+        );
+      } catch (error) {
+        console.error(`[Agent] Failed to save channel prompt:`, error);
+      }
+    }
+
+    // Remove the marker from the response (user won't see it)
+    content = content.replace(
+      /\[SAVE_CHANNEL_PROMPT\][\s\S]*?\[\/SAVE_CHANNEL_PROMPT\]/gi,
+      "",
+    );
+  }
+
+  // Check for CLEAR_CHANNEL_PROMPT marker
+  if (content.includes("[CLEAR_CHANNEL_PROMPT]")) {
+    try {
+      await db.deleteChannelContext(guildId, channelId);
+      console.log(
+        `[Agent] Channel prompt cleared for #${channelName || channelId}`,
+      );
+    } catch (error) {
+      console.error(`[Agent] Failed to clear channel prompt:`, error);
+    }
+
+    // Remove the marker from the response
+    content = content.replace(/\[CLEAR_CHANNEL_PROMPT\]/gi, "");
+  }
+
+  // Clean up any extra whitespace left by marker removal
+  return content.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ============================================================================
 // Command Handlers
 // ============================================================================
 
@@ -443,16 +573,39 @@ async function handlePing(message: Message): Promise<void> {
 }
 
 async function handleStatus(message: Message, prefix: string): Promise<void> {
+  const sessionStatus = getMeshSessionStatus();
+  const sessionEmoji = sessionStatus.isValid ? "✅" : "❌";
+  const sessionText = sessionStatus.isValid
+    ? "Ativa"
+    : `Expirada (${sessionStatus.consecutiveFailures} falhas)`;
+
+  const lastSuccessText = sessionStatus.lastSuccess
+    ? `${Math.floor((Date.now() - sessionStatus.lastSuccess.getTime()) / 1000)}s atrás`
+    : "Nunca";
+
   const embed = new EmbedBuilder()
-    .setColor(0x00ff00)
+    .setColor(sessionStatus.isValid ? 0x00ff00 : 0xff9900)
     .setTitle("📊 Bot Status")
     .addFields(
-      { name: "Status", value: "✅ Online", inline: true },
+      { name: "Discord", value: "✅ Online", inline: true },
       { name: "Prefix", value: `\`${prefix}\``, inline: true },
       { name: "Guild", value: message.guild?.name || "Unknown", inline: true },
+      {
+        name: "Sessão Mesh",
+        value: `${sessionEmoji} ${sessionText}`,
+        inline: true,
+      },
+      {
+        name: "Heartbeat",
+        value: sessionStatus.isHeartbeatRunning ? "✅ Ativo" : "❌ Parado",
+        inline: true,
+      },
+      { name: "Último check", value: lastSuccessText, inline: true },
     )
     .setFooter({
-      text: "Use MCP tools to manage agents and view indexed messages",
+      text: sessionStatus.isValid
+        ? "Use MCP tools to manage agents and view indexed messages"
+        : "⚠️ Clique 'Save' no Mesh Dashboard para renovar a sessão",
     });
 
   await safeReply(message, { embeds: [embed] });
@@ -512,6 +665,186 @@ async function handleHelp(message: Message, prefix: string): Promise<void> {
     .setTimestamp();
 
   await safeReply(message, { embeds: [embed] });
+}
+
+// ============================================================================
+// Channel Prompt Command Handler
+// ============================================================================
+
+/**
+ * Check if a member has permission to manage channel prompts
+ * Requires ALLOWED_ROLES or ADMINISTRATOR permission
+ */
+function hasPromptPermission(member: Message["member"], env: Env): boolean {
+  if (!member) return false;
+
+  // Super admins always have permission
+  if (isSuperAdmin(member.user.id)) return true;
+
+  // Check ADMINISTRATOR permission
+  if (member.permissions.has("Administrator")) return true;
+
+  // Check ALLOWED_ROLES
+  const allowedRoles = env.MESH_REQUEST_CONTEXT?.state?.ALLOWED_ROLES;
+  if (allowedRoles) {
+    const roleIds = allowedRoles.split(",").map((id: string) => id.trim());
+    const memberRoles = member.roles.cache.map((r) => r.id);
+    return roleIds.some((roleId: string) => memberRoles.includes(roleId));
+  }
+
+  return false;
+}
+
+/**
+ * Handle the prompt command for managing channel-specific prompts
+ */
+async function handlePromptCommand(
+  message: Message,
+  args: string[],
+  env: Env,
+): Promise<void> {
+  console.log(`[Prompt] Command called with args: [${args.join(", ")}]`);
+
+  const subcommand = args[0]?.toLowerCase();
+  const guildId = message.guild?.id;
+  const channelId = message.channel.id;
+  const channelName =
+    "name" in message.channel ? message.channel.name : undefined;
+
+  if (!guildId) {
+    await safeReply(message, "❌ Este comando só funciona em servidores.");
+    return;
+  }
+
+  // Check permission for set/clear commands
+  if (
+    (subcommand === "set" || subcommand === "clear") &&
+    !hasPromptPermission(message.member, env)
+  ) {
+    await safeReply(
+      message,
+      "❌ Você não tem permissão para gerenciar prompts de canal.",
+    );
+    return;
+  }
+
+  const db = await import("../../../shared/db.ts");
+
+  switch (subcommand) {
+    case "set": {
+      const promptText = args.slice(1).join(" ");
+      if (!promptText.trim()) {
+        await safeReply(
+          message,
+          "❌ Uso: `prompt set <texto do prompt>`\n\nExemplo:\n`prompt set Este canal é sobre roadmap. Foque em features planejadas e prioridades.`",
+        );
+        return;
+      }
+
+      await db.upsertChannelContext({
+        guild_id: guildId,
+        channel_id: channelId,
+        channel_name: channelName || null,
+        system_prompt: promptText,
+        created_by_id: message.author.id,
+        created_by_username: message.author.username,
+      });
+
+      await safeReply(
+        message,
+        `✅ **Prompt configurado para #${channelName || channelId}**\n\n` +
+          `> ${promptText.slice(0, 200)}${promptText.length > 200 ? "..." : ""}\n\n` +
+          `_Agora quando me mencionarem neste canal, usarei esse contexto._`,
+      );
+      break;
+    }
+
+    case "clear": {
+      await db.deleteChannelContext(guildId, channelId);
+      await safeReply(
+        message,
+        `✅ Prompt removido do canal #${channelName || channelId}`,
+      );
+      break;
+    }
+
+    case "list": {
+      if (!hasPromptPermission(message.member, env)) {
+        await safeReply(
+          message,
+          "❌ Você não tem permissão para listar prompts.",
+        );
+        return;
+      }
+
+      const contexts = await db.listChannelContexts(guildId);
+
+      if (contexts.length === 0) {
+        await safeReply(
+          message,
+          "📋 Nenhum canal tem prompt customizado neste servidor.",
+        );
+        return;
+      }
+
+      const list = contexts
+        .map(
+          (ctx) =>
+            `• **#${ctx.channel_name || ctx.channel_id}**\n  └ ${ctx.system_prompt.slice(0, 100)}${ctx.system_prompt.length > 100 ? "..." : ""}`,
+        )
+        .join("\n\n");
+
+      await safeReply(
+        message,
+        `📋 **Canais com prompt customizado (${contexts.length})**\n\n${list}`,
+      );
+      break;
+    }
+
+    default: {
+      // Show help and current prompt
+      const currentContext = await db.getChannelContext(guildId, channelId);
+
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle("📝 Gerenciamento de Prompts por Canal")
+        .setDescription(
+          "Configure um prompt customizado para este canal. " +
+            "Quando me mencionarem aqui, usarei esse contexto adicional.",
+        )
+        .addFields(
+          {
+            name: "Comandos",
+            value: [
+              "`prompt` → Mostra esta ajuda",
+              "`prompt set <texto>` → Define prompt deste canal",
+              "`prompt clear` → Remove prompt deste canal",
+              "`prompt list` → Lista todos os canais com prompts",
+            ].join("\n"),
+          },
+          {
+            name: "Exemplo",
+            value:
+              "`prompt set Este canal é sobre roadmap do produto. Foque em discutir features, prioridades e planejamento.`",
+          },
+        );
+
+      if (currentContext) {
+        embed.addFields({
+          name: `✅ Prompt atual de #${channelName || channelId}`,
+          value: `> ${currentContext.system_prompt.slice(0, 500)}${currentContext.system_prompt.length > 500 ? "..." : ""}`,
+        });
+      } else {
+        embed.addFields({
+          name: "Status",
+          value: `_Este canal não tem prompt customizado._`,
+        });
+      }
+
+      await safeReply(message, { embeds: [embed] });
+      break;
+    }
+  }
 }
 
 // ============================================================================

@@ -17,6 +17,11 @@ import { setDatabaseEnv } from "../shared/db.ts";
 import { updateEnv } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
+import {
+  startHeartbeat,
+  stopHeartbeat,
+  resetSession,
+} from "./session-keeper.ts";
 
 export { StateSchema };
 
@@ -28,7 +33,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     handlers: {
       SELF: {
         events: ["discord.*"],
-        handler: async ({ events }, env) => {
+        handler: async ({ events }) => {
           try {
             for (const event of events) {
               console.log(`[SELF] Event: ${event.type}`);
@@ -41,7 +46,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         },
       },
       EVENT_BUS: {
-        handler: async ({ events }, env) => {
+        handler: async ({ events }) => {
           try {
             for (const event of events) {
               console.log(`[EVENT_BUS] Event: ${event.type}`);
@@ -59,6 +64,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
       console.log("[CONFIG] Configuration changed");
+
+      // Reset session status - we have fresh credentials from Mesh
+      resetSession();
 
       // Update global env for Discord bot handlers
       updateEnv(env);
@@ -79,9 +87,24 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           await initializeDiscordClient(env);
           discordInitialized = true;
           console.log("[CONFIG] Discord client ready ✓");
+
+          // Start heartbeat to keep Mesh session alive
+          startHeartbeat(env, () => {
+            console.log(
+              "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+            );
+          });
         } catch (error) {
           console.error("[CONFIG] Failed to initialize Discord:", error);
         }
+      } else if (botToken && discordInitialized) {
+        // Bot already running, just restart heartbeat with fresh credentials
+        console.log("[CONFIG] Refreshing session heartbeat...");
+        startHeartbeat(env, () => {
+          console.log(
+            "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          );
+        });
       } else if (!botToken) {
         console.log(
           "[CONFIG] BOT_TOKEN not configured - Discord bot waiting...",
@@ -109,6 +132,10 @@ async function gracefulShutdown(signal: string) {
   console.log(`\n[SHUTDOWN] Received ${signal}, shutting down...`);
 
   try {
+    // Stop session heartbeat first
+    console.log("[SHUTDOWN] Stopping session heartbeat...");
+    stopHeartbeat();
+
     const client = getDiscordClient();
     if (client) {
       console.log("[SHUTDOWN] Destroying Discord client...");
@@ -181,6 +208,13 @@ if (envBotToken && !discordInitialized) {
     .then(() => {
       discordInitialized = true;
       console.log("[STARTUP] Discord bot started from environment ✓");
+
+      // Start heartbeat (will use env vars, may not have full Mesh context)
+      startHeartbeat(startupEnv, () => {
+        console.log(
+          "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+        );
+      });
     })
     .catch((error) => {
       console.error("[STARTUP] Failed to start Discord bot:", error);

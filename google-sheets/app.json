@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-sheets",
+  "friendlyName": "Google Sheets",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-sheets.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Sheets. Read, write, and format spreadsheet data programmatically.",
+  "icon": "https://assets.decocache.com/decocms/4a35d182-7f4d-4978-a592-ccaff1707c80/google-sheets.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Data"],
+    "official": false,
+    "tags": ["google", "sheets", "spreadsheet", "data", "excel", "csv", "productivity"],
+    "short_description": "Integrate and manage Google Sheets. Read, write, and format spreadsheet data programmatically.",
+    "mesh_description": "The Google Sheets MCP provides comprehensive integration with Google Sheets API, enabling full programmatic control over spreadsheet data. This MCP allows AI agents to create spreadsheets, read and write cell values, append rows, manage sheets within workbooks, format cells, sort data, and perform find/replace operations. It supports advanced features including range-based operations, batch updates, and conditional formatting. The integration is perfect for building data processing pipelines, automated reporting systems, and data-driven applications. Ideal for users who need to automate spreadsheet workflows, integrate data management into business processes, or build spreadsheet-aware applications. Provides secure OAuth-based authentication for Sheets access."
+  }
+}
+

@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-forms",
+  "friendlyName": "Google Forms",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-forms.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Forms. Create forms, add questions, and collect responses.",
+  "icon": "https://assets.decocache.com/decocms/0b0efc2d-0f84-483c-a0c8-9422e5aa1bb4/google-forms-logo.jpg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Data"],
+    "official": false,
+    "tags": ["google", "forms", "surveys", "questionnaire", "data-collection"],
+    "short_description": "Integrate and manage Google Forms. Create forms, add questions, and collect responses.",
+    "mesh_description": "The Google Forms MCP provides integration with Google Forms API, enabling programmatic control over form creation and response collection. This MCP allows AI agents to create forms, add various question types, update form settings, and retrieve responses. Perfect for automating surveys, quizzes, and data collection workflows."
+  }
+}
+

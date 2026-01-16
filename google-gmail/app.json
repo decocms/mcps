@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-gmail",
+  "friendlyName": "Google Gmail",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-gmail.decocache.com/mcp"
+  },
+  "description": "Integrate and manage your Gmail. Read, send, search emails, manage labels and drafts.",
+  "icon": "https://assets.decocache.com/decocms/3b38d2ee-b26b-454e-be9f-3be338a5b0f3/google_mail_gmail_logo_icon_159346.webp",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Communication"],
+    "official": false,
+    "tags": ["google", "gmail", "email", "messages", "productivity", "communication"],
+    "short_description": "Integrate and manage your Gmail. Read, send, search emails, manage labels and drafts.",
+    "mesh_description": "The Gmail MCP provides comprehensive integration with Gmail API, enabling full programmatic control over email management. This MCP allows AI agents to read messages and threads, send new emails, search with Gmail query syntax, manage labels, create and send drafts, and organize your inbox. It supports advanced features including thread-based conversations, label management, attachment handling, and powerful search capabilities. The integration is perfect for building intelligent email assistants, automated responders, email-based workflow triggers, and productivity tools. Ideal for users who need to automate email management, integrate messaging into business processes, or build email-aware applications. Provides secure OAuth-based authentication for Gmail access."
+  }
+}
+

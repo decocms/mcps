@@ -12,10 +12,17 @@ import {
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
 import { ensureCollections, ensureIndexes } from "./db/index.ts";
+import {
+  startHeartbeat,
+  stopHeartbeat,
+  resetSession,
+  isSessionActive,
+  getSessionStatus,
+} from "./session-keeper.ts";
 
 // Global state
 let botInitializing = false;
-let botInitialized = false;
+let _botInitialized = false;
 
 // Store the latest env globally for access in event handlers
 let _currentEnv: Env | null = null;
@@ -27,6 +34,8 @@ export function updateEnv(env: Env): void {
   _currentEnv = env;
   // Also update database env
   setDatabaseEnv(env);
+  // Reset session status since we got fresh credentials
+  resetSession();
 }
 
 /**
@@ -80,8 +89,18 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
 
     // Initialize Discord client
     await initializeDiscordClient(env);
-    botInitialized = true;
+    _botInitialized = true;
     console.log("[BotManager] Discord bot started ✓");
+
+    // Start session heartbeat to keep Mesh connection alive
+    startHeartbeat(env, () => {
+      console.log(
+        "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
+      );
+      console.log(
+        "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
+      );
+    });
 
     return true;
   } catch (error) {
@@ -104,11 +123,13 @@ export function isBotRunning(): boolean {
  */
 export function getBotStatus() {
   const client = getDiscordClient();
+  const sessionStatus = getSessionStatus();
 
   if (!client || !client.isReady()) {
     return {
       running: false,
       initializing: botInitializing,
+      meshSession: sessionStatus,
     };
   }
 
@@ -118,6 +139,7 @@ export function getBotStatus() {
     user: client.user?.tag,
     guilds: client.guilds.cache.size,
     uptime: client.uptime,
+    meshSession: sessionStatus,
   };
 }
 
@@ -125,7 +147,22 @@ export function getBotStatus() {
  * Shutdown the bot.
  */
 export async function shutdownBot(): Promise<void> {
+  stopHeartbeat();
   await shutdownDiscordClient();
-  botInitialized = false;
+  _botInitialized = false;
   botInitializing = false;
+}
+
+/**
+ * Check if the Mesh session is active
+ */
+export function isMeshSessionActive(): boolean {
+  return isSessionActive();
+}
+
+/**
+ * Get detailed session status
+ */
+export function getMeshSessionStatus() {
+  return getSessionStatus();
 }

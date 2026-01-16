@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-docs",
+  "friendlyName": "Google Docs",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-docs.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Docs. Create, read, and edit documents programmatically.",
+  "icon": "https://assets.decocache.com/decocms/59550665-a324-454c-bc67-a2660756985e/Google-Docs-logo-400x400.jpg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Documents"],
+    "official": false,
+    "tags": ["google", "docs", "documents", "writing", "editing", "productivity"],
+    "short_description": "Integrate and manage Google Docs. Create, read, and edit documents programmatically.",
+    "mesh_description": "The Google Docs MCP provides comprehensive integration with Google Docs API, enabling full programmatic control over document creation and editing. This MCP allows AI agents to create documents, insert and format text, add headings and lists, insert tables and images, and perform find/replace operations. Perfect for document automation, content generation, and report creation workflows."
+  }
+}
+

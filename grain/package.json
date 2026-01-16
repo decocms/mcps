@@ -1,0 +1,29 @@
+{
+  "name": "grain",
+  "version": "1.0.0",
+  "description": "Grain MCP - Access and manage your Grain recordings and meetings",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "check": "tsc --noEmit",
+    "dev:tunnel": "deco link -p 3003 -- PORT=3003 bun run dev"
+  },
+  "dependencies": {
+    "@decocms/bindings": "1.0.1-alpha.23",
+    "@decocms/runtime": "1.0.0-alpha.41",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "1.20.2",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

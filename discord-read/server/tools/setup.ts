@@ -237,7 +237,7 @@ export const createStartBotTool = (env: Env) =>
 /**
  * Tool to check bot status.
  */
-export const createBotStatusTool = (env: Env) =>
+export const createBotStatusTool = () =>
   createPrivateTool({
     id: "DISCORD_BOT_STATUS",
     description: "Check the status of the Discord bot.",
@@ -268,7 +268,7 @@ export const createBotStatusTool = (env: Env) =>
 /**
  * Tool to show database schema - helps the agent know table names
  */
-export const createShowSchemaTool = (env: Env) =>
+export const createShowSchemaTool = () =>
   createPrivateTool({
     id: "DISCORD_SHOW_SCHEMA",
     description:

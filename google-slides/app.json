@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-slides",
+  "friendlyName": "Google Slides",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-slides.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Slides. Create presentations, add slides, and insert content.",
+  "icon": "https://assets.decocache.com/decocms/f103b5c4-fb06-4b9e-a82c-6b9f867bc91b/Google-Slides-Logo-2014.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Presentations"],
+    "official": false,
+    "tags": ["google", "slides", "presentations", "powerpoint", "decks"],
+    "short_description": "Integrate and manage Google Slides. Create presentations, add slides, and insert content.",
+    "mesh_description": "The Google Slides MCP provides integration with Google Slides API, enabling programmatic control over presentations. This MCP allows AI agents to create presentations, add and manage slides, insert text boxes, images, shapes, and tables. Perfect for automating presentation creation and building slide deck generators."
+  }
+}
+

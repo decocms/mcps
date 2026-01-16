@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "google-meet",
+  "friendlyName": "Google Meet",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-meet.decocache.com/mcp"
+  },
+  "description": "Integrate and manage Google Meet. Create meetings, manage participants, and access recordings.",
+  "icon": "https://assets.decocache.com/decocms/1ec707c1-eba2-4a2a-ada2-f674738fe597/google-meet.jpg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Communication"],
+    "official": false,
+    "tags": ["google", "meet", "video", "conference", "meetings", "collaboration"],
+    "short_description": "Integrate and manage Google Meet. Create meetings, manage participants, and access recordings.",
+    "mesh_description": "The Google Meet MCP provides integration with Google Meet API, enabling programmatic control over video meetings. This MCP allows AI agents to create meeting spaces, retrieve meeting details, list participants, and access conference recordings. Perfect for automating meeting workflows and building meeting management applications."
+  }
+}
+
