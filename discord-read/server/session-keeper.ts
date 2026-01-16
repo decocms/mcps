@@ -144,14 +144,21 @@ export function startHeartbeat(
   // Configura o intervalo
   heartbeatInterval = setInterval(() => {
     // Importa o getCurrentEnv para pegar o env mais recente
-    import("./bot-manager.ts").then(({ getCurrentEnv }) => {
-      const currentEnv = getCurrentEnv();
-      if (currentEnv) {
-        doHeartbeat(currentEnv);
-      } else {
-        console.log("[SessionKeeper] ⚠️ No env available for heartbeat");
-      }
-    });
+    import("./bot-manager.ts")
+      .then(({ getCurrentEnv }) => {
+        const currentEnv = getCurrentEnv();
+        if (currentEnv) {
+          doHeartbeat(currentEnv);
+        } else {
+          console.log("[SessionKeeper] ⚠️ No env available for heartbeat");
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "[SessionKeeper] Failed to import bot-manager:",
+          error instanceof Error ? error.message : String(error),
+        );
+      });
   }, HEARTBEAT_INTERVAL_MS);
 }
 

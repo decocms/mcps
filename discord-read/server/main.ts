@@ -100,7 +100,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       } else if (botToken && discordInitialized) {
         // Bot already running, just restart heartbeat with fresh credentials
         console.log("[CONFIG] Refreshing session heartbeat...");
-        startHeartbeat(env);
+        startHeartbeat(env, () => {
+          console.log(
+            "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          );
+        });
       } else if (!botToken) {
         console.log(
           "[CONFIG] BOT_TOKEN not configured - Discord bot waiting...",
