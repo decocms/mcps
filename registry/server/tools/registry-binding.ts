@@ -163,10 +163,21 @@ const VersionsInputSchema = z.object({
 // ============================================================================
 
 /**
- * Extract search term from WhereExpression or Legacy format
+ * Result of extracting search terms from where clause
  */
-function extractSearchTerm(where: unknown): string | undefined {
-  if (!where || typeof where !== "object") return undefined;
+interface ExtractedSearchTerms {
+  /** Exact app name match - returns only if name matches exactly */
+  exactName?: string;
+  /** Flexible search term - matches partial words in multiple fields */
+  search?: string;
+}
+
+/**
+ * Extract search terms from WhereExpression or Legacy format
+ * Returns exactName for appName (exact match) and search for title (flexible match)
+ */
+function extractSearchTerms(where: unknown): ExtractedSearchTerms {
+  if (!where || typeof where !== "object") return {};
 
   const w = where as {
     operator?: string;
@@ -178,28 +189,44 @@ function extractSearchTerm(where: unknown): string | undefined {
     binder?: string | string[];
   };
 
-  // Legacy format - check for appName or title first
+  const result: ExtractedSearchTerms = {};
+
+  // Legacy format - appName is exact match, title is flexible search
   if (w.appName) {
-    return w.appName;
+    result.exactName = w.appName;
   }
   if (w.title) {
-    return w.title;
+    result.search = w.title;
+  }
+
+  // If we already have results from legacy format, return them
+  if (result.exactName || result.search) {
+    return result;
   }
 
   // WhereExpression format - Field comparison - extract the value
   if (w.field && w.value !== undefined) {
-    return String(w.value);
+    // Check if field is specifically 'name' or 'appName' for exact match
+    const fieldName = Array.isArray(w.field) ? w.field[0] : w.field;
+    if (fieldName === "name" || fieldName === "appName") {
+      result.exactName = String(w.value);
+    } else {
+      result.search = String(w.value);
+    }
+    return result;
   }
 
   // AND/OR - extract from first condition that has a value
   if ((w.operator === "and" || w.operator === "or") && w.conditions) {
     for (const condition of w.conditions) {
-      const term = extractSearchTerm(condition);
-      if (term) return term;
+      const terms = extractSearchTerms(condition);
+      if (terms.exactName) result.exactName = terms.exactName;
+      if (terms.search) result.search = terms.search;
+      if (result.exactName || result.search) return result;
     }
   }
 
-  return undefined;
+  return result;
 }
 
 /**
@@ -256,8 +283,11 @@ export const createListRegistryTool = (_env: Env) =>
           );
         }
 
-        // Extract search term from where clause
-        const apiSearch = where ? extractSearchTerm(where) : undefined;
+        // Extract search terms from where clause
+        // exactName is used for appName (exact match), search is used for title (flexible match)
+        const { exactName, search: apiSearch } = where
+          ? extractSearchTerms(where)
+          : {};
 
         // Query directly from Supabase
         const offset = cursor ? parseInt(cursor, 10) : 0;
@@ -267,6 +297,7 @@ export const createListRegistryTool = (_env: Env) =>
           limit,
           offset,
           search: apiSearch,
+          exactName,
           tags,
           categories,
           verified,
