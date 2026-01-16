@@ -17,4 +17,3 @@
     "mesh_description": "The Blog Post Generator MCP leverages n8n workflow automation to generate high-quality blog post suggestions from various context sources. It accepts three types of input: plain text, URLs for content extraction, or JSON data from the Content Scraper MCP. The workflow processes the context and returns 4 unique blog post suggestions, each with a title, full content, and summary. Perfect for content marketing, SEO optimization, knowledge base creation, or any application requiring automated content generation. Integrates seamlessly with the Content Scraper MCP for end-to-end content pipelines."
   }
 }
-
