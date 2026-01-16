@@ -6,7 +6,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
-import { GrainClient } from "../lib/grain-client.ts";
+import { GrainClient, GrainAPIError } from "../lib/grain-client.ts";
 import type { Env } from "../types/env.ts";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../constants.ts";
 
@@ -119,22 +119,29 @@ export const createListRecordingsTool = (env: Env) =>
         search,
       } = context;
 
-      const client = new GrainClient({
-        apiKey: getGrainApiKey(env),
-      });
-      // Fetch recordings with filters
-      const response = await client.listRecordings({
-        limit,
-        offset,
-        start_date,
-        end_date,
-        status,
-        search,
-      });
+      try {
+        const client = new GrainClient({
+          apiKey: getGrainApiKey(env),
+        });
+        // Fetch recordings with filters
+        const response = await client.listRecordings({
+          limit,
+          offset,
+          start_date,
+          end_date,
+          status,
+          search,
+        });
 
-      return {
-        recordings: response.recordings,
-        cursor: response.cursor,
-      };
+        return {
+          recordings: response.recordings,
+          cursor: response.cursor,
+        };
+      } catch (error) {
+        if (error instanceof GrainAPIError) {
+          throw new Error(error.getUserMessage());
+        }
+        throw error;
+      }
     },
   });

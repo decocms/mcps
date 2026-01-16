@@ -14,6 +14,7 @@ The Grain MCP provides seamless integration with [Grain](https://grain.com), all
 - 🎯 **Filter by Status**: View only ready recordings or check processing status
 - 📅 **Date Range Filtering**: Find meetings within specific time periods
 - 🔔 **Real-time Webhooks**: Receive automatic notifications when recordings are created, updated, or processed
+- 💾 **Local Database Search**: Search through indexed recordings stored locally via webhooks
 
 ## Authentication
 
@@ -73,6 +74,38 @@ List and search through your Grain meeting recordings with flexible filtering op
 ### 2. GET_RECORDING
 
 Get detailed information about a specific Grain recording by its ID. Returns comprehensive details including full transcript, AI summary, highlights, and more.
+
+### 3. SEARCH_INDEXED_RECORDINGS
+
+Search through recordings that have been indexed in the local PostgreSQL database via webhooks. This provides faster search across recordings that have been automatically indexed when Grain sends webhook notifications.
+
+**Input Parameters:**
+- `query` (optional): Search query to find recordings by title (uses full-text search)
+- `start_date` (optional): Filter recordings from this date onwards (ISO 8601 format)
+- `end_date` (optional): Filter recordings up to this date (ISO 8601 format)
+- `limit` (optional): Maximum number of recordings to return (1-100, default: 10)
+
+**Output:**
+- `recordings`: Array of indexed recording objects
+- `count`: Number of recordings returned
+
+**Example Usage:**
+
+```typescript
+// Search by title
+{
+  "query": "product roadmap"
+}
+
+// Search by date range
+{
+  "start_date": "2024-01-01",
+  "end_date": "2024-01-31",
+  "limit": 20
+}
+```
+
+**Note:** Only recordings received via webhooks are available in this search. Use `LIST_RECORDINGS` to search all recordings directly from the Grain API.
 
 **Input Parameters:**
 - `recordingId` (required): The unique identifier of the recording (e.g., "rec_abc123")
@@ -211,12 +244,17 @@ grain/
 │   ├── main.ts           # MCP server entry point
 │   ├── constants.ts      # API constants
 │   ├── lib/
-│   │   ├── grain-client.ts   # Grain API client
+│   │   ├── grain-client.ts   # Grain API client with error handling
 │   │   ├── types.ts          # TypeScript types
+│   │   ├── postgres.ts       # PostgreSQL database operations
 │   │   └── env.ts            # Environment helpers
-│   └── tools/
-│       ├── index.ts          # Tools export
-│       └── list-recordings.ts # List recordings tool
+│   ├── tools/
+│   │   ├── index.ts                    # Tools export
+│   │   ├── list-recordings.ts          # List recordings from Grain API
+│   │   ├── get-recording.ts            # Get recording details
+│   │   └── search-indexed-recordings.ts # Search local database
+│   └── types/
+│       └── env.ts            # Environment type definitions
 ├── package.json
 ├── tsconfig.json
 ├── app.json

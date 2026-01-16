@@ -25,6 +25,61 @@ export interface GrainClientConfig {
   apiKey: string;
 }
 
+/**
+ * Custom error class for Grain API errors
+ */
+export class GrainAPIError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    public readonly statusText: string,
+    public readonly details: string,
+    public readonly endpoint: string,
+  ) {
+    super(`Grain API error (${statusCode}): ${details}`);
+    this.name = "GrainAPIError";
+  }
+
+  /**
+   * Check if the error is due to authentication issues
+   */
+  isAuthError(): boolean {
+    return this.statusCode === 401 || this.statusCode === 403;
+  }
+
+  /**
+   * Check if the error is due to rate limiting
+   */
+  isRateLimited(): boolean {
+    return this.statusCode === 429;
+  }
+
+  /**
+   * Check if the error is a server error (5xx)
+   */
+  isServerError(): boolean {
+    return this.statusCode >= 500 && this.statusCode < 600;
+  }
+
+  /**
+   * Get a user-friendly error message
+   */
+  getUserMessage(): string {
+    if (this.isAuthError()) {
+      return "Authentication failed. Please check your Grain API key at https://grain.com/settings/api";
+    }
+    if (this.isRateLimited()) {
+      return "Rate limit exceeded. Please wait a moment before trying again.";
+    }
+    if (this.statusCode === 404) {
+      return "The requested resource was not found. Please check the recording ID.";
+    }
+    if (this.isServerError()) {
+      return "Grain service is temporarily unavailable. Please try again later.";
+    }
+    return this.details || "An unexpected error occurred with the Grain API.";
+  }
+}
+
 export class GrainClient {
   private apiKey: string;
   private baseUrl: string;
@@ -77,7 +132,12 @@ export class GrainClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+      throw new GrainAPIError(
+        response.status,
+        response.statusText,
+        errorText,
+        endpoint,
+      );
     }
 
     return (await response.json()) as T;
@@ -99,7 +159,12 @@ export class GrainClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+      throw new GrainAPIError(
+        response.status,
+        response.statusText,
+        errorText,
+        endpoint,
+      );
     }
 
     return (await response.json()) as T;
@@ -119,7 +184,12 @@ export class GrainClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+      throw new GrainAPIError(
+        response.status,
+        response.statusText,
+        errorText,
+        endpoint,
+      );
     }
   }
 
@@ -203,7 +273,12 @@ export class GrainClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Grain API error (${response.status}): ${errorText}`);
+      throw new GrainAPIError(
+        response.status,
+        response.statusText,
+        errorText,
+        GRAIN_CREATE_WEBHOOK_ENDPOINT,
+      );
     }
 
     return (await response.json()) as CreateWebhookResponse;
