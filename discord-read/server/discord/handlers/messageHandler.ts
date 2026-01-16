@@ -11,6 +11,10 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";
+import {
+  isMeshSessionActive,
+  getMeshSessionStatus,
+} from "../../bot-manager.ts";
 
 // Super Admins - always have full permissions everywhere
 const SUPER_ADMINS = [
@@ -253,6 +257,25 @@ async function handleDefaultAgent(
     return;
   }
 
+  // Check if Mesh session is active
+  if (!isMeshSessionActive()) {
+    const sessionStatus = getMeshSessionStatus();
+    console.log(
+      `[Agent] ⚠️ Mesh session inactive (failures: ${sessionStatus.consecutiveFailures})`,
+    );
+    await safeReply(
+      message,
+      `⚠️ **Sessão com o Mesh expirada!**\n\n` +
+        `O bot está online mas a conexão com a IA expirou após inatividade.\n\n` +
+        `**Como resolver:**\n` +
+        `1. Vá no **Mesh Dashboard**\n` +
+        `2. Clique em **"Save"** na configuração deste MCP\n` +
+        `3. Isso irá renovar a sessão automaticamente\n\n` +
+        `_A sessão expira após ~5 minutos sem uso._`,
+    );
+    return;
+  }
+
   const channelInfo = isDM
     ? `DM with ${message.author.username}`
     : `#${(message.channel as TextChannel).name || "unknown"}`;
@@ -442,16 +465,39 @@ async function handlePing(message: Message): Promise<void> {
 }
 
 async function handleStatus(message: Message, prefix: string): Promise<void> {
+  const sessionStatus = getMeshSessionStatus();
+  const sessionEmoji = sessionStatus.isValid ? "✅" : "❌";
+  const sessionText = sessionStatus.isValid
+    ? "Ativa"
+    : `Expirada (${sessionStatus.consecutiveFailures} falhas)`;
+
+  const lastSuccessText = sessionStatus.lastSuccess
+    ? `${Math.floor((Date.now() - sessionStatus.lastSuccess.getTime()) / 1000)}s atrás`
+    : "Nunca";
+
   const embed = new EmbedBuilder()
-    .setColor(0x00ff00)
+    .setColor(sessionStatus.isValid ? 0x00ff00 : 0xff9900)
     .setTitle("📊 Bot Status")
     .addFields(
-      { name: "Status", value: "✅ Online", inline: true },
+      { name: "Discord", value: "✅ Online", inline: true },
       { name: "Prefix", value: `\`${prefix}\``, inline: true },
       { name: "Guild", value: message.guild?.name || "Unknown", inline: true },
+      {
+        name: "Sessão Mesh",
+        value: `${sessionEmoji} ${sessionText}`,
+        inline: true,
+      },
+      {
+        name: "Heartbeat",
+        value: sessionStatus.isHeartbeatRunning ? "✅ Ativo" : "❌ Parado",
+        inline: true,
+      },
+      { name: "Último check", value: lastSuccessText, inline: true },
     )
     .setFooter({
-      text: "Use MCP tools to manage agents and view indexed messages",
+      text: sessionStatus.isValid
+        ? "Use MCP tools to manage agents and view indexed messages"
+        : "⚠️ Clique 'Save' no Mesh Dashboard para renovar a sessão",
     });
 
   await safeReply(message, { embeds: [embed] });
