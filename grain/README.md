@@ -1,4 +1,4 @@
-# Grain MCP
+# Grain MCP 
 
 Access and manage your Grain meeting recordings through the Model Context Protocol.
 
