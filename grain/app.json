@@ -1,0 +1,18 @@
+{
+  "scopeName": "deco",
+  "name": "grain",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-grain.decocache.com/mcp"
+  },
+  "description": "Grain App Connection - Access and manage your meeting recordings",
+  "icon": "https://grain.com/favicon.ico",
+  "unlisted": false,
+  "bindings": {
+    "DATABASE": "@deco/postgres"
+  }
+}
+
+
+
+
