@@ -1,0 +1,29 @@
+{
+  "name": "blog-post-generator",
+  "version": "1.0.0",
+  "description": "Blog post generator MCP using n8n workflow automation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "deploy": "npm run build && deco deploy ./dist/server",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "^1.1.3",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
+
