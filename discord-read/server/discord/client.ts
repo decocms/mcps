@@ -281,12 +281,32 @@ function registerEventHandlers(client: Client, env: Env): void {
 
       let prefix: string | null = null;
       let content = message.content;
+      let replyToMessage: string | undefined;
+
+      // Check if this is a reply to the bot's message
+      if (message.reference?.messageId) {
+        try {
+          const repliedMsg = await message.channel.messages.fetch(
+            message.reference.messageId,
+          );
+          if (repliedMsg.author.id === client.user?.id) {
+            prefix = "REPLY";
+            content = message.content; // Keep full content for replies
+            replyToMessage = repliedMsg.content;
+            console.log(
+              `[Discord] Reply to bot detected - original: "${replyToMessage?.slice(0, 50)}..."`,
+            );
+          }
+        } catch (e) {
+          console.log(`[Discord] Could not fetch replied message:`, e);
+        }
+      }
 
       // In DMs, all messages are treated as commands (no prefix needed)
-      if (isDM) {
+      if (!prefix && isDM) {
         prefix = "DM";
         console.log(`[Discord] DM detected - processing as command`);
-      } else {
+      } else if (!prefix) {
         // Check bot mention first (higher priority)
         if (content.startsWith(botMention)) {
           prefix = botMention;
@@ -312,7 +332,14 @@ function registerEventHandlers(client: Client, env: Env): void {
       if (prefix) {
         console.log(`[Discord] Command detected! Content: "${content}"`);
         // Pass the cleaned content without prefix (use currentEnv for latest context)
-        await processCommand(message, prefix, currentEnv, content, isDM);
+        await processCommand(
+          message,
+          prefix,
+          currentEnv,
+          content,
+          isDM,
+          replyToMessage,
+        );
       }
     } catch (error) {
       console.error("[Discord] Error handling message:", error);

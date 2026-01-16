@@ -542,6 +542,32 @@ END $$;
 `;
 
 // ============================================================================
+// Channel Context Table (custom prompts per channel)
+// ============================================================================
+
+export const channelContextTableIdempotentQuery = `
+CREATE TABLE IF NOT EXISTS discord_channel_context (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  guild_id TEXT NOT NULL,
+  channel_id TEXT NOT NULL,
+  channel_name TEXT,
+  system_prompt TEXT NOT NULL,
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by_id TEXT NOT NULL,
+  created_by_username TEXT NOT NULL,
+  UNIQUE(guild_id, channel_id)
+)
+`;
+
+export const channelContextTableIndexesQuery = `
+CREATE INDEX IF NOT EXISTS idx_discord_channel_context_guild ON discord_channel_context(guild_id);
+CREATE INDEX IF NOT EXISTS idx_discord_channel_context_channel ON discord_channel_context(channel_id);
+CREATE INDEX IF NOT EXISTS idx_discord_channel_context_enabled ON discord_channel_context(enabled) WHERE enabled = TRUE;
+`;
+
+// ============================================================================
 // Export All Queries
 // ============================================================================
 
@@ -571,5 +597,9 @@ export const discordQueries = {
   reactions: {
     idempotent: reactionsTableIdempotentQuery,
     indexes: reactionsTableIndexesQuery,
+  },
+  channelContext: {
+    idempotent: channelContextTableIdempotentQuery,
+    indexes: channelContextTableIndexesQuery,
   },
 };
