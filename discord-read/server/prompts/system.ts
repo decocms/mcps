@@ -252,6 +252,34 @@ The database has the following main tables:
 
 ---
 
+## **Mesh Platform & Connected MCPs**
+
+You are connected to the **Mesh** platform and may have access to additional **MCPs (Model Context Protocol)** configured by the user.
+
+### Possible Integrations (examples)
+
+The user may have connected MCPs such as:
+* Notion, Google Sheets, Google Docs, GitHub, Google Calendar, Slack, and others
+
+**Note**: Available MCPs depend on user configuration. Use the tools to check what's available.
+
+### Cross-MCP Actions
+
+You can combine Discord actions with other services when requested:
+
+📌 Examples:
+* "Take this task and create a page in Notion"
+* "Add this feedback to the bugs spreadsheet"
+* "Create a GitHub issue with this error"
+* "Schedule a meeting about this"
+
+When the user requests something involving another service:
+1. Check if the MCP is available using the tools
+2. Execute the requested action
+3. Confirm the result with a link when possible
+
+---
+
 ## **Final Goal**
 
 Be a **reliable, secure, and intelligent agent**, capable of:
@@ -261,6 +289,7 @@ Be a **reliable, secure, and intelligent agent**, capable of:
 * Managing roles
 * Correctly differentiating between **real-time Discord** and **database**
 * Using tools correctly, without errors or assumptions
+* Integrating with external services via MCPs when requested
 `;
 
 /**
@@ -274,6 +303,7 @@ export function getSystemPrompt(context?: {
   userId?: string;
   userName?: string;
   isDM?: boolean;
+  channelPrompt?: string;
 }): string {
   let prompt = DISCORD_AGENT_SYSTEM_PROMPT;
 
@@ -315,6 +345,11 @@ export function getSystemPrompt(context?: {
     if (contextInfo.length > 0) {
       prompt += `\n\n---\n\n## **Current Context**\n\n${contextInfo.join("\n")}`;
       prompt += `\n\n⚠️ **IMPORTANT**: When using Discord tools, always use the IDs shown above (e.g., guild_id, channel_id, user_id). Do NOT use names as IDs.`;
+    }
+
+    // Add channel-specific prompt if configured
+    if (context.channelPrompt) {
+      prompt += `\n\n---\n\n## **Contexto Específico do Canal**\n\n${context.channelPrompt}\n\n_Este contexto foi configurado especificamente para este canal. Use-o para guiar suas respostas._`;
     }
   }
 

@@ -629,3 +629,91 @@ export async function markMemberLeft(
     [guildId, userId],
   );
 }
+
+// ============================================================================
+// Channel Context Operations (custom prompts per channel)
+// ============================================================================
+
+export interface ChannelContextData {
+  id?: string;
+  guild_id: string;
+  channel_id: string;
+  channel_name?: string | null;
+  system_prompt: string;
+  enabled?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+  created_by_id: string;
+  created_by_username: string;
+}
+
+/**
+ * Get custom prompt for a channel
+ */
+export async function getChannelContext(
+  guildId: string,
+  channelId: string,
+): Promise<ChannelContextData | null> {
+  const result = await runSQL<ChannelContextData>(
+    `SELECT * FROM discord_channel_context 
+     WHERE guild_id = ? AND channel_id = ? AND enabled = TRUE 
+     LIMIT 1`,
+    [guildId, channelId],
+  );
+  return result[0] || null;
+}
+
+/**
+ * Create or update custom prompt for a channel
+ */
+export async function upsertChannelContext(
+  data: ChannelContextData,
+): Promise<void> {
+  await runSQL(
+    `INSERT INTO discord_channel_context (
+      guild_id, channel_id, channel_name, system_prompt, enabled,
+      created_at, updated_at, created_by_id, created_by_username
+    ) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
+    ON CONFLICT (guild_id, channel_id) DO UPDATE SET
+      channel_name = EXCLUDED.channel_name,
+      system_prompt = EXCLUDED.system_prompt,
+      enabled = EXCLUDED.enabled,
+      updated_at = NOW()`,
+    [
+      data.guild_id,
+      data.channel_id,
+      data.channel_name || null,
+      data.system_prompt,
+      data.enabled ?? true,
+      data.created_by_id,
+      data.created_by_username,
+    ],
+  );
+}
+
+/**
+ * Delete custom prompt for a channel
+ */
+export async function deleteChannelContext(
+  guildId: string,
+  channelId: string,
+): Promise<void> {
+  await runSQL(
+    `DELETE FROM discord_channel_context WHERE guild_id = ? AND channel_id = ?`,
+    [guildId, channelId],
+  );
+}
+
+/**
+ * List all channel contexts for a guild
+ */
+export async function listChannelContexts(
+  guildId: string,
+): Promise<ChannelContextData[]> {
+  return runSQL<ChannelContextData>(
+    `SELECT * FROM discord_channel_context 
+     WHERE guild_id = ? AND enabled = TRUE
+     ORDER BY channel_name ASC`,
+    [guildId],
+  );
+}
