@@ -151,6 +151,8 @@ export interface ListServersOptions {
   limit?: number;
   offset?: number;
   search?: string;
+  /** Exact name match - when provided, returns only if name matches exactly */
+  exactName?: string;
   tags?: string[];
   categories?: string[];
   verified?: boolean;
@@ -233,6 +235,7 @@ export async function listServers(
     limit = 30,
     offset = 0,
     search,
+    exactName,
     tags,
     categories,
     verified,
@@ -270,8 +273,13 @@ export async function listServers(
     query = query.overlaps("categories", categories);
   }
 
+  // Exact name match - takes precedence over search
+  // When exactName is provided, only return if name matches exactly
+  if (exactName) {
+    query = query.eq("name", exactName);
+  }
   // Flexible search - matches any word in any searchable field
-  if (search) {
+  else if (search) {
     const searchFilter = buildSearchFilter(search);
     query = query.or(searchFilter);
   }
