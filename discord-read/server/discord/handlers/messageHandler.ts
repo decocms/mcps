@@ -400,9 +400,21 @@ async function handleDefaultAgent(
       },
     });
 
-    const responseContent =
+    let responseContent =
       response.content || "Desculpe, não consegui gerar uma resposta.";
     const durationMs = Date.now() - startTime;
+
+    // Process channel prompt markers if present
+    if (message.guild?.id) {
+      responseContent = await processPromptMarkers(
+        responseContent,
+        message.guild.id,
+        message.channel.id,
+        channelName,
+        message.author.id,
+        message.author.username,
+      );
+    }
 
     // Send response (split if needed for Discord's 2000 char limit)
     const maxLength = 2000;
@@ -479,6 +491,76 @@ async function handleDefaultAgent(
       clearInterval(typingInterval);
     }
   }
+}
+
+// ============================================================================
+// Prompt Marker Processing
+// ============================================================================
+
+/**
+ * Process [SAVE_CHANNEL_PROMPT] and [CLEAR_CHANNEL_PROMPT] markers in LLM response
+ * Extracts the prompt content, saves to database, and removes markers from response
+ */
+async function processPromptMarkers(
+  content: string,
+  guildId: string,
+  channelId: string,
+  channelName: string | undefined,
+  authorId: string,
+  authorUsername: string,
+): Promise<string> {
+  const db = await import("../../../shared/db.ts");
+
+  // Check for SAVE_CHANNEL_PROMPT marker
+  const saveMatch = content.match(
+    /\[SAVE_CHANNEL_PROMPT\]([\s\S]*?)\[\/SAVE_CHANNEL_PROMPT\]/i,
+  );
+
+  if (saveMatch) {
+    const promptToSave = saveMatch[1].trim();
+
+    if (promptToSave) {
+      try {
+        await db.upsertChannelContext({
+          guild_id: guildId,
+          channel_id: channelId,
+          channel_name: channelName || null,
+          system_prompt: promptToSave,
+          created_by_id: authorId,
+          created_by_username: authorUsername,
+        });
+        console.log(
+          `[Agent] Channel prompt saved for #${channelName || channelId} (${promptToSave.length} chars)`,
+        );
+      } catch (error) {
+        console.error(`[Agent] Failed to save channel prompt:`, error);
+      }
+    }
+
+    // Remove the marker from the response (user won't see it)
+    content = content.replace(
+      /\[SAVE_CHANNEL_PROMPT\][\s\S]*?\[\/SAVE_CHANNEL_PROMPT\]/gi,
+      "",
+    );
+  }
+
+  // Check for CLEAR_CHANNEL_PROMPT marker
+  if (content.includes("[CLEAR_CHANNEL_PROMPT]")) {
+    try {
+      await db.deleteChannelContext(guildId, channelId);
+      console.log(
+        `[Agent] Channel prompt cleared for #${channelName || channelId}`,
+      );
+    } catch (error) {
+      console.error(`[Agent] Failed to clear channel prompt:`, error);
+    }
+
+    // Remove the marker from the response
+    content = content.replace(/\[CLEAR_CHANNEL_PROMPT\]/gi, "");
+  }
+
+  // Clean up any extra whitespace left by marker removal
+  return content.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // ============================================================================
