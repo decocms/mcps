@@ -1,7 +1,7 @@
 {
-  "name": "blog-generator",
+  "name": "blog-post-generator",
   "version": "1.0.0",
-  "description": "Blog generator MCP using n8n workflow automation",
+  "description": "Blog post generator MCP using n8n workflow automation",
   "private": true,
   "type": "module",
   "scripts": {

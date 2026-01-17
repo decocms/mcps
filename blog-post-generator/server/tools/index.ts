@@ -1,10 +1,10 @@
 /**
  * Central export point for all tools.
  */
-import { blogGeneratorTools } from "./generate-blog.ts";
+import { blogPostGeneratorTools } from "./generate-blog-post.ts";
 
 // Export all tools
-export const tools = [...blogGeneratorTools];
+export const tools = [...blogPostGeneratorTools];
 
 // Re-export domain-specific tools for direct access if needed
-export { blogGeneratorTools } from "./generate-blog.ts";
+export { blogPostGeneratorTools } from "./generate-blog-post.ts";

@@ -1,5 +1,5 @@
 /**
- * Blog Generator MCP
+ * Blog Post Generator MCP
  *
  * MCP that generates blog posts from context via n8n webhook.
  */

@@ -1,5 +1,5 @@
 /**
- * Blog Generator Tool
+ * Blog Post Generator Tool
  *
  * Tool to generate blog posts from various context types using n8n webhook.
  */
@@ -25,7 +25,7 @@ const BlogPostSchema = z.object({
 /**
  * Generate blog post tool - generates blog posts from context
  */
-export const generateBlogTool = (env: Env) =>
+export const generateBlogPostTool = (env: Env) =>
   createPrivateTool({
     id: "generate_blog_post",
     description:
@@ -190,6 +190,6 @@ export const generateBlogTool = (env: Env) =>
   });
 
 /**
- * Export all blog generator tools
+ * Export all blog post generator tools
  */
-export const blogGeneratorTools = [generateBlogTool];
+export const blogPostGeneratorTools = [generateBlogPostTool];

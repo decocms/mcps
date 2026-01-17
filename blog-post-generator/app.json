@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "blog-generator",
+  "friendlyName": "Blog Post Generator",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://blog-post-generator.decocache.com/mcp"
+  },
+  "description": "Generate blog posts from context using n8n workflow automation.",
+  "icon": "https://assets.decocache.com/mcp/blog-post-generator-icon.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Content Generation"],
+    "official": false,
+    "tags": ["blog", "content-generation", "writing", "automation", "n8n", "ai-writing"],
+    "short_description": "Generate blog posts from text, URL or scraped content using n8n workflow.",
+    "mesh_description": "The Blog Post Generator MCP leverages n8n workflow automation to generate high-quality blog post suggestions from various context sources. It accepts three types of input: plain text, URLs for content extraction, or JSON data from the Content Scraper MCP. The workflow processes the context and returns 4 unique blog post suggestions, each with a title, full content, and summary. Perfect for content marketing, SEO optimization, knowledge base creation, or any application requiring automated content generation. Integrates seamlessly with the Content Scraper MCP for end-to-end content pipelines."
+  }
+}
+
