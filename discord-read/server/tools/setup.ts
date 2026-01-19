@@ -14,6 +14,10 @@ import {
   guildsTableIndexesQuery,
 } from "../../shared/db.ts";
 import { getBotStatus, ensureBotRunning, shutdownBot } from "../bot-manager.ts";
+import {
+  startBackfill,
+  type BackfillResult,
+} from "../services/backfill-service.ts";
 
 /**
  * Tool to initialize/migrate database tables.
@@ -489,6 +493,142 @@ export const createRestartBotTool = (env: Env) =>
     },
   });
 
+/**
+ * Tool to start message backfill from Discord channels.
+ * Syncs historical messages to database.
+ */
+export const createBackfillTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_BACKFILL_START",
+    description:
+      "Start syncing historical messages from Discord to the database. " +
+      "Only syncs channels visible to ALLOWED_ROLES. Runs asynchronously and " +
+      "sends progress updates to LOG_CHANNEL_ID. Incremental - skips already synced messages.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild/server ID to sync"),
+        channel_ids: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Optional: specific channel IDs to sync (default: all text channels)",
+          ),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        started: z.boolean(),
+        message: z.string(),
+        guildId: z.string().optional(),
+        channelsToSync: z.number().optional(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        guild_id: string;
+        channel_ids?: string[];
+      };
+
+      // Check if bot is running
+      const status = getBotStatus();
+      if (!status.running) {
+        return {
+          started: false,
+          message:
+            "Bot is not running. Start the bot first with DISCORD_START_BOT.",
+        };
+      }
+
+      console.log(`[Backfill] Tool called for guild ${input.guild_id}`);
+
+      // Start backfill asynchronously
+      // This returns immediately while the backfill runs in background
+      const backfillPromise = startBackfill(
+        env,
+        input.guild_id,
+        input.channel_ids,
+      );
+
+      // For async operation, we fire and forget but handle the result logging
+      backfillPromise
+        .then((result: BackfillResult) => {
+          console.log(
+            `[Backfill] Completed for ${result.guildId}: ${result.totalMessages} messages from ${result.channelsProcessed} channels`,
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `[Backfill] Failed:`,
+            error instanceof Error ? error.message : String(error),
+          );
+        });
+
+      // Return immediately
+      return {
+        started: true,
+        message:
+          "Backfill started! Progress will be sent to LOG_CHANNEL_ID. " +
+          "Use DISCORD_BACKFILL_STATUS to check progress.",
+        guildId: input.guild_id,
+      };
+    },
+  });
+
+/**
+ * Global state to track backfill progress
+ */
+let currentBackfillStatus: {
+  running: boolean;
+  guildId?: string;
+  startedAt?: Date;
+  channelsProcessed?: number;
+  totalChannels?: number;
+  totalMessages?: number;
+} = { running: false };
+
+/**
+ * Tool to check backfill status.
+ */
+export const createBackfillStatusTool = () =>
+  createPrivateTool({
+    id: "DISCORD_BACKFILL_STATUS",
+    description: "Check the status of an ongoing message backfill operation.",
+    inputSchema: z.object({}).strict(),
+    outputSchema: z
+      .object({
+        running: z.boolean(),
+        guildId: z.string().optional(),
+        startedAt: z.string().optional(),
+        channelsProcessed: z.number().optional(),
+        totalChannels: z.number().optional(),
+        totalMessages: z.number().optional(),
+        elapsedTime: z.string().optional(),
+      })
+      .strict(),
+    execute: async () => {
+      if (!currentBackfillStatus.running) {
+        return {
+          running: false,
+        };
+      }
+
+      const elapsed = currentBackfillStatus.startedAt
+        ? Date.now() - currentBackfillStatus.startedAt.getTime()
+        : 0;
+
+      return {
+        running: currentBackfillStatus.running,
+        guildId: currentBackfillStatus.guildId,
+        startedAt: currentBackfillStatus.startedAt?.toISOString(),
+        channelsProcessed: currentBackfillStatus.channelsProcessed,
+        totalChannels: currentBackfillStatus.totalChannels,
+        totalMessages: currentBackfillStatus.totalMessages,
+        elapsedTime: `${Math.floor(elapsed / 1000)}s`,
+      };
+    },
+  });
+
 export const setupTools = [
   createSetupDatabaseTool,
   createCheckDatabaseTool,
@@ -497,4 +637,6 @@ export const setupTools = [
   createShowSchemaTool,
   createShutdownBotTool,
   createRestartBotTool,
+  createBackfillTool,
+  createBackfillStatusTool,
 ];
