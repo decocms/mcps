@@ -21,14 +21,15 @@ const SUPER_ADMINS = [
 const processedMessages = new Set<string>();
 const MAX_PROCESSED_CACHE = 100;
 
-// Cache for channel context (LRU - keeps last 50 channels)
+// Cache for channel context (LRU - keeps last 1000 channels)
+// Channel prompts rarely change, so we cache aggressively
 interface CachedChannelContext {
   prompt: string;
   timestamp: number;
 }
 const channelContextCache = new Map<string, CachedChannelContext>();
-const MAX_CACHE_SIZE = 50;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 1000; // Increased from 50 - channel prompts rarely change
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (was 5 minutes)
 
 /**
  * Check if a user is a super admin
