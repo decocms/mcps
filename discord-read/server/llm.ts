@@ -299,14 +299,23 @@ async function callDirectLLM(
 
 /**
  * Parse SSE stream response from Mesh API
+ * Handles text-delta, text, tool-call, tool-result, and other event types
  */
 async function parseStreamResponse(
   body: ReadableStream<Uint8Array>,
 ): Promise<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
-  let content = "";
+  let textContent = "";
   let buffer = "";
+
+  // Track tool calls and results for logging
+  const toolCalls: Array<{
+    id: string;
+    name: string;
+    args: string;
+    result?: unknown;
+  }> = [];
 
   try {
     while (true) {
@@ -324,11 +333,63 @@ async function parseStreamResponse(
 
           try {
             const event = JSON.parse(data);
+            const { type } = event;
 
-            if (event.type === "text-delta" && event.delta) {
-              content += event.delta;
-            } else if (event.type === "text" && event.text) {
-              content += event.text;
+            // Text content (streaming)
+            if (type === "text-delta" && event.delta) {
+              textContent += event.delta;
+            }
+            // Text content (complete)
+            else if (type === "text" && event.text) {
+              textContent += event.text;
+            }
+            // Tool call started - Mesh is calling a tool
+            else if (
+              type === "tool-call" &&
+              event.toolCallId &&
+              event.toolName
+            ) {
+              console.log(`🔧 [Stream] Tool call: ${event.toolName}`);
+              toolCalls.push({
+                id: event.toolCallId,
+                name: event.toolName,
+                args: event.args ?? "{}",
+              });
+            }
+            // Tool result received - Mesh finished executing the tool
+            else if (type === "tool-result" && event.toolCallId) {
+              const toolCall = toolCalls.find((t) => t.id === event.toolCallId);
+              if (toolCall) {
+                toolCall.result = event.result ?? event.output;
+                console.log(
+                  `✅ [Stream] Tool result for ${toolCall.name}: ${JSON.stringify(toolCall.result).slice(0, 100)}...`,
+                );
+              }
+            }
+            // Text generation ended
+            else if (type === "text-end") {
+              // Text content is complete at this point
+              console.log(
+                `📝 [Stream] Text ended (${textContent.length} chars)`,
+              );
+            }
+            // Entire generation finished
+            else if (type === "finish") {
+              console.log(
+                `🏁 [Stream] Generation finished. Tools used: ${toolCalls.length}`,
+              );
+              break;
+            }
+            // Message metadata (ignore but log if interesting)
+            else if (type === "message-metadata") {
+              // Contains info about the message, usually ignorable
+            }
+            // Unknown event type
+            else if (
+              type &&
+              !["message-start", "content-start", "content-end"].includes(type)
+            ) {
+              console.log(`❓ [Stream] Unknown event type: ${type}`);
             }
           } catch {
             // Ignore parse errors for non-JSON lines
@@ -340,5 +401,16 @@ async function parseStreamResponse(
     reader.releaseLock();
   }
 
-  return content;
+  // Log summary if tools were used
+  if (toolCalls.length > 0) {
+    console.log(`\n📊 [Stream] Summary: ${toolCalls.length} tool(s) called:`);
+    for (const tc of toolCalls) {
+      console.log(
+        `   - ${tc.name}: ${tc.result !== undefined ? "✅ success" : "⏳ pending"}`,
+      );
+    }
+    console.log("");
+  }
+
+  return textContent;
 }
