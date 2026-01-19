@@ -93,5 +93,10 @@
     "site": "grain",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
+  },
+  "blog-post-generator": {
+    "site": "blog-generator",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
   }
 }
