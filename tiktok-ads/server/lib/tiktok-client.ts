@@ -464,10 +464,14 @@ export class TikTokClient {
     }
 
     return {
-      rows: result.data.list.map((row) => ({
-        dimensions: row.dimensions,
-        metrics: row as unknown as Record<string, number>,
-      })),
+      rows: result.data.list.map((row) => {
+        // Extract only numeric metrics, excluding dimensions
+        const { dimensions, ...metrics } = row;
+        return {
+          dimensions,
+          metrics: metrics as Record<string, number>,
+        };
+      }),
       page_info: result.data.page_info,
     };
   }

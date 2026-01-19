@@ -271,29 +271,42 @@ export const createUpdateAdGroupTool = (env: Env) =>
   createPrivateTool({
     id: "update_adgroup",
     description:
-      "Update an existing ad group. Only provided fields will be updated.",
-    inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
-      adgroup_id: z.string().describe("Ad Group ID to update (required)"),
-      adgroup_name: z.string().optional().describe("New ad group name"),
-      bid_price: z.coerce
-        .number()
-        .positive()
-        .optional()
-        .describe("New bid price"),
-      budget: z.coerce
-        .number()
-        .positive()
-        .optional()
-        .describe("New budget amount"),
-      schedule_end_time: z
-        .string()
-        .optional()
-        .describe("New end time (format: YYYY-MM-DD HH:mm:ss)"),
-      operation_status: OperationStatusSchema.optional().describe(
-        "New status: ENABLE, DISABLE, or DELETE",
+      "Update an existing ad group. Only provided fields will be updated. At least one field to update must be provided.",
+    inputSchema: z
+      .object({
+        advertiser_id: z.string().describe("Advertiser ID (required)"),
+        adgroup_id: z.string().describe("Ad Group ID to update (required)"),
+        adgroup_name: z.string().optional().describe("New ad group name"),
+        bid_price: z.coerce
+          .number()
+          .positive()
+          .optional()
+          .describe("New bid price"),
+        budget: z.coerce
+          .number()
+          .positive()
+          .optional()
+          .describe("New budget amount"),
+        schedule_end_time: z
+          .string()
+          .optional()
+          .describe("New end time (format: YYYY-MM-DD HH:mm:ss)"),
+        operation_status: OperationStatusSchema.optional().describe(
+          "New status: ENABLE, DISABLE, or DELETE",
+        ),
+      })
+      .refine(
+        (data) =>
+          data.adgroup_name !== undefined ||
+          data.bid_price !== undefined ||
+          data.budget !== undefined ||
+          data.schedule_end_time !== undefined ||
+          data.operation_status !== undefined,
+        {
+          message:
+            "At least one field to update must be provided (adgroup_name, bid_price, budget, schedule_end_time, or operation_status)",
+        },
       ),
-    }),
     outputSchema: z.object({
       adgroup_id: z.string().describe("ID of the updated ad group"),
       success: z.boolean().describe("Whether update was successful"),

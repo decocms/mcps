@@ -209,21 +209,33 @@ export const createUpdateCampaignTool = (env: Env) =>
   createPrivateTool({
     id: "update_campaign",
     description:
-      "Update an existing campaign. Only provided fields will be updated.",
-    inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
-      campaign_id: z.string().describe("Campaign ID to update (required)"),
-      campaign_name: z.string().optional().describe("New campaign name"),
-      budget_mode: BudgetModeSchema.optional().describe("New budget mode"),
-      budget: z.coerce
-        .number()
-        .positive()
-        .optional()
-        .describe("New budget amount"),
-      operation_status: OperationStatusSchema.optional().describe(
-        "New status: ENABLE, DISABLE, or DELETE",
+      "Update an existing campaign. Only provided fields will be updated. At least one field to update must be provided.",
+    inputSchema: z
+      .object({
+        advertiser_id: z.string().describe("Advertiser ID (required)"),
+        campaign_id: z.string().describe("Campaign ID to update (required)"),
+        campaign_name: z.string().optional().describe("New campaign name"),
+        budget_mode: BudgetModeSchema.optional().describe("New budget mode"),
+        budget: z.coerce
+          .number()
+          .positive()
+          .optional()
+          .describe("New budget amount"),
+        operation_status: OperationStatusSchema.optional().describe(
+          "New status: ENABLE, DISABLE, or DELETE",
+        ),
+      })
+      .refine(
+        (data) =>
+          data.campaign_name !== undefined ||
+          data.budget_mode !== undefined ||
+          data.budget !== undefined ||
+          data.operation_status !== undefined,
+        {
+          message:
+            "At least one field to update must be provided (campaign_name, budget_mode, budget, or operation_status)",
+        },
       ),
-    }),
     outputSchema: z.object({
       campaign_id: z.string().describe("ID of the updated campaign"),
       success: z.boolean().describe("Whether update was successful"),
