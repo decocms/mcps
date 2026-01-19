@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../../types/env.ts";
-import { discordAPI, encodeEmoji } from "./api.ts";
+import { discordAPI, discordAPIBatch, encodeEmoji } from "./api.ts";
 
 // ============================================================================
 // Send Message
@@ -153,41 +153,509 @@ export const createEditMessageTool = (env: Env) =>
   });
 
 // ============================================================================
-// Delete Message
+// Delete Message (supports single or multiple IDs)
 // ============================================================================
 
 export const createDeleteMessageTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_DELETE_MESSAGE",
-    description: "Delete a message from a Discord channel",
+    description:
+      "Delete one or more messages from a Discord channel. For multiple messages, they are deleted sequentially with automatic rate limit handling.",
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
-        message_id: z.string().describe("The message ID to delete"),
+        message_id: z
+          .string()
+          .optional()
+          .describe("Single message ID to delete"),
+        message_ids: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Array of message IDs to delete (processed sequentially with rate limit handling)",
+          ),
         reason: z
           .string()
           .optional()
           .describe("Reason for deletion (audit log)"),
       })
       .strict(),
-    outputSchema: z.object({ success: z.boolean() }).strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        failed_count: z.number(),
+        errors: z
+          .array(z.object({ message_id: z.string(), error: z.string() }))
+          .optional(),
+      })
+      .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         channel_id: string;
-        message_id: string;
+        message_id?: string;
+        message_ids?: string[];
         reason?: string;
       };
 
-      await discordAPI(
+      // Build list of IDs to delete
+      const idsToDelete: string[] = [];
+      if (input.message_id) {
+        idsToDelete.push(input.message_id);
+      }
+      if (input.message_ids) {
+        idsToDelete.push(...input.message_ids);
+      }
+
+      if (idsToDelete.length === 0) {
+        throw new Error("Either message_id or message_ids must be provided");
+      }
+
+      // Single message - simple delete
+      if (idsToDelete.length === 1) {
+        await discordAPI(
+          env,
+          `/channels/${input.channel_id}/messages/${idsToDelete[0]}`,
+          { method: "DELETE", reason: input.reason },
+        );
+        return { success: true, deleted_count: 1, failed_count: 0 };
+      }
+
+      // Multiple messages - batch delete with rate limit handling
+      console.log(
+        `🗑️ [Delete] Deleting ${idsToDelete.length} messages from channel ${input.channel_id}...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
         env,
-        `/channels/${input.channel_id}/messages/${input.message_id}`,
+        idsToDelete,
+        async (messageId) => {
+          await discordAPI(
+            env,
+            `/channels/${input.channel_id}/messages/${messageId}`,
+            { method: "DELETE", reason: input.reason },
+          );
+          return messageId;
+        },
         {
-          method: "DELETE",
-          reason: input.reason,
+          delayMs: 200, // 200ms between deletes to stay under rate limit
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`🗑️ [Delete] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip", // Continue on errors
         },
       );
 
-      return { success: true };
+      console.log(
+        `✅ [Delete] Completed: ${results.length} deleted, ${errors.length} failed`,
+      );
+
+      return {
+        success: errors.length === 0,
+        deleted_count: results.length,
+        failed_count: errors.length,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({
+                message_id: e.item,
+                error: e.error,
+              }))
+            : undefined,
+      };
+    },
+  });
+
+// ============================================================================
+// Bulk Delete Messages (Discord's native bulk endpoint)
+// ============================================================================
+
+export const createBulkDeleteMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_BULK_DELETE_MESSAGES",
+    description:
+      "Delete multiple messages at once using Discord's bulk delete endpoint. " +
+      "IMPORTANT: Only works for messages less than 14 days old. " +
+      "Can delete 2-100 messages per call. For older messages, use DISCORD_DELETE_MESSAGE with message_ids array.",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_ids: z
+          .array(z.string())
+          .min(2)
+          .max(100)
+          .describe(
+            "Array of message IDs to delete (2-100, must be < 14 days old)",
+          ),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for deletion (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_ids: string[];
+        reason?: string;
+      };
+
+      if (input.message_ids.length < 2) {
+        throw new Error(
+          "Bulk delete requires at least 2 message IDs. Use DISCORD_DELETE_MESSAGE for single messages.",
+        );
+      }
+
+      if (input.message_ids.length > 100) {
+        throw new Error(
+          "Bulk delete supports maximum 100 messages per call. Split into multiple calls.",
+        );
+      }
+
+      console.log(
+        `🗑️ [Bulk Delete] Deleting ${input.message_ids.length} messages from channel ${input.channel_id}...`,
+      );
+
+      try {
+        await discordAPI(
+          env,
+          `/channels/${input.channel_id}/messages/bulk-delete`,
+          {
+            method: "POST",
+            body: { messages: input.message_ids },
+            reason: input.reason,
+          },
+        );
+
+        console.log(
+          `✅ [Bulk Delete] Successfully deleted ${input.message_ids.length} messages`,
+        );
+
+        return {
+          success: true,
+          deleted_count: input.message_ids.length,
+          message: `Successfully deleted ${input.message_ids.length} messages`,
+        };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+
+        // Check if it's the "too old" error
+        if (
+          errorMsg.includes("10008") ||
+          errorMsg.includes("older than 2 weeks")
+        ) {
+          throw new Error(
+            "Some messages are older than 14 days. Use DISCORD_DELETE_MESSAGE with message_ids array for older messages.",
+          );
+        }
+
+        throw error;
+      }
+    },
+  });
+
+// ============================================================================
+// Purge Channel Messages (intelligent purge)
+// ============================================================================
+
+export const createPurgeChannelMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_PURGE_MESSAGES",
+    description:
+      "Intelligently purge messages from a channel. Automatically uses bulk delete for recent messages (<14 days) " +
+      "and individual delete for older messages. Can filter by user, bot messages, or content.",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        limit: z
+          .number()
+          .min(1)
+          .max(1000)
+          .default(100)
+          .describe("Maximum number of messages to delete (1-1000)"),
+        user_id: z
+          .string()
+          .optional()
+          .describe("Only delete messages from this user"),
+        bots_only: z
+          .boolean()
+          .optional()
+          .describe("Only delete messages from bots"),
+        humans_only: z
+          .boolean()
+          .optional()
+          .describe("Only delete messages from humans (non-bots)"),
+        contains: z
+          .string()
+          .optional()
+          .describe("Only delete messages containing this text"),
+        before_id: z
+          .string()
+          .optional()
+          .describe("Only delete messages before this message ID"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for deletion (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        scanned_count: z.number(),
+        bulk_deleted: z.number(),
+        individual_deleted: z.number(),
+        failed_count: z.number(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        limit: number;
+        user_id?: string;
+        bots_only?: boolean;
+        humans_only?: boolean;
+        contains?: string;
+        before_id?: string;
+        reason?: string;
+      };
+
+      console.log(
+        `🧹 [Purge] Starting purge in channel ${input.channel_id}, limit: ${input.limit}`,
+      );
+
+      // 14 days ago timestamp (Discord's bulk delete limit)
+      const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+      // Fetch messages
+      const params = new URLSearchParams();
+      params.set("limit", String(Math.min(input.limit, 100)));
+      if (input.before_id) params.set("before", input.before_id);
+
+      let allMessages: Array<{
+        id: string;
+        content: string;
+        author: { id: string; bot?: boolean };
+        timestamp: string;
+      }> = [];
+
+      let lastId = input.before_id;
+      let fetched = 0;
+
+      // Fetch messages in batches
+      while (fetched < input.limit) {
+        const batchSize = Math.min(100, input.limit - fetched);
+        const fetchParams = new URLSearchParams();
+        fetchParams.set("limit", String(batchSize));
+        if (lastId) fetchParams.set("before", lastId);
+
+        const messages = await discordAPI<
+          Array<{
+            id: string;
+            content: string;
+            author: { id: string; bot?: boolean };
+            timestamp: string;
+          }>
+        >(
+          env,
+          `/channels/${input.channel_id}/messages?${fetchParams.toString()}`,
+        );
+
+        if (messages.length === 0) break;
+
+        allMessages.push(...messages);
+        lastId = messages[messages.length - 1].id;
+        fetched += messages.length;
+
+        console.log(`🧹 [Purge] Fetched ${fetched} messages...`);
+
+        // Small delay between fetches
+        if (messages.length === batchSize && fetched < input.limit) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+
+      // Filter messages
+      let filteredMessages = allMessages;
+
+      if (input.user_id) {
+        filteredMessages = filteredMessages.filter(
+          (m) => m.author.id === input.user_id,
+        );
+      }
+      if (input.bots_only) {
+        filteredMessages = filteredMessages.filter(
+          (m) => m.author.bot === true,
+        );
+      }
+      if (input.humans_only) {
+        filteredMessages = filteredMessages.filter((m) => !m.author.bot);
+      }
+      if (input.contains) {
+        const searchText = input.contains.toLowerCase();
+        filteredMessages = filteredMessages.filter((m) =>
+          m.content.toLowerCase().includes(searchText),
+        );
+      }
+
+      console.log(
+        `🧹 [Purge] Found ${filteredMessages.length} messages matching criteria`,
+      );
+
+      if (filteredMessages.length === 0) {
+        return {
+          success: true,
+          deleted_count: 0,
+          scanned_count: allMessages.length,
+          bulk_deleted: 0,
+          individual_deleted: 0,
+          failed_count: 0,
+          message: "No messages matched the filter criteria",
+        };
+      }
+
+      // Separate into recent (can bulk delete) and old (need individual delete)
+      const recentMessages = filteredMessages.filter((m) => {
+        const timestamp = new Date(m.timestamp).getTime();
+        return timestamp > fourteenDaysAgo;
+      });
+      const oldMessages = filteredMessages.filter((m) => {
+        const timestamp = new Date(m.timestamp).getTime();
+        return timestamp <= fourteenDaysAgo;
+      });
+
+      let bulkDeleted = 0;
+      let individualDeleted = 0;
+      let failedCount = 0;
+
+      // Bulk delete recent messages (in chunks of 100)
+      if (recentMessages.length >= 2) {
+        const recentIds = recentMessages.map((m) => m.id);
+
+        for (let i = 0; i < recentIds.length; i += 100) {
+          const chunk = recentIds.slice(i, Math.min(i + 100, recentIds.length));
+
+          if (chunk.length >= 2) {
+            try {
+              await discordAPI(
+                env,
+                `/channels/${input.channel_id}/messages/bulk-delete`,
+                {
+                  method: "POST",
+                  body: { messages: chunk },
+                  reason: input.reason,
+                },
+              );
+              bulkDeleted += chunk.length;
+              console.log(
+                `🧹 [Purge] Bulk deleted ${chunk.length} recent messages`,
+              );
+            } catch (error) {
+              console.log(
+                `⚠️ [Purge] Bulk delete failed, falling back to individual delete`,
+              );
+              // Fall back to individual delete
+              for (const id of chunk) {
+                try {
+                  await discordAPI(
+                    env,
+                    `/channels/${input.channel_id}/messages/${id}`,
+                    { method: "DELETE", reason: input.reason },
+                  );
+                  individualDeleted++;
+                  await new Promise((r) => setTimeout(r, 200));
+                } catch {
+                  failedCount++;
+                }
+              }
+            }
+
+            // Small delay between bulk operations
+            await new Promise((r) => setTimeout(r, 500));
+          } else if (chunk.length === 1) {
+            // Single message - individual delete
+            try {
+              await discordAPI(
+                env,
+                `/channels/${input.channel_id}/messages/${chunk[0]}`,
+                { method: "DELETE", reason: input.reason },
+              );
+              individualDeleted++;
+            } catch {
+              failedCount++;
+            }
+          }
+        }
+      } else if (recentMessages.length === 1) {
+        // Single recent message
+        try {
+          await discordAPI(
+            env,
+            `/channels/${input.channel_id}/messages/${recentMessages[0].id}`,
+            { method: "DELETE", reason: input.reason },
+          );
+          individualDeleted++;
+        } catch {
+          failedCount++;
+        }
+      }
+
+      // Individual delete for old messages
+      if (oldMessages.length > 0) {
+        console.log(
+          `🧹 [Purge] Deleting ${oldMessages.length} old messages individually...`,
+        );
+
+        const { results, errors } = await discordAPIBatch(
+          env,
+          oldMessages,
+          async (msg) => {
+            await discordAPI(
+              env,
+              `/channels/${input.channel_id}/messages/${msg.id}`,
+              { method: "DELETE", reason: input.reason },
+            );
+            return msg.id;
+          },
+          {
+            delayMs: 200,
+            onProgress: (completed, total) => {
+              if (completed % 20 === 0 || completed === total) {
+                console.log(`🧹 [Purge] Old messages: ${completed}/${total}`);
+              }
+            },
+            onError: () => "skip",
+          },
+        );
+
+        individualDeleted += results.length;
+        failedCount += errors.length;
+      }
+
+      const totalDeleted = bulkDeleted + individualDeleted;
+      console.log(
+        `✅ [Purge] Complete! Deleted ${totalDeleted} messages (${bulkDeleted} bulk, ${individualDeleted} individual)`,
+      );
+
+      return {
+        success: failedCount === 0,
+        deleted_count: totalDeleted,
+        scanned_count: allMessages.length,
+        bulk_deleted: bulkDeleted,
+        individual_deleted: individualDeleted,
+        failed_count: failedCount,
+        message: `Deleted ${totalDeleted} of ${filteredMessages.length} messages matching criteria`,
+      };
     },
   });
 
@@ -561,6 +1029,8 @@ export const discordMessageTools = [
   createSendMessageTool,
   createEditMessageTool,
   createDeleteMessageTool,
+  createBulkDeleteMessagesTool,
+  createPurgeChannelMessagesTool,
   createGetMessageTool,
   createGetChannelMessagesTool,
   createPinMessageTool,

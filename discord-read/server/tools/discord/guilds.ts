@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../../types/env.ts";
-import { discordAPI } from "./api.ts";
+import { discordAPI, discordAPIBatch } from "./api.ts";
 
 // ============================================================================
 // Get Guild
@@ -437,17 +437,24 @@ export const createGetCurrentUserTool = (env: Env) =>
   });
 
 // ============================================================================
-// Ban Member
+// Ban Member (supports single or multiple users)
 // ============================================================================
 
 export const createBanMemberTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_BAN_MEMBER",
-    description: "Ban a member from a Discord server",
+    description:
+      "Ban one or more members from a Discord server. Supports batch operations with rate limit handling.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID to ban"),
+        user_id: z.string().optional().describe("Single user ID to ban"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Array of user IDs to ban (processed with rate limit handling)",
+          ),
         delete_message_days: z
           .number()
           .min(0)
@@ -457,27 +464,88 @@ export const createBanMemberTool = (env: Env) =>
         reason: z.string().optional().describe("Reason for ban (audit log)"),
       })
       .strict(),
-    outputSchema: z.object({ success: z.boolean() }).strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        banned_count: z.number(),
+        failed_count: z.number(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
+      })
+      .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         delete_message_days?: number;
         reason?: string;
       };
+
+      const usersToBan: string[] = [];
+      if (input.user_id) usersToBan.push(input.user_id);
+      if (input.user_ids) usersToBan.push(...input.user_ids);
+
+      if (usersToBan.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
 
       const body: Record<string, unknown> = {};
       if (input.delete_message_days !== undefined) {
         body.delete_message_seconds = input.delete_message_days * 86400;
       }
 
-      await discordAPI(env, `/guilds/${input.guild_id}/bans/${input.user_id}`, {
-        method: "PUT",
-        body,
-        reason: input.reason,
-      });
+      // Single user - simple ban
+      if (usersToBan.length === 1) {
+        await discordAPI(
+          env,
+          `/guilds/${input.guild_id}/bans/${usersToBan[0]}`,
+          { method: "PUT", body, reason: input.reason },
+        );
+        return { success: true, banned_count: 1, failed_count: 0 };
+      }
 
-      return { success: true };
+      // Multiple users - batch ban
+      console.log(
+        `🔨 [Ban] Banning ${usersToBan.length} users from guild ${input.guild_id}...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        usersToBan,
+        async (userId) => {
+          await discordAPI(env, `/guilds/${input.guild_id}/bans/${userId}`, {
+            method: "PUT",
+            body,
+            reason: input.reason,
+          });
+          return userId;
+        },
+        {
+          delayMs: 300,
+          onProgress: (completed, total) => {
+            if (completed % 5 === 0 || completed === total) {
+              console.log(`🔨 [Ban] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
+        },
+      );
+
+      console.log(
+        `✅ [Ban] Completed: ${results.length} banned, ${errors.length} failed`,
+      );
+
+      return {
+        success: errors.length === 0,
+        banned_count: results.length,
+        failed_count: errors.length,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
+      };
     },
   });
 
@@ -657,54 +725,119 @@ export const createEditRoleTool = (env: Env) =>
   });
 
 // ============================================================================
-// Delete Role
+// Delete Role (supports multiple roles)
 // ============================================================================
 
 export const createDeleteRoleTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_DELETE_ROLE",
-    description: "Delete a role from a Discord server",
+    description:
+      "Delete one or more roles from a Discord server. Supports batch operations.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        role_id: z.string().describe("The role ID to delete"),
+        role_id: z.string().optional().describe("Single role ID to delete"),
+        role_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of role IDs to delete"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
       .strict(),
-    outputSchema: z.object({ success: z.boolean() }).strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        failed_count: z.number(),
+        errors: z
+          .array(z.object({ role_id: z.string(), error: z.string() }))
+          .optional(),
+      })
+      .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        role_id: string;
+        role_id?: string;
+        role_ids?: string[];
         reason?: string;
       };
 
-      await discordAPI(
-        env,
-        `/guilds/${input.guild_id}/roles/${input.role_id}`,
-        {
+      const roles: string[] = [];
+      if (input.role_id) roles.push(input.role_id);
+      if (input.role_ids) roles.push(...input.role_ids);
+
+      if (roles.length === 0) {
+        throw new Error("Either role_id or role_ids must be provided");
+      }
+
+      // Single role - simple delete
+      if (roles.length === 1) {
+        await discordAPI(env, `/guilds/${input.guild_id}/roles/${roles[0]}`, {
           method: "DELETE",
           reason: input.reason,
+        });
+        return { success: true, deleted_count: 1, failed_count: 0 };
+      }
+
+      // Multiple roles - batch delete
+      console.log(
+        `🗑️ [Role] Deleting ${roles.length} roles from guild ${input.guild_id}...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        roles,
+        async (roleId) => {
+          await discordAPI(env, `/guilds/${input.guild_id}/roles/${roleId}`, {
+            method: "DELETE",
+            reason: input.reason,
+          });
+          return roleId;
+        },
+        {
+          delayMs: 300,
+          onProgress: (completed, total) => {
+            if (completed % 5 === 0 || completed === total) {
+              console.log(`🗑️ [Role] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
-      return { success: true };
+      console.log(
+        `✅ [Role] Completed: ${results.length} deleted, ${errors.length} failed`,
+      );
+
+      return {
+        success: errors.length === 0,
+        deleted_count: results.length,
+        failed_count: errors.length,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ role_id: e.item, error: e.error }))
+            : undefined,
+      };
     },
   });
 
 // ============================================================================
-// Add Role to Member
+// Add Role to Member (supports multiple users)
 // ============================================================================
 
 export const createAddRoleToMemberTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_ADD_ROLE",
     description:
-      "Add a role to a guild member. Requires MANAGE_ROLES permission.",
+      "Add a role to one or more guild members. Supports batch operations with rate limit handling.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID of the member"),
+        user_id: z.string().optional().describe("Single user ID"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to add the role to"),
         role_id: z.string().describe("The role ID to add"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
@@ -712,46 +845,107 @@ export const createAddRoleToMemberTool = (env: Env) =>
     outputSchema: z
       .object({
         success: z.boolean(),
+        added_count: z.number(),
+        failed_count: z.number(),
         message: z.string(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
       })
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         role_id: string;
         reason?: string;
       };
 
-      await discordAPI(
+      const users: string[] = [];
+      if (input.user_id) users.push(input.user_id);
+      if (input.user_ids) users.push(...input.user_ids);
+
+      if (users.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
+
+      // Single user - simple add
+      if (users.length === 1) {
+        await discordAPI(
+          env,
+          `/guilds/${input.guild_id}/members/${users[0]}/roles/${input.role_id}`,
+          { method: "PUT", reason: input.reason },
+        );
+        return {
+          success: true,
+          added_count: 1,
+          failed_count: 0,
+          message: `Role ${input.role_id} added to user ${users[0]}`,
+        };
+      }
+
+      // Multiple users - batch add
+      console.log(
+        `➕ [Role] Adding role ${input.role_id} to ${users.length} users...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
         env,
-        `/guilds/${input.guild_id}/members/${input.user_id}/roles/${input.role_id}`,
+        users,
+        async (userId) => {
+          await discordAPI(
+            env,
+            `/guilds/${input.guild_id}/members/${userId}/roles/${input.role_id}`,
+            { method: "PUT", reason: input.reason },
+          );
+          return userId;
+        },
         {
-          method: "PUT",
-          reason: input.reason,
+          delayMs: 200,
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`➕ [Role] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
+      console.log(
+        `✅ [Role] Completed: ${results.length} added, ${errors.length} failed`,
+      );
+
       return {
-        success: true,
-        message: `Role ${input.role_id} added to user ${input.user_id}`,
+        success: errors.length === 0,
+        added_count: results.length,
+        failed_count: errors.length,
+        message: `Role added to ${results.length} of ${users.length} users`,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
       };
     },
   });
 
 // ============================================================================
-// Remove Role from Member
+// Remove Role from Member (supports multiple users)
 // ============================================================================
 
 export const createRemoveRoleFromMemberTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_REMOVE_ROLE",
     description:
-      "Remove a role from a guild member. Requires MANAGE_ROLES permission.",
+      "Remove a role from one or more guild members. Supports batch operations with rate limit handling.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID of the member"),
+        user_id: z.string().optional().describe("Single user ID"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to remove the role from"),
         role_id: z.string().describe("The role ID to remove"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
@@ -759,29 +953,86 @@ export const createRemoveRoleFromMemberTool = (env: Env) =>
     outputSchema: z
       .object({
         success: z.boolean(),
+        removed_count: z.number(),
+        failed_count: z.number(),
         message: z.string(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
       })
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         role_id: string;
         reason?: string;
       };
 
-      await discordAPI(
+      const users: string[] = [];
+      if (input.user_id) users.push(input.user_id);
+      if (input.user_ids) users.push(...input.user_ids);
+
+      if (users.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
+
+      // Single user - simple remove
+      if (users.length === 1) {
+        await discordAPI(
+          env,
+          `/guilds/${input.guild_id}/members/${users[0]}/roles/${input.role_id}`,
+          { method: "DELETE", reason: input.reason },
+        );
+        return {
+          success: true,
+          removed_count: 1,
+          failed_count: 0,
+          message: `Role ${input.role_id} removed from user ${users[0]}`,
+        };
+      }
+
+      // Multiple users - batch remove
+      console.log(
+        `➖ [Role] Removing role ${input.role_id} from ${users.length} users...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
         env,
-        `/guilds/${input.guild_id}/members/${input.user_id}/roles/${input.role_id}`,
+        users,
+        async (userId) => {
+          await discordAPI(
+            env,
+            `/guilds/${input.guild_id}/members/${userId}/roles/${input.role_id}`,
+            { method: "DELETE", reason: input.reason },
+          );
+          return userId;
+        },
         {
-          method: "DELETE",
-          reason: input.reason,
+          delayMs: 200,
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`➖ [Role] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
+      console.log(
+        `✅ [Role] Completed: ${results.length} removed, ${errors.length} failed`,
+      );
+
       return {
-        success: true,
-        message: `Role ${input.role_id} removed from user ${input.user_id}`,
+        success: errors.length === 0,
+        removed_count: results.length,
+        failed_count: errors.length,
+        message: `Role removed from ${results.length} of ${users.length} users`,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
       };
     },
   });
@@ -870,62 +1121,126 @@ export const createEditMemberTool = (env: Env) =>
   });
 
 // ============================================================================
-// Kick Member
+// Kick Member (supports multiple users)
 // ============================================================================
 
 export const createKickMemberTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_KICK_MEMBER",
-    description: "Kick a member from a Discord server (they can rejoin).",
+    description:
+      "Kick one or more members from a Discord server (they can rejoin). Supports batch operations.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID to kick"),
+        user_id: z.string().optional().describe("Single user ID to kick"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to kick"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
       .strict(),
     outputSchema: z
       .object({
         success: z.boolean(),
+        kicked_count: z.number(),
+        failed_count: z.number(),
         message: z.string(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
       })
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         reason?: string;
       };
 
-      await discordAPI(
-        env,
-        `/guilds/${input.guild_id}/members/${input.user_id}`,
-        {
+      const users: string[] = [];
+      if (input.user_id) users.push(input.user_id);
+      if (input.user_ids) users.push(...input.user_ids);
+
+      if (users.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
+
+      // Single user - simple kick
+      if (users.length === 1) {
+        await discordAPI(env, `/guilds/${input.guild_id}/members/${users[0]}`, {
           method: "DELETE",
           reason: input.reason,
+        });
+        return {
+          success: true,
+          kicked_count: 1,
+          failed_count: 0,
+          message: `User ${users[0]} kicked from guild ${input.guild_id}`,
+        };
+      }
+
+      // Multiple users - batch kick
+      console.log(
+        `👢 [Kick] Kicking ${users.length} users from guild ${input.guild_id}...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        users,
+        async (userId) => {
+          await discordAPI(env, `/guilds/${input.guild_id}/members/${userId}`, {
+            method: "DELETE",
+            reason: input.reason,
+          });
+          return userId;
+        },
+        {
+          delayMs: 300,
+          onProgress: (completed, total) => {
+            if (completed % 5 === 0 || completed === total) {
+              console.log(`👢 [Kick] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
+      console.log(
+        `✅ [Kick] Completed: ${results.length} kicked, ${errors.length} failed`,
+      );
+
       return {
-        success: true,
-        message: `User ${input.user_id} kicked from guild ${input.guild_id}`,
+        success: errors.length === 0,
+        kicked_count: results.length,
+        failed_count: errors.length,
+        message: `Kicked ${results.length} of ${users.length} users`,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
       };
     },
   });
 
 // ============================================================================
-// Timeout Member
+// Timeout Member (supports multiple users)
 // ============================================================================
 
 export const createTimeoutMemberTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_TIMEOUT_MEMBER",
     description:
-      "Timeout a member (prevent them from interacting) for a specified duration.",
+      "Timeout one or more members (prevent them from interacting) for a specified duration. Supports batch operations.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID to timeout"),
+        user_id: z.string().optional().describe("Single user ID to timeout"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to timeout"),
         duration_minutes: z
           .number()
           .min(1)
@@ -937,81 +1252,200 @@ export const createTimeoutMemberTool = (env: Env) =>
     outputSchema: z
       .object({
         success: z.boolean(),
+        timed_out_count: z.number(),
+        failed_count: z.number(),
         message: z.string(),
         timeout_until: z.string(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
       })
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         duration_minutes: number;
         reason?: string;
       };
+
+      const users: string[] = [];
+      if (input.user_id) users.push(input.user_id);
+      if (input.user_ids) users.push(...input.user_ids);
+
+      if (users.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
 
       const timeoutUntil = new Date(
         Date.now() + input.duration_minutes * 60 * 1000,
       ).toISOString();
 
-      await discordAPI(
-        env,
-        `/guilds/${input.guild_id}/members/${input.user_id}`,
-        {
+      // Single user - simple timeout
+      if (users.length === 1) {
+        await discordAPI(env, `/guilds/${input.guild_id}/members/${users[0]}`, {
           method: "PATCH",
           body: { communication_disabled_until: timeoutUntil },
           reason: input.reason,
+        });
+        return {
+          success: true,
+          timed_out_count: 1,
+          failed_count: 0,
+          message: `User ${users[0]} timed out for ${input.duration_minutes} minutes`,
+          timeout_until: timeoutUntil,
+        };
+      }
+
+      // Multiple users - batch timeout
+      console.log(
+        `⏱️ [Timeout] Timing out ${users.length} users for ${input.duration_minutes} minutes...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        users,
+        async (userId) => {
+          await discordAPI(env, `/guilds/${input.guild_id}/members/${userId}`, {
+            method: "PATCH",
+            body: { communication_disabled_until: timeoutUntil },
+            reason: input.reason,
+          });
+          return userId;
+        },
+        {
+          delayMs: 200,
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`⏱️ [Timeout] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
+      console.log(
+        `✅ [Timeout] Completed: ${results.length} timed out, ${errors.length} failed`,
+      );
+
       return {
-        success: true,
-        message: `User ${input.user_id} timed out for ${input.duration_minutes} minutes`,
+        success: errors.length === 0,
+        timed_out_count: results.length,
+        failed_count: errors.length,
+        message: `Timed out ${results.length} of ${users.length} users for ${input.duration_minutes} minutes`,
         timeout_until: timeoutUntil,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
       };
     },
   });
 
 // ============================================================================
-// Remove Timeout
+// Remove Timeout (supports multiple users)
 // ============================================================================
 
 export const createRemoveTimeoutTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_REMOVE_TIMEOUT",
-    description: "Remove timeout from a member (allow them to interact again).",
+    description:
+      "Remove timeout from one or more members (allow them to interact again). Supports batch operations.",
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
-        user_id: z.string().describe("The user ID to remove timeout from"),
+        user_id: z
+          .string()
+          .optional()
+          .describe("Single user ID to remove timeout from"),
+        user_ids: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to remove timeout from"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
       .strict(),
     outputSchema: z
       .object({
         success: z.boolean(),
+        removed_count: z.number(),
+        failed_count: z.number(),
         message: z.string(),
+        errors: z
+          .array(z.object({ user_id: z.string(), error: z.string() }))
+          .optional(),
       })
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         guild_id: string;
-        user_id: string;
+        user_id?: string;
+        user_ids?: string[];
         reason?: string;
       };
 
-      await discordAPI(
-        env,
-        `/guilds/${input.guild_id}/members/${input.user_id}`,
-        {
+      const users: string[] = [];
+      if (input.user_id) users.push(input.user_id);
+      if (input.user_ids) users.push(...input.user_ids);
+
+      if (users.length === 0) {
+        throw new Error("Either user_id or user_ids must be provided");
+      }
+
+      // Single user - simple remove
+      if (users.length === 1) {
+        await discordAPI(env, `/guilds/${input.guild_id}/members/${users[0]}`, {
           method: "PATCH",
           body: { communication_disabled_until: null },
           reason: input.reason,
+        });
+        return {
+          success: true,
+          removed_count: 1,
+          failed_count: 0,
+          message: `Timeout removed from user ${users[0]}`,
+        };
+      }
+
+      // Multiple users - batch remove
+      console.log(`⏱️ [Timeout] Removing timeout from ${users.length} users...`);
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        users,
+        async (userId) => {
+          await discordAPI(env, `/guilds/${input.guild_id}/members/${userId}`, {
+            method: "PATCH",
+            body: { communication_disabled_until: null },
+            reason: input.reason,
+          });
+          return userId;
+        },
+        {
+          delayMs: 200,
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`⏱️ [Timeout] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip",
         },
       );
 
+      console.log(
+        `✅ [Timeout] Completed: ${results.length} removed, ${errors.length} failed`,
+      );
+
       return {
-        success: true,
-        message: `Timeout removed from user ${input.user_id}`,
+        success: errors.length === 0,
+        removed_count: results.length,
+        failed_count: errors.length,
+        message: `Timeout removed from ${results.length} of ${users.length} users`,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({ user_id: e.item, error: e.error }))
+            : undefined,
       };
     },
   });

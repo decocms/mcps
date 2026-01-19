@@ -13,7 +13,7 @@ import {
   guildsTableIdempotentQuery,
   guildsTableIndexesQuery,
 } from "../../shared/db.ts";
-import { getBotStatus, ensureBotRunning } from "../bot-manager.ts";
+import { getBotStatus, ensureBotRunning, shutdownBot } from "../bot-manager.ts";
 
 /**
  * Tool to initialize/migrate database tables.
@@ -346,10 +346,155 @@ export const createShowSchemaTool = () =>
     },
   });
 
+/**
+ * Tool to shutdown the Discord bot.
+ */
+export const createShutdownBotTool = () =>
+  createPrivateTool({
+    id: "DISCORD_SHUTDOWN_BOT",
+    description:
+      "Shutdown the Discord bot completely. Stops all instances, disconnects from Discord, and stops the session heartbeat. Use this for maintenance or to force a restart.",
+    inputSchema: z
+      .object({
+        confirm: z
+          .boolean()
+          .describe(
+            "Must be true to confirm shutdown. This prevents accidental shutdowns.",
+          ),
+        reason: z
+          .string()
+          .optional()
+          .describe("Optional reason for shutdown (for logging)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        wasRunning: z.boolean(),
+      })
+      .strict(),
+    execute: async ({ confirm, reason }) => {
+      if (!confirm) {
+        return {
+          success: false,
+          message:
+            "Shutdown not confirmed. Set confirm=true to shutdown the bot.",
+          wasRunning: false,
+        };
+      }
+
+      const status = getBotStatus();
+      const wasRunning = status.running;
+
+      if (!wasRunning) {
+        return {
+          success: true,
+          message: "Bot was not running.",
+          wasRunning: false,
+        };
+      }
+
+      try {
+        console.log(
+          `[Shutdown] Shutting down bot...${reason ? ` Reason: ${reason}` : ""}`,
+        );
+
+        await shutdownBot();
+
+        console.log("[Shutdown] Bot shutdown complete ✓");
+
+        return {
+          success: true,
+          message: `Bot shutdown successfully.${reason ? ` Reason: ${reason}` : ""} Use DISCORD_START_BOT to restart.`,
+          wasRunning: true,
+        };
+      } catch (error) {
+        console.error("[Shutdown] Error during shutdown:", error);
+        return {
+          success: false,
+          message: `Shutdown failed: ${error instanceof Error ? error.message : String(error)}`,
+          wasRunning,
+        };
+      }
+    },
+  });
+
+/**
+ * Tool to restart the Discord bot.
+ */
+export const createRestartBotTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_RESTART_BOT",
+    description:
+      "Restart the Discord bot. Performs a full shutdown and then starts the bot again. Useful for applying configuration changes or recovering from errors.",
+    inputSchema: z
+      .object({
+        reason: z
+          .string()
+          .optional()
+          .describe("Optional reason for restart (for logging)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        botUser: z.string().optional(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ reason }) => {
+      const reasonText = reason ? ` Reason: ${reason}` : "";
+      console.log(`[Restart] Restarting bot...${reasonText}`);
+
+      try {
+        // Step 1: Shutdown
+        const status = getBotStatus();
+        if (status.running) {
+          console.log("[Restart] Shutting down current instance...");
+          await shutdownBot();
+          // Wait a moment for cleanup
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        // Step 2: Start
+        console.log("[Restart] Starting new instance...");
+        const started = await ensureBotRunning(env);
+        const newStatus = getBotStatus();
+
+        if (started && newStatus.running) {
+          console.log("[Restart] Bot restarted successfully ✓");
+          return {
+            success: true,
+            message: `Bot restarted successfully.${reasonText}`,
+            botUser: newStatus.user,
+          };
+        }
+
+        return {
+          success: false,
+          message: newStatus.initializing
+            ? "Bot is still initializing after restart..."
+            : "Failed to restart bot. Check server logs.",
+        };
+      } catch (error) {
+        console.error("[Restart] Error during restart:", error);
+        return {
+          success: false,
+          message: "Restart failed",
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
 export const setupTools = [
   createSetupDatabaseTool,
   createCheckDatabaseTool,
   createStartBotTool,
   createBotStatusTool,
   createShowSchemaTool,
+  createShutdownBotTool,
+  createRestartBotTool,
 ];
