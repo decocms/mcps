@@ -21,11 +21,79 @@ const SUPER_ADMINS = [
 const processedMessages = new Set<string>();
 const MAX_PROCESSED_CACHE = 100;
 
+// Cache for channel context (LRU - keeps last 50 channels)
+interface CachedChannelContext {
+  prompt: string;
+  timestamp: number;
+}
+const channelContextCache = new Map<string, CachedChannelContext>();
+const MAX_CACHE_SIZE = 50;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Check if a user is a super admin
  */
 export function isSuperAdmin(userId: string): boolean {
   return SUPER_ADMINS.includes(userId);
+}
+
+/**
+ * Get cached channel context or fetch from DB
+ */
+async function getCachedChannelContext(
+  guildId: string,
+  channelId: string,
+): Promise<string | undefined> {
+  const cacheKey = `${guildId}:${channelId}`;
+  const cached = channelContextCache.get(cacheKey);
+
+  // Check if cache is valid
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.prompt;
+  }
+
+  // Fetch from DB
+  try {
+    const db = await import("../../../shared/db.ts");
+    const channelContext = await db.getChannelContext(guildId, channelId);
+    const prompt = channelContext?.system_prompt;
+
+    // Update cache (with LRU eviction)
+    if (channelContextCache.size >= MAX_CACHE_SIZE) {
+      // Remove oldest entry
+      const firstKey = channelContextCache.keys().next().value;
+      if (firstKey) channelContextCache.delete(firstKey);
+    }
+
+    if (prompt) {
+      channelContextCache.set(cacheKey, {
+        prompt,
+        timestamp: Date.now(),
+      });
+    } else {
+      // Cache empty result too (to avoid repeated DB calls)
+      channelContextCache.set(cacheKey, {
+        prompt: "",
+        timestamp: Date.now(),
+      });
+    }
+
+    return prompt;
+  } catch (e) {
+    console.log(`[Agent] Could not fetch channel context:`, e);
+    return undefined;
+  }
+}
+
+/**
+ * Invalidate channel context cache (call when prompt is updated)
+ */
+export function invalidateChannelContextCache(
+  guildId: string,
+  channelId: string,
+): void {
+  const cacheKey = `${guildId}:${channelId}`;
+  channelContextCache.delete(cacheKey);
 }
 
 /**
@@ -62,13 +130,6 @@ export async function indexMessage(
   message: Message,
   isDM: boolean = false,
 ): Promise<void> {
-  const channelInfo = isDM
-    ? "DM"
-    : `#${(message.channel as TextChannel).name || "unknown"}`;
-  console.log(
-    `[Message] [${channelInfo}] ${message.author.username}: ${message.content.slice(0, 50)}...`,
-  );
-
   try {
     const db = await import("../../../shared/db.ts");
 
@@ -158,7 +219,7 @@ export async function indexMessage(
       edited_at: message.editedAt,
     });
 
-    console.log(`[Message] Indexed: ${message.id}`);
+    // Indexed successfully (removed log for performance)
   } catch (error) {
     // Don't crash if indexing fails - just log
     console.error(`[Message] Failed to index:`, error);
@@ -232,12 +293,7 @@ async function handleDefaultAgent(
   // The LLM call will fail with a clear error if the session is expired,
   // and that error is already handled in the catch block below.
 
-  const channelInfo = isDM
-    ? `DM with ${message.author.username}`
-    : `#${(message.channel as TextChannel).name || "unknown"}`;
-  console.log(
-    `[Agent] Processing [${channelInfo}]: "${userInput.slice(0, 50)}..."`,
-  );
+  // Removed verbose logging for better performance
 
   // Show typing indicator with continuous loop (Discord typing expires after ~10s)
   let typingInterval: ReturnType<typeof setInterval> | null = null;
@@ -254,65 +310,52 @@ async function handleDefaultAgent(
   typingInterval = setInterval(startTyping, 8000);
 
   try {
-    // Import LLM module
-    const { generateResponse } = await import("../../llm.ts");
+    // Import modules in parallel
+    const [{ generateResponse }, { getSystemPrompt }] = await Promise.all([
+      import("../../llm.ts"),
+      import("../../prompts/system.ts"),
+    ]);
 
     const startTime = Date.now();
+    const channelName =
+      "name" in message.channel
+        ? (message.channel.name ?? undefined)
+        : undefined;
 
-    // Fetch last 10 messages from channel for context
-    let contextMessages = "";
-    try {
-      const messages = await message.channel.messages.fetch({ limit: 11 }); // 10 + current
-      const recentMessages = Array.from(messages.values())
-        .filter((m) => m.id !== message.id) // Exclude current message
-        .slice(0, 10)
-        .reverse(); // Oldest first
+    // Fetch context and channel prompt in parallel
+    const [contextMessages, channelPrompt] = await Promise.all([
+      // Fetch last 10 messages from channel for context
+      (async () => {
+        try {
+          const messages = await message.channel.messages.fetch({
+            limit: 11,
+          }); // 10 + current
+          const recentMessages = Array.from(messages.values())
+            .filter((m) => m.id !== message.id) // Exclude current message
+            .slice(0, 10)
+            .reverse(); // Oldest first
 
-      if (recentMessages.length > 0) {
-        contextMessages = recentMessages
-          .map((m) => `[${m.author.username}]: ${m.content.slice(0, 500)}`)
-          .join("\n");
-        console.log(
-          `[Agent] Context: ${recentMessages.length} previous messages`,
-        );
-      }
-    } catch (e) {
-      console.log(`[Agent] Could not fetch context:`, e);
-    }
+          if (recentMessages.length > 0) {
+            return recentMessages
+              .map((m) => `[${m.author.username}]: ${m.content.slice(0, 500)}`)
+              .join("\n");
+          }
+          return "";
+        } catch (e) {
+          return "";
+        }
+      })(),
+      // Fetch channel-specific prompt (with cache)
+      message.guild?.id
+        ? getCachedChannelContext(message.guild.id, message.channel.id)
+        : Promise.resolve(undefined),
+    ]);
 
     // Build messages for LLM with context
     const llmMessages: Array<{
       role: "system" | "user" | "assistant";
       content: string;
     }> = [];
-
-    // Import and use the system prompt
-    const { getSystemPrompt } = await import("../../prompts/system.ts");
-    const db = await import("../../../shared/db.ts");
-
-    const channelName =
-      "name" in message.channel
-        ? (message.channel.name ?? undefined)
-        : undefined;
-
-    // Fetch channel-specific prompt if configured
-    let channelPrompt: string | undefined;
-    if (message.guild?.id) {
-      try {
-        const channelContext = await db.getChannelContext(
-          message.guild.id,
-          message.channel.id,
-        );
-        if (channelContext?.system_prompt) {
-          channelPrompt = channelContext.system_prompt;
-          console.log(
-            `[Agent] Using channel context for #${channelName || message.channel.id}`,
-          );
-        }
-      } catch (e) {
-        console.log(`[Agent] Could not fetch channel context:`, e);
-      }
-    }
 
     // Add system prompt with context (including IDs for tools)
     const systemPrompt = getSystemPrompt({
@@ -348,7 +391,6 @@ async function handleDefaultAgent(
     llmMessages.push({ role: "user", content: userInput });
 
     // Call the model using Mesh API with Discord context
-    console.log(`[Agent] Calling Mesh API...`);
 
     const response = await generateResponse(env, llmMessages, {
       discordContext: {
@@ -488,9 +530,8 @@ async function processPromptMarkers(
           created_by_id: authorId,
           created_by_username: authorUsername,
         });
-        console.log(
-          `[Agent] Channel prompt saved for #${channelName || channelId} (${promptToSave.length} chars)`,
-        );
+        // Invalidate cache after saving
+        invalidateChannelContextCache(guildId, channelId);
       } catch (error) {
         console.error(`[Agent] Failed to save channel prompt:`, error);
       }
@@ -507,9 +548,8 @@ async function processPromptMarkers(
   if (content.includes("[CLEAR_CHANNEL_PROMPT]")) {
     try {
       await db.deleteChannelContext(guildId, channelId);
-      console.log(
-        `[Agent] Channel prompt cleared for #${channelName || channelId}`,
-      );
+      // Invalidate cache after clearing
+      invalidateChannelContextCache(guildId, channelId);
     } catch (error) {
       console.error(`[Agent] Failed to clear channel prompt:`, error);
     }

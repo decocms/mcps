@@ -220,13 +220,7 @@ function registerEventHandlers(client: Client, env: Env): void {
       }
     }
 
-    // Debug: log all messages
-    const channelInfo = isDM
-      ? "DM"
-      : `#${(message.channel as { name?: string }).name || "unknown"}`;
-    console.log(
-      `[Discord] Message received [${channelInfo}]: "${message.content}" from ${message.author.username}`,
-    );
+    // Removed verbose logging for better performance
 
     // Re-set database env (ensures it's available for this message)
     // Only set if we have a valid MESH_REQUEST_CONTEXT
@@ -268,70 +262,44 @@ function registerEventHandlers(client: Client, env: Env): void {
         }
       }
 
+      // Check prefixes first (faster) before fetching reply message
       const configuredPrefix =
         currentEnv.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
       const botMention = `<@${client.user?.id}>`;
-      const botMentionNick = `<@!${client.user?.id}>`; // Nickname mention format
-
-      // Debug: show what we're looking for
-      console.log(
-        `[Discord] Looking for prefixes: "${botMention}" or "${botMentionNick}" or "${configuredPrefix}"`,
-      );
-      console.log(`[Discord] Message content: "${message.content}"`);
-
+      const botMentionNick = `<@!${client.user?.id}>`;
       let prefix: string | null = null;
       let content = message.content;
       let replyToMessage: string | undefined;
 
-      // Check if this is a reply to the bot's message
-      if (message.reference?.messageId) {
+      // Fast prefix checks (no async needed)
+      if (isDM) {
+        prefix = "DM";
+      } else if (content.startsWith(botMention)) {
+        prefix = botMention;
+        content = content.slice(botMention.length).trim();
+      } else if (content.startsWith(botMentionNick)) {
+        prefix = botMentionNick;
+        content = content.slice(botMentionNick.length).trim();
+      } else if (content.startsWith(configuredPrefix)) {
+        prefix = configuredPrefix;
+        content = content.slice(configuredPrefix.length).trim();
+      } else if (message.reference?.messageId) {
+        // Only fetch reply if no prefix matched (optimization)
         try {
           const repliedMsg = await message.channel.messages.fetch(
             message.reference.messageId,
           );
           if (repliedMsg.author.id === client.user?.id) {
             prefix = "REPLY";
-            content = message.content; // Keep full content for replies
-            replyToMessage = repliedMsg.content;
-            console.log(
-              `[Discord] Reply to bot detected - original: "${replyToMessage?.slice(0, 50)}..."`,
-            );
+            content = message.content;
+            replyToMessage = repliedMsg.content; // Get content while we have it
           }
         } catch (e) {
-          console.log(`[Discord] Could not fetch replied message:`, e);
-        }
-      }
-
-      // In DMs, all messages are treated as commands (no prefix needed)
-      if (!prefix && isDM) {
-        prefix = "DM";
-        console.log(`[Discord] DM detected - processing as command`);
-      } else if (!prefix) {
-        // Check bot mention first (higher priority)
-        if (content.startsWith(botMention)) {
-          prefix = botMention;
-          content = content.slice(botMention.length).trim();
-          console.log(`[Discord] Matched bot mention: "${botMention}"`);
-        } else if (content.startsWith(botMentionNick)) {
-          prefix = botMentionNick;
-          content = content.slice(botMentionNick.length).trim();
-          console.log(
-            `[Discord] Matched bot mention (nick): "${botMentionNick}"`,
-          );
-        } else if (content.startsWith(configuredPrefix)) {
-          prefix = configuredPrefix;
-          content = content.slice(configuredPrefix.length).trim();
-          console.log(
-            `[Discord] Matched configured prefix: "${configuredPrefix}"`,
-          );
-        } else {
-          console.log(`[Discord] No prefix matched`);
+          // Silently fail - reply detection is optional
         }
       }
 
       if (prefix) {
-        console.log(`[Discord] Command detected! Content: "${content}"`);
-        // Pass the cleaned content without prefix (use currentEnv for latest context)
         await processCommand(
           message,
           prefix,
