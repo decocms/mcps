@@ -14,7 +14,7 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv } from "./bot-manager.ts";
+import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import {
@@ -27,6 +27,10 @@ export { StateSchema };
 
 // Track Discord client state
 let discordInitialized = false;
+
+// Auto-restart cron interval (1 hour)
+const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
+let autoRestartInterval: ReturnType<typeof setInterval> | null = null;
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   events: {
@@ -132,7 +136,14 @@ async function gracefulShutdown(signal: string) {
   console.log(`\n[SHUTDOWN] Received ${signal}, shutting down...`);
 
   try {
-    // Stop session heartbeat first
+    // Stop auto-restart cron
+    if (autoRestartInterval) {
+      console.log("[SHUTDOWN] Stopping auto-restart cron...");
+      clearInterval(autoRestartInterval);
+      autoRestartInterval = null;
+    }
+
+    // Stop session heartbeat
     console.log("[SHUTDOWN] Stopping session heartbeat...");
     stopHeartbeat();
 
@@ -220,3 +231,60 @@ if (envBotToken && !discordInitialized) {
       console.error("[STARTUP] Failed to start Discord bot:", error);
     });
 }
+
+// ============================================================================
+// Auto-Restart Cron Job (every 1 hour)
+// ============================================================================
+
+/**
+ * Check if the bot is running and restart if needed.
+ * Runs every hour to ensure the bot stays online.
+ */
+async function autoRestartCheck(): Promise<void> {
+  const client = getDiscordClient();
+
+  if (!client || !client.isReady()) {
+    console.log("[AUTO-RESTART] Bot is down, attempting restart...");
+
+    const env = getCurrentEnv();
+    if (!env) {
+      console.log("[AUTO-RESTART] No environment available, skipping restart");
+      return;
+    }
+
+    const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+    if (!botToken) {
+      console.log("[AUTO-RESTART] No BOT_TOKEN configured, skipping restart");
+      return;
+    }
+
+    try {
+      await initializeDiscordClient(env);
+      discordInitialized = true;
+      console.log("[AUTO-RESTART] Bot restarted successfully ✓");
+
+      // Restart heartbeat
+      startHeartbeat(env, () => {
+        console.log(
+          "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+        );
+      });
+    } catch (error) {
+      console.error(
+        "[AUTO-RESTART] Failed to restart bot:",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  } else {
+    console.log(
+      `[AUTO-RESTART] Bot is healthy (${client.guilds.cache.size} guilds)`,
+    );
+  }
+}
+
+// Start auto-restart cron
+autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
+console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+
+// Run initial check after 5 seconds (give time for normal startup)
+setTimeout(autoRestartCheck, 5000);
