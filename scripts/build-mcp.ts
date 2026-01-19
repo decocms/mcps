@@ -3,11 +3,13 @@ import { $ } from "bun";
 const FOLDER_OVERRIDES = {
   vibemcp: "mcp-studio",
   whatsappagent: "whatsapp",
+  "blog-generator": "blog-post-generator",
 };
 
 const PKG_NAME_OVERRIDES = {
   vibemcp: "mcp-studio",
   openrouter: "@decocms/openrouter",
+  "blog-generator": "blog-post-generator",
 };
 
 const getMcpPkgName = (siteName: string) => {
