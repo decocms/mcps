@@ -294,7 +294,7 @@ function registerEventHandlers(client: Client, env: Env): void {
             content = message.content;
             replyToMessage = repliedMsg.content; // Get content while we have it
           }
-        } catch (e) {
+        } catch {
           // Silently fail - reply detection is optional
         }
       }

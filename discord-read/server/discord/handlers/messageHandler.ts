@@ -341,7 +341,7 @@ async function handleDefaultAgent(
               .join("\n");
           }
           return "";
-        } catch (e) {
+        } catch {
           return "";
         }
       })(),
