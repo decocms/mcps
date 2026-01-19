@@ -245,22 +245,36 @@ export const createCreateAdTool = (env: Env) =>
 export const createUpdateAdTool = (env: Env) =>
   createPrivateTool({
     id: "update_ad",
-    description: "Update an existing ad. Only provided fields will be updated.",
-    inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
-      ad_id: z.string().describe("Ad ID to update (required)"),
-      ad_name: z.string().optional().describe("New ad name"),
-      ad_text: z.string().optional().describe("New ad text/caption"),
-      call_to_action: z.string().optional().describe("New call to action"),
-      landing_page_url: z
-        .string()
-        .url()
-        .optional()
-        .describe("New landing page URL"),
-      operation_status: OperationStatusSchema.optional().describe(
-        "New status: ENABLE, DISABLE, or DELETE",
+    description:
+      "Update an existing ad. Only provided fields will be updated. At least one field to update must be provided.",
+    inputSchema: z
+      .object({
+        advertiser_id: z.string().describe("Advertiser ID (required)"),
+        ad_id: z.string().describe("Ad ID to update (required)"),
+        ad_name: z.string().optional().describe("New ad name"),
+        ad_text: z.string().optional().describe("New ad text/caption"),
+        call_to_action: z.string().optional().describe("New call to action"),
+        landing_page_url: z
+          .string()
+          .url()
+          .optional()
+          .describe("New landing page URL"),
+        operation_status: OperationStatusSchema.optional().describe(
+          "New status: ENABLE, DISABLE, or DELETE",
+        ),
+      })
+      .refine(
+        (data) =>
+          data.ad_name !== undefined ||
+          data.ad_text !== undefined ||
+          data.call_to_action !== undefined ||
+          data.landing_page_url !== undefined ||
+          data.operation_status !== undefined,
+        {
+          message:
+            "At least one field to update must be provided (ad_name, ad_text, call_to_action, landing_page_url, or operation_status)",
+        },
       ),
-    }),
     outputSchema: z.object({
       ad_id: z.string().describe("ID of the updated ad"),
       success: z.boolean().describe("Whether update was successful"),
