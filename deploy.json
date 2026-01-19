@@ -1,0 +1,97 @@
+{
+  "vibemcp": {
+    "site": "vibemcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "openrouter": {
+    "site": "openrouter",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "registry": {
+    "site": "registry",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "meta-ads": {
+    "site": "meta-ads",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-calendar": {
+    "site": "google-calendar",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-tag-manager": {
+    "site": "google-tag-manager",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "content-scraper": {
+    "site": "content-scraper",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-big-query": {
+    "site": "google-big-query",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "deco-llm": {
+    "site": "deco-llm",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "whatsappagent": {
+    "site": "whatsappagent",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "hyperdx": {
+    "site": "hyperdx",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "object-storage": {
+    "site": "object-storage",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "discord-read": {
+    "site": "object-storage",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-sheets": {
+    "site": "google-sheets",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-drive": {
+    "site": "google-drive",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-meet": {
+    "site": "google-meet",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-slides": {
+    "site": "google-slides",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-forms": {
+    "site": "google-forms",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "grain": {
+    "site": "grain",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  }
+}
