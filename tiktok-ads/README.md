@@ -42,31 +42,18 @@ MCP Server for TikTok Marketing API integration. Manage campaigns, ad groups, ad
 
 ### 2. Get Access Token
 
-#### Option A: Direct Access Token (Recommended for Development)
-
 1. In the TikTok Developer Portal, go to your app
 2. Navigate to "Tools" > "Access Token"
 3. Generate a long-lived access token
 4. Copy the token
 
-#### Option B: OAuth Flow (For Production - Requires App Approval)
+> **Nota:** O token direto funciona sem precisar de aprovação do app pelo TikTok. É ideal para desenvolvimento e produção inicial.
 
-1. Submit your app for TikTok review
-2. Wait for approval (may take several weeks)
-3. Once approved, OAuth flow will work automatically
+### 3. Configure na Instalação do MCP
 
-### 3. Configure Environment Variables
+Ao instalar o MCP, você será solicitado a preencher:
 
-Create a `.env` file with:
-
-```bash
-# Required: Access Token (use this for development)
-TIKTOK_ACCESS_TOKEN=your_access_token
-
-# Optional: OAuth credentials (for future OAuth support)
-TIKTOK_APP_ID=your_app_id
-TIKTOK_APP_SECRET=your_app_secret
-```
+- **Access Token**: O token gerado no passo anterior
 
 ## Development
 
@@ -197,12 +184,12 @@ bun run build
 ```
 tiktok-ads/
 ├── server/
-│   ├── main.ts              # Entry point with OAuth config
+│   ├── main.ts              # Entry point com StateSchema
 │   ├── constants.ts         # API URLs and constants
 │   ├── lib/
 │   │   ├── tiktok-client.ts # API client
 │   │   ├── types.ts         # TypeScript types
-│   │   └── env.ts           # Access token helper
+│   │   └── env.ts           # Helper para obter access token do state
 │   └── tools/
 │       ├── index.ts         # Exports all tools
 │       ├── campaigns.ts     # Campaign tools
@@ -210,7 +197,7 @@ tiktok-ads/
 │       ├── ads.ts           # Ad tools
 │       └── reports.ts       # Report tools
 ├── shared/
-│   └── deco.gen.ts          # Generated types
+│   └── deco.gen.ts          # Types e StateSchema
 ├── app.json                 # MCP configuration
 ├── package.json
 ├── tsconfig.json
@@ -266,13 +253,18 @@ Common metrics available in reports:
 
 ## Authentication Notes
 
-### Current: Access Token
+### Access Token Direto
 
-For development and testing, you can use a direct access token generated from the TikTok Developer Portal. This token has a long expiration and doesn't require app approval.
+Este MCP usa autenticação via Access Token direto, gerado no TikTok Developer Portal. Essa abordagem:
 
-### Future: OAuth 2.0
+- ✅ **Funciona imediatamente** - Não precisa de aprovação do app pelo TikTok
+- ✅ **Token de longa duração** - Expira em meses, não horas
+- ✅ **Simples de configurar** - Basta gerar o token e colar na instalação
 
-When your app is approved by TikTok, the OAuth flow will allow other users to authenticate with their own TikTok accounts. The MCP is already prepared for this with the OAuth configuration in `main.ts`.
+Para gerar o token:
+1. Acesse [TikTok Developer Portal](https://business-api.tiktok.com/portal/apps/)
+2. Vá em "Tools" > "Access Token"
+3. Gere e copie o token
 
 ## API Reference
 

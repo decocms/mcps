@@ -1,26 +1,19 @@
 import type { Env } from "../../shared/deco.gen.ts";
 
 /**
- * Get TikTok access token from environment context
- * Supports both OAuth flow (via MESH_REQUEST_CONTEXT) and direct token (via env var)
- * @param env - The environment containing the mesh request context
+ * Get TikTok access token from the state configured during MCP installation
+ * @param env - The environment containing the deco request context with state
  * @returns The access token
- * @throws Error if not authenticated
+ * @throws Error if not configured
  */
 export const getTikTokAccessToken = (env: Env): string => {
-  // First try OAuth token from mesh context
-  const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
-  if (authorization) {
-    return authorization;
+  const accessToken = env.DECO_REQUEST_CONTEXT?.state?.accessToken;
+
+  if (!accessToken) {
+    throw new Error(
+      "TikTok Access Token não configurado. Configure o token na instalação do MCP.",
+    );
   }
 
-  // Fall back to direct token from environment variable
-  const directToken = process.env.TIKTOK_ACCESS_TOKEN;
-  if (directToken) {
-    return directToken;
-  }
-
-  throw new Error(
-    "Not authenticated. Please provide TIKTOK_ACCESS_TOKEN or authorize with TikTok first.",
-  );
+  return accessToken;
 };
