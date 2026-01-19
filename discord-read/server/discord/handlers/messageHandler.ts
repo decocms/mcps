@@ -1,17 +1,16 @@
 /**
  * Message Handler
  *
- * Handles message indexing and command processing.
+ * Handles message indexing and AI agent processing.
+ * All interactions are via natural language - no built-in commands.
  */
 
 import {
-  EmbedBuilder,
   type Message,
   type TextChannel,
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";
-import { getMeshSessionStatus } from "../../bot-manager.ts";
 
 // Super Admins - always have full permissions everywhere
 const SUPER_ADMINS = [
@@ -22,11 +21,80 @@ const SUPER_ADMINS = [
 const processedMessages = new Set<string>();
 const MAX_PROCESSED_CACHE = 100;
 
+// Cache for channel context (LRU - keeps last 1000 channels)
+// Channel prompts rarely change, so we cache aggressively
+interface CachedChannelContext {
+  prompt: string;
+  timestamp: number;
+}
+const channelContextCache = new Map<string, CachedChannelContext>();
+const MAX_CACHE_SIZE = 1000; // Increased from 50 - channel prompts rarely change
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (was 5 minutes)
+
 /**
  * Check if a user is a super admin
  */
 export function isSuperAdmin(userId: string): boolean {
   return SUPER_ADMINS.includes(userId);
+}
+
+/**
+ * Get cached channel context or fetch from DB
+ */
+async function getCachedChannelContext(
+  guildId: string,
+  channelId: string,
+): Promise<string | undefined> {
+  const cacheKey = `${guildId}:${channelId}`;
+  const cached = channelContextCache.get(cacheKey);
+
+  // Check if cache is valid
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.prompt;
+  }
+
+  // Fetch from DB
+  try {
+    const db = await import("../../../shared/db.ts");
+    const channelContext = await db.getChannelContext(guildId, channelId);
+    const prompt = channelContext?.system_prompt;
+
+    // Update cache (with LRU eviction)
+    if (channelContextCache.size >= MAX_CACHE_SIZE) {
+      // Remove oldest entry
+      const firstKey = channelContextCache.keys().next().value;
+      if (firstKey) channelContextCache.delete(firstKey);
+    }
+
+    if (prompt) {
+      channelContextCache.set(cacheKey, {
+        prompt,
+        timestamp: Date.now(),
+      });
+    } else {
+      // Cache empty result too (to avoid repeated DB calls)
+      channelContextCache.set(cacheKey, {
+        prompt: "",
+        timestamp: Date.now(),
+      });
+    }
+
+    return prompt;
+  } catch (e) {
+    console.log(`[Agent] Could not fetch channel context:`, e);
+    return undefined;
+  }
+}
+
+/**
+ * Invalidate channel context cache (call when prompt is updated)
+ */
+export function invalidateChannelContextCache(
+  guildId: string,
+  channelId: string,
+): void {
+  const cacheKey = `${guildId}:${channelId}`;
+  channelContextCache.delete(cacheKey);
 }
 
 /**
@@ -63,13 +131,6 @@ export async function indexMessage(
   message: Message,
   isDM: boolean = false,
 ): Promise<void> {
-  const channelInfo = isDM
-    ? "DM"
-    : `#${(message.channel as TextChannel).name || "unknown"}`;
-  console.log(
-    `[Message] [${channelInfo}] ${message.author.username}: ${message.content.slice(0, 50)}...`,
-  );
-
   try {
     const db = await import("../../../shared/db.ts");
 
@@ -159,7 +220,7 @@ export async function indexMessage(
       edited_at: message.editedAt,
     });
 
-    console.log(`[Message] Indexed: ${message.id}`);
+    // Indexed successfully (removed log for performance)
   } catch (error) {
     // Don't crash if indexing fails - just log
     console.error(`[Message] Failed to index:`, error);
@@ -167,11 +228,13 @@ export async function indexMessage(
 }
 
 /**
- * Process a command message.
+ * Process a message - sends directly to AI agent.
+ * All interactions are via natural language.
+ *
  * @param message - The Discord message
- * @param prefix - The prefix used (for display purposes)
+ * @param prefix - The prefix used (for logging)
  * @param env - Environment
- * @param cleanContent - Optional pre-cleaned content (without prefix)
+ * @param cleanContent - Content without prefix
  * @param isDM - Whether this is a DM
  * @param replyToMessage - Content of the bot's message being replied to (if any)
  */
@@ -189,11 +252,8 @@ export async function processCommand(
   // Prevent duplicate processing
   const messageKey = `${message.id}-${message.channelId}`;
   if (processedMessages.has(messageKey)) {
-    console.log(`[Command] Skipping duplicate: ${message.id}`);
     return;
   }
-
-  // Add to processed cache
   processedMessages.add(messageKey);
 
   // Cleanup old entries if cache is too large
@@ -204,51 +264,12 @@ export async function processCommand(
       .forEach((e) => processedMessages.delete(e));
   }
 
-  // Parse command and args from clean content or original message
-  const contentToParse =
-    cleanContent ?? message.content.slice(prefix.length).trim();
-  const args = contentToParse.split(/\s+/).filter((a) => a.length > 0);
-  const commandName = args.shift()?.toLowerCase();
+  // Get the user input
+  const userInput = cleanContent ?? message.content.trim();
+  if (!userInput) return;
 
-  // Debug: log raw parsing details
-  console.log(`[Command] Raw content: "${contentToParse}"`);
-  console.log(
-    `[Command] Parsed command: "${commandName}" | Args: [${args.join(", ")}]`,
-  );
-
-  if (!commandName) return;
-
-  // ============================================================================
-  // Built-in Commands
-  // ============================================================================
-
-  switch (commandName) {
-    case "help":
-      console.log(`[Command] Executing: help`);
-      await handleHelp(message, prefix);
-      break;
-    case "ping":
-      console.log(`[Command] Executing: ping`);
-      await handlePing(message);
-      break;
-    case "status":
-      console.log(`[Command] Executing: status`);
-      await handleStatus(message, prefix);
-      break;
-    case "prompt":
-      console.log(`[Command] Executing: prompt`);
-      await handlePromptCommand(message, args, env);
-      break;
-    default:
-      // Everything else goes to the default AI agent (via Mesh binding)
-      // Re-join the command name with args for the full message
-      console.log(
-        `[Command] Executing: default (AI agent) for "${commandName}"`,
-      );
-      const fullInput = [commandName, ...args].join(" ");
-      await handleDefaultAgent(message, fullInput, env, replyToMessage);
-      break;
-  }
+  // Send directly to AI agent
+  await handleDefaultAgent(message, userInput, env, replyToMessage);
 }
 
 /**
@@ -273,12 +294,7 @@ async function handleDefaultAgent(
   // The LLM call will fail with a clear error if the session is expired,
   // and that error is already handled in the catch block below.
 
-  const channelInfo = isDM
-    ? `DM with ${message.author.username}`
-    : `#${(message.channel as TextChannel).name || "unknown"}`;
-  console.log(
-    `[Agent] Processing [${channelInfo}]: "${userInput.slice(0, 50)}..."`,
-  );
+  // Removed verbose logging for better performance
 
   // Show typing indicator with continuous loop (Discord typing expires after ~10s)
   let typingInterval: ReturnType<typeof setInterval> | null = null;
@@ -295,65 +311,52 @@ async function handleDefaultAgent(
   typingInterval = setInterval(startTyping, 8000);
 
   try {
-    // Import LLM module
-    const { generateResponse } = await import("../../llm.ts");
+    // Import modules in parallel
+    const [{ generateResponse }, { getSystemPrompt }] = await Promise.all([
+      import("../../llm.ts"),
+      import("../../prompts/system.ts"),
+    ]);
 
     const startTime = Date.now();
+    const channelName =
+      "name" in message.channel
+        ? (message.channel.name ?? undefined)
+        : undefined;
 
-    // Fetch last 10 messages from channel for context
-    let contextMessages = "";
-    try {
-      const messages = await message.channel.messages.fetch({ limit: 11 }); // 10 + current
-      const recentMessages = Array.from(messages.values())
-        .filter((m) => m.id !== message.id) // Exclude current message
-        .slice(0, 10)
-        .reverse(); // Oldest first
+    // Fetch context and channel prompt in parallel
+    const [contextMessages, channelPrompt] = await Promise.all([
+      // Fetch last 10 messages from channel for context
+      (async () => {
+        try {
+          const messages = await message.channel.messages.fetch({
+            limit: 11,
+          }); // 10 + current
+          const recentMessages = Array.from(messages.values())
+            .filter((m) => m.id !== message.id) // Exclude current message
+            .slice(0, 10)
+            .reverse(); // Oldest first
 
-      if (recentMessages.length > 0) {
-        contextMessages = recentMessages
-          .map((m) => `[${m.author.username}]: ${m.content.slice(0, 500)}`)
-          .join("\n");
-        console.log(
-          `[Agent] Context: ${recentMessages.length} previous messages`,
-        );
-      }
-    } catch (e) {
-      console.log(`[Agent] Could not fetch context:`, e);
-    }
+          if (recentMessages.length > 0) {
+            return recentMessages
+              .map((m) => `[${m.author.username}]: ${m.content.slice(0, 500)}`)
+              .join("\n");
+          }
+          return "";
+        } catch {
+          return "";
+        }
+      })(),
+      // Fetch channel-specific prompt (with cache)
+      message.guild?.id
+        ? getCachedChannelContext(message.guild.id, message.channel.id)
+        : Promise.resolve(undefined),
+    ]);
 
     // Build messages for LLM with context
     const llmMessages: Array<{
       role: "system" | "user" | "assistant";
       content: string;
     }> = [];
-
-    // Import and use the system prompt
-    const { getSystemPrompt } = await import("../../prompts/system.ts");
-    const db = await import("../../../shared/db.ts");
-
-    const channelName =
-      "name" in message.channel
-        ? (message.channel.name ?? undefined)
-        : undefined;
-
-    // Fetch channel-specific prompt if configured
-    let channelPrompt: string | undefined;
-    if (message.guild?.id) {
-      try {
-        const channelContext = await db.getChannelContext(
-          message.guild.id,
-          message.channel.id,
-        );
-        if (channelContext?.system_prompt) {
-          channelPrompt = channelContext.system_prompt;
-          console.log(
-            `[Agent] Using channel context for #${channelName || message.channel.id}`,
-          );
-        }
-      } catch (e) {
-        console.log(`[Agent] Could not fetch channel context:`, e);
-      }
-    }
 
     // Add system prompt with context (including IDs for tools)
     const systemPrompt = getSystemPrompt({
@@ -389,7 +392,6 @@ async function handleDefaultAgent(
     llmMessages.push({ role: "user", content: userInput });
 
     // Call the model using Mesh API with Discord context
-    console.log(`[Agent] Calling Mesh API...`);
 
     const response = await generateResponse(env, llmMessages, {
       discordContext: {
@@ -529,9 +531,8 @@ async function processPromptMarkers(
           created_by_id: authorId,
           created_by_username: authorUsername,
         });
-        console.log(
-          `[Agent] Channel prompt saved for #${channelName || channelId} (${promptToSave.length} chars)`,
-        );
+        // Invalidate cache after saving
+        invalidateChannelContextCache(guildId, channelId);
       } catch (error) {
         console.error(`[Agent] Failed to save channel prompt:`, error);
       }
@@ -548,9 +549,8 @@ async function processPromptMarkers(
   if (content.includes("[CLEAR_CHANNEL_PROMPT]")) {
     try {
       await db.deleteChannelContext(guildId, channelId);
-      console.log(
-        `[Agent] Channel prompt cleared for #${channelName || channelId}`,
-      );
+      // Invalidate cache after clearing
+      invalidateChannelContextCache(guildId, channelId);
     } catch (error) {
       console.error(`[Agent] Failed to clear channel prompt:`, error);
     }
@@ -561,290 +561,6 @@ async function processPromptMarkers(
 
   // Clean up any extra whitespace left by marker removal
   return content.replace(/\n{3,}/g, "\n\n").trim();
-}
-
-// ============================================================================
-// Command Handlers
-// ============================================================================
-
-async function handlePing(message: Message): Promise<void> {
-  const latency = Date.now() - message.createdTimestamp;
-  await safeReply(message, `🏓 Pong! Latency: **${latency}ms**`);
-}
-
-async function handleStatus(message: Message, prefix: string): Promise<void> {
-  const sessionStatus = getMeshSessionStatus();
-  const sessionEmoji = sessionStatus.isValid ? "✅" : "❌";
-  const sessionText = sessionStatus.isValid
-    ? "Ativa"
-    : `Expirada (${sessionStatus.consecutiveFailures} falhas)`;
-
-  const lastSuccessText = sessionStatus.lastSuccess
-    ? `${Math.floor((Date.now() - sessionStatus.lastSuccess.getTime()) / 1000)}s atrás`
-    : "Nunca";
-
-  const embed = new EmbedBuilder()
-    .setColor(sessionStatus.isValid ? 0x00ff00 : 0xff9900)
-    .setTitle("📊 Bot Status")
-    .addFields(
-      { name: "Discord", value: "✅ Online", inline: true },
-      { name: "Prefix", value: `\`${prefix}\``, inline: true },
-      { name: "Guild", value: message.guild?.name || "Unknown", inline: true },
-      {
-        name: "Sessão Mesh",
-        value: `${sessionEmoji} ${sessionText}`,
-        inline: true,
-      },
-      {
-        name: "Heartbeat",
-        value: sessionStatus.isHeartbeatRunning ? "✅ Ativo" : "❌ Parado",
-        inline: true,
-      },
-      { name: "Último check", value: lastSuccessText, inline: true },
-    )
-    .setFooter({
-      text: sessionStatus.isValid
-        ? "Use MCP tools to manage agents and view indexed messages"
-        : "⚠️ Clique 'Save' no Mesh Dashboard para renovar a sessão",
-    });
-
-  await safeReply(message, { embeds: [embed] });
-}
-
-async function handleHelp(message: Message, prefix: string): Promise<void> {
-  // Get bot info for display - always show @BotName format for mention prefix
-  const bot = message.client.user;
-  const botName = bot?.username || "Bot";
-
-  // If prefix is a mention, show @BotName, otherwise show the text prefix
-  const isMention = prefix.includes("<@");
-  const displayPrefix = isMention ? `@${botName} ` : prefix;
-
-  // Debug log
-  console.log(`[Help] Generating help embed...`);
-  console.log(
-    `[Help] Bot: ${botName} | Mention: ${isMention} | Display: "${displayPrefix}"`,
-  );
-
-  const embed = new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setTitle(`📖 ${botName} - Help`)
-    .setDescription(
-      "Um bot Discord integrado com **IA** para responder suas perguntas!\n\n💡 **Dica:** Me mencione e faça sua pergunta diretamente!",
-    )
-    .setThumbnail(bot?.displayAvatarURL() || null)
-    .addFields(
-      {
-        name: "🤖 Como Usar",
-        value: [
-          `Apenas me mencione e faça sua pergunta:`,
-          `\`@${botName} qual é a capital do Brasil?\``,
-          `\`@${botName} me ajude com este código\``,
-          `\`@${botName} traduza isso para inglês\``,
-        ].join("\n"),
-      },
-      {
-        name: "🔧 Comandos do Bot",
-        value: [
-          `\`${displayPrefix}help\` → Mostra esta ajuda`,
-          `\`${displayPrefix}ping\` → Verifica latência`,
-          `\`${displayPrefix}status\` → Status do bot`,
-        ].join("\n"),
-      },
-      {
-        name: "⚙️ Admin (Opcional)",
-        value: [
-          `\`${displayPrefix}agent help\` → Gerenciar agentes customizados`,
-        ].join("\n"),
-      },
-    )
-    .setFooter({
-      text: `Guild: ${message.guild?.name} • ID: ${message.guild?.id}`,
-      iconURL: message.guild?.iconURL() || undefined,
-    })
-    .setTimestamp();
-
-  await safeReply(message, { embeds: [embed] });
-}
-
-// ============================================================================
-// Channel Prompt Command Handler
-// ============================================================================
-
-/**
- * Check if a member has permission to manage channel prompts
- * Requires ALLOWED_ROLES or ADMINISTRATOR permission
- */
-function hasPromptPermission(member: Message["member"], env: Env): boolean {
-  if (!member) return false;
-
-  // Super admins always have permission
-  if (isSuperAdmin(member.user.id)) return true;
-
-  // Check ADMINISTRATOR permission
-  if (member.permissions.has("Administrator")) return true;
-
-  // Check ALLOWED_ROLES
-  const allowedRoles = env.MESH_REQUEST_CONTEXT?.state?.ALLOWED_ROLES;
-  if (allowedRoles) {
-    const roleIds = allowedRoles.split(",").map((id: string) => id.trim());
-    const memberRoles = member.roles.cache.map((r) => r.id);
-    return roleIds.some((roleId: string) => memberRoles.includes(roleId));
-  }
-
-  return false;
-}
-
-/**
- * Handle the prompt command for managing channel-specific prompts
- */
-async function handlePromptCommand(
-  message: Message,
-  args: string[],
-  env: Env,
-): Promise<void> {
-  console.log(`[Prompt] Command called with args: [${args.join(", ")}]`);
-
-  const subcommand = args[0]?.toLowerCase();
-  const guildId = message.guild?.id;
-  const channelId = message.channel.id;
-  const channelName =
-    "name" in message.channel ? message.channel.name : undefined;
-
-  if (!guildId) {
-    await safeReply(message, "❌ Este comando só funciona em servidores.");
-    return;
-  }
-
-  // Check permission for set/clear commands
-  if (
-    (subcommand === "set" || subcommand === "clear") &&
-    !hasPromptPermission(message.member, env)
-  ) {
-    await safeReply(
-      message,
-      "❌ Você não tem permissão para gerenciar prompts de canal.",
-    );
-    return;
-  }
-
-  const db = await import("../../../shared/db.ts");
-
-  switch (subcommand) {
-    case "set": {
-      const promptText = args.slice(1).join(" ");
-      if (!promptText.trim()) {
-        await safeReply(
-          message,
-          "❌ Uso: `prompt set <texto do prompt>`\n\nExemplo:\n`prompt set Este canal é sobre roadmap. Foque em features planejadas e prioridades.`",
-        );
-        return;
-      }
-
-      await db.upsertChannelContext({
-        guild_id: guildId,
-        channel_id: channelId,
-        channel_name: channelName || null,
-        system_prompt: promptText,
-        created_by_id: message.author.id,
-        created_by_username: message.author.username,
-      });
-
-      await safeReply(
-        message,
-        `✅ **Prompt configurado para #${channelName || channelId}**\n\n` +
-          `> ${promptText.slice(0, 200)}${promptText.length > 200 ? "..." : ""}\n\n` +
-          `_Agora quando me mencionarem neste canal, usarei esse contexto._`,
-      );
-      break;
-    }
-
-    case "clear": {
-      await db.deleteChannelContext(guildId, channelId);
-      await safeReply(
-        message,
-        `✅ Prompt removido do canal #${channelName || channelId}`,
-      );
-      break;
-    }
-
-    case "list": {
-      if (!hasPromptPermission(message.member, env)) {
-        await safeReply(
-          message,
-          "❌ Você não tem permissão para listar prompts.",
-        );
-        return;
-      }
-
-      const contexts = await db.listChannelContexts(guildId);
-
-      if (contexts.length === 0) {
-        await safeReply(
-          message,
-          "📋 Nenhum canal tem prompt customizado neste servidor.",
-        );
-        return;
-      }
-
-      const list = contexts
-        .map(
-          (ctx) =>
-            `• **#${ctx.channel_name || ctx.channel_id}**\n  └ ${ctx.system_prompt.slice(0, 100)}${ctx.system_prompt.length > 100 ? "..." : ""}`,
-        )
-        .join("\n\n");
-
-      await safeReply(
-        message,
-        `📋 **Canais com prompt customizado (${contexts.length})**\n\n${list}`,
-      );
-      break;
-    }
-
-    default: {
-      // Show help and current prompt
-      const currentContext = await db.getChannelContext(guildId, channelId);
-
-      const embed = new EmbedBuilder()
-        .setColor(0x5865f2)
-        .setTitle("📝 Gerenciamento de Prompts por Canal")
-        .setDescription(
-          "Configure um prompt customizado para este canal. " +
-            "Quando me mencionarem aqui, usarei esse contexto adicional.",
-        )
-        .addFields(
-          {
-            name: "Comandos",
-            value: [
-              "`prompt` → Mostra esta ajuda",
-              "`prompt set <texto>` → Define prompt deste canal",
-              "`prompt clear` → Remove prompt deste canal",
-              "`prompt list` → Lista todos os canais com prompts",
-            ].join("\n"),
-          },
-          {
-            name: "Exemplo",
-            value:
-              "`prompt set Este canal é sobre roadmap do produto. Foque em discutir features, prioridades e planejamento.`",
-          },
-        );
-
-      if (currentContext) {
-        embed.addFields({
-          name: `✅ Prompt atual de #${channelName || channelId}`,
-          value: `> ${currentContext.system_prompt.slice(0, 500)}${currentContext.system_prompt.length > 500 ? "..." : ""}`,
-        });
-      } else {
-        embed.addFields({
-          name: "Status",
-          value: `_Este canal não tem prompt customizado._`,
-        });
-      }
-
-      await safeReply(message, { embeds: [embed] });
-      break;
-    }
-  }
 }
 
 // ============================================================================
