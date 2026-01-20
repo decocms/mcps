@@ -36,7 +36,9 @@ export const StateSchema = z.object({
   APP_TOKEN: z
     .string()
     .optional()
-    .describe("Slack App Token for Socket Mode (xapp-...)"),
+    .describe(
+      "(Opcional) Slack App Token para Socket Mode - não necessário para webhooks",
+    ),
 
   // Configuration
   ALLOWED_CHANNELS: z

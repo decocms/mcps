@@ -13,6 +13,7 @@ import type {
 } from "./types.ts";
 
 let webClient: WebClient | null = null;
+let currentBotToken: string | null = null;
 
 export interface SlackClientConfig {
   botToken: string;
@@ -23,6 +24,7 @@ export interface SlackClientConfig {
  */
 export function initializeSlackClient(config: SlackClientConfig): WebClient {
   webClient = new WebClient(config.botToken);
+  currentBotToken = config.botToken;
   console.log("[Slack] Web client initialized");
   return webClient;
 }
@@ -32,6 +34,28 @@ export function initializeSlackClient(config: SlackClientConfig): WebClient {
  */
 export function getSlackClient(): WebClient | null {
   return webClient;
+}
+
+/**
+ * Ensure the Slack client is initialized, initializing if needed
+ */
+export function ensureSlackClient(botToken?: string): WebClient | null {
+  // If client exists, return it
+  if (webClient) {
+    return webClient;
+  }
+
+  // If we have a token, initialize
+  if (botToken) {
+    return initializeSlackClient({ botToken });
+  }
+
+  // If we had a previous token, reinitialize
+  if (currentBotToken) {
+    return initializeSlackClient({ botToken: currentBotToken });
+  }
+
+  return null;
 }
 
 /**

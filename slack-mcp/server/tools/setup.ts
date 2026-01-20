@@ -7,7 +7,11 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../types/env.ts";
-import { getSlackClient, getBotInfo } from "../lib/slack-client.ts";
+import {
+  getSlackClient,
+  getBotInfo,
+  ensureSlackClient,
+} from "../lib/slack-client.ts";
 import {
   getThreadMetadata,
   resetThread,
@@ -37,8 +41,10 @@ export const createGetBotStatusTool = (env: Env) =>
       .strict(),
     execute: async () => {
       try {
-        const client = getSlackClient();
         const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+
+        // Try to ensure client is initialized
+        const client = ensureSlackClient(botToken);
 
         if (!client) {
           return {
