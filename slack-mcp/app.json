@@ -4,7 +4,7 @@
   "friendlyName": "Slack Bot Beta",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-slack.decocache.com/mcp"
+    "url": "https://sites-slack-mcp.decocache.com/mcp"
   },
   "description": "Slack bot integration with intelligent thread management, AI agent commands, message handling and webhook support.",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg",
