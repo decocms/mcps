@@ -41,38 +41,142 @@ app.get("/health", (c) => {
 });
 
 /**
+ * Debug endpoint - check configuration and send test message
+ * Access: GET /debug?channel=C0A9RBGTTS9
+ */
+app.get("/debug", async (c) => {
+  const { listTeamConfigs } = await import("./lib/data.ts");
+  const { sendMessage, getSlackClient, initializeSlackClient } = await import(
+    "./lib/slack-client.ts"
+  );
+
+  const testChannel = c.req.query("channel");
+  const results: Record<string, unknown> = {
+    timestamp: new Date().toISOString(),
+    testChannel,
+  };
+
+  // List all configured teams
+  try {
+    const teams = await listTeamConfigs();
+    results.configuredTeams = teams.map((t) => ({
+      teamId: t.teamId,
+      organizationId: t.organizationId,
+      meshUrl: t.meshUrl,
+      botUserId: t.botUserId,
+      configuredAt: t.configuredAt,
+      hasToken: !!t.botToken,
+      hasSigningSecret: !!t.signingSecret,
+    }));
+    results.teamCount = teams.length;
+
+    // Try to send test message if channel provided
+    if (testChannel && teams.length > 0) {
+      const firstTeam = teams[0];
+
+      // Initialize client with first team's token
+      if (firstTeam.botToken) {
+        initializeSlackClient({ botToken: firstTeam.botToken });
+
+        try {
+          const testResult = await sendMessage({
+            channel: testChannel,
+            text: `🔍 *Debug Test Message*\n\`\`\`\nTimestamp: ${new Date().toISOString()}\nTeam: ${firstTeam.teamId}\nOrg: ${firstTeam.organizationId}\nBot User: ${firstTeam.botUserId ?? "unknown"}\n\`\`\``,
+          });
+          results.testMessage = {
+            success: true,
+            ts: testResult?.ts,
+          };
+        } catch (sendError) {
+          results.testMessage = {
+            success: false,
+            error: String(sendError),
+          };
+        }
+      } else {
+        results.testMessage = {
+          success: false,
+          error: "No bot token in team config",
+        };
+      }
+    } else if (testChannel) {
+      results.testMessage = {
+        success: false,
+        error: "No teams configured - configure Slack connection in Mesh first",
+      };
+    }
+  } catch (error) {
+    results.error = String(error);
+  }
+
+  return c.json(results, 200);
+});
+
+/**
  * Main Slack events endpoint (Multi-tenant)
  */
 app.post("/slack/events", async (c) => {
+  const startTime = Date.now();
+  console.log("\n");
+  console.log("╔══════════════════════════════════════════════════════════╗");
+  console.log("║            🔔 SLACK WEBHOOK RECEIVED                     ║");
+  console.log("╚══════════════════════════════════════════════════════════╝");
+  console.log(`[Router] Time: ${new Date().toISOString()}`);
+
   const rawBody = await c.req.text();
+  console.log("[Router] Body length:", rawBody.length);
+  console.log("[Router] Raw body preview:", rawBody.substring(0, 300));
 
   // Parse payload to get team_id for config lookup
   let parsedPayload: SlackWebhookPayload;
   try {
     parsedPayload = JSON.parse(rawBody);
-  } catch {
+    console.log("[Router] Parsed payload type:", parsedPayload.type);
+  } catch (e) {
+    console.error("[Router] Failed to parse JSON:", e);
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
   // Handle URL verification challenge (doesn't need team config)
-  const challengeResponse = handleChallenge(parsedPayload);
-  if (challengeResponse) {
-    return challengeResponse;
+  if (parsedPayload.type === "url_verification") {
+    console.log("[Router] ✅ URL verification challenge detected!");
+    console.log("[Router] Challenge value:", parsedPayload.challenge);
+
+    // Return challenge as plain text (Slack requirement)
+    const response = new Response(parsedPayload.challenge, {
+      status: 200,
+      headers: { "Content-Type": "text/plain" },
+    });
+    console.log("[Router] Returning challenge response");
+    return response;
   }
 
   // Get team_id from payload
   const teamId = parsedPayload.team_id;
   if (!teamId) {
-    console.error("[Router] Missing team_id in payload");
+    console.error("[Router] ❌ Missing team_id in payload");
     return c.json({ error: "Missing team_id" }, 400);
   }
+  console.log(`[Router] Team ID: ${teamId}`);
 
   // Lookup team configuration
+  console.log(`[Router] Looking up config for team: ${teamId}...`);
   const teamConfig = await readTeamConfig(teamId);
+
   if (!teamConfig) {
-    console.error(`[Router] No config found for team: ${teamId}`);
+    console.error(`[Router] ❌ NO CONFIG FOUND for team: ${teamId}`);
+    console.error(`[Router] ⚠️ The team needs to be configured in Mesh FIRST!`);
+    console.error(
+      `[Router] ⚠️ Make sure to save the Slack connection in Mesh Dashboard.`,
+    );
     return c.json({ error: "Team not configured" }, 403);
   }
+
+  console.log(`[Router] ✅ Config found for team ${teamId}:`);
+  console.log(`[Router]   organizationId: ${teamConfig.organizationId}`);
+  console.log(`[Router]   meshUrl: ${teamConfig.meshUrl}`);
+  console.log(`[Router]   botUserId: ${teamConfig.botUserId ?? "not set"}`);
+  console.log(`[Router]   configuredAt: ${teamConfig.configuredAt}`);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
