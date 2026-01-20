@@ -121,7 +121,7 @@ export const createCreateTool = (env: Env) =>
         .describe(
           "The input to the workflow execution. Required only if the workflow has steps that reference the input with the @input.field syntax.",
         ),
-      gateway_id: z
+      virtual_mcp_id: z
         .string()
         .describe("The gateway ID to use for the execution"),
       start_at_epoch_ms: z
@@ -158,7 +158,7 @@ export const createCreateTool = (env: Env) =>
 
         const { id: executionId } = await createExecution(env, {
           input: context.input,
-          gateway_id: context.gateway_id,
+          gateway_id: context.virtual_mcp_id,
           start_at_epoch_ms: context.start_at_epoch_ms,
           workflow_collection_id: context.workflow_collection_id,
           steps,
@@ -189,7 +189,6 @@ export const createGetTool = (env: Env) =>
     outputSchema: createCollectionGetOutputSchema(WorkflowExecutionSchema),
     execute: async ({ context }) => {
       const { id } = context;
-
       const result = await getExecutionFull(env, id);
       if (!result) {
         throw new Error("Execution not found");
@@ -198,9 +197,11 @@ export const createGetTool = (env: Env) =>
       if (!execution) {
         throw new Error("Execution not found");
       }
-
       return {
-        item: execution,
+        item: {
+          ...execution,
+          virtual_mcp_id: execution.virtual_mcp_id,
+        },
       };
     },
   });
@@ -218,7 +219,7 @@ export const createGetExecutionWorkflowTool = (env: Env) =>
     outputSchema: z.object({
       steps: z.array(StepSchema.omit({ outputSchema: true })),
       input: z.record(z.string(), z.unknown()).nullish(),
-      gateway_id: z.string(),
+      virtual_mcp_id: z.string(),
       created_at_epoch_ms: z.number(),
       id: z.string(),
       workflow_collection_id: z.string().nullish(),
@@ -243,7 +244,7 @@ export const createGetExecutionWorkflowTool = (env: Env) =>
           outputSchema: undefined,
         })),
         input: workflow.input,
-        gateway_id: workflow.gateway_id,
+        virtual_mcp_id: workflow.gateway_id,
         created_at_epoch_ms: workflow.created_at_epoch_ms,
       };
     },

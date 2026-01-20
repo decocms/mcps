@@ -60,9 +60,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
       // Create tables first, then indexes
-      await ensureCollections(env);
-      await ensurePromptsTable(env);
-      await ensureIndexes(env);
+      try {
+        await ensureCollections(env);
+        await ensurePromptsTable(env);
+        await ensureIndexes(env);
+      } catch (error) {
+        console.error("Error ensuring tables and indexes:", error);
+      }
     },
     scopes: [
       "DATABASE::DATABASES_RUN_SQL",
