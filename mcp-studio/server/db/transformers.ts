@@ -68,7 +68,7 @@ export function transformDbRowToExecution(
     // The actual values will be joined from the workflow table when needed
     workflow_id: row.workflow_id as string,
     title: row.title ?? "",
-    gateway_id: row.gateway_id ?? "",
+    virtual_mcp_id: row.gateway_id ?? "",
     completed_steps: { success: [], error: [] } as unknown as
       | { success: string[]; error: string[] }
       | undefined,

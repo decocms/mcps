@@ -241,7 +241,7 @@ Example workflow with a step that references the output of another step:
         steps: z
           .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
           .optional(),
-        gateway_id: z
+        virtual_mcp_id: z
           .string()
           .default("")
           .describe(
@@ -266,7 +266,7 @@ Example workflow with a step that references the output of another step:
         steps: data.steps ?? [],
         created_by: user?.id || undefined,
         updated_by: user?.id || undefined,
-        gateway_id: data.gateway_id,
+        gateway_id: data.virtual_mcp_id,
       };
       const { item } = await insertWorkflowCollectionItem(env, workflow);
       const result = WorkflowSchema.parse(item);
