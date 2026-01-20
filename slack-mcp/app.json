@@ -1,7 +1,7 @@
 {
   "scopeName": "deco",
   "name": "slack",
-  "friendlyName": "Slack Bot",
+  "friendlyName": "Slack Bot Beta",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-slack.decocache.com/mcp"
