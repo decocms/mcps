@@ -19,16 +19,25 @@ import {
 import { configureThreadManager } from "./lib/thread.ts";
 import {
   handleLLMResponse,
+  handleSlackWebhookEvent,
   SLACK_EVENT_TYPES,
 } from "./slack/handlers/eventHandler.ts";
 import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
 
 export { StateSchema };
 
+// Current connection config (set by onChange)
+let currentMeshConfig: { organizationId: string; meshUrl: string } | null =
+  null;
+
 // Event types this MCP subscribes to
 const SUBSCRIBED_EVENT_TYPES = [
+  // LLM response events
   SLACK_EVENT_TYPES.OPERATOR_TEXT_COMPLETED,
   SLACK_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED,
+  // Slack webhook events (from Mesh)
+  "slack",
+  "slack.*",
 ];
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
@@ -41,6 +50,24 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             for (const event of events) {
               console.log(`[EVENT_BUS] Received event: ${event.type}`);
 
+              // Handle Slack webhook events from Mesh
+              if (event.type === "slack" || event.type.startsWith("slack.")) {
+                console.log(`[EVENT_BUS] Processing Slack webhook event`);
+
+                // Use current connection config
+                if (!currentMeshConfig) {
+                  console.error(
+                    "[EVENT_BUS] No mesh config available for Slack webhook",
+                  );
+                  continue;
+                }
+
+                // Process the Slack webhook payload
+                await handleSlackWebhookEvent(event.data, currentMeshConfig);
+                continue;
+              }
+
+              // Handle LLM response events
               if (
                 event.type === SLACK_EVENT_TYPES.OPERATOR_TEXT_COMPLETED ||
                 event.type === SLACK_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED
@@ -124,6 +151,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         console.log("[CONFIG] Missing required configuration, waiting...");
         return;
       }
+
+      // Save current mesh config for Event Bus handler
+      currentMeshConfig = { organizationId, meshUrl };
+      console.log("[CONFIG] Mesh config saved for Event Bus handler");
 
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
@@ -225,9 +256,14 @@ console.log(`
 
 💡 The Slack bot will start when Mesh sends the configuration.
    → Configure BOT_TOKEN and SIGNING_SECRET in the Mesh Dashboard.
-   → Webhook URL: https://your-mcp-url/slack/events
 
-Endpoints:
+🔗 Slack Webhook URL (via Mesh):
+   https://mesh.deco.cx/org/{orgName}/events/slack?sub={connectionId}
+
+   Example:
+   https://mesh.deco.cx/org/jonas-deco-cloud/events/slack?sub=conn_IYvdXMQLi7v6TmjdaabS3
+
+Endpoints (fallback - direct HTTP):
   POST /slack/events     - Slack Event Subscriptions
   POST /slack/commands   - Slash Commands
   POST /slack/interactive - Interactive Components

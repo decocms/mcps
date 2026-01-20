@@ -345,3 +345,96 @@ export async function handleLLMResponse(
     }
   }
 }
+
+/**
+ * Handle Slack webhook events received via Mesh Event Bus
+ * This is the new multi-tenant entry point for webhooks
+ */
+export async function handleSlackWebhookEvent(
+  payload: unknown,
+  config: {
+    organizationId: string;
+    meshUrl: string;
+  },
+): Promise<void> {
+  console.log("[EventHandler] Processing webhook from Mesh Event Bus");
+  console.log("[EventHandler] Payload:", JSON.stringify(payload, null, 2));
+
+  // The payload should be the Slack webhook payload
+  const slackPayload = payload as {
+    type?: string;
+    challenge?: string;
+    event?: SlackEvent;
+    team_id?: string;
+  };
+
+  // Handle URL verification challenge
+  if (slackPayload.type === "url_verification" && slackPayload.challenge) {
+    console.log("[EventHandler] URL verification challenge received");
+    // For challenges via Event Bus, we just log - the response goes back via Mesh
+    return;
+  }
+
+  // Handle event callbacks
+  if (slackPayload.type === "event_callback" && slackPayload.event) {
+    const event = slackPayload.event;
+    const eventType = event.type;
+
+    console.log(`[EventHandler] Processing event: ${eventType}`);
+
+    // Create a minimal team config for event handling
+    const teamConfig: SlackTeamConfig = {
+      teamId: slackPayload.team_id ?? "unknown",
+      organizationId: config.organizationId,
+      meshUrl: config.meshUrl,
+      botToken: "", // Not needed for event handling via Event Bus
+      signingSecret: "", // Not needed - Mesh handles auth
+    };
+
+    // Route to appropriate handler
+    switch (eventType) {
+      case "app_mention":
+        await handleAppMention(
+          event as SlackAppMentionEvent,
+          { type: eventType, payload: event },
+          teamConfig,
+        );
+        break;
+
+      case "message":
+        await handleMessage(
+          event as SlackMessageEvent,
+          { type: eventType, payload: event },
+          teamConfig,
+        );
+        break;
+
+      case "reaction_added":
+        await handleReactionAdded(
+          event,
+          { type: eventType, payload: event },
+          teamConfig,
+        );
+        break;
+
+      case "channel_created":
+        await handleChannelCreated(
+          event,
+          { type: eventType, payload: event },
+          teamConfig,
+        );
+        break;
+
+      case "member_joined_channel":
+        await handleMemberJoined(
+          event,
+          { type: eventType, payload: event },
+          teamConfig,
+        );
+        break;
+
+      default:
+        console.log(`[EventHandler] Unhandled event type: ${eventType}`);
+    }
+  }
+}
