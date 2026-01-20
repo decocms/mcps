@@ -10,7 +10,7 @@ import { withRuntime } from "@decocms/runtime";
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
-import { app, configureRouter, setBotUserId } from "./router.ts";
+import { app, setBotUserId, setBotUserIdForTeam } from "./router.ts";
 import {
   initializeSlackClient,
   getSlackClient,
@@ -18,15 +18,12 @@ import {
 } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
 import {
-  setEventHandlerEnv,
   handleLLMResponse,
   SLACK_EVENT_TYPES,
 } from "./slack/handlers/eventHandler.ts";
+import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
 
 export { StateSchema };
-
-// Track Slack client state
-let slackInitialized = false;
 
 // Event types this MCP subscribes to
 const SUBSCRIBED_EVENT_TYPES = [
@@ -112,48 +109,61 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Get configuration from state
       const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
       const signingSecret = env.MESH_REQUEST_CONTEXT?.state?.SIGNING_SECRET;
+      const appToken = env.MESH_REQUEST_CONTEXT?.state?.APP_TOKEN;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const threadTimeoutMin =
         env.MESH_REQUEST_CONTEXT?.state?.THREAD_TIMEOUT_MIN ?? 10;
+
+      console.log("[CONFIG] meshUrl:", meshUrl);
+      console.log("[CONFIG] organizationId:", organizationId);
+      console.log("[CONFIG] botToken exists:", !!botToken);
+      console.log("[CONFIG] signingSecret exists:", !!signingSecret);
+
+      if (!botToken || !signingSecret || !meshUrl || !organizationId) {
+        console.log("[CONFIG] Missing required configuration, waiting...");
+        return;
+      }
 
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
 
-      // Set event handler environment for publishing
-      setEventHandlerEnv({
-        meshUrl: env.MESH_REQUEST_CONTEXT?.meshUrl,
-        organizationId: env.MESH_REQUEST_CONTEXT?.organizationId,
-      });
+      // Initialize Slack client to get team info
+      try {
+        initializeSlackClient({ botToken });
 
-      // Configure router with signing secret
-      if (signingSecret) {
-        configureRouter({ signingSecret });
-      }
-
-      // Initialize Slack client if BOT_TOKEN is provided
-      if (botToken && !slackInitialized && !getSlackClient()) {
-        console.log("[CONFIG] Initializing Slack client...");
-        try {
-          initializeSlackClient({ botToken });
-          slackInitialized = true;
-
-          // Get and set bot user ID for mention detection
-          const botInfo = await getBotInfo();
-          if (botInfo) {
-            setBotUserId(botInfo.userId);
-            console.log(
-              `[CONFIG] Slack client ready ✓ (Bot: ${botInfo.userId})`,
-            );
-          } else {
-            console.log("[CONFIG] Slack client ready ✓");
-          }
-        } catch (error) {
-          console.error("[CONFIG] Failed to initialize Slack:", error);
+        // Get bot info (includes teamId)
+        const botInfo = await getBotInfo();
+        if (!botInfo?.teamId) {
+          console.error("[CONFIG] Failed to get teamId from Slack");
+          return;
         }
-      } else if (botToken && slackInitialized) {
-        // Client already initialized, just update config
-        console.log("[CONFIG] Slack client already initialized");
-      } else if (!botToken) {
-        console.log("[CONFIG] BOT_TOKEN not configured - Slack bot waiting...");
+
+        const teamId = botInfo.teamId;
+        console.log(`[CONFIG] Team ID: ${teamId}`);
+
+        // Save team configuration for multi-tenant support
+        await saveTeamConfig(teamId, {
+          organizationId,
+          meshUrl,
+          botToken,
+          signingSecret,
+          appToken,
+          botUserId: botInfo.userId,
+        });
+
+        // Update bot user ID in cache
+        if (botInfo.userId) {
+          await updateTeamBotUserId(teamId, botInfo.userId);
+          setBotUserIdForTeam(teamId, botInfo.userId);
+        }
+
+        console.log(
+          `[CONFIG] ✅ Team ${teamId} configured for org ${organizationId}`,
+        );
+        console.log(`[CONFIG] Bot user: ${botInfo.userId}`);
+      } catch (error) {
+        console.error("[CONFIG] Failed to configure team:", error);
       }
     },
     scopes: ["EVENT_BUS::*", "MODEL_PROVIDER::*", "*"],
@@ -165,6 +175,22 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 });
 
 const PORT = process.env.PORT ?? 8080;
+
+// Debug: log all environment variables
+console.log("\n🔧 [ENV] Environment variables:");
+for (const [key, value] of Object.entries(process.env)) {
+  const isSensitive =
+    key.includes("TOKEN") ||
+    key.includes("SECRET") ||
+    key.includes("KEY") ||
+    key.includes("PASSWORD");
+  const displayValue =
+    isSensitive && value
+      ? `${value.substring(0, 4)}...${value.substring(value.length - 4)}`
+      : value;
+  console.log(`   ${key}=${displayValue}`);
+}
+console.log("");
 
 /**
  * Wrapped fetch handler that intercepts webhook routes
