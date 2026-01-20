@@ -1,0 +1,23 @@
+{
+  "scopeName": "deco",
+  "name": "slack",
+  "friendlyName": "Slack Bot",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-slack.decocache.com/mcp"
+  },
+  "description": "Slack bot integration with intelligent thread management, AI agent commands, message handling and webhook support.",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg",
+  "unlisted": false,
+  "bindings": {
+    "DATABASE": "@deco/postgres"
+  },
+  "metadata": {
+    "categories": ["Communication", "Automation"],
+    "official": false,
+    "tags": ["slack", "bot", "messaging", "ai-agent", "webhooks", "automation", "threads", "channels", "workspace"],
+    "short_description": "Slack bot with intelligent thread management, AI agent commands, and webhook support.",
+    "mesh_description": "The Slack MCP provides comprehensive integration with Slack workspaces, enabling AI agents to interact with channels, messages, and users. This MCP includes intelligent thread management that solves the common problem of context mixing - each @mention to the bot creates a new logical conversation thread, while replies in the same Slack thread maintain shared context. AI agents can send, edit, and delete messages; reply in threads; search message history; list and join channels; get user information; and add/remove reactions. The bot supports both channel messages (via @mentions) and direct messages, with configurable channel permissions. Built-in webhook handling processes Slack events (messages, reactions, channel events) and publishes them to the Event Bus for integration with other MCPs. The MCP uses timeout-based thread reset (default 10 minutes) to automatically clear conversation context after periods of inactivity. Ideal for building intelligent Slack assistants, automating workspace workflows, or integrating AI capabilities into team communication."
+  }
+}
+
