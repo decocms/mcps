@@ -1,10 +1,11 @@
 /**
- * Slack Event Handler
+ * Slack Event Handler (Multi-tenant)
  *
  * Processes incoming Slack events and publishes to Event Bus.
+ * Uses team configuration for multi-tenant support.
  */
 
-import { publishEvent, type EventPublishOptions } from "../../events.ts";
+import { publishEvent } from "../../events.ts";
 import {
   appendUserMessage,
   appendAssistantMessage,
@@ -21,6 +22,7 @@ import type {
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";
+import type { SlackTeamConfig } from "../../lib/data.ts";
 
 // Event types for publishing
 export const SLACK_EVENT_TYPES = {
@@ -46,17 +48,12 @@ export interface SlackEventContext {
   apiAppId?: string;
 }
 
-let currentEnv: EventPublishOptions | null = null;
-
-export function setEventHandlerEnv(env: EventPublishOptions): void {
-  currentEnv = env;
-}
-
 /**
- * Main event handler - routes events to appropriate handlers
+ * Main event handler - routes events to appropriate handlers (Multi-tenant)
  */
 export async function handleSlackEvent(
   context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   const { type, payload } = context;
 
@@ -64,27 +61,32 @@ export async function handleSlackEvent(
     channel: payload.channel,
     user: payload.user,
     ts: payload.ts,
+    teamId: teamConfig.teamId,
   });
 
   switch (type) {
     case "app_mention":
-      await handleAppMention(payload as SlackAppMentionEvent, context);
+      await handleAppMention(
+        payload as SlackAppMentionEvent,
+        context,
+        teamConfig,
+      );
       break;
 
     case "message":
-      await handleMessage(payload as SlackMessageEvent, context);
+      await handleMessage(payload as SlackMessageEvent, context, teamConfig);
       break;
 
     case "reaction_added":
-      await handleReactionAdded(payload, context);
+      await handleReactionAdded(payload, context, teamConfig);
       break;
 
     case "channel_created":
-      await handleChannelCreated(payload, context);
+      await handleChannelCreated(payload, context, teamConfig);
       break;
 
     case "member_joined_channel":
-      await handleMemberJoined(payload, context);
+      await handleMemberJoined(payload, context, teamConfig);
       break;
 
     default:
@@ -98,6 +100,7 @@ export async function handleSlackEvent(
 async function handleAppMention(
   event: SlackAppMentionEvent,
   context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   const { channel, user, text, ts, thread_ts } = event;
 
@@ -118,27 +121,28 @@ async function handleAppMention(
   const recentMessages = await getRecentMessages(channel, threadIdentifier, 10);
 
   // Publish to Event Bus for LLM processing
-  if (currentEnv) {
-    await publishEvent(
-      {
-        type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-        data: {
-          messages: recentMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          context: {
-            channel,
-            threadTs: threadIdentifier,
-            messageTs: ts,
-            userId: user,
-          },
+  await publishEvent(
+    {
+      type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
+      data: {
+        messages: recentMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        context: {
+          channel,
+          threadTs: threadIdentifier,
+          messageTs: ts,
+          userId: user,
         },
-        subject: `${channel}:${threadIdentifier}`,
       },
-      currentEnv,
-    );
-  }
+      subject: `${channel}:${threadIdentifier}`,
+    },
+    {
+      meshUrl: teamConfig.meshUrl,
+      organizationId: teamConfig.organizationId,
+    },
+  );
 
   // Remove thinking reaction after sending to event bus
   // The actual response will come through the event subscription
@@ -150,11 +154,17 @@ async function handleAppMention(
 async function handleMessage(
   event: SlackMessageEvent,
   context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   const { channel, user, text, ts, thread_ts, channel_type } = event;
 
   // Check if this is a DM
   const isDM = channel_type === "im" || channel?.startsWith("D");
+
+  const eventOptions = {
+    meshUrl: teamConfig.meshUrl,
+    organizationId: teamConfig.organizationId,
+  };
 
   if (isDM) {
     console.log(`[EventHandler] DM from ${user}`);
@@ -168,27 +178,25 @@ async function handleMessage(
     const recentMessages = await getRecentMessages(channel, ts, 10);
 
     // Publish to Event Bus for LLM processing
-    if (currentEnv) {
-      await publishEvent(
-        {
-          type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-          data: {
-            messages: recentMessages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-            context: {
-              channel,
-              messageTs: ts,
-              userId: user,
-              isDM: true,
-            },
+    await publishEvent(
+      {
+        type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
+        data: {
+          messages: recentMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          context: {
+            channel,
+            messageTs: ts,
+            userId: user,
+            isDM: true,
           },
-          subject: `${channel}:${ts}`,
         },
-        currentEnv,
-      );
-    }
+        subject: `${channel}:${ts}`,
+      },
+      eventOptions,
+    );
   } else if (thread_ts) {
     // This is a reply in a thread where we're active
     console.log(`[EventHandler] Thread reply from ${user} in ${channel}`);
@@ -202,27 +210,25 @@ async function handleMessage(
     const recentMessages = await getRecentMessages(channel, thread_ts, 10);
 
     // Publish to Event Bus
-    if (currentEnv) {
-      await publishEvent(
-        {
-          type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-          data: {
-            messages: recentMessages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-            context: {
-              channel,
-              threadTs: thread_ts,
-              messageTs: ts,
-              userId: user,
-            },
+    await publishEvent(
+      {
+        type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
+        data: {
+          messages: recentMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          context: {
+            channel,
+            threadTs: thread_ts,
+            messageTs: ts,
+            userId: user,
           },
-          subject: `${channel}:${thread_ts}`,
         },
-        currentEnv,
-      );
-    }
+        subject: `${channel}:${thread_ts}`,
+      },
+      eventOptions,
+    );
   }
   // Regular channel messages without mention are ignored
 }
@@ -233,18 +239,20 @@ async function handleMessage(
 async function handleReactionAdded(
   event: SlackEvent,
   _context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   // Publish event for potential automation
-  if (currentEnv) {
-    await publishEvent(
-      {
-        type: SLACK_EVENT_TYPES.REACTION_ADDED,
-        data: event,
-        subject: event.user,
-      },
-      currentEnv,
-    );
-  }
+  await publishEvent(
+    {
+      type: SLACK_EVENT_TYPES.REACTION_ADDED,
+      data: event,
+      subject: event.user,
+    },
+    {
+      meshUrl: teamConfig.meshUrl,
+      organizationId: teamConfig.organizationId,
+    },
+  );
 }
 
 /**
@@ -253,16 +261,18 @@ async function handleReactionAdded(
 async function handleChannelCreated(
   event: SlackEvent,
   _context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
-  if (currentEnv) {
-    await publishEvent(
-      {
-        type: SLACK_EVENT_TYPES.CHANNEL_CREATED,
-        data: event,
-      },
-      currentEnv,
-    );
-  }
+  await publishEvent(
+    {
+      type: SLACK_EVENT_TYPES.CHANNEL_CREATED,
+      data: event,
+    },
+    {
+      meshUrl: teamConfig.meshUrl,
+      organizationId: teamConfig.organizationId,
+    },
+  );
 }
 
 /**
@@ -271,17 +281,19 @@ async function handleChannelCreated(
 async function handleMemberJoined(
   event: SlackEvent,
   _context: SlackEventContext,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
-  if (currentEnv) {
-    await publishEvent(
-      {
-        type: SLACK_EVENT_TYPES.MEMBER_JOINED,
-        data: event,
-        subject: event.user,
-      },
-      currentEnv,
-    );
-  }
+  await publishEvent(
+    {
+      type: SLACK_EVENT_TYPES.MEMBER_JOINED,
+      data: event,
+      subject: event.user,
+    },
+    {
+      meshUrl: teamConfig.meshUrl,
+      organizationId: teamConfig.organizationId,
+    },
+  );
 }
 
 /**
