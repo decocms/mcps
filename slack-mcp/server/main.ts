@@ -23,6 +23,7 @@ import {
   SLACK_EVENT_TYPES,
 } from "./slack/handlers/eventHandler.ts";
 import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
+import { configureLogger, logger } from "./lib/logger.ts";
 
 export { StateSchema };
 
@@ -56,14 +57,27 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
                 // Use current connection config
                 if (!currentMeshConfig) {
-                  console.error(
-                    "[EVENT_BUS] No mesh config available for Slack webhook",
-                  );
+                  const errorMsg = "No mesh config available for Slack webhook";
+                  console.error(`[EVENT_BUS] ${errorMsg}`);
+                  await logger.webhookError(errorMsg, {
+                    eventType: event.type,
+                  });
                   continue;
                 }
 
+                // Log webhook received
+                const payload = event.data as { team_id?: string };
+                await logger.webhookReceived(event.type, payload?.team_id);
+
                 // Process the Slack webhook payload
-                await handleSlackWebhookEvent(event.data, currentMeshConfig);
+                try {
+                  await handleSlackWebhookEvent(event.data, currentMeshConfig);
+                } catch (webhookError) {
+                  await logger.webhookError(String(webhookError), {
+                    eventType: event.type,
+                    teamId: payload?.team_id,
+                  });
+                }
                 continue;
               }
 
@@ -137,6 +151,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
       const signingSecret = env.MESH_REQUEST_CONTEXT?.state?.SIGNING_SECRET;
       const appToken = env.MESH_REQUEST_CONTEXT?.state?.APP_TOKEN;
+      const logChannelId = env.MESH_REQUEST_CONTEXT?.state?.LOG_CHANNEL_ID;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const threadTimeoutMin =
@@ -146,9 +161,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       console.log("[CONFIG] organizationId:", organizationId);
       console.log("[CONFIG] botToken exists:", !!botToken);
       console.log("[CONFIG] signingSecret exists:", !!signingSecret);
+      console.log("[CONFIG] logChannelId:", logChannelId ?? "not configured");
 
       if (!botToken || !signingSecret || !meshUrl || !organizationId) {
         console.log("[CONFIG] Missing required configuration, waiting...");
+        // Can't log to Slack yet - no config
         return;
       }
 
@@ -189,12 +206,30 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           setBotUserIdForTeam(teamId, botInfo.userId);
         }
 
+        // Configure logger with log channel
+        configureLogger({ channelId: logChannelId });
+
         console.log(
           `[CONFIG] ✅ Team ${teamId} configured for org ${organizationId}`,
         );
         console.log(`[CONFIG] Bot user: ${botInfo.userId}`);
+
+        // Log config received
+        await logger.configReceived({
+          meshUrl,
+          organizationId,
+          teamId,
+          botUserId: botInfo.userId,
+          logChannelId: logChannelId ?? "not set",
+        });
+
+        // Send connection success log to Slack
+        await logger.connected(teamId, botInfo.userId);
       } catch (error) {
         console.error("[CONFIG] Failed to configure team:", error);
+        await logger.error("Failed to configure team", {
+          error: String(error),
+        });
       }
     },
     scopes: ["EVENT_BUS::*", "MODEL_PROVIDER::*", "*"],
