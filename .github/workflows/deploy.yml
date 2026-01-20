@@ -27,6 +27,18 @@ jobs:
           # Get the previous commit to compare against
           PREVIOUS_COMMIT="${{ github.event.before }}"
           
+          # Handle case where there's no valid previous commit (first push, squash merge, force push)
+          if [ "$PREVIOUS_COMMIT" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS_COMMIT" ]; then
+            echo "No valid previous commit, comparing against HEAD~1"
+            PREVIOUS_COMMIT="HEAD~1"
+          fi
+          
+          # Verify the commit exists, fallback to HEAD~1 if not
+          if ! git cat-file -e "$PREVIOUS_COMMIT" 2>/dev/null; then
+            echo "Previous commit not found, comparing against HEAD~1"
+            PREVIOUS_COMMIT="HEAD~1"
+          fi
+          
           # Detect changed MCPs
           CHANGED_MCPS=$(bun run scripts/detect-changed-mcps.ts "$PREVIOUS_COMMIT" HEAD)
           echo "Changed MCPs: $CHANGED_MCPS"
