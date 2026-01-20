@@ -98,5 +98,10 @@
     "site": "blog-generator",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
+  },
+  "slack-mcp": {
+    "site": "slack-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
   }
 }

@@ -1,0 +1,35 @@
+{
+  "name": "slack-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Slack bot with intelligent thread management, AI agent commands, and webhook support",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.0.8",
+    "@decocms/runtime": "^1.1.3",
+    "@slack/web-api": "^7.8.0",
+    "hono": "^4.7.4",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
+
