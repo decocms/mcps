@@ -4,7 +4,10 @@
  * MCP server for Slack bot integration with intelligent
  * thread management and AI agent commands.
  *
- * Webhooks are handled via the handle_webhook tool.
+ * Multi-tenant architecture:
+ * - Webhooks received at /slack/events/:connectionId
+ * - Configs stored in KV store (connectionId -> config)
+ * - Each Mesh connection maps to a Slack workspace
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
@@ -15,14 +18,11 @@ import { StateSchema, type Env } from "./types/env.ts";
 import { initializeSlackClient, getBotInfo } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
 import { configureLLM } from "./slack/handlers/eventHandler.ts";
-import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
+import { saveConnectionConfig, updateConnectionSlackInfo } from "./lib/data.ts";
 import { configureLogger, logger } from "./lib/logger.ts";
-import { setBotUserIdForTeam } from "./router.ts";
+import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 
 export { StateSchema };
-
-// Webhooks are now handled via the handle_webhook tool
-// No need for Event Bus subscriptions
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
@@ -70,7 +70,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         languageModel?.value?.id ?? "not configured",
       );
 
-      if (!botToken || !signingSecret || !meshUrl || !organizationId) {
+      if (
+        !botToken ||
+        !signingSecret ||
+        !meshUrl ||
+        !organizationId ||
+        !connectionId
+      ) {
         console.log("[CONFIG] Missing required configuration, waiting...");
         return;
       }
@@ -95,64 +101,65 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
 
-      // Initialize Slack client to get team info
+      // Save connection configuration (primary key: connectionId)
+      await saveConnectionConfig(connectionId, {
+        organizationId,
+        meshUrl,
+        botToken,
+        signingSecret,
+        appToken,
+      });
+
+      console.log(`[CONFIG] ✅ Connection ${connectionId} saved`);
+
+      // Initialize Slack client to get additional info (teamId, botUserId)
       try {
         initializeSlackClient({ botToken });
 
         // Get bot info (includes teamId)
         const botInfo = await getBotInfo();
-        if (!botInfo?.teamId) {
-          console.error("[CONFIG] Failed to get teamId from Slack");
-          return;
-        }
 
-        const teamId = botInfo.teamId;
-        console.log(`[CONFIG] Team ID: ${teamId}`);
+        if (botInfo?.teamId || botInfo?.userId) {
+          // Update connection with Slack API data
+          await updateConnectionSlackInfo(connectionId, {
+            teamId: botInfo.teamId,
+            botUserId: botInfo.userId,
+          });
 
-        // Save team configuration for multi-tenant support
-        await saveTeamConfig(teamId, {
-          organizationId,
-          meshUrl,
-          botToken,
-          signingSecret,
-          appToken,
-          botUserId: botInfo.userId,
-        });
+          // Cache bot user ID for event filtering
+          if (botInfo.userId) {
+            setBotUserIdForConnection(connectionId, botInfo.userId);
+          }
 
-        // Update bot user ID in cache
-        if (botInfo.userId) {
-          await updateTeamBotUserId(teamId, botInfo.userId);
-          setBotUserIdForTeam(teamId, botInfo.userId);
+          console.log(`[CONFIG] Team ID: ${botInfo.teamId ?? "unknown"}`);
+          console.log(`[CONFIG] Bot User: ${botInfo.userId ?? "unknown"}`);
         }
 
         // Configure logger with log channel
         configureLogger({ channelId: logChannelId });
 
-        console.log(
-          `[CONFIG] ✅ Team ${teamId} configured for org ${organizationId}`,
-        );
-        console.log(`[CONFIG] Bot user: ${botInfo.userId}`);
-
         // Build webhook URL
-        const webhookUrl = connectionId
-          ? `${meshUrl}/webhooks/${connectionId}`
-          : "Not available (connectionId missing)";
+        const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
 
         // Log config received
         await logger.configReceived({
           meshUrl,
           organizationId,
-          teamId,
-          botUserId: botInfo.userId,
+          teamId: botInfo?.teamId ?? "unknown",
+          botUserId: botInfo?.userId,
           logChannelId: logChannelId ?? "not set",
           webhookUrl,
         });
 
         // Send connection success log to Slack
-        await logger.connected(teamId, botInfo.userId);
+        await logger.connected(
+          botInfo?.teamId ?? connectionId,
+          botInfo?.userId ?? "unknown",
+        );
       } catch (error) {
-        console.error("[CONFIG] Failed to configure team:", error);
-        await logger.error("Failed to configure team", {
+        console.error("[CONFIG] Failed to get Slack info:", error);
+        // Config is already saved, just log the error
+        await logger.error("Failed to get Slack info", {
           error: String(error),
         });
       }
@@ -184,11 +191,20 @@ for (const [key, value] of Object.entries(process.env)) {
 console.log("");
 
 /**
- * Serve MCP requests via the runtime
- * Webhooks are now handled by Mesh's Universal Webhook Proxy
+ * Serve requests:
+ * - Webhook routes handled by webhookRouter (/slack/events, /slack/commands, etc.)
+ * - MCP requests handled by runtime
  */
 serve(async (req, env, ctx) => {
-  return runtime.fetch(req, env, ctx);
+  // Try webhook router first
+  const webhookResponse = await webhookRouter.fetch(req, env, ctx);
+
+  // If webhook router returned 404, fall back to MCP runtime
+  if (webhookResponse.status === 404) {
+    return runtime.fetch(req, env, ctx);
+  }
+
+  return webhookResponse;
 });
 
 console.log(`
@@ -196,6 +212,7 @@ console.log(`
 ║                Slack MCP Server Started                  ║
 ╠══════════════════════════════════════════════════════════╣
 ║  MCP Server:    http://localhost:${String(PORT).padEnd(5)}                  ║
+║  Webhook URL:   /slack/events/:connectionId              ║
 ║  Slack Bot:     Waiting for configuration...             ║
 ╚══════════════════════════════════════════════════════════╝
 `);
@@ -206,15 +223,12 @@ console.log(`
 💡 The Slack bot will start when Mesh sends the configuration.
    → Configure BOT_TOKEN and SIGNING_SECRET in the Mesh Dashboard.
 
-🔗 Slack Webhook URL (via Mesh Universal Webhook Proxy):
-   https://mesh.deco.cx/webhooks/{connectionId}
-
-   The webhook URL will be shown in the MCP configuration panel
-   after you install this MCP in Mesh.
+🔗 Slack Webhook URL format:
+   https://slack-mcp.deco.cx/slack/events/{connectionId}
 
 📖 Setup Steps:
    1. Install this MCP in Mesh
    2. Configure BOT_TOKEN and SIGNING_SECRET
-   3. Copy the Webhook URL from configuration
-   4. Paste it in your Slack App's Event Subscriptions
+   3. Get the webhook URL with your connectionId
+   4. Use the Webhook URL in your Slack App's Event Subscriptions
 `);
