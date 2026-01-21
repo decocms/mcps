@@ -11,7 +11,7 @@ import { messageTools } from "./messages.ts";
 import { channelTools } from "./channels.ts";
 import { userTools } from "./users.ts";
 import { setupTools } from "./setup.ts";
-import { handleWebhook } from "./handle-webhook";
+import { createHandleWebhookTool } from "./handle-webhook.ts";
 
 type ToolFactory<E> = (env: E) => unknown;
 type ToolCollection<E> = ToolFactory<E>[];
@@ -41,5 +41,5 @@ export const tools: ToolCollection<Env> = [
   ...wrappedChannelTools,
   ...wrappedUserTools,
   ...wrappedSetupTools,
-  handleWebhook, // Webhook handler doesn't need Slack client init
+  createHandleWebhookTool, // Webhook handler initializes Slack client internally
 ];
