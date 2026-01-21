@@ -6,8 +6,20 @@ import { sendMessage } from "./slack-client.ts";
 
 let logChannelId: string | null = null;
 let loggingEnabled = false;
+let webhookProcessingPaused = false; // Pause logging during webhook processing to prevent loops
+
+// TEMPORARILY DISABLED: Slack logging causes infinite loops
+// TODO: Re-enable when we have proper filtering at Mesh level
+const SLACK_LOGGING_DISABLED = true;
 
 export function configureLogger(config: { channelId?: string }): void {
+  if (SLACK_LOGGING_DISABLED) {
+    loggingEnabled = false;
+    console.log("[Logger] Slack logging DISABLED to prevent infinite loops");
+    console.log("[Logger] Logs will only go to console");
+    return;
+  }
+
   if (config.channelId) {
     logChannelId = config.channelId;
     loggingEnabled = true;
@@ -19,7 +31,21 @@ export function configureLogger(config: { channelId?: string }): void {
 }
 
 export function isLoggingEnabled(): boolean {
-  return loggingEnabled && !!logChannelId;
+  return loggingEnabled && !!logChannelId && !webhookProcessingPaused;
+}
+
+/**
+ * Pause Slack logging during webhook processing to prevent infinite loops
+ */
+export function pauseSlackLogging(): void {
+  webhookProcessingPaused = true;
+}
+
+/**
+ * Resume Slack logging after webhook processing
+ */
+export function resumeSlackLogging(): void {
+  webhookProcessingPaused = false;
 }
 
 type LogLevel = "info" | "warn" | "error" | "success";
@@ -43,8 +69,8 @@ export async function logToSlack(
   const consoleMethod = level === "error" ? console.error : console.log;
   consoleMethod(`[${level.toUpperCase()}] ${title}`, details ?? "");
 
-  // Send to Slack if enabled
-  if (!loggingEnabled || !logChannelId) {
+  // Send to Slack if enabled and not paused (to prevent loops during webhook processing)
+  if (!loggingEnabled || !logChannelId || webhookProcessingPaused) {
     return;
   }
 

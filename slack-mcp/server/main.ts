@@ -3,6 +3,9 @@
  *
  * MCP server for Slack bot integration with intelligent
  * thread management and AI agent commands.
+ *
+ * Webhooks are handled by Mesh's Universal Webhook Proxy.
+ * This MCP receives events via Event Bus.
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
@@ -10,129 +13,72 @@ import { withRuntime } from "@decocms/runtime";
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
-import { app, setBotUserId, setBotUserIdForTeam } from "./router.ts";
-import {
-  initializeSlackClient,
-  getSlackClient,
-  getBotInfo,
-} from "./lib/slack-client.ts";
+import { initializeSlackClient, getBotInfo } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
 import {
-  handleLLMResponse,
   handleSlackWebhookEvent,
-  SLACK_EVENT_TYPES,
+  configureLLM,
 } from "./slack/handlers/eventHandler.ts";
 import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
 import { configureLogger, logger } from "./lib/logger.ts";
+import { setBotUserIdForTeam } from "./router.ts";
 
 export { StateSchema };
 
 // Current connection config (set by onChange)
-let currentMeshConfig: { organizationId: string; meshUrl: string } | null =
-  null;
+let currentMeshConfig: {
+  organizationId: string;
+  meshUrl: string;
+  connectionId?: string;
+} | null = null;
 
-// Event types this MCP subscribes to
-const SUBSCRIBED_EVENT_TYPES = [
-  // LLM response events
-  SLACK_EVENT_TYPES.OPERATOR_TEXT_COMPLETED,
-  SLACK_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED,
-  // Slack webhook events (from Mesh)
-  "slack",
-  "slack.*",
+// Slack event types from Mesh Universal Webhook Proxy
+// These are delivered via SELF handler (filtered by connectionId/publisher)
+const SLACK_WEBHOOK_EVENTS = [
+  "message",
+  "app_mention",
+  "reaction_added",
+  "reaction_removed",
+  "member_joined_channel",
+  "member_left_channel",
+  "channel_created",
+  "channel_rename",
+  "url_verification",
 ];
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   events: {
     handlers: {
-      EVENT_BUS: {
-        events: SUBSCRIBED_EVENT_TYPES,
-        handler: async ({ events }) => {
-          try {
-            for (const event of events) {
-              console.log(`[EVENT_BUS] Received event: ${event.type}`);
-
-              // Handle Slack webhook events from Mesh
-              if (event.type === "slack" || event.type.startsWith("slack.")) {
-                console.log(`[EVENT_BUS] Processing Slack webhook event`);
-
-                // Use current connection config
-                if (!currentMeshConfig) {
-                  const errorMsg = "No mesh config available for Slack webhook";
-                  console.error(`[EVENT_BUS] ${errorMsg}`);
-                  await logger.webhookError(errorMsg, {
-                    eventType: event.type,
-                  });
-                  continue;
-                }
-
-                // Log webhook received
-                const payload = event.data as { team_id?: string };
-                await logger.webhookReceived(event.type, payload?.team_id);
-
-                // Process the Slack webhook payload
-                try {
-                  await handleSlackWebhookEvent(event.data, currentMeshConfig);
-                } catch (webhookError) {
-                  await logger.webhookError(String(webhookError), {
-                    eventType: event.type,
-                    teamId: payload?.team_id,
-                  });
-                }
-                continue;
-              }
-
-              // Handle LLM response events
-              if (
-                event.type === SLACK_EVENT_TYPES.OPERATOR_TEXT_COMPLETED ||
-                event.type === SLACK_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED
-              ) {
-                // Extract response text and context
-                const data = event.data as {
-                  text?: string;
-                  messageParts?: Array<{ type: string; text?: string }>;
-                };
-                const subject = event.subject;
-
-                // Parse subject to get channel and thread info
-                // Subject format: "channelId:threadTs"
-                const [channel, threadTs] = (subject ?? "").split(":");
-
-                if (!channel) {
-                  console.error("[EVENT_BUS] Missing channel in subject");
-                  continue;
-                }
-
-                // Get the response text
-                let responseText = data.text ?? "";
-                if (!responseText && data.messageParts) {
-                  // Extract text from message parts
-                  responseText = data.messageParts
-                    .filter((p) => p.type === "text")
-                    .map((p) => p.text ?? "")
-                    .join("");
-                }
-
-                if (responseText) {
-                  await handleLLMResponse(responseText, {
-                    channel,
-                    threadTs: threadTs || undefined,
-                  });
-                }
-              }
-            }
-            return { success: true };
-          } catch (error) {
-            console.error(`[EVENT_BUS] Error handling events:`, error);
-            return { success: false };
-          }
-        },
-      },
+      // SELF handler receives events where publisher = this connectionId
+      // This ensures each Slack MCP only receives its own webhook events
       SELF: {
-        events: ["slack.*"],
+        events: SLACK_WEBHOOK_EVENTS,
         handler: async ({ events }) => {
           try {
             for (const event of events) {
               console.log(`[SELF] Event: ${event.type}`);
+
+              // Skip url_verification (handled by Mesh webhook proxy)
+              if (event.type === "url_verification") {
+                continue;
+              }
+
+              // Use current connection config
+              if (!currentMeshConfig) {
+                console.error(`[SELF] No mesh config available`);
+                continue;
+              }
+
+              // Process the Slack webhook payload
+              const payload = event.data as { team_id?: string };
+              try {
+                await handleSlackWebhookEvent(event.data, currentMeshConfig);
+              } catch (webhookError) {
+                await logger.webhookError(String(webhookError), {
+                  eventType: event.type,
+                  teamId: payload?.team_id,
+                });
+              }
             }
             return { success: true };
           } catch (error) {
@@ -154,14 +100,39 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const logChannelId = env.MESH_REQUEST_CONTEXT?.state?.LOG_CHANNEL_ID;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       const threadTimeoutMin =
         env.MESH_REQUEST_CONTEXT?.state?.THREAD_TIMEOUT_MIN ?? 10;
 
+      // Get LLM configuration
+      const modelProvider = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER;
+      const agent = env.MESH_REQUEST_CONTEXT?.state?.AGENT as
+        | {
+            __type?: string;
+            value?: string;
+          }
+        | undefined;
+      const languageModel = env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
+
       console.log("[CONFIG] meshUrl:", meshUrl);
       console.log("[CONFIG] organizationId:", organizationId);
+      console.log("[CONFIG] connectionId:", connectionId);
       console.log("[CONFIG] botToken exists:", !!botToken);
       console.log("[CONFIG] signingSecret exists:", !!signingSecret);
       console.log("[CONFIG] logChannelId:", logChannelId ?? "not configured");
+      console.log(
+        "[CONFIG] modelProvider:",
+        modelProvider?.value ?? "not configured",
+      );
+      console.log(
+        "[CONFIG] agent:",
+        agent?.value ?? "not configured (system_prompt comes from gateway)",
+      );
+      console.log(
+        "[CONFIG] languageModel:",
+        languageModel?.value?.id ?? "not configured",
+      );
 
       if (!botToken || !signingSecret || !meshUrl || !organizationId) {
         console.log("[CONFIG] Missing required configuration, waiting...");
@@ -170,8 +141,25 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       }
 
       // Save current mesh config for Event Bus handler
-      currentMeshConfig = { organizationId, meshUrl };
+      currentMeshConfig = { organizationId, meshUrl, connectionId };
       console.log("[CONFIG] Mesh config saved for Event Bus handler");
+
+      // Configure LLM if model provider is set
+      if (modelProvider?.value && token) {
+        configureLLM({
+          meshUrl,
+          organizationId,
+          token,
+          modelProviderId: modelProvider.value,
+          modelId: languageModel?.value?.id,
+          agentId: agent?.value,
+        });
+        console.log("[CONFIG] ✅ LLM configured for direct calls");
+      } else {
+        console.log(
+          "[CONFIG] ⚠️ LLM not configured - will use Event Bus fallback",
+        );
+      }
 
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
@@ -214,6 +202,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
         console.log(`[CONFIG] Bot user: ${botInfo.userId}`);
 
+        // Build webhook URL
+        const webhookUrl = connectionId
+          ? `${meshUrl}/webhooks/${connectionId}`
+          : "Not available (connectionId missing)";
+
         // Log config received
         await logger.configReceived({
           meshUrl,
@@ -221,6 +214,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           teamId,
           botUserId: botInfo.userId,
           logChannelId: logChannelId ?? "not set",
+          webhookUrl,
         });
 
         // Send connection success log to Slack
@@ -259,21 +253,10 @@ for (const [key, value] of Object.entries(process.env)) {
 console.log("");
 
 /**
- * Wrapped fetch handler that intercepts webhook routes
- * and delegates MCP requests to the runtime
+ * Serve MCP requests via the runtime
+ * Webhooks are now handled by Mesh's Universal Webhook Proxy
  */
 serve(async (req, env, ctx) => {
-  const url = new URL(req.url);
-
-  // Route Slack webhook endpoints to our router
-  if (url.pathname.startsWith("/slack/") || url.pathname === "/health") {
-    const response = await app.fetch(req, env, ctx);
-    if (response.status !== 404) {
-      return response;
-    }
-  }
-
-  // Everything else goes to MCP runtime
   return runtime.fetch(req, env, ctx);
 });
 
@@ -292,15 +275,15 @@ console.log(`
 💡 The Slack bot will start when Mesh sends the configuration.
    → Configure BOT_TOKEN and SIGNING_SECRET in the Mesh Dashboard.
 
-🔗 Slack Webhook URL (via Mesh):
-   https://mesh.deco.cx/org/{orgName}/events/slack?sub={connectionId}
+🔗 Slack Webhook URL (via Mesh Universal Webhook Proxy):
+   https://mesh.deco.cx/webhooks/{connectionId}
 
-   Example:
-   https://mesh.deco.cx/org/jonas-deco-cloud/events/slack?sub=conn_IYvdXMQLi7v6TmjdaabS3
+   The webhook URL will be shown in the MCP configuration panel
+   after you install this MCP in Mesh.
 
-Endpoints (fallback - direct HTTP):
-  POST /slack/events     - Slack Event Subscriptions
-  POST /slack/commands   - Slash Commands
-  POST /slack/interactive - Interactive Components
-  GET  /health           - Health Check
+📖 Setup Steps:
+   1. Install this MCP in Mesh
+   2. Configure BOT_TOKEN and SIGNING_SECRET
+   3. Copy the Webhook URL from configuration
+   4. Paste it in your Slack App's Event Subscriptions
 `);

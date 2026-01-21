@@ -15,6 +15,7 @@ import {
   sendMessage,
   replyInThread,
   addReaction,
+  removeReaction,
   getBotInfo,
 } from "../../lib/slack-client.ts";
 import type {
@@ -22,8 +23,26 @@ import type {
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";
-import type { SlackTeamConfig } from "../../lib/data.ts";
-import { logger } from "../../lib/logger.ts";
+import { readTeamConfig, type SlackTeamConfig } from "../../lib/data.ts";
+import {
+  logger,
+  pauseSlackLogging,
+  resumeSlackLogging,
+} from "../../lib/logger.ts";
+import { shouldIgnoreEvent } from "../../webhook.ts";
+import { generateLLMResponse, type LLMConfig } from "../../lib/llm.ts";
+
+// Global LLM config set by main.ts
+let globalLLMConfig: LLMConfig | null = null;
+
+export function configureLLM(config: LLMConfig): void {
+  globalLLMConfig = config;
+  console.log("[EventHandler] LLM configured", {
+    modelProviderId: config.modelProviderId,
+    modelId: config.modelId,
+    agentId: config.agentId,
+  });
+}
 
 // Event types for publishing
 export const SLACK_EVENT_TYPES = {
@@ -35,7 +54,8 @@ export const SLACK_EVENT_TYPES = {
   MEMBER_JOINED: "slack.member.joined",
 
   // Outgoing events (to Event Bus for LLM processing)
-  OPERATOR_GENERATE: "operator.generate",
+  // Note: Uses "public:" prefix so mcp-studio can receive it
+  OPERATOR_GENERATE: "public:operator.generate",
 
   // Response events (from Event Bus)
   OPERATOR_TEXT_COMPLETED: "public:operator.text.completed",
@@ -121,32 +141,70 @@ async function handleAppMention(
   // Get recent conversation history
   const recentMessages = await getRecentMessages(channel, threadIdentifier, 10);
 
-  // Publish to Event Bus for LLM processing
-  await publishEvent(
-    {
-      type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-      data: {
-        messages: recentMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        context: {
-          channel,
-          threadTs: threadIdentifier,
-          messageTs: ts,
-          userId: user,
+  // Check if LLM is configured
+  if (!globalLLMConfig) {
+    console.log("[EventHandler] LLM not configured, publishing to Event Bus");
+    // Fallback to Event Bus if LLM not configured
+    await publishEvent(
+      {
+        type: SLACK_EVENT_TYPES.OPERATOR_GENERATE,
+        data: {
+          messages: recentMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          context: {
+            channel,
+            threadTs: threadIdentifier,
+            messageTs: ts,
+            userId: user,
+          },
         },
+        subject: `${channel}:${threadIdentifier}`,
       },
-      subject: `${channel}:${threadIdentifier}`,
-    },
-    {
-      meshUrl: teamConfig.meshUrl,
-      organizationId: teamConfig.organizationId,
-    },
-  );
+      {
+        meshUrl: teamConfig.meshUrl,
+        organizationId: teamConfig.organizationId,
+      },
+    );
+    return;
+  }
 
-  // Remove thinking reaction after sending to event bus
-  // The actual response will come through the event subscription
+  // Call LLM directly
+  try {
+    console.log("[EventHandler] Calling LLM directly");
+
+    const response = await generateLLMResponse(
+      recentMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+      globalLLMConfig,
+    );
+
+    // Remove thinking reaction
+    await removeReaction(channel, ts, "thinking_face").catch(() => {});
+
+    // Send response in thread
+    await replyInThread(channel, ts, response);
+
+    // Save assistant message to thread history
+    await appendAssistantMessage(channel, threadIdentifier, response, ts);
+
+    console.log("[EventHandler] LLM response sent to Slack");
+  } catch (error) {
+    console.error("[EventHandler] LLM error:", error);
+
+    // Remove thinking reaction on error
+    await removeReaction(channel, ts, "thinking_face").catch(() => {});
+
+    // Send error message
+    await replyInThread(
+      channel,
+      ts,
+      "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.",
+    );
+  }
 }
 
 /**
@@ -381,153 +439,180 @@ export async function handleSlackWebhookEvent(
     meshUrl: string;
   },
 ): Promise<void> {
-  console.log("[EventHandler] ========================================");
-  console.log("[EventHandler] Processing webhook from Mesh Event Bus");
+  // Pause Slack logging during webhook processing to prevent infinite loops
+  // (bot logs → Slack event → webhook → bot logs → ...)
+  pauseSlackLogging();
 
-  await logger.webhookProcessing("Webhook received from Mesh", {
-    organizationId: config.organizationId,
-    meshUrl: config.meshUrl,
-  });
+  try {
+    console.log("[EventHandler] ========================================");
+    console.log("[EventHandler] Processing webhook from Mesh Event Bus");
 
-  // Validate payload
-  if (!payload || typeof payload !== "object") {
-    const errorMsg = `Invalid payload - not an object. Received: ${typeof payload}`;
-    console.error("[EventHandler] ❌", errorMsg);
-    await logger.webhookError(errorMsg, { payloadType: typeof payload });
-    throw new Error("Invalid webhook payload - expected object");
-  }
-
-  // The payload should be the Slack webhook payload
-  const slackPayload = payload as {
-    type?: string;
-    challenge?: string;
-    event?: SlackEvent;
-    team_id?: string;
-    token?: string;
-    api_app_id?: string;
-  };
-
-  await logger.webhookProcessing("Payload parsed", {
-    type: slackPayload.type,
-    teamId: slackPayload.team_id,
-    apiAppId: slackPayload.api_app_id,
-    hasEvent: !!slackPayload.event,
-  });
-
-  // Handle URL verification challenge
-  if (slackPayload.type === "url_verification") {
-    await logger.success("URL Verification Challenge", {
-      challenge: slackPayload.challenge,
-      note: "Challenge response is handled by Mesh",
-    });
-    return;
-  }
-
-  // Log if we receive an unknown type
-  if (!slackPayload.type) {
-    const errorMsg = "Missing 'type' field in payload";
-    console.error("[EventHandler] ❌", errorMsg);
-    await logger.webhookError(errorMsg, {
-      keysReceived: Object.keys(slackPayload),
-    });
-    throw new Error("Invalid webhook payload - missing type field");
-  }
-
-  // Handle event callbacks
-  if (slackPayload.type === "event_callback") {
-    await logger.webhookProcessing("Event callback received");
-
-    if (!slackPayload.event) {
-      const errorMsg = "Missing 'event' field in event_callback";
-      await logger.webhookError(errorMsg);
-      throw new Error("Invalid event_callback - missing event field");
-    }
-
-    const event = slackPayload.event;
-    const eventType = event.type;
-
-    await logger.eventReceived(eventType, {
-      user: event.user,
-      channel: event.channel,
-      text: event.text?.substring(0, 100),
-    });
-
-    // Create a minimal team config for event handling
-    const teamConfig: SlackTeamConfig = {
-      teamId: slackPayload.team_id ?? "unknown",
+    await logger.webhookProcessing("Webhook received from Mesh", {
       organizationId: config.organizationId,
       meshUrl: config.meshUrl,
-      botToken: "", // Not needed for event handling via Event Bus
-      signingSecret: "", // Not needed - Mesh handles auth
-      configuredAt: new Date().toISOString(),
-    };
+    });
 
-    // Route to appropriate handler
-    try {
-      switch (eventType) {
-        case "app_mention":
-          await logger.webhookProcessing(`Handling ${eventType}`);
-          await handleAppMention(
-            event as SlackAppMentionEvent,
-            { type: eventType, payload: event },
-            teamConfig,
-          );
-          await logger.eventHandled(eventType);
-          break;
-
-        case "message":
-          await logger.webhookProcessing(`Handling ${eventType}`);
-          await handleMessage(
-            event as SlackMessageEvent,
-            { type: eventType, payload: event },
-            teamConfig,
-          );
-          await logger.eventHandled(eventType);
-          break;
-
-        case "reaction_added":
-          await logger.webhookProcessing(`Handling ${eventType}`);
-          await handleReactionAdded(
-            event,
-            { type: eventType, payload: event },
-            teamConfig,
-          );
-          await logger.eventHandled(eventType);
-          break;
-
-        case "channel_created":
-          await logger.webhookProcessing(`Handling ${eventType}`);
-          await handleChannelCreated(
-            event,
-            { type: eventType, payload: event },
-            teamConfig,
-          );
-          await logger.eventHandled(eventType);
-          break;
-
-        case "member_joined_channel":
-          await logger.webhookProcessing(`Handling ${eventType}`);
-          await handleMemberJoined(
-            event,
-            { type: eventType, payload: event },
-            teamConfig,
-          );
-          await logger.eventHandled(eventType);
-          break;
-
-        default:
-          await logger.warn(`Unhandled event type: ${eventType}`);
-      }
-    } catch (handlerError) {
-      await logger.eventError(eventType, String(handlerError));
-      throw handlerError;
+    // Validate payload
+    if (!payload || typeof payload !== "object") {
+      const errorMsg = `Invalid payload - not an object. Received: ${typeof payload}`;
+      console.error("[EventHandler] ❌", errorMsg);
+      await logger.webhookError(errorMsg, { payloadType: typeof payload });
+      throw new Error("Invalid webhook payload - expected object");
     }
 
-    return;
-  }
+    // The payload should be the Slack webhook payload
+    const slackPayload = payload as {
+      type?: string;
+      challenge?: string;
+      event?: SlackEvent;
+      team_id?: string;
+      token?: string;
+      api_app_id?: string;
+    };
 
-  // Unknown payload type
-  await logger.webhookError(`Unknown payload type: ${slackPayload.type}`, {
-    payload: slackPayload,
-  });
+    await logger.webhookProcessing("Payload parsed", {
+      type: slackPayload.type,
+      teamId: slackPayload.team_id,
+      apiAppId: slackPayload.api_app_id,
+      hasEvent: !!slackPayload.event,
+    });
+
+    // Handle URL verification challenge
+    if (slackPayload.type === "url_verification") {
+      await logger.success("URL Verification Challenge", {
+        challenge: slackPayload.challenge,
+        note: "Challenge response is handled by Mesh",
+      });
+      return;
+    }
+
+    // Log if we receive an unknown type
+    if (!slackPayload.type) {
+      const errorMsg = "Missing 'type' field in payload";
+      console.error("[EventHandler] ❌", errorMsg);
+      await logger.webhookError(errorMsg, {
+        keysReceived: Object.keys(slackPayload),
+      });
+      throw new Error("Invalid webhook payload - missing type field");
+    }
+
+    // Handle event callbacks
+    if (slackPayload.type === "event_callback") {
+      await logger.webhookProcessing("Event callback received");
+
+      if (!slackPayload.event) {
+        const errorMsg = "Missing 'event' field in event_callback";
+        await logger.webhookError(errorMsg);
+        throw new Error("Invalid event_callback - missing event field");
+      }
+
+      const event = slackPayload.event;
+      const eventType = event.type;
+      const teamId = slackPayload.team_id ?? "unknown";
+
+      // Get team config to get botUserId for filtering
+      const savedTeamConfig = await readTeamConfig(teamId);
+      const botUserId = savedTeamConfig?.botUserId;
+
+      // Check if we should ignore this event (bot's own messages, etc.)
+      if (
+        shouldIgnoreEvent(
+          slackPayload as Parameters<typeof shouldIgnoreEvent>[0],
+          botUserId,
+        )
+      ) {
+        console.log(
+          `[EventHandler] Ignoring event from bot or ignored subtype`,
+        );
+        return;
+      }
+
+      await logger.eventReceived(eventType, {
+        user: event.user,
+        channel: event.channel,
+        text: event.text?.substring(0, 100),
+      });
+
+      // Create team config for event handling, using saved config if available
+      const teamConfig: SlackTeamConfig = savedTeamConfig ?? {
+        teamId,
+        organizationId: config.organizationId,
+        meshUrl: config.meshUrl,
+        botToken: "", // Not needed for event handling via Event Bus
+        signingSecret: "", // Not needed - Mesh handles auth
+        configuredAt: new Date().toISOString(),
+      };
+
+      // Route to appropriate handler
+      try {
+        switch (eventType) {
+          case "app_mention":
+            await logger.webhookProcessing(`Handling ${eventType}`);
+            await handleAppMention(
+              event as SlackAppMentionEvent,
+              { type: eventType, payload: event },
+              teamConfig,
+            );
+            await logger.eventHandled(eventType);
+            break;
+
+          case "message":
+            await logger.webhookProcessing(`Handling ${eventType}`);
+            await handleMessage(
+              event as SlackMessageEvent,
+              { type: eventType, payload: event },
+              teamConfig,
+            );
+            await logger.eventHandled(eventType);
+            break;
+
+          case "reaction_added":
+            await logger.webhookProcessing(`Handling ${eventType}`);
+            await handleReactionAdded(
+              event,
+              { type: eventType, payload: event },
+              teamConfig,
+            );
+            await logger.eventHandled(eventType);
+            break;
+
+          case "channel_created":
+            await logger.webhookProcessing(`Handling ${eventType}`);
+            await handleChannelCreated(
+              event,
+              { type: eventType, payload: event },
+              teamConfig,
+            );
+            await logger.eventHandled(eventType);
+            break;
+
+          case "member_joined_channel":
+            await logger.webhookProcessing(`Handling ${eventType}`);
+            await handleMemberJoined(
+              event,
+              { type: eventType, payload: event },
+              teamConfig,
+            );
+            await logger.eventHandled(eventType);
+            break;
+
+          default:
+            await logger.warn(`Unhandled event type: ${eventType}`);
+        }
+      } catch (handlerError) {
+        await logger.eventError(eventType, String(handlerError));
+        throw handlerError;
+      }
+
+      return;
+    }
+
+    // Unknown payload type
+    await logger.webhookError(`Unknown payload type: ${slackPayload.type}`, {
+      payload: slackPayload,
+    });
+  } finally {
+    // Always resume logging after webhook processing
+    resumeSlackLogging();
+  }
 }
