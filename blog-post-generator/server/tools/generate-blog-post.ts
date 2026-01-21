@@ -1,17 +1,12 @@
 /**
  * Blog Post Generator Tool
  *
- * Tool to generate blog posts from various context types using n8n webhook.
+ * Tool to generate blog posts from context and tone of voice using n8n webhook.
  */
 
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
-
-/**
- * Context type enum
- */
-const ContextTypeEnum = z.enum(["text", "url", "json"]);
 
 /**
  * Blog post schema
@@ -23,32 +18,39 @@ const BlogPostSchema = z.object({
 });
 
 /**
- * Generate blog post tool - generates blog posts from context
+ * Generate blog post tool - generates blog posts from context and tone of voice
  */
 export const generateBlogPostTool = (env: Env) =>
   createPrivateTool({
     id: "generate_blog_post",
     description:
-      "Generate blog post suggestions from context. " +
-      "Accepts plain text, URL, or JSON from content-scraper as context. " +
+      "Generate blog post suggestions from context and tone of voice. " +
+      "Accepts either plain text OR JSON for both context and tone of voice. " +
       "Returns 4 blog post suggestions with title, content, and summary.",
     inputSchema: z.object({
-      contextType: ContextTypeEnum.describe(
-        'Context type: "text" for plain text, "url" for URL, "json" for content-scraper data',
-      ),
-      textContext: z
+      contextText: z
         .string()
         .optional()
-        .describe('Plain text as context (when contextType = "text")'),
-      urlContext: z
-        .string()
-        .optional()
-        .describe('URL to use as context (when contextType = "url")'),
-      jsonContext: z
+        .describe(
+          "Plain text context for blog post generation. Use this OR contextJson, not both.",
+        ),
+      contextJson: z
         .record(z.string(), z.unknown())
         .optional()
         .describe(
-          'JSON from content-scraper or similar structure (when contextType = "json")',
+          "JSON context for blog post generation (e.g., from content-scraper). Use this OR contextText, not both.",
+        ),
+      toneOfVoiceText: z
+        .string()
+        .optional()
+        .describe(
+          "Plain text describing the desired tone of voice. Use this OR toneOfVoiceJson, not both.",
+        ),
+      toneOfVoiceJson: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe(
+          "JSON describing the desired tone of voice with structured attributes. Use this OR toneOfVoiceText, not both.",
         ),
       additionalInstructions: z
         .string()
@@ -65,10 +67,10 @@ export const generateBlogPostTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const {
-        contextType,
-        textContext,
-        urlContext,
-        jsonContext,
+        contextText,
+        contextJson,
+        toneOfVoiceText,
+        toneOfVoiceJson,
         additionalInstructions,
       } = context;
 
@@ -83,46 +85,42 @@ export const generateBlogPostTool = (env: Env) =>
           };
         }
 
-        // Validate context based on type
-        let contextData: unknown;
-
-        switch (contextType) {
-          case "text":
-            if (!textContext) {
-              return {
-                success: false,
-                error: 'textContext is required when contextType is "text"',
-              };
-            }
-            contextData = { type: "text", content: textContext };
-            break;
-
-          case "url":
-            if (!urlContext) {
-              return {
-                success: false,
-                error: 'urlContext is required when contextType is "url"',
-              };
-            }
-            contextData = { type: "url", url: urlContext };
-            break;
-
-          case "json":
-            if (!jsonContext) {
-              return {
-                success: false,
-                error: 'jsonContext is required when contextType is "json"',
-              };
-            }
-            contextData = { type: "json", data: jsonContext };
-            break;
-
-          default:
-            return {
-              success: false,
-              error: `Invalid contextType: ${contextType}`,
-            };
+        // Validate that at least one context is provided
+        if (!contextText && !contextJson) {
+          return {
+            success: false,
+            error: "Either contextText or contextJson must be provided",
+          };
         }
+
+        // Validate that only one context type is provided
+        if (contextText && contextJson) {
+          return {
+            success: false,
+            error: "Provide either contextText OR contextJson, not both",
+          };
+        }
+
+        // Validate that only one tone of voice type is provided (if any)
+        if (toneOfVoiceText && toneOfVoiceJson) {
+          return {
+            success: false,
+            error:
+              "Provide either toneOfVoiceText OR toneOfVoiceJson, not both",
+          };
+        }
+
+        // Build context data
+        const contextData = contextText
+          ? { type: "text", content: contextText }
+          : { type: "json", data: contextJson };
+
+        // Build tone of voice data (optional)
+        const toneOfVoiceData = toneOfVoiceText
+          ? { type: "text", content: toneOfVoiceText }
+          : toneOfVoiceJson
+            ? { type: "json", data: toneOfVoiceJson }
+            : null;
 
         // Set up timeout controller (5 minutes)
         const controller = new AbortController();
@@ -136,6 +134,7 @@ export const generateBlogPostTool = (env: Env) =>
             },
             body: JSON.stringify({
               context: contextData,
+              toneOfVoice: toneOfVoiceData,
               additionalInstructions: additionalInstructions ?? "",
             }),
             signal: controller.signal,
