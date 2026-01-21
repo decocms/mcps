@@ -4,8 +4,7 @@
  * MCP server for Slack bot integration with intelligent
  * thread management and AI agent commands.
  *
- * Webhooks are handled by Mesh's Universal Webhook Proxy.
- * This MCP receives events via Event Bus.
+ * Webhooks are handled via the handle_webhook tool.
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
@@ -15,80 +14,17 @@ import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
 import { initializeSlackClient, getBotInfo } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
-import {
-  handleSlackWebhookEvent,
-  configureLLM,
-} from "./slack/handlers/eventHandler.ts";
+import { configureLLM } from "./slack/handlers/eventHandler.ts";
 import { saveTeamConfig, updateTeamBotUserId } from "./lib/data.ts";
 import { configureLogger, logger } from "./lib/logger.ts";
 import { setBotUserIdForTeam } from "./router.ts";
 
 export { StateSchema };
 
-// Current connection config (set by onChange)
-let currentMeshConfig: {
-  organizationId: string;
-  meshUrl: string;
-  connectionId?: string;
-} | null = null;
-
-// Slack event types from Mesh Universal Webhook Proxy
-// These are delivered via SELF handler (filtered by connectionId/publisher)
-const SLACK_WEBHOOK_EVENTS = [
-  "message",
-  "app_mention",
-  "reaction_added",
-  "reaction_removed",
-  "member_joined_channel",
-  "member_left_channel",
-  "channel_created",
-  "channel_rename",
-  "url_verification",
-];
+// Webhooks are now handled via the handle_webhook tool
+// No need for Event Bus subscriptions
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
-  events: {
-    handlers: {
-      // SELF handler receives events where publisher = this connectionId
-      // This ensures each Slack MCP only receives its own webhook events
-      SELF: {
-        events: SLACK_WEBHOOK_EVENTS,
-        handler: async ({ events }) => {
-          try {
-            for (const event of events) {
-              console.log(`[SELF] Event: ${event.type}`);
-
-              // Skip url_verification (handled by Mesh webhook proxy)
-              if (event.type === "url_verification") {
-                continue;
-              }
-
-              // Use current connection config
-              if (!currentMeshConfig) {
-                console.error(`[SELF] No mesh config available`);
-                continue;
-              }
-
-              // Process the Slack webhook payload
-              const payload = event.data as { team_id?: string };
-              try {
-                await handleSlackWebhookEvent(event.data, currentMeshConfig);
-              } catch (webhookError) {
-                await logger.webhookError(String(webhookError), {
-                  eventType: event.type,
-                  teamId: payload?.team_id,
-                });
-              }
-            }
-            return { success: true };
-          } catch (error) {
-            console.error(`[SELF] Error:`, error);
-            return { success: false };
-          }
-        },
-      },
-    },
-  },
   configuration: {
     onChange: async (env) => {
       console.log("[CONFIG] Configuration changed");
@@ -136,13 +72,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
       if (!botToken || !signingSecret || !meshUrl || !organizationId) {
         console.log("[CONFIG] Missing required configuration, waiting...");
-        // Can't log to Slack yet - no config
         return;
       }
-
-      // Save current mesh config for Event Bus handler
-      currentMeshConfig = { organizationId, meshUrl, connectionId };
-      console.log("[CONFIG] Mesh config saved for Event Bus handler");
 
       // Configure LLM if model provider is set
       if (modelProvider?.value && token) {
