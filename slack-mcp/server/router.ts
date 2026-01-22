@@ -9,9 +9,7 @@
 import { Hono } from "hono";
 import {
   verifySlackRequest,
-  handleChallenge,
   parseSlashCommand,
-  getEventType,
   shouldIgnoreEvent,
   isBotMentioned,
   removeBotMention,
@@ -64,13 +62,6 @@ app.get("/health", (c) => {
  */
 app.post("/slack/events/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
-  console.log("\n");
-  console.log("╔══════════════════════════════════════════════════════════╗");
-  console.log("║            🔔 SLACK WEBHOOK RECEIVED                     ║");
-  console.log("╚══════════════════════════════════════════════════════════╝");
-  console.log(`[Router] Time: ${new Date().toISOString()}`);
-  console.log(`[Router] Connection ID: ${connectionId}`);
-
   const rawBody = await c.req.text();
 
   // Parse payload
@@ -84,7 +75,6 @@ app.post("/slack/events/:connectionId", async (c) => {
 
   // Handle URL verification challenge (doesn't need connection config)
   if (parsedPayload.type === "url_verification") {
-    console.log("[Router] ✅ URL verification challenge");
     return new Response(parsedPayload.challenge, {
       status: 200,
       headers: { "Content-Type": "text/plain" },
@@ -94,13 +84,8 @@ app.post("/slack/events/:connectionId", async (c) => {
   // Lookup connection configuration
   const connectionConfig = await readConnectionConfig(connectionId);
   if (!connectionConfig) {
-    console.error(
-      `[Router] ❌ No config found for connection: ${connectionId}`,
-    );
     return c.json({ error: "Connection not configured" }, 403);
   }
-
-  console.log(`[Router] ✅ Config found for connection ${connectionId}`);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -124,13 +109,8 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ ok: true });
   }
 
-  const eventType = getEventType(payload);
-  console.log(`[Router] Event: ${eventType} for connection: ${connectionId}`);
-
   // Process the event asynchronously
-  processConnectionEventAsync(payload, connectionConfig).catch((error) => {
-    console.error("[Router] Error processing event:", error);
-  });
+  processConnectionEventAsync(payload, connectionConfig).catch(console.error);
 
   // Acknowledge immediately (Slack expects response within 3 seconds)
   return c.json({ ok: true });
@@ -216,67 +196,35 @@ app.get("/debug", async (c) => {
  * Main Slack events endpoint (Multi-tenant)
  */
 app.post("/slack/events", async (c) => {
-  const startTime = Date.now();
-  console.log("\n");
-  console.log("╔══════════════════════════════════════════════════════════╗");
-  console.log("║            🔔 SLACK WEBHOOK RECEIVED                     ║");
-  console.log("╚══════════════════════════════════════════════════════════╝");
-  console.log(`[Router] Time: ${new Date().toISOString()}`);
-
   const rawBody = await c.req.text();
-  console.log("[Router] Body length:", rawBody.length);
-  console.log("[Router] Raw body preview:", rawBody.substring(0, 300));
 
   // Parse payload to get team_id for config lookup
   let parsedPayload: SlackWebhookPayload;
   try {
     parsedPayload = JSON.parse(rawBody);
-    console.log("[Router] Parsed payload type:", parsedPayload.type);
-  } catch (e) {
-    console.error("[Router] Failed to parse JSON:", e);
+  } catch {
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
   // Handle URL verification challenge (doesn't need team config)
   if (parsedPayload.type === "url_verification") {
-    console.log("[Router] ✅ URL verification challenge detected!");
-    console.log("[Router] Challenge value:", parsedPayload.challenge);
-
-    // Return challenge as plain text (Slack requirement)
-    const response = new Response(parsedPayload.challenge, {
+    return new Response(parsedPayload.challenge, {
       status: 200,
       headers: { "Content-Type": "text/plain" },
     });
-    console.log("[Router] Returning challenge response");
-    return response;
   }
 
   // Get team_id from payload
   const teamId = parsedPayload.team_id;
   if (!teamId) {
-    console.error("[Router] ❌ Missing team_id in payload");
     return c.json({ error: "Missing team_id" }, 400);
   }
-  console.log(`[Router] Team ID: ${teamId}`);
 
   // Lookup team configuration
-  console.log(`[Router] Looking up config for team: ${teamId}...`);
   const teamConfig = await readTeamConfig(teamId);
-
   if (!teamConfig) {
-    console.error(`[Router] ❌ NO CONFIG FOUND for team: ${teamId}`);
-    console.error(`[Router] ⚠️ The team needs to be configured in Mesh FIRST!`);
-    console.error(
-      `[Router] ⚠️ Make sure to save the Slack connection in Mesh Dashboard.`,
-    );
     return c.json({ error: "Team not configured" }, 403);
   }
-
-  console.log(`[Router] ✅ Config found for team ${teamId}:`);
-  console.log(`[Router]   organizationId: ${teamConfig.organizationId}`);
-  console.log(`[Router]   meshUrl: ${teamConfig.meshUrl}`);
-  console.log(`[Router]   botUserId: ${teamConfig.botUserId ?? "not set"}`);
-  console.log(`[Router]   configuredAt: ${teamConfig.configuredAt}`);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -299,13 +247,8 @@ app.post("/slack/events", async (c) => {
     return c.json({ ok: true });
   }
 
-  const eventType = getEventType(payload);
-  console.log(`[Router] Received event: ${eventType} from team: ${teamId}`);
-
   // Process the event asynchronously with team config
-  processEventAsync(payload, teamConfig).catch((error) => {
-    console.error("[Router] Error processing event:", error);
-  });
+  processEventAsync(payload, teamConfig).catch(console.error);
 
   // Acknowledge immediately (Slack expects response within 3 seconds)
   return c.json({ ok: true });
@@ -325,14 +268,12 @@ app.post("/slack/commands", async (c) => {
   // Get team_id from command
   const teamId = command.team_id;
   if (!teamId) {
-    console.error("[Router] Missing team_id in command");
     return c.json({ error: "Missing team_id" }, 400);
   }
 
   // Lookup team configuration
   const teamConfig = await readTeamConfig(teamId);
   if (!teamConfig) {
-    console.error(`[Router] No config found for team: ${teamId}`);
     return c.json({ error: "Team not configured" }, 403);
   }
 
@@ -351,14 +292,8 @@ app.post("/slack/commands", async (c) => {
     return c.json({ error: "Invalid signature" }, 401);
   }
 
-  console.log(
-    `[Router] Received slash command: ${command.command} from team: ${teamId}`,
-  );
-
-  // For now, acknowledge and process async
-  processSlashCommandAsync(command, teamConfig).catch((error) => {
-    console.error("[Router] Error processing slash command:", error);
-  });
+  // Acknowledge and process async
+  processSlashCommandAsync(command, teamConfig).catch(console.error);
 
   return c.json({
     response_type: "ephemeral",
@@ -390,14 +325,12 @@ app.post("/slack/interactive", async (c) => {
   // Get team_id from interactive payload
   const teamId = interactivePayload.team?.id;
   if (!teamId) {
-    console.error("[Router] Missing team_id in interactive payload");
     return c.json({ error: "Missing team_id" }, 400);
   }
 
   // Lookup team configuration
   const teamConfig = await readTeamConfig(teamId);
   if (!teamConfig) {
-    console.error(`[Router] No config found for team: ${teamId}`);
     return c.json({ error: "Team not configured" }, 403);
   }
 
@@ -415,14 +348,8 @@ app.post("/slack/interactive", async (c) => {
     return c.json({ error: "Invalid signature" }, 401);
   }
 
-  console.log(
-    `[Router] Received interactive event: ${interactivePayload.type} from team: ${teamId}`,
-  );
-
   // Process asynchronously
-  processInteractiveAsync(interactivePayload, teamConfig).catch((error) => {
-    console.error("[Router] Error processing interactive event:", error);
-  });
+  processInteractiveAsync(interactivePayload, teamConfig).catch(console.error);
 
   return c.json({ ok: true });
 });
@@ -557,22 +484,15 @@ async function processSlashCommandAsync(
   _teamConfig: SlackTeamConfig,
 ): Promise<void> {
   // TODO: Implement slash command handling with team config
-  console.log("[Router] Processing slash command:", command.command);
-
-  // You can use command.response_url to send delayed responses
   if (command.response_url) {
-    try {
-      await fetch(command.response_url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          response_type: "ephemeral",
-          text: `Received command: ${command.command} ${command.text}`,
-        }),
-      });
-    } catch (error) {
-      console.error("[Router] Failed to send command response:", error);
-    }
+    await fetch(command.response_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        response_type: "ephemeral",
+        text: `Received command: ${command.command} ${command.text}`,
+      }),
+    });
   }
 }
 
@@ -580,10 +500,8 @@ async function processSlashCommandAsync(
  * Process interactive payloads asynchronously (Multi-tenant)
  */
 async function processInteractiveAsync(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload: { type: string },
+  _payload: { type: string },
   _teamConfig: SlackTeamConfig,
 ): Promise<void> {
   // TODO: Implement interactive payload handling with team config
-  console.log("[Router] Processing interactive payload:", payload.type);
 }
