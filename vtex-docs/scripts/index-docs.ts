@@ -93,6 +93,19 @@ function extractSection(path: string): string {
   return "";
 }
 
+function cleanMarkdown(content: string): string {
+  // Remove HTML/SVG tags (including multiline)
+  content = content.replace(/<[^>]*>/gs, "");
+
+  // Remove markdown images ![alt](url)
+  content = content.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+
+  // Normalize excessive whitespace
+  content = content.replace(/\n{3,}/g, "\n\n").trim();
+
+  return content;
+}
+
 async function processFile(filePath: string): Promise<DocChunk[]> {
   const content = await Bun.file(filePath).text();
   const { frontmatter, body } = parseFrontmatter(content);
@@ -107,7 +120,8 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
       ?.replace(/\.(mdx?|md)$/, "") ||
     "Untitled";
 
-  const chunks = await splitter.splitText(body);
+  const cleanedBody = cleanMarkdown(body);
+  const chunks = await splitter.splitText(cleanedBody);
 
   return chunks.map((chunk) => ({
     content: chunk,
