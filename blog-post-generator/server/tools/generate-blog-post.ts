@@ -98,7 +98,7 @@ export const generateBlogPostTool = (env: Env) =>
         .string()
         .optional()
         .describe("Additional instructions for blog post generation"),
-      content_porpuse: z
+      content_purpose: z
         .string()
         .optional()
         .describe("Content purpose for blog post generation"),
@@ -134,7 +134,7 @@ export const generateBlogPostTool = (env: Env) =>
         toneOfVoiceText,
         toneOfVoiceJson,
         additionalInstructions,
-        content_porpuse,
+        content_purpose,
         brand_context,
       } = context;
 
@@ -200,7 +200,7 @@ export const generateBlogPostTool = (env: Env) =>
               context: contextData,
               toneOfVoice: toneOfVoiceData,
               additionalInstructions: additionalInstructions ?? "",
-              content_porpuse: content_porpuse ?? "",
+              content_purpose: content_purpose ?? "",
               brand_context: brand_context ?? null,
             }),
             signal: controller.signal,
