@@ -5,8 +5,8 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { embeddingModel } from "../server/lib/mesh-provider";
 
 // Configuration
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 200;
+const CHUNK_SIZE = 1500;
+const CHUNK_OVERLAP = 300;
 const BATCH_SIZE = 50;
 
 // Initialize Supabase client
