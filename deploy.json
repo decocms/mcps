@@ -1,4 +1,9 @@
 {
+  "github": {
+    "site": "github-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
   "vibemcp": {
     "site": "vibemcp",
     "entrypoint": "./dist/server/main.js",
