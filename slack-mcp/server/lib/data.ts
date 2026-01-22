@@ -17,7 +17,6 @@ export interface SlackConnectionConfig {
   meshUrl: string;
   botToken: string;
   signingSecret: string;
-  appToken?: string;
   teamId?: string; // Optional, fetched from Slack API
   botUserId?: string;
   configuredAt: string;
@@ -102,7 +101,6 @@ export interface SlackTeamConfig {
   meshUrl: string;
   botToken: string;
   signingSecret: string;
-  appToken?: string;
   botUserId?: string;
   configuredAt: string;
 }

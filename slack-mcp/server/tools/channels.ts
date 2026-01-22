@@ -12,6 +12,8 @@ import {
   getChannelInfo,
   joinChannel,
   getChannelMembers,
+  openDM,
+  inviteToChannel,
 } from "../lib/slack-client.ts";
 
 /**
@@ -253,6 +255,97 @@ export const createGetChannelMembersTool = (_env: Env) =>
   });
 
 /**
+ * Open a direct message conversation with a user
+ */
+export const createOpenDMTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_OPEN_DM",
+    description:
+      "Open a direct message conversation with a user. Returns the channel ID for the DM.",
+    inputSchema: z
+      .object({
+        user_id: z
+          .string()
+          .describe("User ID to open a DM with (e.g., U1234567890)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        channel_id: z.string().optional().describe("Channel ID of the DM"),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        user_id: string;
+      };
+
+      try {
+        const result = await openDM(input.user_id);
+
+        if (result.ok) {
+          return {
+            success: true,
+            channel_id: result.channelId,
+          };
+        }
+
+        return {
+          success: false,
+          error: result.error ?? "Failed to open DM",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
+ * Invite a user to a channel
+ */
+export const createInviteToChannelTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_INVITE_TO_CHANNEL",
+    description: "Invite a user to a public channel",
+    inputSchema: z
+      .object({
+        channel: z.string().describe("Channel ID to invite the user to"),
+        user_id: z.string().describe("User ID to invite"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel: string;
+        user_id: string;
+      };
+
+      try {
+        const success = await inviteToChannel(input.channel, input.user_id);
+
+        return {
+          success,
+          error: success ? undefined : "Failed to invite user to channel",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
  * Export all channel tools
  */
 export const channelTools = [
@@ -260,4 +353,6 @@ export const channelTools = [
   createGetChannelInfoTool,
   createJoinChannelTool,
   createGetChannelMembersTool,
+  createOpenDMTool,
+  createInviteToChannelTool,
 ];

@@ -471,7 +471,6 @@ async function processConnectionEventAsync(
       meshUrl: connectionConfig.meshUrl,
       botToken: connectionConfig.botToken,
       signingSecret: connectionConfig.signingSecret,
-      appToken: connectionConfig.appToken,
       botUserId: connectionConfig.botUserId,
       configuredAt: connectionConfig.configuredAt,
     };

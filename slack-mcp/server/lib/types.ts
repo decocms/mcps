@@ -15,6 +15,23 @@ export interface SlackEvent {
   subtype?: string;
 }
 
+// File attachment in Slack events
+export interface SlackFileAttachment {
+  id: string;
+  name: string;
+  mimetype: string;
+  filetype: string;
+  url_private: string;
+  url_private_download?: string;
+  size?: number;
+  mode?: string;
+  title?: string;
+  thumb_360?: string;
+  thumb_480?: string;
+  thumb_720?: string;
+  thumb_1024?: string;
+}
+
 export interface SlackMessageEvent extends SlackEvent {
   type: "message";
   channel: string;
@@ -23,6 +40,7 @@ export interface SlackMessageEvent extends SlackEvent {
   ts: string;
   thread_ts?: string;
   channel_type?: "channel" | "group" | "im" | "mpim";
+  files?: SlackFileAttachment[];
 }
 
 export interface SlackAppMentionEvent extends SlackEvent {
@@ -32,6 +50,7 @@ export interface SlackAppMentionEvent extends SlackEvent {
   text: string;
   ts: string;
   thread_ts?: string;
+  files?: SlackFileAttachment[];
 }
 
 export interface SlackReactionAddedEvent extends SlackEvent {

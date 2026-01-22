@@ -17,7 +17,12 @@ import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
 import { initializeSlackClient, getBotInfo } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
-import { configureLLM } from "./slack/handlers/eventHandler.ts";
+import {
+  configureLLM,
+  configureContext,
+  configureStreaming,
+  setBotUserId as setBotUserIdInHandler,
+} from "./slack/handlers/eventHandler.ts";
 import { saveConnectionConfig, updateConnectionSlackInfo } from "./lib/data.ts";
 import { configureLogger, logger } from "./lib/logger.ts";
 import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
@@ -29,27 +34,46 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     onChange: async (env) => {
       console.log("[CONFIG] Configuration changed");
 
-      // Get configuration from state
-      const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-      const signingSecret = env.MESH_REQUEST_CONTEXT?.state?.SIGNING_SECRET;
-      const appToken = env.MESH_REQUEST_CONTEXT?.state?.APP_TOKEN;
-      const logChannelId = env.MESH_REQUEST_CONTEXT?.state?.LOG_CHANNEL_ID;
+      const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      const threadTimeoutMin =
-        env.MESH_REQUEST_CONTEXT?.state?.THREAD_TIMEOUT_MIN ?? 10;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
 
-      // Get LLM configuration
-      const modelProvider = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER;
-      const agent = env.MESH_REQUEST_CONTEXT?.state?.AGENT as
+      // Use slug for API calls (falls back to id for backwards compatibility)
+      // Type assertion needed as organizationSlug is a new Mesh feature
+      const meshContext = env.MESH_REQUEST_CONTEXT as
+        | (typeof env.MESH_REQUEST_CONTEXT & { organizationSlug?: string })
+        | undefined;
+      const organizationId =
+        meshContext?.organizationSlug ?? meshContext?.organizationId;
+
+      // Get Slack credentials
+      const botToken = state?.SLACK_CREDENTIALS?.BOT_TOKEN;
+      const signingSecret = state?.SLACK_CREDENTIALS?.SIGNING_SECRET;
+
+      // Get channel configuration
+      const logChannelId = state?.CHANNEL_CONFIG?.LOG_CHANNEL_ID;
+
+      // Get LLM configuration (bindings)
+      const modelProvider = state?.MODEL_PROVIDER;
+      const agent = state?.AGENT as
         | {
             __type?: string;
             value?: string;
           }
         | undefined;
-      const languageModel = env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+      const languageModel = state?.LANGUAGE_MODEL;
+
+      // Get context configuration (with defaults from schema)
+      const contextConfig = state?.CONTEXT_CONFIG;
+      const maxMessagesBeforeSummary =
+        contextConfig?.MAX_MESSAGES_BEFORE_SUMMARY;
+      const recentMessagesToKeep = contextConfig?.RECENT_MESSAGES_TO_KEEP;
+      const maxMessagesToFetch = contextConfig?.MAX_MESSAGES_TO_FETCH;
+      const threadTimeoutMin = contextConfig?.THREAD_TIMEOUT_MIN ?? 10;
+
+      // Get response configuration (with defaults)
+      const enableStreaming = state?.RESPONSE_CONFIG?.ENABLE_STREAMING ?? true;
 
       console.log("[CONFIG] meshUrl:", meshUrl);
       console.log("[CONFIG] organizationId:", organizationId);
@@ -98,6 +122,16 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
+      // Configure context settings (uses defaults if not provided)
+      configureContext({
+        maxMessagesBeforeSummary,
+        recentMessagesToKeep,
+        maxMessagesToFetch,
+      });
+
+      // Configure streaming behavior
+      configureStreaming(enableStreaming);
+
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
 
@@ -107,7 +141,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         meshUrl,
         botToken,
         signingSecret,
-        appToken,
       });
 
       console.log(`[CONFIG] ✅ Connection ${connectionId} saved`);
@@ -129,6 +162,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           // Cache bot user ID for event filtering
           if (botInfo.userId) {
             setBotUserIdForConnection(connectionId, botInfo.userId);
+            setBotUserIdInHandler(botInfo.userId);
           }
 
           console.log(`[CONFIG] Team ID: ${botInfo.teamId ?? "unknown"}`);
@@ -140,6 +174,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
         // Build webhook URL
         const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
+
+        console.log(
+          `\n🔗 WEBHOOK URL (use this in Slack Event Subscriptions):`,
+        );
+        console.log(`   ${webhookUrl}\n`);
 
         // Log config received
         await logger.configReceived({
@@ -221,14 +260,14 @@ console.log(`
 📡 MCP Server ready!
 
 💡 The Slack bot will start when Mesh sends the configuration.
-   → Configure BOT_TOKEN and SIGNING_SECRET in the Mesh Dashboard.
+   → Configure SLACK_CREDENTIALS (BOT_TOKEN and SIGNING_SECRET) in the Mesh Dashboard.
 
 🔗 Slack Webhook URL format:
-   https://slack-mcp.deco.cx/slack/events/{connectionId}
+   https://sites-slack-mcp.decocache.com/slack/events/{connectionId}
 
 📖 Setup Steps:
    1. Install this MCP in Mesh
-   2. Configure BOT_TOKEN and SIGNING_SECRET
+   2. Configure SLACK_CREDENTIALS with your Bot Token and Signing Secret
    3. Get the webhook URL with your connectionId
    4. Use the Webhook URL in your Slack App's Event Subscriptions
 `);

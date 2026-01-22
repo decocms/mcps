@@ -75,10 +75,10 @@ Esta URL:
 |-------|-------------|-----------|
 | BOT_TOKEN | ✅ | Token do bot (xoxb-...) |
 | SIGNING_SECRET | ✅ | Signing Secret para verificar webhooks |
-| APP_TOKEN | ❌ | Token para Socket Mode (não usado com webhooks) |
 | LOG_CHANNEL_ID | ❌ | Canal para logs do bot |
 | THREAD_TIMEOUT_MIN | ❌ | Timeout de inatividade em minutos (padrão: 10) |
 | ALLOWED_CHANNELS | ❌ | IDs de canais permitidos (separados por vírgula) |
+| ENABLE_STREAMING | ❌ | Habilitar respostas em streaming (padrão: true) |
 
 ## Tools Disponíveis
 
