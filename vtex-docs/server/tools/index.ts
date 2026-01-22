@@ -6,7 +6,3 @@ import { vtexDocsAssistant } from "./assistant.ts";
 import { vtexDocsSearch } from "./search.ts";
 
 export const tools = [...userTools, vtexDocsAssistant, vtexDocsSearch];
-
-export { userTools } from "@decocms/mcps-shared/tools/user";
-export { vtexDocsAssistant } from "./assistant.ts";
-export { vtexDocsSearch } from "./search.ts";

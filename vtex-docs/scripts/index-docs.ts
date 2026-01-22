@@ -119,7 +119,7 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
 }
 
 async function deleteExistingChunks(source: string): Promise<void> {
-  await supabase.from("doc_chunks").delete().eq("metadata->>source", source);
+  await supabase.from("vtex_docs_chunks").delete().eq("metadata->>source", source);
 }
 
 async function insertChunks(
@@ -132,7 +132,7 @@ async function insertChunks(
     embedding: vectors[i],
   }));
 
-  const { error } = await supabase.from("doc_chunks").insert(rows);
+  const { error } = await supabase.from("vtex_docs_chunks").insert(rows);
   if (error) throw new Error(`Insert failed: ${error.message}`);
 }
 
