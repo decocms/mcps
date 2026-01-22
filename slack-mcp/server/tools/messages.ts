@@ -15,6 +15,10 @@ import {
   getChannelHistory,
   getThreadReplies,
   searchMessages,
+  scheduleMessage,
+  deleteScheduledMessage,
+  pinMessage,
+  unpinMessage,
 } from "../lib/slack-client.ts";
 
 /**
@@ -437,6 +441,205 @@ export const createSearchMessagesTool = (_env: Env) =>
   });
 
 /**
+ * Schedule a message to be sent later
+ */
+export const createScheduleMessageTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_SCHEDULE_MESSAGE",
+    description:
+      "Schedule a message to be sent at a specific time in the future",
+    inputSchema: z
+      .object({
+        channel: z.string().describe("Channel ID to send the message to"),
+        text: z.string().describe("The message text to send"),
+        post_at: z
+          .number()
+          .describe(
+            "Unix timestamp (seconds) for when to send the message. Must be at least 1 minute in the future.",
+          ),
+        thread_ts: z
+          .string()
+          .optional()
+          .describe("Thread timestamp to schedule in a thread"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        scheduled_message_id: z
+          .string()
+          .optional()
+          .describe("ID of the scheduled message"),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel: string;
+        text: string;
+        post_at: number;
+        thread_ts?: string;
+      };
+
+      try {
+        const result = await scheduleMessage(
+          input.channel,
+          input.text,
+          input.post_at,
+          input.thread_ts,
+        );
+
+        if (result.ok) {
+          return {
+            success: true,
+            scheduled_message_id: result.scheduledMessageId,
+          };
+        }
+
+        return {
+          success: false,
+          error: result.error ?? "Failed to schedule message",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
+ * Delete a scheduled message
+ */
+export const createDeleteScheduledMessageTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_DELETE_SCHEDULED_MESSAGE",
+    description: "Delete a scheduled message before it is sent",
+    inputSchema: z
+      .object({
+        channel: z
+          .string()
+          .describe("Channel ID where the message was scheduled"),
+        scheduled_message_id: z
+          .string()
+          .describe("ID of the scheduled message to delete"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel: string;
+        scheduled_message_id: string;
+      };
+
+      try {
+        const success = await deleteScheduledMessage(
+          input.channel,
+          input.scheduled_message_id,
+        );
+
+        return {
+          success,
+          error: success ? undefined : "Failed to delete scheduled message",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
+ * Pin a message to a channel
+ */
+export const createPinMessageTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_PIN_MESSAGE",
+    description: "Pin a message to a channel for easy reference",
+    inputSchema: z
+      .object({
+        channel: z.string().describe("Channel ID where the message exists"),
+        timestamp: z.string().describe("Timestamp of the message to pin"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel: string;
+        timestamp: string;
+      };
+
+      try {
+        const success = await pinMessage(input.channel, input.timestamp);
+
+        return {
+          success,
+          error: success ? undefined : "Failed to pin message",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
+ * Unpin a message from a channel
+ */
+export const createUnpinMessageTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_UNPIN_MESSAGE",
+    description: "Unpin a message from a channel",
+    inputSchema: z
+      .object({
+        channel: z.string().describe("Channel ID where the message exists"),
+        timestamp: z.string().describe("Timestamp of the message to unpin"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel: string;
+        timestamp: string;
+      };
+
+      try {
+        const success = await unpinMessage(input.channel, input.timestamp);
+
+        return {
+          success,
+          error: success ? undefined : "Failed to unpin message",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
  * Export all message tools
  */
 export const messageTools = [
@@ -447,4 +650,8 @@ export const messageTools = [
   createGetChannelHistoryTool,
   createGetThreadRepliesTool,
   createSearchMessagesTool,
+  createScheduleMessageTool,
+  createDeleteScheduledMessageTool,
+  createPinMessageTool,
+  createUnpinMessageTool,
 ];
