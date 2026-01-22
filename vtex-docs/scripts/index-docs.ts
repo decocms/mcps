@@ -142,7 +142,7 @@ async function deleteExistingChunks(source: string): Promise<void> {
     .from("vtex_docs_chunks")
     .delete()
     .or(
-      `metadata->>source.eq.${normalizedSource},metadata->>source.eq../${normalizedSource}`,
+      `metadata->>source.eq.${normalizedSource},metadata->>source.eq./${normalizedSource}`,
     );
 }
 
