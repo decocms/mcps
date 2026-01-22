@@ -1,0 +1,28 @@
+{
+  "name": "@decocms/google-flights",
+  "version": "1.0.0",
+  "description": "Search for flights using Google Flights data",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.0.7",
+    "@decocms/runtime": "^1.1.3",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "1.25.1",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

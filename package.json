@@ -21,8 +21,8 @@
   },
   "workspaces": [
     "apify",
-    "content-scraper",
     "blog-post-generator",
+    "content-scraper",
     "data-for-seo",
     "datajud",
     "deco-llm",
@@ -33,6 +33,7 @@
     "google-calendar",
     "google-docs",
     "google-drive",
+    "google-flights",
     "google-forms",
     "google-gmail",
     "google-meet",
