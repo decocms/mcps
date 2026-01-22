@@ -12,7 +12,7 @@ const BATCH_SIZE = 50;
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_KEY!,
 );
 
 // Markdown-aware text splitter
@@ -101,7 +101,10 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
   const section = extractSection(filePath);
   const title =
     frontmatter.title ||
-    filePath.split("/").pop()?.replace(/\.(mdx?|md)$/, "") ||
+    filePath
+      .split("/")
+      .pop()
+      ?.replace(/\.(mdx?|md)$/, "") ||
     "Untitled";
 
   const chunks = await splitter.splitText(body);
@@ -119,12 +122,15 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
 }
 
 async function deleteExistingChunks(source: string): Promise<void> {
-  await supabase.from("vtex_docs_chunks").delete().eq("metadata->>source", source);
+  await supabase
+    .from("vtex_docs_chunks")
+    .delete()
+    .eq("metadata->>source", source);
 }
 
 async function insertChunks(
   chunks: DocChunk[],
-  vectors: number[][]
+  vectors: number[][],
 ): Promise<void> {
   const rows = chunks.map((chunk, i) => ({
     content: chunk.content,
