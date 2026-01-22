@@ -136,10 +136,14 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
 }
 
 async function deleteExistingChunks(source: string): Promise<void> {
+  // Delete both with and without "./" prefix to clean up any duplicates
+  const normalizedSource = source.replace(/^\.\//, "");
   await supabase
     .from("vtex_docs_chunks")
     .delete()
-    .eq("metadata->>source", source);
+    .or(
+      `metadata->>source.eq.${normalizedSource},metadata->>source.eq../${normalizedSource}`,
+    );
 }
 
 async function insertChunks(
@@ -165,7 +169,8 @@ async function indexDocs(): Promise<void> {
   const glob = new Glob(`${docsPath}/**/*.{md,mdx}`);
   const files: string[] = [];
   for await (const file of glob.scan(".")) {
-    files.push(file);
+    // Normalize path: remove leading "./" to avoid duplicates
+    files.push(file.replace(/^\.\//, ""));
   }
 
   console.log(`Found ${files.length} files\n`);
