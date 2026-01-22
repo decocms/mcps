@@ -1,4 +1,4 @@
-# Slack MCP
+# Slack MCP 
 
 MCP para integração com Slack, incluindo bot inteligente com gerenciamento de threads, comandos de AI agent e suporte a webhooks.
 
