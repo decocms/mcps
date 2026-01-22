@@ -834,24 +834,29 @@ export async function uploadFile(
   }
 
   try {
+    const uploadArgs = {
+      channel_id: options.channels[0],
+      content: options.content ?? "",
+      filename: options.filename,
+      filetype: options.filetype,
+      title: options.title,
+      initial_comment: options.initialComment,
+      thread_ts: options.threadTs,
+    };
+
     const result = await withRateLimitRetry(
       () =>
-        webClient!.files.uploadV2({
-          channel_id: options.channels[0],
-          content: options.content,
-          filename: options.filename,
-          filetype: options.filetype,
-          title: options.title,
-          initial_comment: options.initialComment,
-          thread_ts: options.threadTs,
-        }),
+        webClient!.files.uploadV2(
+          uploadArgs as Parameters<WebClient["files"]["uploadV2"]>[0],
+        ),
       "uploadFile",
     );
 
-    if (result.ok && result.file) {
+    const fileResult = result as { ok: boolean; file?: { id?: string } };
+    if (fileResult.ok && fileResult.file) {
       return {
         ok: true,
-        fileId: (result.file as { id?: string }).id,
+        fileId: fileResult.file.id,
       };
     }
 

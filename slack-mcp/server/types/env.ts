@@ -8,14 +8,14 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings (AI connections)
-  EVENT_BUS: BindingOf("@deco/event-bus"),
-  DATABASE: BindingOf("@deco/postgres").optional(),
-  MODEL_PROVIDER: BindingOf("@deco/llm").describe(
-    "AI Model Provider connection",
-  ),
-  AGENT: BindingOf("@deco/agent").describe(
-    "Agent with tools, resources and prompts",
-  ),
+  EVENT_BUS: BindingOf("@deco/event-bus").required(),
+  DATABASE: BindingOf("@deco/postgres").required(),
+  MODEL_PROVIDER: BindingOf("@deco/llm")
+    .required()
+    .describe("AI Model Provider connection"),
+  AGENT: BindingOf("@deco/agent")
+    .required()
+    .describe("Agent with tools, resources and prompts"),
   LANGUAGE_MODEL: z
     .object({
       __type: z.literal("@deco/language-model"),
@@ -26,7 +26,7 @@ export const StateSchema = z.object({
         .loose()
         .describe("The language model to use for agent responses."),
     })
-    .optional(),
+    .required(),
 
   // Webhook URL (read-only template)
   WEBHOOK_URL: z
