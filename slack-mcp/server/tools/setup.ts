@@ -41,7 +41,8 @@ export const createGetBotStatusTool = (env: Env) =>
       .strict(),
     execute: async () => {
       try {
-        const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+        const botToken =
+          env.MESH_REQUEST_CONTEXT?.state?.SLACK_CREDENTIALS?.BOT_TOKEN;
 
         // Try to ensure client is initialized
         const client = ensureSlackClient(botToken);

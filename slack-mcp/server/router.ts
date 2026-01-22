@@ -2,7 +2,8 @@
  * HTTP Router for Slack MCP (Multi-tenant)
  *
  * Handles incoming webhook requests from Slack.
- * Looks up team configuration by team_id for multi-tenant support.
+ * Primary route: /slack/events/:connectionId (uses connectionId as key)
+ * Legacy route: /slack/events (uses team_id from payload)
  */
 
 import { Hono } from "hono";
@@ -17,18 +18,31 @@ import {
 } from "./webhook.ts";
 import { handleSlackEvent } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
-import { readTeamConfig, type SlackTeamConfig } from "./lib/data.ts";
+import {
+  readConnectionConfig,
+  readTeamConfig,
+  type SlackConnectionConfig,
+  type SlackTeamConfig,
+} from "./lib/data.ts";
 
-// Cache for bot user IDs (teamId -> botUserId)
+// Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
 
 export function setBotUserId(userId: string): void {
-  // This is called from main.ts with the current team's bot user ID
-  // For multi-tenant, we store in cache when team config is loaded
+  // This is called from main.ts with the current connection's bot user ID
+  // For multi-tenant, we store in cache when connection config is loaded
 }
 
+export function setBotUserIdForConnection(
+  connectionId: string,
+  userId: string,
+): void {
+  botUserIdCache.set(connectionId, userId);
+}
+
+// Legacy: Keep for backwards compatibility
 export function setBotUserIdForTeam(teamId: string, userId: string): void {
-  botUserIdCache.set(teamId, userId);
+  botUserIdCache.set(`team:${teamId}`, userId);
 }
 
 export const app = new Hono();
@@ -39,6 +53,92 @@ export const app = new Hono();
 app.get("/health", (c) => {
   return c.json({ status: "ok", service: "slack-mcp" });
 });
+
+// ============================================================================
+// Primary Route: /slack/events/:connectionId (uses connectionId as key)
+// ============================================================================
+
+/**
+ * Main Slack events endpoint with connectionId in URL
+ * URL: /slack/events/:connectionId
+ */
+app.post("/slack/events/:connectionId", async (c) => {
+  const connectionId = c.req.param("connectionId");
+  console.log("\n");
+  console.log("╔══════════════════════════════════════════════════════════╗");
+  console.log("║            🔔 SLACK WEBHOOK RECEIVED                     ║");
+  console.log("╚══════════════════════════════════════════════════════════╝");
+  console.log(`[Router] Time: ${new Date().toISOString()}`);
+  console.log(`[Router] Connection ID: ${connectionId}`);
+
+  const rawBody = await c.req.text();
+
+  // Parse payload
+  let parsedPayload: SlackWebhookPayload;
+  try {
+    parsedPayload = JSON.parse(rawBody);
+  } catch {
+    console.error("[Router] Failed to parse JSON");
+    return c.json({ error: "Invalid JSON" }, 400);
+  }
+
+  // Handle URL verification challenge (doesn't need connection config)
+  if (parsedPayload.type === "url_verification") {
+    console.log("[Router] ✅ URL verification challenge");
+    return new Response(parsedPayload.challenge, {
+      status: 200,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
+  // Lookup connection configuration
+  const connectionConfig = await readConnectionConfig(connectionId);
+  if (!connectionConfig) {
+    console.error(
+      `[Router] ❌ No config found for connection: ${connectionId}`,
+    );
+    return c.json({ error: "Connection not configured" }, 403);
+  }
+
+  console.log(`[Router] ✅ Config found for connection ${connectionId}`);
+
+  const signature = c.req.header("x-slack-signature");
+  const timestamp = c.req.header("x-slack-request-timestamp");
+
+  // Verify the request with connection's signing secret
+  const { verified, payload } = await verifySlackRequest(
+    rawBody,
+    signature ?? null,
+    timestamp ?? null,
+    connectionConfig.signingSecret,
+  );
+
+  if (!verified || !payload) {
+    return c.json({ error: "Invalid signature" }, 401);
+  }
+
+  // Check if we should ignore this event
+  const botUserId =
+    connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
+  if (shouldIgnoreEvent(payload, botUserId)) {
+    return c.json({ ok: true });
+  }
+
+  const eventType = getEventType(payload);
+  console.log(`[Router] Event: ${eventType} for connection: ${connectionId}`);
+
+  // Process the event asynchronously
+  processConnectionEventAsync(payload, connectionConfig).catch((error) => {
+    console.error("[Router] Error processing event:", error);
+  });
+
+  // Acknowledge immediately (Slack expects response within 3 seconds)
+  return c.json({ ok: true });
+});
+
+// ============================================================================
+// Legacy Routes: Use team_id from payload (backwards compatibility)
+// ============================================================================
 
 /**
  * Debug endpoint - check configuration and send test message
@@ -328,7 +428,71 @@ app.post("/slack/interactive", async (c) => {
 });
 
 /**
- * Process Slack events asynchronously (Multi-tenant)
+ * Process Slack events asynchronously (connection-based)
+ */
+async function processConnectionEventAsync(
+  payload: SlackWebhookPayload,
+  connectionConfig: SlackConnectionConfig,
+): Promise<void> {
+  if (!payload.event) return;
+
+  const event = payload.event;
+  const eventType = event.type;
+  const botUserId =
+    connectionConfig.botUserId ??
+    botUserIdCache.get(connectionConfig.connectionId);
+
+  // Determine if bot was mentioned (for app_mention or message events)
+  let shouldProcess = false;
+  let cleanText = event.text ?? "";
+
+  if (eventType === "app_mention") {
+    shouldProcess = true;
+    if (botUserId) {
+      cleanText = removeBotMention(cleanText, botUserId);
+    }
+  } else if (eventType === "message") {
+    const isDM = event.channel?.startsWith("D");
+    if (isDM) {
+      shouldProcess = true;
+    } else if (botUserId && isBotMentioned(event.text ?? "", botUserId)) {
+      shouldProcess = true;
+      cleanText = removeBotMention(event.text ?? "", botUserId);
+    }
+  } else {
+    shouldProcess = true;
+  }
+
+  if (shouldProcess) {
+    // Convert to team config format for compatibility with handleSlackEvent
+    const teamConfig: SlackTeamConfig = {
+      teamId: connectionConfig.teamId ?? payload.team_id ?? "",
+      organizationId: connectionConfig.organizationId,
+      meshUrl: connectionConfig.meshUrl,
+      botToken: connectionConfig.botToken,
+      signingSecret: connectionConfig.signingSecret,
+      botUserId: connectionConfig.botUserId,
+      configuredAt: connectionConfig.configuredAt,
+    };
+
+    await handleSlackEvent(
+      {
+        type: eventType,
+        payload: {
+          ...event,
+          text: cleanText,
+          original_text: event.text,
+        },
+        teamId: payload.team_id,
+        apiAppId: payload.api_app_id,
+      },
+      teamConfig,
+    );
+  }
+}
+
+/**
+ * Process Slack events asynchronously (legacy team-based)
  */
 async function processEventAsync(
   payload: SlackWebhookPayload,
@@ -339,7 +503,7 @@ async function processEventAsync(
   const event = payload.event;
   const eventType = event.type;
   const botUserId =
-    teamConfig.botUserId ?? botUserIdCache.get(teamConfig.teamId);
+    teamConfig.botUserId ?? botUserIdCache.get(`team:${teamConfig.teamId}`);
 
   // Determine if bot was mentioned (for app_mention or message events)
   let shouldProcess = false;

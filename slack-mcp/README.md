@@ -6,11 +6,11 @@ MCP para integração com Slack, incluindo bot inteligente com gerenciamento de 
 
 - **Bot Inteligente**: Responde a @mentions e mensagens diretas com integração LLM
 - **Gerenciamento de Threads**: Cada @mention cria uma nova thread lógica, resolvendo o problema de mistura de contextos
-- **Webhooks**: Recebe e processa eventos do Slack (mensagens, reactions, etc.)
+- **Webhooks**: Recebe e processa eventos do Slack via Mesh Universal Webhook Proxy
 - **Tools Completas**: Enviar/editar/deletar mensagens, listar canais, buscar usuários, etc.
 - **Event Bus**: Integração com Deco Mesh para processamento de eventos
 
-## Configuração
+## Configuração Rápida
 
 ### 1. Criar um Slack App
 
@@ -31,25 +31,54 @@ MCP para integração com Slack, incluindo bot inteligente com gerenciamento de 
 
 3. Instale o app no seu workspace
 
-### 2. Configurar Event Subscriptions
+### 2. Instalar no Mesh
 
-1. Na seção **Event Subscriptions**, habilite eventos
-2. Configure a Request URL: `https://your-mcp-url/slack/events`
-3. Adicione os seguintes eventos:
+1. Acesse o Mesh Dashboard
+2. Vá para MCPs → Store
+3. Procure por "Slack Bot" e instale
+4. Configure os campos obrigatórios:
+   - **BOT_TOKEN**: Token do bot (começa com `xoxb-`)
+   - **SIGNING_SECRET**: Signing Secret do app
+
+### 3. Configurar Webhook no Slack
+
+Após configurar no Mesh, você verá a **Webhook URL** no painel de configuração. Copie esta URL.
+
+1. No Slack App, vá para **Event Subscriptions**
+2. Habilite eventos
+3. Cole a Webhook URL no campo **Request URL**
+4. O Slack vai verificar a URL automaticamente ✅
+5. Adicione os eventos:
    - `app_mention` - Quando o bot é mencionado
    - `message.channels` - Mensagens em canais públicos
    - `message.groups` - Mensagens em canais privados
    - `message.im` - Mensagens diretas
    - `reaction_added` - Reactions adicionadas
 
-### 3. Configurar no Mesh
+## Webhook URL
 
-No Dashboard do Mesh, configure:
+A URL de webhook é gerada automaticamente pelo Mesh usando o **Universal Webhook Proxy**:
 
-- **BOT_TOKEN**: Token do bot (começa com `xoxb-`)
-- **SIGNING_SECRET**: Signing Secret do app (para verificar webhooks)
-- **THREAD_TIMEOUT_MIN**: Timeout de inatividade da thread em minutos (padrão: 10)
-- **ALLOWED_CHANNELS**: IDs de canais permitidos (opcional, separados por vírgula)
+```
+https://mesh.deco.cx/webhooks/{connectionId}
+```
+
+Esta URL:
+- ✅ Responde automaticamente ao challenge de verificação do Slack
+- ✅ Verifica assinaturas usando seu `SIGNING_SECRET`
+- ✅ Publica eventos no Event Bus para processamento pelo MCP
+- ✅ É única para sua conexão/organização
+
+## Campos de Configuração
+
+| Campo | Obrigatório | Descrição |
+|-------|-------------|-----------|
+| BOT_TOKEN | ✅ | Token do bot (xoxb-...) |
+| SIGNING_SECRET | ✅ | Signing Secret para verificar webhooks |
+| LOG_CHANNEL_ID | ❌ | Canal para logs do bot |
+| THREAD_TIMEOUT_MIN | ❌ | Timeout de inatividade em minutos (padrão: 10) |
+| ALLOWED_CHANNELS | ❌ | IDs de canais permitidos (separados por vírgula) |
+| ENABLE_STREAMING | ❌ | Habilitar respostas em streaming (padrão: true) |
 
 ## Tools Disponíveis
 
@@ -107,6 +136,34 @@ O MCP resolve o problema comum de mistura de contextos em bots do Slack:
                      (contexto limpo, sem mistura com pergunta 1)
 ```
 
+## Arquitetura de Webhooks
+
+Este MCP usa o **Mesh Universal Webhook Proxy** para receber eventos:
+
+```
+┌─────────────┐     ┌──────────────────────┐     ┌───────────┐     ┌───────────┐
+│  Slack API  │────▶│ Mesh Webhook Proxy   │────▶│ Event Bus │────▶│ Slack MCP │
+│             │     │ /webhooks/:connId    │     │           │     │           │
+└─────────────┘     └──────────────────────┘     └───────────┘     └───────────┘
+        │                     │
+        │                     ▼
+        │              ┌─────────────────┐
+        │              │ Slack Adapter   │
+        │              │ - Verifica sig  │
+        │              │ - Responde chal │
+        │              └─────────────────┘
+        │
+        ▼
+   url_verification
+   challenge response
+```
+
+**Benefícios:**
+- Cada organização tem sua própria URL
+- O MCP não precisa expor endpoints HTTP
+- Verificação de assinatura centralizada no Mesh
+- Challenge do Slack tratado automaticamente
+
 ## Desenvolvimento
 
 ```bash
@@ -122,11 +179,3 @@ O deploy é automático via GitHub Actions quando há push para `main`.
 ```bash
 bun run scripts/deploy.ts slack-mcp
 ```
-
-## Endpoints
-
-- `POST /slack/events` - Eventos do Slack (Event Subscriptions)
-- `POST /slack/commands` - Slash Commands
-- `POST /slack/interactive` - Componentes interativos
-- `GET /health` - Health check
-
