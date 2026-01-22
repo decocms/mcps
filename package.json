@@ -21,8 +21,8 @@
   },
   "workspaces": [
     "apify",
-    "content-scraper",
     "blog-post-generator",
+    "content-scraper",
     "data-for-seo",
     "datajud",
     "deco-llm",
@@ -54,6 +54,7 @@
     "replicate",
     "shared",
     "slack-mcp",
+    "slides",
     "sora",
     "template-minimal",
     "template-with-view",

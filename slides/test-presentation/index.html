@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Presentation</title>
+  <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./engine.js"></script>
+  <style>
+    .loading { display: flex; align-items: center; justify-content: center; height: 100vh; color: #c4df1b; font-family: system-ui; }
+    .loading::after { content: ''; width: 24px; height: 24px; margin-left: 12px; border: 2px solid #3a3936; border-top-color: #c4df1b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root"><div class="loading">Loading presentation</div></div>
+  <script>document.addEventListener('DOMContentLoaded', function() { initPresentation('./slides/manifest.json'); });</script>
+</body>
+</html>

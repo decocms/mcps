@@ -1,0 +1,18 @@
+{
+  "id": "slide-003",
+  "layout": "list",
+  "title": "Key Features",
+  "subtitle": "Everything you need to create beautiful presentations",
+  "tag": "FEATURES",
+  "backgroundColor": "dc-950",
+  "textColor": "light",
+  "accent": "green",
+  "items": [
+    { "title": "Multiple Layouts", "subtitle": "Title, content, stats, two-column, list, quote, image, and custom" },
+    { "title": "GSAP Animations", "subtitle": "Smooth, professional transitions powered by GSAP" },
+    { "title": "No Build Required", "subtitle": "Uses CDN-loaded React and GSAP - just serve and present" },
+    { "title": "Portable Output", "subtitle": "Bundle to a single HTML file that works anywhere" },
+    { "title": "Style Guide", "subtitle": "Define your design system in a simple markdown file" },
+    { "title": "AI-Powered", "subtitle": "Create presentations through natural conversation" }
+  ]
+}

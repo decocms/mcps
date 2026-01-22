@@ -1,0 +1,15 @@
+{
+  "id": "slide-002",
+  "layout": "stats",
+  "title": "Key Metrics",
+  "tag": "PERFORMANCE",
+  "backgroundColor": "dc-950",
+  "textColor": "light",
+  "accent": "green",
+  "items": [
+    { "value": "2.5M", "label": "Users" },
+    { "value": "99.9%", "label": "Uptime" },
+    { "value": "150ms", "label": "Response Time" },
+    { "value": "$1.2M", "label": "Revenue" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "slide-001",
+  "layout": "title",
+  "title": "Introduction",
+  "subtitle": "Getting started with Slides MCP",
+  "tag": "OVERVIEW",
+  "backgroundColor": "dc-950",
+  "textColor": "light",
+  "accent": "green"
+}
