@@ -21,14 +21,14 @@ export const vtexDocsSearch = (_env: Env) =>
         .min(1)
         .max(20)
         .optional()
-        .describe("Number of results to return (default: 5)"),
+        .describe("Number of results to return (default: 8)"),
       semanticWeight: z
         .number()
         .min(0)
         .max(1)
         .optional()
         .describe(
-          "Weight for semantic search vs full-text (0-1, default: 0.5)",
+          "Weight for semantic search vs full-text (0-1, default: 0.3)",
         ),
     }),
     outputSchema: z.object({
@@ -45,7 +45,7 @@ export const vtexDocsSearch = (_env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      const { query, language, limit = 5, semanticWeight = 0.5 } = context;
+      const { query, language, limit = 8, semanticWeight = 0.3 } = context;
 
       const { embedding } = await embed({
         model: embeddingModel(),

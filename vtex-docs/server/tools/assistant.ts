@@ -43,9 +43,9 @@ export const vtexDocsAssistant = (_env: Env) =>
       const { data: docs, error } = await supabase.rpc("hybrid_search", {
         query_text: question,
         query_embedding: embedding,
-        match_count: 5,
+        match_count: 8,
         rrf_k: 60,
-        semantic_weight: 0.5,
+        semantic_weight: 0.3,
         filter_metadata: filter,
       });
 
