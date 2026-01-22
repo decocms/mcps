@@ -79,20 +79,26 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
     /**
      * Generate the authorization URL for GitHub App installation
+     *
+     * Uses /installations/select_target which:
+     * - Lets user select organization/account
+     * - Works for new installations
+     * - For already installed apps, user can click "Configure" then "Save" to re-authorize
+     *
+     * Note: Make sure "Request user authorization (OAuth) during installation" is
+     * enabled in the GitHub App settings for re-authorization to work.
      */
     authorizationUrl: (callbackUrl) => {
+      // Use select_target to let user choose org/account
       const url = new URL(
-        `https://github.com/apps/${GITHUB_APP_NAME}/installations/new`,
+        `https://github.com/apps/${GITHUB_APP_NAME}/installations/select_target`,
       );
 
       // Parse the callback URL to extract state parameter
       const callbackUrlObj = new URL(callbackUrl);
       const state = callbackUrlObj.searchParams.get("state");
 
-      // Set the setup_action to redirect back after installation
-      url.searchParams.set("setup_action", "install");
-
-      // Pass state through the callback
+      // Pass state for CSRF protection and to preserve the redirect flow
       if (state) {
         url.searchParams.set("state", state);
       }

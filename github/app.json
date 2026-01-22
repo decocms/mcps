@@ -1,10 +1,10 @@
 {
   "scopeName": "deco",
-  "name": "github",
+  "name": "github-mcp",
   "friendlyName": "GitHub Events",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-github.decocache.com/mcp"
+    "url": "https://sites-github-mcp.decocache.com/mcp"
   },
   "description": "GitHub webhook event hub - Subscribe to repository events and publish them to the Event Bus",
   "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
