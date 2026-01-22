@@ -98,6 +98,14 @@ export const generateBlogPostTool = (env: Env) =>
         .string()
         .optional()
         .describe("Additional instructions for blog post generation"),
+      content_purpose: z
+        .string()
+        .optional()
+        .describe("Content purpose for blog post generation"),
+      brand_context: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe("Brand context as JSON for blog post generation"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -126,6 +134,8 @@ export const generateBlogPostTool = (env: Env) =>
         toneOfVoiceText,
         toneOfVoiceJson,
         additionalInstructions,
+        content_purpose,
+        brand_context,
       } = context;
 
       try {
@@ -190,6 +200,8 @@ export const generateBlogPostTool = (env: Env) =>
               context: contextData,
               toneOfVoice: toneOfVoiceData,
               additionalInstructions: additionalInstructions ?? "",
+              content_purpose: content_purpose ?? "",
+              brand_context: brand_context ?? null,
             }),
             signal: controller.signal,
           });
