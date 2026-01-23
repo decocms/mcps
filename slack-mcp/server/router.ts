@@ -57,6 +57,32 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", service: "slack-mcp" });
 });
 
+/**
+ * Temporary file serving endpoint (for Whisper transcription)
+ * URL: /temp-files/:id
+ */
+app.get("/temp-files/:id", async (c) => {
+  const { getTempFile } = await import("./lib/tempFileStore.ts");
+  const id = c.req.param("id");
+
+  const file = getTempFile(id);
+  if (!file) {
+    return c.json({ error: "File not found or expired" }, 404);
+  }
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(file.data, "base64");
+
+  // Return the file with correct content type
+  return new Response(buffer, {
+    headers: {
+      "Content-Type": file.mimeType,
+      "Content-Disposition": `attachment; filename="${file.name}"`,
+      "Content-Length": buffer.length.toString(),
+    },
+  });
+});
+
 // ============================================================================
 // Primary Route: /slack/events/:connectionId (uses connectionId as key)
 // ============================================================================

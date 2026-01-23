@@ -27,6 +27,11 @@ export const StateSchema = z.object({
         .describe("The language model to use for agent responses."),
     })
     .required(),
+  WHISPER: BindingOf("@deco/whisper")
+    .optional()
+    .describe(
+      "OpenAI Whisper for audio transcription. If not set, audio files will be sent directly to LLM.",
+    ),
 
   // Webhook URL (read-only template)
   WEBHOOK_URL: z

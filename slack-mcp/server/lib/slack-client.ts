@@ -716,16 +716,12 @@ export async function downloadSlackFile(
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-    // Use expected mime type if provided and response is generic
-    const finalMimeType =
-      expectedMimeType &&
-      (contentType === "application/octet-stream" ||
-        contentType.includes("text/html"))
-        ? expectedMimeType
-        : contentType;
+    // Always prefer expected mime type if provided, as Slack's file metadata is more reliable
+    // than the Content-Type header from the download endpoint
+    const finalMimeType = expectedMimeType || contentType;
 
     console.log(
-      `[Slack] File downloaded: ${base64.length} chars, type: ${finalMimeType}`,
+      `[Slack] File downloaded: ${base64.length} chars, type: ${finalMimeType}${expectedMimeType ? ` (from metadata, server sent: ${contentType})` : ""}`,
     );
 
     return {
@@ -763,46 +759,57 @@ export async function processSlackFiles(
   }>,
 ): Promise<
   Array<{
-    type: "image";
+    type: "image" | "audio";
     data: string;
     mimeType: string;
     name: string;
   }>
 > {
   const processedFiles: Array<{
-    type: "image";
+    type: "image" | "audio";
     data: string;
     mimeType: string;
     name: string;
   }> = [];
 
   for (const file of files) {
-    // Only process images for now
-    if (!isImageFile(file.mimetype)) {
+    const isImage = isImageFile(file.mimetype);
+    const isAudio = file.mimetype.startsWith("audio/");
+    
+    console.log(`[Slack] Processing file:`, {
+      name: file.name,
+      mimetype: file.mimetype,
+      isImage,
+      isAudio,
+      url_private_present: !!file.url_private,
+    });
+    
+    // Process images and audio files
+    if (!isImage && !isAudio) {
       console.log(
-        `[Slack] Skipping non-image file: ${file.name} (${file.mimetype})`,
+        `[Slack] Skipping unsupported file type: ${file.name} (${file.mimetype})`,
       );
       continue;
     }
 
     const downloaded = await downloadSlackFile(file.url_private, file.mimetype);
     if (downloaded) {
-      // Double-check it's actually an image after download
-      if (!isImageFile(downloaded.mimeType)) {
-        console.error(
-          `[Slack] File ${file.name} is not an image after download: ${downloaded.mimeType}`,
-        );
-        continue;
-      }
       processedFiles.push({
-        type: "image",
+        type: isAudio ? "audio" : "image",
         data: downloaded.data,
         mimeType: downloaded.mimeType,
         name: file.name,
       });
-      console.log(
-        `[Slack] Downloaded image: ${file.name} (${downloaded.mimeType})`,
-      );
+      
+      if (isAudio) {
+        console.log(
+          `[Slack] 🎵 Downloaded audio: ${file.name} (${downloaded.mimeType}, ${downloaded.data.length} chars)`,
+        );
+      } else {
+        console.log(
+          `[Slack] Downloaded image: ${file.name} (${downloaded.mimeType})`,
+        );
+      }
     }
   }
 

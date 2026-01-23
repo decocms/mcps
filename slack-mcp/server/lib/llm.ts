@@ -1,21 +1,11 @@
 /**
  * LLM Integration for Slack MCP
  *
- * Uses MCP bindings to call LLM providers through Mesh,
- * following the same pattern as Mesh's internal LLM calls.
+ * Uses direct Mesh API calls to LLM providers.
+ * This is used in webhook context where bindings are not available.
  */
 
-import { LanguageModelBinding } from "@decocms/bindings/llm";
-
 const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-sonnet-4";
-
-// MCP Connection type for HTTP connections
-interface MCPConnection {
-  type: "HTTP";
-  url: string;
-  token?: string;
-  headers?: Record<string, string>;
-}
 
 export interface LLMConfig {
   meshUrl: string;
@@ -28,9 +18,10 @@ export interface LLMConfig {
 }
 
 export interface MessageImage {
-  type: "image";
+  type: "image" | "audio";
   data: string; // base64
   mimeType: string;
+  name?: string;
 }
 
 export interface Message {
@@ -40,52 +31,106 @@ export interface Message {
 }
 
 /**
- * Create MCP connection to the LLM provider through Mesh proxy
+ * Call LLM via Mesh Models API (same as mcp-studio)
  */
-function createLLMConnection(config: LLMConfig): MCPConnection {
-  const { meshUrl, modelProviderId, token } = config;
+async function callModelsAPI(
+  config: LLMConfig,
+  messages: Array<{ role: string; parts: any }>,
+  stream: boolean = false,
+): Promise<Response> {
+  const {
+    meshUrl,
+    organizationId,
+    token,
+    modelProviderId,
+    modelId = DEFAULT_LANGUAGE_MODEL,
+    agentId,
+  } = config;
 
   // When running locally with a tunnel, use localhost for internal API calls
   const isTunnel = meshUrl.includes(".deco.host");
   const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
 
-  return {
-    type: "HTTP",
-    url: `${effectiveMeshUrl}/mcp/${modelProviderId}`,
-    token,
+  // Use the decopilot endpoint (new Mesh API)
+  const url = `${effectiveMeshUrl}/api/${organizationId}/decopilot/stream`;
+
+  console.log(`[LLM] Calling Decopilot API:`, {
+    url,
+    hasToken: !!token,
+    modelId,
+    hasAgent: !!agentId,
+    stream,
+  });
+
+  const body = {
+    messages,
+    model: {
+      id: modelId,
+      connectionId: modelProviderId,
+    },
+    agent: {
+      id: agentId ?? null,
+    },
+    stream: true,
   };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[LLM] API error:", errorText);
+    throw new Error(
+      `Mesh Models API call failed (${response.status}): ${errorText}`,
+    );
+  }
+
+  return response;
 }
 
 /**
- * Convert messages to LanguageModelV2 prompt format
+ * Generate unique message ID
+ */
+function generateMessageId(): string {
+  return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Convert messages to Decopilot API format
+ * Format: { id, role, parts: [...] }
  */
 function messagesToPrompt(
   messages: Message[],
   systemPrompt?: string,
 ): Array<{
+  id: string;
   role: "system" | "user" | "assistant";
-  content:
-    | string
-    | Array<
-        | { type: "text"; text: string }
-        | { type: "file"; data: string; mediaType: string }
-      >;
+  parts: Array<
+    | { type: "text"; text: string }
+    | { type: "file"; url: string; filename: string; mediaType: string }
+  >;
 }> {
   const prompt: Array<{
+    id: string;
     role: "system" | "user" | "assistant";
-    content:
-      | string
-      | Array<
-          | { type: "text"; text: string }
-          | { type: "file"; data: string; mediaType: string }
-        >;
+    parts: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; url: string; filename: string; mediaType: string }
+    >;
   }> = [];
 
   // Add system prompt if provided
   if (systemPrompt) {
     prompt.push({
+      id: generateMessageId(),
       role: "system",
-      content: systemPrompt,
+      parts: [{ type: "text", text: systemPrompt }],
     });
   }
 
@@ -93,37 +138,47 @@ function messagesToPrompt(
   for (const msg of messages) {
     if (msg.role === "system") {
       prompt.push({
+        id: generateMessageId(),
         role: "system",
-        content: msg.content,
+        parts: [{ type: "text", text: msg.content }],
       });
     } else if (msg.role === "user") {
-      const content: Array<
-        | { type: "text"; text: string }
-        | { type: "file"; data: string; mediaType: string }
-      > = [{ type: "text", text: msg.content }];
+    const parts: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; url: string; filename: string; mediaType: string }
+    > = [{ type: "text", text: msg.content }];
 
-      // Add images if present
-      if (msg.images && msg.images.length > 0) {
-        for (const img of msg.images) {
-          const dataUri = img.data.startsWith("data:")
-            ? img.data
-            : `data:${img.mimeType};base64,${img.data}`;
-          content.push({
-            type: "file",
-            data: dataUri,
-            mediaType: img.mimeType,
-          });
-        }
+    // Add media files (images and audio) if present
+    if (msg.images && msg.images.length > 0) {
+      for (const media of msg.images) {
+        const dataUri = media.data.startsWith("data:")
+          ? media.data
+          : `data:${media.mimeType};base64,${media.data}`;
+        
+        const filename = media.name || 
+          (media.type === "audio" ? "audio" : "image");
+        
+        parts.push({
+          type: "file",
+          url: dataUri,
+          filename,
+          mediaType: media.mimeType,
+        });
+        
+        console.log(`[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`);
       }
+    }
 
       prompt.push({
+        id: generateMessageId(),
         role: "user",
-        content,
+        parts,
       });
     } else if (msg.role === "assistant") {
       prompt.push({
+        id: generateMessageId(),
         role: "assistant",
-        content: [{ type: "text", text: msg.content }],
+        parts: [{ type: "text", text: msg.content }],
       });
     }
   }
@@ -132,41 +187,35 @@ function messagesToPrompt(
 }
 
 /**
- * Generate a response from the LLM via MCP binding
+ * Generate a response from the LLM via Mesh Models API
  */
 export async function generateLLMResponse(
   messages: Message[],
   config: LLMConfig,
 ): Promise<string> {
-  const { modelId = DEFAULT_LANGUAGE_MODEL, systemPrompt } = config;
+  const { systemPrompt } = config;
 
-  console.log("[LLM] Creating binding connection");
-  const connection = createLLMConnection(config);
-  const llmBinding = LanguageModelBinding.forConnection(connection);
+  // Convert messages to the format expected by Models API
+  const apiMessages = messagesToPrompt(messages, systemPrompt);
 
-  const prompt = messagesToPrompt(messages, systemPrompt);
-
-  console.log("[LLM] Calling LLM_DO_GENERATE:", {
-    modelId,
-    hasSystemPrompt: !!systemPrompt,
-    messageCount: prompt.length,
+  console.log("[LLM] Calling Models API (generate):", {
+    messageCount: apiMessages.length,
   });
 
   try {
-    const result = await llmBinding.LLM_DO_GENERATE({
-      modelId,
-      callOptions: {
-        prompt: prompt as any,
-        maxOutputTokens: 4096,
-        temperature: 0.7,
-      },
-    });
+    const response = await callModelsAPI(config, apiMessages, false);
+    const result = (await response.json()) as {
+      parts?: Array<{ type: string; text?: string }>;
+      finishReason?: string;
+    };
 
-    // Extract text from content
+    // Extract text from parts
     let text = "";
-    for (const part of result.content) {
-      if (part.type === "text") {
-        text += part.text;
+    if (result.parts) {
+      for (const part of result.parts) {
+        if (part.type === "text" && part.text) {
+          text += part.text;
+        }
       }
     }
 
@@ -177,7 +226,7 @@ export async function generateLLMResponse(
 
     return text || "Desculpe, não consegui gerar uma resposta.";
   } catch (error) {
-    console.error("[LLM] Error calling LLM_DO_GENERATE:", error);
+    console.error("[LLM] Error calling Models API:", error);
     throw error;
   }
 }
@@ -216,30 +265,22 @@ function parseStreamLine(
 }
 
 /**
- * Generate a response from the LLM via MCP binding with streaming
+ * Generate a response from the LLM via Mesh Models API with streaming
  */
 export async function generateLLMResponseWithStreaming(
   messages: Message[],
   config: LLMConfig,
   onStream: StreamCallback,
 ): Promise<string> {
-  const { modelId = DEFAULT_LANGUAGE_MODEL, systemPrompt } = config;
+  const { systemPrompt } = config;
 
-  console.log("[LLM Streaming] Creating binding connection");
-  const connection = createLLMConnection(config);
-  const llmBinding = LanguageModelBinding.forConnection(connection);
+  // Convert messages to the format expected by Models API
+  const apiMessages = messagesToPrompt(messages, systemPrompt);
 
-  const prompt = messagesToPrompt(messages, systemPrompt);
+  console.log("[LLM Streaming] Calling Models API (stream)");
 
   try {
-    const response = await llmBinding.LLM_DO_STREAM({
-      modelId,
-      callOptions: {
-        prompt: prompt as any,
-        maxOutputTokens: 4096,
-        temperature: 0.7,
-      },
-    });
+    const response = await callModelsAPI(config, apiMessages, true);
 
     // The binding returns a Response object with a streaming body
     if (!response.ok) {
