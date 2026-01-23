@@ -126,7 +126,7 @@ type GitHubWebhookPayload = z.infer<typeof GitHubWebhookPayloadSchema>;
  * Create the GitHub webhook handler streamable tool
  *
  * This tool is called directly by GitHub webhooks via the endpoint:
- * ${meshUrl}/mcp/${connectionId}/call-tool/GITHUB_WEBHOOK
+ * ${meshUrl}/mcp/${connectionId}/call-tool/MESH_PUBLIC_GITHUB_WEBHOOK
  *
  * Security:
  * - connectionId in URL provides authentication (only correct connectionId can invoke)
@@ -139,7 +139,7 @@ export const createGitHubWebhookTool = (env: Env) =>
         public_tool: true,
       },
     },
-    id: "GITHUB_WEBHOOK",
+    id: "MESH_PUBLIC_GITHUB_WEBHOOK",
     description:
       "Receives GitHub webhook events and publishes them to the Event Bus. " +
       "This endpoint is called directly by GitHub when webhook events occur.",

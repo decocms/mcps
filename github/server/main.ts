@@ -177,7 +177,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const githubClient = GitHubClient.for(token);
 
       // Webhook URL points to our Streamable Tool endpoint
-      const webhookUrl = `${meshUrl}/mcp/${connectionId}/call-tool/GITHUB_WEBHOOK`;
+      const webhookUrl = `${meshUrl}/mcp/${connectionId}/call-tool/MESH_PUBLIC_GITHUB_WEBHOOK`;
       console.log(`[GitHub] Webhook URL: ${webhookUrl}`);
 
       // Handle different target modes
