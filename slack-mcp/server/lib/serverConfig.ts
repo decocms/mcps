@@ -1,6 +1,6 @@
 /**
  * Global Server Configuration
- * 
+ *
  * Stores runtime server configuration like base URL
  */
 
@@ -20,4 +20,3 @@ export function setServerBaseUrl(url: string): void {
 export function getServerBaseUrl(): string {
   return serverBaseUrl;
 }
-

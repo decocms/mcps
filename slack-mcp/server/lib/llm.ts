@@ -143,31 +143,33 @@ function messagesToPrompt(
         parts: [{ type: "text", text: msg.content }],
       });
     } else if (msg.role === "user") {
-    const parts: Array<
-      | { type: "text"; text: string }
-      | { type: "file"; url: string; filename: string; mediaType: string }
-    > = [{ type: "text", text: msg.content }];
+      const parts: Array<
+        | { type: "text"; text: string }
+        | { type: "file"; url: string; filename: string; mediaType: string }
+      > = [{ type: "text", text: msg.content }];
 
-    // Add media files (images and audio) if present
-    if (msg.images && msg.images.length > 0) {
-      for (const media of msg.images) {
-        const dataUri = media.data.startsWith("data:")
-          ? media.data
-          : `data:${media.mimeType};base64,${media.data}`;
-        
-        const filename = media.name || 
-          (media.type === "audio" ? "audio" : "image");
-        
-        parts.push({
-          type: "file",
-          url: dataUri,
-          filename,
-          mediaType: media.mimeType,
-        });
-        
-        console.log(`[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`);
+      // Add media files (images and audio) if present
+      if (msg.images && msg.images.length > 0) {
+        for (const media of msg.images) {
+          const dataUri = media.data.startsWith("data:")
+            ? media.data
+            : `data:${media.mimeType};base64,${media.data}`;
+
+          const filename =
+            media.name || (media.type === "audio" ? "audio" : "image");
+
+          parts.push({
+            type: "file",
+            url: dataUri,
+            filename,
+            mediaType: media.mimeType,
+          });
+
+          console.log(
+            `[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`,
+          );
+        }
       }
-    }
 
       prompt.push({
         id: generateMessageId(),

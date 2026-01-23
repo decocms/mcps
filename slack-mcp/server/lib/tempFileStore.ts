@@ -114,4 +114,3 @@ setInterval(cleanupExpiredFiles, CLEANUP_INTERVAL);
 console.log(
   `[TempStore] Initialized (TTL: ${FILE_TTL / 1000}s, cleanup interval: ${CLEANUP_INTERVAL / 1000}s)`,
 );
-

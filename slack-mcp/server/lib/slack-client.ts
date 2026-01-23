@@ -775,7 +775,7 @@ export async function processSlackFiles(
   for (const file of files) {
     const isImage = isImageFile(file.mimetype);
     const isAudio = file.mimetype.startsWith("audio/");
-    
+
     console.log(`[Slack] Processing file:`, {
       name: file.name,
       mimetype: file.mimetype,
@@ -783,7 +783,7 @@ export async function processSlackFiles(
       isAudio,
       url_private_present: !!file.url_private,
     });
-    
+
     // Process images and audio files
     if (!isImage && !isAudio) {
       console.log(
@@ -800,7 +800,7 @@ export async function processSlackFiles(
         mimeType: downloaded.mimeType,
         name: file.name,
       });
-      
+
       if (isAudio) {
         console.log(
           `[Slack] 🎵 Downloaded audio: ${file.name} (${downloaded.mimeType}, ${downloaded.data.length} chars)`,

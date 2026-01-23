@@ -25,7 +25,12 @@ export interface ContextConfig {
 export interface MessageWithImages {
   role: "user" | "assistant";
   content: string;
-  images?: Array<{ type: "image" | "audio"; data: string; mimeType: string; name?: string }>;
+  images?: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name?: string;
+  }>;
 }
 
 export interface ContextMessage {
@@ -160,7 +165,12 @@ export async function buildContextMessages(
 export function formatMessagesForLLM(
   contextMessages: ContextMessage[],
   currentContent: string,
-  media?: Array<{ type: "image" | "audio"; data: string; mimeType: string; name: string }>,
+  media?: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
 ): MessageWithImages[] {
   const allMessages: MessageWithImages[] = [];
 

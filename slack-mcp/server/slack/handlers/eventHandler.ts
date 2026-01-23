@@ -93,9 +93,9 @@ async function transcribeAudio(
 
     // Call Whisper via MCP proxy endpoint
     const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
-    
+
     console.log(`[Whisper] Calling MCP proxy: ${url}`);
-    
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -128,7 +128,7 @@ async function transcribeAudio(
     }
 
     const result = (await response.json()) as {
-      result?: { 
+      result?: {
         content?: Array<{ type: string; text?: string }>;
         text?: string; // Direct text response format
       };
@@ -136,12 +136,14 @@ async function transcribeAudio(
 
     // Try to extract transcription from different response formats
     let transcription: string | undefined;
-    
+
     // Format 1: MCP content array format
     if (result?.result?.content) {
-      transcription = result.result.content.find((c) => c.type === "text")?.text;
+      transcription = result.result.content.find(
+        (c) => c.type === "text",
+      )?.text;
     }
-    
+
     // Format 2: Direct text field (when responseFormat: "text")
     if (!transcription && result?.result?.text) {
       const textResult = result.result.text;
@@ -308,7 +310,7 @@ async function processAttachedFiles(
   if (whisperConfigured) {
     const { storeTempFile } = await import("../../lib/tempFileStore.ts");
     const { getServerBaseUrl } = await import("../../lib/serverConfig.ts");
-    
+
     // Store audio files temporarily and transcribe
     for (const processedFile of processedFiles) {
       if (processedFile.type === "audio") {
@@ -318,12 +320,12 @@ async function processAttachedFiles(
           processedFile.mimeType,
           processedFile.name,
         );
-        
+
         // Build public URL that Whisper can access (no auth needed)
         // Uses the configured server base URL (from WEBHOOK_URL)
         const serverBaseUrl = getServerBaseUrl();
         const tempFileUrl = `${serverBaseUrl}/temp-files/${tempFileId}`;
-        
+
         console.log(`[EventHandler] Audio file for transcription:`, {
           name: processedFile.name,
           mimeType: processedFile.mimeType,
@@ -331,16 +333,21 @@ async function processAttachedFiles(
           serverBaseUrl,
           tempFileUrl: tempFileUrl.substring(0, 80) + "...",
         });
-        
+
         const transcription = await transcribeAudio(
           tempFileUrl,
           processedFile.mimeType,
           processedFile.name,
         );
-        
+
         if (transcription) {
-          console.log(`[EventHandler] ✅ Transcription received:`, transcription);
-          transcriptions.push(`[Audio: ${processedFile.name}]\n${transcription}`);
+          console.log(
+            `[EventHandler] ✅ Transcription received:`,
+            transcription,
+          );
+          transcriptions.push(
+            `[Audio: ${processedFile.name}]\n${transcription}`,
+          );
         }
       }
     }
@@ -363,7 +370,12 @@ async function buildLLMMessages(
   text: string,
   ts: string,
   threadTs: string | undefined,
-  media: Array<{ type: "image" | "audio"; data: string; mimeType: string; name: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   cleanMention: boolean = false,
 ) {
   // Build context from previous messages (if configured)
@@ -492,9 +504,7 @@ async function handleAppMention(
     } else {
       await replyInThread(channel, ts, warningMsg);
     }
-    console.log(
-      "[EventHandler] Sent Whisper configuration warning to user",
-    );
+    console.log("[EventHandler] Sent Whisper configuration warning to user");
     return;
   }
 
@@ -507,9 +517,8 @@ async function handleAppMention(
   // When we have transcriptions, remove audio files from media array
   // (send only transcribed text, not the audio file itself)
   // Keep images as they can be processed by the LLM
-  const mediaForLLM = transcriptions.length > 0
-    ? media.filter((m) => m.type === "image")
-    : media;
+  const mediaForLLM =
+    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
   if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
     console.log(
@@ -601,9 +610,7 @@ async function handleMessage(
     } else if (thread_ts) {
       await replyInThread(channel, thread_ts, warningMsg);
     }
-    console.log(
-      "[EventHandler] Sent Whisper configuration warning to user",
-    );
+    console.log("[EventHandler] Sent Whisper configuration warning to user");
     return;
   }
 
@@ -616,9 +623,8 @@ async function handleMessage(
   // When we have transcriptions, remove audio files from media array
   // (send only transcribed text, not the audio file itself)
   // Keep images as they can be processed by the LLM
-  const mediaForLLM = transcriptions.length > 0
-    ? media.filter((m) => m.type === "image")
-    : media;
+  const mediaForLLM =
+    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
   if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
     console.log(
@@ -632,7 +638,14 @@ async function handleMessage(
   };
 
   if (isDM) {
-    await handleDirectMessage(channel, user, fullText, ts, mediaForLLM, meshConfig);
+    await handleDirectMessage(
+      channel,
+      user,
+      fullText,
+      ts,
+      mediaForLLM,
+      meshConfig,
+    );
   } else if (thread_ts) {
     await handleThreadReply(
       channel,
@@ -655,7 +668,12 @@ async function handleDirectMessage(
   user: string,
   text: string,
   ts: string,
-  media: Array<{ type: "image" | "audio"; data: string; mimeType: string; name: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   meshConfig: MeshConfig,
 ): Promise<void> {
   console.log(`[EventHandler] DM from ${user}`);
@@ -700,7 +718,12 @@ async function handleThreadReply(
   text: string,
   ts: string,
   threadTs: string,
-  media: Array<{ type: "image" | "audio"; data: string; mimeType: string; name: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   meshConfig: MeshConfig,
 ): Promise<void> {
   console.log(`[EventHandler] Thread reply from ${user}`);
