@@ -40,6 +40,7 @@ import {
 } from "./context-builder.ts";
 import {
   configureLLM as setLLMConfig,
+  clearLLMConfig as clearLLMConfigInternal,
   configureStreaming as setStreamingConfig,
   isLLMConfigured,
   handleLLMCall,
@@ -64,6 +65,13 @@ let globalBotUserId: string | null = null;
  */
 export function configureLLM(config: Parameters<typeof setLLMConfig>[0]): void {
   setLLMConfig(config);
+}
+
+/**
+ * Clear LLM configuration (prevents cross-tenant config leakage)
+ */
+export function clearLLMConfig(): void {
+  clearLLMConfigInternal();
 }
 
 /**
