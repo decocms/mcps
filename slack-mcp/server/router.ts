@@ -115,8 +115,10 @@ app.post("/slack/events/:connectionId", async (c) => {
   // Lookup connection configuration
   const connectionConfig = await readConnectionConfig(connectionId);
   if (!connectionConfig) {
+    console.error(`[Router] ❌ Connection not found: ${connectionId}`);
     return c.json({ error: "Connection not configured" }, 403);
   }
+  console.log(`[Router] ✅ Connection loaded: ${connectionId}`);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");

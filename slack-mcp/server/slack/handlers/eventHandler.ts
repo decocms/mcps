@@ -253,11 +253,17 @@ async function processAttachedFiles(
     mimeType: string;
     name: string;
   }>;
+  textFiles: Array<{ name: string; content: string; mimeType: string }>;
   transcriptions: string[];
   audioWithoutWhisper: boolean;
 }> {
   if (!files || files.length === 0)
-    return { media: [], transcriptions: [], audioWithoutWhisper: false };
+    return {
+      media: [],
+      textFiles: [],
+      transcriptions: [],
+      audioWithoutWhisper: false,
+    };
 
   console.log(`[EventHandler] Processing ${files.length} attached files`);
 
@@ -288,8 +294,37 @@ async function processAttachedFiles(
 
   const processedFiles = await processSlackFiles(files);
 
+  // Separate text files from media files
+  const textFiles: Array<{ name: string; content: string; mimeType: string }> =
+    [];
+  const mediaFiles: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }> = [];
+
+  for (const file of processedFiles) {
+    if (file.type === "text") {
+      textFiles.push({
+        name: file.name,
+        content: file.data,
+        mimeType: file.mimeType,
+      });
+    } else {
+      mediaFiles.push(
+        file as {
+          type: "image" | "audio";
+          data: string;
+          mimeType: string;
+          name: string;
+        },
+      );
+    }
+  }
+
   // Check if there are audio files
-  const hasAudio = processedFiles.some((f) => f.type === "audio");
+  const hasAudio = mediaFiles.some((f) => f.type === "audio");
   const whisperConfigured = whisperConfig !== null;
 
   // If audio without Whisper, return only images and set warning flag
@@ -297,9 +332,10 @@ async function processAttachedFiles(
     console.warn(
       "[EventHandler] ⚠️ Audio files detected but Whisper not configured - skipping audio",
     );
-    const onlyImages = processedFiles.filter((f) => f.type === "image");
+    const onlyImages = mediaFiles.filter((f) => f.type === "image");
     return {
       media: onlyImages,
+      textFiles,
       transcriptions: [],
       audioWithoutWhisper: true,
     };
@@ -312,7 +348,7 @@ async function processAttachedFiles(
     const { getServerBaseUrl } = await import("../../lib/serverConfig.ts");
 
     // Store audio files temporarily and transcribe
-    for (const processedFile of processedFiles) {
+    for (const processedFile of mediaFiles) {
       if (processedFile.type === "audio") {
         // Store file in temp store
         const tempFileId = storeTempFile(
@@ -354,12 +390,18 @@ async function processAttachedFiles(
   }
 
   console.log(`[EventHandler] ${processedFiles.length} files ready for LLM:`, {
-    images: processedFiles.filter((f) => f.type === "image").length,
-    audio: processedFiles.filter((f) => f.type === "audio").length,
+    images: mediaFiles.filter((f) => f.type === "image").length,
+    audio: mediaFiles.filter((f) => f.type === "audio").length,
+    textFiles: textFiles.length,
     transcriptions: transcriptions.length,
   });
 
-  return { media: processedFiles, transcriptions, audioWithoutWhisper: false };
+  return {
+    media: mediaFiles,
+    textFiles,
+    transcriptions,
+    audioWithoutWhisper: false,
+  };
 }
 
 /**
@@ -489,8 +531,8 @@ async function handleAppMention(
   // Remove eyes reaction when we start processing
   await removeReaction(channel, ts, "eyes");
 
-  // Process attached files (images and audio with transcriptions)
-  const { media, transcriptions, audioWithoutWhisper } =
+  // Process attached files (images, audio, and text files)
+  const { media, textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
   // If audio was sent without Whisper configured, inform the user
@@ -508,11 +550,23 @@ async function handleAppMention(
     return;
   }
 
-  // Add transcriptions to the message text
-  const fullText =
-    transcriptions.length > 0
-      ? `${text}\n\n${transcriptions.join("\n\n")}`
-      : text;
+  // Format text files for LLM
+  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
+  const textFileContent = textFiles
+    .map((file) => {
+      const language = getLanguageFromFilename(file.name);
+      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
+    })
+    .join("\n\n");
+
+  // Add transcriptions and text files to the message text
+  let fullText = text;
+  if (transcriptions.length > 0) {
+    fullText += `\n\n${transcriptions.join("\n\n")}`;
+  }
+  if (textFileContent) {
+    fullText += `\n\n${textFileContent}`;
+  }
 
   // When we have transcriptions, remove audio files from media array
   // (send only transcribed text, not the audio file itself)
@@ -595,8 +649,8 @@ async function handleMessage(
     }
   }
 
-  // Process attached files (images and audio with transcriptions)
-  const { media, transcriptions, audioWithoutWhisper } =
+  // Process attached files (images, audio, and text files)
+  const { media, textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
   // If audio was sent without Whisper configured, inform the user
@@ -614,11 +668,23 @@ async function handleMessage(
     return;
   }
 
-  // Add transcriptions to the message text
-  const fullText =
-    transcriptions.length > 0
-      ? `${text}\n\n${transcriptions.join("\n\n")}`
-      : text;
+  // Format text files for LLM
+  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
+  const textFileContent = textFiles
+    .map((file) => {
+      const language = getLanguageFromFilename(file.name);
+      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
+    })
+    .join("\n\n");
+
+  // Add transcriptions and text files to the message text
+  let fullText = text;
+  if (transcriptions.length > 0) {
+    fullText += `\n\n${transcriptions.join("\n\n")}`;
+  }
+  if (textFileContent) {
+    fullText += `\n\n${textFileContent}`;
+  }
 
   // When we have transcriptions, remove audio files from media array
   // (send only transcribed text, not the audio file itself)
