@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "google-flights",
+  "friendlyName": "Google Flights",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-flights.decocache.com/mcp"
+  },
+  "description": "Search for flights using Google Flights data. Find flight options, compare prices, and get travel date suggestions.",
+  "icon": "https://www.gstatic.com/flights/app/lf1_64dp.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Travel"],
+    "official": false,
+    "tags": ["flights", "travel", "google-flights", "airports", "booking"],
+    "short_description": "Search flights and find airports using Google Flights data.",
+    "mesh_description": "The Google Flights MCP enables AI agents to search for flights between airports, find airport codes by city or name, and calculate travel dates. It provides access to a comprehensive database of 10,000+ airports with IATA codes, and generates Google Flights search URLs for users to view real-time pricing. Perfect for travel planning, flight comparison, and trip organization."
+  }
+}
