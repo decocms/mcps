@@ -581,37 +581,46 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
+      const requestId = crypto.randomUUID();
+      let state = "init";
+      let finished = false;
+
+      const slowRequestTimeout = setTimeout(() => {
+        if (!finished) {
+          console.warn(
+            `[LLM_DO_STREAM] SLOW REQUEST ${requestId} state=${state} (>20s)`,
+          );
+        }
+      }, 20_000);
+
+      console.log(`[LLM_DO_STREAM] START ${requestId} model=${modelId}`);
+
       const apiKey = getOpenRouterApiKey(env);
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
       try {
-        const t0 = performance.now();
+        state = "preauth";
         const hook = await usageHooks?.start?.(
           await OpenRouterClient.for(apiKey).getModel(modelId),
           context,
         );
-        console.log(
-          `[perf] LLM_DO_STREAM usageHooks.start: ${(performance.now() - t0).toFixed(1)}ms`,
-        );
-        const t1 = performance.now();
+
+        state = "modelStream";
         const callResponse = await model.doStream(
           callOptions as Parameters<(typeof model)["doStream"]>[0],
-        );
-        console.log(
-          `[perf] LLM_DO_STREAM model.doStream: ${(performance.now() - t1).toFixed(1)}ms`,
         );
 
         const [usage, stream] = getUsageFromStream(
           callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
         );
         usage.then((u) => {
-          const t2 = performance.now();
+          state = "commit";
           hook?.end?.(u).then(() => {
-            console.log(
-              `[perf] LLM_DO_STREAM hook.end: ${(performance.now() - t2).toFixed(1)}ms`,
-            );
+            finished = true;
+            clearTimeout(slowRequestTimeout);
+            console.log(`[LLM_DO_STREAM] END ${requestId}`);
           });
         });
         const response = streamToResponse(stream);
@@ -619,6 +628,12 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         // Return the data stream response
         return response;
       } catch (error) {
+        finished = true;
+        clearTimeout(slowRequestTimeout);
+        console.error(
+          `[LLM_DO_STREAM] ERROR ${requestId} state=${state}`,
+          error,
+        );
         if (isAPICallError(error)) {
           return new Response(error.responseBody, {
             status: error.statusCode,
@@ -762,27 +777,15 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
-      const t0 = performance.now();
       const hook = await usageHooks?.start?.(
         await OpenRouterClient.for(apiKey).getModel(modelId),
         context,
       );
-      console.log(
-        `[perf] LLM_DO_GENERATE usageHooks.start: ${(performance.now() - t0).toFixed(1)}ms`,
-      );
       // Use doGenerate directly (consistent with doStream pattern)
-      const t1 = performance.now();
       const result = await model.doGenerate(
         callOptions as Parameters<(typeof model)["doGenerate"]>[0],
       );
-      console.log(
-        `[perf] LLM_DO_GENERATE model.doGenerate: ${(performance.now() - t1).toFixed(1)}ms`,
-      );
-      const t2 = performance.now();
       await hook?.end?.(result);
-      console.log(
-        `[perf] LLM_DO_GENERATE hook.end: ${(performance.now() - t2).toFixed(1)}ms`,
-      );
 
       // Transform the result to match the binding schema
       return transformGenerateResult(result) as z.infer<
