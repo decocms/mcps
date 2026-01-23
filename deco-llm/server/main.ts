@@ -61,6 +61,7 @@ const runtime = withRuntime<
       start: async (modelInfo, params) => {
         const amount = calculatePreAuthAmount(modelInfo, params);
 
+        const t0 = performance.now();
         const { id } =
           await env.MESH_REQUEST_CONTEXT.state.WALLET.PRE_AUTHORIZE_AMOUNT({
             amount,
@@ -69,12 +70,16 @@ const runtime = withRuntime<
               params: params,
             },
           });
+        console.log(
+          `[perf] WALLET.PRE_AUTHORIZE_AMOUNT: ${(performance.now() - t0).toFixed(1)}ms`,
+        );
         return {
           end: async (usage) => {
             if (!isOpenRouterUsageReport(usage)) {
               throw new Error("Usage cost not found");
             }
             const vendorId = process.env.WALLET_VENDOR_ID ?? "deco";
+            const t1 = performance.now();
             await env.MESH_REQUEST_CONTEXT.state.WALLET.COMMIT_PRE_AUTHORIZED_AMOUNT(
               {
                 identifier: id,
@@ -86,6 +91,9 @@ const runtime = withRuntime<
                   usage.providerMetadata.openrouter.usage.cost,
                 ),
               },
+            );
+            console.log(
+              `[perf] WALLET.COMMIT_PRE_AUTHORIZED_AMOUNT: ${(performance.now() - t1).toFixed(1)}ms`,
             );
           },
         };
