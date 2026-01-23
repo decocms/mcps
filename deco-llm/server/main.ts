@@ -62,18 +62,14 @@ const runtime = withRuntime<
       start: async (modelInfo, params) => {
         const amount = calculatePreAuthAmount(modelInfo, params);
 
-        const signal = AbortSignal.timeout(10_000); // timeout of 10s
         const { id } =
-          await env.MESH_REQUEST_CONTEXT.state.WALLET.PRE_AUTHORIZE_AMOUNT(
-            {
-              amount,
-              metadata: {
-                modelId: modelInfo.id,
-                params: params,
-              },
+          await env.MESH_REQUEST_CONTEXT.state.WALLET.PRE_AUTHORIZE_AMOUNT({
+            amount,
+            metadata: {
+              modelId: modelInfo.id,
+              params: params,
             },
-            { signal },
-          ).catch((err) => {
+          }).catch((err) => {
             console.error("WALLET ERROR", err);
             return {
               id: undefined,
