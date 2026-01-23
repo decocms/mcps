@@ -21,8 +21,8 @@
   },
   "workspaces": [
     "apify",
-    "content-scraper",
     "blog-post-generator",
+    "content-scraper",
     "data-for-seo",
     "datajud",
     "deco-llm",
@@ -59,6 +59,7 @@
     "template-with-view",
     "tiktok-ads",
     "veo",
+    "vtex-docs",
     "whatsapp",
     "whisper"
   ],
