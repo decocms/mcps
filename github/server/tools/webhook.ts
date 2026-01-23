@@ -145,7 +145,7 @@ export const createGitHubWebhookTool = (env: Env): StreamableTool => ({
   description:
     "Receives GitHub webhook events and publishes them to the Event Bus. " +
     "This endpoint is called directly by GitHub when webhook events occur.",
-  inputSchema: GitHubWebhookPayloadSchema,
+  inputSchema: GitHubWebhookPayloadSchema.loose(),
   execute: async ({ context, runtimeContext }) => {
     runtimeContext ??= createRuntimeContext(runtimeContext);
 
