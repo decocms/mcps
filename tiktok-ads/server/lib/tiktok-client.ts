@@ -516,5 +516,8 @@ export class TikTokClient {
   }
 }
 
-// Re-export getTikTokAccessToken from env.ts for convenience
-export { getTikTokAccessToken as getAccessToken } from "./env.ts";
+// Re-export helpers from env.ts for convenience
+export {
+  getTikTokAccessToken as getAccessToken,
+  getDefaultAdvertiserId,
+} from "./env.ts";
