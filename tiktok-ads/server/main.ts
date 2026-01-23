@@ -22,7 +22,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
    * For TikTok Ads, we need the access token that users generate
    * in the TikTok Developer Portal.
    */
-  oauth: {
+  configuration: {
     state: StateSchema,
   },
   tools,
