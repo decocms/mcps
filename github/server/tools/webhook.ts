@@ -6,7 +6,10 @@
  * a webhook secret is configured.
  */
 
-import { createStreamableTool } from "@decocms/runtime/tools";
+import {
+  createRuntimeContext,
+  type StreamableTool,
+} from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 
@@ -132,106 +135,103 @@ type GitHubWebhookPayload = z.infer<typeof GitHubWebhookPayloadSchema>;
  * - connectionId in URL provides authentication (only correct connectionId can invoke)
  * - Webhook signature validation using HMAC SHA-256 (when secret is configured)
  */
-export const createGitHubWebhookTool = (env: Env) =>
-  createStreamableTool({
-    _meta: {
-      "mcp.mesh": {
-        public_tool: true,
-      },
+export const createGitHubWebhookTool = (env: Env): StreamableTool => ({
+  _meta: {
+    "mcp.mesh": {
+      public_tool: true,
     },
-    id: "MESH_PUBLIC_GITHUB_WEBHOOK",
-    description:
-      "Receives GitHub webhook events and publishes them to the Event Bus. " +
-      "This endpoint is called directly by GitHub when webhook events occur.",
-    inputSchema: GitHubWebhookPayloadSchema,
-    execute: async ({ context, runtimeContext }) => {
-      const payload = context as GitHubWebhookPayload;
+  },
+  id: "MESH_PUBLIC_GITHUB_WEBHOOK",
+  description:
+    "Receives GitHub webhook events and publishes them to the Event Bus. " +
+    "This endpoint is called directly by GitHub when webhook events occur.",
+  inputSchema: GitHubWebhookPayloadSchema,
+  execute: async ({ context, runtimeContext }) => {
+    runtimeContext ??= createRuntimeContext(runtimeContext);
 
-      // Use runtimeContext.env for the current request's environment if available
-      const currentEnv = runtimeContext?.env
-        ? (runtimeContext.env as unknown as Env)
-        : env;
+    const payload = context as GitHubWebhookPayload;
 
-      // Get request from runtimeContext for header access
-      const req = runtimeContext?.req as Request | undefined;
+    // Use runtimeContext.env for the current request's environment if available
+    const currentEnv = runtimeContext?.env
+      ? (runtimeContext.env as unknown as Env)
+      : env;
 
-      // Validate webhook signature if secret is configured
+    // Get request from runtimeContext for header access
+    const req = runtimeContext?.req as Request | undefined;
 
-      if (WEBHOOK_SECRET && req) {
-        const signature = req.headers.get("x-hub-signature-256");
-        // Note: We use the serialized context since the raw body may not be available
-        const bodyForValidation = JSON.stringify(context);
+    // Validate webhook signature if secret is configured
 
-        const isValid = await verifyWebhookSignature(
-          bodyForValidation,
-          signature,
-          WEBHOOK_SECRET,
+    if (WEBHOOK_SECRET && req) {
+      const signature = req.headers.get("x-hub-signature-256");
+      // Note: We use the serialized context since the raw body may not be available
+      const bodyForValidation = JSON.stringify(context);
+
+      const isValid = await verifyWebhookSignature(
+        bodyForValidation,
+        signature,
+        WEBHOOK_SECRET,
+      );
+
+      if (!isValid) {
+        console.error("[GitHub Webhook] Invalid signature");
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook signature" }),
+          { status: 401, headers: { "Content-Type": "application/json" } },
         );
-
-        if (!isValid) {
-          console.error("[GitHub Webhook] Invalid signature");
-          return new Response(
-            JSON.stringify({ error: "Invalid webhook signature" }),
-            { status: 401, headers: { "Content-Type": "application/json" } },
-          );
-        }
-
-        console.log("[GitHub Webhook] Signature validated successfully");
       }
 
-      // Get event type from x-github-event header (preferred) or payload field
-      const eventType =
-        req?.headers.get("x-github-event") ||
-        payload._github_event ||
-        "webhook";
+      console.log("[GitHub Webhook] Signature validated successfully");
+    }
 
-      console.log(`[GitHub Webhook] Received event: ${eventType}`, {
-        action: payload.action,
-        repo: payload.repository?.full_name,
-        sender: payload.sender?.login,
+    // Get event type from x-github-event header (preferred) or payload field
+    const eventType =
+      req?.headers.get("x-github-event") || payload._github_event || "webhook";
+
+    console.log(`[GitHub Webhook] Received event: ${eventType}`, {
+      action: payload.action,
+      repo: payload.repository?.full_name,
+      sender: payload.sender?.login,
+    });
+
+    // Determine the event subject (usually repository full name)
+    const subject =
+      payload.repository?.full_name || payload.organization?.login || "unknown";
+
+    // Build full event type: github.<event>.<action>
+    // e.g., github.pull_request.opened, github.push
+    const fullEventType = payload.action
+      ? `github.${eventType}.${payload.action}`
+      : `github.${eventType}`;
+
+    try {
+      // Publish the event to the Event Bus
+      await currentEnv.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS?.EVENT_PUBLISH({
+        type: fullEventType,
+        data: payload,
+        subject,
       });
 
-      // Determine the event subject (usually repository full name)
-      const subject =
-        payload.repository?.full_name ||
-        payload.organization?.login ||
-        "unknown";
+      console.log(`[GitHub Webhook] Published event: ${fullEventType}`, {
+        subject,
+      });
 
-      // Build full event type: github.<event>.<action>
-      // e.g., github.pull_request.opened, github.push
-      const fullEventType = payload.action
-        ? `github.${eventType}.${payload.action}`
-        : `github.${eventType}`;
-
-      try {
-        // Publish the event to the Event Bus
-        await currentEnv.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS?.EVENT_PUBLISH({
-          type: fullEventType,
-          data: payload,
+      return new Response(
+        JSON.stringify({
+          success: true,
+          event: fullEventType,
           subject,
-        });
-
-        console.log(`[GitHub Webhook] Published event: ${fullEventType}`, {
-          subject,
-        });
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            event: fullEventType,
-            subject,
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
-      } catch (error) {
-        console.error("[GitHub Webhook] Failed to publish event:", error);
-        return new Response(
-          JSON.stringify({
-            error: "Failed to publish event",
-            details: String(error),
-          }),
-          { status: 500, headers: { "Content-Type": "application/json" } },
-        );
-      }
-    },
-  });
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    } catch (error) {
+      console.error("[GitHub Webhook] Failed to publish event:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to publish event",
+          details: String(error),
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+  },
+});
