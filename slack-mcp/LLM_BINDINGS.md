@@ -43,6 +43,91 @@ return {
 **Tipos de arquivo suportados:**
 - **Imagens**: `image/png`, `image/jpeg`, `image/gif`, `image/webp`
 - **Áudio**: `audio/mp4`, `audio/mpeg`, `audio/ogg`, `audio/webm`, `audio/wav`
+- **Documentos**: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX)
+- **Texto**: `text/plain`, `application/json`, `.txt`, `.json`, `.csv`, `.md`, `.js`, `.ts`, `.py`, etc.
+
+### 2.1. Extração de Texto de Documentos
+
+Para **PDF** e **DOCX**, o texto é extraído automaticamente usando bibliotecas especializadas:
+
+```typescript
+// slack-client.ts - extractTextFromPDF()
+import * as pdfParse from "pdf-parse";
+
+const data = await pdfParse(buffer);
+return data.text;  // Texto extraído do PDF
+```
+
+```typescript
+// slack-client.ts - extractTextFromDOCX()
+import mammoth from "mammoth";
+
+const result = await mammoth.extractRawText({ buffer });
+return result.value;  // Texto extraído do DOCX
+```
+
+**Limitações:**
+- ✅ **Texto puro** extraído com sucesso
+- ✅ Máximo **500KB** de texto após extração
+- ❌ **Imagens** dentro do PDF/DOCX não são processadas
+- ❌ **Tabelas** complexas podem perder formatação
+- ⚠️ Arquivos muito grandes (>1.5MB) podem ser truncados
+
+**Logs esperados:**
+```bash
+[Slack] 📄 Extracting text from PDF: documento.pdf
+[Slack] 📄 Downloaded text file: documento.pdf (application/pdf, 12345 chars)
+
+[Slack] 📄 Extracting text from DOCX: contrato.docx
+[Slack] 📄 Downloaded text file: contrato.docx (application/vnd.openxmlformats-officedocument.wordprocessingml.document, 67890 chars)
+```
+
+### 2.2. Processamento de Arquivos de Texto
+
+Arquivos de texto puro (JSON, TXT, código-fonte) são baixados diretamente:
+
+```typescript
+// slack-client.ts - downloadTextFile()
+const text = await response.text();
+
+if (text.length > maxSize) {
+  return text.substring(0, maxSize) + "\n\n[... truncated]";
+}
+return text;
+```
+
+**Formatos suportados:**
+- `text/plain` → `.txt`, `.log`, `.env`
+- `application/json` → `.json`
+- `text/csv` → `.csv`
+- `text/markdown` → `.md`, `.markdown`
+- Código-fonte: `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rb`, `.go`, `.java`, `.c`, `.cpp`, `.rs`, `.sh`, etc.
+
+**Como são enviados ao LLM:**
+```typescript
+// lib/llm.ts - messagesToPrompt()
+if (msg.textFiles && msg.textFiles.length > 0) {
+  for (const file of msg.textFiles) {
+    parts.push({ 
+      type: "text", 
+      text: `\n\n[File: ${file.name}]\n\`\`\`${file.language}\n${file.content}\n\`\`\`` 
+    });
+  }
+}
+```
+
+**Exemplo de prompt gerado:**
+```
+Analise este arquivo JSON
+
+[File: config.json]
+```json
+{
+  "version": "1.0.0",
+  "settings": {...}
+}
+```
+```
 
 ### 3. Construção do Prompt
 
@@ -111,44 +196,32 @@ interface UIMessage {
 
 ### Suporte a Áudio
 
-Arquivos de áudio são processados de forma idêntica às imagens:
+**⚠️ Importante: Áudios NÃO são enviados diretamente ao LLM!**
 
-```typescript
-// Exemplo de áudio no prompt
-{
-  type: "file",
-  url: "data:audio/mp4;base64,<base64_data>",
-  filename: "audio_message.m4a",
-  mediaType: "audio/mp4"
-}
-```
+O bot usa a binding do **OpenAI Whisper** para transcrever áudios e enviar **apenas o texto** ao LLM. Áudio em base64 não é suportado nativamente pela maioria dos LLMs.
 
 **Como funciona:**
-1. ✅ Usuário envia mensagem de voz ou anexo de áudio no Slack
-2. ✅ O bot baixa o arquivo automaticamente via Slack API
-3. ✅ Converte para base64 e adiciona ao prompt
-4. ✅ O LLM processa o áudio nativamente (transcrição + análise)
 
-**Formatos suportados:**
-- `audio/mp4` (`.m4a`)
-- `audio/mpeg` (`.mp3`)
-- `audio/ogg` (`.ogg`)
-- `audio/webm` (`.webm`)
-- `audio/wav` (`.wav`)
+1. ✅ Usuário envia áudio no Slack
+2. ✅ Bot baixa o arquivo via Slack API
+3. ✅ Armazena temporariamente em servidor local (TTL: 10min)
+4. ✅ Gera URL pública via túnel: `https://localhost-xxx.deco.host/temp-files/{id}`
+5. ✅ **Whisper API transcreve** o áudio
+6. ✅ **Transcrição (texto puro)** é adicionada ao prompt
+7. ✅ LLM recebe APENAS o texto (não recebe áudio)
 
-**Transcrição Automática via Whisper:**
-O bot pode usar a binding do **OpenAI Whisper** para transcrever áudios automaticamente antes de enviar para o LLM. Quando configurado:
-
-1. ✅ Usuário envia áudio
-2. ✅ Bot baixa o arquivo
-3. ✅ **Whisper transcreve** o áudio
-4. ✅ Transcrição é adicionada ao prompt como texto
-5. ✅ LLM recebe o texto + contexto
+**Formatos suportados pelo Whisper:**
+- `audio/flac`, `audio/m4a`, `audio/mp3`, `audio/mp4`
+- `audio/mpeg`, `audio/mpga`, `audio/oga`, `audio/ogg`
+- `audio/wav`, `audio/webm`
 
 **Configuração:**
 ```typescript
 // No Mesh Admin, adicionar binding:
 WHISPER: "@deco/whisper"
+
+// Opcional: Definir URL pública do servidor
+SERVER_PUBLIC_URL: "https://localhost-xxx.deco.host"
 ```
 
 **Vantagens:**
@@ -156,6 +229,18 @@ WHISPER: "@deco/whisper"
 - ✅ Funciona mesmo que Slack não gere transcrição
 - ✅ LLM pode processar o texto normalmente
 - ✅ Suporta contexto de conversação com áudio
+- ✅ Áudio é automaticamente limpo após 10 minutos
+
+**Logs esperados:**
+```bash
+[EventHandler] Audio file for transcription: {
+  name: "audio_message.m4a",
+  mimeType: "audio/mp4",
+  tempFileUrl: "https://localhost-xxx.deco.host/temp-files/abc-123..."
+}
+[EventHandler] ✅ Transcription received: "Olá, como vai?"
+[LLM] Adding transcription to prompt: [Audio: audio_message.m4a] Olá, como vai?
+```
 
 **Sem Whisper:**
 Se a binding não estiver configurada e o usuário enviar áudio, o bot responderá com:
