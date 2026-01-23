@@ -21,8 +21,8 @@
         "./registry": "./registry.ts"
     },
     "devDependencies": {
-        "@decocms/bindings": "^1.0.7",
-        "@decocms/runtime": "^1.1.3",
+        "@decocms/bindings": "1.0.7",
+        "@decocms/runtime": "1.1.3",
         "@types/bun": "^1.2.14",
         "vite": "7.2.0",
         "zod": "^4.0.0"

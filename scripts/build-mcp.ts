@@ -4,10 +4,12 @@ const FOLDER_OVERRIDES = {
   vibemcp: "mcp-studio",
   whatsappagent: "whatsapp",
   "blog-generator": "blog-post-generator",
+  "github-mcp": "github",
 };
 
 const PKG_NAME_OVERRIDES = {
   vibemcp: "mcp-studio",
+  "github-mcp": "github",
   openrouter: "@decocms/openrouter",
   "blog-generator": "blog-post-generator",
 };

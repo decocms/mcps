@@ -21,13 +21,14 @@
   },
   "workspaces": [
     "apify",
-    "content-scraper",
     "blog-post-generator",
+    "content-scraper",
     "data-for-seo",
     "datajud",
     "deco-llm",
     "discord-read",
     "gemini-pro-vision",
+    "github",
     "google-big-query",
     "google-calendar",
     "google-docs",
@@ -58,6 +59,7 @@
     "template-with-view",
     "tiktok-ads",
     "veo",
+    "vtex-docs",
     "whatsapp",
     "whisper"
   ],

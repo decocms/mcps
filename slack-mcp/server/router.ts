@@ -14,7 +14,11 @@ import {
   isBotMentioned,
   removeBotMention,
 } from "./webhook.ts";
-import { handleSlackEvent } from "./slack/handlers/eventHandler.ts";
+import {
+  handleSlackEvent,
+  configureLLM,
+  clearLLMConfig,
+} from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import {
   readConnectionConfig,
@@ -22,6 +26,7 @@ import {
   type SlackConnectionConfig,
   type SlackTeamConfig,
 } from "./lib/data.ts";
+import { initializeSlackClient } from "./lib/slack-client.ts";
 
 // Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
@@ -50,6 +55,32 @@ export const app = new Hono();
  */
 app.get("/health", (c) => {
   return c.json({ status: "ok", service: "slack-mcp" });
+});
+
+/**
+ * Temporary file serving endpoint (for Whisper transcription)
+ * URL: /temp-files/:id
+ */
+app.get("/temp-files/:id", async (c) => {
+  const { getTempFile } = await import("./lib/tempFileStore.ts");
+  const id = c.req.param("id");
+
+  const file = getTempFile(id);
+  if (!file) {
+    return c.json({ error: "File not found or expired" }, 404);
+  }
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(file.data, "base64");
+
+  // Return the file with correct content type
+  return new Response(buffer, {
+    headers: {
+      "Content-Type": file.mimeType,
+      "Content-Disposition": `attachment; filename="${file.name}"`,
+      "Content-Length": buffer.length.toString(),
+    },
+  });
 });
 
 // ============================================================================
@@ -84,8 +115,10 @@ app.post("/slack/events/:connectionId", async (c) => {
   // Lookup connection configuration
   const connectionConfig = await readConnectionConfig(connectionId);
   if (!connectionConfig) {
+    console.error(`[Router] ❌ Connection not found: ${connectionId}`);
     return c.json({ error: "Connection not configured" }, 403);
   }
+  console.log(`[Router] ✅ Connection loaded: ${connectionId}`);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -363,6 +396,38 @@ async function processConnectionEventAsync(
 ): Promise<void> {
   if (!payload.event) return;
 
+  // IMPORTANT: Initialize Slack client with this connection's token
+  // Each connection has its own Slack workspace credentials
+  initializeSlackClient({ botToken: connectionConfig.botToken });
+
+  // Configure LLM with this connection's settings
+  console.log("[Router] Connection config for LLM:", {
+    connectionId: connectionConfig.connectionId,
+    organizationId: connectionConfig.organizationId,
+    meshUrl: connectionConfig.meshUrl,
+    hasToken: !!connectionConfig.meshToken,
+    modelProviderId: connectionConfig.modelProviderId,
+    agentId: connectionConfig.agentId,
+  });
+
+  if (connectionConfig.meshToken && connectionConfig.modelProviderId) {
+    configureLLM({
+      meshUrl: connectionConfig.meshUrl,
+      organizationId: connectionConfig.organizationId,
+      token: connectionConfig.meshToken,
+      modelProviderId: connectionConfig.modelProviderId,
+      modelId: connectionConfig.modelId,
+      agentId: connectionConfig.agentId,
+      systemPrompt: connectionConfig.systemPrompt,
+    });
+  } else {
+    // Clear LLM config to prevent cross-tenant configuration leakage
+    clearLLMConfig();
+    console.warn(
+      "[Router] LLM not configured - missing meshToken or modelProviderId",
+    );
+  }
+
   const event = payload.event;
   const eventType = event.type;
   const botUserId =
@@ -426,6 +491,11 @@ async function processEventAsync(
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
   if (!payload.event) return;
+
+  // IMPORTANT: Initialize Slack client with this team's token
+  if (teamConfig.botToken) {
+    initializeSlackClient({ botToken: teamConfig.botToken });
+  }
 
   const event = payload.event;
   const eventType = event.type;

@@ -41,7 +41,16 @@ export function configureLLM(config: LLMConfig): void {
     modelId: config.modelId,
     agentId: config.agentId,
     hasToken: !!config.token,
+    hasSystemPrompt: !!config.systemPrompt,
   });
+}
+
+/**
+ * Clear LLM configuration (prevents cross-tenant config leakage)
+ */
+export function clearLLMConfig(): void {
+  globalLLMConfig = null;
+  console.log("[LLMHandler] Config cleared");
 }
 
 /**

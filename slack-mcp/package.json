@@ -16,9 +16,11 @@
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.8",
-    "@decocms/runtime": "^1.1.3",
+    "@decocms/runtime": "1.1.3",
     "@slack/web-api": "^7.8.0",
     "hono": "^4.7.4",
+    "mammoth": "^1.11.0",
+    "pdf-parse": "^2.4.5",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -33,4 +35,3 @@
     "node": ">=22.0.0"
   }
 }
-

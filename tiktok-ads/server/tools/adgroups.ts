@@ -7,7 +7,11 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { TikTokClient, getAccessToken } from "../lib/tiktok-client.ts";
+import {
+  TikTokClient,
+  getAccessToken,
+  getDefaultAdvertiserId,
+} from "../lib/tiktok-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -85,7 +89,10 @@ export const createListAdGroupsTool = (env: Env) =>
     description:
       "List all ad groups for an advertiser with optional filters for campaign, name, and status.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_ids: z
         .array(z.string())
         .optional()
@@ -117,12 +124,19 @@ export const createListAdGroupsTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.listAdGroups({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_ids: context.campaign_ids,
         adgroup_ids: context.adgroup_ids,
         filtering: {
@@ -149,19 +163,29 @@ export const createGetAdGroupTool = (env: Env) =>
     description:
       "Get detailed information about a specific ad group by its ID.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       adgroup_id: z.string().describe("Ad Group ID to retrieve"),
     }),
     outputSchema: z.object({
       adgroup: AdGroupSchema.nullable().describe("Ad Group details"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.listAdGroups({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         adgroup_ids: [context.adgroup_id],
       });
 
@@ -181,7 +205,10 @@ export const createCreateAdGroupTool = (env: Env) =>
     description:
       "Create a new ad group within a campaign. Requires advertiser ID, campaign ID, name, and optimization goal.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_id: z.string().describe("Campaign ID (required)"),
       adgroup_name: z.string().describe("Ad Group name (required)"),
       optimization_goal: OptimizationGoalSchema.describe(
@@ -231,12 +258,19 @@ export const createCreateAdGroupTool = (env: Env) =>
       message: z.string().describe("Result message"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.createAdGroup({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_id: context.campaign_id,
         adgroup_name: context.adgroup_name,
         optimization_goal: context.optimization_goal,
@@ -274,7 +308,10 @@ export const createUpdateAdGroupTool = (env: Env) =>
       "Update an existing ad group. Only provided fields will be updated. At least one field to update must be provided.",
     inputSchema: z
       .object({
-        advertiser_id: z.string().describe("Advertiser ID (required)"),
+        advertiser_id: z
+          .string()
+          .optional()
+          .describe("Advertiser ID (optional if configured in MCP)"),
         adgroup_id: z.string().describe("Ad Group ID to update (required)"),
         adgroup_name: z.string().optional().describe("New ad group name"),
         bid_price: z.coerce
@@ -313,12 +350,19 @@ export const createUpdateAdGroupTool = (env: Env) =>
       message: z.string().describe("Result message"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.updateAdGroup({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         adgroup_id: context.adgroup_id,
         adgroup_name: context.adgroup_name,
         bid_price: context.bid_price,

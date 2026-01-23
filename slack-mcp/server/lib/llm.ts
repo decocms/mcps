@@ -1,38 +1,11 @@
 /**
  * LLM Integration for Slack MCP
  *
- * Calls the Mesh models API directly to generate responses.
- * The system_prompt is automatically injected by Mesh based on the agent configuration.
+ * Uses direct Mesh API calls to LLM providers.
+ * This is used in webhook context where bindings are not available.
  */
 
-import { jsonSchema, parseJsonEventStream } from "ai";
-
-const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-4.5-sonnet";
-
-// Schema for AI SDK stream events
-const streamEventSchema = jsonSchema<{
-  type: string;
-  delta?: string;
-  toolCallId?: string;
-  toolName?: string;
-  args?: string;
-  result?: unknown;
-  output?: unknown;
-  finishReason?: string;
-}>({
-  type: "object",
-  properties: {
-    type: { type: "string" },
-    delta: { type: "string" },
-    toolCallId: { type: "string" },
-    toolName: { type: "string" },
-    args: { type: "string" },
-    result: {},
-    output: {},
-    finishReason: { type: "string" },
-  },
-  required: ["type"],
-});
+const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-sonnet-4";
 
 export interface LLMConfig {
   meshUrl: string;
@@ -41,12 +14,14 @@ export interface LLMConfig {
   modelProviderId: string;
   modelId?: string;
   agentId?: string;
+  systemPrompt?: string;
 }
 
 export interface MessageImage {
-  type: "image";
+  type: "image" | "audio";
   data: string; // base64
   mimeType: string;
+  name?: string;
 }
 
 export interface Message {
@@ -56,15 +31,13 @@ export interface Message {
 }
 
 /**
- * Generate a response from the LLM via Mesh API
- *
- * The system_prompt configured in the agent/gateway is automatically
- * injected by Mesh - no need to fetch it separately.
+ * Call LLM via Mesh Models API (same as mcp-studio)
  */
-export async function generateLLMResponse(
-  messages: Message[],
+async function callModelsAPI(
   config: LLMConfig,
-): Promise<string> {
+  messages: Array<{ role: string; parts: any }>,
+  stream: boolean = false,
+): Promise<Response> {
   const {
     meshUrl,
     organizationId,
@@ -75,116 +48,189 @@ export async function generateLLMResponse(
   } = config;
 
   // When running locally with a tunnel, use localhost for internal API calls
-  // The tunnel URL may not route correctly for server-to-server communication
   const isTunnel = meshUrl.includes(".deco.host");
   const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
 
-  // Build messages - Mesh will inject the agent's system_prompt automatically
-  const allMessages = messages.map((m, msgIndex) => {
-    const parts: Array<
-      | { type: "text"; text: string }
-      | { type: "file"; url: string; filename: string; mediaType: string }
-    > = [{ type: "text", text: m.content }];
+  // Use the decopilot endpoint (new Mesh API)
+  const url = `${effectiveMeshUrl}/api/${organizationId}/decopilot/stream`;
 
-    // Add images as file parts (Mesh UIMessagePart format)
-    if (m.images && m.images.length > 0) {
-      for (let i = 0; i < m.images.length; i++) {
-        const img = m.images[i];
-        // Mesh expects file parts with data URI
-        const dataUri = img.data.startsWith("data:")
-          ? img.data
-          : `data:${img.mimeType};base64,${img.data}`;
-
-        parts.push({
-          type: "file",
-          url: dataUri,
-          filename: `image_${msgIndex}_${i}.${img.mimeType.split("/")[1] || "png"}`,
-          mediaType: img.mimeType,
-        });
-
-        console.log(
-          `[LLM] Added image as file: ${img.mimeType}, ${img.data.length} chars`,
-        );
-      }
-    }
-
-    return { role: m.role, parts };
+  console.log(`[LLM] Calling Decopilot API:`, {
+    url,
+    hasToken: !!token,
+    modelId,
+    hasAgent: !!agentId,
+    stream,
   });
 
-  const requestBody = {
+  const body = {
+    messages,
     model: {
-      connectionId: modelProviderId,
       id: modelId,
+      connectionId: modelProviderId,
     },
-    messages: allMessages,
+    agent: {
+      id: agentId ?? null,
+    },
     stream: true,
-    gateway: { id: agentId ?? null },
   };
 
-  const response = await fetch(
-    `${effectiveMeshUrl}/api/${organizationId}/models/stream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify(requestBody),
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-  );
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[LLM] API Error", {
-      status: response.status,
-      error: errorText,
-    });
+    console.error("[LLM] API error:", errorText);
     throw new Error(
-      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
+      `Mesh Models API call failed (${response.status}): ${errorText}`,
     );
   }
 
-  if (!response.body) {
-    throw new Error("No response body from LLM API");
+  return response;
+}
+
+/**
+ * Generate unique message ID
+ */
+function generateMessageId(): string {
+  return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Convert messages to Decopilot API format
+ * Format: { id, role, parts: [...] }
+ */
+function messagesToPrompt(
+  messages: Message[],
+  systemPrompt?: string,
+): Array<{
+  id: string;
+  role: "system" | "user" | "assistant";
+  parts: Array<
+    | { type: "text"; text: string }
+    | { type: "file"; url: string; filename: string; mediaType: string }
+  >;
+}> {
+  const prompt: Array<{
+    id: string;
+    role: "system" | "user" | "assistant";
+    parts: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; url: string; filename: string; mediaType: string }
+    >;
+  }> = [];
+
+  // Add system prompt if provided
+  if (systemPrompt) {
+    prompt.push({
+      id: generateMessageId(),
+      role: "system",
+      parts: [{ type: "text", text: systemPrompt }],
+    });
   }
 
-  // Process the stream and collect text
-  let textContent = "";
-  let lastTextContent = "";
+  // Convert messages
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      prompt.push({
+        id: generateMessageId(),
+        role: "system",
+        parts: [{ type: "text", text: msg.content }],
+      });
+    } else if (msg.role === "user") {
+      const parts: Array<
+        | { type: "text"; text: string }
+        | { type: "file"; url: string; filename: string; mediaType: string }
+      > = [{ type: "text", text: msg.content }];
+
+      // Add media files (images and audio) if present
+      if (msg.images && msg.images.length > 0) {
+        for (const media of msg.images) {
+          const dataUri = media.data.startsWith("data:")
+            ? media.data
+            : `data:${media.mimeType};base64,${media.data}`;
+
+          const filename =
+            media.name || (media.type === "audio" ? "audio" : "image");
+
+          parts.push({
+            type: "file",
+            url: dataUri,
+            filename,
+            mediaType: media.mimeType,
+          });
+
+          console.log(
+            `[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`,
+          );
+        }
+      }
+
+      prompt.push({
+        id: generateMessageId(),
+        role: "user",
+        parts,
+      });
+    } else if (msg.role === "assistant") {
+      prompt.push({
+        id: generateMessageId(),
+        role: "assistant",
+        parts: [{ type: "text", text: msg.content }],
+      });
+    }
+  }
+
+  return prompt;
+}
+
+/**
+ * Generate a response from the LLM via Mesh Models API
+ */
+export async function generateLLMResponse(
+  messages: Message[],
+  config: LLMConfig,
+): Promise<string> {
+  const { systemPrompt } = config;
+
+  // Convert messages to the format expected by Models API
+  const apiMessages = messagesToPrompt(messages, systemPrompt);
+
+  console.log("[LLM] Calling Models API (generate):", {
+    messageCount: apiMessages.length,
+  });
 
   try {
-    const eventStream = parseJsonEventStream({
-      stream: response.body,
-      schema: streamEventSchema,
-    });
+    const response = await callModelsAPI(config, apiMessages, false);
+    const result = (await response.json()) as {
+      parts?: Array<{ type: string; text?: string }>;
+      finishReason?: string;
+    };
 
-    const reader = eventStream.getReader();
-    while (true) {
-      const { done, value: event } = await reader.read();
-      if (done) break;
-      if (!event.success) continue;
-
-      const { type } = event.value;
-
-      if (type === "text-delta" && event.value.delta) {
-        textContent += event.value.delta;
-      } else if (type === "text-end") {
-        // Save the current text but DON'T break - there may be more tool calls
-        lastTextContent = textContent;
-      } else if (type === "finish") {
-        break;
+    // Extract text from parts
+    let text = "";
+    if (result.parts) {
+      for (const part of result.parts) {
+        if (part.type === "text" && part.text) {
+          text += part.text;
+        }
       }
     }
+
+    console.log("[LLM] Response received:", {
+      textLength: text.length,
+      finishReason: result.finishReason,
+    });
+
+    return text || "Desculpe, não consegui gerar uma resposta.";
   } catch (error) {
-    console.error("[LLM] Stream processing error:", error);
-    if (textContent || lastTextContent) {
-      return textContent || lastTextContent;
-    }
+    console.error("[LLM] Error calling Models API:", error);
     throw error;
   }
-
-  return textContent || "Desculpe, não consegui gerar uma resposta.";
 }
 
 /**
@@ -196,176 +242,122 @@ export type StreamCallback = (
 ) => Promise<void>;
 
 /**
- * Generate a response from the LLM via Mesh API with streaming callback
- * This allows updating the Slack message in real-time as the LLM generates text
+ * Parse stream lines to extract text deltas
+ */
+function parseStreamLine(
+  line: string,
+): { type: string; delta?: string } | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("event:")) return null;
+  if (trimmed.startsWith("id:")) return null;
+  if (trimmed.startsWith("retry:")) return null;
+
+  let payload = trimmed;
+  if (payload.startsWith("data:")) {
+    payload = payload.slice("data:".length).trim();
+    if (!payload || payload === "[DONE]") return null;
+  }
+
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate a response from the LLM via Mesh Models API with streaming
  */
 export async function generateLLMResponseWithStreaming(
   messages: Message[],
   config: LLMConfig,
   onStream: StreamCallback,
 ): Promise<string> {
-  const {
-    meshUrl,
-    organizationId,
-    token,
-    modelProviderId,
-    modelId = DEFAULT_LANGUAGE_MODEL,
-    agentId,
-  } = config;
+  const { systemPrompt } = config;
 
-  // When running locally with a tunnel, use localhost for internal API calls
-  // The tunnel URL may not route correctly for server-to-server communication
-  const isTunnel = meshUrl.includes(".deco.host");
-  const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
+  // Convert messages to the format expected by Models API
+  const apiMessages = messagesToPrompt(messages, systemPrompt);
 
-  // Build messages (Mesh UIMessagePart format)
-  const allMessages = messages.map((m, msgIndex) => {
-    const parts: Array<
-      | { type: "text"; text: string }
-      | { type: "file"; url: string; filename: string; mediaType: string }
-    > = [{ type: "text", text: m.content }];
-
-    // Add images as file parts (Mesh UIMessagePart format)
-    if (m.images && m.images.length > 0) {
-      for (let i = 0; i < m.images.length; i++) {
-        const img = m.images[i];
-        // Mesh expects file parts with data URI
-        const dataUri = img.data.startsWith("data:")
-          ? img.data
-          : `data:${img.mimeType};base64,${img.data}`;
-
-        parts.push({
-          type: "file",
-          url: dataUri,
-          filename: `image_${msgIndex}_${i}.${img.mimeType.split("/")[1] || "png"}`,
-          mediaType: img.mimeType,
-        });
-
-        console.log(
-          `[LLM Streaming] Added image as file: ${img.mimeType}, ${img.data.length} chars`,
-        );
-      }
-    }
-
-    return { role: m.role, parts };
-  });
-
-  const requestBody = {
-    model: {
-      connectionId: modelProviderId,
-      id: modelId,
-    },
-    messages: allMessages,
-    stream: true,
-    gateway: { id: agentId ?? null },
-  };
-
-  const url = `${effectiveMeshUrl}/api/${organizationId}/models/stream`;
-  console.log("[LLM Streaming] Request URL:", url);
-  console.log("[LLM Streaming] Organization:", organizationId);
-  console.log("[LLM Streaming] Model Provider:", modelProviderId);
-  console.log("[LLM Streaming] Agent:", agentId ?? "none");
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      Accept: "text/event-stream",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[LLM Streaming] Error:", {
-      status: response.status,
-      error: errorText,
-      url,
-      organizationId,
-    });
-    throw new Error(
-      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
-    );
-  }
-
-  if (!response.body) {
-    throw new Error("No response body from LLM API");
-  }
-
-  // Process the stream with callbacks
-  let textContent = "";
-  let lastStreamUpdate = 0;
-  const STREAM_UPDATE_INTERVAL = 500; // Update every 500ms to avoid rate limits
+  console.log("[LLM Streaming] Calling Models API (stream)");
 
   try {
-    const eventStream = parseJsonEventStream({
-      stream: response.body,
-      schema: streamEventSchema,
-    });
+    const response = await callModelsAPI(config, apiMessages, true);
 
-    const reader = eventStream.getReader();
+    // The binding returns a Response object with a streaming body
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[LLM Streaming] Error:", {
+        status: response.status,
+        error: errorText,
+      });
+      throw new Error(
+        `LLM streaming failed (${response.status}): ${errorText}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new Error("No response body from LLM stream");
+    }
+
+    // Process the stream
+    let textContent = "";
+    let lastStreamUpdate = 0;
+    const STREAM_UPDATE_INTERVAL = 500;
+
+    const reader = response.body
+      .pipeThrough(new TextDecoderStream())
+      .getReader();
+    let buffer = "";
     let eventCount = 0;
-    while (true) {
-      const { done, value: event } = await reader.read();
-      if (done) {
-        console.log(
-          `[LLM Streaming] Stream ended. Total events: ${eventCount}, text length: ${textContent.length}`,
-        );
-        break;
-      }
+    let finished = false;
 
-      eventCount++;
+    while (!finished) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      if (!event.success) {
-        console.log(`[LLM Streaming] Event ${eventCount} failed:`, event.error);
-        continue;
-      }
+      buffer += value;
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
 
-      const { type } = event.value;
+      for (const line of lines) {
+        const parsed = parseStreamLine(line);
+        if (!parsed) continue;
 
-      // Log event types (but not all text-delta to avoid spam)
-      if (type !== "text-delta" || eventCount <= 3) {
-        console.log(`[LLM Streaming] Event ${eventCount}: type=${type}`);
-      }
+        eventCount++;
+        const { type } = parsed;
 
-      // Log error events with full details
-      if (type === "error") {
-        console.error(
-          `[LLM Streaming] ERROR event:`,
-          JSON.stringify(event.value, null, 2),
-        );
-      }
-
-      if (type === "text-delta" && event.value.delta) {
-        textContent += event.value.delta;
-
-        // Throttle updates to avoid Slack rate limits
-        const now = Date.now();
-        if (now - lastStreamUpdate > STREAM_UPDATE_INTERVAL) {
-          await onStream(textContent, false);
-          lastStreamUpdate = now;
+        if (type !== "text-delta" || eventCount <= 3) {
+          console.log(`[LLM Streaming] Event ${eventCount}: type=${type}`);
         }
-      } else if (type === "finish") {
-        console.log(
-          `[LLM Streaming] Finish event received. Final text length: ${textContent.length}`,
-        );
-        break;
+
+        if (type === "text-delta" && parsed.delta) {
+          textContent += parsed.delta;
+
+          const now = Date.now();
+          if (now - lastStreamUpdate > STREAM_UPDATE_INTERVAL) {
+            await onStream(textContent, false);
+            lastStreamUpdate = now;
+          }
+        } else if (type === "finish") {
+          console.log(
+            `[LLM Streaming] Finish. Text length: ${textContent.length}`,
+          );
+          finished = true;
+          break;
+        }
       }
     }
+
+    // Final update
+    await onStream(
+      textContent || "Desculpe, não consegui gerar uma resposta.",
+      true,
+    );
+
+    return textContent || "Desculpe, não consegui gerar uma resposta.";
   } catch (error) {
-    console.error("[LLM] Stream processing error:", error);
-    if (textContent) {
-      await onStream(textContent, true);
-      return textContent;
-    }
+    console.error("[LLM Streaming] Error:", error);
     throw error;
   }
-
-  // Final update with complete text
-  await onStream(
-    textContent || "Desculpe, não consegui gerar uma resposta.",
-    true,
-  );
-  return textContent || "Desculpe, não consegui gerar uma resposta.";
 }

@@ -69,7 +69,7 @@ function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
   return {
     id: r.id as string,
     title: r.title as string,
-    description: r.description as string | undefined,
+    description: r.description !== null ? (r.description as string) : undefined,
     steps: steps as Workflow["steps"],
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,

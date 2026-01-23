@@ -581,16 +581,33 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
       } = context;
       env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
+      const requestId = crypto.randomUUID();
+      let state = "init";
+      let finished = false;
+
+      const slowRequestTimeout = setTimeout(() => {
+        if (!finished) {
+          console.warn(
+            `[LLM_DO_STREAM] SLOW REQUEST ${requestId} state=${state} (>20s)`,
+          );
+        }
+      }, 20_000);
+
+      console.log(`[LLM_DO_STREAM] START ${requestId} model=${modelId}`);
+
       const apiKey = getOpenRouterApiKey(env);
       // Create OpenRouter provider
       const openrouter = createOpenRouter({ apiKey });
       const model = openrouter.languageModel(modelId);
 
       try {
+        state = "preauth";
         const hook = await usageHooks?.start?.(
           await OpenRouterClient.for(apiKey).getModel(modelId),
           context,
         );
+
+        state = "modelStream";
         const callResponse = await model.doStream(
           callOptions as Parameters<(typeof model)["doStream"]>[0],
         );
@@ -598,12 +615,25 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         const [usage, stream] = getUsageFromStream(
           callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
         );
-        usage.then((usage) => hook?.end?.(usage));
+        usage.then((u) => {
+          state = "commit";
+          hook?.end?.(u).then(() => {
+            finished = true;
+            clearTimeout(slowRequestTimeout);
+            console.log(`[LLM_DO_STREAM] END ${requestId}`);
+          });
+        });
         const response = streamToResponse(stream);
 
         // Return the data stream response
         return response;
       } catch (error) {
+        finished = true;
+        clearTimeout(slowRequestTimeout);
+        console.error(
+          `[LLM_DO_STREAM] ERROR ${requestId} state=${state}`,
+          error,
+        );
         if (isAPICallError(error)) {
           return new Response(error.responseBody, {
             status: error.statusCode,

@@ -57,6 +57,7 @@ const runtime = withRuntime<
   Registry
 >({
   tools: (env) => {
+    // @ts-expect-error: TODO: fix this later
     return tools(env, {
       start: async (modelInfo, params) => {
         const amount = calculatePreAuthAmount(modelInfo, params);
@@ -68,9 +69,17 @@ const runtime = withRuntime<
               modelId: modelInfo.id,
               params: params,
             },
+          }).catch((err) => {
+            console.error("WALLET ERROR", err);
+            return {
+              id: undefined,
+            };
           });
         return {
           end: async (usage) => {
+            if (!id) {
+              return;
+            }
             if (!isOpenRouterUsageReport(usage)) {
               throw new Error("Usage cost not found");
             }

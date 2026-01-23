@@ -8,7 +8,7 @@ import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "./tools/index.ts";
-import { type Env as DecoEnv, StateSchema } from "../shared/deco.gen.ts";
+import { type Env as DecoEnv, StateSchema } from "./lib/schema.ts";
 
 /**
  * Environment type for TikTok Ads MCP
@@ -22,10 +22,12 @@ const runtime = withRuntime<Env, typeof StateSchema>({
    * For TikTok Ads, we need the access token that users generate
    * in the TikTok Developer Portal.
    */
-  oauth: {
+  configuration: {
     state: StateSchema,
   },
-  tools,
+  tools: (env) => tools.map((createTool) => createTool(env)),
 });
+
+export default runtime;
 
 serve(runtime.fetch);

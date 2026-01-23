@@ -14,6 +14,8 @@ import {
   getThreadReplies,
   sendThinkingMessage,
   processSlackFiles,
+  addReaction,
+  removeReaction,
 } from "../../lib/slack-client.ts";
 import type {
   SlackEvent,
@@ -40,10 +42,139 @@ import {
 } from "./context-builder.ts";
 import {
   configureLLM as setLLMConfig,
+  clearLLMConfig as clearLLMConfigInternal,
   configureStreaming as setStreamingConfig,
   isLLMConfigured,
   handleLLMCall,
 } from "./llm-handler.ts";
+
+// Whisper configuration
+interface WhisperConfig {
+  meshUrl: string;
+  organizationId: string;
+  token: string;
+  whisperConnectionId: string;
+}
+
+let whisperConfig: WhisperConfig | null = null;
+
+export function configureWhisper(config: WhisperConfig) {
+  whisperConfig = config;
+  console.log("[Whisper] Configured", {
+    meshUrl: config.meshUrl,
+    organizationId: config.organizationId,
+    whisperConnectionId: config.whisperConnectionId,
+    hasToken: !!config.token,
+  });
+}
+
+/**
+ * Transcribe audio using Whisper binding
+ */
+async function transcribeAudio(
+  audioUrl: string,
+  mimeType: string,
+  filename: string,
+): Promise<string | null> {
+  if (!whisperConfig) {
+    console.log("[Whisper] Not configured, skipping transcription");
+    return null;
+  }
+
+  try {
+    console.log(`[Whisper] Transcribing audio: ${filename} (${mimeType})`);
+    console.log(`[Whisper] Audio URL: ${audioUrl.substring(0, 50)}...`);
+
+    // Use localhost for tunnel URLs
+    const isTunnel = whisperConfig.meshUrl.includes(".deco.host");
+    const effectiveMeshUrl = isTunnel
+      ? "http://localhost:3000"
+      : whisperConfig.meshUrl;
+
+    // Call Whisper via MCP proxy endpoint
+    const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
+
+    console.log(`[Whisper] Calling MCP proxy: ${url}`);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${whisperConfig.token}`,
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: Date.now(),
+        method: "tools/call",
+        params: {
+          name: "TRANSCRIBE_AUDIO",
+          arguments: {
+            audioUrl: audioUrl,
+            language: undefined, // Auto-detect
+            responseFormat: "text",
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[Whisper] Transcription failed: ${response.status} ${response.statusText}`,
+      );
+      console.error(`[Whisper] Error details:`, errorText);
+      return null;
+    }
+
+    const result = (await response.json()) as {
+      result?: {
+        content?: Array<{ type: string; text?: string }>;
+        text?: string; // Direct text response format
+      };
+    };
+
+    // Try to extract transcription from different response formats
+    let transcription: string | undefined;
+
+    // Format 1: MCP content array format
+    if (result?.result?.content) {
+      transcription = result.result.content.find(
+        (c) => c.type === "text",
+      )?.text;
+    }
+
+    // Format 2: Direct text field (when responseFormat: "text")
+    if (!transcription && result?.result?.text) {
+      const textResult = result.result.text;
+      // Check if it's JSON string like {"text":"..."}
+      if (typeof textResult === "string" && textResult.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(textResult);
+          transcription = parsed.text || textResult;
+        } catch {
+          transcription = textResult;
+        }
+      } else {
+        transcription = textResult;
+      }
+    }
+
+    if (transcription) {
+      console.log(
+        `[Whisper] ✅ Transcription successful (${transcription.length} chars): ${transcription.substring(0, 100)}...`,
+      );
+      return transcription.trim();
+    }
+
+    console.warn("[Whisper] No transcription in response:", result);
+    return null;
+  } catch (error) {
+    console.error("[Whisper] Transcription error:", error);
+    return null;
+  }
+}
+
 import {
   SLACK_EVENT_TYPES,
   type SlackEventContext,
@@ -64,6 +195,13 @@ let globalBotUserId: string | null = null;
  */
 export function configureLLM(config: Parameters<typeof setLLMConfig>[0]): void {
   setLLMConfig(config);
+}
+
+/**
+ * Clear LLM configuration (prevents cross-tenant config leakage)
+ */
+export function clearLLMConfig(): void {
+  clearLLMConfigInternal();
 }
 
 /**
@@ -103,22 +241,167 @@ async function botParticipatedInThread(
 }
 
 /**
- * Process attached files and return images
+ * Process attached files and return media (images and audio)
+ * Also returns transcriptions for audio files and warning if Whisper is needed
  */
-async function processAttachedImages(
+async function processAttachedFiles(
   files: SlackAppMentionEvent["files"],
-): Promise<Array<{ type: "image"; data: string; mimeType: string }>> {
-  if (!files || files.length === 0) return [];
+): Promise<{
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>;
+  textFiles: Array<{ name: string; content: string; mimeType: string }>;
+  transcriptions: string[];
+  audioWithoutWhisper: boolean;
+}> {
+  if (!files || files.length === 0)
+    return {
+      media: [],
+      textFiles: [],
+      transcriptions: [],
+      audioWithoutWhisper: false,
+    };
 
   console.log(`[EventHandler] Processing ${files.length} attached files`);
+
+  // Log detailed file information
+  files.forEach((file, index) => {
+    console.log(`[EventHandler] File ${index + 1}:`, {
+      name: file.name,
+      mimetype: file.mimetype,
+      filetype: file.filetype,
+      size: file.size,
+      mode: file.mode,
+      url_private: file.url_private ? "present" : "missing",
+      // Audio-specific fields
+      duration_ms: (file as any).duration_ms,
+      transcription: (file as any).transcription,
+      // Log all keys to see what's available
+      allKeys: Object.keys(file),
+    });
+
+    // If it's audio with transcription, log it
+    if (file.mimetype.startsWith("audio/") && (file as any).transcription) {
+      console.log(
+        `[EventHandler] 🎤 Audio transcription:`,
+        (file as any).transcription,
+      );
+    }
+  });
+
   const processedFiles = await processSlackFiles(files);
-  const images = processedFiles.map((f) => ({
-    type: "image" as const,
-    data: f.data,
-    mimeType: f.mimeType,
-  }));
-  console.log(`[EventHandler] ${images.length} images ready for LLM`);
-  return images;
+
+  // Separate text files from media files
+  const textFiles: Array<{ name: string; content: string; mimeType: string }> =
+    [];
+  const mediaFiles: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }> = [];
+
+  for (const file of processedFiles) {
+    if (file.type === "text") {
+      textFiles.push({
+        name: file.name,
+        content: file.data,
+        mimeType: file.mimeType,
+      });
+    } else {
+      mediaFiles.push(
+        file as {
+          type: "image" | "audio";
+          data: string;
+          mimeType: string;
+          name: string;
+        },
+      );
+    }
+  }
+
+  // Check if there are audio files
+  const hasAudio = mediaFiles.some((f) => f.type === "audio");
+  const whisperConfigured = whisperConfig !== null;
+
+  // If audio without Whisper, return only images and set warning flag
+  if (hasAudio && !whisperConfigured) {
+    console.warn(
+      "[EventHandler] ⚠️ Audio files detected but Whisper not configured - skipping audio",
+    );
+    const onlyImages = mediaFiles.filter((f) => f.type === "image");
+    return {
+      media: onlyImages,
+      textFiles,
+      transcriptions: [],
+      audioWithoutWhisper: true,
+    };
+  }
+
+  // Transcribe audio files if Whisper is configured
+  const transcriptions: string[] = [];
+  if (whisperConfigured) {
+    const { storeTempFile } = await import("../../lib/tempFileStore.ts");
+    const { getServerBaseUrl } = await import("../../lib/serverConfig.ts");
+
+    // Store audio files temporarily and transcribe
+    for (const processedFile of mediaFiles) {
+      if (processedFile.type === "audio") {
+        // Store file in temp store
+        const tempFileId = storeTempFile(
+          processedFile.data,
+          processedFile.mimeType,
+          processedFile.name,
+        );
+
+        // Build public URL that Whisper can access (no auth needed)
+        // Uses the configured server base URL (from WEBHOOK_URL)
+        const serverBaseUrl = getServerBaseUrl();
+        const tempFileUrl = `${serverBaseUrl}/temp-files/${tempFileId}`;
+
+        console.log(`[EventHandler] Audio file for transcription:`, {
+          name: processedFile.name,
+          mimeType: processedFile.mimeType,
+          tempFileId,
+          serverBaseUrl,
+          tempFileUrl: tempFileUrl.substring(0, 80) + "...",
+        });
+
+        const transcription = await transcribeAudio(
+          tempFileUrl,
+          processedFile.mimeType,
+          processedFile.name,
+        );
+
+        if (transcription) {
+          console.log(
+            `[EventHandler] ✅ Transcription received:`,
+            transcription,
+          );
+          transcriptions.push(
+            `[Audio: ${processedFile.name}]\n${transcription}`,
+          );
+        }
+      }
+    }
+  }
+
+  console.log(`[EventHandler] ${processedFiles.length} files ready for LLM:`, {
+    images: mediaFiles.filter((f) => f.type === "image").length,
+    audio: mediaFiles.filter((f) => f.type === "audio").length,
+    textFiles: textFiles.length,
+    transcriptions: transcriptions.length,
+  });
+
+  return {
+    media: mediaFiles,
+    textFiles,
+    transcriptions,
+    audioWithoutWhisper: false,
+  };
 }
 
 /**
@@ -129,7 +412,12 @@ async function buildLLMMessages(
   text: string,
   ts: string,
   threadTs: string | undefined,
-  images: Array<{ type: "image"; data: string; mimeType: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   cleanMention: boolean = false,
 ) {
   // Build context from previous messages (if configured)
@@ -146,13 +434,13 @@ async function buildLLMMessages(
   }
 
   // Build current content
-  const currentContent = buildCurrentContent(text, images.length, cleanMention);
+  const currentContent = buildCurrentContent(text, media.length, cleanMention);
 
   // Format messages with context/request separation
   return formatMessagesForLLM(
     contextMessages,
     currentContent,
-    images.length > 0 ? images : undefined,
+    media.length > 0 ? media : undefined,
   );
 }
 
@@ -233,20 +521,72 @@ async function handleAppMention(
   const { channel, user, text, ts, thread_ts, files } = event;
   console.log(`[EventHandler] App mention from ${user} in ${channel}`);
 
+  // Add eyes reaction immediately for quick feedback
+  await addReaction(channel, ts, "eyes");
+
   // Send thinking message immediately
   const replyTo = thread_ts ?? ts;
   const thinkingMsg = await sendThinkingMessage(channel, replyTo);
 
-  // Process images
-  const images = await processAttachedImages(files);
+  // Remove eyes reaction when we start processing
+  await removeReaction(channel, ts, "eyes");
+
+  // Process attached files (images, audio, and text files)
+  const { media, textFiles, transcriptions, audioWithoutWhisper } =
+    await processAttachedFiles(files);
+
+  // If audio was sent without Whisper configured, inform the user
+  if (audioWithoutWhisper) {
+    const warningMsg =
+      "🎤 Áudio detectado! Para processar arquivos de áudio, é necessário ativar a integração **Whisper** no Mesh.\n\n" +
+      "Entre em contato com o administrador para configurar o Whisper e habilitar transcrição automática de áudios.";
+
+    if (thread_ts) {
+      await replyInThread(channel, thread_ts, warningMsg);
+    } else {
+      await replyInThread(channel, ts, warningMsg);
+    }
+    console.log("[EventHandler] Sent Whisper configuration warning to user");
+    return;
+  }
+
+  // Format text files for LLM
+  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
+  const textFileContent = textFiles
+    .map((file) => {
+      const language = getLanguageFromFilename(file.name);
+      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
+    })
+    .join("\n\n");
+
+  // Add transcriptions and text files to the message text
+  let fullText = text;
+  if (transcriptions.length > 0) {
+    fullText += `\n\n${transcriptions.join("\n\n")}`;
+  }
+  if (textFileContent) {
+    fullText += `\n\n${textFileContent}`;
+  }
+
+  // When we have transcriptions, remove audio files from media array
+  // (send only transcribed text, not the audio file itself)
+  // Keep images as they can be processed by the LLM
+  const mediaForLLM =
+    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
+
+  if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
+    console.log(
+      `[EventHandler] Filtered ${media.length - mediaForLLM.length} audio files from LLM prompt (using transcriptions instead)`,
+    );
+  }
 
   // Build messages for LLM
   const messages = await buildLLMMessages(
     channel,
-    text,
+    fullText,
     ts,
     thread_ts,
-    images,
+    mediaForLLM,
     true, // Clean bot mention
   );
 
@@ -309,8 +649,54 @@ async function handleMessage(
     }
   }
 
-  // Process images
-  const images = await processAttachedImages(files);
+  // Process attached files (images, audio, and text files)
+  const { media, textFiles, transcriptions, audioWithoutWhisper } =
+    await processAttachedFiles(files);
+
+  // If audio was sent without Whisper configured, inform the user
+  if (audioWithoutWhisper) {
+    const warningMsg =
+      "🎤 Áudio detectado! Para processar arquivos de áudio, é necessário ativar a integração **Whisper** no Mesh.\n\n" +
+      "Entre em contato com o administrador para configurar o Whisper e habilitar transcrição automática de áudios.";
+
+    if (isDM) {
+      await sendMessage({ channel, text: warningMsg });
+    } else if (thread_ts) {
+      await replyInThread(channel, thread_ts, warningMsg);
+    }
+    console.log("[EventHandler] Sent Whisper configuration warning to user");
+    return;
+  }
+
+  // Format text files for LLM
+  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
+  const textFileContent = textFiles
+    .map((file) => {
+      const language = getLanguageFromFilename(file.name);
+      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
+    })
+    .join("\n\n");
+
+  // Add transcriptions and text files to the message text
+  let fullText = text;
+  if (transcriptions.length > 0) {
+    fullText += `\n\n${transcriptions.join("\n\n")}`;
+  }
+  if (textFileContent) {
+    fullText += `\n\n${textFileContent}`;
+  }
+
+  // When we have transcriptions, remove audio files from media array
+  // (send only transcribed text, not the audio file itself)
+  // Keep images as they can be processed by the LLM
+  const mediaForLLM =
+    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
+
+  if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
+    console.log(
+      `[EventHandler] Filtered ${media.length - mediaForLLM.length} audio files from LLM prompt (using transcriptions instead)`,
+    );
+  }
 
   const meshConfig = {
     meshUrl: teamConfig.meshUrl,
@@ -318,15 +704,22 @@ async function handleMessage(
   };
 
   if (isDM) {
-    await handleDirectMessage(channel, user, text, ts, images, meshConfig);
+    await handleDirectMessage(
+      channel,
+      user,
+      fullText,
+      ts,
+      mediaForLLM,
+      meshConfig,
+    );
   } else if (thread_ts) {
     await handleThreadReply(
       channel,
       user,
-      text,
+      fullText,
       ts,
       thread_ts,
-      images,
+      mediaForLLM,
       meshConfig,
     );
   }
@@ -341,13 +734,25 @@ async function handleDirectMessage(
   user: string,
   text: string,
   ts: string,
-  images: Array<{ type: "image"; data: string; mimeType: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   meshConfig: MeshConfig,
 ): Promise<void> {
   console.log(`[EventHandler] DM from ${user}`);
 
+  // Add eyes reaction immediately for quick feedback
+  await addReaction(channel, ts, "eyes");
+
   const thinkingMsg = await sendThinkingMessage(channel);
-  const messages = await buildLLMMessages(channel, text, ts, undefined, images);
+
+  // Remove eyes reaction when we start processing
+  await removeReaction(channel, ts, "eyes");
+
+  const messages = await buildLLMMessages(channel, text, ts, undefined, media);
 
   if (!isLLMConfigured()) {
     await publishToEventBus(
@@ -379,13 +784,25 @@ async function handleThreadReply(
   text: string,
   ts: string,
   threadTs: string,
-  images: Array<{ type: "image"; data: string; mimeType: string }>,
+  media: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
   meshConfig: MeshConfig,
 ): Promise<void> {
   console.log(`[EventHandler] Thread reply from ${user}`);
 
+  // Add eyes reaction immediately for quick feedback
+  await addReaction(channel, ts, "eyes");
+
   const thinkingMsg = await sendThinkingMessage(channel, threadTs);
-  const messages = await buildLLMMessages(channel, text, ts, threadTs, images);
+
+  // Remove eyes reaction when we start processing
+  await removeReaction(channel, ts, "eyes");
+
+  const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
 
   if (!isLLMConfigured()) {
     await publishToEventBus(

@@ -1,4 +1,9 @@
 {
+  "github": {
+    "site": "github-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
   "vibemcp": {
     "site": "vibemcp",
     "entrypoint": "./dist/server/main.js",
@@ -106,6 +111,11 @@
   },
   "tiktok-ads": {
     "site": "tiktok-ads",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "vtex-docs": {
+    "site": "vtex-docs",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   }
