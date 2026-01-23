@@ -231,13 +231,6 @@ export async function generateLLMResponseWithStreaming(
 
   const prompt = messagesToPrompt(messages, systemPrompt);
 
-  console.log("[LLM Streaming] Calling LLM_DO_STREAM:", {
-    modelId,
-    hasSystemPrompt: !!systemPrompt,
-    systemPromptPreview: systemPrompt?.substring(0, 100),
-    messageCount: prompt.length,
-  });
-
   try {
     const response = await llmBinding.LLM_DO_STREAM({
       modelId,
@@ -274,8 +267,9 @@ export async function generateLLMResponseWithStreaming(
       .getReader();
     let buffer = "";
     let eventCount = 0;
+    let finished = false;
 
-    while (true) {
+    while (!finished) {
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -306,6 +300,7 @@ export async function generateLLMResponseWithStreaming(
           console.log(
             `[LLM Streaming] Finish. Text length: ${textContent.length}`,
           );
+          finished = true;
           break;
         }
       }

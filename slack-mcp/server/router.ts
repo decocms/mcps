@@ -17,6 +17,7 @@ import {
 import {
   handleSlackEvent,
   configureLLM,
+  clearLLMConfig,
 } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import {
@@ -392,6 +393,8 @@ async function processConnectionEventAsync(
       systemPrompt: connectionConfig.systemPrompt,
     });
   } else {
+    // Clear LLM config to prevent cross-tenant configuration leakage
+    clearLLMConfig();
     console.warn(
       "[Router] LLM not configured - missing meshToken or modelProviderId",
     );
