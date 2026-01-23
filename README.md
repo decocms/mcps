@@ -1,9 +1,8 @@
 # mcps
 
-First-party MCPs maintained by the decocms team. 
+First-party MCPs maintained by the decocms team.
 
 ## Getting Started
-
 
 After cloning the repository, install dependencies:
 
@@ -37,21 +36,25 @@ bun run new <name> [options]
 ### Examples
 
 **Create an MCP with a React view:**
+
 ```bash
 bun run new weather-mcp
 ```
 
 **Create an API-only MCP (no view):**
+
 ```bash
 bun run new weather-api --no-view
 ```
 
 **Create from minimal template:**
+
 ```bash
 bun run new my-mcp --template minimal
 ```
 
 **Create with custom description:**
+
 ```bash
 bun run new weather-api --no-view --description "Weather forecast API"
 ```
@@ -59,11 +62,12 @@ bun run new weather-api --no-view --description "Weather forecast API"
 ### Templates
 
 - **`with-view`** - Full-featured MCP with a Vite + React view
+
   - Includes Tailwind CSS, React Router, React Query
   - Cloudflare Workers backend
   - Perfect for MCPs that need a UI
-  
 - **`minimal`** - Lightweight API-only MCP
+
   - Just the server code, no frontend
   - Smaller dependency footprint
   - Perfect for pure API/tool MCPs
@@ -99,10 +103,12 @@ This monorepo uses centralized GitHub Actions workflows with **automatic MCP dis
 ### What Gets Deployed?
 
 **Production (push to main)**:
+
 - Compares current commit with previous commit
 - Deploys all MCPs that have file changes
 
 **Preview (pull requests)**:
+
 - Compares PR branch with base branch (main)
 - Deploys all MCPs that have changes in the PR
 - Posts preview URLs as a comment on the PR
@@ -122,17 +128,20 @@ bun run scripts/deploy.ts your-mcp-name --preview
 ### Requirements
 
 Each MCP directory must have:
+
 - A `package.json` with a `build` script
 - Build output in `dist/server` directory (or as configured for Deco)
 
 Repository requirements:
+
 - `DECO_DEPLOY_TOKEN` secret configured in GitHub repository settings
 
 ### Adding a New MCP
 
 Just create a new directory with a `package.json` - that's it! The workflows will automatically:
+
 1. Detect it as an MCP
 2. Monitor it for changes
 3. Deploy it when changes are pushed
 
-No manual workflow configuration needed! 
+No manual workflow configuration needed!
