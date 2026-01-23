@@ -13,7 +13,7 @@
     "dev:tunnel": "deco link -p 3003 -- PORT=3003 bun run dev"
   },
   "dependencies": {
-    "@decocms/runtime": "^1.1.3",
+    "@decocms/runtime": "1.1.3",
     "zod": "^4.0.0"
   },
   "devDependencies": {
