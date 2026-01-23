@@ -15,6 +15,11 @@ export interface SlackConnectionConfig {
   connectionId: string;
   organizationId: string;
   meshUrl: string;
+  meshToken?: string; // Mesh API token for LLM calls
+  modelProviderId?: string; // Model provider connection ID
+  modelId?: string; // Language model ID
+  agentId?: string; // Agent/gateway ID
+  systemPrompt?: string; // Agent's system prompt (fetched from Mesh)
   botToken: string;
   signingSecret: string;
   teamId?: string; // Optional, fetched from Slack API

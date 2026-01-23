@@ -41,6 +41,8 @@ export function configureLLM(config: LLMConfig): void {
     modelId: config.modelId,
     agentId: config.agentId,
     hasToken: !!config.token,
+    hasSystemPrompt: !!config.systemPrompt,
+    systemPromptPreview: config.systemPrompt?.substring(0, 100),
   });
 }
 

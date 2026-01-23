@@ -14,7 +14,10 @@ import {
   isBotMentioned,
   removeBotMention,
 } from "./webhook.ts";
-import { handleSlackEvent } from "./slack/handlers/eventHandler.ts";
+import {
+  handleSlackEvent,
+  configureLLM,
+} from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import {
   readConnectionConfig,
@@ -22,6 +25,7 @@ import {
   type SlackConnectionConfig,
   type SlackTeamConfig,
 } from "./lib/data.ts";
+import { initializeSlackClient } from "./lib/slack-client.ts";
 
 // Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
@@ -363,6 +367,36 @@ async function processConnectionEventAsync(
 ): Promise<void> {
   if (!payload.event) return;
 
+  // IMPORTANT: Initialize Slack client with this connection's token
+  // Each connection has its own Slack workspace credentials
+  initializeSlackClient({ botToken: connectionConfig.botToken });
+
+  // Configure LLM with this connection's settings
+  console.log("[Router] Connection config for LLM:", {
+    connectionId: connectionConfig.connectionId,
+    organizationId: connectionConfig.organizationId,
+    meshUrl: connectionConfig.meshUrl,
+    hasToken: !!connectionConfig.meshToken,
+    modelProviderId: connectionConfig.modelProviderId,
+    agentId: connectionConfig.agentId,
+  });
+
+  if (connectionConfig.meshToken && connectionConfig.modelProviderId) {
+    configureLLM({
+      meshUrl: connectionConfig.meshUrl,
+      organizationId: connectionConfig.organizationId,
+      token: connectionConfig.meshToken,
+      modelProviderId: connectionConfig.modelProviderId,
+      modelId: connectionConfig.modelId,
+      agentId: connectionConfig.agentId,
+      systemPrompt: connectionConfig.systemPrompt,
+    });
+  } else {
+    console.warn(
+      "[Router] LLM not configured - missing meshToken or modelProviderId",
+    );
+  }
+
   const event = payload.event;
   const eventType = event.type;
   const botUserId =
@@ -426,6 +460,11 @@ async function processEventAsync(
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
   if (!payload.event) return;
+
+  // IMPORTANT: Initialize Slack client with this team's token
+  if (teamConfig.botToken) {
+    initializeSlackClient({ botToken: teamConfig.botToken });
+  }
 
   const event = payload.event;
   const eventType = event.type;
