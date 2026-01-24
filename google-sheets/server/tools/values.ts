@@ -340,7 +340,7 @@ export const createSearchDataTool = (env: Env) =>
       sheetName: z.string().describe("Name of the sheet to search"),
       searchTerm: z.string().describe("Term to search for"),
       searchColumns: z
-        .array(z.coerce.number())
+        .array(z.coerce.number().int().min(0))
         .optional()
         .describe(
           "Column indices to search in (0-based). If not provided, searches all columns.",
