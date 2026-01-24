@@ -11,6 +11,7 @@ import type {
   BatchUpdateResponse,
   Request,
 } from "./types.ts";
+import { calculateDataRange } from "./utils.ts";
 
 export class SheetsClient {
   private accessToken: string;
@@ -1193,6 +1194,175 @@ export class SheetsClient {
     const url = new URL(ENDPOINTS.VALUES(spreadsheetId, range));
     url.searchParams.set("valueRenderOption", "FORMULA");
     return this.request<ValueRange>(url.toString());
+  }
+
+  // ============================================
+  // Enhanced Metadata Operations
+  // ============================================
+
+  /**
+   * Get the actual data range for a sheet (where data exists, not full grid)
+   */
+  async getSheetDataRange(
+    spreadsheetId: string,
+    sheetTitle: string,
+  ): Promise<{ range: string; filledCells: number } | null> {
+    try {
+      const result = await this.readRange(spreadsheetId, sheetTitle);
+      if (!result.values || result.values.length === 0) {
+        return null;
+      }
+      return calculateDataRange(result.values, sheetTitle);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get metadata for all sheets including actual data ranges
+   */
+  async getSpreadsheetWithDataRanges(spreadsheetId: string): Promise<{
+    spreadsheet: Spreadsheet;
+    dataRanges: Record<string, { range: string; filledCells: number }>;
+  }> {
+    const spreadsheet = await this.getSpreadsheet(spreadsheetId);
+    const dataRanges: Record<string, { range: string; filledCells: number }> =
+      {};
+
+    if (spreadsheet.sheets) {
+      const promises = spreadsheet.sheets.map(async (sheet) => {
+        const title = sheet.properties?.title;
+        if (title) {
+          const rangeInfo = await this.getSheetDataRange(spreadsheetId, title);
+          if (rangeInfo) {
+            dataRanges[title] = rangeInfo;
+          }
+        }
+      });
+      await Promise.all(promises);
+    }
+
+    return { spreadsheet, dataRanges };
+  }
+
+  /**
+   * Copy a sheet to a destination spreadsheet (or within the same one)
+   */
+  async copySheetTo(
+    spreadsheetId: string,
+    sheetId: number,
+    destinationSpreadsheetId?: string,
+  ): Promise<{ sheetId: number; title: string }> {
+    const url = `${ENDPOINTS.SPREADSHEET(spreadsheetId)}/sheets/${sheetId}:copyTo`;
+    const result = await this.request<{
+      sheetId: number;
+      title: string;
+      index: number;
+    }>(url, {
+      method: "POST",
+      body: JSON.stringify({
+        destinationSpreadsheetId: destinationSpreadsheetId || spreadsheetId,
+      }),
+    });
+    return { sheetId: result.sheetId, title: result.title };
+  }
+
+  /**
+   * Get headers from a specific row of a sheet
+   */
+  async getSheetHeaders(
+    spreadsheetId: string,
+    sheetName: string,
+    range: string = "A:Z",
+    headerRow: number = 1,
+  ): Promise<ValueRange> {
+    const rangeStart = range.split(":")[0].replace(/[0-9]/g, "");
+    const rangeEnd = range.split(":")[1].replace(/[0-9]/g, "");
+    const headerRange = `${sheetName}!${rangeStart}${headerRow}:${rangeEnd}${headerRow}`;
+    return this.readRange(spreadsheetId, headerRange);
+  }
+
+  /**
+   * Search for a term across multiple columns in a sheet
+   * Returns matching rows
+   */
+  async searchInSheet(
+    spreadsheetId: string,
+    sheetName: string,
+    searchTerm: string,
+    options: {
+      searchColumns?: number[];
+      headerRow?: number;
+      caseSensitive?: boolean;
+    } = {},
+  ): Promise<{
+    headers: string[];
+    matches: Array<{ rowNumber: number; values: unknown[] }>;
+    totalMatches: number;
+  }> {
+    const { headerRow = 1, caseSensitive = false } = options;
+
+    // Get all data from the sheet
+    const result = await this.readRange(spreadsheetId, sheetName);
+    const values = result.values || [];
+
+    if (values.length === 0) {
+      return { headers: [], matches: [], totalMatches: 0 };
+    }
+
+    // Extract headers
+    const headers =
+      headerRow > 0 && values.length >= headerRow
+        ? values[headerRow - 1].map((h: unknown) => String(h || ""))
+        : [];
+
+    // Determine which columns to search
+    const columnsToSearch = options.searchColumns || [];
+    const searchAllColumns = columnsToSearch.length === 0;
+
+    const term = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+    const matches: Array<{ rowNumber: number; values: unknown[] }> = [];
+
+    // Search through data rows (skip header if present)
+    const startRow = headerRow > 0 ? headerRow : 0;
+
+    for (let i = startRow; i < values.length; i++) {
+      const row = values[i];
+      if (!row) continue;
+
+      let found = false;
+
+      for (let colIndex = 0; colIndex < row.length; colIndex++) {
+        if (!searchAllColumns && !columnsToSearch.includes(colIndex)) {
+          continue;
+        }
+
+        const cellValue = row[colIndex];
+        if (cellValue === null || cellValue === undefined) continue;
+
+        const cellStr = caseSensitive
+          ? String(cellValue)
+          : String(cellValue).toLowerCase();
+
+        if (cellStr.includes(term)) {
+          found = true;
+          break;
+        }
+      }
+
+      if (found) {
+        matches.push({
+          rowNumber: i + 1, // 1-based row number
+          values: row,
+        });
+      }
+    }
+
+    return {
+      headers,
+      matches,
+      totalMatches: matches.length,
+    };
   }
 }
 

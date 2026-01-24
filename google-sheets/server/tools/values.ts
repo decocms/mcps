@@ -6,6 +6,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
+import { processHeaders } from "../lib/utils.ts";
 
 export const createReadRangeTool = (env: Env) =>
   createPrivateTool({
@@ -271,6 +272,125 @@ export const createReadFormulasTool = (env: Env) =>
     },
   });
 
+// ============================================
+// Get Sheet Headers
+// ============================================
+
+export const createGetSheetHeadersTool = (env: Env) =>
+  createPrivateTool({
+    id: "get_sheet_headers",
+    description:
+      "Get structured header information from a sheet. Returns column labels, header-to-index mapping, and header values array. Useful for understanding column structure before querying data.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetName: z.string().describe("Name of the sheet"),
+      range: z
+        .string()
+        .optional()
+        .describe("Column range to read headers from (default: A:Z)"),
+      headerRow: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Row number containing headers (default: 1)"),
+    }),
+    outputSchema: z.object({
+      labels: z
+        .record(z.string(), z.string())
+        .describe("Mapping of Col1, Col2... to header names"),
+      headerMap: z
+        .record(z.string(), z.number())
+        .describe("Mapping of header name to column index (0-based)"),
+      headerValues: z.array(z.string()).describe("Array of header values"),
+      columnCount: z.number().describe("Number of columns with headers"),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const result = await client.getSheetHeaders(
+        context.spreadsheetId,
+        context.sheetName,
+        context.range || "A:Z",
+        context.headerRow || 1,
+      );
+
+      const headerRow = result.values?.[0] || [];
+      const { labels, headerMap, headerValues } = processHeaders(headerRow);
+
+      return {
+        labels,
+        headerMap,
+        headerValues,
+        columnCount: headerValues.length,
+      };
+    },
+  });
+
+// ============================================
+// Search Data
+// ============================================
+
+export const createSearchDataTool = (env: Env) =>
+  createPrivateTool({
+    id: "search_data",
+    description:
+      "Search for a term across columns in a sheet. Returns matching rows with row numbers. Useful for finding specific data without knowing the exact location.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetName: z.string().describe("Name of the sheet to search"),
+      searchTerm: z.string().describe("Term to search for"),
+      searchColumns: z
+        .array(z.coerce.number().int().min(0))
+        .optional()
+        .describe(
+          "Column indices to search in (0-based). If not provided, searches all columns.",
+        ),
+      headerRow: z.coerce
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe(
+          "Row number containing headers (default: 1). Set to 0 to treat first row as data.",
+        ),
+      caseSensitive: z
+        .boolean()
+        .optional()
+        .describe("Whether search is case-sensitive (default: false)"),
+    }),
+    outputSchema: z.object({
+      headers: z.array(z.string()).describe("Column headers from the sheet"),
+      matches: z
+        .array(
+          z.object({
+            rowNumber: z.number().describe("1-based row number in the sheet"),
+            values: z.array(z.any()).describe("Cell values for the row"),
+          }),
+        )
+        .describe("Matching rows"),
+      totalMatches: z.number().describe("Total number of matches found"),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const result = await client.searchInSheet(
+        context.spreadsheetId,
+        context.sheetName,
+        context.searchTerm,
+        {
+          searchColumns: context.searchColumns,
+          headerRow: context.headerRow ?? 1,
+          caseSensitive: context.caseSensitive ?? false,
+        },
+      );
+
+      return {
+        headers: result.headers,
+        matches: result.matches,
+        totalMatches: result.totalMatches,
+      };
+    },
+  });
+
 export const valueTools = [
   createReadRangeTool,
   createWriteRangeTool,
@@ -279,4 +399,6 @@ export const valueTools = [
   createBatchReadTool,
   createBatchWriteTool,
   createReadFormulasTool,
+  createGetSheetHeadersTool,
+  createSearchDataTool,
 ];
