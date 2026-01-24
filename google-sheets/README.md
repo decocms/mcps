@@ -1,4 +1,4 @@
-# Google Sheets MCP
+# Google Sheets MCP 
 
 MCP Server for Google Sheets API. Full-featured integration for reading, writing, formatting, and managing spreadsheet data programmatically.
 
