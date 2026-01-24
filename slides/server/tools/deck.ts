@@ -6,7 +6,7 @@
  */
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 // Default style guide template
 const DEFAULT_STYLE_TEMPLATE = `# Presentation Style Guide
@@ -92,25 +92,118 @@ Edit \`design-system.jsx\` to customize components. Key components:
 All styling uses CSS classes from \`styles.css\` with CSS variables for easy theming.
 `;
 
+// Brand assets configuration type
+interface BrandAssets {
+  logoUrl?: string; // Primary logo (usually horizontal, for headers)
+  logoLightUrl?: string; // Light version for dark backgrounds
+  logoDarkUrl?: string; // Dark version for light backgrounds
+  iconUrl?: string; // Square icon (for favicons, small spaces)
+  brandName: string; // Fallback text if no logo
+  tagline?: string; // Brand tagline
+}
+
 // Design System JSX - Real JSX syntax
-const getDesignSystemJSX = (brandName = "Brand", tagline = "TAGLINE") => `/**
+const getDesignSystemJSX = (assets: BrandAssets) => {
+  const {
+    brandName,
+    tagline = "",
+    logoUrl,
+    logoLightUrl,
+    logoDarkUrl,
+    iconUrl,
+  } = assets;
+
+  // Determine which logo URLs to embed
+  const primaryLogo = logoUrl || "";
+  const lightLogo = logoLightUrl || primaryLogo;
+  const darkLogo = logoDarkUrl || primaryLogo;
+  const icon = iconUrl || primaryLogo;
+
+  return `/**
  * Design System
  * Brand components for presentations using real JSX
  * Requires: React, @babel/standalone
+ *
+ * Brand Assets:
+ * - Primary Logo: ${primaryLogo || "(text fallback)"}
+ * - Light Logo: ${lightLogo || "(text fallback)"}
+ * - Dark Logo: ${darkLogo || "(text fallback)"}
+ * - Icon: ${icon || "(text fallback)"}
  */
 
 (() => {
   // ============================================================================
-  // BRAND: Logo
+  // BRAND ASSETS CONFIGURATION
   // ============================================================================
 
-  function BrandLogo({ size = "normal", className = "" }) {
+  const BRAND = {
+    name: "${brandName}",
+    tagline: "${tagline}",
+    logos: {
+      primary: "${primaryLogo}",
+      light: "${lightLogo}",    // For dark backgrounds
+      dark: "${darkLogo}",      // For light backgrounds
+      icon: "${icon}",          // Square icon
+    },
+    hasImageLogo: ${Boolean(primaryLogo)},
+  };
+
+  // ============================================================================
+  // BRAND: Logo Component
+  // ============================================================================
+
+  function BrandLogo({ size = "normal", variant = "auto", className = "" }) {
     const isSmall = size === "small";
     
+    // Determine which logo to use based on variant
+    // auto: uses primary, light/dark: uses specific version
+    const logoSrc = variant === "light" 
+      ? BRAND.logos.light 
+      : variant === "dark" 
+        ? BRAND.logos.dark 
+        : BRAND.logos.primary;
+    
+    // If we have an image logo, render it
+    if (BRAND.hasImageLogo && logoSrc) {
+      return (
+        <div className={\`logo-brand logo-brand--image \${isSmall ? "logo-small" : ""} \${className}\`}>
+          <img 
+            src={logoSrc} 
+            alt={BRAND.name}
+            className="logo-brand-image"
+          />
+        </div>
+      );
+    }
+    
+    // Fallback to text logo
     return (
-      <div className={\`logo-brand \${isSmall ? "logo-small" : ""} \${className}\`}>
-        <span className="logo-brand-wordmark">${brandName}</span>
-        <span className="logo-brand-tagline">${tagline}</span>
+      <div className={\`logo-brand logo-brand--text \${isSmall ? "logo-small" : ""} \${className}\`}>
+        <span className="logo-brand-wordmark">{BRAND.name}</span>
+        {BRAND.tagline && <span className="logo-brand-tagline">{BRAND.tagline}</span>}
+      </div>
+    );
+  }
+
+  function BrandIcon({ size = 32, className = "" }) {
+    if (BRAND.logos.icon) {
+      return (
+        <img 
+          src={BRAND.logos.icon} 
+          alt={BRAND.name}
+          className={\`brand-icon \${className}\`}
+          style={{ width: size, height: size, objectFit: 'contain' }}
+        />
+      );
+    }
+    
+    // Fallback: first letter of brand name
+    return (
+      <div 
+        className={\`brand-icon brand-icon--text \${className}\`}
+        style={{ width: size, height: size, fontSize: size * 0.5 }}
+      >
+        {BRAND.name.charAt(0).toUpperCase()}
       </div>
     );
   }
@@ -334,6 +427,8 @@ const getDesignSystemJSX = (brandName = "Brand", tagline = "TAGLINE") => `/**
   // ============================================================================
 
   window.DesignSystem = {
+    // Brand configuration
+    BRAND,
     // Slide components
     SlideComponents: {
       title: TitleSlide,
@@ -344,6 +439,7 @@ const getDesignSystemJSX = (brandName = "Brand", tagline = "TAGLINE") => `/**
     },
     // Individual components for custom slides
     BrandLogo,
+    BrandIcon,
     TitleSlide,
     ContentSlide,
     StatsSlide,
@@ -359,8 +455,11 @@ const getDesignSystemJSX = (brandName = "Brand", tagline = "TAGLINE") => `/**
   };
 
   console.log("✓ Design System loaded");
+  console.log("  Brand:", BRAND.name);
+  console.log("  Has image logo:", BRAND.hasImageLogo);
 })();
 `;
+};
 
 // Engine JSX - Real JSX syntax
 const getEngineJSX = () => `/**
@@ -624,7 +723,7 @@ const getDesignViewerHTML = (brandColor = "#8B5CF6") => `<!DOCTYPE html>
   <script type="text/babel" src="./design-system.jsx" data-presets="react"></script>
   <script type="text/babel" data-presets="react">
     setTimeout(() => {
-      const { BrandLogo, TitleSlide, ContentSlide, StatsSlide, TwoColumnSlide, ListSlide, BulletList, Tag } = window.DesignSystem;
+      const { BRAND, BrandLogo, BrandIcon, TitleSlide, ContentSlide, StatsSlide, TwoColumnSlide, ListSlide, BulletList, Tag } = window.DesignSystem;
       
       const sampleSlides = {
         title: { title: "SAMPLE TITLE" },
@@ -676,14 +775,42 @@ const getDesignViewerHTML = (brandColor = "#8B5CF6") => `<!DOCTYPE html>
               <h2 className="ds-section-title">Brand Logo</h2>
               <div className="ds-grid">
                 <div className="ds-card">
-                  <div className="ds-card-preview light"><BrandLogo size="normal" /></div>
-                  <div className="ds-card-info"><h3 className="ds-card-name">BrandLogo (normal)</h3><p className="ds-card-desc">For title slides</p></div>
+                  <div className="ds-card-preview light"><BrandLogo size="normal" variant="dark" /></div>
+                  <div className="ds-card-info">
+                    <h3 className="ds-card-name">BrandLogo (normal, light bg)</h3>
+                    <p className="ds-card-desc">For content slides with light backgrounds</p>
+                  </div>
                 </div>
                 <div className="ds-card">
-                  <div className="ds-card-preview light"><BrandLogo size="small" /></div>
-                  <div className="ds-card-info"><h3 className="ds-card-name">BrandLogo (small)</h3><p className="ds-card-desc">For headers</p></div>
+                  <div className="ds-card-preview dark"><BrandLogo size="normal" variant="light" /></div>
+                  <div className="ds-card-info">
+                    <h3 className="ds-card-name">BrandLogo (normal, dark bg)</h3>
+                    <p className="ds-card-desc">For title slides with dark backgrounds</p>
+                  </div>
+                </div>
+                <div className="ds-card">
+                  <div className="ds-card-preview light"><BrandLogo size="small" variant="dark" /></div>
+                  <div className="ds-card-info">
+                    <h3 className="ds-card-name">BrandLogo (small)</h3>
+                    <p className="ds-card-desc">For slide headers</p>
+                  </div>
+                </div>
+                <div className="ds-card">
+                  <div className="ds-card-preview light"><BrandIcon size={48} /></div>
+                  <div className="ds-card-info">
+                    <h3 className="ds-card-name">BrandIcon</h3>
+                    <p className="ds-card-desc">For favicon and small spaces</p>
+                  </div>
                 </div>
               </div>
+              {!BRAND.hasImageLogo && (
+                <div style={{ marginTop: 16, padding: 16, background: 'rgba(255,200,0,0.1)', borderRadius: 8, border: '1px solid rgba(255,200,0,0.3)' }}>
+                  <p style={{ color: '#ffd666', fontSize: 14, margin: 0 }}>
+                    ⚠️ <strong>No image logo configured.</strong> Using text fallback. 
+                    For professional presentations, provide logo images via the DECK_INIT assets parameter.
+                  </p>
+                </div>
+              )}
             </section>
             
             <section className="ds-section">
@@ -809,15 +936,33 @@ html, body {
   right: var(--margin-x); z-index: 3;
 }
 
-/* Brand Logo */
-.logo-brand { display: flex; flex-direction: column; font-size: 42px; }
-.logo-brand.logo-small { font-size: 28px; }
+/* Brand Logo - Image version */
+.logo-brand { display: flex; flex-direction: column; }
+.logo-brand--image { align-items: flex-start; }
+.logo-brand--image .logo-brand-image {
+  height: 48px; width: auto; max-width: 200px;
+  object-fit: contain; object-position: left center;
+}
+.logo-brand--image.logo-small .logo-brand-image {
+  height: 32px; max-width: 140px;
+}
+
+/* Brand Logo - Text fallback */
+.logo-brand--text { font-size: 42px; }
+.logo-brand--text.logo-small { font-size: 28px; }
 .logo-brand-wordmark {
   font-weight: 700; color: var(--bg-shape-dark); letter-spacing: -0.02em;
 }
 .logo-brand-tagline {
   font-size: 11px; font-weight: 500; color: var(--bg-shape-dark);
   letter-spacing: 0.2em; text-transform: uppercase; margin-top: 2px;
+}
+
+/* Brand Icon */
+.brand-icon { display: flex; align-items: center; justify-content: center; }
+.brand-icon--text {
+  background: var(--brand-primary); color: white; font-weight: 700;
+  border-radius: 8px;
 }
 
 /* Content Slide */
@@ -946,12 +1091,41 @@ html, body {
 }
 `;
 
+// Schema for brand assets
+const BrandAssetsSchema = z.object({
+  logoUrl: z
+    .string()
+    .optional()
+    .describe(
+      "Primary logo image URL (horizontal format, for headers). Required for professional brands.",
+    ),
+  logoLightUrl: z
+    .string()
+    .optional()
+    .describe(
+      "Light version of logo for dark backgrounds. Falls back to logoUrl if not provided.",
+    ),
+  logoDarkUrl: z
+    .string()
+    .optional()
+    .describe(
+      "Dark version of logo for light backgrounds. Falls back to logoUrl if not provided.",
+    ),
+  iconUrl: z
+    .string()
+    .optional()
+    .describe(
+      "Square icon/favicon (for small spaces, browser tabs). Falls back to logoUrl if not provided.",
+    ),
+});
+
 /**
  * DECK_INIT - Initialize a new slide deck with JSX architecture
  */
 export const createDeckInitTool = (_env: Env) =>
   createTool({
     id: "DECK_INIT",
+    _meta: { "ui/resourceUri": "ui://design-system" },
     description: `Initialize a new slide deck or brand.
 
 **Two modes:**
@@ -959,6 +1133,15 @@ export const createDeckInitTool = (_env: Env) =>
 1. **Create a BRAND** (no 'brand' parameter):
    Creates all files for a reusable brand in brands/{brandSlug}/
    - design-system.jsx, styles.css, design.html, style.md
+   
+   **IMPORTANT: Brand Assets**
+   For professional brands, you should provide image URLs for logos:
+   - \`logoUrl\`: Primary horizontal logo (required for real brands)
+   - \`logoLightUrl\`: Light version for dark backgrounds (optional)
+   - \`logoDarkUrl\`: Dark version for light backgrounds (optional)
+   - \`iconUrl\`: Square icon for favicons/small spaces (optional)
+   
+   If no logoUrl is provided, falls back to text-based logo using brandName.
 
 2. **Create a DECK** (with 'brand' parameter):
    Creates only deck files in decks/{deckSlug}/, references brand
@@ -979,7 +1162,7 @@ The deck's index.html will load design-system.jsx and styles.css from the brand 
       brandName: z
         .string()
         .optional()
-        .describe("Brand name for logo (only for new brands)"),
+        .describe("Brand name (used for alt text and text fallback)"),
       brandTagline: z
         .string()
         .optional()
@@ -988,6 +1171,9 @@ The deck's index.html will load design-system.jsx and styles.css from the brand 
         .string()
         .optional()
         .describe("Primary brand color in hex (only for new brands)"),
+      assets: BrandAssetsSchema.optional().describe(
+        "Brand image assets (logos, icons). Provide these for professional-looking presentations.",
+      ),
     }),
     outputSchema: z.object({
       files: z
@@ -1004,8 +1190,15 @@ The deck's index.html will load design-system.jsx and styles.css from the brand 
         .describe("Whether this created a brand or deck"),
     }),
     execute: async ({ context }) => {
-      const { title, subtitle, brand, brandName, brandTagline, brandColor } =
-        context;
+      const {
+        title,
+        subtitle,
+        brand,
+        brandName,
+        brandTagline,
+        brandColor,
+        assets,
+      } = context;
       const now = new Date().toISOString();
 
       // MODE: Create a DECK referencing an existing brand
@@ -1083,14 +1276,23 @@ The deck's index.html will load design-system.jsx and styles.css from the brand 
         stylesCSS = stylesCSS.replace(/#8B5CF6/g, brandColor);
       }
 
+      // Build brand assets object
+      const brandAssets: BrandAssets = {
+        brandName: brandName || title || "Brand",
+        tagline: brandTagline,
+        logoUrl: assets?.logoUrl,
+        logoLightUrl: assets?.logoLightUrl,
+        logoDarkUrl: assets?.logoDarkUrl,
+        iconUrl: assets?.iconUrl,
+      };
+
+      const hasImageAssets = Boolean(assets?.logoUrl);
+
       return {
         files: [
           {
             path: "design-system.jsx",
-            content: getDesignSystemJSX(
-              brandName || "Brand",
-              brandTagline || "TAGLINE",
-            ),
+            content: getDesignSystemJSX(brandAssets),
           },
           { path: "styles.css", content: stylesCSS },
           {
@@ -1098,8 +1300,30 @@ The deck's index.html will load design-system.jsx and styles.css from the brand 
             content: getDesignViewerHTML(brandColor || "#8B5CF6"),
           },
           { path: "style.md", content: DEFAULT_STYLE_TEMPLATE },
+          {
+            path: "brand-assets.json",
+            content: JSON.stringify(
+              {
+                name: brandAssets.brandName,
+                tagline: brandAssets.tagline || "",
+                color: brandColor || "#8B5CF6",
+                assets: {
+                  logo: assets?.logoUrl || null,
+                  logoLight: assets?.logoLightUrl || null,
+                  logoDark: assets?.logoDarkUrl || null,
+                  icon: assets?.iconUrl || null,
+                },
+                hasImageAssets,
+                createdAt: now,
+              },
+              null,
+              2,
+            ),
+          },
         ],
-        message: `Brand "${brandName || title}" created. Save to brands/{brand-slug}/. Preview design system at /design.html`,
+        message: hasImageAssets
+          ? `Brand "${brandAssets.brandName}" created with image logo. Save to brands/{brand-slug}/. Preview design system at /design.html`
+          : `Brand "${brandAssets.brandName}" created with text fallback logo. For professional presentations, provide logoUrl with actual brand images. Save to brands/{brand-slug}/. Preview design system at /design.html`,
         mode: "brand" as const,
       };
     },
@@ -1229,11 +1453,183 @@ export const createDeckGetDesignSystemTool = (_env: Env) =>
       content: z.string().describe("JSX design system content"),
     }),
     execute: async ({ context }) => ({
-      content: getDesignSystemJSX(
-        context.brandName || "Brand",
-        context.brandTagline || "TAGLINE",
-      ),
+      content: getDesignSystemJSX({
+        brandName: context.brandName || "Brand",
+        tagline: context.brandTagline || "TAGLINE",
+      }),
     }),
+  });
+
+/**
+ * BRAND_ASSETS_VALIDATE - Validate and prepare brand assets
+ */
+export const createBrandAssetsValidateTool = (_env: Env) =>
+  createTool({
+    id: "BRAND_ASSETS_VALIDATE",
+    description: `Validate brand assets and get recommendations for what's missing.
+
+Use this tool to:
+1. Check if provided asset URLs are valid
+2. Get a list of required vs optional assets
+3. Get suggestions for finding missing assets
+
+This should be called BEFORE DECK_INIT when setting up a new brand.`,
+    inputSchema: z.object({
+      brandName: z.string().describe("Brand/company name"),
+      brandWebsite: z
+        .string()
+        .optional()
+        .describe("Brand website URL (for asset discovery suggestions)"),
+      assets: z
+        .object({
+          logoUrl: z.string().optional().describe("Primary logo URL"),
+          logoLightUrl: z.string().optional().describe("Light logo URL"),
+          logoDarkUrl: z.string().optional().describe("Dark logo URL"),
+          iconUrl: z.string().optional().describe("Icon/favicon URL"),
+        })
+        .optional()
+        .describe("Currently provided assets"),
+    }),
+    outputSchema: z.object({
+      isComplete: z
+        .boolean()
+        .describe("Whether minimum required assets are provided"),
+      providedAssets: z
+        .array(z.string())
+        .describe("List of assets that were provided"),
+      missingRequired: z
+        .array(z.string())
+        .describe("List of required assets that are missing"),
+      missingOptional: z
+        .array(z.string())
+        .describe("List of optional assets that could improve the brand"),
+      suggestions: z
+        .array(z.string())
+        .describe("Suggestions for finding missing assets"),
+      assetRequirements: z.object({
+        logo: z.object({
+          description: z.string(),
+          required: z.boolean(),
+          recommendedFormat: z.string(),
+          recommendedSize: z.string(),
+        }),
+        logoLight: z.object({
+          description: z.string(),
+          required: z.boolean(),
+          recommendedFormat: z.string(),
+          recommendedSize: z.string(),
+        }),
+        logoDark: z.object({
+          description: z.string(),
+          required: z.boolean(),
+          recommendedFormat: z.string(),
+          recommendedSize: z.string(),
+        }),
+        icon: z.object({
+          description: z.string(),
+          required: z.boolean(),
+          recommendedFormat: z.string(),
+          recommendedSize: z.string(),
+        }),
+      }),
+    }),
+    execute: async ({ context }) => {
+      const { brandName, brandWebsite, assets } = context;
+
+      const providedAssets: string[] = [];
+      const missingRequired: string[] = [];
+      const missingOptional: string[] = [];
+      const suggestions: string[] = [];
+
+      // Check provided assets
+      if (assets?.logoUrl) {
+        providedAssets.push("Primary Logo (logoUrl)");
+      } else {
+        missingRequired.push("Primary Logo (logoUrl)");
+      }
+
+      if (assets?.logoLightUrl) {
+        providedAssets.push("Light Logo (logoLightUrl)");
+      } else {
+        missingOptional.push(
+          "Light Logo (logoLightUrl) - for dark backgrounds",
+        );
+      }
+
+      if (assets?.logoDarkUrl) {
+        providedAssets.push("Dark Logo (logoDarkUrl)");
+      } else {
+        missingOptional.push("Dark Logo (logoDarkUrl) - for light backgrounds");
+      }
+
+      if (assets?.iconUrl) {
+        providedAssets.push("Icon (iconUrl)");
+      } else {
+        missingOptional.push("Icon (iconUrl) - for favicon and small spaces");
+      }
+
+      // Generate suggestions based on what's missing
+      if (missingRequired.length > 0) {
+        suggestions.push(
+          `Ask the user: "Please provide a URL or file path for your ${brandName} logo"`,
+        );
+
+        if (brandWebsite) {
+          suggestions.push(
+            `Try checking ${brandWebsite}/logo.png or ${brandWebsite}/logo.svg`,
+          );
+          suggestions.push(
+            `Look for the logo in the website's header or footer`,
+          );
+          suggestions.push(
+            `Check the <meta property="og:image"> tag in the page source`,
+          );
+          suggestions.push(`Look for ${brandWebsite}/favicon.ico for the icon`);
+        }
+
+        suggestions.push(
+          `If the user has a brand guidelines PDF, ask them to share it`,
+        );
+        suggestions.push(
+          `The user can upload images to a service like imgur.com and share the URL`,
+        );
+      }
+
+      return {
+        isComplete: missingRequired.length === 0,
+        providedAssets,
+        missingRequired,
+        missingOptional,
+        suggestions,
+        assetRequirements: {
+          logo: {
+            description:
+              "Primary horizontal logo, displayed in slide headers and title slides",
+            required: true,
+            recommendedFormat: "PNG with transparent background, or SVG",
+            recommendedSize: "At least 400px wide, height 80-120px",
+          },
+          logoLight: {
+            description: "Light/white version of the logo for dark backgrounds",
+            required: false,
+            recommendedFormat: "PNG with transparent background, or SVG",
+            recommendedSize: "Same as primary logo",
+          },
+          logoDark: {
+            description: "Dark/black version of the logo for light backgrounds",
+            required: false,
+            recommendedFormat: "PNG with transparent background, or SVG",
+            recommendedSize: "Same as primary logo",
+          },
+          icon: {
+            description: "Square icon for favicon and small display areas",
+            required: false,
+            recommendedFormat: "PNG or SVG",
+            recommendedSize: "64x64px or larger, square (1:1 ratio)",
+          },
+        },
+      };
+    },
   });
 
 export const deckTools = [
@@ -1242,4 +1638,5 @@ export const deckTools = [
   createDeckBundleTool,
   createDeckGetEngineTool,
   createDeckGetDesignSystemTool,
+  createBrandAssetsValidateTool,
 ];

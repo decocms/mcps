@@ -42,7 +42,7 @@ const DEFAULT_WORKSPACE = "~/slides";
 
 import { createPrompt, type GetPromptResult } from "@decocms/runtime";
 import { z } from "zod";
-import type { Env } from "./main.ts";
+import type { Env } from "./types/env.ts";
 
 /**
  * SLIDES_SETUP_BRAND - Research and create a brand design system
@@ -56,9 +56,10 @@ export const createSetupBrandPrompt = (_env: Env) =>
 The agent should:
 1. Research the brand (website, existing materials, style guides)
 2. Extract colors, typography, logo treatment, and visual style
-3. Create a customized design system
-4. Generate sample slides showing all layouts
-5. Show the design system viewer (/design.html) for user approval
+3. **COLLECT BRAND ASSETS** (logo images are essential!)
+4. Create a customized design system
+5. Generate sample slides showing all layouts
+6. Show the design system viewer (/design.html) for user approval
 
 Files are saved to: {workspace}/brands/{brand-slug}/
 Once approved, the design system can be reused for all future presentations.`,
@@ -70,6 +71,21 @@ Once approved, the design system can be reused for all future presentations.`,
         .string()
         .optional()
         .describe("Brand website URL for research (e.g., 'https://acme.com')"),
+      logoUrl: z
+        .string()
+        .optional()
+        .describe(
+          "Primary logo image URL (horizontal format, PNG/SVG preferred)",
+        ),
+      logoLightUrl: z
+        .string()
+        .optional()
+        .describe("Light version of logo for dark backgrounds"),
+      logoDarkUrl: z
+        .string()
+        .optional()
+        .describe("Dark version of logo for light backgrounds"),
+      iconUrl: z.string().optional().describe("Square icon/favicon URL"),
       styleNotes: z
         .string()
         .optional()
@@ -80,13 +96,23 @@ Once approved, the design system can be reused for all future presentations.`,
         .describe("Workspace root (default: ~/slides)"),
     },
     execute: ({ args }): GetPromptResult => {
-      const { brandName, brandWebsite, styleNotes } = args;
+      const {
+        brandName,
+        brandWebsite,
+        styleNotes,
+        logoUrl,
+        logoLightUrl,
+        logoDarkUrl,
+        iconUrl,
+      } = args;
       const workspace = args.workspace || DEFAULT_WORKSPACE;
-      const brandSlug = brandName
+      const brandSlug = (brandName || "brand")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/-+$/, "");
       const brandPath = `${workspace}/brands/${brandSlug}`;
+
+      const hasProvidedAssets = Boolean(logoUrl);
 
       return {
         description: `Create a design system for ${brandName}`,
@@ -104,18 +130,82 @@ ${brandPath}/
 ├── design-system.jsx    # Brand components (logo, slides)
 ├── styles.css           # Brand colors, typography
 ├── style.md             # AI style guide
+├── brand-assets.json    # Asset configuration
 └── design.html          # Component viewer
 \`\`\`
 
 ## Your Task
 Create a complete presentation design system for **${brandName}**.
 
+## CRITICAL: Brand Assets Required
+
+Professional presentations need proper brand assets. ${
+                hasProvidedAssets
+                  ? `
+✅ Logo provided: ${logoUrl}${logoLightUrl ? `\n✅ Light logo: ${logoLightUrl}` : ""}${logoDarkUrl ? `\n✅ Dark logo: ${logoDarkUrl}` : ""}${iconUrl ? `\n✅ Icon: ${iconUrl}` : ""}`
+                  : `
+⚠️ **No logo images provided!**
+
+### STEP 1: Try Automatic Brand Research (Recommended)
+
+First, check if research bindings are available:
+\`\`\`
+Call BRAND_RESEARCH_STATUS to check available bindings
+\`\`\`
+
+If PERPLEXITY or FIRECRAWL bindings are configured, use automatic research:
+\`\`\`
+Call BRAND_RESEARCH with:
+- brandName: "${brandName || "brand"}"
+- websiteUrl: "${brandWebsite || "(brand website URL)"}"
+\`\`\`
+
+This will automatically discover:
+- Logo image URLs
+- Brand colors (hex values)
+- Typography/fonts
+- Brand tagline and description
+
+### STEP 2: Manual Collection (if no bindings or research incomplete)
+
+If automatic research is unavailable or incomplete, collect manually:
+
+1. **Primary Logo** (REQUIRED for professional brands):
+   - Horizontal/wide format preferred
+   - PNG with transparent background or SVG
+   - URL or file path
+
+2. **Light Logo** (optional but recommended):
+   - White or light-colored version
+   - For use on dark backgrounds (title slides)
+
+3. **Dark Logo** (optional):
+   - Black or dark-colored version
+   - For use on light backgrounds (content slides)
+
+4. **Icon** (optional):
+   - Square format (1:1 ratio)
+   - For favicon and small spaces
+
+### How to Get Assets Manually
+- Ask the user directly: "Please provide your logo image URL or file"
+- If they have a website, look for logos in:
+  - \`/logo.png\`, \`/logo.svg\`
+  - \`/images/logo-*\`
+  - The \`<meta property="og:image">\` tag
+  - The favicon (\`/favicon.ico\`, \`/favicon.png\`)
+- Extract from their brand guidelines PDF if provided
+
+**DO NOT proceed without at least a primary logo URL!**`
+              }
+
 ## Research Phase
 ${
   brandWebsite
     ? `1. Visit ${brandWebsite} to understand the brand identity
-2. Extract: primary colors, secondary colors, typography, logo usage, visual style`
-    : "1. Ask the user for brand colors, fonts, and style preferences"
+2. **Find logo images** (check /logo.png, favicon, og:image)
+3. Extract: primary colors, secondary colors, typography, visual style`
+    : "1. Ask the user for brand colors, fonts, and style preferences\n2. **Request logo image URLs** (this is essential!)"
 }
 ${styleNotes ? `\nUser notes: ${styleNotes}` : ""}
 
@@ -132,13 +222,20 @@ Call \`DECK_INIT\` with:
 - brandName: "${brandName}"
 - brandTagline: (extract from research or ask user)
 - brandColor: (primary brand color from research)
+- assets: {
+    logoUrl: "${logoUrl || "(URL from research or user)"}",
+    logoLightUrl: "${logoLightUrl || "(optional - for dark backgrounds)"}",
+    logoDarkUrl: "${logoDarkUrl || "(optional - for light backgrounds)"}",
+    iconUrl: "${iconUrl || "(optional - for favicon)"}"
+  }
 
-### Step 3: Save ONLY brand files
+### Step 3: Save brand files
 From DECK_INIT output, write these to ${brandPath}/:
 - design-system.jsx
 - styles.css
 - style.md
 - design.html
+- brand-assets.json
 
 (Do NOT save index.html, engine.jsx, or slides/ - those go in decks)
 
@@ -213,7 +310,7 @@ The agent will:
       const workspace = args.workspace || DEFAULT_WORKSPACE;
       const deckSlug =
         args.deckName ||
-        title
+        (title || "presentation")
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/-+$/, "");
@@ -385,10 +482,15 @@ Use when:
 - Simple one-off presentations
 - Demos and prototypes
 
-Uses a generic brand and creates deck directly.`,
+Uses a generic brand and creates deck directly. For professional presentations
+with custom branding, use SLIDES_SETUP_BRAND instead.`,
     argsSchema: {
       title: z.string().describe("Presentation title"),
       topic: z.string().describe("What the presentation is about"),
+      logoUrl: z
+        .string()
+        .optional()
+        .describe("Optional: Logo image URL for professional look"),
       slideCount: z
         .string()
         .optional()
@@ -399,10 +501,10 @@ Uses a generic brand and creates deck directly.`,
         .describe("Workspace root (default: ~/slides)"),
     },
     execute: ({ args }): GetPromptResult => {
-      const { title, topic } = args;
+      const { title, topic, logoUrl } = args;
       const workspace = args.workspace || DEFAULT_WORKSPACE;
       const count = args.slideCount || "5-7";
-      const deckSlug = title
+      const deckSlug = (title || "presentation")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/-+$/, "");
@@ -431,9 +533,20 @@ mkdir -p ${deckPath}/slides
 Call \`DECK_INIT\` with:
 - title: "${title}"
 - brandName: "Presenter"
-- brandColor: "#3B82F6"
+- brandColor: "#3B82F6"${
+                logoUrl
+                  ? `
+- assets: { logoUrl: "${logoUrl}" }`
+                  : ""
+              }
 
 Write ALL files to ${deckPath}/
+${
+  !logoUrl
+    ? `
+💡 **Tip**: For a more professional look, provide a logoUrl with your logo image.`
+    : ""
+}
 
 ### Step 3: Create slides
 Generate ${count} slides covering ${topic}:
@@ -528,12 +641,13 @@ If both exist: "Ready to create presentations!"`,
   });
 
 /**
- * Export all prompt factories
+ * All prompt factory functions.
+ * Each factory takes env and returns a prompt definition.
  */
-export const prompts = (env: Env) => [
-  createSetupBrandPrompt(env),
-  createNewDeckPrompt(env),
-  createAddContentPrompt(env),
-  createQuickStartPrompt(env),
-  createListPrompt(env),
+export const prompts = [
+  createSetupBrandPrompt,
+  createNewDeckPrompt,
+  createAddContentPrompt,
+  createQuickStartPrompt,
+  createListPrompt,
 ];

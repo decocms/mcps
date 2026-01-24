@@ -15,8 +15,8 @@
     "./tools": "./server/tools/index.ts"
   },
   "dependencies": {
-    "@decocms/bindings": "^1.0.7",
-    "@decocms/runtime": "^1.1.3",
+    "@decocms/bindings": "^1.0.9",
+    "@decocms/runtime": "1.2.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

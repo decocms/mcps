@@ -16,7 +16,7 @@
  */
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 // Shared schemas
 const LayoutSchema = z.enum([
@@ -95,6 +95,7 @@ const SlideDataSchema = z.object({
 export const createSlideCreateTool = (_env: Env) =>
   createTool({
     id: "SLIDE_CREATE",
+    _meta: { "ui/resourceUri": "ui://slide" },
     description: `Create a new slide. Returns slide JSON to save and updated manifest.
 
 LAYOUT EXAMPLES:
@@ -528,6 +529,61 @@ export const createSlideDuplicateTool = (_env: Env) =>
     },
   });
 
+/**
+ * SLIDES_PREVIEW - Preview a complete presentation
+ *
+ * This tool displays slides in an interactive viewer UI (MCP App).
+ */
+export const createSlidesPreviewTool = (_env: Env) =>
+  createTool({
+    id: "SLIDES_PREVIEW",
+    _meta: { "ui/resourceUri": "ui://slides-viewer" },
+    description: `Preview a complete slide presentation in an interactive viewer.
+
+Opens the slides viewer UI with navigation, keyboard controls, and thumbnails.
+
+**Use this to:**
+- Show the user their presentation
+- Preview slides before exporting
+- Navigate through the deck
+
+**Input:** Array of slide objects (or JSON strings to parse)`,
+    inputSchema: z.object({
+      title: z.string().optional().describe("Presentation title"),
+      slides: z
+        .array(z.unknown())
+        .describe("Array of slide objects or JSON strings"),
+    }),
+    outputSchema: z.object({
+      title: z.string(),
+      slides: z.array(z.unknown()),
+      slideCount: z.number(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const { title = "Presentation", slides: rawSlides } = context;
+
+      // Parse slides if they're strings
+      const slides = rawSlides.map((slide) => {
+        if (typeof slide === "string") {
+          try {
+            return JSON.parse(slide);
+          } catch {
+            return { title: "Parse Error", layout: "content" };
+          }
+        }
+        return slide;
+      });
+
+      return {
+        title,
+        slides,
+        slideCount: slides.length,
+        message: `Showing ${slides.length} slides. Use arrow keys or buttons to navigate.`,
+      };
+    },
+  });
+
 // Export all slide tools
 export const slideTools = [
   createSlideCreateTool,
@@ -537,4 +593,5 @@ export const slideTools = [
   createSlideListTool,
   createSlideReorderTool,
   createSlideDuplicateTool,
+  createSlidesPreviewTool,
 ];

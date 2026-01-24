@@ -6,7 +6,7 @@
  */
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 /**
  * STYLE_GET - Get the current style guide content
