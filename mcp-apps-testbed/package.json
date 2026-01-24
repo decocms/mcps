@@ -1,0 +1,23 @@
+{
+  "name": "@decocms/mcp-apps-testbed",
+  "version": "1.0.0",
+  "description": "Testbed for MCP Apps - Interactive User Interfaces",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "build": "bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
