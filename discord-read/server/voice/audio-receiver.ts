@@ -6,8 +6,9 @@
  */
 
 import { EndBehaviorType, type VoiceConnection } from "@discordjs/voice";
-import { Transform } from "stream";
+import { Transform, pipeline } from "stream";
 import type { User } from "discord.js";
+import prism from "prism-media";
 
 // ============================================================================
 // Types
@@ -60,6 +61,7 @@ export function setAudioCompleteCallback(
 
 /**
  * Start listening to a user's audio in a voice connection
+ * Discord sends Opus packets which we decode to PCM using prism-media
  */
 export function subscribeToUser(
   connection: VoiceConnection,
@@ -67,8 +69,8 @@ export function subscribeToUser(
   username: string,
 ): void {
   try {
-    // Create audio stream for this user
-    const audioStream = connection.receiver.subscribe(userId, {
+    // Create audio stream for this user (returns Opus packets)
+    const opusStream = connection.receiver.subscribe(userId, {
       end: {
         behavior: EndBehaviorType.AfterSilence,
         duration: SILENCE_THRESHOLD_MS,
@@ -79,6 +81,14 @@ export function subscribeToUser(
       `[AudioReceiver] 🎤 Subscribed to user: ${username} (${userId})`,
     );
 
+    // Create Opus decoder to convert Opus -> PCM
+    // Discord uses 48kHz, 2 channels (stereo)
+    const opusDecoder = new prism.opus.Decoder({
+      rate: 48000,
+      channels: 2,
+      frameSize: 960,
+    });
+
     // Initialize buffer for this user
     audioBuffers.set(userId, {
       userId,
@@ -88,8 +98,16 @@ export function subscribeToUser(
       lastChunkTime: Date.now(),
     });
 
-    // Collect audio chunks
-    audioStream.on("data", (chunk: Buffer) => {
+    // Pipe Opus stream through decoder to get PCM
+    pipeline(opusStream, opusDecoder, (err) => {
+      if (err) {
+        console.error(`[AudioReceiver] Pipeline error for ${username}:`, err);
+        audioBuffers.delete(userId);
+      }
+    });
+
+    // Collect decoded PCM audio chunks
+    opusDecoder.on("data", (chunk: Buffer) => {
       const buffer = audioBuffers.get(userId);
       if (buffer) {
         buffer.chunks.push(chunk);
@@ -105,13 +123,13 @@ export function subscribeToUser(
     });
 
     // When stream ends (silence detected), process the audio
-    audioStream.on("end", () => {
+    opusDecoder.on("end", () => {
       console.log(`[AudioReceiver] Stream ended for ${username}`);
       processCompletedAudio(userId);
     });
 
-    audioStream.on("error", (error) => {
-      console.error(`[AudioReceiver] Error for ${username}:`, error);
+    opusDecoder.on("error", (error) => {
+      console.error(`[AudioReceiver] Decoder error for ${username}:`, error);
       audioBuffers.delete(userId);
     });
   } catch (error) {
@@ -180,8 +198,18 @@ export function setupSpeakingListener(
       return;
     }
 
-    // Get user info
-    const user = await getUserInfo(userId);
+    // Get user info with error handling
+    let user;
+    try {
+      user = await getUserInfo(userId);
+    } catch (error) {
+      console.error(
+        `[AudioReceiver] Error fetching user info for ${userId}:`,
+        error,
+      );
+      return;
+    }
+
     if (!user) {
       console.log(`[AudioReceiver] Could not get user info for ${userId}`);
       return;
@@ -251,12 +279,10 @@ export function pcmToWav(pcmBuffer: Buffer): Buffer {
 }
 
 /**
- * Create an Opus decoder transform stream
- * Note: This requires @discordjs/opus or opusscript to be installed
+ * Create a passthrough transform stream for collecting audio data
+ * Note: Audio decoding is handled by prism-media in subscribeToUser
  */
-export function createOpusDecoder(): Transform {
-  // Discord.js voice already decodes Opus to PCM internally
-  // This is a passthrough that collects the PCM data
+export function createAudioCollector(): Transform {
   return new Transform({
     transform(chunk, _encoding, callback) {
       this.push(chunk);

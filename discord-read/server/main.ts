@@ -155,71 +155,78 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         }
       }
 
-      // Configure voice system if enabled
-      const voiceConfig = state?.VOICE_CONFIG;
-      if (voiceConfig?.ENABLED) {
+      // Helper function to configure voice system
+      const configureVoiceSystem = async () => {
+        const voiceConfig = state?.VOICE_CONFIG;
+        if (!voiceConfig?.ENABLED) return;
+
+        const client = getDiscordClient();
+        if (!client) {
+          console.log(
+            "[CONFIG] Voice enabled but Discord client not ready yet",
+          );
+          return;
+        }
+
         const { configureVoiceCommands, configureTTS } = await import(
           "./voice/index.ts"
         );
         const { generateResponse } = await import("./llm.ts");
         const { getSystemPrompt } = await import("./prompts/system.ts");
 
-        const client = getDiscordClient();
-        if (client) {
-          configureVoiceCommands(
-            client,
-            {
-              enabled: voiceConfig.ENABLED,
-              responseMode: voiceConfig.RESPONSE_MODE || "voice",
-              ttsEnabled: voiceConfig.TTS_ENABLED !== false,
-              ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
-              silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS || 1000,
-            },
-            {
-              // Voice command handler - uses LLM to process voice commands
-              processVoiceCommand: async (
-                userId: string,
-                username: string,
-                text: string,
-                guildId: string,
-              ) => {
-                const systemPrompt = getSystemPrompt({
-                  guildId,
-                  userId,
-                  userName: username,
-                  isDM: false,
-                });
-
-                const messages = [
-                  { role: "system" as const, content: systemPrompt },
-                  {
-                    role: "system" as const,
-                    content:
-                      "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
-                  },
-                  { role: "user" as const, content: text },
-                ];
-
-                const response = await generateResponse(env, messages);
-                return response.content;
-              },
-            },
-          );
-
-          // Configure TTS
-          configureTTS({
-            enabled: voiceConfig.TTS_ENABLED !== false,
-            language: voiceConfig.TTS_LANGUAGE || "pt-BR",
-          });
-
-          console.log("[CONFIG] Voice commands configured:", {
+        configureVoiceCommands(
+          client,
+          {
             enabled: voiceConfig.ENABLED,
-            responseMode: voiceConfig.RESPONSE_MODE,
+            responseMode: voiceConfig.RESPONSE_MODE || "voice",
             ttsEnabled: voiceConfig.TTS_ENABLED !== false,
             ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
-          });
-        }
-      }
+            silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS || 1000,
+          },
+          {
+            // Voice command handler - uses LLM to process voice commands
+            processVoiceCommand: async (
+              userId: string,
+              username: string,
+              text: string,
+              guildId: string,
+            ) => {
+              const systemPrompt = getSystemPrompt({
+                guildId,
+                userId,
+                userName: username,
+                isDM: false,
+              });
+
+              const messages = [
+                { role: "system" as const, content: systemPrompt },
+                {
+                  role: "system" as const,
+                  content:
+                    "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+                },
+                { role: "user" as const, content: text },
+              ];
+
+              const response = await generateResponse(env, messages);
+              return response.content;
+            },
+          },
+        );
+
+        // Configure TTS
+        configureTTS({
+          enabled: voiceConfig.TTS_ENABLED !== false,
+          language: voiceConfig.TTS_LANGUAGE || "pt-BR",
+        });
+
+        console.log("[CONFIG] Voice commands configured:", {
+          enabled: voiceConfig.ENABLED,
+          responseMode: voiceConfig.RESPONSE_MODE,
+          ttsEnabled: voiceConfig.TTS_ENABLED !== false,
+          ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
+        });
+      };
 
       // Initialize Discord client if BOT_TOKEN is provided
       const botToken = state?.BOT_TOKEN;
@@ -229,6 +236,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           await initializeDiscordClient(env);
           discordInitialized = true;
           console.log("[CONFIG] Discord client ready ✓");
+
+          // Configure voice system after client is initialized
+          await configureVoiceSystem();
 
           // Start heartbeat to keep Mesh session alive
           startHeartbeat(env, () => {
@@ -240,7 +250,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           console.error("[CONFIG] Failed to initialize Discord:", error);
         }
       } else if (botToken && discordInitialized) {
-        // Bot already running, just restart heartbeat with fresh credentials
+        // Bot already running, reconfigure voice and restart heartbeat
+        await configureVoiceSystem();
+
         console.log("[CONFIG] Refreshing session heartbeat...");
         startHeartbeat(env, () => {
           console.log(

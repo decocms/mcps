@@ -104,13 +104,15 @@ function splitTextForTTS(text: string, maxLength: number = 200): string[] {
       splitIndex = remaining.lastIndexOf(" ", maxLength);
     }
     if (splitIndex === -1 || splitIndex < maxLength / 2) {
-      splitIndex = maxLength;
+      // No good split point found, hard cut at maxLength - 1 to stay within limit
+      splitIndex = maxLength - 1;
     }
 
-    // Include the punctuation in the chunk
-    const chunk = remaining.slice(0, splitIndex + 1).trim();
+    // Include the punctuation in the chunk but ensure we don't exceed maxLength
+    const chunkEnd = Math.min(splitIndex + 1, maxLength);
+    const chunk = remaining.slice(0, chunkEnd).trim();
     chunks.push(chunk);
-    remaining = remaining.slice(splitIndex + 1).trim();
+    remaining = remaining.slice(chunkEnd).trim();
   }
 
   return chunks;
