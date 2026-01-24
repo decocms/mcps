@@ -27,19 +27,55 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
- * Query a single table with pagination
+ * Get current ISO 8601 week in format "YYYY-wWW"
+ * ISO weeks start on Monday and week 1 is the week containing the first Thursday
+ */
+function getCurrentWeekDate(): string {
+  const now = new Date();
+
+  // Create a copy and set to nearest Thursday (ISO week belongs to the year of its Thursday)
+  const thursday = new Date(now);
+  thursday.setDate(thursday.getDate() - ((thursday.getDay() + 6) % 7) + 3);
+
+  // Get the ISO year (year of the Thursday)
+  const isoYear = thursday.getFullYear();
+
+  // Find the first Thursday of the ISO year
+  const firstThursday = new Date(isoYear, 0, 4);
+  firstThursday.setDate(
+    firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3,
+  );
+
+  // Calculate week number
+  const weekNumber = Math.ceil(
+    (thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000) +
+      1,
+  );
+
+  const paddedWeek = weekNumber.toString().padStart(2, "0");
+  return `${isoYear}-w${paddedWeek}`;
+}
+
+/**
+ * Query a single table with pagination and optional week filter
  */
 async function queryTable(
   client: DatabaseClient,
   tableName: string,
   startIndex: number,
   endIndex: number,
+  onlyThisWeek: boolean = false,
 ): Promise<{ table: string; data: Record<string, unknown>[] }> {
   const limit = endIndex - startIndex + 1;
   const offset = startIndex - 1;
 
+  const whereClause = onlyThisWeek
+    ? `WHERE week_date = '${getCurrentWeekDate()}'`
+    : "";
+
   const query = `
     SELECT * FROM ${tableName}
+    ${whereClause}
     ORDER BY id
     LIMIT ${limit}
     OFFSET ${offset}
@@ -62,7 +98,7 @@ export const getContentScrapeTool = (env: Env) =>
     description:
       "Lists content that has been collected and saved to the database. " +
       "Can fetch from a specific source (contents, reddit, linkedin, twitter) or all of them. " +
-      "Supports pagination by index range.",
+      "Supports pagination by index range and filtering by current week.",
     inputSchema: z.object({
       table: TableEnum.default("all").describe(
         'Which table to fetch: "all" for all tables, or "contents", "reddit", "linkedin", "twitter" for a specific one',
@@ -79,6 +115,12 @@ export const getContentScrapeTool = (env: Env) =>
         .positive()
         .default(100)
         .describe("End index - which item to fetch up to (default: 100)"),
+      onlyThisWeek: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, returns only content from the current week (default: false)",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -106,7 +148,7 @@ export const getContentScrapeTool = (env: Env) =>
       error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { table, startIndex, endIndex } = context;
+      const { table, startIndex, endIndex, onlyThisWeek } = context;
 
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
@@ -174,6 +216,7 @@ export const getContentScrapeTool = (env: Env) =>
                   tableName,
                   startIndex,
                   endIndex,
+                  onlyThisWeek,
                 );
                 results.push({
                   table: key,
@@ -198,6 +241,7 @@ export const getContentScrapeTool = (env: Env) =>
               tableName,
               startIndex,
               endIndex,
+              onlyThisWeek,
             );
             results.push({
               table,
