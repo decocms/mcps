@@ -8,9 +8,9 @@ import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
 
 const SheetSchema = z.object({
-  sheetId: z.number(),
-  title: z.string(),
-  index: z.number(),
+  sheetId: z.number().optional(),
+  title: z.string().optional(),
+  index: z.number().optional(),
   rowCount: z.number().optional(),
   columnCount: z.number().optional(),
 });
@@ -157,10 +157,133 @@ export const createRenameSheetTool = (env: Env) =>
     },
   });
 
+// ============================================
+// Duplicate Sheet
+// ============================================
+
+export const createDuplicateSheetTool = (env: Env) =>
+  createPrivateTool({
+    id: "duplicate_sheet",
+    description:
+      "Create a copy of an existing sheet within the same spreadsheet.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sourceSheetId: z.coerce.number().describe("Sheet ID to duplicate"),
+      newSheetName: z
+        .string()
+        .optional()
+        .describe(
+          "Name for the new sheet (optional, auto-generated if not provided)",
+        ),
+      insertSheetIndex: z.coerce
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Position index for the new sheet (0-based, optional)"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.duplicateSheet(
+        context.spreadsheetId,
+        context.sourceSheetId,
+        context.newSheetName,
+        context.insertSheetIndex,
+      );
+      return {
+        success: true,
+        message: context.newSheetName
+          ? `Sheet duplicated as "${context.newSheetName}"`
+          : "Sheet duplicated successfully",
+      };
+    },
+  });
+
+// ============================================
+// Freeze Rows/Columns
+// ============================================
+
+export const createFreezeRowsTool = (env: Env) =>
+  createPrivateTool({
+    id: "freeze_rows",
+    description:
+      "Freeze rows at the top of a sheet. Frozen rows stay visible when scrolling down. Useful for keeping headers visible.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      frozenRowCount: z.coerce
+        .number()
+        .int()
+        .min(0)
+        .describe("Number of rows to freeze (0 to unfreeze)"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.freezeRows(
+        context.spreadsheetId,
+        context.sheetId,
+        context.frozenRowCount,
+      );
+      return {
+        success: true,
+        message:
+          context.frozenRowCount > 0
+            ? `${context.frozenRowCount} row(s) frozen`
+            : "Rows unfrozen",
+      };
+    },
+  });
+
+export const createFreezeColumnsTool = (env: Env) =>
+  createPrivateTool({
+    id: "freeze_columns",
+    description:
+      "Freeze columns at the left of a sheet. Frozen columns stay visible when scrolling right. Useful for keeping row labels visible.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      frozenColumnCount: z.coerce
+        .number()
+        .int()
+        .min(0)
+        .describe("Number of columns to freeze (0 to unfreeze)"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.freezeColumns(
+        context.spreadsheetId,
+        context.sheetId,
+        context.frozenColumnCount,
+      );
+      return {
+        success: true,
+        message:
+          context.frozenColumnCount > 0
+            ? `${context.frozenColumnCount} column(s) frozen`
+            : "Columns unfrozen",
+      };
+    },
+  });
+
 export const spreadsheetTools = [
   createCreateSpreadsheetTool,
   createGetSpreadsheetTool,
   createAddSheetTool,
   createDeleteSheetTool,
   createRenameSheetTool,
+  createDuplicateSheetTool,
+  createFreezeRowsTool,
+  createFreezeColumnsTool,
 ];

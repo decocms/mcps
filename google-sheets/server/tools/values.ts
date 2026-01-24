@@ -225,6 +225,52 @@ export const createBatchWriteTool = (env: Env) =>
     },
   });
 
+// ============================================
+// Read Formulas
+// ============================================
+
+export const createReadFormulasTool = (env: Env) =>
+  createPrivateTool({
+    id: "read_formulas",
+    description:
+      "Read formulas from a range in a spreadsheet. Unlike read_range which returns calculated values, this returns the actual formulas (e.g., '=SUM(A1:A10)' instead of '100').",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      range: z
+        .string()
+        .describe(
+          "Range in A1 notation (e.g., 'Sheet1!A1:D10', 'A:D', '1:10')",
+        ),
+    }),
+    outputSchema: z.object({
+      range: z.string(),
+      formulas: z
+        .array(z.array(z.any()))
+        .describe(
+          "2D array of formulas (cells without formulas return their value)",
+        ),
+      rowCount: z.number(),
+      columnCount: z.number(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const result = await client.readFormulas(
+        context.spreadsheetId,
+        context.range,
+      );
+      const formulas = result.values || [];
+      return {
+        range: result.range,
+        formulas,
+        rowCount: formulas.length,
+        columnCount:
+          formulas.length > 0
+            ? Math.max(...formulas.map((r: any[]) => r.length))
+            : 0,
+      };
+    },
+  });
+
 export const valueTools = [
   createReadRangeTool,
   createWriteRangeTool,
@@ -232,4 +278,5 @@ export const valueTools = [
   createClearRangeTool,
   createBatchReadTool,
   createBatchWriteTool,
+  createReadFormulasTool,
 ];
