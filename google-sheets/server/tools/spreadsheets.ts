@@ -177,6 +177,8 @@ export const createDuplicateSheetTool = (env: Env) =>
         ),
       insertSheetIndex: z.coerce
         .number()
+        .int()
+        .min(0)
         .optional()
         .describe("Position index for the new sheet (0-based, optional)"),
     }),
@@ -215,6 +217,8 @@ export const createFreezeRowsTool = (env: Env) =>
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       frozenRowCount: z.coerce
         .number()
+        .int()
+        .min(0)
         .describe("Number of rows to freeze (0 to unfreeze)"),
     }),
     outputSchema: z.object({
@@ -248,6 +252,8 @@ export const createFreezeColumnsTool = (env: Env) =>
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       frozenColumnCount: z.coerce
         .number()
+        .int()
+        .min(0)
         .describe("Number of columns to freeze (0 to unfreeze)"),
     }),
     outputSchema: z.object({
