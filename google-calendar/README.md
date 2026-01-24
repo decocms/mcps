@@ -108,10 +108,13 @@ bun run build
       { "email": "john@company.com" },
       { "email": "mary@company.com" }
     ],
+    "guestsCanSeeOtherGuests": false,
     "sendUpdates": "all"
   }
 }
 ```
+
+> **Note:** The `guestsCanSeeOtherGuests` parameter is set to `false` by default, preventing attendees from seeing other invitees' email addresses. Set it to `true` if you want guests to see the full attendee list.
 
 ### Quick add event with natural language
 
