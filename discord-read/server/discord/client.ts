@@ -113,6 +113,7 @@ async function doInitialize(env: Env): Promise<Client> {
       GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildVoiceStates, // For voice channel features
     ],
     partials: [Partials.Message, Partials.Reaction, Partials.User],
   });
@@ -497,4 +498,111 @@ export async function shutdownDiscordClient(): Promise<void> {
     eventsRegistered = false; // Reset flag so events can be re-registered
     console.log("[Discord] Client shutdown");
   }
+}
+
+// ============================================================================
+// Message Helpers for Streaming
+// ============================================================================
+
+/**
+ * Send a "thinking" message that will be updated with the actual response.
+ * Returns the message for later editing.
+ */
+export async function sendThinkingMessage(
+  message: Message,
+): Promise<Message | null> {
+  try {
+    const channel = message.channel;
+    if (!("send" in channel)) {
+      console.error("[Discord] Channel does not support sending messages");
+      return null;
+    }
+
+    const thinkingMsg = await channel.send({
+      content: `<@${message.author.id}> 🤔 Pensando...`,
+    });
+
+    return thinkingMsg;
+  } catch (error) {
+    console.error("[Discord] Failed to send thinking message:", error);
+    return null;
+  }
+}
+
+/**
+ * Edit an existing message with new content.
+ * Used for streaming responses.
+ */
+export async function editMessage(
+  message: Message,
+  content: string,
+): Promise<boolean> {
+  try {
+    await message.edit({ content });
+    return true;
+  } catch (error) {
+    console.error("[Discord] Failed to edit message:", error);
+    return false;
+  }
+}
+
+/**
+ * Update a thinking message with the actual response (or partial response during streaming).
+ * Handles Discord's 2000 character limit by truncating if necessary.
+ */
+export async function updateThinkingMessage(
+  thinkingMsg: Message,
+  content: string,
+  authorMention?: string,
+): Promise<boolean> {
+  try {
+    // Add author mention if provided
+    const fullContent = authorMention ? `${authorMention} ${content}` : content;
+
+    // Discord has a 2000 character limit
+    const maxLength = 2000;
+    const truncatedContent =
+      fullContent.length > maxLength
+        ? fullContent.slice(0, maxLength - 3) + "..."
+        : fullContent;
+
+    await thinkingMsg.edit({ content: truncatedContent });
+    return true;
+  } catch (error) {
+    console.error("[Discord] Failed to update thinking message:", error);
+    return false;
+  }
+}
+
+/**
+ * Split long text into chunks that fit Discord's message limit.
+ */
+export function splitMessage(text: string, maxLength: number = 2000): string[] {
+  if (text.length <= maxLength) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Try to split at natural break points
+    let splitIndex = remaining.lastIndexOf("\n", maxLength);
+    if (splitIndex === -1 || splitIndex < maxLength / 2) {
+      splitIndex = remaining.lastIndexOf(" ", maxLength);
+    }
+    if (splitIndex === -1 || splitIndex < maxLength / 2) {
+      splitIndex = maxLength;
+    }
+
+    chunks.push(remaining.slice(0, splitIndex));
+    remaining = remaining.slice(splitIndex).trim();
+  }
+
+  return chunks;
 }
