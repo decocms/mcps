@@ -19,62 +19,62 @@ const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
  * sha256=<hex-digest>
  */
 async function verifyWebhookSignature(
-	rawBody: string,
-	signature: string | null,
-	secret: string,
+  rawBody: string,
+  signature: string | null,
+  secret: string,
 ): Promise<boolean> {
-	if (!secret) {
-		// No secret configured, skip validation
-		console.log(
-			"[GitHub Webhook] No webhook secret configured, skipping signature validation",
-		);
-		return true;
-	}
+  if (!secret) {
+    // No secret configured, skip validation
+    console.log(
+      "[GitHub Webhook] No webhook secret configured, skipping signature validation",
+    );
+    return true;
+  }
 
-	if (!signature) {
-		console.warn("[GitHub Webhook] Missing signature header");
-		return false;
-	}
+  if (!signature) {
+    console.warn("[GitHub Webhook] Missing signature header");
+    return false;
+  }
 
-	// Extract the hash from "sha256=<hash>"
-	const expectedPrefix = "sha256=";
-	if (!signature.startsWith(expectedPrefix)) {
-		console.warn("[GitHub Webhook] Invalid signature format");
-		return false;
-	}
+  // Extract the hash from "sha256=<hash>"
+  const expectedPrefix = "sha256=";
+  if (!signature.startsWith(expectedPrefix)) {
+    console.warn("[GitHub Webhook] Invalid signature format");
+    return false;
+  }
 
-	const signatureHash = signature.slice(expectedPrefix.length);
+  const signatureHash = signature.slice(expectedPrefix.length);
 
-	// Compute HMAC SHA-256
-	const encoder = new TextEncoder();
-	const key = await crypto.subtle.importKey(
-		"raw",
-		encoder.encode(secret),
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"],
-	);
+  // Compute HMAC SHA-256
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
 
-	const signatureBytes = await crypto.subtle.sign(
-		"HMAC",
-		key,
-		encoder.encode(rawBody),
-	);
-	const computedHash = Array.from(new Uint8Array(signatureBytes))
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+  const signatureBytes = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(rawBody),
+  );
+  const computedHash = Array.from(new Uint8Array(signatureBytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
-	// Constant-time comparison to prevent timing attacks
-	if (computedHash.length !== signatureHash.length) {
-		return false;
-	}
+  // Constant-time comparison to prevent timing attacks
+  if (computedHash.length !== signatureHash.length) {
+    return false;
+  }
 
-	let result = 0;
-	for (let i = 0; i < computedHash.length; i++) {
-		result |= computedHash.charCodeAt(i) ^ signatureHash.charCodeAt(i);
-	}
+  let result = 0;
+  for (let i = 0; i < computedHash.length; i++) {
+    result |= computedHash.charCodeAt(i) ^ signatureHash.charCodeAt(i);
+  }
 
-	return result === 0;
+  return result === 0;
 }
 
 /**
@@ -84,41 +84,41 @@ async function verifyWebhookSignature(
  * to accept any valid JSON while extracting common fields.
  */
 const GitHubWebhookPayloadSchema = z
-	.object({
-		action: z.string().optional(),
-		sender: z
-			.object({
-				login: z.string(),
-				id: z.number(),
-			})
-			.loose()
-			.optional(),
-		repository: z
-			.object({
-				id: z.number(),
-				name: z.string(),
-				full_name: z.string(),
-				owner: z.object({ login: z.string() }).passthrough(),
-			})
-			.loose()
-			.optional(),
-		organization: z
-			.object({
-				login: z.string(),
-				id: z.number(),
-			})
-			.loose()
-			.optional(),
-		installation: z
-			.object({
-				id: z.number(),
-			})
-			.loose()
-			.optional(),
-		// GitHub event type header value (passed as body field by some proxies)
-		_github_event: z.string().optional(),
-	})
-	.loose();
+  .object({
+    action: z.string().optional(),
+    sender: z
+      .object({
+        login: z.string(),
+        id: z.number(),
+      })
+      .loose()
+      .optional(),
+    repository: z
+      .object({
+        id: z.number(),
+        name: z.string(),
+        full_name: z.string(),
+        owner: z.object({ login: z.string() }).passthrough(),
+      })
+      .loose()
+      .optional(),
+    organization: z
+      .object({
+        login: z.string(),
+        id: z.number(),
+      })
+      .loose()
+      .optional(),
+    installation: z
+      .object({
+        id: z.number(),
+      })
+      .loose()
+      .optional(),
+    // GitHub event type header value (passed as body field by some proxies)
+    _github_event: z.string().optional(),
+  })
+  .loose();
 
 type GitHubWebhookPayload = z.infer<typeof GitHubWebhookPayloadSchema>;
 
@@ -133,93 +133,93 @@ type GitHubWebhookPayload = z.infer<typeof GitHubWebhookPayloadSchema>;
  * - Webhook signature validation using HMAC SHA-256 (when secret is configured)
  */
 export const createGitHubWebhookTool = (env: Env): CreatedTool => ({
-	_meta: {
-		"mcp.mesh": {
-			public_tool: true,
-		},
-	},
-	id: "MESH_PUBLIC_GITHUB_WEBHOOK",
-	description:
-		"Receives GitHub webhook events and publishes them to the Event Bus. " +
-		"This endpoint is called directly by GitHub when webhook events occur.",
-	inputSchema: GitHubWebhookPayloadSchema.loose(),
-	execute: async ({ context, runtimeContext }) => {
-		runtimeContext ??= createRuntimeContext(runtimeContext);
+  _meta: {
+    "mcp.mesh": {
+      public_tool: true,
+    },
+  },
+  id: "MESH_PUBLIC_GITHUB_WEBHOOK",
+  description:
+    "Receives GitHub webhook events and publishes them to the Event Bus. " +
+    "This endpoint is called directly by GitHub when webhook events occur.",
+  inputSchema: GitHubWebhookPayloadSchema.loose(),
+  execute: async ({ context, runtimeContext }) => {
+    runtimeContext ??= createRuntimeContext(runtimeContext);
 
-		const payload = context as GitHubWebhookPayload;
+    const payload = context as GitHubWebhookPayload;
 
-		// Use runtimeContext.env for the current request's environment if available
-		const currentEnv = runtimeContext?.env
-			? (runtimeContext.env as unknown as Env)
-			: env;
+    // Use runtimeContext.env for the current request's environment if available
+    const currentEnv = runtimeContext?.env
+      ? (runtimeContext.env as unknown as Env)
+      : env;
 
-		// Get request from runtimeContext for header access
-		const req = runtimeContext?.req as Request | undefined;
+    // Get request from runtimeContext for header access
+    const req = runtimeContext?.req as Request | undefined;
 
-		// Validate webhook signature if secret is configured
+    // Validate webhook signature if secret is configured
 
-		if (WEBHOOK_SECRET && req) {
-			const signature = req.headers.get("x-hub-signature-256");
-			// Note: We use the serialized context since the raw body may not be available
-			const bodyForValidation = JSON.stringify(context);
+    if (WEBHOOK_SECRET && req) {
+      const signature = req.headers.get("x-hub-signature-256");
+      // Note: We use the serialized context since the raw body may not be available
+      const bodyForValidation = JSON.stringify(context);
 
-			const isValid = await verifyWebhookSignature(
-				bodyForValidation,
-				signature,
-				WEBHOOK_SECRET,
-			);
+      const isValid = await verifyWebhookSignature(
+        bodyForValidation,
+        signature,
+        WEBHOOK_SECRET,
+      );
 
-			if (!isValid) {
-				console.error("[GitHub Webhook] Invalid signature");
-				return { error: "Invalid webhook signature" };
-			}
+      if (!isValid) {
+        console.error("[GitHub Webhook] Invalid signature");
+        return { error: "Invalid webhook signature" };
+      }
 
-			console.log("[GitHub Webhook] Signature validated successfully");
-		}
+      console.log("[GitHub Webhook] Signature validated successfully");
+    }
 
-		// Get event type from x-github-event header (preferred) or payload field
-		const eventType =
-			req?.headers.get("x-github-event") || payload._github_event || "webhook";
+    // Get event type from x-github-event header (preferred) or payload field
+    const eventType =
+      req?.headers.get("x-github-event") || payload._github_event || "webhook";
 
-		console.log(`[GitHub Webhook] Received event: ${eventType}`, {
-			action: payload.action,
-			repo: payload.repository?.full_name,
-			sender: payload.sender?.login,
-		});
+    console.log(`[GitHub Webhook] Received event: ${eventType}`, {
+      action: payload.action,
+      repo: payload.repository?.full_name,
+      sender: payload.sender?.login,
+    });
 
-		// Determine the event subject (usually repository full name)
-		const subject =
-			payload.repository?.full_name || payload.organization?.login || "unknown";
+    // Determine the event subject (usually repository full name)
+    const subject =
+      payload.repository?.full_name || payload.organization?.login || "unknown";
 
-		// Build full event type: github.<event>.<action>
-		// e.g., github.pull_request.opened, github.push
-		const fullEventType = payload.action
-			? `github.${eventType}.${payload.action}`
-			: `github.${eventType}`;
+    // Build full event type: github.<event>.<action>
+    // e.g., github.pull_request.opened, github.push
+    const fullEventType = payload.action
+      ? `github.${eventType}.${payload.action}`
+      : `github.${eventType}`;
 
-		try {
-			// Publish the event to the Event Bus
-			await currentEnv.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS?.EVENT_PUBLISH({
-				type: fullEventType,
-				data: payload,
-				subject,
-			});
+    try {
+      // Publish the event to the Event Bus
+      await currentEnv.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS?.EVENT_PUBLISH({
+        type: fullEventType,
+        data: payload,
+        subject,
+      });
 
-			console.log(`[GitHub Webhook] Published event: ${fullEventType}`, {
-				subject,
-			});
+      console.log(`[GitHub Webhook] Published event: ${fullEventType}`, {
+        subject,
+      });
 
-			return {
-				success: true,
-				event: fullEventType,
-				subject,
-			};
-		} catch (error) {
-			console.error("[GitHub Webhook] Failed to publish event:", error);
-			return {
-				error: "Failed to publish event",
-				details: String(error),
-			};
-		}
-	},
+      return {
+        success: true,
+        event: fullEventType,
+        subject,
+      };
+    } catch (error) {
+      console.error("[GitHub Webhook] Failed to publish event:", error);
+      return {
+        error: "Failed to publish event",
+        details: String(error),
+      };
+    }
+  },
 });

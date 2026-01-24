@@ -58,47 +58,45 @@ async function queryTable(
  */
 export const getContentScrapeTool = (env: Env) =>
   createPrivateTool({
-    id: "get_content_scrape",
+    id: "LIST_SCRAPED_CONTENT",
     description:
-      "Busca conteúdo coletado do banco de dados. " +
-      "Pode buscar de uma tabela específica (contents, reddit, linkedin, twitter) ou de todas. " +
-      "Suporta paginação por range de índices.",
+      "Lists content that has been collected and saved to the database. " +
+      "Can fetch from a specific source (contents, reddit, linkedin, twitter) or all of them. " +
+      "Supports pagination by index range.",
     inputSchema: z.object({
       table: TableEnum.default("all").describe(
-        'Qual tabela buscar: "all" para todas, ou "contents", "reddit", "linkedin", "twitter" para uma específica',
+        'Which table to fetch: "all" for all tables, or "contents", "reddit", "linkedin", "twitter" for a specific one',
       ),
       startIndex: z
         .number()
         .int()
         .positive()
         .default(1)
-        .describe(
-          "Índice inicial - a partir de qual item começar (default: 1)",
-        ),
+        .describe("Start index - which item to start from (default: 1)"),
       endIndex: z
         .number()
         .int()
         .positive()
         .default(100)
-        .describe("Índice final - até qual item buscar (default: 100)"),
+        .describe("End index - which item to fetch up to (default: 100)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       results: z
         .array(
           z.object({
-            table: z.string().describe("Nome da tabela"),
+            table: z.string().describe("Table name"),
             data: z
               .array(z.record(z.string(), z.unknown()))
-              .describe("Dados retornados da tabela"),
-            count: z.number().describe("Quantidade de registros retornados"),
+              .describe("Data returned from the table"),
+            count: z.number().describe("Number of records returned"),
           }),
         )
         .optional(),
       totalCount: z
         .number()
         .optional()
-        .describe("Total de registros retornados"),
+        .describe("Total number of records returned"),
       range: z
         .object({
           startIndex: z.number(),
