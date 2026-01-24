@@ -10,10 +10,10 @@ import type { Env } from "../types/env.ts";
  */
 export const scrapeContentTool = (env: Env) =>
   createPrivateTool({
-    id: "scrape_content",
+    id: "RUN_SCRAPING_WORKFLOW",
     description:
-      "Scrape content from a URL using the n8n workflow. " +
-      "Extracts and processes web content through an automated pipeline.",
+      "Runs the scraping workflow to collect content from configured sources (URLs, Reddit, LinkedIn, Twitter). " +
+      "Processes content through an automated pipeline and saves it to the database.",
     inputSchema: z.object({}),
     outputSchema: z.object({
       success: z.boolean(),
@@ -84,7 +84,7 @@ export const scrapeContentTool = (env: Env) =>
           if (fetchError instanceof Error && fetchError.name === "AbortError") {
             return {
               success: false,
-              error: "Workflow timeout - excedeu 5 minutos de execução",
+              error: "Workflow timeout - exceeded 5 minutes of execution",
             };
           }
           throw fetchError;
