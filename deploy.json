@@ -69,6 +69,11 @@
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   },
+  "google-apps-script": {
+    "site": "google-apps-script",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
   "google-sheets": {
     "site": "google-sheets",
     "entrypoint": "./dist/server/main.js",
