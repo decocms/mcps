@@ -277,13 +277,115 @@ export const createFreezeColumnsTool = (env: Env) =>
     },
   });
 
+// ============================================
+// Get Spreadsheet Metadata (Enhanced)
+// ============================================
+
+export const createGetSpreadsheetMetadataTool = (env: Env) =>
+  createPrivateTool({
+    id: "get_spreadsheet_metadata",
+    description:
+      "Get enhanced metadata about a spreadsheet including actual data ranges and filled cell counts for each sheet. More detailed than get_spreadsheet - shows where data actually exists.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+    }),
+    outputSchema: z.object({
+      spreadsheetId: z.string(),
+      title: z.string(),
+      url: z.string().optional(),
+      locale: z.string().optional(),
+      sheets: z.array(
+        z.object({
+          id: z.number(),
+          title: z.string(),
+          rowCount: z.number(),
+          columnCount: z.number(),
+          dataRange: z.string().optional(),
+          filledCells: z.number().optional(),
+        }),
+      ),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const { spreadsheet, dataRanges } =
+        await client.getSpreadsheetWithDataRanges(context.spreadsheetId);
+
+      return {
+        spreadsheetId: spreadsheet.spreadsheetId,
+        title: spreadsheet.properties?.title || "",
+        url: spreadsheet.spreadsheetUrl,
+        locale: spreadsheet.properties?.locale,
+        sheets:
+          spreadsheet.sheets?.map((s) => {
+            const title = s.properties?.title || "";
+            const rangeInfo = dataRanges[title];
+            return {
+              id: s.properties?.sheetId || 0,
+              title,
+              rowCount: s.properties?.gridProperties?.rowCount || 0,
+              columnCount: s.properties?.gridProperties?.columnCount || 0,
+              dataRange: rangeInfo?.range,
+              filledCells: rangeInfo?.filledCells,
+            };
+          }) || [],
+      };
+    },
+  });
+
+// ============================================
+// Copy Sheet (to same or different spreadsheet)
+// ============================================
+
+export const createCopySheetTool = (env: Env) =>
+  createPrivateTool({
+    id: "copy_sheet",
+    description:
+      "Copy a sheet to the same spreadsheet or to a different spreadsheet. Uses the native copyTo API endpoint.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Source spreadsheet ID"),
+      sheetId: z.coerce
+        .number()
+        .describe("Sheet ID to copy (numeric ID, not the title)"),
+      destinationSpreadsheetId: z
+        .string()
+        .optional()
+        .describe(
+          "Destination spreadsheet ID. If not provided, copies within the same spreadsheet.",
+        ),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      newSheetId: z.number(),
+      newSheetTitle: z.string(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const result = await client.copySheetTo(
+        context.spreadsheetId,
+        context.sheetId,
+        context.destinationSpreadsheetId,
+      );
+      return {
+        success: true,
+        newSheetId: result.sheetId,
+        newSheetTitle: result.title,
+        message: context.destinationSpreadsheetId
+          ? `Sheet copied to spreadsheet ${context.destinationSpreadsheetId} as "${result.title}"`
+          : `Sheet copied as "${result.title}"`,
+      };
+    },
+  });
+
 export const spreadsheetTools = [
   createCreateSpreadsheetTool,
   createGetSpreadsheetTool,
+  createGetSpreadsheetMetadataTool,
   createAddSheetTool,
   createDeleteSheetTool,
   createRenameSheetTool,
   createDuplicateSheetTool,
+  createCopySheetTool,
   createFreezeRowsTool,
   createFreezeColumnsTool,
 ];
