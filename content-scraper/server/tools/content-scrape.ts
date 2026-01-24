@@ -27,17 +27,33 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
- * Get current ISO week in format "YYYY-wWW"
+ * Get current ISO 8601 week in format "YYYY-wWW"
+ * ISO weeks start on Monday and week 1 is the week containing the first Thursday
  */
 function getCurrentWeekDate(): string {
   const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const days = Math.floor(
-    (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
+
+  // Create a copy and set to nearest Thursday (ISO week belongs to the year of its Thursday)
+  const thursday = new Date(now);
+  thursday.setDate(thursday.getDate() - ((thursday.getDay() + 6) % 7) + 3);
+
+  // Get the ISO year (year of the Thursday)
+  const isoYear = thursday.getFullYear();
+
+  // Find the first Thursday of the ISO year
+  const firstThursday = new Date(isoYear, 0, 4);
+  firstThursday.setDate(
+    firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3,
   );
-  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+
+  // Calculate week number
+  const weekNumber = Math.ceil(
+    (thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000) +
+      1,
+  );
+
   const paddedWeek = weekNumber.toString().padStart(2, "0");
-  return `${now.getFullYear()}-w${paddedWeek}`;
+  return `${isoYear}-w${paddedWeek}`;
 }
 
 /**
