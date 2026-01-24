@@ -11,6 +11,7 @@ import type { ToolFactory, ToolCollection } from "../types/tools.ts";
 import { messageTools } from "./messages.ts";
 import { setupTools } from "./setup.ts";
 import { allDiscordTools } from "./discord/index.ts";
+import { voiceTools } from "./voice.ts";
 
 // Wrap each tool factory to update env on every call
 function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
@@ -25,9 +26,11 @@ function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
 const wrappedSetupTools = setupTools.map(wrapWithEnvUpdate);
 const wrappedMessageTools = messageTools.map(wrapWithEnvUpdate);
 const wrappedDiscordTools = allDiscordTools.map(wrapWithEnvUpdate);
+const wrappedVoiceTools = voiceTools.map(wrapWithEnvUpdate);
 
 export const tools: ToolCollection<Env> = [
   ...wrappedSetupTools,
   ...wrappedMessageTools,
   ...wrappedDiscordTools,
+  ...wrappedVoiceTools,
 ];

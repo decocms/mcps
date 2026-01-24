@@ -83,8 +83,146 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       await ensureIndexes(env);
       console.log("[CONFIG] Database tables ready");
 
+      // Get configuration from state
+      const state = env.MESH_REQUEST_CONTEXT?.state;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
+
+      // Configure LLM if model provider is set
+      const modelProvider = state?.MODEL_PROVIDER;
+      const agent = state?.AGENT;
+      const languageModel = state?.LANGUAGE_MODEL;
+      const whisper = state?.WHISPER;
+
+      // Extract values
+      const languageModelConnectionId = languageModel?.value?.connectionId;
+      const modelProviderId: string | undefined =
+        (typeof modelProvider?.value === "string"
+          ? modelProvider.value
+          : undefined) ||
+        (typeof languageModelConnectionId === "string"
+          ? languageModelConnectionId
+          : undefined);
+      const agentId: string | undefined =
+        typeof agent?.value === "string" ? agent.value : undefined;
+      const modelId = languageModel?.value?.id;
+
+      // Configure LLM module
+      if (modelProviderId && token && meshUrl && organizationId) {
+        const { configureLLM, configureStreaming, configureWhisper } =
+          await import("./llm.ts");
+
+        configureLLM({
+          meshUrl,
+          organizationId,
+          token,
+          modelProviderId,
+          modelId,
+          agentId,
+        });
+
+        // Configure streaming (default: enabled)
+        const enableStreaming =
+          state?.RESPONSE_CONFIG?.ENABLE_STREAMING ?? true;
+        configureStreaming(enableStreaming);
+
+        console.log("[CONFIG] LLM configured:", {
+          modelProviderId,
+          modelId,
+          agentId: agentId || "not set",
+          streaming: enableStreaming,
+        });
+
+        // Configure Whisper for audio transcription if set
+        if (whisper && typeof whisper.value === "string") {
+          configureWhisper({
+            meshUrl,
+            organizationId,
+            token,
+            whisperConnectionId: whisper.value,
+          });
+          console.log("[CONFIG] Whisper configured for audio transcription");
+
+          // Also configure Whisper for voice STT
+          const { configureVoiceWhisper } = await import("./voice/index.ts");
+          configureVoiceWhisper({
+            meshUrl,
+            organizationId,
+            token,
+            whisperConnectionId: whisper.value,
+          });
+        }
+      }
+
+      // Configure voice system if enabled
+      const voiceConfig = state?.VOICE_CONFIG;
+      if (voiceConfig?.ENABLED) {
+        const { configureVoiceCommands, configureTTS } = await import(
+          "./voice/index.ts"
+        );
+        const { generateResponse } = await import("./llm.ts");
+        const { getSystemPrompt } = await import("./prompts/system.ts");
+
+        const client = getDiscordClient();
+        if (client) {
+          configureVoiceCommands(
+            client,
+            {
+              enabled: voiceConfig.ENABLED,
+              responseMode: voiceConfig.RESPONSE_MODE || "voice",
+              ttsEnabled: voiceConfig.TTS_ENABLED !== false,
+              ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
+              silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS || 1000,
+            },
+            {
+              // Voice command handler - uses LLM to process voice commands
+              processVoiceCommand: async (
+                userId: string,
+                username: string,
+                text: string,
+                guildId: string,
+              ) => {
+                const systemPrompt = getSystemPrompt({
+                  guildId,
+                  userId,
+                  userName: username,
+                  isDM: false,
+                });
+
+                const messages = [
+                  { role: "system" as const, content: systemPrompt },
+                  {
+                    role: "system" as const,
+                    content:
+                      "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+                  },
+                  { role: "user" as const, content: text },
+                ];
+
+                const response = await generateResponse(env, messages);
+                return response.content;
+              },
+            },
+          );
+
+          // Configure TTS
+          configureTTS({
+            enabled: voiceConfig.TTS_ENABLED !== false,
+            language: voiceConfig.TTS_LANGUAGE || "pt-BR",
+          });
+
+          console.log("[CONFIG] Voice commands configured:", {
+            enabled: voiceConfig.ENABLED,
+            responseMode: voiceConfig.RESPONSE_MODE,
+            ttsEnabled: voiceConfig.TTS_ENABLED !== false,
+            ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
+          });
+        }
+      }
+
       // Initialize Discord client if BOT_TOKEN is provided
-      const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
+      const botToken = state?.BOT_TOKEN;
       if (botToken && !discordInitialized && !getDiscordClient()) {
         console.log("[CONFIG] Initializing Discord client...");
         try {
@@ -146,6 +284,18 @@ async function gracefulShutdown(signal: string) {
     // Stop session heartbeat
     console.log("[SHUTDOWN] Stopping session heartbeat...");
     stopHeartbeat();
+
+    // Stop all voice sessions
+    try {
+      const { stopAllSessions, disconnectAll } = await import(
+        "./voice/index.ts"
+      );
+      console.log("[SHUTDOWN] Stopping voice sessions...");
+      await stopAllSessions();
+      disconnectAll();
+    } catch {
+      // Voice module might not be loaded
+    }
 
     const client = getDiscordClient();
     if (client) {
