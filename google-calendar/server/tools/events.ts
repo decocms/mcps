@@ -142,7 +142,6 @@ export const createListEventsTool = (env: Env) =>
       timeZone: z.string().optional().describe("Calendar timezone"),
     }),
     execute: async ({ context }) => {
-      console.log("HI!!");
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
