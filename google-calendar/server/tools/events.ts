@@ -301,6 +301,11 @@ export const createCreateEventTool = (env: Env) =>
         .enum(["default", "public", "private", "confidential"])
         .optional()
         .describe("Event visibility"),
+      guestsCanSeeOtherGuests: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Whether guests can see other attendees (default: true)"),
       sendUpdates: z
         .enum(["all", "externalOnly", "none"])
         .optional()
@@ -325,6 +330,7 @@ export const createCreateEventTool = (env: Env) =>
         reminders: context.reminders,
         colorId: context.colorId,
         visibility: context.visibility,
+        guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests ?? true,
         sendUpdates: context.sendUpdates,
       });
 
@@ -391,6 +397,10 @@ export const createUpdateEventTool = (env: Env) =>
         .enum(["default", "public", "private", "confidential"])
         .optional()
         .describe("New visibility setting"),
+      guestsCanSeeOtherGuests: z
+        .boolean()
+        .optional()
+        .describe("Whether guests can see other attendees"),
       sendUpdates: z
         .enum(["all", "externalOnly", "none"])
         .optional()
@@ -415,6 +425,7 @@ export const createUpdateEventTool = (env: Env) =>
         attendees: context.attendees,
         colorId: context.colorId,
         visibility: context.visibility,
+        guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests,
         sendUpdates: context.sendUpdates,
       });
 
