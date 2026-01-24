@@ -212,7 +212,7 @@ export const createGetRunningProcessesTool = (env: Env) =>
   createPrivateTool({
     id: "get_running_processes",
     description:
-      "Gets all currently running processes for the authenticated user. Useful for monitoring active script executions.",
+      "Gets all currently running processes for the authenticated user. Paginates through all results to ensure no running processes are missed. Useful for monitoring active script executions.",
     inputSchema: z.object({
       scriptId: z
         .string()
@@ -235,24 +235,45 @@ export const createGetRunningProcessesTool = (env: Env) =>
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
-      const result = await client.listUserProcesses({
-        pageSize: 100,
-        userProcessFilter: {
-          scriptId: context.scriptId,
-          statuses: ["RUNNING"],
-        },
-      });
-      const processes =
-        result.processes?.map((p) => ({
-          projectName: p.projectName,
-          functionName: p.functionName,
-          processType: p.processType,
-          startTime: p.startTime,
-          duration: p.duration,
-        })) || [];
+
+      // Paginate through all results to ensure we don't miss any running processes
+      const allProcesses: Array<{
+        projectName?: string;
+        functionName?: string;
+        processType?: string;
+        startTime?: string;
+        duration?: string;
+      }> = [];
+      let pageToken: string | undefined;
+
+      do {
+        const result = await client.listUserProcesses({
+          pageSize: 100,
+          pageToken,
+          userProcessFilter: {
+            scriptId: context.scriptId,
+            statuses: ["RUNNING"],
+          },
+        });
+
+        if (result.processes) {
+          allProcesses.push(
+            ...result.processes.map((p) => ({
+              projectName: p.projectName,
+              functionName: p.functionName,
+              processType: p.processType,
+              startTime: p.startTime,
+              duration: p.duration,
+            })),
+          );
+        }
+
+        pageToken = result.nextPageToken;
+      } while (pageToken);
+
       return {
-        processes,
-        runningCount: processes.length,
+        processes: allProcesses,
+        runningCount: allProcesses.length,
       };
     },
   });

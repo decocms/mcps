@@ -45,13 +45,15 @@ export const createRunScriptTool = (env: Env) =>
         parameters: context.parameters,
         devMode: false,
       });
+      // Check both operation-level error and script execution error
+      const error = result.error || result.response?.error;
       return {
         done: result.done,
         result: result.response?.result,
-        error: result.error
+        error: error
           ? {
-              code: result.error.code,
-              message: result.error.message,
+              code: error.code,
+              message: error.message,
             }
           : undefined,
       };
@@ -97,13 +99,15 @@ export const createRunScriptDevModeTool = (env: Env) =>
         parameters: context.parameters,
         devMode: true,
       });
+      // Check both operation-level error and script execution error
+      const error = result.error || result.response?.error;
       return {
         done: result.done,
         result: result.response?.result,
-        error: result.error
+        error: error
           ? {
-              code: result.error.code,
-              message: result.error.message,
+              code: error.code,
+              message: error.message,
             }
           : undefined,
       };

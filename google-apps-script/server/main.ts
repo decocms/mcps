@@ -17,6 +17,11 @@ const APPS_SCRIPT_SCOPES = [
   "https://www.googleapis.com/auth/script.processes",
 ].join(" ");
 
+// TODO: This module-level variable has a race condition with concurrent users.
+// When multiple users initiate OAuth simultaneously, one user's redirect_uri can be
+// overwritten before their token exchange completes. The proper fix requires encoding
+// redirect_uri in the OAuth state parameter or using request-scoped storage.
+// This is an architectural issue that affects all Google MCPs using this pattern.
 let lastRedirectUri: string | null = null;
 
 const runtime = withRuntime<Env>({
