@@ -27,19 +27,39 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
- * Query a single table with pagination
+ * Get current ISO week in format "YYYY-wWW"
+ */
+function getCurrentWeekDate(): string {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const days = Math.floor(
+    (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  const paddedWeek = weekNumber.toString().padStart(2, "0");
+  return `${now.getFullYear()}-w${paddedWeek}`;
+}
+
+/**
+ * Query a single table with pagination and optional week filter
  */
 async function queryTable(
   client: DatabaseClient,
   tableName: string,
   startIndex: number,
   endIndex: number,
+  onlyThisWeek: boolean = false,
 ): Promise<{ table: string; data: Record<string, unknown>[] }> {
   const limit = endIndex - startIndex + 1;
   const offset = startIndex - 1;
 
+  const whereClause = onlyThisWeek
+    ? `WHERE week_date = '${getCurrentWeekDate()}'`
+    : "";
+
   const query = `
     SELECT * FROM ${tableName}
+    ${whereClause}
     ORDER BY id
     LIMIT ${limit}
     OFFSET ${offset}
@@ -62,7 +82,7 @@ export const getContentScrapeTool = (env: Env) =>
     description:
       "Lists content that has been collected and saved to the database. " +
       "Can fetch from a specific source (contents, reddit, linkedin, twitter) or all of them. " +
-      "Supports pagination by index range.",
+      "Supports pagination by index range and filtering by current week.",
     inputSchema: z.object({
       table: TableEnum.default("all").describe(
         'Which table to fetch: "all" for all tables, or "contents", "reddit", "linkedin", "twitter" for a specific one',
@@ -79,6 +99,12 @@ export const getContentScrapeTool = (env: Env) =>
         .positive()
         .default(100)
         .describe("End index - which item to fetch up to (default: 100)"),
+      onlyThisWeek: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, returns only content from the current week (default: false)",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -106,7 +132,7 @@ export const getContentScrapeTool = (env: Env) =>
       error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { table, startIndex, endIndex } = context;
+      const { table, startIndex, endIndex, onlyThisWeek } = context;
 
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
@@ -174,6 +200,7 @@ export const getContentScrapeTool = (env: Env) =>
                   tableName,
                   startIndex,
                   endIndex,
+                  onlyThisWeek,
                 );
                 results.push({
                   table: key,
@@ -198,6 +225,7 @@ export const getContentScrapeTool = (env: Env) =>
               tableName,
               startIndex,
               endIndex,
+              onlyThisWeek,
             );
             results.push({
               table,
