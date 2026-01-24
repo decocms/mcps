@@ -305,7 +305,7 @@ export const createCreateEventTool = (env: Env) =>
         .boolean()
         .optional()
         .default(true)
-        .describe("Whether guests can see other attendees (default: false)"),
+        .describe("Whether guests can see other attendees (default: true)"),
       sendUpdates: z
         .enum(["all", "externalOnly", "none"])
         .optional()
