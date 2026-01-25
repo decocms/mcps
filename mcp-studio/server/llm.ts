@@ -83,6 +83,20 @@ export async function generateResponseForEvent(
   if (!organizationId) {
     throw new Error("No organizationId found");
   }
+
+  const modelProviderId = env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value;
+  const languageModelId =
+    env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL?.value?.id;
+  const agentId = env.MESH_REQUEST_CONTEXT.state.AGENT?.value;
+
+  if (!modelProviderId) {
+    throw new Error("MODEL_PROVIDER not configured");
+  }
+
+  if (!agentId) {
+    throw new Error("AGENT not configured");
+  }
+
   const response = await fetch(
     (env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL) +
       "/api/" +
@@ -97,13 +111,11 @@ export async function generateResponseForEvent(
       },
       body: JSON.stringify({
         model: {
-          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER.value,
-          id:
-            env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL.value.id ??
-            DEFAULT_LANGUAGE_MODEL,
+          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value,
+          id: languageModelId ?? DEFAULT_LANGUAGE_MODEL,
         },
         gateway: {
-          id: env.MESH_REQUEST_CONTEXT.state.AGENT.value,
+          id: env.MESH_REQUEST_CONTEXT.state.AGENT?.value,
         },
         messages: [
           {
