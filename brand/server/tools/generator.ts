@@ -676,14 +676,14 @@ This is the main tool - it:
     execute: async ({ context }) => {
       const { brandName, websiteUrl } = context;
 
-      const firecrawl = env.MESH_REQUEST_CONTEXT?.state?.FIRECRAWL;
+      const scraper = env.MESH_REQUEST_CONTEXT?.state?.SCRAPER;
       const perplexity = env.MESH_REQUEST_CONTEXT?.state?.PERPLEXITY;
 
-      if (!firecrawl && !perplexity) {
+      if (!scraper && !perplexity) {
         return {
           success: false,
           error:
-            "No research bindings available. Configure FIRECRAWL and/or PERPLEXITY bindings.",
+            "No research bindings available. Configure SCRAPER and/or PERPLEXITY bindings.",
         };
       }
 
@@ -696,9 +696,9 @@ This is the main tool - it:
       };
 
       // Scrape website
-      if (firecrawl) {
+      if (scraper) {
         try {
-          const result = (await firecrawl.firecrawl_scrape({
+          const result = (await scraper.scrape_content({
             url: websiteUrl,
             formats: ["branding", "links"],
           })) as { branding?: Record<string, unknown> };

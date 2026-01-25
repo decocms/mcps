@@ -1,96 +1,70 @@
 /**
  * Type definitions for the Brand MCP environment.
  *
- * This MCP requires Perplexity and Firecrawl bindings for brand research.
+ * This MCP uses Perplexity for AI research and Content Scraper for web scraping.
  */
 import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Perplexity binding schema - defines the tools to match
+ * Perplexity binding schema - matches the actual tool names from Perplexity MCP
+ *
+ * Perplexity exposes: ASK, CHAT (from @decocms/mcps-shared/search-ai)
  */
 const PerplexityBindingSchema = [
   {
-    name: "perplexity_research",
+    name: "ASK",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: { type: "string" },
+        model: { type: "string" },
+      },
+      required: ["prompt"],
+    },
+  },
+  {
+    name: "CHAT",
     inputSchema: {
       type: "object",
       properties: {
         messages: { type: "array" },
-        strip_thinking: { type: "boolean" },
+        model: { type: "string" },
       },
       required: ["messages"],
-    },
-  },
-  {
-    name: "perplexity_ask",
-    inputSchema: {
-      type: "object",
-      properties: {
-        messages: { type: "array" },
-      },
-      required: ["messages"],
-    },
-  },
-  {
-    name: "perplexity_search",
-    inputSchema: {
-      type: "object",
-      properties: {
-        query: { type: "string" },
-      },
-      required: ["query"],
     },
   },
 ] as const;
 
 /**
- * Firecrawl binding schema - defines the tools to match
+ * Content Scraper binding schema - matches the actual tool names
+ *
+ * Content Scraper exposes: scrape_content, get_content_scrape
  */
-const FirecrawlBindingSchema = [
+const ContentScraperBindingSchema = [
   {
-    name: "firecrawl_scrape",
-    inputSchema: {
-      type: "object",
-      properties: {
-        url: { type: "string" },
-        formats: { type: "array" },
-      },
-      required: ["url"],
-    },
-  },
-  {
-    name: "firecrawl_crawl",
+    name: "scrape_content",
     inputSchema: {
       type: "object",
       properties: {
         url: { type: "string" },
       },
       required: ["url"],
-    },
-  },
-  {
-    name: "firecrawl_search",
-    inputSchema: {
-      type: "object",
-      properties: {
-        query: { type: "string" },
-      },
-      required: ["query"],
     },
   },
 ] as const;
 
 /**
- * State schema with required bindings for brand research.
+ * State schema with optional bindings for brand research.
  *
  * The bindings use __binding to define tool patterns for matching connections:
- * - PERPLEXITY: Matches connections with perplexity_* tools
- * - FIRECRAWL: Matches connections with firecrawl_* tools
+ * - PERPLEXITY: Matches connections with ASK/CHAT tools (from search-ai)
+ * - SCRAPER: Matches connections with scrape_content tool
  */
 export const StateSchema = z.object({
   /**
    * Perplexity binding for web research.
-   * Matches connections with tools: perplexity_research, perplexity_ask, etc.
+   * Matches connections with tools: ASK, CHAT
    */
   PERPLEXITY: z
     .object({
@@ -101,24 +75,26 @@ export const StateSchema = z.object({
       value: z.string(),
     })
     .optional()
-    .describe(
-      "Perplexity AI for brand research - requires perplexity_research tool",
-    ),
+    .describe("Perplexity AI for brand research - requires ASK tool"),
 
   /**
-   * Firecrawl binding for web scraping.
-   * Matches connections with tools: firecrawl_scrape, firecrawl_crawl, etc.
+   * Content Scraper binding for web scraping.
+   * Matches connections with tools: scrape_content
    */
-  FIRECRAWL: z
+  SCRAPER: z
     .object({
-      __type: z.literal("@deco/firecrawl").default("@deco/firecrawl"),
+      __type: z
+        .literal("@deco/content-scraper")
+        .default("@deco/content-scraper"),
       __binding: z
-        .literal(FirecrawlBindingSchema)
-        .default(FirecrawlBindingSchema),
+        .literal(ContentScraperBindingSchema)
+        .default(ContentScraperBindingSchema),
       value: z.string(),
     })
     .optional()
-    .describe("Firecrawl for web scraping - requires firecrawl_scrape tool"),
+    .describe(
+      "Content Scraper for web scraping - requires scrape_content tool",
+    ),
 });
 
 /**

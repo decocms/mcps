@@ -8,11 +8,9 @@ import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Brand MCP binding schema - defines the tools to match
+ * Brand MCP binding schema - matches the actual tool names from Brand MCP
  *
- * The Brand MCP provides comprehensive brand research and design system
- * generation capabilities. Slides can use these to automatically create
- * brand-aware presentations.
+ * Brand MCP exposes: BRAND_CREATE, BRAND_DISCOVER, BRAND_GENERATE, BRAND_STATUS
  */
 const BrandBindingSchema = [
   {
@@ -23,7 +21,7 @@ const BrandBindingSchema = [
         brandName: { type: "string" },
         websiteUrl: { type: "string" },
       },
-      required: ["brandName", "websiteUrl"],
+      required: ["brandName"],
     },
   },
   {
@@ -34,7 +32,7 @@ const BrandBindingSchema = [
         brandName: { type: "string" },
         websiteUrl: { type: "string" },
       },
-      required: ["brandName", "websiteUrl"],
+      required: ["brandName"],
     },
   },
   {

@@ -101,7 +101,7 @@ Uses Firecrawl's 'branding' format to extract:
 - Logo images found on the page
 - Visual style (aesthetic, shadows, border radius)
 
-**Requires:** FIRECRAWL binding to be configured.
+**Requires:** SCRAPER binding to be configured.
 
 **Best for:** When you have the brand's website URL and want to extract their actual design system.`,
     inputSchema: z.object({
@@ -120,12 +120,12 @@ Uses Firecrawl's 'branding' format to extract:
     execute: async ({ context }) => {
       const { url, includeScreenshot } = context;
 
-      const firecrawl = env.MESH_REQUEST_CONTEXT?.state?.FIRECRAWL;
-      if (!firecrawl) {
+      const scraper = env.MESH_REQUEST_CONTEXT?.state?.SCRAPER;
+      if (!scraper) {
         return {
           success: false,
           error:
-            "FIRECRAWL binding not configured. Add the Firecrawl binding to enable website scraping.",
+            "SCRAPER binding not configured. Add the Content Scraper binding to enable website scraping.",
         };
       }
 
@@ -135,7 +135,7 @@ Uses Firecrawl's 'branding' format to extract:
           formats.push("screenshot");
         }
 
-        const result = (await firecrawl.firecrawl_scrape({
+        const result = (await scraper.scrape_content({
           url,
           formats,
         })) as {
@@ -401,7 +401,7 @@ export const createBrandDiscoverTool = (env: Env) =>
     description: `Comprehensive brand discovery combining web scraping and AI research.
 
 This is the most complete tool - it:
-1. Scrapes the brand website for visual identity (if FIRECRAWL available)
+1. Scrapes the brand website for visual identity (if SCRAPER available)
 2. Researches the brand using AI (if PERPLEXITY available)
 3. Combines results into a complete brand identity
 
@@ -420,14 +420,14 @@ This is the most complete tool - it:
     execute: async ({ context }) => {
       const { brandName, websiteUrl } = context;
 
-      const firecrawl = env.MESH_REQUEST_CONTEXT?.state?.FIRECRAWL;
+      const scraper = env.MESH_REQUEST_CONTEXT?.state?.SCRAPER;
       const perplexity = env.MESH_REQUEST_CONTEXT?.state?.PERPLEXITY;
 
-      if (!firecrawl && !perplexity) {
+      if (!scraper && !perplexity) {
         return {
           success: false,
           error:
-            "No research bindings available. Configure FIRECRAWL and/or PERPLEXITY bindings.",
+            "No research bindings available. Configure SCRAPER and/or PERPLEXITY bindings.",
         };
       }
 
@@ -441,9 +441,9 @@ This is the most complete tool - it:
       let researchData: unknown;
 
       // Step 1: Scrape the website
-      if (firecrawl) {
+      if (scraper) {
         try {
-          const scrapeResult = (await firecrawl.firecrawl_scrape({
+          const scrapeResult = (await scraper.scrape_content({
             url: websiteUrl,
             formats: ["branding", "links"],
           })) as { branding?: Record<string, unknown>; links?: string[] };
@@ -601,10 +601,10 @@ export const createBrandStatusTool = (env: Env) =>
     id: "BRAND_STATUS",
     description: `Check which brand research capabilities are available.
 
-Returns the status of FIRECRAWL and PERPLEXITY bindings and what each enables.`,
+Returns the status of SCRAPER and PERPLEXITY bindings and what each enables.`,
     inputSchema: z.object({}),
     outputSchema: z.object({
-      firecrawl: z.object({
+      scraper: z.object({
         available: z.boolean(),
         capabilities: z.array(z.string()),
       }),
@@ -615,13 +615,13 @@ Returns the status of FIRECRAWL and PERPLEXITY bindings and what each enables.`,
       recommendation: z.string(),
     }),
     execute: async () => {
-      const firecrawl = env.MESH_REQUEST_CONTEXT?.state?.FIRECRAWL;
+      const scraper = env.MESH_REQUEST_CONTEXT?.state?.SCRAPER;
       const perplexity = env.MESH_REQUEST_CONTEXT?.state?.PERPLEXITY;
 
       return {
-        firecrawl: {
-          available: Boolean(firecrawl),
-          capabilities: firecrawl
+        scraper: {
+          available: Boolean(scraper),
+          capabilities: scraper
             ? [
                 "Extract colors from website CSS",
                 "Identify typography and fonts",
@@ -644,13 +644,13 @@ Returns the status of FIRECRAWL and PERPLEXITY bindings and what each enables.`,
             : [],
         },
         recommendation:
-          firecrawl && perplexity
+          scraper && perplexity
             ? "Full capabilities available! Use BRAND_DISCOVER for complete brand profiles."
-            : firecrawl
-              ? "Firecrawl available for website scraping. Add Perplexity for deeper research."
+            : scraper
+              ? "Content Scraper available for website scraping. Add Perplexity for deeper research."
               : perplexity
-                ? "Perplexity available for research. Add Firecrawl for direct website extraction."
-                : "No bindings configured. Add FIRECRAWL and/or PERPLEXITY bindings.",
+                ? "Perplexity available for research. Add Content Scraper for direct website extraction."
+                : "No bindings configured. Add SCRAPER and/or PERPLEXITY bindings.",
       };
     },
   });

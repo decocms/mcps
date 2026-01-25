@@ -5,16 +5,16 @@
  *
  * ## Features
  *
- * - **Brand Scraping** - Extract colors, fonts, logos from websites using Firecrawl
+ * - **Brand Scraping** - Extract colors, fonts, logos from websites using Content Scraper
  * - **Brand Research** - Deep research using Perplexity AI
  * - **Design System Generation** - CSS variables, JSX components, style guides
  * - **MCP Apps UI** - Interactive brand previews
  *
- * ## Required Bindings
+ * ## Optional Bindings
  *
- * Configure at least one of these for full functionality:
- * - **FIRECRAWL** - For website scraping and brand extraction
- * - **PERPLEXITY** - For AI-powered brand research
+ * Configure for full functionality:
+ * - **SCRAPER** - For website scraping and brand extraction (Content Scraper MCP)
+ * - **PERPLEXITY** - For AI-powered brand research (Perplexity MCP)
  */
 import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
@@ -32,7 +32,7 @@ console.log("[brand-mcp] Resources count:", resources.length);
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
-    scopes: ["PERPLEXITY::*", "FIRECRAWL::*"],
+    scopes: ["PERPLEXITY::*", "SCRAPER::*"],
     state: StateSchema,
   },
   tools,
@@ -102,7 +102,7 @@ console.log("[brand-mcp] MCP Apps (UI Resources):");
 console.log("  - ui://brand-preview - Interactive brand preview");
 console.log("  - ui://brand-list    - Grid view of brands");
 console.log("");
-console.log("[brand-mcp] Required bindings: FIRECRAWL, PERPLEXITY");
+console.log("[brand-mcp] Optional bindings: SCRAPER, PERPLEXITY");
 
 // Copy URL to clipboard on macOS
 if (process.platform === "darwin") {
