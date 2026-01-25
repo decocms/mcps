@@ -7,7 +7,7 @@
  *
  * - **Brand-Aware Design Systems** - Create reusable design systems with brand colors, typography, and logos
  * - **Multiple Slide Layouts** - Title, content, stats, two-column, list, quote, image, and custom
- * - **Automatic Brand Research** - Optionally integrate Perplexity and Firecrawl for brand discovery
+ * - **Brand MCP Integration** - Connect to Brand MCP for automatic brand discovery
  * - **MCP Apps UI** - Interactive slide viewer and design system preview
  * - **JSX + Babel** - Modern component-based slides with browser-side transpilation
  */
@@ -29,7 +29,7 @@ console.log("[slides-mcp] Resources count:", resources.length);
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
-    scopes: ["PERPLEXITY::*", "FIRECRAWL::*"],
+    scopes: ["BRAND::*"],
     state: StateSchema,
   },
   tools,
@@ -94,14 +94,14 @@ console.log("  - SLIDE_CREATE     - Add slides to presentation");
 console.log("  - SLIDE_UPDATE     - Modify existing slides");
 console.log("  - SLIDE_DELETE     - Remove slides");
 console.log("  - SLIDES_PREVIEW   - Preview multiple slides");
-console.log("  - BRAND_RESEARCH   - Research brand identity (optional)");
 console.log("");
 console.log("[slides-mcp] MCP Apps (UI Resources):");
 console.log("  - ui://slides-viewer  - Full presentation viewer");
 console.log("  - ui://design-system  - Brand design system preview");
 console.log("  - ui://slide          - Single slide preview");
 console.log("");
-console.log("[slides-mcp] Optional bindings: FIRECRAWL, PERPLEXITY");
+console.log("[slides-mcp] Optional binding: BRAND (Brand MCP)");
+console.log("  Connect Brand MCP for automatic brand discovery");
 
 // Copy URL to clipboard on macOS
 if (process.platform === "darwin") {
