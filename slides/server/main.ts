@@ -19,7 +19,7 @@ import { StateSchema, type Env, type Registry } from "./types/env.ts";
 
 export { StateSchema };
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8004;
 
 console.log("[slides-mcp] Starting server...");
 console.log("[slides-mcp] Port:", PORT);
