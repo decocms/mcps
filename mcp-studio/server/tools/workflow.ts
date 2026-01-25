@@ -255,6 +255,7 @@ Example workflow with a step that references the output of another step:
     }),
     // outputSchema: CREATE_BINDING.outputSchema,
     execute: async ({ context }) => {
+      validateConnectionState(env);
       const { data } = context;
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
       const workflow: Workflow & { gateway_id: string } = {
@@ -281,6 +282,31 @@ Example workflow with a step that references the output of another step:
       };
     },
   });
+
+function validateConnectionState(env: Env) {
+  const state = env.MESH_REQUEST_CONTEXT.state;
+  if (!state) {
+    throw new Error(
+      "Connection state not found in context. Make sure to fill all the required bindings in the connection settings.",
+    );
+  }
+  const { CONNECTION, DATABASE, EVENT_BUS } = state;
+  if (!CONNECTION.value) {
+    throw new Error(
+      "CONNECTION binding not found. Make sure to configure it properly in the MCP server settings.",
+    );
+  }
+  if (!DATABASE.value) {
+    throw new Error(
+      "DATABASE binding not found. Make sure to configure it properly in the MCP server settings.",
+    );
+  }
+  if (!EVENT_BUS.value) {
+    throw new Error(
+      "EVENT_BUS binding not found. Make sure to configure it properly in the MCP server settings.",
+    );
+  }
+}
 
 async function updateWorkflowCollection(
   env: Env,
