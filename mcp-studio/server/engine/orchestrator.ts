@@ -9,9 +9,7 @@ import { validateNoCycles } from "@decocms/bindings/workflow";
 import {
   claimExecution,
   createStepResult,
-  getExecution,
-  getStepResults,
-  getWorkflow,
+  getExecutionContext,
   updateExecution,
   updateStepResult,
 } from "../db/queries/executions.ts";
@@ -93,8 +91,6 @@ export async function handleExecutionCreated(
   env: Env,
   executionId: string,
 ): Promise<void> {
-  console.log(`[ORCHESTRATOR] Handling execution.created: ${executionId}`);
-
   const execution = await claimExecution(env, executionId);
   if (!execution) {
     console.log(
@@ -131,91 +127,25 @@ export async function handleExecutionCreated(
       ? JSON.parse(execution.input)
       : (execution.input ?? {});
 
-  // Check for existing step results (for resumed executions)
-  const stepResults = await getStepResults(env, executionId);
-  const completedStepNames = new Set<string>();
-  const claimedStepNames = new Set<string>();
-  const stepOutputs = new Map<string, unknown>();
-  let failedStep: { stepId: string; error: string } | undefined;
-
-  for (const result of stepResults) {
-    if (result.completed_at_epoch_ms) {
-      completedStepNames.add(result.step_id);
-      stepOutputs.set(result.step_id, result.output);
-      // Track the first failed step (if any)
-      if (result.error && !failedStep) {
-        failedStep = { stepId: result.step_id, error: String(result.error) };
-      }
-    } else {
-      claimedStepNames.add(result.step_id);
-    }
-  }
-
-  // If a step failed, mark the workflow as error
-  if (failedStep) {
-    await updateExecution(
-      env,
-      executionId,
-      {
-        status: "error",
-        error: `Step "${failedStep.stepId}" failed: ${failedStep.error}`,
-        completed_at_epoch_ms: Date.now(),
-      },
-      { onlyIfStatus: "running" },
-    );
-
-    console.log(
-      `[ORCHESTRATOR] Workflow ${executionId} failed (resumed): step ${failedStep.stepId} had error`,
-    );
-    return;
-  }
-
   // Find ready steps (respecting already completed/claimed steps)
-  const readySteps = getReadySteps(steps, completedStepNames, claimedStepNames);
-
-  // Check if workflow is already complete
-  if (readySteps.length === 0 && completedStepNames.size === steps.length) {
-    const lastStep = steps[steps.length - 1];
-    const lastOutput = stepOutputs.get(lastStep.name);
-
-    await updateExecution(
-      env,
-      executionId,
-      {
-        status: "success",
-        output: lastOutput,
-        completed_at_epoch_ms: Date.now(),
-      },
-      { onlyIfStatus: "running" },
-    );
-
-    console.log(`[ORCHESTRATOR] Workflow ${executionId} already completed`);
-    return;
-  }
-
-  if (readySteps.length === 0) {
-    console.log(
-      `[ORCHESTRATOR] No ready steps found, waiting for in-flight steps`,
-    );
-    return;
-  }
-
-  console.log(
-    `[ORCHESTRATOR] Dispatching ${readySteps.length} ready steps:`,
-    readySteps.map((s) => s.name),
-  );
+  const readySteps = getReadySteps(steps, new Set<string>(), new Set<string>());
 
   // Dispatch step.execute events for all ready steps
   for (const step of readySteps) {
     // Resolve input refs using completed step outputs
     const { resolved } = resolveAllRefs(step.input, {
       workflowInput,
-      stepOutputs,
+      stepOutputs: new Map<string, unknown>(),
     });
 
-    await publishEvent(env, "workflow.step.execute", executionId, {
+    publishEvent(env, "workflow.step.execute", executionId, {
       stepName: step.name,
       input: resolved,
+    }).catch((error: Error) => {
+      console.error(
+        `[ORCHESTRATOR] Failed to publish step.execute event for ${executionId}/${step.name}:`,
+        error,
+      );
     });
   }
 }
@@ -233,29 +163,20 @@ export async function handleStepExecute(
 ): Promise<void> {
   console.log(`[ORCHESTRATOR] Executing step: ${executionId}/${stepName}`);
 
-  // Check if execution is still running
-  const execution = await getExecution(env, executionId);
-  if (!execution || execution.status !== "running") {
+  // Get execution context in a single query (optimized)
+  const context = await getExecutionContext(env, executionId);
+  if (!context || context.execution.status !== "running") {
     console.log(
       `[ORCHESTRATOR] Execution ${executionId} is not running, skipping step ${stepName}`,
     );
     return;
   }
 
-  // Get workflow to find the step
-  const workflow = await getWorkflow(env, execution.workflow_id);
-  if (!workflow) {
-    console.error(
-      `[ORCHESTRATOR] Workflow not found for execution ${executionId}`,
-    );
-    return;
-  }
-
-  const steps = workflow.steps as Step[];
+  const steps = context.workflow.steps as Step[];
   const step = steps.find((s) => s.name === stepName);
   if (!step) {
     console.error(
-      `[ORCHESTRATOR] Step ${stepName} not found in workflow ${execution.workflow_id}`,
+      `[ORCHESTRATOR] Step ${stepName} not found in workflow ${context.execution.workflow_id}`,
     );
     return;
   }
@@ -274,7 +195,11 @@ export async function handleStepExecute(
   }
 
   // Execute the step
-  const ctx = new ExecutionContext(env, executionId, workflow.gateway_id);
+  const ctx = new ExecutionContext(
+    env,
+    executionId,
+    context.workflow.gateway_id,
+  );
   const stepType = getStepType(step);
 
   let output: unknown;
@@ -328,9 +253,9 @@ export async function handleStepCompleted(
     completed_at_epoch_ms: Date.now(),
   });
 
-  // Get execution
-  const execution = await getExecution(env, executionId);
-  if (!execution || execution.status !== "running") {
+  // Get execution context in a single query (optimized)
+  const context = await getExecutionContext(env, executionId);
+  if (!context || context.execution.status !== "running") {
     console.log(
       `[ORCHESTRATOR] Execution ${executionId} is not running, skipping completion handling`,
     );
@@ -358,12 +283,9 @@ export async function handleStepCompleted(
     return;
   }
 
-  // Get workflow and step results
-  const workflow = await getWorkflow(env, execution.workflow_id);
-  if (!workflow) return;
-
+  // Unpack context
+  const { workflow, stepResults } = context;
   const steps = workflow.steps as Step[];
-  const stepResults = await getStepResults(env, executionId);
 
   // Build sets for completed and claimed steps
   const completedStepNames = new Set<string>();
@@ -417,21 +339,20 @@ export async function handleStepCompleted(
   );
 
   // Get workflow input for ref resolution
-  const workflowInput =
-    typeof workflow.input === "string"
-      ? JSON.parse(workflow.input)
-      : (workflow.input ?? {});
+  const workflowInput = workflow.input ?? {};
 
-  // Dispatch step.execute events
-  for (const step of readySteps) {
-    const { resolved } = resolveAllRefs(step.input, {
-      workflowInput,
-      stepOutputs,
-    });
+  // Dispatch step.execute events in parallel
+  await Promise.all(
+    readySteps.map((step) => {
+      const { resolved } = resolveAllRefs(step.input, {
+        workflowInput,
+        stepOutputs,
+      });
 
-    await publishEvent(env, "workflow.step.execute", executionId, {
-      stepName: step.name,
-      input: resolved,
-    });
-  }
+      return publishEvent(env, "workflow.step.execute", executionId, {
+        stepName: step.name,
+        input: resolved,
+      });
+    }),
+  );
 }

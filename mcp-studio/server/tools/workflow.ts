@@ -310,12 +310,24 @@ function validateConnectionState(env: Env) {
 
 async function updateWorkflowCollection(
   env: Env,
-  context: { id: string; data: Workflow },
+  context: { id: string; data: Partial<Workflow> },
 ) {
   const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
   const now = new Date().toISOString();
   const { id, data } = context;
-  await validateWorkflow(data, env);
+
+  const workflow = await getWorkflowCollection(env, id);
+  if (!workflow) {
+    throw new Error(`Workflow with id ${id} not found`);
+  }
+
+  await validateWorkflow(
+    {
+      ...workflow,
+      ...data,
+    },
+    env,
+  );
 
   const setClauses: string[] = [];
   const params: unknown[] = [];
@@ -323,8 +335,11 @@ async function updateWorkflowCollection(
   setClauses.push(`updated_at = ?`);
   params.push(now);
 
-  setClauses.push(`updated_by = ?`);
-  params.push(user?.id || null);
+  const updatedBy = user?.id;
+  if (updatedBy) {
+    setClauses.push(`updated_by = ?`);
+    params.push(updatedBy);
+  }
 
   if (data.title !== undefined) {
     setClauses.push(`title = ?`);
@@ -366,43 +381,27 @@ export const createUpdateTool = (env: Env) =>
     id: "COLLECTION_WORKFLOW_UPDATE",
     description: "Update an existing workflow",
     inputSchema: z.object({
-      id: z.string().describe("The ID of the workflow to update"),
-      data: z
-        .object({
-          title: z.string().optional().describe("The title of the workflow"),
-          steps: z
-            .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
-            .optional()
-            .describe("The steps of the workflow"),
-          gateway_id: z
-            .string()
-            .optional()
-            .describe("The gateway ID to use for the workflow"),
-          description: z
-            .string()
-            .optional()
-            .describe("The description of the workflow"),
-          updated_by: z
-            .string()
-            .optional()
-            .describe("The updated by user of the workflow"),
-        })
-        .optional()
-        .describe("The data for the workflow"),
+      id: z.string(),
+      data: z.object({
+        title: z.string().optional(),
+        steps: z
+          .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+          .optional(),
+        virtual_mcp_id: z.string().optional(),
+        description: z.string().optional(),
+      }),
     }),
-    outputSchema: UPDATE_BINDING.outputSchema,
     execute: async ({ context }) => {
       try {
-        const result = await updateWorkflowCollection(env, {
-          id: context.id as string,
-          data: context.data as Workflow,
-        });
-        return result;
+        await updateWorkflowCollection(env, context);
+        return {
+          success: true,
+        };
       } catch (error) {
-        console.error("Error updating workflow:", error);
-        throw new Error(
-          error instanceof Error ? error.message : "Unknown error",
-        );
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
       }
     },
   });
