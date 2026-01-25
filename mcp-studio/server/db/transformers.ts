@@ -70,7 +70,13 @@ export function transformDbRowToExecution(
     title: row.title ?? "",
     virtual_mcp_id: row.gateway_id ?? "",
     completed_steps: { success: [], error: [] } as unknown as
-      | { success: string[]; error: string[] }
+      | {
+          success: {
+            name: string;
+            completed_at_epoch_ms: number;
+          }[];
+          error: string[];
+        }
       | undefined,
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
     started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),

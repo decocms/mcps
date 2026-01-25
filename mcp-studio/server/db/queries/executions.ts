@@ -119,10 +119,10 @@ export async function getExecutionFull(
     `SELECT 
       we.*,
       COALESCE(
-        (SELECT array_agg(step_id) 
+        (SELECT array_agg(json_build_object('name', step_id, 'completed_at_epoch_ms', completed_at_epoch_ms)::jsonb) 
          FROM workflow_execution_step_result 
          WHERE execution_id = we.id AND completed_at_epoch_ms IS NOT NULL AND error IS NULL),
-        ARRAY[]::text[]
+        ARRAY[]::jsonb[]
       ) as success_steps,
       COALESCE(
         (SELECT array_agg(step_id) 
