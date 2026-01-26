@@ -194,9 +194,25 @@ export class VTEXClient {
   async listOrders(params?: {
     page?: number;
     per_page?: number;
+    orderBy?: string;
+    q?: string;
     f_status?: string;
     f_creationDate?: string;
-    q?: string;
+    f_authorizedDate?: string;
+    f_invoicedDate?: string;
+    f_hasInputInvoice?: boolean;
+    f_shippingEstimate?: string;
+    f_UtmSource?: string;
+    f_sellerNames?: string;
+    f_callCenterOperatorName?: string;
+    f_salesChannel?: string;
+    salesChannelId?: string;
+    f_affiliateId?: string;
+    f_paymentNames?: string;
+    f_RnB?: string;
+    f_isInstore?: boolean;
+    incompleteOrders?: boolean;
+    searchField?: string;
   }) {
     return this.request<OrderList>("GET", "/api/oms/pvt/orders", { params });
   }
