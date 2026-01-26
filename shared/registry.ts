@@ -96,4 +96,44 @@ export interface Registry extends BindingRegistry {
       }>;
     },
   ];
+
+  /**
+   * Perplexity binding - matches official @perplexity-ai/mcp-server
+   *
+   * Tools: perplexity_ask, perplexity_reason, perplexity_research
+   * All accept messages array with role/content
+   */
+  "@deco/perplexity": [
+    {
+      name: "perplexity_ask";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+        citations?: string[];
+      }>;
+    },
+    {
+      name: "perplexity_research";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+        citations?: string[];
+      }>;
+      opt?: true;
+    },
+    {
+      name: "perplexity_reason";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+      }>;
+      opt?: true;
+    },
+  ];
 }
