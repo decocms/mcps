@@ -19,9 +19,6 @@ const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/gmail.labels",
 ].join(" ");
 
-// Store the last used redirect_uri for token exchange
-let lastRedirectUri: string | null = null;
-
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: {
@@ -40,9 +37,6 @@ const runtime = withRuntime<Env>({
       callbackUrlObj.searchParams.delete("state");
       const cleanRedirectUri = callbackUrlObj.toString();
 
-      // Store for later use in exchangeCode
-      lastRedirectUri = cleanRedirectUri;
-
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("redirect_uri", cleanRedirectUri);
       url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -60,11 +54,8 @@ const runtime = withRuntime<Env>({
     },
 
     // Exchanges the authorization code for access token
-    exchangeCode: async ({ code, code_verifier }: any) => {
-      // Use the stored redirect_uri from authorizationUrl
-      const cleanRedirectUri = lastRedirectUri;
-
-      if (!cleanRedirectUri) {
+    exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
+      if (!redirect_uri) {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
         );
@@ -75,7 +66,7 @@ const runtime = withRuntime<Env>({
         client_id: process.env.GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
         grant_type: "authorization_code",
-        redirect_uri: cleanRedirectUri,
+        redirect_uri,
       });
 
       // Add PKCE verifier if provided (code_challenge_method is only needed in auth request, not token exchange)
@@ -92,6 +83,43 @@ const runtime = withRuntime<Env>({
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Google OAuth failed: ${response.status} - ${error}`);
+      }
+
+      const data = (await response.json()) as {
+        access_token: string;
+        refresh_token?: string;
+        expires_in?: number;
+        token_type: string;
+      };
+
+      return {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: data.token_type || "Bearer",
+        expires_in: data.expires_in,
+      };
+    },
+
+    // Refreshes the access token using the refresh token
+    refreshToken: async (refreshToken) => {
+      const params = new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        grant_type: "refresh_token",
+      });
+
+      const response = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(
+          `Google OAuth refresh failed: ${response.status} - ${error}`,
+        );
       }
 
       const data = (await response.json()) as {
