@@ -1,94 +1,70 @@
 /**
  * Type definitions for the Brand MCP environment.
  *
- * This MCP uses Perplexity for AI research and Content Scraper for web scraping.
+ * This MCP uses bindings matched by tool format, not specific MCP names.
  */
 import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Perplexity binding schema - matches any Perplexity MCP
- *
- * Works with:
- * - Official @perplexity-ai/mcp-server (uses query)
- * - Custom implementations (may use messages)
- *
- * We just check for tool existence, not strict input validation.
- * Two tools ensure Zod serializes as enum (array).
+ * Perplexity binding - matches any MCP with perplexity_ask and perplexity_research tools
  */
 const PerplexityBindingSchema = [
   {
     name: "perplexity_ask",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
+    inputSchema: { type: "object", properties: {} },
   },
   {
     name: "perplexity_research",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
+    inputSchema: { type: "object", properties: {} },
   },
 ] as const;
 
 /**
- * Content Scraper binding schema - matches the actual tools from content-scraper MCP
- *
- * Content Scraper exposes scrape_content with an empty input schema
- * (configuration comes from MCP state, not tool input)
+ * Scraper binding - matches any MCP with scrape_content tool
  */
-const ContentScraperBindingSchema = [
+const ScraperBindingSchema = [
   {
     name: "scrape_content",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "firecrawl_scrape",
+    inputSchema: { type: "object", properties: {} },
   },
 ] as const;
 
 /**
- * State schema with optional bindings for brand research.
+ * State schema with bindings matched by tool format.
  *
- * Bindings are matched by checking if a connection's tools satisfy the binding requirements.
- * The __binding property contains the tool patterns used for matching.
+ * Uses generic "binding" type so any connection with matching tools is shown.
  */
 export const StateSchema = z.object({
   /**
-   * Perplexity binding for web research.
-   * Matches connections with the ASK tool (prompt input required).
+   * Perplexity binding - any MCP with perplexity_ask/perplexity_research tools
    */
   PERPLEXITY: z
     .object({
-      __type: z.literal("@deco/perplexity").default("@deco/perplexity"),
+      __type: z.literal("binding").default("binding"),
       __binding: z
         .literal(PerplexityBindingSchema)
         .default(PerplexityBindingSchema),
       value: z.string(),
     })
     .optional()
-    .describe("Perplexity AI for brand research - requires ASK tool"),
+    .describe("AI research - requires perplexity_ask and perplexity_research"),
 
   /**
-   * Content Scraper binding for web scraping.
-   * Matches connections with the scrape_content tool.
+   * Scraper binding - any MCP with scrape_content or firecrawl_scrape tools
    */
   SCRAPER: z
     .object({
-      __type: z
-        .literal("@deco/content-scraper")
-        .default("@deco/content-scraper"),
-      __binding: z
-        .literal(ContentScraperBindingSchema)
-        .default(ContentScraperBindingSchema),
+      __type: z.literal("binding").default("binding"),
+      __binding: z.literal(ScraperBindingSchema).default(ScraperBindingSchema),
       value: z.string(),
     })
     .optional()
-    .describe(
-      "Content Scraper for web scraping - requires scrape_content tool",
-    ),
+    .describe("Web scraping - requires scrape_content or firecrawl_scrape"),
 });
 
 /**
