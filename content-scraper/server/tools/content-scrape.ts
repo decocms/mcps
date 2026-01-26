@@ -27,36 +27,36 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
+ * Get ISO 8601 week number for a given date
+ */
+function getISOWeek(date: Date): { year: number; week: number } {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  // Set to nearest Thursday: current date + 4 - current day number (Monday=1, Sunday=7)
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  // Get first day of year
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate week number
+  const weekNum = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return { year: d.getUTCFullYear(), week: weekNum };
+}
+
+/**
  * Get last week's ISO 8601 week in format "YYYY-wWW"
- * ISO weeks start on Monday and week 1 is the week containing the first Thursday
+ * Returns the week before the current week
  */
 function getLastWeekDate(): string {
   const now = new Date();
-
   // Subtract 7 days to get last week
   now.setDate(now.getDate() - 7);
 
-  // Create a copy and set to nearest Thursday (ISO week belongs to the year of its Thursday)
-  const thursday = new Date(now);
-  thursday.setDate(thursday.getDate() - ((thursday.getDay() + 6) % 7) + 3);
-
-  // Get the ISO year (year of the Thursday)
-  const isoYear = thursday.getFullYear();
-
-  // Find the first Thursday of the ISO year
-  const firstThursday = new Date(isoYear, 0, 4);
-  firstThursday.setDate(
-    firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3,
-  );
-
-  // Calculate week number
-  const weekNumber = Math.ceil(
-    (thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000) +
-      1,
-  );
-
-  const paddedWeek = weekNumber.toString().padStart(2, "0");
-  return `${isoYear}-w${paddedWeek}`;
+  const { year, week } = getISOWeek(now);
+  const paddedWeek = week.toString().padStart(2, "0");
+  return `${year}-w${paddedWeek}`;
 }
 
 /**
