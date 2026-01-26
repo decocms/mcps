@@ -148,6 +148,10 @@ export const getContentScrapeTool = (env: Env) =>
           endIndex: z.number(),
         })
         .optional(),
+      weekDateFilter: z
+        .string()
+        .optional()
+        .describe("The week_date value used for filtering (for debugging)"),
       error: z.string().optional(),
     }),
     execute: async ({ context }) => {
@@ -254,6 +258,7 @@ export const getContentScrapeTool = (env: Env) =>
           }
 
           const totalCount = results.reduce((sum, r) => sum + r.count, 0);
+          const weekDateUsed = onlyThisWeek ? getLastWeekDate() : undefined;
 
           return {
             success: true,
@@ -263,6 +268,7 @@ export const getContentScrapeTool = (env: Env) =>
               startIndex,
               endIndex,
             },
+            weekDateFilter: weekDateUsed,
           };
         } finally {
           await client.close();
