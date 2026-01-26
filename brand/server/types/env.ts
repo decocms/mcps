@@ -7,31 +7,28 @@ import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Perplexity binding schema - matches actual tools from perplexity-agent
+ * Perplexity binding schema - matches any Perplexity MCP
  *
- * From screenshot: perplexity_ask, perplexity_research, perplexity_reason, perplexity_search
- * Brand uses perplexity_research with messages array
+ * Works with:
+ * - Official @perplexity-ai/mcp-server (uses query)
+ * - Custom implementations (may use messages)
  *
- * We include two tools so Zod serializes as enum (array) instead of const (single object)
+ * We just check for tool existence, not strict input validation.
+ * Two tools ensure Zod serializes as enum (array).
  */
 const PerplexityBindingSchema = [
-  {
-    name: "perplexity_research",
-    inputSchema: {
-      type: "object",
-      properties: {
-        messages: { type: "array" },
-      },
-      required: ["messages"],
-    },
-  },
   {
     name: "perplexity_ask",
     inputSchema: {
       type: "object",
-      properties: {
-        query: { type: "string" },
-      },
+      properties: {},
+    },
+  },
+  {
+    name: "perplexity_research",
+    inputSchema: {
+      type: "object",
+      properties: {},
     },
   },
 ] as const;
