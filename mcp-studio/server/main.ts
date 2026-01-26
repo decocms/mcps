@@ -11,12 +11,12 @@ import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { tools } from "./tools/index.ts";
-import { type Env, type Registry, StateSchema } from "./types/env.ts";
+import { type Env, StateSchema } from "./types/env.ts";
 import { generateResponseForEvent, ThreadMessage } from "./llm.ts";
 
 export { StateSchema };
 
-const runtime = withRuntime<Env, typeof StateSchema, Registry>({
+const runtime = withRuntime<Env, typeof StateSchema>({
   events: {
     handlers: {
       SELF: {
@@ -60,6 +60,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
+      console.log("Environment changed:", env);
       // Create tables first, then indexes
       try {
         await ensureCollections(env);
@@ -81,4 +82,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   prompts: [], // removed because this was making a call to the database for every request to the MCP server
 });
 
-serve(runtime.fetch);
+serve((req, env, ctx) => {
+  console.log("Request received:", req.url);
+  return runtime.fetch(req, env, ctx);
+});
