@@ -4,7 +4,7 @@ import { WebhookPayload } from "./lib/types";
 import { readCallbackUrl, readSenderConfig, saveAuthToken } from "./lib/data";
 import { env } from "./env";
 import { FIREABLE_EVENT_TYPES } from "./main";
-import { appendUserMessage } from "./lib/thread";
+import { getKvStore } from "./lib/kv";
 
 /**
  * Verifies the webhook signature from Meta using HMAC-SHA256.
@@ -171,12 +171,27 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
     });
   }
 
-  const thread = await appendUserMessage(from, text);
+  const kv = getKvStore();
+  let threadId = await kv.get<string>(`whatsapp:thread:${from}`);
+  if (!threadId) {
+    threadId = crypto.randomUUID();
+    await kv.set(`whatsapp:thread:${from}`, threadId, {
+      ex: 60 * 60 * 24, // 1 day
+    });
+  }
+  const now = Date.now();
+
+  const userMessage = {
+    role: "user",
+    parts: [{ type: "text", text }],
+    timestamp: now,
+  };
 
   publishEvent({
     type: FIREABLE_EVENT_TYPES.OPERATOR_GENERATE,
     data: {
-      messages: thread.messages.slice(-10),
+      messages: [userMessage],
+      threadId,
     },
     subject: from,
     organizationId: config.organizationId,

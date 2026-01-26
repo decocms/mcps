@@ -121,13 +121,25 @@ export async function getExecutionFull(
       COALESCE(
         (SELECT array_agg(step_id) 
          FROM workflow_execution_step_result 
-         WHERE execution_id = we.id AND completed_at_epoch_ms IS NOT NULL AND error IS NULL),
+         WHERE execution_id = we.id 
+           AND started_at_epoch_ms IS NOT NULL
+           AND completed_at_epoch_ms IS NULL
+           AND error IS NULL),
         ARRAY[]::text[]
+      ) as running_steps,
+      COALESCE(
+        (SELECT array_agg(json_build_object('name', step_id, 'completed_at_epoch_ms', completed_at_epoch_ms)::jsonb) 
+         FROM workflow_execution_step_result 
+         WHERE execution_id = we.id 
+           AND completed_at_epoch_ms IS NOT NULL
+           AND error IS NULL),
+        ARRAY[]::jsonb[]
       ) as success_steps,
       COALESCE(
         (SELECT array_agg(step_id) 
          FROM workflow_execution_step_result 
-         WHERE execution_id = we.id AND error IS NOT NULL),
+         WHERE execution_id = we.id 
+           AND error IS NOT NULL),
         ARRAY[]::text[]
       ) as error_steps
     FROM workflow_execution we
@@ -675,6 +687,26 @@ export async function createStepResult(
   );
 
   return result[0];
+}
+
+/**
+ * Get step results by prefix (for forEach iterations)
+ * Returns all step results where step_id starts with the given prefix
+ */
+export async function getStepResultsByPrefix(
+  env: Env,
+  executionId: string,
+  prefix: string,
+): Promise<WorkflowExecutionStepResult[]> {
+  const result = await runSQL<Record<string, unknown>>(
+    env,
+    `SELECT * FROM workflow_execution_step_result 
+     WHERE execution_id = ? AND step_id LIKE ?
+     ORDER BY step_id`,
+    [executionId, `${prefix}%`],
+  );
+
+  return result.map((row) => transformDbRowToStepResult(row));
 }
 
 /**

@@ -23,7 +23,6 @@ import {
   readPhoneFromAccessToken,
 } from "./lib/data.ts";
 import { getWhatsappClient } from "./lib/whatsapp-client.ts";
-import { appendAssistantMessage, MessagePart } from "./lib/thread.ts";
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
@@ -90,23 +89,6 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
                 });
               } catch (error) {
                 console.error("Error sending text message:", error);
-              }
-            } else if (
-              event.type ===
-              SUBSCRIBED_EVENT_TYPES.OPERATOR_GENERATION_COMPLETED
-            ) {
-              try {
-                const { messageParts } = event.data as {
-                  messageParts: MessagePart[];
-                };
-                const subject = event.subject;
-                if (!subject) {
-                  console.error("No subject found in event");
-                  continue;
-                }
-                await appendAssistantMessage(subject, messageParts);
-              } catch (error) {
-                console.error("Error appending assistant message:", error);
               }
             }
           }

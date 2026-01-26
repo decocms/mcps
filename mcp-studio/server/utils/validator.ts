@@ -29,6 +29,7 @@ import {
 import type { Env } from "../types/env.ts";
 import { getStepType } from "../types/step.ts";
 import { extractRefs, parseAtRef } from "./ref-resolver.ts";
+import { JSONSchema7 } from "ai";
 
 export const ValidationErrorSchema = z.object({
   type: z.enum([
@@ -70,6 +71,18 @@ interface ToolDefinition {
   name: string;
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
+}
+
+/**
+ * Wrap a schema in an array schema for forEach steps
+ */
+function wrapInArraySchema(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    type: "array",
+    items: schema,
+  };
 }
 
 /**
@@ -386,6 +399,23 @@ export async function validateWorkflow(
 
       // biome-ignore lint/suspicious/noExplicitAny: hard typings
       const toolOutputSchema = (tool?.outputSchema as any) ?? {};
+      const toolInputSchema = (tool?.inputSchema as JSONSchema7) ?? {};
+      const required = toolInputSchema?.required ?? [];
+
+      if (required.length > 0) {
+        const inputKeys = Object.keys(step.input as Record<string, unknown>);
+        const missingRequired = required.filter(
+          (key) => !inputKeys.includes(key),
+        );
+        if (missingRequired.length > 0) {
+          errors.push({
+            type: "schema_mismatch",
+            step: step.name,
+            field: "input",
+            message: `Missing required input properties: ${missingRequired.join(", ")}`,
+          });
+        }
+      }
 
       if (transformCode) {
         let processedTransformCode = transformCode;
@@ -436,16 +466,22 @@ export async function validateWorkflow(
 
           // Step output is the transform's output
           if (transformResult.schemas?.output) {
-            stepOutputSchemas.set(step.name, transformResult.schemas.output);
+            const outputSchema = step.forEach
+              ? wrapInArraySchema(transformResult.schemas.output)
+              : transformResult.schemas.output;
+            stepOutputSchemas.set(step.name, outputSchema);
             // biome-ignore lint/suspicious/noExplicitAny: hard typings
-            step.outputSchema = transformResult.schemas.output as any;
+            step.outputSchema = outputSchema as any;
           }
         }
       } else {
         // No transform - step output is tool's output
-        stepOutputSchemas.set(step.name, toolOutputSchema);
+        const outputSchema = step.forEach
+          ? wrapInArraySchema(toolOutputSchema)
+          : toolOutputSchema;
+        stepOutputSchemas.set(step.name, outputSchema);
         // biome-ignore lint/suspicious/noExplicitAny: hard typings
-        step.outputSchema = toolOutputSchema;
+        step.outputSchema = outputSchema;
       }
     }
 
@@ -455,9 +491,12 @@ export async function validateWorkflow(
       if (error) errors.push(error);
       if (schema) {
         schemas[step.name] = schema;
-        stepOutputSchemas.set(step.name, schema.output);
+        const outputSchema = step.forEach
+          ? wrapInArraySchema(schema.output)
+          : schema.output;
+        stepOutputSchemas.set(step.name, outputSchema);
         // biome-ignore lint/suspicious/noExplicitAny: hard typings
-        step.outputSchema = schema.output as any;
+        step.outputSchema = outputSchema as any;
       }
     }
 

@@ -181,9 +181,299 @@ export const createFindReplaceTool = (env: Env) =>
     },
   });
 
+// ============================================
+// Merge Cells
+// ============================================
+
+export const createMergeCellsTool = (env: Env) =>
+  createPrivateTool({
+    id: "merge_cells",
+    description:
+      "Merge multiple cells into one. Useful for creating titles or headers spanning multiple columns.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      startRow: z.coerce.number().describe("Start row index (0-based)"),
+      endRow: z.coerce.number().describe("End row index (exclusive)"),
+      startColumn: z.coerce.number().describe("Start column index (0-based)"),
+      endColumn: z.coerce.number().describe("End column index (exclusive)"),
+      mergeType: z
+        .enum(["MERGE_ALL", "MERGE_COLUMNS", "MERGE_ROWS"])
+        .optional()
+        .describe(
+          "MERGE_ALL: merge all cells, MERGE_COLUMNS: merge cells in each column, MERGE_ROWS: merge cells in each row (default: MERGE_ALL)",
+        ),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.mergeCells(
+        context.spreadsheetId,
+        context.sheetId,
+        context.startRow,
+        context.endRow,
+        context.startColumn,
+        context.endColumn,
+        context.mergeType ?? "MERGE_ALL",
+      );
+      return { success: true, message: "Cells merged successfully" };
+    },
+  });
+
+export const createUnmergeCellsTool = (env: Env) =>
+  createPrivateTool({
+    id: "unmerge_cells",
+    description: "Unmerge previously merged cells.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      startRow: z.coerce.number().describe("Start row index (0-based)"),
+      endRow: z.coerce.number().describe("End row index (exclusive)"),
+      startColumn: z.coerce.number().describe("Start column index (0-based)"),
+      endColumn: z.coerce.number().describe("End column index (exclusive)"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.unmergeCells(
+        context.spreadsheetId,
+        context.sheetId,
+        context.startRow,
+        context.endRow,
+        context.startColumn,
+        context.endColumn,
+      );
+      return { success: true, message: "Cells unmerged successfully" };
+    },
+  });
+
+// ============================================
+// Borders
+// ============================================
+
+const BorderStyleSchema = z.enum([
+  "NONE",
+  "DOTTED",
+  "DASHED",
+  "SOLID",
+  "SOLID_MEDIUM",
+  "SOLID_THICK",
+  "DOUBLE",
+]);
+const ColorSchema = z.object({
+  red: z.number().min(0).max(1),
+  green: z.number().min(0).max(1),
+  blue: z.number().min(0).max(1),
+});
+const BorderSchema = z.object({
+  style: BorderStyleSchema,
+  color: ColorSchema.optional(),
+});
+
+export const createSetBordersTool = (env: Env) =>
+  createPrivateTool({
+    id: "set_borders",
+    description: "Add or update borders around and within a range of cells.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      startRow: z.coerce.number().describe("Start row index (0-based)"),
+      endRow: z.coerce.number().describe("End row index (exclusive)"),
+      startColumn: z.coerce.number().describe("Start column index (0-based)"),
+      endColumn: z.coerce.number().describe("End column index (exclusive)"),
+      top: BorderSchema.optional().describe("Top border style"),
+      bottom: BorderSchema.optional().describe("Bottom border style"),
+      left: BorderSchema.optional().describe("Left border style"),
+      right: BorderSchema.optional().describe("Right border style"),
+      innerHorizontal: BorderSchema.optional().describe(
+        "Inner horizontal borders (between rows)",
+      ),
+      innerVertical: BorderSchema.optional().describe(
+        "Inner vertical borders (between columns)",
+      ),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.updateBorders(
+        context.spreadsheetId,
+        context.sheetId,
+        context.startRow,
+        context.endRow,
+        context.startColumn,
+        context.endColumn,
+        {
+          top: context.top,
+          bottom: context.bottom,
+          left: context.left,
+          right: context.right,
+          innerHorizontal: context.innerHorizontal,
+          innerVertical: context.innerVertical,
+        },
+      );
+      return { success: true, message: "Borders applied successfully" };
+    },
+  });
+
+// ============================================
+// Banding (Alternating Row Colors)
+// ============================================
+
+export const createAddBandingTool = (env: Env) =>
+  createPrivateTool({
+    id: "add_banding",
+    description:
+      "Add alternating row colors (banding) to a range. Great for making tables easier to read.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      startRow: z.coerce.number().describe("Start row index (0-based)"),
+      endRow: z.coerce.number().describe("End row index (exclusive)"),
+      startColumn: z.coerce.number().describe("Start column index (0-based)"),
+      endColumn: z.coerce.number().describe("End column index (exclusive)"),
+      headerColor: ColorSchema.optional().describe("Color for header row"),
+      firstBandColor: ColorSchema.optional().describe("Color for odd rows"),
+      secondBandColor: ColorSchema.optional().describe("Color for even rows"),
+      footerColor: ColorSchema.optional().describe("Color for footer row"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.addBanding(
+        context.spreadsheetId,
+        context.sheetId,
+        context.startRow,
+        context.endRow,
+        context.startColumn,
+        context.endColumn,
+        {
+          headerColor: context.headerColor,
+          firstBandColor: context.firstBandColor,
+          secondBandColor: context.secondBandColor,
+          footerColor: context.footerColor,
+        },
+      );
+      return {
+        success: true,
+        message: "Banding (alternating colors) applied successfully",
+      };
+    },
+  });
+
+// ============================================
+// Number Format
+// ============================================
+
+export const createSetNumberFormatTool = (env: Env) =>
+  createPrivateTool({
+    id: "set_number_format",
+    description:
+      "Set the number format for a range of cells (currency, percentage, date, etc.).",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      startRow: z.coerce.number().describe("Start row index (0-based)"),
+      endRow: z.coerce.number().describe("End row index (exclusive)"),
+      startColumn: z.coerce.number().describe("Start column index (0-based)"),
+      endColumn: z.coerce.number().describe("End column index (exclusive)"),
+      formatType: z
+        .enum([
+          "TEXT",
+          "NUMBER",
+          "PERCENT",
+          "CURRENCY",
+          "DATE",
+          "TIME",
+          "DATE_TIME",
+          "SCIENTIFIC",
+        ])
+        .describe("Type of number format"),
+      pattern: z
+        .string()
+        .optional()
+        .describe(
+          "Custom pattern (e.g., '#,##0.00' for numbers, 'R$ #,##0.00' for currency, 'yyyy-mm-dd' for dates)",
+        ),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.setNumberFormat(
+        context.spreadsheetId,
+        context.sheetId,
+        context.startRow,
+        context.endRow,
+        context.startColumn,
+        context.endColumn,
+        {
+          type: context.formatType,
+          pattern: context.pattern,
+        },
+      );
+      return {
+        success: true,
+        message: `Number format (${context.formatType}) applied successfully`,
+      };
+    },
+  });
+
+// ============================================
+// Notes
+// ============================================
+
+export const createAddNoteTool = (env: Env) =>
+  createPrivateTool({
+    id: "add_note",
+    description:
+      "Add a note (comment) to a cell. Notes appear when hovering over the cell.",
+    inputSchema: z.object({
+      spreadsheetId: z.string().describe("Spreadsheet ID"),
+      sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
+      row: z.coerce.number().describe("Row index (0-based)"),
+      column: z.coerce.number().describe("Column index (0-based)"),
+      note: z.string().describe("Note text to add"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      await client.addNote(
+        context.spreadsheetId,
+        context.sheetId,
+        context.row,
+        context.column,
+        context.note,
+      );
+      return { success: true, message: "Note added successfully" };
+    },
+  });
+
 export const formattingTools = [
   createFormatCellsTool,
   createAutoResizeColumnsTool,
   createSortRangeTool,
   createFindReplaceTool,
+  createMergeCellsTool,
+  createUnmergeCellsTool,
+  createSetBordersTool,
+  createAddBandingTool,
+  createSetNumberFormatTool,
+  createAddNoteTool,
 ];

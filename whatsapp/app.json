@@ -1,19 +1,18 @@
 {
   "scopeName": "deco",
-  "name": "whatsapp",
-  "friendlyName": "WhatsApp Business",
+  "name": "whatsapp-agent",
+  "friendlyName": "Deco WhatsApp Agent",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-whatsappagent.decocache.com/mcp"
   },
-  "description": "Integrate with WhatsApp Business API for messaging, phone number management, and automated responses",
+  "description": "Talk to your Mesh Agents via WhatsApp",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["Communication"],
     "official": false,
     "tags": ["whatsapp", "messaging", "business", "meta", "chat", "automation", "webhook", "communication"],
-    "short_description": "Integrate with WhatsApp Business API for messaging, phone number management, and automated responses",
-    "mesh_description": "The WhatsApp Business MCP provides comprehensive integration with the WhatsApp Business API, enabling AI agents to send and receive messages, manage phone numbers, and handle webhooks. This MCP supports phone number management including listing, creating, and verifying phone numbers for your WhatsApp Business Account. It handles incoming webhooks by publishing them as CloudEvents to the event bus, allowing other MCPs to subscribe and react to WhatsApp messages in real-time. The integration includes automated message handling, verification flows, and supports building conversational AI assistants that can respond to customer inquiries via WhatsApp. Ideal for businesses looking to automate customer communication, build chatbots, or integrate WhatsApp messaging into their workflows. Provides secure OAuth-based authentication through a custom WhatsApp verification flow."
+    "short_description": "Talk to your Mesh Agents via WhatsApp"
   }
 }

@@ -77,17 +77,32 @@ If the user says you are dumb because you dont remember something, explain that 
 export async function generateResponseForEvent(
   env: Env,
   messages: ThreadMessage[],
+  threadId: string,
   subject: string,
 ) {
   const organizationId = env.MESH_REQUEST_CONTEXT.organizationId;
   if (!organizationId) {
     throw new Error("No organizationId found");
   }
+
+  const modelProviderId = env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value;
+  const languageModelId =
+    env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL?.value?.id;
+  const agentId = env.MESH_REQUEST_CONTEXT.state.AGENT?.value;
+
+  if (!modelProviderId) {
+    throw new Error("MODEL_PROVIDER not configured");
+  }
+
+  if (!agentId) {
+    throw new Error("AGENT not configured");
+  }
+
   const response = await fetch(
     (env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL) +
       "/api/" +
       env.MESH_REQUEST_CONTEXT.organizationId +
-      "/models/stream",
+      "/decopilot/stream",
     {
       method: "POST",
       headers: {
@@ -97,14 +112,13 @@ export async function generateResponseForEvent(
       },
       body: JSON.stringify({
         model: {
-          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER.value,
-          id:
-            env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL.value.id ??
-            DEFAULT_LANGUAGE_MODEL,
+          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value,
+          id: languageModelId ?? DEFAULT_LANGUAGE_MODEL,
         },
-        gateway: {
-          id: env.MESH_REQUEST_CONTEXT.state.AGENT.value,
+        agent: {
+          id: env.MESH_REQUEST_CONTEXT.state.AGENT?.value,
         },
+        threadId,
         messages: [
           {
             role: "system",
