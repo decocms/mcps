@@ -82,7 +82,4 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   prompts: [], // removed because this was making a call to the database for every request to the MCP server
 });
 
-serve((req, env, ctx) => {
-  console.log("Request received:", req.url);
-  return runtime.fetch(req, env, ctx);
-});
+serve(runtime.fetch);
