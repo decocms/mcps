@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "@decocms/mcps",
@@ -630,6 +629,22 @@
         "typescript": "^5.7.2",
       },
     },
+    "slides": {
+      "name": "@decocms/slides",
+      "version": "1.0.0",
+      "dependencies": {
+        "@decocms/bindings": "^1.0.9",
+        "@decocms/runtime": "1.2.0",
+        "zod": "^4.0.0",
+      },
+      "devDependencies": {
+        "@decocms/mcps-shared": "1.0.0",
+        "@mastra/core": "^0.24.0",
+        "@modelcontextprotocol/sdk": "1.25.1",
+        "deco-cli": "^0.28.0",
+        "typescript": "^5.7.2",
+      },
+    },
     "sora": {
       "name": "sora",
       "version": "1.0.0",
@@ -996,6 +1011,8 @@
     "@decocms/openrouter": ["@decocms/openrouter@workspace:openrouter"],
 
     "@decocms/runtime": ["@decocms/runtime@1.1.3", "", { "dependencies": { "@ai-sdk/provider": "^3.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@decocms/bindings": "^1.0.7", "@modelcontextprotocol/sdk": "1.25.1", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^4.0.0" } }, "sha512-pj6OccmpWulMjyOt9FHTNX41xHk800uzhmoYK/xq9h1f+DfDBMqyOZnt70Zmwrab7dMDO2w3VQD+NlgFKtrw1w=="],
+
+    "@decocms/slides": ["@decocms/slides@workspace:slides"],
 
     "@decocms/vite-plugin": ["@decocms/vite-plugin@1.0.0-alpha.1", "", { "dependencies": { "@cloudflare/vite-plugin": "^1.13.4", "vite": "7.2.0" } }, "sha512-DI9zNH49pVk8aQ+7rNYwqTZhjQ4RZDA+kA1t3ifwc4RLJsOtYv8LOXERRZnou7CcKVTdXPB06M8gbMWPpSaq8w=="],
 
@@ -3022,6 +3039,8 @@
     "@decocms/openrouter/@decocms/bindings": ["@decocms/bindings@1.1.3", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.25.2", "@tanstack/react-router": "1.139.7", "react": "^19.2.0", "zod": "^4.0.0", "zod-from-json-schema": "^0.5.2" } }, "sha512-G7GvtGhXa/LoPllCVaeGAnkM9Mz5bG/bmUEfdno9+flKTIWAm9HUqSACX48jRv25OiAir6KbL1JX/xF6uHSUtQ=="],
 
     "@decocms/runtime/@decocms/bindings": ["@decocms/bindings@1.1.3", "", { "dependencies": { "@modelcontextprotocol/sdk": "1.25.2", "@tanstack/react-router": "1.139.7", "react": "^19.2.0", "zod": "^4.0.0", "zod-from-json-schema": "^0.5.2" } }, "sha512-G7GvtGhXa/LoPllCVaeGAnkM9Mz5bG/bmUEfdno9+flKTIWAm9HUqSACX48jRv25OiAir6KbL1JX/xF6uHSUtQ=="],
+
+    "@decocms/slides/@decocms/runtime": ["@decocms/runtime@1.2.0", "", { "dependencies": { "@ai-sdk/provider": "^3.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@decocms/bindings": "^1.0.7", "@modelcontextprotocol/sdk": "1.25.1", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^4.0.0" } }, "sha512-HkhKBrCGYPlKyYW+iZxl7hmSwvzeJbBkFYE1+/0y5Ok1rlf/pxHHBHfiFlVgs1pr/seyFjEsqi2LnK8bMnDOEg=="],
 
     "@discordjs/rest/@discordjs/collection": ["@discordjs/collection@2.1.1", "", {}, "sha512-LiSusze9Tc7qF03sLCujF5iZp7K+vRNEDBZ86FT9aQAv3vxMLihUvKvpsCWiQ2DJq1tVckopKm1rxomgNUc9hg=="],
 
