@@ -18,7 +18,8 @@
         "./storage": "./storage/index.ts",
         "./search-ai": "./search-ai/index.ts",
         "./serve": "./serve.ts",
-        "./registry": "./registry.ts"
+        "./registry": "./registry.ts",
+        "./google-oauth": "./google-oauth.ts"
     },
     "devDependencies": {
         "@decocms/bindings": "1.0.7",
