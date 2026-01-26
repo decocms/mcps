@@ -53,6 +53,8 @@ export function handleWorkflowEvents(events: WorkflowEvent[], env: Env): void {
             executionId,
             data.stepName as string,
             data.input as Record<string, unknown>,
+            data.iterationIndex as number | undefined,
+            data.item,
           ).catch(async (error: Error) => {
             console.error(
               `[EVENT] workflow.step.execute failed for ${executionId}/${data.stepName}:`,
@@ -65,6 +67,7 @@ export function handleWorkflowEvents(events: WorkflowEvent[], env: Env): void {
                 subject: executionId,
                 data: {
                   stepName: data.stepName,
+                  iterationIndex: data.iterationIndex,
                   error: error.message,
                 },
               });
@@ -86,6 +89,7 @@ export function handleWorkflowEvents(events: WorkflowEvent[], env: Env): void {
             data.stepName as string,
             data.output,
             data.error as string | undefined,
+            data.iterationIndex as number | undefined,
           ).catch((error: Error) => {
             console.error(
               `[EVENT] workflow.step.completed failed for ${executionId}/${data.stepName}:`,

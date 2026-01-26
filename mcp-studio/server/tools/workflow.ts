@@ -216,10 +216,14 @@ export const createInsertTool = (env: Env) =>
     This is ideal for storing and reusing workflows. You may also want to use this tool to iterate on a workflow before creating executions. You may start with an empty array of steps and add steps gradually.
 
 Key concepts:
-- Steps run in parallel unless they reference each other's outputs via @ref
+- Steps without references run immediately.
+- Steps with references run as soon as all referenced steps have completed.
 - Use @ref syntax to wire data:
     - @input.field - From the execution input
-    - @stepName.field - From the output of a step
+    - @stepName - From the output of a step
+    - @stepName.field - From the specific field of the output of a step
+    - @item - From the current item in a forEach loop
+    - @item.field - From the specific field of the current item in a forEach loop
 You can also put many refs inside a single string, for example: "Hello @input.name, your order @input.order_id is ready".
 - Execution order is auto-determined from @ref dependencies
 

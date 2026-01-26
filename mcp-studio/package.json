@@ -14,8 +14,8 @@
     "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
-    "@decocms/bindings": "^1.1.2",
-    "@decocms/runtime": "1.1.3",
+    "@decocms/bindings": "^1.1.3",
+    "@decocms/runtime": "^1.2.4",
     "@jitl/quickjs-singlefile-cjs-release-sync": "^0.31.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@types/prettier": "^3.0.0",

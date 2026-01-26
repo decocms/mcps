@@ -266,7 +266,6 @@ export const createGetStepResultTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { executionId, stepId } = context;
-
       const result = await getStepResult(env, executionId, stepId);
       if (!result) {
         throw new Error("Step result not found");

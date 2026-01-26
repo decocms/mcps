@@ -43,7 +43,7 @@ export function isAtRef(value: unknown): value is `@${string}` {
  * Parse an @ref string into its components
  */
 export function parseAtRef(ref: `@${string}`): {
-  type: "step" | "input" | "item";
+  type: "step" | "input" | "item" | "index";
   stepName?: string;
   groupId?: string;
   path?: string;
@@ -54,6 +54,11 @@ export function parseAtRef(ref: `@${string}`): {
   if (refStr === "item" || refStr.startsWith("item.")) {
     const path = refStr.length > 4 ? refStr.substring(5) : ""; // Remove 'item.' or 'item'
     return { type: "item", path };
+  }
+
+  // ForEach index reference: @index
+  if (refStr === "index") {
+    return { type: "index" };
   }
 
   // Input reference: @input.path.to.value
