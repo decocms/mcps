@@ -27,11 +27,14 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
- * Get current ISO 8601 week in format "YYYY-wWW"
+ * Get last week's ISO 8601 week in format "YYYY-wWW"
  * ISO weeks start on Monday and week 1 is the week containing the first Thursday
  */
-function getCurrentWeekDate(): string {
+function getLastWeekDate(): string {
   const now = new Date();
+
+  // Subtract 7 days to get last week
+  now.setDate(now.getDate() - 7);
 
   // Create a copy and set to nearest Thursday (ISO week belongs to the year of its Thursday)
   const thursday = new Date(now);
@@ -70,7 +73,7 @@ async function queryTable(
   const offset = startIndex - 1;
 
   const whereClause = onlyThisWeek
-    ? `WHERE week_date = '${getCurrentWeekDate()}'`
+    ? `WHERE week_date = '${getLastWeekDate()}'`
     : "";
 
   const query = `
@@ -119,7 +122,7 @@ export const getContentScrapeTool = (env: Env) =>
         .boolean()
         .default(false)
         .describe(
-          "If true, returns only content from the current week (default: false)",
+          "If true, returns only content from the last week (default: false)",
         ),
     }),
     outputSchema: z.object({
