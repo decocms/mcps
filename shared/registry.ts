@@ -103,7 +103,7 @@ export interface Registry extends BindingRegistry {
    * Tools: perplexity_ask, perplexity_reason, perplexity_research
    * All accept messages array with role/content
    */
-  "@deco/perplexity": [
+  "@deco/perplexity-ai": [
     {
       name: "perplexity_ask";
       inputSchema: z.ZodType<{

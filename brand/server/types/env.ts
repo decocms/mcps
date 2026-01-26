@@ -9,7 +9,7 @@ import {
 import { z } from "zod";
 
 export const StateSchema = z.object({
-  PERPLEXITY: BindingOf("@deco/perplexity")
+  PERPLEXITY: BindingOf("@deco/perplexity-ai")
     .optional()
     .describe("AI research - any MCP with perplexity tools"),
   SCRAPER: BindingOf("@deco/scraper")
