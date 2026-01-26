@@ -7,9 +7,10 @@ import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Perplexity binding schema - matches the actual tool names from Perplexity MCP
+ * Perplexity binding schema - matches the actual tools from Perplexity MCP
  *
- * Perplexity exposes: ASK, CHAT (from @decocms/mcps-shared/search-ai)
+ * Perplexity MCP exposes ASK and CHAT tools (from @decocms/mcps-shared/search-ai)
+ * The input schemas must match exactly what the tools expect.
  */
 const PerplexityBindingSchema = [
   {
@@ -17,39 +18,28 @@ const PerplexityBindingSchema = [
     inputSchema: {
       type: "object",
       properties: {
-        prompt: { type: "string" },
-        model: { type: "string" },
+        prompt: {
+          type: "string",
+          description: "The question or prompt to ask",
+        },
       },
       required: ["prompt"],
-    },
-  },
-  {
-    name: "CHAT",
-    inputSchema: {
-      type: "object",
-      properties: {
-        messages: { type: "array" },
-        model: { type: "string" },
-      },
-      required: ["messages"],
     },
   },
 ] as const;
 
 /**
- * Content Scraper binding schema - matches the actual tool names
+ * Content Scraper binding schema - matches the actual tools from content-scraper MCP
  *
- * Content Scraper exposes: scrape_content, get_content_scrape
+ * Content Scraper exposes scrape_content with an empty input schema
+ * (configuration comes from MCP state, not tool input)
  */
 const ContentScraperBindingSchema = [
   {
     name: "scrape_content",
     inputSchema: {
       type: "object",
-      properties: {
-        url: { type: "string" },
-      },
-      required: ["url"],
+      properties: {},
     },
   },
 ] as const;
@@ -57,14 +47,13 @@ const ContentScraperBindingSchema = [
 /**
  * State schema with optional bindings for brand research.
  *
- * The bindings use __binding to define tool patterns for matching connections:
- * - PERPLEXITY: Matches connections with ASK/CHAT tools (from search-ai)
- * - SCRAPER: Matches connections with scrape_content tool
+ * Bindings are matched by checking if a connection's tools satisfy the binding requirements.
+ * The __binding property contains the tool patterns used for matching.
  */
 export const StateSchema = z.object({
   /**
    * Perplexity binding for web research.
-   * Matches connections with tools: ASK, CHAT
+   * Matches connections with the ASK tool (prompt input required).
    */
   PERPLEXITY: z
     .object({
@@ -79,7 +68,7 @@ export const StateSchema = z.object({
 
   /**
    * Content Scraper binding for web scraping.
-   * Matches connections with tools: scrape_content
+   * Matches connections with the scrape_content tool.
    */
   SCRAPER: z
     .object({

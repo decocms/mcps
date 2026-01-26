@@ -8,9 +8,10 @@ import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Brand MCP binding schema - matches the actual tool names from Brand MCP
+ * Brand MCP binding schema - matches the actual tools from Brand MCP
  *
- * Brand MCP exposes: BRAND_CREATE, BRAND_DISCOVER, BRAND_GENERATE, BRAND_STATUS
+ * Brand MCP exposes BRAND_CREATE which is the main entry point.
+ * The input schema must match exactly what the tool expects.
  */
 const BrandBindingSchema = [
   {
@@ -18,39 +19,10 @@ const BrandBindingSchema = [
     inputSchema: {
       type: "object",
       properties: {
-        brandName: { type: "string" },
-        websiteUrl: { type: "string" },
+        brandName: { type: "string", description: "Brand or company name" },
+        websiteUrl: { type: "string", description: "Brand website URL" },
       },
-      required: ["brandName"],
-    },
-  },
-  {
-    name: "BRAND_DISCOVER",
-    inputSchema: {
-      type: "object",
-      properties: {
-        brandName: { type: "string" },
-        websiteUrl: { type: "string" },
-      },
-      required: ["brandName"],
-    },
-  },
-  {
-    name: "BRAND_GENERATE",
-    inputSchema: {
-      type: "object",
-      properties: {
-        identity: { type: "object" },
-        outputFormat: { type: "string" },
-      },
-      required: ["identity"],
-    },
-  },
-  {
-    name: "BRAND_STATUS",
-    inputSchema: {
-      type: "object",
-      properties: {},
+      required: ["brandName", "websiteUrl"],
     },
   },
 ] as const;
@@ -65,7 +37,7 @@ const BrandBindingSchema = [
 export const StateSchema = z.object({
   /**
    * Optional Brand MCP binding for brand research.
-   * Provides: BRAND_CREATE, BRAND_DISCOVER, BRAND_GENERATE, BRAND_STATUS
+   * Matches connections with the BRAND_CREATE tool.
    */
   BRAND: z
     .object({
