@@ -1,46 +1,41 @@
 /**
- * Type definitions for the Slides MCP environment.
+ * Environment Type Definitions for Slides MCP
  *
- * Uses bindings matched by tool format, not specific MCP names.
+ * Uses BindingOf with tool-based matching via Registry.
  */
-import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
+import {
+  BindingOf,
+  type DefaultEnv,
+  type BindingRegistry,
+} from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Brand MCP binding - matches any MCP with BRAND_CREATE tool
+ * Registry defines the tool signatures for each binding type.
+ * Connections with matching tools will be shown as options.
  */
-const BrandBindingSchema = [
-  {
-    name: "BRAND_CREATE",
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
-    name: "BRAND_DISCOVER",
-    inputSchema: { type: "object", properties: {} },
-  },
-] as const;
+export interface Registry extends BindingRegistry {
+  "@deco/brand": [
+    {
+      name: "BRAND_CREATE";
+      inputSchema: z.ZodType<{ brandName: string; websiteUrl?: string }>;
+    },
+    {
+      name: "BRAND_DISCOVER";
+      inputSchema: z.ZodType<{ brandName: string; websiteUrl?: string }>;
+      opt?: true;
+    },
+  ];
+}
 
 /**
- * State schema with bindings matched by tool format.
+ * State schema using BindingOf for clean binding declarations.
  */
 export const StateSchema = z.object({
-  /**
-   * Brand MCP binding - any MCP with BRAND_CREATE/BRAND_DISCOVER tools
-   */
-  BRAND: z
-    .object({
-      __type: z.literal("binding").default("binding"),
-      __binding: z.literal(BrandBindingSchema).default(BrandBindingSchema),
-      value: z.string(),
-    })
+  BRAND: BindingOf<Registry, "@deco/brand">("@deco/brand")
     .optional()
-    .describe("Brand research - requires BRAND_CREATE and BRAND_DISCOVER"),
+    .describe("Brand research - any MCP with BRAND_CREATE tool"),
 });
-
-/**
- * Registry type for the bindings.
- */
-export type Registry = BindingRegistry;
 
 /**
  * Environment type for the Slides MCP.

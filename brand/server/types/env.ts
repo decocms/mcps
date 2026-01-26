@@ -1,76 +1,57 @@
 /**
- * Type definitions for the Brand MCP environment.
+ * Environment Type Definitions for Brand MCP
  *
- * This MCP uses bindings matched by tool format, not specific MCP names.
+ * Uses BindingOf with tool-based matching via Registry.
  */
-import { type DefaultEnv, type BindingRegistry } from "@decocms/runtime";
+import {
+  BindingOf,
+  type DefaultEnv,
+  type BindingRegistry,
+} from "@decocms/runtime";
 import { z } from "zod";
 
 /**
- * Perplexity binding - matches any MCP with perplexity_ask and perplexity_research tools
+ * Registry defines the tool signatures for each binding type.
+ * Connections with matching tools will be shown as options.
  */
-const PerplexityBindingSchema = [
-  {
-    name: "perplexity_ask",
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
-    name: "perplexity_research",
-    inputSchema: { type: "object", properties: {} },
-  },
-] as const;
+export interface Registry extends BindingRegistry {
+  "@deco/perplexity": [
+    {
+      name: "perplexity_ask";
+      inputSchema: z.ZodType<{ query?: string; messages?: unknown[] }>;
+    },
+    {
+      name: "perplexity_research";
+      inputSchema: z.ZodType<{ query?: string; messages?: unknown[] }>;
+      opt?: true;
+    },
+  ];
+  "@deco/scraper": [
+    {
+      name: "scrape_content";
+      inputSchema: z.ZodType<{ url?: string }>;
+      opt?: true;
+    },
+    {
+      name: "firecrawl_scrape";
+      inputSchema: z.ZodType<{ url?: string }>;
+      opt?: true;
+    },
+  ];
+}
 
 /**
- * Scraper binding - matches any MCP with scrape_content tool
- */
-const ScraperBindingSchema = [
-  {
-    name: "scrape_content",
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
-    name: "firecrawl_scrape",
-    inputSchema: { type: "object", properties: {} },
-  },
-] as const;
-
-/**
- * State schema with bindings matched by tool format.
- *
- * Uses generic "binding" type so any connection with matching tools is shown.
+ * State schema using BindingOf for clean binding declarations.
  */
 export const StateSchema = z.object({
-  /**
-   * Perplexity binding - any MCP with perplexity_ask/perplexity_research tools
-   */
-  PERPLEXITY: z
-    .object({
-      __type: z.literal("binding").default("binding"),
-      __binding: z
-        .literal(PerplexityBindingSchema)
-        .default(PerplexityBindingSchema),
-      value: z.string(),
-    })
+  PERPLEXITY: BindingOf<Registry, "@deco/perplexity">("@deco/perplexity")
     .optional()
-    .describe("AI research - requires perplexity_ask and perplexity_research"),
+    .describe("AI research - any MCP with perplexity_ask tool"),
 
-  /**
-   * Scraper binding - any MCP with scrape_content or firecrawl_scrape tools
-   */
-  SCRAPER: z
-    .object({
-      __type: z.literal("binding").default("binding"),
-      __binding: z.literal(ScraperBindingSchema).default(ScraperBindingSchema),
-      value: z.string(),
-    })
+  SCRAPER: BindingOf<Registry, "@deco/scraper">("@deco/scraper")
     .optional()
-    .describe("Web scraping - requires scrape_content or firecrawl_scrape"),
+    .describe("Web scraping - any MCP with scrape_content or firecrawl_scrape"),
 });
-
-/**
- * Registry type for the bindings.
- */
-export type Registry = BindingRegistry;
 
 /**
  * Environment type for the Brand MCP.
