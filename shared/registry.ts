@@ -136,4 +136,53 @@ export interface Registry extends BindingRegistry {
       opt?: true;
     },
   ];
+
+  /**
+   * Firecrawl binding - matches official firecrawl-mcp
+   *
+   * Tools: firecrawl_scrape, firecrawl_crawl, firecrawl_map, firecrawl_search, etc.
+   */
+  "@deco/firecrawl": [
+    {
+      name: "firecrawl_scrape";
+      inputSchema: z.ZodType<{
+        url: string;
+        formats?: string[];
+        onlyMainContent?: boolean;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+    },
+    {
+      name: "firecrawl_crawl";
+      inputSchema: z.ZodType<{
+        url: string;
+        maxDepth?: number;
+        limit?: number;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+      opt?: true;
+    },
+    {
+      name: "firecrawl_map";
+      inputSchema: z.ZodType<{
+        url: string;
+        search?: string;
+        limit?: number;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+      opt?: true;
+    },
+  ];
 }

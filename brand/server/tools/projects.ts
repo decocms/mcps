@@ -330,7 +330,7 @@ This combines scraping and AI research, then saves the results to the project.`,
       project.updatedAt = new Date().toISOString();
       projectStore.set(projectId, project);
 
-      const scraper = env.MESH_REQUEST_CONTEXT?.state?.SCRAPER;
+      const firecrawl = env.MESH_REQUEST_CONTEXT?.state?.FIRECRAWL;
       const perplexity = env.MESH_REQUEST_CONTEXT?.state?.PERPLEXITY;
 
       const identity: Partial<BrandIdentity> = {
@@ -340,9 +340,9 @@ This combines scraping and AI research, then saves the results to the project.`,
       };
 
       // Scrape with Content Scraper
-      if (scraper) {
+      if (firecrawl) {
         try {
-          const result = (await scraper.scrape_content({
+          const result = (await firecrawl.firecrawl_scrape({
             url,
             formats: ["branding", "links"],
           })) as { branding?: Record<string, unknown> };

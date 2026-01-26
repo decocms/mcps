@@ -5,7 +5,7 @@
  *
  * ## Features
  *
- * - **Brand Scraping** - Extract colors, fonts, logos from websites using Content Scraper
+ * - **Brand Scraping** - Extract colors, fonts, logos from websites using Firecrawl
  * - **Brand Research** - Deep research using Perplexity AI
  * - **Design System Generation** - CSS variables, JSX components, style guides
  * - **MCP Apps UI** - Interactive brand previews
@@ -13,8 +13,8 @@
  * ## Optional Bindings
  *
  * Configure for full functionality:
- * - **SCRAPER** - For website scraping and brand extraction (Content Scraper MCP)
- * - **PERPLEXITY** - For AI-powered brand research (Perplexity MCP)
+ * - **FIRECRAWL** - For website scraping and brand extraction (firecrawl-mcp)
+ * - **PERPLEXITY** - For AI-powered brand research (@perplexity-ai/mcp-server)
  */
 import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
@@ -32,7 +32,7 @@ console.log("[brand-mcp] Resources count:", resources.length);
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
-    scopes: ["PERPLEXITY::*", "SCRAPER::*"],
+    scopes: ["PERPLEXITY::*", "FIRECRAWL::*"],
     state: StateSchema,
   },
   tools,
