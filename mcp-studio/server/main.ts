@@ -36,15 +36,16 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           try {
             for (const event of events) {
               if (event.type === "public:operator.generate") {
-                const { messages } = event.data as {
+                const { messages, threadId } = event.data as {
                   messages: ThreadMessage[];
+                  threadId: string;
                 };
                 if (!messages) {
                   console.error("[Mesh Operator] No messages found in event");
                   continue;
                 }
                 const subject = event.subject ?? crypto.randomUUID();
-                generateResponseForEvent(env, messages, subject);
+                generateResponseForEvent(env, messages, threadId, subject);
               }
             }
           } catch (error) {

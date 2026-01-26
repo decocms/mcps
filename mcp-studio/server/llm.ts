@@ -77,6 +77,7 @@ If the user says you are dumb because you dont remember something, explain that 
 export async function generateResponseForEvent(
   env: Env,
   messages: ThreadMessage[],
+  threadId: string,
   subject: string,
 ) {
   const organizationId = env.MESH_REQUEST_CONTEXT.organizationId;
@@ -101,7 +102,7 @@ export async function generateResponseForEvent(
     (env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL) +
       "/api/" +
       env.MESH_REQUEST_CONTEXT.organizationId +
-      "/models/stream",
+      "/decopilot/stream",
     {
       method: "POST",
       headers: {
@@ -114,9 +115,10 @@ export async function generateResponseForEvent(
           connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value,
           id: languageModelId ?? DEFAULT_LANGUAGE_MODEL,
         },
-        gateway: {
+        agent: {
           id: env.MESH_REQUEST_CONTEXT.state.AGENT?.value,
         },
+        threadId,
         messages: [
           {
             role: "system",
