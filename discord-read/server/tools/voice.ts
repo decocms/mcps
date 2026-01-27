@@ -399,6 +399,74 @@ export const createJoinUserVoiceTool = (_env: Env) =>
     },
   });
 
+/**
+ * Send TTS message to a text channel (Discord native TTS)
+ * Simple tool that works without voice session - just sends tts: true message
+ */
+export const createTTSTool = (_env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_TTS",
+    description:
+      "Send a text-to-speech message to a Discord text channel. Discord will read the message aloud to users in the channel.",
+    inputSchema: z
+      .object({
+        channelId: z.string().describe("Text channel ID to send TTS message"),
+        text: z.string().describe("Text to be spoken via TTS (max 2000 chars)"),
+      })
+      .strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { channelId: string; text: string };
+      const { channelId, text } = input;
+
+      const client = getDiscordClient();
+      if (!client) {
+        return {
+          success: false,
+          error: "Discord client not initialized",
+        };
+      }
+
+      try {
+        const channel = await client.channels.fetch(channelId);
+        if (!channel || !("send" in channel)) {
+          return {
+            success: false,
+            error: "Channel not found or is not a text channel",
+          };
+        }
+
+        // Truncate if too long (Discord limit is 2000)
+        const truncated =
+          text.length > 1900 ? text.substring(0, 1900) + "..." : text;
+
+        await (channel as { send: Function }).send({
+          content: truncated,
+          tts: true, // Discord native TTS!
+        });
+
+        console.log(
+          `[Tool] DISCORD_TTS sent to ${channelId}: "${truncated.substring(0, 50)}..."`,
+        );
+
+        return {
+          success: true,
+          message: `TTS message sent to channel`,
+        };
+      } catch (error) {
+        console.error("[Tool] DISCORD_TTS error:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
 // Export all voice tools
 export const voiceTools = [
   createJoinVoiceChannelTool,
@@ -406,4 +474,5 @@ export const voiceTools = [
   createVoiceStatusTool,
   createSpeakInVoiceTool,
   createJoinUserVoiceTool,
+  createTTSTool,
 ];
