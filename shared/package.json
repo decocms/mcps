@@ -19,7 +19,8 @@
         "./search-ai": "./search-ai/index.ts",
         "./serve": "./serve.ts",
         "./registry": "./registry.ts",
-        "./whatsapp": "./whatsapp/index.ts"
+        "./whatsapp": "./whatsapp/index.ts",
+        "./api-key-manager": "./api-key-manager.ts"
     },
     "devDependencies": {
         "@decocms/bindings": "1.0.7",

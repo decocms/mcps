@@ -117,7 +117,7 @@ export const StateSchema = z.object({
     .object({
       ENABLED: z
         .boolean()
-        .default(false)
+        .default(true)
         .describe("Enable voice channel features"),
       AUTO_JOIN_CHANNEL_ID: z
         .string()

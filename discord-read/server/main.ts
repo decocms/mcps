@@ -14,7 +14,11 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
+import {
+  updateEnv,
+  getCurrentEnv,
+  storeEssentialConfig,
+} from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import {
@@ -22,6 +26,7 @@ import {
   stopHeartbeat,
   resetSession,
 } from "./session-keeper.ts";
+import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
 
 export { StateSchema };
 
@@ -87,7 +92,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
 
       // Configure LLM if model provider is set
       const modelProvider = state?.MODEL_PROVIDER;
@@ -108,15 +114,38 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         typeof agent?.value === "string" ? agent.value : undefined;
       const modelId = languageModel?.value?.id;
 
-      // Configure LLM module
-      if (modelProviderId && token && meshUrl && organizationId) {
+      // Get or create persistent API Key (to avoid 5-minute JWT expiration)
+      // The temporary token from Mesh expires in 5 minutes, but the Discord
+      // websocket needs to stay connected indefinitely. We create a persistent
+      // API Key using the temporary token, which can then be used for all
+      // subsequent LLM/DB calls.
+      let persistentToken = temporaryToken;
+      if (temporaryToken && meshUrl && organizationId && connectionId) {
+        const apiKey = await getOrCreatePersistentApiKey({
+          meshUrl,
+          organizationId,
+          connectionId,
+          temporaryToken,
+        });
+        if (apiKey) {
+          persistentToken = apiKey;
+          console.log("[CONFIG] Using persistent API Key for LLM calls");
+        } else {
+          console.log(
+            "[CONFIG] ⚠️ Could not create persistent API Key, using temporary token (may expire in 5 minutes)",
+          );
+        }
+      }
+
+      // Configure LLM module with persistent token
+      if (modelProviderId && persistentToken && meshUrl && organizationId) {
         const { configureLLM, configureStreaming, configureWhisper } =
           await import("./llm.ts");
 
         configureLLM({
           meshUrl,
           organizationId,
-          token,
+          token: persistentToken,
           modelProviderId,
           modelId,
           agentId,
@@ -132,6 +161,17 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           modelId,
           agentId: agentId || "not set",
           streaming: enableStreaming,
+          usingPersistentApiKey: persistentToken !== temporaryToken,
+        });
+
+        // Store essential config for fallback when env is not available
+        storeEssentialConfig({
+          meshUrl,
+          organizationId,
+          persistentToken,
+          modelProviderId,
+          modelId,
+          agentId,
         });
 
         // Configure Whisper for audio transcription if set
@@ -139,7 +179,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           configureWhisper({
             meshUrl,
             organizationId,
-            token,
+            token: persistentToken,
             whisperConnectionId: whisper.value,
           });
           console.log("[CONFIG] Whisper configured for audio transcription");
@@ -149,7 +189,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           configureVoiceWhisper({
             meshUrl,
             organizationId,
-            token,
+            token: persistentToken,
             whisperConnectionId: whisper.value,
           });
         }
@@ -157,8 +197,17 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
       // Helper function to configure voice system
       const configureVoiceSystem = async () => {
-        const voiceConfig = state?.VOICE_CONFIG;
-        if (!voiceConfig?.ENABLED) return;
+        // Voice is enabled by default - use defaults if VOICE_CONFIG not set or ENABLED not defined
+        const rawVoiceConfig = state?.VOICE_CONFIG;
+        const voiceConfig = {
+          ENABLED: rawVoiceConfig?.ENABLED ?? true, // Default to true
+          RESPONSE_MODE: rawVoiceConfig?.RESPONSE_MODE,
+          TTS_ENABLED: rawVoiceConfig?.TTS_ENABLED,
+          TTS_LANGUAGE: rawVoiceConfig?.TTS_LANGUAGE,
+          SILENCE_THRESHOLD_MS: rawVoiceConfig?.SILENCE_THRESHOLD_MS,
+          AUTO_JOIN_CHANNEL_ID: rawVoiceConfig?.AUTO_JOIN_CHANNEL_ID,
+        };
+        if (!voiceConfig.ENABLED) return;
 
         const client = getDiscordClient();
         if (!client) {
@@ -329,6 +378,22 @@ process.on("beforeExit", () => gracefulShutdown("beforeExit"));
 
 // Also handle uncaught exceptions to cleanup
 process.on("uncaughtException", async (error) => {
+  // Check if this is a DAVE decryption error (Discord voice encryption)
+  // These are non-fatal and can be ignored
+  const errorMessage = error.message || String(error);
+  if (
+    errorMessage.includes("DecryptionFailed") ||
+    errorMessage.includes("Failed to decrypt") ||
+    errorMessage.includes("DAVE") ||
+    errorMessage.includes("UnencryptedWhenPassthroughDisabled")
+  ) {
+    console.warn(
+      "[Voice] DAVE decryption error (non-fatal, ignoring):",
+      errorMessage,
+    );
+    return; // Don't crash for voice decryption errors
+  }
+
   console.error("[CRASH] Uncaught exception:", error);
   await gracefulShutdown("uncaughtException");
 });

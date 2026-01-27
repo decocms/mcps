@@ -143,14 +143,23 @@ export function startHeartbeat(
 
   // Configura o intervalo
   heartbeatInterval = setInterval(() => {
-    // Importa o getCurrentEnv para pegar o env mais recente
+    // Importa o getCurrentEnv e getStoredConfig para pegar o env/config mais recente
     import("./bot-manager.ts")
-      .then(({ getCurrentEnv }) => {
+      .then(({ getCurrentEnv, getStoredConfig }) => {
         const currentEnv = getCurrentEnv();
         if (currentEnv) {
           doHeartbeat(currentEnv);
         } else {
-          console.log("[SessionKeeper] ⚠️ No env available for heartbeat");
+          // Fallback: use stored config to do heartbeat
+          const storedConfig = getStoredConfig();
+          if (storedConfig) {
+            // Create a minimal env-like object for heartbeat check
+            doHeartbeatWithConfig(storedConfig);
+          } else {
+            console.log(
+              "[SessionKeeper] ⚠️ No env or stored config available for heartbeat",
+            );
+          }
         }
       })
       .catch((error) => {
@@ -160,6 +169,52 @@ export function startHeartbeat(
         );
       });
   }, HEARTBEAT_INTERVAL_MS);
+}
+
+/**
+ * Heartbeat using stored config (fallback when env is not available)
+ */
+async function doHeartbeatWithConfig(config: {
+  meshUrl: string;
+  organizationId: string;
+  persistentToken: string;
+}): Promise<void> {
+  console.log("[SessionKeeper] 💓 Heartbeat (using stored config)...");
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(
+      `${config.meshUrl}/api/${config.organizationId}/health`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${config.persistentToken}`,
+        },
+        signal: controller.signal,
+      },
+    );
+
+    clearTimeout(timeout);
+
+    if (response.status === 401 || response.status === 403) {
+      console.log(
+        `[SessionKeeper] ❌ Session expired (HTTP ${response.status})`,
+      );
+      consecutiveFailures++;
+      isSessionValid = false;
+    } else {
+      consecutiveFailures = 0;
+      lastSuccessTime = new Date();
+      isSessionValid = true;
+      console.log("[SessionKeeper] ✅ Session valid");
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[SessionKeeper] ⚠️ Network error: ${msg}`);
+    // Assume valid for network errors
+  }
 }
 
 /**

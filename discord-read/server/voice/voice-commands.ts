@@ -20,6 +20,8 @@ import {
   setAudioCompleteCallback,
   setupSpeakingListener,
   clearAllBuffers,
+  pauseListening,
+  resumeListening,
   type CompletedAudio,
 } from "./audio-receiver.ts";
 import {
@@ -62,7 +64,7 @@ export interface VoiceCommandHandler {
 // ============================================================================
 
 let voiceConfig: VoiceConfig = {
-  enabled: false,
+  enabled: true, // Voice enabled by default
   responseMode: "voice",
   ttsEnabled: true,
   ttsLanguage: "pt-BR",
@@ -235,6 +237,9 @@ async function handleVoiceCommand(
     return;
   }
 
+  // Pause listening while processing to prevent overlapping commands
+  pauseListening();
+
   // Update last activity
   const session = activeSessions.get(guildId);
   if (session) {
@@ -250,6 +255,7 @@ async function handleVoiceCommand(
     const transcription = await transcribeAudioBase64(audio);
     if (!transcription || !transcription.text) {
       console.log("[VoiceCommands] No transcription result");
+      resumeListening();
       return;
     }
 
@@ -267,6 +273,7 @@ async function handleVoiceCommand(
     ) {
       console.log("[VoiceCommands] Exit command detected");
       await stopVoiceSession(guildId);
+      // Don't resume listening - we're leaving
       return;
     }
 
@@ -280,6 +287,7 @@ async function handleVoiceCommand(
 
     if (!response) {
       console.log("[VoiceCommands] No response from LLM");
+      resumeListening();
       return;
     }
 
@@ -318,6 +326,13 @@ async function handleVoiceCommand(
         guildId,
         { language: voiceConfig.ttsLanguage },
       );
+    }
+  } finally {
+    // Always resume listening after processing (unless we're leaving)
+    if (activeSessions.has(guildId)) {
+      // Small delay after TTS to avoid capturing the bot's own audio
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      resumeListening();
     }
   }
 }

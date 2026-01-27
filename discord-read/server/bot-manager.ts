@@ -15,7 +15,6 @@ import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import {
   startHeartbeat,
   stopHeartbeat,
-  resetSession,
   isSessionActive,
   getSessionStatus,
 } from "./session-keeper.ts";
@@ -27,6 +26,32 @@ let _botInitialized = false;
 // Store the latest env globally for access in event handlers
 let _currentEnv: Env | null = null;
 
+// Store essential config that doesn't depend on env (for fallback)
+interface StoredConfig {
+  meshUrl: string;
+  organizationId: string;
+  persistentToken: string;
+  modelProviderId?: string;
+  modelId?: string;
+  agentId?: string;
+}
+let _storedConfig: StoredConfig | null = null;
+
+/**
+ * Store essential config for fallback when env is not available
+ */
+export function storeEssentialConfig(config: StoredConfig): void {
+  _storedConfig = config;
+  console.log("[BotManager] Essential config stored for fallback");
+}
+
+/**
+ * Get stored essential config
+ */
+export function getStoredConfig(): StoredConfig | null {
+  return _storedConfig;
+}
+
 /**
  * Update the stored environment (called when new requests come in)
  */
@@ -34,8 +59,6 @@ export function updateEnv(env: Env): void {
   _currentEnv = env;
   // Also update database env
   setDatabaseEnv(env);
-  // Reset session status since we got fresh credentials
-  resetSession();
 }
 
 /**
@@ -91,6 +114,9 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     await initializeDiscordClient(env);
     _botInitialized = true;
     console.log("[BotManager] Discord bot started ✓");
+
+    // Configure voice system after bot starts
+    await configureVoiceSystemInternal(env);
 
     // Start session heartbeat to keep Mesh connection alive
     startHeartbeat(env, () => {
@@ -151,6 +177,96 @@ export async function shutdownBot(): Promise<void> {
   await shutdownDiscordClient();
   _botInitialized = false;
   botInitializing = false;
+}
+
+/**
+ * Configure voice system after bot starts or restarts.
+ * This is called from ensureBotRunning and can be called externally.
+ */
+export async function configureVoiceSystemInternal(env: Env): Promise<void> {
+  const client = getDiscordClient();
+  if (!client?.isReady()) {
+    console.log("[BotManager] Cannot configure voice - client not ready");
+    return;
+  }
+
+  const state = env.MESH_REQUEST_CONTEXT?.state;
+  const rawVoiceConfig = state?.VOICE_CONFIG;
+
+  // Voice is enabled by default
+  const voiceConfig = {
+    ENABLED: rawVoiceConfig?.ENABLED ?? true,
+    RESPONSE_MODE: rawVoiceConfig?.RESPONSE_MODE || "voice",
+    TTS_ENABLED: rawVoiceConfig?.TTS_ENABLED !== false,
+    TTS_LANGUAGE: rawVoiceConfig?.TTS_LANGUAGE || "pt-BR",
+    SILENCE_THRESHOLD_MS: rawVoiceConfig?.SILENCE_THRESHOLD_MS || 1000,
+  };
+
+  if (!voiceConfig.ENABLED) {
+    console.log("[BotManager] Voice is disabled");
+    return;
+  }
+
+  try {
+    const { configureVoiceCommands, configureTTS } = await import(
+      "./voice/index.ts"
+    );
+    const { generateResponse } = await import("./llm.ts");
+    const { getSystemPrompt } = await import("./prompts/system.ts");
+
+    configureVoiceCommands(
+      client,
+      {
+        enabled: voiceConfig.ENABLED,
+        responseMode: voiceConfig.RESPONSE_MODE as "voice" | "dm" | "both",
+        ttsEnabled: voiceConfig.TTS_ENABLED,
+        ttsLanguage: voiceConfig.TTS_LANGUAGE,
+        silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS,
+      },
+      {
+        processVoiceCommand: async (
+          userId: string,
+          username: string,
+          text: string,
+          guildId: string,
+        ) => {
+          const systemPrompt = getSystemPrompt({
+            guildId,
+            userId,
+            userName: username,
+            isDM: false,
+          });
+
+          const messages = [
+            { role: "system" as const, content: systemPrompt },
+            {
+              role: "system" as const,
+              content:
+                "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+            },
+            { role: "user" as const, content: text },
+          ];
+
+          const response = await generateResponse(env, messages);
+          return response.content;
+        },
+      },
+    );
+
+    configureTTS({
+      enabled: voiceConfig.TTS_ENABLED,
+      language: voiceConfig.TTS_LANGUAGE,
+    });
+
+    console.log("[BotManager] Voice system configured:", {
+      enabled: voiceConfig.ENABLED,
+      responseMode: voiceConfig.RESPONSE_MODE,
+      ttsEnabled: voiceConfig.TTS_ENABLED,
+      ttsLanguage: voiceConfig.TTS_LANGUAGE,
+    });
+  } catch (error) {
+    console.error("[BotManager] Failed to configure voice:", error);
+  }
 }
 
 /**

@@ -28,6 +28,7 @@ import { saveConnectionConfig, updateConnectionSlackInfo } from "./lib/data.ts";
 import { configureLogger, logger } from "./lib/logger.ts";
 import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 import { setServerBaseUrl } from "./lib/serverConfig.ts";
+import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
 
 export { StateSchema };
 
@@ -97,7 +98,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+      const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
 
       // Get Slack credentials from state
@@ -164,23 +165,45 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         return;
       }
 
+      // Get or create persistent API Key (to avoid 5-minute JWT expiration)
+      // The temporary token from Mesh expires in 5 minutes, but Slack webhooks
+      // can arrive at any time. We create a persistent API Key using the
+      // temporary token, which can then be used for all subsequent LLM calls.
+      let persistentToken = temporaryToken;
+      if (temporaryToken) {
+        const apiKey = await getOrCreatePersistentApiKey({
+          meshUrl,
+          organizationId,
+          connectionId,
+          temporaryToken,
+        });
+        if (apiKey) {
+          persistentToken = apiKey;
+          console.log("[CONFIG] Using persistent API Key for LLM calls");
+        } else {
+          console.log(
+            "[CONFIG] ⚠️ Could not create persistent API Key, using temporary token (may expire in 5 minutes)",
+          );
+        }
+      }
+
       // Fetch agent's system_prompt if agentId is set
       let systemPrompt: string | undefined;
-      if (agentId && token) {
+      if (agentId && persistentToken) {
         systemPrompt = await fetchAgentSystemPrompt(
           meshUrl,
           organizationId,
           agentId,
-          token,
+          persistentToken,
         );
       }
 
       // Configure LLM if model provider is set
-      if (modelProviderId && token) {
+      if (modelProviderId && persistentToken) {
         configureLLM({
           meshUrl,
           organizationId,
-          token,
+          token: persistentToken,
           modelProviderId,
           modelId: languageModel?.value?.id,
           agentId,
@@ -189,14 +212,14 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       }
 
       // Configure Whisper for audio transcription if set
-      if (whisper && token) {
+      if (whisper && persistentToken) {
         const whisperConnectionId =
           typeof whisper.value === "string" ? whisper.value : undefined;
         if (whisperConnectionId) {
           configureWhisper({
             meshUrl,
             organizationId,
-            token,
+            token: persistentToken,
             whisperConnectionId,
           });
         }
@@ -215,11 +238,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Configure thread manager
       configureThreadManager({ timeoutMinutes: threadTimeoutMin });
 
-      // Save connection configuration (primary key: connectionId)
+      // Save connection configuration with persistent token
       await saveConnectionConfig(connectionId, {
         organizationId,
         meshUrl,
-        meshToken: token,
+        meshToken: persistentToken,
         modelProviderId,
         modelId: languageModel?.value?.id,
         agentId,
