@@ -12,7 +12,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@decocms/runtime": "link:@decocms/runtime",
+    "@decocms/runtime": "1.2.4",
     "zod": "^4.0.0"
   },
   "devDependencies": {
