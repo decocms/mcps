@@ -87,3 +87,11 @@ export const LABEL_TYPE = {
   SYSTEM: "system",
   USER: "user",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  GMAIL_READONLY: "https://www.googleapis.com/auth/gmail.readonly",
+  GMAIL_SEND: "https://www.googleapis.com/auth/gmail.send",
+  GMAIL_MODIFY: "https://www.googleapis.com/auth/gmail.modify",
+  GMAIL_LABELS: "https://www.googleapis.com/auth/gmail.labels",
+} as const;

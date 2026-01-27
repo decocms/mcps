@@ -66,3 +66,15 @@ export const PROCESS_STATUS = {
   UNKNOWN: "UNKNOWN",
   DELAYED: "DELAYED",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  SCRIPT_PROJECTS: "https://www.googleapis.com/auth/script.projects",
+  SCRIPT_PROJECTS_READONLY:
+    "https://www.googleapis.com/auth/script.projects.readonly",
+  SCRIPT_DEPLOYMENTS: "https://www.googleapis.com/auth/script.deployments",
+  SCRIPT_DEPLOYMENTS_READONLY:
+    "https://www.googleapis.com/auth/script.deployments.readonly",
+  SCRIPT_METRICS: "https://www.googleapis.com/auth/script.metrics",
+  SCRIPT_PROCESSES: "https://www.googleapis.com/auth/script.processes",
+} as const;

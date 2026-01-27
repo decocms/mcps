@@ -39,3 +39,11 @@ export const ENTRY_POINT_ACCESS = {
   ALL: "ALL",
   CREATOR_APP_ONLY: "CREATOR_APP_ONLY",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  MEETINGS_SPACE_CREATED:
+    "https://www.googleapis.com/auth/meetings.space.created",
+  MEETINGS_SPACE_READONLY:
+    "https://www.googleapis.com/auth/meetings.space.readonly",
+} as const;
