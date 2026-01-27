@@ -177,11 +177,11 @@ async function sendTTSWithElevenLabs(
       apiKey: elevenlabsConfig.apiKey,
     });
 
-    // Generate audio in PCM format (no FFmpeg needed!)
+    // Generate audio in PCM 24kHz (will be upsampled to 48kHz for Discord)
     const audio = await client.textToSpeech.convert(elevenlabsConfig.voiceId, {
       text: message,
       modelId: "eleven_multilingual_v2",
-      outputFormat: "pcm_44100", // PCM format - works without FFmpeg
+      outputFormat: "pcm_24000", // 24kHz PCM - will upsample to 48kHz
     });
 
     // Convert stream to buffer

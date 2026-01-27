@@ -293,6 +293,30 @@ export function cleanupAllPlayers(): void {
 }
 
 /**
+ * Upsample PCM audio from 24kHz to 48kHz (required by Discord)
+ * Simple linear interpolation - each sample is duplicated
+ */
+function upsample24kTo48k(input: Buffer): Buffer {
+  // Input: 24kHz PCM 16-bit mono
+  // Output: 48kHz PCM 16-bit stereo
+  const samplesIn = input.length / 2; // 16-bit = 2 bytes per sample
+  const output = Buffer.alloc(samplesIn * 4 * 2); // 2x samples, stereo (2 channels)
+
+  for (let i = 0; i < samplesIn; i++) {
+    const sample = input.readInt16LE(i * 2);
+
+    // Write sample twice (upsampling 24kHz -> 48kHz)
+    // And for both channels (mono -> stereo)
+    output.writeInt16LE(sample, i * 8); // Left channel, sample 1
+    output.writeInt16LE(sample, i * 8 + 2); // Right channel, sample 1
+    output.writeInt16LE(sample, i * 8 + 4); // Left channel, sample 2
+    output.writeInt16LE(sample, i * 8 + 6); // Right channel, sample 2
+  }
+
+  return output;
+}
+
+/**
  * Play audio buffer (e.g., from ElevenLabs) in voice channel
  */
 export async function playAudioBuffer(
@@ -302,12 +326,15 @@ export async function playAudioBuffer(
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
     try {
-      // Create a readable stream from the buffer
-      const stream = Readable.from(audioBuffer);
+      // Upsample from 24kHz to 48kHz and convert mono to stereo
+      const upsampled = upsample24kTo48k(audioBuffer);
+
+      // Create a readable stream from the upsampled buffer
+      const stream = Readable.from(upsampled);
 
       // Create audio resource - PCM format doesn't need FFmpeg!
       const resource = createAudioResource(stream, {
-        inputType: StreamType.Raw, // Raw PCM audio (44.1kHz, 16-bit, stereo)
+        inputType: StreamType.Raw, // Raw PCM audio (48kHz, 16-bit, stereo)
         inlineVolume: false, // PCM doesn't support inline volume
       });
 
