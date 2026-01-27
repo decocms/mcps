@@ -196,7 +196,7 @@ async function sendTTSWithElevenLabs(
     );
 
     // Get voice connection
-    const connection = activeConnections.get(guildId);
+    const connection = getActiveConnection(guildId);
     if (!connection) {
       console.error("[VoiceCommands] ❌ No voice connection found");
       return false;
