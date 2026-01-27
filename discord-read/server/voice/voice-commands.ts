@@ -73,12 +73,10 @@ let voiceConfig: VoiceConfig = {
 let discordClient: Client | null = null;
 let commandHandler: VoiceCommandHandler | null = null;
 
-// ElevenLabs TTS configuration
+// ElevenLabs TTS configuration (using SDK directly)
 let elevenlabsConfig: {
-  meshUrl: string;
-  organizationId: string;
-  token: string;
-  elevenlabsConnectionId: string;
+  apiKey: string;
+  voiceId: string;
 } | null = null;
 
 // Track active voice sessions (includes text channel for TTS)
@@ -143,7 +141,7 @@ async function sendTTSMessage(
 }
 
 /**
- * Send TTS audio using ElevenLabs TEXT_TO_SPEECH
+ * Send TTS audio using ElevenLabs SDK
  * Generates high-quality audio and uploads to Discord
  */
 async function sendTTSWithElevenLabs(
@@ -171,77 +169,31 @@ async function sendTTSWithElevenLabs(
       `[VoiceCommands] 🎙️ Generating ElevenLabs TTS: "${message.substring(0, 50)}..."`,
     );
 
-    // Call ElevenLabs TEXT_TO_SPEECH via MCP
-    const isTunnel = elevenlabsConfig.meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isTunnel
-      ? "http://localhost:3000"
-      : elevenlabsConfig.meshUrl;
+    // Import ElevenLabs SDK
+    const { ElevenLabsClient } = await import("@elevenlabs/elevenlabs-js");
 
-    const url = `${effectiveMeshUrl}/mcp/${elevenlabsConfig.elevenlabsConnectionId}`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/event-stream",
-        Authorization: `Bearer ${elevenlabsConfig.token}`,
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: Date.now(),
-        method: "tools/call",
-        params: {
-          name: "TEXT_TO_SPEECH",
-          arguments: {
-            text: message,
-            language: voiceConfig.ttsLanguage || "pt-BR",
-          },
-        },
-      }),
+    // Create client with API key
+    const client = new ElevenLabsClient({
+      apiKey: elevenlabsConfig.apiKey,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[VoiceCommands] ❌ ElevenLabs TTS failed: ${response.status}`,
-        errorText,
-      );
-      return false;
+    // Generate audio
+    const audio = await client.textToSpeech.convert(elevenlabsConfig.voiceId, {
+      text: message,
+      modelId: "eleven_multilingual_v2",
+      outputFormat: "mp3_44100_128",
+    });
+
+    // Convert stream to buffer
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of audio) {
+      chunks.push(chunk);
     }
+    const audioBuffer = Buffer.concat(chunks);
 
-    const result = (await response.json()) as {
-      result?: {
-        content?: Array<{ type: string; text?: string; data?: string }>;
-      };
-    };
-
-    // Extract audio data (should be base64 or URL)
-    let audioUrl: string | undefined;
-
-    if (result?.result?.content) {
-      for (const item of result.result.content) {
-        if (item.type === "resource" && item.data) {
-          audioUrl = item.data;
-          break;
-        }
-        if (item.type === "text" && item.text) {
-          try {
-            const parsed = JSON.parse(item.text);
-            if (parsed.audioUrl) {
-              audioUrl = parsed.audioUrl;
-              break;
-            }
-          } catch {
-            // Not JSON, ignore
-          }
-        }
-      }
-    }
-
-    if (!audioUrl) {
-      console.error("[VoiceCommands] ❌ No audio URL in ElevenLabs response");
-      return false;
-    }
+    console.log(
+      `[VoiceCommands] 🎙️ Generated ${audioBuffer.length} bytes of audio`,
+    );
 
     // Send audio to Discord channel
     const channel = await discordClient.channels.fetch(session.textChannelId);
@@ -252,26 +204,15 @@ async function sendTTSWithElevenLabs(
       return false;
     }
 
-    // If it's a data URI, convert to buffer for upload
-    if (audioUrl.startsWith("data:")) {
-      const base64Data = audioUrl.split(",")[1];
-      const audioBuffer = Buffer.from(base64Data, "base64");
-
-      await (channel as TextChannel).send({
-        files: [
-          {
-            attachment: audioBuffer,
-            name: "tts.mp3",
-            description: "ElevenLabs TTS Audio",
-          },
-        ],
-      });
-    } else {
-      // It's a URL, send as link
-      await (channel as TextChannel).send({
-        content: `🎙️ ${audioUrl}`,
-      });
-    }
+    await (channel as TextChannel).send({
+      files: [
+        {
+          attachment: audioBuffer,
+          name: "tts.mp3",
+          description: "ElevenLabs TTS Audio",
+        },
+      ],
+    });
 
     console.log("[VoiceCommands] ✅ ElevenLabs TTS sent successfully");
     return true;
@@ -339,16 +280,17 @@ export function configureVoiceWhisper(config: {
 }
 
 /**
- * Configure ElevenLabs for TTS
+ * Configure ElevenLabs for TTS (using SDK directly)
  */
 export function configureElevenLabs(config: {
-  meshUrl: string;
-  organizationId: string;
-  token: string;
-  elevenlabsConnectionId: string;
+  apiKey: string;
+  voiceId: string;
 }): void {
   elevenlabsConfig = config;
-  console.log("[VoiceCommands] ElevenLabs TTS configured");
+  console.log("[VoiceCommands] ElevenLabs TTS configured:", {
+    voiceId: config.voiceId,
+    hasApiKey: !!config.apiKey,
+  });
 }
 
 /**

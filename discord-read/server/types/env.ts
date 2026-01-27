@@ -38,13 +38,6 @@ export const StateSchema = z.object({
       "OpenAI Whisper for audio transcription. If not set, audio files will not be processed.",
     ),
 
-  // ElevenLabs for Text-to-Speech (optional)
-  ELEVENLABS: BindingOf("@deco/elevenlabs")
-    .optional()
-    .describe(
-      "ElevenLabs for high-quality Text-to-Speech. If not set, Discord native TTS will be used.",
-    ),
-
   // Config do Discord Bot
   BOT_TOKEN: z.string().describe("Discord Bot Token"),
   COMMAND_PREFIX: z
@@ -146,6 +139,16 @@ export const StateSchema = z.object({
         .number()
         .default(1000)
         .describe("Milliseconds of silence before processing audio"),
+      ELEVENLABS_API_KEY: z
+        .string()
+        .optional()
+        .describe(
+          "ElevenLabs API Key for high-quality TTS (if not set, uses Discord native TTS)",
+        ),
+      ELEVENLABS_VOICE_ID: z
+        .string()
+        .default("JBFqnCBsd6RMkjVDRZzb")
+        .describe("ElevenLabs Voice ID to use (default: George)"),
     })
     .optional()
     .describe("Voice channel configuration for voice commands and TTS"),

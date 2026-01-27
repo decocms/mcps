@@ -201,22 +201,26 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           });
         }
 
-        // Configure ElevenLabs for TTS if set
-        const elevenlabs = state?.ELEVENLABS;
-        const elevenlabsConnectionId =
-          elevenlabs && typeof elevenlabs.value === "string"
-            ? elevenlabs.value
-            : undefined;
+        // Configure ElevenLabs for TTS if API key is set
+        const voiceConfig = state?.VOICE_CONFIG;
+        const elevenlabsApiKey = voiceConfig?.ELEVENLABS_API_KEY;
+        const elevenlabsVoiceId =
+          voiceConfig?.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
 
-        if (elevenlabsConnectionId) {
+        if (elevenlabsApiKey) {
           const { configureElevenLabs } = await import("./voice/index.ts");
           configureElevenLabs({
-            meshUrl,
-            organizationId,
-            token: persistentToken,
-            elevenlabsConnectionId,
+            apiKey: elevenlabsApiKey,
+            voiceId: elevenlabsVoiceId,
           });
-          console.log("[CONFIG] ElevenLabs configured for TTS");
+          console.log(
+            "[CONFIG] ElevenLabs configured for TTS with voice:",
+            elevenlabsVoiceId,
+          );
+        } else {
+          console.log(
+            "[CONFIG] ElevenLabs not configured - using Discord native TTS",
+          );
         }
       }
 
