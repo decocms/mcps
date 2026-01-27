@@ -177,11 +177,11 @@ async function sendTTSWithElevenLabs(
       apiKey: elevenlabsConfig.apiKey,
     });
 
-    // Generate audio
+    // Generate audio in PCM format (no FFmpeg needed!)
     const audio = await client.textToSpeech.convert(elevenlabsConfig.voiceId, {
       text: message,
       modelId: "eleven_multilingual_v2",
-      outputFormat: "mp3_44100_128",
+      outputFormat: "pcm_44100", // PCM format - works without FFmpeg
     });
 
     // Convert stream to buffer

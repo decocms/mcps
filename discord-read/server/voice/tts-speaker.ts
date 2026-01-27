@@ -305,16 +305,11 @@ export async function playAudioBuffer(
       // Create a readable stream from the buffer
       const stream = Readable.from(audioBuffer);
 
-      // Create audio resource
+      // Create audio resource - PCM format doesn't need FFmpeg!
       const resource = createAudioResource(stream, {
-        inputType: StreamType.Arbitrary,
-        inlineVolume: true,
+        inputType: StreamType.Raw, // Raw PCM audio (44.1kHz, 16-bit, stereo)
+        inlineVolume: false, // PCM doesn't support inline volume
       });
-
-      // Set volume
-      if (resource.volume) {
-        resource.volume.setVolume(1.0);
-      }
 
       // Get or create player
       let player = activePlayers.get(guildId);
