@@ -13,6 +13,7 @@ export async function readCallbackUrl(code: string) {
 }
 
 export interface WhatsAppConnectionConfig {
+  userId: string;
   organizationId: string;
   callbackUrl: string | null;
   complete: boolean;
@@ -36,6 +37,11 @@ export async function saveSenderConfig(
   await kv.set(`whatsapp:config:${sender}`, config);
 }
 
+export async function deleteSenderConfig(sender: string) {
+  const kv = getKvStore();
+  await kv.delete(`whatsapp:config:${sender}`);
+}
+
 // Auth token (short-lived, for OAuth completion) - 5 min TTL
 export async function saveAuthToken(token: string, phone: string) {
   const kv = getKvStore();
@@ -53,9 +59,7 @@ export async function readAndDeleteAuthToken(
 
 export async function saveAccessToken(token: string, phone: string) {
   const kv = getKvStore();
-  await kv.set(`whatsapp:access_token:${token}`, phone, {
-    ex: 60,
-  });
+  await kv.set(`whatsapp:access_token:${token}`, phone);
 }
 
 export async function readPhoneFromAccessToken(

@@ -117,7 +117,7 @@ export const StateSchema = z.object({
     .object({
       ENABLED: z
         .boolean()
-        .default(false)
+        .default(true)
         .describe("Enable voice channel features"),
       AUTO_JOIN_CHANNEL_ID: z
         .string()
@@ -139,6 +139,16 @@ export const StateSchema = z.object({
         .number()
         .default(1000)
         .describe("Milliseconds of silence before processing audio"),
+      ELEVENLABS_API_KEY: z
+        .string()
+        .optional()
+        .describe(
+          "ElevenLabs API Key for high-quality TTS (if not set, uses Discord native TTS)",
+        ),
+      ELEVENLABS_VOICE_ID: z
+        .string()
+        .default("JBFqnCBsd6RMkjVDRZzb")
+        .describe("ElevenLabs Voice ID to use (default: George)"),
     })
     .optional()
     .describe("Voice channel configuration for voice commands and TTS"),

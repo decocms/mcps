@@ -182,5 +182,3 @@ const processes = await list_script_processes({
 - [Executar Scripts via API](https://developers.google.com/apps-script/api/how-tos/execute)
 
 
-
-

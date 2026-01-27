@@ -12,7 +12,6 @@ import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
-import { generateResponseForEvent, ThreadMessage } from "./llm.ts";
 
 export { StateSchema };
 
@@ -31,36 +30,10 @@ const runtime = withRuntime<Env, typeof StateSchema>({
           }
         },
       },
-      EVENT_BUS: {
-        handler: async ({ events }, env) => {
-          try {
-            for (const event of events) {
-              if (event.type === "public:operator.generate") {
-                const { messages, threadId } = event.data as {
-                  messages: ThreadMessage[];
-                  threadId: string;
-                };
-                if (!messages) {
-                  console.error("[Mesh Operator] No messages found in event");
-                  continue;
-                }
-                const subject = event.subject ?? crypto.randomUUID();
-                generateResponseForEvent(env, messages, threadId, subject);
-              }
-            }
-          } catch (error) {
-            console.error("[WhatsApp] Error handling events:", error);
-            return { success: false };
-          }
-          return { success: true };
-        },
-        events: ["public:operator.generate"],
-      },
     },
   },
   configuration: {
     onChange: async (env) => {
-      console.log("Environment changed:", env);
       // Create tables first, then indexes
       try {
         await ensureCollections(env);

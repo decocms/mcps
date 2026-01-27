@@ -44,24 +44,12 @@ export {
 } from "./transcription.ts";
 
 export {
-  // TTS Speaker
-  configureTTS,
-  isTTSEnabled,
-  getTTSLanguage,
-  speakInChannel,
-  stopSpeaking,
-  cleanupPlayer,
-  cleanupAllPlayers,
-  sayGreeting,
-  sayGoodbye,
-  type TTSConfig,
-  type SpeakOptions,
-} from "./tts-speaker.ts";
-
-export {
   // Voice Commands (Main Integration)
+  // Note: TTS uses ElevenLabs if configured, otherwise Discord's native TTS
   configureVoiceCommands,
   configureVoiceWhisper,
+  configureElevenLabs,
+  isElevenLabsConfigured,
   isVoiceEnabled,
   startVoiceSession,
   stopVoiceSession,
@@ -70,6 +58,8 @@ export {
   getAllSessions,
   stopAllSessions,
   joinUserChannel,
+  isTTSEnabled,
+  configureTTS,
   type VoiceConfig,
   type VoiceCommandHandler,
 } from "./voice-commands.ts";

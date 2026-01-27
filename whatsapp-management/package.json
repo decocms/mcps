@@ -1,12 +1,11 @@
 {
-  "name": "whatsappagent",
+  "name": "whatsapp-management",
   "version": "1.0.0",
-  "description": "WhatsApp MCP",
+  "description": "WhatsApp Business Management MCP",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run scripts/dev.ts",
-    "dev:link": "deco link -p 8003 -- PORT=8003 bun run dev",
+    "dev": "PORT=8003 bun run --hot server/main.ts",
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server"
@@ -14,8 +13,6 @@
   "dependencies": {
     "@decocms/bindings": "^1.1.3",
     "@decocms/runtime": "1.1.3",
-    "@upstash/redis": "^1.36.1",
-    "ai": "^6.0.50",
     "hono": "^4.11.3",
     "zod": "^4.0.0"
   },

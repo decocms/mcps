@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { env } from "./env";
 import { saveCallbackUrl } from "./lib/data";
+import { handleVerifiedWebhookPayload } from "./webhook";
 import {
   handleChallenge,
-  handleVerifiedWebhookPayload,
-  verifyWebhook,
-} from "./webhook";
+  handleWebhookPost,
+} from "@decocms/mcps-shared/whatsapp";
 
 export const app = new Hono();
 
@@ -13,18 +13,11 @@ app.get("/webhook", (c) => {
   return handleChallenge(c.req.raw);
 });
 
-app.post("/webhook", async (c) => {
-  const rawBody = await c.req.text();
-  const signature = c.req.header("X-Hub-Signature-256") ?? null;
-
-  const result = await verifyWebhook(rawBody, signature);
-  if (!result.verified) {
-    return c.json({ error: "Invalid signature" }, 401);
-  }
-
-  await handleVerifiedWebhookPayload(result.payload);
-
-  return c.json({ success: true });
+app.post("/webhook", (c) => {
+  return handleWebhookPost(c.req.raw, {
+    appSecret: env.META_APP_SECRET,
+    handleEvent: handleVerifiedWebhookPayload,
+  });
 });
 
 app.get("/oauth/custom", async (c) => {

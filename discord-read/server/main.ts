@@ -14,7 +14,11 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
+import {
+  updateEnv,
+  getCurrentEnv,
+  storeEssentialConfig,
+} from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import {
@@ -22,6 +26,7 @@ import {
   stopHeartbeat,
   resetSession,
 } from "./session-keeper.ts";
+import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
 
 export { StateSchema };
 
@@ -87,7 +92,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
 
       // Configure LLM if model provider is set
       const modelProvider = state?.MODEL_PROVIDER;
@@ -108,15 +114,38 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         typeof agent?.value === "string" ? agent.value : undefined;
       const modelId = languageModel?.value?.id;
 
-      // Configure LLM module
-      if (modelProviderId && token && meshUrl && organizationId) {
+      // Get or create persistent API Key (to avoid 5-minute JWT expiration)
+      // The temporary token from Mesh expires in 5 minutes, but the Discord
+      // websocket needs to stay connected indefinitely. We create a persistent
+      // API Key using the temporary token, which can then be used for all
+      // subsequent LLM/DB calls.
+      let persistentToken = temporaryToken;
+      if (temporaryToken && meshUrl && organizationId && connectionId) {
+        const apiKey = await getOrCreatePersistentApiKey({
+          meshUrl,
+          organizationId,
+          connectionId,
+          temporaryToken,
+        });
+        if (apiKey) {
+          persistentToken = apiKey;
+          console.log("[CONFIG] Using persistent API Key for LLM calls");
+        } else {
+          console.log(
+            "[CONFIG] ⚠️ Could not create persistent API Key, using temporary token (may expire in 5 minutes)",
+          );
+        }
+      }
+
+      // Configure LLM module with persistent token
+      if (modelProviderId && persistentToken && meshUrl && organizationId) {
         const { configureLLM, configureStreaming, configureWhisper } =
           await import("./llm.ts");
 
         configureLLM({
           meshUrl,
           organizationId,
-          token,
+          token: persistentToken,
           modelProviderId,
           modelId,
           agentId,
@@ -132,15 +161,33 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           modelId,
           agentId: agentId || "not set",
           streaming: enableStreaming,
+          usingPersistentApiKey: persistentToken !== temporaryToken,
+        });
+
+        // Get whisper connection ID if configured
+        const whisperConnectionId =
+          whisper && typeof whisper.value === "string"
+            ? whisper.value
+            : undefined;
+
+        // Store essential config for fallback when env is not available
+        storeEssentialConfig({
+          meshUrl,
+          organizationId,
+          persistentToken,
+          modelProviderId,
+          modelId,
+          agentId,
+          whisperConnectionId,
         });
 
         // Configure Whisper for audio transcription if set
-        if (whisper && typeof whisper.value === "string") {
+        if (whisperConnectionId) {
           configureWhisper({
             meshUrl,
             organizationId,
-            token,
-            whisperConnectionId: whisper.value,
+            token: persistentToken,
+            whisperConnectionId,
           });
           console.log("[CONFIG] Whisper configured for audio transcription");
 
@@ -149,16 +196,47 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           configureVoiceWhisper({
             meshUrl,
             organizationId,
-            token,
+            token: persistentToken,
             whisperConnectionId: whisper.value,
           });
+        }
+
+        // Configure ElevenLabs for TTS if API key is set
+        const voiceConfig = state?.VOICE_CONFIG;
+        const elevenlabsApiKey = voiceConfig?.ELEVENLABS_API_KEY;
+        const elevenlabsVoiceId =
+          voiceConfig?.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
+
+        if (elevenlabsApiKey) {
+          const { configureElevenLabs } = await import("./voice/index.ts");
+          configureElevenLabs({
+            apiKey: elevenlabsApiKey,
+            voiceId: elevenlabsVoiceId,
+          });
+          console.log(
+            "[CONFIG] ElevenLabs configured for TTS with voice:",
+            elevenlabsVoiceId,
+          );
+        } else {
+          console.log(
+            "[CONFIG] ElevenLabs not configured - using Discord native TTS",
+          );
         }
       }
 
       // Helper function to configure voice system
       const configureVoiceSystem = async () => {
-        const voiceConfig = state?.VOICE_CONFIG;
-        if (!voiceConfig?.ENABLED) return;
+        // Voice is enabled by default - use defaults if VOICE_CONFIG not set or ENABLED not defined
+        const rawVoiceConfig = state?.VOICE_CONFIG;
+        const voiceConfig = {
+          ENABLED: rawVoiceConfig?.ENABLED ?? true, // Default to true
+          RESPONSE_MODE: rawVoiceConfig?.RESPONSE_MODE,
+          TTS_ENABLED: rawVoiceConfig?.TTS_ENABLED,
+          TTS_LANGUAGE: rawVoiceConfig?.TTS_LANGUAGE,
+          SILENCE_THRESHOLD_MS: rawVoiceConfig?.SILENCE_THRESHOLD_MS,
+          AUTO_JOIN_CHANNEL_ID: rawVoiceConfig?.AUTO_JOIN_CHANNEL_ID,
+        };
+        if (!voiceConfig.ENABLED) return;
 
         const client = getDiscordClient();
         if (!client) {
@@ -191,6 +269,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
               text: string,
               guildId: string,
             ) => {
+              console.log(
+                "[VoiceCommands] DEBUG - Processing voice command with guildId:",
+                guildId,
+              );
+
               const systemPrompt = getSystemPrompt({
                 guildId,
                 userId,
@@ -198,12 +281,47 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
                 isDM: false,
               });
 
+              // Log a part of the system prompt to verify guild ID is included
+              const guildIdInPrompt = systemPrompt.includes(guildId);
+              console.log(
+                "[VoiceCommands] DEBUG - System prompt includes correct guildId:",
+                guildIdInPrompt,
+              );
+              if (!guildIdInPrompt) {
+                console.warn(
+                  "[VoiceCommands] ⚠️ WARNING: guildId NOT found in system prompt!",
+                );
+              }
+
+              // Log the CRITICAL section of the prompt
+              const criticalSection = systemPrompt.match(
+                /⚠️ \*\*CRITICAL\*\*:.*?985687648595243068/s,
+              );
+              if (criticalSection) {
+                console.log(
+                  "[VoiceCommands] DEBUG - CRITICAL prompt section found:",
+                  criticalSection[0].substring(0, 200),
+                );
+              } else {
+                console.warn(
+                  "[VoiceCommands] ⚠️ WARNING: CRITICAL section with hardcoded guild ID NOT found!",
+                );
+              }
+
               const messages = [
                 { role: "system" as const, content: systemPrompt },
                 {
                   role: "system" as const,
                   content:
-                    "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+                    "O usuário está falando através de um canal de voz. REGRAS OBRIGATÓRIAS:\n" +
+                    "1. Seja EXTREMAMENTE objetivo e direto\n" +
+                    "2. Máximo 2-3 frases curtas\n" +
+                    "3. Sem explicações longas ou detalhes desnecessários\n" +
+                    "4. Sem saudações ou introduções\n" +
+                    "5. Vá direto ao ponto\n" +
+                    "6. Se precisar usar uma tool, use e responda apenas o resultado\n" +
+                    "Exemplo BOM: 'Entrei no canal e mandei oi para o Lucas.'\n" +
+                    "Exemplo RUIM: 'Desculpe, estou tendo dificuldades...' [explicação longa]",
                 },
                 { role: "user" as const, content: text },
               ];
@@ -329,6 +447,22 @@ process.on("beforeExit", () => gracefulShutdown("beforeExit"));
 
 // Also handle uncaught exceptions to cleanup
 process.on("uncaughtException", async (error) => {
+  // Check if this is a DAVE decryption error (Discord voice encryption)
+  // These are non-fatal and can be ignored
+  const errorMessage = error.message || String(error);
+  if (
+    errorMessage.includes("DecryptionFailed") ||
+    errorMessage.includes("Failed to decrypt") ||
+    errorMessage.includes("DAVE") ||
+    errorMessage.includes("UnencryptedWhenPassthroughDisabled")
+  ) {
+    console.warn(
+      "[Voice] DAVE decryption error (non-fatal, ignoring):",
+      errorMessage,
+    );
+    return; // Don't crash for voice decryption errors
+  }
+
   console.error("[CRASH] Uncaught exception:", error);
   await gracefulShutdown("uncaughtException");
 });

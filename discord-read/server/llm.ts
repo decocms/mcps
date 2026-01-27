@@ -315,53 +315,70 @@ export async function generateResponse(
     discordContext?: DiscordContext;
   },
 ): Promise<GenerateResponse> {
-  // Try to get config from global first, then from env
+  // Try to get config from global first
   let config = globalLLMConfig;
 
   if (!config) {
-    // Fallback: Build config from env
-    const { getCurrentEnv } = await import("./bot-manager.ts");
-    const storedEnv = getCurrentEnv();
-    const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
-      ? env
-      : storedEnv?.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
-        ? storedEnv
-        : env;
+    // Fallback 1: Try stored config (persistent, doesn't depend on env)
+    const { getStoredConfig, getCurrentEnv } = await import("./bot-manager.ts");
+    const storedConfig = getStoredConfig();
 
-    const organizationId = effectiveEnv.MESH_REQUEST_CONTEXT?.organizationId;
-    if (!organizationId) {
-      throw new Error(
-        "No organizationId found. Please open Mesh Dashboard and click 'Save' on this MCP to refresh the connection.",
-      );
+    if (storedConfig) {
+      console.log("[LLM] Using stored config fallback");
+      config = {
+        meshUrl: storedConfig.meshUrl,
+        organizationId: storedConfig.organizationId,
+        token: storedConfig.persistentToken,
+        modelProviderId: storedConfig.modelProviderId || "",
+        modelId: storedConfig.modelId,
+        agentId: storedConfig.agentId,
+      };
+    } else {
+      // Fallback 2: Build config from env (may have expired token)
+      const storedEnv = getCurrentEnv();
+      const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER
+        ?.value
+        ? env
+        : storedEnv?.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
+          ? storedEnv
+          : env;
+
+      const organizationId = effectiveEnv.MESH_REQUEST_CONTEXT?.organizationId;
+      if (!organizationId) {
+        throw new Error(
+          "No organizationId found. Please open Mesh Dashboard and click 'Save' on this MCP to refresh the connection.",
+        );
+      }
+
+      const meshUrl =
+        effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
+      const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
+      const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
+      const connectionId = state?.MODEL_PROVIDER?.value;
+      const modelId =
+        state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
+      const agentId = state?.AGENT?.value;
+
+      if (!connectionId) {
+        throw new Error(
+          "MODEL_PROVIDER not configured.\n\n" +
+            "🔧 **How to fix:**\n" +
+            "1. Open **Mesh Dashboard**\n" +
+            "2. Go to this MCP's configuration\n" +
+            "3. Configure **MODEL_PROVIDER** (e.g., OpenRouter, OpenAI)\n" +
+            "4. Click **Save** to apply",
+        );
+      }
+
+      config = {
+        meshUrl,
+        organizationId,
+        token,
+        modelProviderId: connectionId,
+        modelId,
+        agentId,
+      };
     }
-
-    const meshUrl =
-      effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
-    const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
-    const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
-    const connectionId = state?.MODEL_PROVIDER?.value;
-    const modelId = state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
-    const agentId = state?.AGENT?.value;
-
-    if (!connectionId) {
-      throw new Error(
-        "MODEL_PROVIDER not configured.\n\n" +
-          "🔧 **How to fix:**\n" +
-          "1. Open **Mesh Dashboard**\n" +
-          "2. Go to this MCP's configuration\n" +
-          "3. Configure **MODEL_PROVIDER** (e.g., OpenRouter, OpenAI)\n" +
-          "4. Click **Save** to apply",
-      );
-    }
-
-    config = {
-      meshUrl,
-      organizationId,
-      token,
-      modelProviderId: connectionId,
-      modelId,
-      agentId,
-    };
   }
 
   // Convert messages to UIMessage format
