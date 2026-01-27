@@ -269,7 +269,15 @@ export async function configureVoiceSystemInternal(env: Env): Promise<void> {
             {
               role: "system" as const,
               content:
-                "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+                "O usuário está falando através de um canal de voz. REGRAS OBRIGATÓRIAS:\n" +
+                "1. Seja EXTREMAMENTE objetivo e direto\n" +
+                "2. Máximo 2-3 frases curtas\n" +
+                "3. Sem explicações longas ou detalhes desnecessários\n" +
+                "4. Sem saudações ou introduções\n" +
+                "5. Vá direto ao ponto\n" +
+                "6. Se precisar usar uma tool, use e responda apenas o resultado\n" +
+                "Exemplo BOM: 'Entrei no canal e mandei oi para o Lucas.'\n" +
+                "Exemplo RUIM: 'Desculpe, estou tendo dificuldades...' [explicação longa]",
             },
             { role: "user" as const, content: text },
           ];
