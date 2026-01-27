@@ -11,7 +11,6 @@ import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 import { z } from "zod";
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { tools } from "./tools/index.ts";
 
 import { env } from "./env.ts";
 import { app } from "./router.ts";
@@ -22,17 +21,33 @@ import {
   saveAccessToken,
   readPhoneFromAccessToken,
 } from "./lib/data.ts";
-import { getWhatsappClient } from "./lib/whatsapp-client.ts";
+import { getWhatsappClient } from "@decocms/mcps-shared/whatsapp";
+import { generateResponseForEvent, ThreadMessage } from "./llm.ts";
+
+export const whatsappClient = getWhatsappClient({
+  accessToken: env.META_ACCESS_KEY,
+  businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
+});
 
 const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
+  MODEL_PROVIDER: BindingOf("@deco/llm"),
+  LANGUAGE_MODEL: z.object({
+    __type: z.literal("@deco/language-model"),
+    value: z
+      .object({
+        id: z.string().optional(),
+      })
+      .loose()
+      .describe("The language model to be used."),
+  }),
 });
 
 export type RuntimeEnv = DefaultEnv<typeof StateSchema, Registry>;
 
 export const SUBSCRIBED_EVENT_TYPES = {
-  OPERATOR_TEXT_COMPLETED: "public:operator.text.completed",
-  OPERATOR_GENERATION_COMPLETED: "public:operator.generation.completed",
+  OPERATOR_TEXT_COMPLETED: "operator.text.completed",
+  OPERATOR_GENERATE: "public:operator.generate",
 };
 
 export const FIREABLE_EVENT_TYPES = {
@@ -41,10 +56,10 @@ export const FIREABLE_EVENT_TYPES = {
 
 const ALL_SUBSCRIBED_EVENT_TYPES = Object.values(SUBSCRIBED_EVENT_TYPES);
 
-const LAZY_DEFAULT_PHONE_NUMBER_ID = "957005920822800"; // lmao
+export const LAZY_DEFAULT_PHONE_NUMBER_ID = "957005920822800"; // lmao
 
 const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
-  tools,
+  tools: [],
   oauth: {
     mode: "PKCE",
     authorizationServer: "http://wa.me",
@@ -65,12 +80,39 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
       const accessToken = crypto.randomUUID();
       await saveAccessToken(accessToken, phone);
 
+      await whatsappClient.sendTextMessage({
+        phoneNumberId: env.PHONE_NUMBER_ID ?? LAZY_DEFAULT_PHONE_NUMBER_ID,
+        to: phone,
+        message:
+          "Successfully authenticated. Finish your setup in the connection's settings by selecting all EVENT_BUS, MODEL_PROVIDER, and LANGUAGE_MODEL bindings.",
+      });
+
       return { access_token: accessToken, token_type: "Bearer" };
     },
   },
   events: {
     handlers: {
       EVENT_BUS: {
+        handler: async ({ events }, runtimeEnv) => {
+          for (const event of events) {
+            if (event.type === SUBSCRIBED_EVENT_TYPES.OPERATOR_GENERATE) {
+              const { messages, threadId } = event.data as {
+                messages: ThreadMessage[];
+                threadId: string;
+              };
+              if (!messages) {
+                console.error("[Mesh Operator] No messages found in event");
+                continue;
+              }
+              const subject = event.subject ?? crypto.randomUUID();
+              generateResponseForEvent(runtimeEnv, messages, threadId, subject);
+            }
+          }
+          return { success: true };
+        },
+        events: ALL_SUBSCRIBED_EVENT_TYPES,
+      },
+      SELF: {
         handler: async ({ events }) => {
           for (const event of events) {
             if (event.type === SUBSCRIBED_EVENT_TYPES.OPERATOR_TEXT_COMPLETED) {
@@ -81,7 +123,7 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
                   console.error("No subject found in event");
                   continue;
                 }
-                getWhatsappClient().sendTextMessage({
+                whatsappClient.sendTextMessage({
                   phoneNumberId:
                     env.PHONE_NUMBER_ID ?? LAZY_DEFAULT_PHONE_NUMBER_ID,
                   to: subject,
@@ -96,32 +138,48 @@ const mcpRuntime = withRuntime<RuntimeEnv, typeof StateSchema, Registry>({
         },
         events: ALL_SUBSCRIBED_EVENT_TYPES,
       },
-      SELF: {
-        handler: async () => {
-          return { success: true };
-        },
-        events: ALL_SUBSCRIBED_EVENT_TYPES,
-      },
     },
   },
   configuration: {
     scopes: ["EVENT_BUS::*", "*"],
     state: StateSchema,
-    onChange: async (env) => {
-      const { organizationId, authorization } = env.MESH_REQUEST_CONTEXT;
-      if (!organizationId) {
-        console.error("No organizationId found");
-        return;
-      }
-      if (!organizationId || !authorization) return;
-      const phone = await readPhoneFromAccessToken(authorization);
-      if (!phone) return;
+    onChange: async (runtimeEnv) => {
+      try {
+        const { organizationId, authorization, ensureAuthenticated } =
+          runtimeEnv.MESH_REQUEST_CONTEXT;
+        if (!organizationId) {
+          console.error("No organizationId found");
+          return;
+        }
+        const authenticated = ensureAuthenticated();
+        const userId = authenticated?.id;
+        if (!userId) {
+          console.error("No userId found");
+          return;
+        }
 
-      await saveSenderConfig(phone, {
-        organizationId,
-        complete: true,
-        callbackUrl: null,
-      });
+        if (!authorization) {
+          console.error("No authorization found");
+          return;
+        }
+        const phone = await readPhoneFromAccessToken(authorization);
+        if (!phone) return;
+        await saveSenderConfig(phone, {
+          userId,
+          organizationId,
+          complete: true,
+          callbackUrl: null,
+        });
+        await whatsappClient.sendTextMessage({
+          phoneNumberId: env.PHONE_NUMBER_ID ?? LAZY_DEFAULT_PHONE_NUMBER_ID,
+          to: phone,
+          message:
+            "Saved settings. Selected model: " +
+            runtimeEnv.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL?.value?.id,
+        });
+      } catch (error) {
+        console.error("Error saving sender config:", error);
+      }
     },
   },
 });

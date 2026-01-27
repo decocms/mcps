@@ -1,6 +1,6 @@
 import { env } from "./env";
 
-export async function publishEvent({
+export async function publishPublicEvent({
   data,
   organizationId,
   type,

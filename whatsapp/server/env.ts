@@ -14,11 +14,6 @@ const envSchema = z.object({
     .describe("The phone number ID to use for the WhatsApp Business Account"),
   SELF_URL: z.string().optional().default("http://localhost:8003"),
   MESH_URL: z.string().optional().default("http://localhost:3000"),
-  ENABLE_MANAGEMENT_TOOLS: z
-    .string()
-    .optional()
-    .transform((value) => value === "true")
-    .default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

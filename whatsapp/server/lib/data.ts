@@ -13,6 +13,7 @@ export async function readCallbackUrl(code: string) {
 }
 
 export interface WhatsAppConnectionConfig {
+  userId: string;
   organizationId: string;
   callbackUrl: string | null;
   complete: boolean;
@@ -53,9 +54,7 @@ export async function readAndDeleteAuthToken(
 
 export async function saveAccessToken(token: string, phone: string) {
   const kv = getKvStore();
-  await kv.set(`whatsapp:access_token:${token}`, phone, {
-    ex: 60,
-  });
+  await kv.set(`whatsapp:access_token:${token}`, phone);
 }
 
 export async function readPhoneFromAccessToken(
