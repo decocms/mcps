@@ -54,10 +54,43 @@ export function configureWhisperSTT(config: WhisperConfig): void {
 }
 
 /**
+ * Update only the token (used when refreshing from stored config)
+ */
+export function updateWhisperToken(token: string): void {
+  if (whisperConfig) {
+    whisperConfig.token = token;
+    console.log("[Transcription] Whisper token updated");
+  }
+}
+
+/**
  * Check if Whisper is configured
  */
 export function isWhisperConfigured(): boolean {
   return whisperConfig !== null;
+}
+
+/**
+ * Get effective token - uses stored config as fallback
+ */
+async function getEffectiveToken(): Promise<string | null> {
+  if (whisperConfig?.token) {
+    return whisperConfig.token;
+  }
+
+  // Try to get from stored config (has persistent API Key)
+  try {
+    const { getStoredConfig } = await import("../bot-manager.ts");
+    const storedConfig = getStoredConfig();
+    if (storedConfig?.persistentToken) {
+      console.log("[Transcription] Using token from stored config");
+      return storedConfig.persistentToken;
+    }
+  } catch {
+    // bot-manager not available
+  }
+
+  return null;
 }
 
 // ============================================================================
@@ -121,6 +154,13 @@ export async function transcribeAudio(
     return null;
   }
 
+  // Get effective token (with fallback to stored config)
+  const effectiveToken = await getEffectiveToken();
+  if (!effectiveToken) {
+    console.log("[Transcription] No valid token available");
+    return null;
+  }
+
   try {
     console.log(
       `[Transcription] Transcribing audio from ${audio.username} (${audio.audioBuffer.length} bytes, ${audio.duration}ms)`,
@@ -151,7 +191,7 @@ export async function transcribeAudio(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${whisperConfig.token}`,
+        Authorization: `Bearer ${effectiveToken}`,
         Accept: "application/json, text/event-stream",
       },
       body: JSON.stringify({
@@ -242,6 +282,13 @@ export async function transcribeAudioBase64(
     return null;
   }
 
+  // Get effective token (with fallback to stored config)
+  const effectiveToken = await getEffectiveToken();
+  if (!effectiveToken) {
+    console.log("[Transcription] No valid token available");
+    return null;
+  }
+
   try {
     // Convert PCM to WAV
     const wavBuffer = pcmToWav(audio.audioBuffer);
@@ -266,7 +313,7 @@ export async function transcribeAudioBase64(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${whisperConfig.token}`,
+        Authorization: `Bearer ${effectiveToken}`,
         Accept: "application/json",
       },
       body: JSON.stringify({
