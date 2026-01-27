@@ -294,23 +294,34 @@ export function cleanupAllPlayers(): void {
 
 /**
  * Upsample PCM audio from 24kHz to 48kHz (required by Discord)
- * Simple linear interpolation - each sample is duplicated
+ * Uses linear interpolation for smoother audio
  */
 function upsample24kTo48k(input: Buffer): Buffer {
   // Input: 24kHz PCM 16-bit mono
   // Output: 48kHz PCM 16-bit stereo
   const samplesIn = input.length / 2; // 16-bit = 2 bytes per sample
-  const output = Buffer.alloc(samplesIn * 4 * 2); // 2x samples, stereo (2 channels)
+  const samplesOut = samplesIn * 2; // 2x upsampling
+  const output = Buffer.alloc(samplesOut * 2 * 2); // stereo (2 channels) * 2 bytes
+
+  let outIdx = 0;
 
   for (let i = 0; i < samplesIn; i++) {
-    const sample = input.readInt16LE(i * 2);
+    const sample1 = input.readInt16LE(i * 2);
+    const sample2 =
+      i < samplesIn - 1 ? input.readInt16LE((i + 1) * 2) : sample1;
 
-    // Write sample twice (upsampling 24kHz -> 48kHz)
-    // And for both channels (mono -> stereo)
-    output.writeInt16LE(sample, i * 8); // Left channel, sample 1
-    output.writeInt16LE(sample, i * 8 + 2); // Right channel, sample 1
-    output.writeInt16LE(sample, i * 8 + 4); // Left channel, sample 2
-    output.writeInt16LE(sample, i * 8 + 6); // Right channel, sample 2
+    // Linear interpolation between sample1 and sample2
+    const interpolated = Math.floor((sample1 + sample2) / 2);
+
+    // Write sample1 (left and right)
+    output.writeInt16LE(sample1, outIdx);
+    output.writeInt16LE(sample1, outIdx + 2);
+    outIdx += 4;
+
+    // Write interpolated (left and right)
+    output.writeInt16LE(interpolated, outIdx);
+    output.writeInt16LE(interpolated, outIdx + 2);
+    outIdx += 4;
   }
 
   return output;
