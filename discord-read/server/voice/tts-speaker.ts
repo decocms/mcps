@@ -293,6 +293,69 @@ export function cleanupAllPlayers(): void {
 }
 
 /**
+ * Play audio buffer (e.g., from ElevenLabs) in voice channel
+ */
+export async function playAudioBuffer(
+  connection: VoiceConnection,
+  audioBuffer: Buffer,
+  guildId: string,
+): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Create a readable stream from the buffer
+      const stream = Readable.from(audioBuffer);
+
+      // Create audio resource
+      const resource = createAudioResource(stream, {
+        inputType: StreamType.Arbitrary,
+        inlineVolume: true,
+      });
+
+      // Set volume
+      if (resource.volume) {
+        resource.volume.setVolume(1.0);
+      }
+
+      // Get or create player
+      let player = activePlayers.get(guildId);
+      if (!player) {
+        player = createAudioPlayer({
+          behaviors: {
+            noSubscriber: NoSubscriberBehavior.Play,
+          },
+        });
+        activePlayers.set(guildId, player);
+        connection.subscribe(player);
+      }
+
+      // Set up completion handlers
+      const onIdle = () => {
+        player?.off(AudioPlayerStatus.Idle, onIdle);
+        player?.off("error", onError);
+        console.log("[TTS] Audio playback completed");
+        resolve(true);
+      };
+
+      const onError = (error: Error) => {
+        player?.off(AudioPlayerStatus.Idle, onIdle);
+        player?.off("error", onError);
+        console.error("[TTS] Audio playback error:", error);
+        reject(error);
+      };
+
+      player.on(AudioPlayerStatus.Idle, onIdle);
+      player.on("error", onError);
+
+      // Play
+      player.play(resource);
+    } catch (error) {
+      console.error("[TTS] Failed to play audio buffer:", error);
+      resolve(false);
+    }
+  });
+}
+
+/**
  * Quick greeting when joining a channel
  */
 export async function sayGreeting(

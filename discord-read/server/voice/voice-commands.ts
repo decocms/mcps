@@ -195,27 +195,25 @@ async function sendTTSWithElevenLabs(
       `[VoiceCommands] 🎙️ Generated ${audioBuffer.length} bytes of audio`,
     );
 
-    // Send audio to Discord channel
-    const channel = await discordClient.channels.fetch(session.textChannelId);
-    if (!channel || !("send" in channel)) {
-      console.error(
-        "[VoiceCommands] ❌ Channel not found or not a text channel",
-      );
+    // Get voice connection
+    const connection = activeConnections.get(guildId);
+    if (!connection) {
+      console.error("[VoiceCommands] ❌ No voice connection found");
       return false;
     }
 
-    await (channel as TextChannel).send({
-      files: [
-        {
-          attachment: audioBuffer,
-          name: "tts.mp3",
-          description: "ElevenLabs TTS Audio",
-        },
-      ],
-    });
+    // Play audio in voice channel
+    const { playAudioBuffer } = await import("./tts-speaker.ts");
+    const success = await playAudioBuffer(connection, audioBuffer, guildId);
 
-    console.log("[VoiceCommands] ✅ ElevenLabs TTS sent successfully");
-    return true;
+    if (success) {
+      console.log(
+        "[VoiceCommands] ✅ ElevenLabs TTS played successfully in voice",
+      );
+      return true;
+    }
+
+    return false;
   } catch (error) {
     console.error("[VoiceCommands] ❌ ElevenLabs TTS error:", error);
     return false;
