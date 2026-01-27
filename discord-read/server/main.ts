@@ -269,12 +269,44 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
               text: string,
               guildId: string,
             ) => {
+              console.log(
+                "[VoiceCommands] DEBUG - Processing voice command with guildId:",
+                guildId,
+              );
+
               const systemPrompt = getSystemPrompt({
                 guildId,
                 userId,
                 userName: username,
                 isDM: false,
               });
+
+              // Log a part of the system prompt to verify guild ID is included
+              const guildIdInPrompt = systemPrompt.includes(guildId);
+              console.log(
+                "[VoiceCommands] DEBUG - System prompt includes correct guildId:",
+                guildIdInPrompt,
+              );
+              if (!guildIdInPrompt) {
+                console.warn(
+                  "[VoiceCommands] ⚠️ WARNING: guildId NOT found in system prompt!",
+                );
+              }
+
+              // Log the CRITICAL section of the prompt
+              const criticalSection = systemPrompt.match(
+                /⚠️ \*\*CRITICAL\*\*:.*?985687648595243068/s,
+              );
+              if (criticalSection) {
+                console.log(
+                  "[VoiceCommands] DEBUG - CRITICAL prompt section found:",
+                  criticalSection[0].substring(0, 200),
+                );
+              } else {
+                console.warn(
+                  "[VoiceCommands] ⚠️ WARNING: CRITICAL section with hardcoded guild ID NOT found!",
+                );
+              }
 
               const messages = [
                 { role: "system" as const, content: systemPrompt },
