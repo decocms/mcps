@@ -38,6 +38,9 @@ export type AudioCompleteCallback = (audio: CompletedAudio) => Promise<void>;
 // Active audio buffers per user
 const audioBuffers = new Map<string, AudioBuffer>();
 
+// Track active subscriptions to prevent duplicates
+const activeSubscriptions = new Set<string>();
+
 // Registered callbacks
 let onAudioComplete: AudioCompleteCallback | null = null;
 
@@ -68,8 +71,9 @@ export function setAudioCompleteCallback(
  */
 export function pauseListening(): void {
   isProcessingCommand = true;
-  // Clear any in-progress audio buffers
+  // Clear any in-progress audio buffers and subscriptions
   audioBuffers.clear();
+  activeSubscriptions.clear();
   console.log("[AudioReceiver] 🔇 Listening paused (processing command)");
 }
 
@@ -97,7 +101,14 @@ export function subscribeToUser(
   userId: string,
   username: string,
 ): void {
+  // Prevent duplicate subscriptions (causes memory leak)
+  if (activeSubscriptions.has(userId)) {
+    return;
+  }
+
   try {
+    activeSubscriptions.add(userId);
+
     // Create audio stream for this user (returns Opus packets)
     const opusStream = connection.receiver.subscribe(userId, {
       end: {
@@ -105,6 +116,9 @@ export function subscribeToUser(
         duration: SILENCE_THRESHOLD_MS,
       },
     });
+
+    // Set max listeners to prevent warning
+    opusStream.setMaxListeners(20);
 
     // Handle stream errors (including DAVE decryption errors)
     opusStream.on("error", (error) => {
@@ -114,10 +128,7 @@ export function subscribeToUser(
         errorMessage.includes("DecryptionFailed") ||
         errorMessage.includes("Failed to decrypt")
       ) {
-        console.warn(
-          `[AudioReceiver] DAVE decryption error for ${username} (ignoring)`,
-        );
-        return;
+        return; // Silent ignore DAVE errors
       }
       console.error(`[AudioReceiver] Stream error for ${username}:`, error);
     });
@@ -170,14 +181,17 @@ export function subscribeToUser(
     // When stream ends (silence detected), process the audio
     opusDecoder.on("end", () => {
       console.log(`[AudioReceiver] Stream ended for ${username}`);
+      activeSubscriptions.delete(userId); // Allow re-subscription
       processCompletedAudio(userId);
     });
 
     opusDecoder.on("error", (error) => {
       console.error(`[AudioReceiver] Decoder error for ${username}:`, error);
+      activeSubscriptions.delete(userId);
       audioBuffers.delete(userId);
     });
   } catch (error) {
+    activeSubscriptions.delete(userId);
     console.error(`[AudioReceiver] Failed to subscribe to ${username}:`, error);
   }
 }

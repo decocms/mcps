@@ -269,12 +269,10 @@ export const createSpeakInVoiceTool = (_env: Env) =>
       const { guildId, text, language } = input;
 
       try {
-        const {
-          getActiveConnection,
-          speakInChannel,
-          isTTSEnabled,
-          hasActiveSession,
-        } = await import("../voice/index.ts");
+        const { isTTSEnabled, hasActiveSession, getSessionInfo } = await import(
+          "../voice/index.ts"
+        );
+        const { getDiscordClient } = await import("../discord-client.ts");
 
         if (!hasActiveSession(guildId)) {
           return {
@@ -290,21 +288,37 @@ export const createSpeakInVoiceTool = (_env: Env) =>
           };
         }
 
-        const connection = getActiveConnection(guildId);
-        if (!connection) {
+        // Get text channel from session for TTS
+        const session = getSessionInfo(guildId);
+        const client = getDiscordClient();
+
+        if (!session?.textChannelId || !client) {
           return {
             success: false,
-            error: "No active voice connection",
+            error: "No text channel configured for TTS",
           };
         }
 
-        const success = await speakInChannel(connection, text, guildId, {
-          language: language || "pt-BR",
+        // Send via Discord native TTS
+        const channel = await client.channels.fetch(session.textChannelId);
+        if (!channel || !("send" in channel)) {
+          return {
+            success: false,
+            error: "Could not access text channel",
+          };
+        }
+
+        // Truncate if too long
+        const truncated =
+          text.length > 1900 ? text.substring(0, 1900) + "..." : text;
+        await (channel as { send: Function }).send({
+          content: truncated,
+          tts: true, // Discord native TTS!
         });
 
         return {
-          success,
-          message: success ? "Speech completed" : "Failed to speak",
+          success: true,
+          message: "Speech sent via Discord TTS",
         };
       } catch (error) {
         console.error("[Tool] DISCORD_SPEAK_IN_VOICE error:", error);

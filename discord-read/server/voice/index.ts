@@ -44,22 +44,8 @@ export {
 } from "./transcription.ts";
 
 export {
-  // TTS Speaker
-  configureTTS,
-  isTTSEnabled,
-  getTTSLanguage,
-  speakInChannel,
-  stopSpeaking,
-  cleanupPlayer,
-  cleanupAllPlayers,
-  sayGreeting,
-  sayGoodbye,
-  type TTSConfig,
-  type SpeakOptions,
-} from "./tts-speaker.ts";
-
-export {
   // Voice Commands (Main Integration)
+  // Note: TTS now uses Discord's native TTS - no FFmpeg needed!
   configureVoiceCommands,
   configureVoiceWhisper,
   isVoiceEnabled,
@@ -70,6 +56,8 @@ export {
   getAllSessions,
   stopAllSessions,
   joinUserChannel,
+  isTTSEnabled,
+  configureTTS,
   type VoiceConfig,
   type VoiceCommandHandler,
 } from "./voice-commands.ts";

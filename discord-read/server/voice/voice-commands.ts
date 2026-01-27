@@ -7,7 +7,14 @@
  * Also handles sending responses via DM if configured.
  */
 
-import type { Guild, User, VoiceChannel, Client, DMChannel } from "discord.js";
+import type {
+  Guild,
+  User,
+  VoiceChannel,
+  Client,
+  DMChannel,
+  TextChannel,
+} from "discord.js";
 import type { VoiceConnection } from "@discordjs/voice";
 import {
   joinVoiceChannelSafe,
@@ -29,14 +36,6 @@ import {
   configureWhisperSTT,
   isWhisperConfigured,
 } from "./transcription.ts";
-import {
-  speakInChannel,
-  configureTTS,
-  isTTSEnabled,
-  sayGreeting,
-  sayGoodbye,
-  cleanupPlayer,
-} from "./tts-speaker.ts";
 
 // ============================================================================
 // Types
@@ -74,16 +73,52 @@ let voiceConfig: VoiceConfig = {
 let discordClient: Client | null = null;
 let commandHandler: VoiceCommandHandler | null = null;
 
-// Track active voice sessions
+// Track active voice sessions (includes text channel for TTS)
 const activeSessions = new Map<
   string,
   {
     guildId: string;
     channelId: string;
+    textChannelId?: string;
     startedAt: Date;
     lastActivity: Date;
   }
 >();
+
+/**
+ * Send a TTS message using Discord's native TTS
+ * This is much simpler than generating audio - Discord reads it aloud
+ */
+async function sendTTSMessage(
+  guildId: string,
+  message: string,
+): Promise<boolean> {
+  const session = activeSessions.get(guildId);
+  if (!session?.textChannelId || !discordClient) {
+    return false;
+  }
+
+  try {
+    const channel = await discordClient.channels.fetch(session.textChannelId);
+    if (!channel || !("send" in channel)) {
+      return false;
+    }
+
+    // Discord TTS has 2000 char limit - truncate if needed
+    const truncated =
+      message.length > 1900 ? message.substring(0, 1900) + "..." : message;
+
+    await (channel as TextChannel).send({
+      content: truncated,
+      tts: true, // Discord native TTS!
+    });
+
+    return true;
+  } catch (error) {
+    console.error("[VoiceCommands] TTS message error:", error);
+    return false;
+  }
+}
 
 // ============================================================================
 // Configuration
@@ -101,13 +136,8 @@ export function configureVoiceCommands(
   voiceConfig = { ...voiceConfig, ...config };
   commandHandler = handler;
 
-  // Configure TTS
-  configureTTS({
-    enabled: voiceConfig.ttsEnabled,
-    language: voiceConfig.ttsLanguage,
-  });
-
   console.log("[VoiceCommands] Configured:", voiceConfig);
+  console.log("[VoiceCommands] Using Discord native TTS (no FFmpeg needed)");
 }
 
 /**
@@ -135,10 +165,12 @@ export function isVoiceEnabled(): boolean {
 
 /**
  * Start listening in a voice channel
+ * @param textChannelId - Optional text channel ID for TTS responses
  */
 export async function startVoiceSession(
   channel: VoiceChannel,
   guild: Guild,
+  textChannelId?: string,
 ): Promise<boolean> {
   if (!voiceConfig.enabled) {
     console.log("[VoiceCommands] Voice is disabled");
@@ -178,17 +210,18 @@ export async function startVoiceSession(
       }
     });
 
-    // Track session
+    // Track session (include text channel for TTS)
     activeSessions.set(guild.id, {
       guildId: guild.id,
       channelId: channel.id,
+      textChannelId,
       startedAt: new Date(),
       lastActivity: new Date(),
     });
 
-    // Say greeting
-    if (voiceConfig.ttsEnabled) {
-      await sayGreeting(connection, guild.id, voiceConfig.ttsLanguage);
+    // Say greeting via Discord TTS
+    if (voiceConfig.ttsEnabled && textChannelId) {
+      await sendTTSMessage(guild.id, "Olá! Estou ouvindo no canal de voz.");
     }
 
     console.log(`[VoiceCommands] ✅ Voice session started in ${channel.name}`);
@@ -203,18 +236,13 @@ export async function startVoiceSession(
  * Stop voice session in a guild
  */
 export async function stopVoiceSession(guildId: string): Promise<boolean> {
-  const connection = getActiveConnection(guildId);
-
-  if (connection && voiceConfig.ttsEnabled) {
-    // Say goodbye before leaving
-    await sayGoodbye(connection, guildId, voiceConfig.ttsLanguage);
-    // Small delay to let the audio finish
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+  // Say goodbye via Discord TTS before leaving
+  if (voiceConfig.ttsEnabled) {
+    await sendTTSMessage(guildId, "Até logo! Saindo do canal de voz.");
   }
 
   // Clean up
   clearAllBuffers();
-  cleanupPlayer(guildId);
   activeSessions.delete(guildId);
 
   // Leave channel
@@ -300,11 +328,9 @@ async function handleVoiceCommand(
       voiceConfig.responseMode === "voice" ||
       voiceConfig.responseMode === "both"
     ) {
-      // Respond via TTS in voice channel
-      if (isTTSEnabled()) {
-        await speakInChannel(connection, response, guildId, {
-          language: voiceConfig.ttsLanguage,
-        });
+      // Respond via Discord native TTS
+      if (voiceConfig.ttsEnabled) {
+        await sendTTSMessage(guildId, response);
       }
     }
 
@@ -318,13 +344,11 @@ async function handleVoiceCommand(
   } catch (error) {
     console.error("[VoiceCommands] Error handling command:", error);
 
-    // Try to speak error message
-    if (isTTSEnabled()) {
-      await speakInChannel(
-        connection,
-        "Desculpe, ocorreu um erro ao processar seu comando.",
+    // Try to speak error message via Discord TTS
+    if (voiceConfig.ttsEnabled) {
+      await sendTTSMessage(
         guildId,
-        { language: voiceConfig.ttsLanguage },
+        "Desculpe, ocorreu um erro ao processar seu comando.",
       );
     }
   } finally {
@@ -452,6 +476,24 @@ export {
   getMemberVoiceChannel,
 } from "./voice-client.ts";
 
-export { speakInChannel, isTTSEnabled, configureTTS } from "./tts-speaker.ts";
-
 export { isWhisperConfigured } from "./transcription.ts";
+
+/**
+ * Check if TTS is enabled (using Discord native TTS)
+ */
+export function isTTSEnabled(): boolean {
+  return voiceConfig.ttsEnabled;
+}
+
+/**
+ * Configure TTS settings (for Discord native TTS)
+ */
+export function configureTTS(config: {
+  enabled: boolean;
+  language?: string;
+}): void {
+  voiceConfig.ttsEnabled = config.enabled;
+  if (config.language) {
+    voiceConfig.ttsLanguage = config.language;
+  }
+}
