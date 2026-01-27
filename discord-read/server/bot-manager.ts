@@ -231,8 +231,15 @@ export async function configureVoiceSystemInternal(env: Env): Promise<void> {
           text: string,
           guildId: string,
         ) => {
+          // Get guild info from Discord client
+          const client = getDiscordClient();
+          const guild = client
+            ? await client.guilds.fetch(guildId).catch(() => null)
+            : null;
+
           const systemPrompt = getSystemPrompt({
             guildId,
+            guildName: guild?.name,
             userId,
             userName: username,
             isDM: false,
