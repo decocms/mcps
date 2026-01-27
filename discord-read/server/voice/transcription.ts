@@ -71,20 +71,37 @@ export function isWhisperConfigured(): boolean {
 }
 
 /**
- * Get effective token - uses stored config as fallback
+ * Get effective config - uses stored config as fallback for token and connectionId
  */
-async function getEffectiveToken(): Promise<string | null> {
-  if (whisperConfig?.token) {
-    return whisperConfig.token;
+async function getEffectiveConfig(): Promise<{
+  token: string;
+  whisperConnectionId: string;
+  meshUrl: string;
+} | null> {
+  // If we have full whisperConfig, use it but maybe refresh token
+  if (whisperConfig?.token && whisperConfig?.whisperConnectionId) {
+    return {
+      token: whisperConfig.token,
+      whisperConnectionId: whisperConfig.whisperConnectionId,
+      meshUrl: whisperConfig.meshUrl,
+    };
   }
 
   // Try to get from stored config (has persistent API Key)
   try {
     const { getStoredConfig } = await import("../bot-manager.ts");
     const storedConfig = getStoredConfig();
-    if (storedConfig?.persistentToken) {
-      console.log("[Transcription] Using token from stored config");
-      return storedConfig.persistentToken;
+    if (
+      storedConfig?.persistentToken &&
+      storedConfig?.whisperConnectionId &&
+      storedConfig?.meshUrl
+    ) {
+      console.log("[Transcription] Using config from stored config (fallback)");
+      return {
+        token: storedConfig.persistentToken,
+        whisperConnectionId: storedConfig.whisperConnectionId,
+        meshUrl: storedConfig.meshUrl,
+      };
     }
   } catch {
     // bot-manager not available
@@ -149,15 +166,10 @@ export async function transcribeAudio(
   audio: CompletedAudio,
   serverBaseUrl?: string,
 ): Promise<TranscriptionResult | null> {
-  if (!whisperConfig) {
-    console.log("[Transcription] Whisper not configured");
-    return null;
-  }
-
-  // Get effective token (with fallback to stored config)
-  const effectiveToken = await getEffectiveToken();
-  if (!effectiveToken) {
-    console.log("[Transcription] No valid token available");
+  // Get effective config (with fallback to stored config)
+  const config = await getEffectiveConfig();
+  if (!config) {
+    console.log("[Transcription] Whisper not configured (no config available)");
     return null;
   }
 
@@ -177,13 +189,13 @@ export async function transcribeAudio(
       : `data:audio/wav;base64,${wavBuffer.toString("base64")}`;
 
     // Use localhost for tunnel URLs
-    const isTunnel = whisperConfig.meshUrl.includes(".deco.host");
+    const isTunnel = config.meshUrl.includes(".deco.host");
     const effectiveMeshUrl = isTunnel
       ? "http://localhost:3000"
-      : whisperConfig.meshUrl;
+      : config.meshUrl;
 
     // Call Whisper via MCP proxy
-    const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
+    const url = `${effectiveMeshUrl}/mcp/${config.whisperConnectionId}`;
 
     console.log(`[Transcription] Calling Whisper: ${url}`);
 
@@ -191,7 +203,7 @@ export async function transcribeAudio(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${effectiveToken}`,
+        Authorization: `Bearer ${config.token}`,
         Accept: "application/json, text/event-stream",
       },
       body: JSON.stringify({
@@ -277,15 +289,10 @@ export async function transcribeAudio(
 export async function transcribeAudioBase64(
   audio: CompletedAudio,
 ): Promise<TranscriptionResult | null> {
-  if (!whisperConfig) {
-    console.log("[Transcription] Whisper not configured");
-    return null;
-  }
-
-  // Get effective token (with fallback to stored config)
-  const effectiveToken = await getEffectiveToken();
-  if (!effectiveToken) {
-    console.log("[Transcription] No valid token available");
+  // Get effective config (with fallback to stored config)
+  const config = await getEffectiveConfig();
+  if (!config) {
+    console.log("[Transcription] Whisper not configured (no config available)");
     return null;
   }
 
@@ -301,19 +308,19 @@ export async function transcribeAudioBase64(
     );
 
     // Use localhost for tunnel URLs
-    const isTunnel = whisperConfig.meshUrl.includes(".deco.host");
+    const isTunnel = config.meshUrl.includes(".deco.host");
     const effectiveMeshUrl = isTunnel
       ? "http://localhost:3000"
-      : whisperConfig.meshUrl;
+      : config.meshUrl;
 
     // Call Whisper via MCP proxy
-    const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
+    const url = `${effectiveMeshUrl}/mcp/${config.whisperConnectionId}`;
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${effectiveToken}`,
+        Authorization: `Bearer ${config.token}`,
         Accept: "application/json",
       },
       body: JSON.stringify({

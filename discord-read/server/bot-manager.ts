@@ -34,6 +34,7 @@ interface StoredConfig {
   modelProviderId?: string;
   modelId?: string;
   agentId?: string;
+  whisperConnectionId?: string;
 }
 let _storedConfig: StoredConfig | null = null;
 

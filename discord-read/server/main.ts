@@ -164,6 +164,12 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           usingPersistentApiKey: persistentToken !== temporaryToken,
         });
 
+        // Get whisper connection ID if configured
+        const whisperConnectionId =
+          whisper && typeof whisper.value === "string"
+            ? whisper.value
+            : undefined;
+
         // Store essential config for fallback when env is not available
         storeEssentialConfig({
           meshUrl,
@@ -172,15 +178,16 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           modelProviderId,
           modelId,
           agentId,
+          whisperConnectionId,
         });
 
         // Configure Whisper for audio transcription if set
-        if (whisper && typeof whisper.value === "string") {
+        if (whisperConnectionId) {
           configureWhisper({
             meshUrl,
             organizationId,
             token: persistentToken,
-            whisperConnectionId: whisper.value,
+            whisperConnectionId,
           });
           console.log("[CONFIG] Whisper configured for audio transcription");
 
