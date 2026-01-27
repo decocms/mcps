@@ -626,7 +626,42 @@ export async function joinUserChannel(
     return false;
   }
 
-  return startVoiceSession(channel, guild);
+  // Find a text channel to send TTS messages to
+  // Try to find a text channel with the same name as the voice channel, or use the first available text channel
+  let textChannelId: string | undefined;
+
+  const textChannels = guild.channels.cache.filter(
+    (c) => c.type === 0, // 0 = GUILD_TEXT
+  );
+
+  // Try to find a text channel with the same name
+  const matchingChannel = textChannels.find(
+    (c) => c.name === channel.name || c.name === `${channel.name}-text`,
+  );
+
+  if (matchingChannel) {
+    textChannelId = matchingChannel.id;
+    console.log(
+      `[VoiceCommands] Using matching text channel: ${matchingChannel.name}`,
+    );
+  } else if (textChannels.size > 0) {
+    // Use the first available text channel
+    const firstChannel = textChannels.first();
+    if (firstChannel) {
+      textChannelId = firstChannel.id;
+      console.log(
+        `[VoiceCommands] Using first available text channel: ${firstChannel.name}`,
+      );
+    }
+  }
+
+  if (!textChannelId) {
+    console.warn(
+      "[VoiceCommands] ⚠️ No text channel found in guild - TTS will not work",
+    );
+  }
+
+  return startVoiceSession(channel, guild, textChannelId);
 }
 
 // ============================================================================
