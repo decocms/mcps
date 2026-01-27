@@ -239,98 +239,6 @@ export const createVoiceStatusTool = (_env: Env) =>
   });
 
 /**
- * Speak text in voice channel (TTS)
- */
-export const createSpeakInVoiceTool = (_env: Env) =>
-  createPrivateTool({
-    id: "DISCORD_SPEAK_IN_VOICE",
-    description: "Speak text in the current voice channel using TTS",
-    inputSchema: z
-      .object({
-        guildId: z.string().describe("Guild ID where to speak"),
-        text: z.string().describe("Text to speak"),
-        language: z
-          .string()
-          .optional()
-          .describe("Language code (default: pt-BR)"),
-      })
-      .strict(),
-    outputSchema: z.object({
-      success: z.boolean(),
-      message: z.string().optional(),
-      error: z.string().optional(),
-    }),
-    execute: async ({ context }: { context: unknown }) => {
-      const input = context as {
-        guildId: string;
-        text: string;
-        language?: string;
-      };
-      const { guildId, text } = input;
-
-      try {
-        const { isTTSEnabled, hasActiveSession, getSessionInfo } = await import(
-          "../voice/index.ts"
-        );
-        const { getDiscordClient } = await import("../discord/client.ts");
-
-        if (!hasActiveSession(guildId)) {
-          return {
-            success: false,
-            error: "Not connected to any voice channel in this guild",
-          };
-        }
-
-        if (!isTTSEnabled()) {
-          return {
-            success: false,
-            error: "TTS is disabled",
-          };
-        }
-
-        // Get text channel from session for TTS
-        const session = getSessionInfo(guildId);
-        const client = getDiscordClient();
-
-        if (!session?.textChannelId || !client) {
-          return {
-            success: false,
-            error: "No text channel configured for TTS",
-          };
-        }
-
-        // Send via Discord native TTS
-        const channel = await client.channels.fetch(session.textChannelId);
-        if (!channel || !("send" in channel)) {
-          return {
-            success: false,
-            error: "Could not access text channel",
-          };
-        }
-
-        // Truncate if too long
-        const truncated =
-          text.length > 1900 ? text.substring(0, 1900) + "..." : text;
-        await (channel as { send: Function }).send({
-          content: truncated,
-          tts: true, // Discord native TTS!
-        });
-
-        return {
-          success: true,
-          message: "Speech sent via Discord TTS",
-        };
-      } catch (error) {
-        console.error("[Tool] DISCORD_SPEAK_IN_VOICE error:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    },
-  });
-
-/**
  * Join user's voice channel
  */
 export const createJoinUserVoiceTool = (_env: Env) =>
@@ -472,7 +380,6 @@ export const voiceTools = [
   createJoinVoiceChannelTool,
   createLeaveVoiceChannelTool,
   createVoiceStatusTool,
-  createSpeakInVoiceTool,
   createJoinUserVoiceTool,
   createTTSTool,
 ];
