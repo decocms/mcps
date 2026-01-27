@@ -285,11 +285,23 @@ async function sendTTSWithElevenLabs(
  * Send TTS - uses ElevenLabs if configured, otherwise Discord native
  */
 async function sendTTS(guildId: string, message: string): Promise<boolean> {
+  console.log("[VoiceCommands] DEBUG - sendTTS called:", {
+    guildId,
+    messageLength: message.length,
+    hasElevenlabs: !!elevenlabsConfig,
+  });
+
   if (elevenlabsConfig) {
+    console.log("[VoiceCommands] DEBUG - Trying ElevenLabs");
     const success = await sendTTSWithElevenLabs(guildId, message);
-    if (success) return true;
+    if (success) {
+      console.log("[VoiceCommands] DEBUG - ElevenLabs success");
+      return true;
+    }
     // Fallback to Discord native if ElevenLabs fails
     console.log("[VoiceCommands] Falling back to Discord native TTS");
+  } else {
+    console.log("[VoiceCommands] DEBUG - No ElevenLabs, using Discord native");
   }
   return sendTTSMessage(guildId, message);
 }
@@ -517,15 +529,32 @@ async function handleVoiceCommand(
       `[VoiceCommands] 🤖 Response: "${response.substring(0, 100)}${response.length > 100 ? "..." : ""}"`,
     );
 
+    console.log("[VoiceCommands] DEBUG - Voice config:", {
+      responseMode: voiceConfig.responseMode,
+      ttsEnabled: voiceConfig.ttsEnabled,
+      guildId,
+      hasResponse: !!response,
+    });
+
     // Respond based on mode
     if (
       voiceConfig.responseMode === "voice" ||
       voiceConfig.responseMode === "both"
     ) {
+      console.log("[VoiceCommands] DEBUG - Entering voice response block");
       // Respond via TTS (ElevenLabs if configured, otherwise Discord native)
       if (voiceConfig.ttsEnabled) {
+        console.log("[VoiceCommands] DEBUG - About to call sendTTS");
         await sendTTS(guildId, response);
+        console.log("[VoiceCommands] DEBUG - sendTTS completed");
+      } else {
+        console.log("[VoiceCommands] DEBUG - TTS disabled, skipping");
       }
+    } else {
+      console.log(
+        "[VoiceCommands] DEBUG - Skipping voice response, mode:",
+        voiceConfig.responseMode,
+      );
     }
 
     if (
