@@ -78,11 +78,11 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
   }
   const kv = getKvStore();
   if (text.includes("[VERIFY_CODE]")) {
-    await deleteSenderConfig(from);
-    await kv.delete(`whatsapp:thread:${from}`);
-    handleVerifyCode({ from, phoneNumberId, text }).catch((e) => {
-      console.error("Error handling verify code", e);
-    });
+    await Promise.all([
+      deleteSenderConfig(from),
+      kv.delete(`whatsapp:thread:${from}`),
+      handleVerifyCode({ from, phoneNumberId, text }),
+    ]);
     return;
   }
   const config = await readSenderConfig(from);
