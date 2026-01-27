@@ -316,12 +316,28 @@ export async function transcribeAudioBase64(
     // Call Whisper via MCP proxy
     const url = `${effectiveMeshUrl}/mcp/${config.whisperConnectionId}`;
 
+    console.log(`[Transcription] Calling: ${url}`);
+    console.log(
+      `[Transcription] Token (first 20 chars): ${config.token.substring(0, 20)}...`,
+    );
+    console.log(
+      `[Transcription] Audio data URI length: ${audioDataUri.length} chars (~${Math.round(audioDataUri.length / 1024)}KB)`,
+    );
+
+    // WARNING: Large audio files may cause 406 errors
+    // The Whisper MCP may not accept data URIs larger than ~2MB
+    if (audioDataUri.length > 2 * 1024 * 1024) {
+      console.warn(
+        `[Transcription] ⚠️ Audio data URI is very large (${Math.round(audioDataUri.length / 1024 / 1024)}MB), may fail`,
+      );
+    }
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${config.token}`,
-        Accept: "application/json",
+        Accept: "application/json, text/event-stream", // Match Slack MCP
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -338,7 +354,11 @@ export async function transcribeAudioBase64(
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
       console.error(`[Transcription] Failed: ${response.status}`);
+      console.error(
+        `[Transcription] Error body: ${errorText.substring(0, 500)}`,
+      );
       return null;
     }
 
