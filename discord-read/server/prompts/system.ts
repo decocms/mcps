@@ -415,7 +415,7 @@ export function getSystemPrompt(context?: {
       prompt += `\n\n---\n\n## **Current Context**\n\n${contextInfo.join("\n")}`;
       prompt += `\n\n⚠️ **CRITICAL**: When using Discord tools, **ALWAYS use the guild_id shown above** (${context.guildId ? `\`${context.guildId}\`` : "from context"}).`;
       prompt += `\n\n**Examples**:`;
-      prompt += `\n- ✅ CORRECT: Use \`guildId: "${context.guildId || "985687648595243068"}"\` when joining voice channels`;
+      prompt += `\n- ✅ CORRECT: Use \`guildId: " 985687648595243068"\` when joining voice channels`;
       prompt += `\n- ❌ WRONG: Never guess or use a different guild ID`;
       prompt += `\n- ❌ WRONG: Never use server names as IDs`;
     }

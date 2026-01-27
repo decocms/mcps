@@ -293,6 +293,43 @@ export function cleanupAllPlayers(): void {
 }
 
 /**
+ * Normalize audio to boost volume (prevent low volume issues)
+ */
+function normalizeAudio(input: Buffer, targetPeak: number = 28000): Buffer {
+  const samplesIn = input.length / 2;
+
+  // Find peak
+  let peak = 0;
+  for (let i = 0; i < samplesIn; i++) {
+    const sample = Math.abs(input.readInt16LE(i * 2));
+    peak = Math.max(peak, sample);
+  }
+
+  if (peak === 0) {
+    console.warn("[TTS] Audio is silent (all zeros)");
+    return input;
+  }
+
+  // Calculate amplification factor
+  const amplification = targetPeak / peak;
+  console.log(
+    `[TTS] Normalizing: peak=${peak}, amplification=${amplification.toFixed(2)}x`,
+  );
+
+  // Apply amplification
+  const output = Buffer.alloc(input.length);
+  for (let i = 0; i < samplesIn; i++) {
+    const sample = input.readInt16LE(i * 2);
+    const amplified = Math.floor(sample * amplification);
+    // Clamp to prevent clipping
+    const clamped = Math.max(-32768, Math.min(32767, amplified));
+    output.writeInt16LE(clamped, i * 2);
+  }
+
+  return output;
+}
+
+/**
  * Upsample PCM audio from 24kHz to 48kHz (required by Discord)
  * Uses linear interpolation for smoother audio
  */
@@ -364,8 +401,11 @@ export async function playAudioBuffer(
       }
       console.log(`[TTS] DEBUG - First 10 samples:`, firstSamples);
 
+      // Normalize audio to boost volume
+      const normalized = normalizeAudio(audioBuffer);
+
       // Upsample from 24kHz to 48kHz and convert mono to stereo
-      const upsampled = upsample24kTo48k(audioBuffer);
+      const upsampled = upsample24kTo48k(normalized);
 
       console.log(`[TTS] DEBUG - Output buffer: ${upsampled.length} bytes`);
 
