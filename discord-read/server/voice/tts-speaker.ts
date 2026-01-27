@@ -297,18 +297,32 @@ export function cleanupAllPlayers(): void {
  * Uses linear interpolation for smoother audio
  */
 function upsample24kTo48k(input: Buffer): Buffer {
+  console.log(
+    `[TTS] Upsampling: ${input.length} bytes input (${input.length / 2} samples)`,
+  );
+
   // Input: 24kHz PCM 16-bit mono
   // Output: 48kHz PCM 16-bit stereo
   const samplesIn = input.length / 2; // 16-bit = 2 bytes per sample
   const samplesOut = samplesIn * 2; // 2x upsampling
   const output = Buffer.alloc(samplesOut * 2 * 2); // stereo (2 channels) * 2 bytes
 
+  console.log(
+    `[TTS] Upsampling output: ${output.length} bytes (${samplesOut} samples * 2 channels)`,
+  );
+
   let outIdx = 0;
+  let maxSample = 0;
+  let minSample = 0;
 
   for (let i = 0; i < samplesIn; i++) {
     const sample1 = input.readInt16LE(i * 2);
     const sample2 =
       i < samplesIn - 1 ? input.readInt16LE((i + 1) * 2) : sample1;
+
+    // Track min/max for debugging
+    maxSample = Math.max(maxSample, Math.abs(sample1));
+    minSample = Math.min(minSample, sample1);
 
     // Linear interpolation between sample1 and sample2
     const interpolated = Math.floor((sample1 + sample2) / 2);
@@ -324,6 +338,10 @@ function upsample24kTo48k(input: Buffer): Buffer {
     outIdx += 4;
   }
 
+  console.log(
+    `[TTS] Sample range: ${minSample} to ${maxSample} (max abs: ${maxSample})`,
+  );
+
   return output;
 }
 
@@ -337,8 +355,26 @@ export async function playAudioBuffer(
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
     try {
+      console.log(`[TTS] DEBUG - Input buffer: ${audioBuffer.length} bytes`);
+
+      // Check if buffer has actual data (not all zeros)
+      const firstSamples = [];
+      for (let i = 0; i < Math.min(10, audioBuffer.length / 2); i++) {
+        firstSamples.push(audioBuffer.readInt16LE(i * 2));
+      }
+      console.log(`[TTS] DEBUG - First 10 samples:`, firstSamples);
+
       // Upsample from 24kHz to 48kHz and convert mono to stereo
       const upsampled = upsample24kTo48k(audioBuffer);
+
+      console.log(`[TTS] DEBUG - Output buffer: ${upsampled.length} bytes`);
+
+      // Check upsampled output
+      const firstUpsampled = [];
+      for (let i = 0; i < Math.min(10, upsampled.length / 2); i++) {
+        firstUpsampled.push(upsampled.readInt16LE(i * 2));
+      }
+      console.log(`[TTS] DEBUG - First 10 upsampled samples:`, firstUpsampled);
 
       // Create a readable stream from the upsampled buffer
       const stream = Readable.from(upsampled);
