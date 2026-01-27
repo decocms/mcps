@@ -88,15 +88,17 @@ export const createListBotGuildsTool = (env: Env) =>
     outputSchema: z
       .object({
         guilds: z.array(
-          z
-            .object({
-              id: z.string(),
-              name: z.string(),
-              icon: z.string().nullable(),
-              owner: z.boolean(),
-              permissions: z.string(),
-            })
-            .passthrough(), // Allow additional Discord properties
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            icon: z.string().nullable(),
+            owner: z.boolean(),
+            permissions: z.string(),
+            banner: z.string().optional(),
+            features: z.array(z.string()).optional(),
+            approximate_member_count: z.number().optional(),
+            approximate_presence_count: z.number().optional(),
+          }),
         ),
         count: z.number(),
       })
