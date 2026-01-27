@@ -240,27 +240,52 @@ export async function transcribeAudio(
     // Extract transcription
     let transcription: string | undefined;
 
+    console.log(
+      "[Transcription] DEBUG - Full result:",
+      JSON.stringify(result).substring(0, 500),
+    );
+
     // Format 1: MCP content array
     if (result?.result?.content) {
       transcription = result.result.content.find(
         (c) => c.type === "text",
       )?.text;
+      console.log(
+        "[Transcription] DEBUG - Extracted from content array:",
+        transcription?.substring(0, 100),
+      );
     }
 
     // Format 2: Direct text
     if (!transcription && result?.result?.text) {
       const textResult = result.result.text;
+      console.log(
+        "[Transcription] DEBUG - textResult type:",
+        typeof textResult,
+      );
+      console.log(
+        "[Transcription] DEBUG - textResult value:",
+        String(textResult).substring(0, 200),
+      );
+
       if (typeof textResult === "string" && textResult.trim().startsWith("{")) {
         try {
           const parsed = JSON.parse(textResult);
+          console.log("[Transcription] DEBUG - Parsed JSON:", parsed);
           transcription = parsed.text || textResult;
-        } catch {
+        } catch (e) {
+          console.log("[Transcription] DEBUG - JSON parse failed:", e);
           transcription = textResult;
         }
       } else {
         transcription = textResult;
       }
     }
+
+    console.log(
+      "[Transcription] DEBUG - Final transcription:",
+      transcription?.substring(0, 100),
+    );
 
     if (transcription) {
       console.log(
