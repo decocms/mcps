@@ -8,10 +8,10 @@
   },
   "description": "Talk to your Mesh Agents via WhatsApp",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
-  "unlisted": true,
+  "unlisted": false,
   "metadata": {
     "categories": ["Communication"],
-    "official": false,
+    "official": true,
     "tags": ["whatsapp", "messaging", "business", "meta", "chat", "automation", "webhook", "communication"],
     "short_description": "Talk to your Mesh Agents via WhatsApp"
   }
