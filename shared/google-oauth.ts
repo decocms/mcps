@@ -44,9 +44,12 @@ interface TokenResponse {
  * Creates a Google OAuth configuration for use with @decocms/runtime
  */
 export function createGoogleOAuth(config: GoogleOAuthConfig) {
-  const getClientId = () => config.clientId ?? process.env.GOOGLE_CLIENT_ID!;
-  const getClientSecret = () =>
-    config.clientSecret ?? process.env.GOOGLE_CLIENT_SECRET!;
+  const getClientId = (env?: any) =>
+    config.clientId ?? env?.GOOGLE_CLIENT_ID ?? process.env.GOOGLE_CLIENT_ID!;
+  const getClientSecret = (env?: any) =>
+    config.clientSecret ??
+    env?.GOOGLE_CLIENT_SECRET ??
+    process.env.GOOGLE_CLIENT_SECRET!;
   const scopeString = config.scopes.join(" ");
 
   return {
@@ -57,7 +60,7 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
      * Generates the Google OAuth authorization URL
      * Handles Google's requirement for clean redirect_uri (without state param)
      */
-    authorizationUrl: (callbackUrl: string) => {
+    authorizationUrl: (callbackUrl: string, env?: any) => {
       const callbackUrlObj = new URL(callbackUrl);
       const state = callbackUrlObj.searchParams.get("state");
 
@@ -67,7 +70,7 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
 
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("redirect_uri", cleanRedirectUri);
-      url.searchParams.set("client_id", getClientId());
+      url.searchParams.set("client_id", getClientId(env));
       url.searchParams.set("response_type", "code");
       url.searchParams.set("scope", scopeString);
       url.searchParams.set("access_type", "offline");
@@ -84,15 +87,18 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
     /**
      * Exchanges the authorization code for access and refresh tokens
      */
-    exchangeCode: async ({
-      code,
-      code_verifier,
-      redirect_uri,
-    }: {
-      code: string;
-      code_verifier?: string;
-      redirect_uri?: string;
-    }) => {
+    exchangeCode: async (
+      {
+        code,
+        code_verifier,
+        redirect_uri,
+      }: {
+        code: string;
+        code_verifier?: string;
+        redirect_uri?: string;
+      },
+      env?: any,
+    ) => {
       if (!redirect_uri) {
         throw new Error(
           "redirect_uri is required for Google OAuth token exchange",
@@ -101,8 +107,8 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
 
       const params = new URLSearchParams({
         code,
-        client_id: getClientId(),
-        client_secret: getClientSecret(),
+        client_id: getClientId(env),
+        client_secret: getClientSecret(env),
         grant_type: "authorization_code",
         redirect_uri,
       });
@@ -136,11 +142,11 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
     /**
      * Refreshes the access token using the refresh token
      */
-    refreshToken: async (refreshToken: string) => {
+    refreshToken: async (refreshToken: string, env?: any) => {
       const params = new URLSearchParams({
         refresh_token: refreshToken,
-        client_id: getClientId(),
-        client_secret: getClientSecret(),
+        client_id: getClientId(env),
+        client_secret: getClientSecret(env),
         grant_type: "refresh_token",
       });
 
