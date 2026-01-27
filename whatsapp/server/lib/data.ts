@@ -37,6 +37,11 @@ export async function saveSenderConfig(
   await kv.set(`whatsapp:config:${sender}`, config);
 }
 
+export async function deleteSenderConfig(sender: string) {
+  const kv = getKvStore();
+  await kv.delete(`whatsapp:config:${sender}`);
+}
+
 // Auth token (short-lived, for OAuth completion) - 5 min TTL
 export async function saveAuthToken(token: string, phone: string) {
   const kv = getKvStore();
