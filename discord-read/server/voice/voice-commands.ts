@@ -476,6 +476,25 @@ async function handleVoiceCommand(
       hasResponse: !!response,
     });
 
+    // Check if response contains error messages
+    const lowerResponse = response.toLowerCase();
+    const isErrorResponse =
+      lowerResponse.includes("desculpe") ||
+      lowerResponse.includes("não consigo") ||
+      lowerResponse.includes("nao consigo") ||
+      lowerResponse.includes("erro") ||
+      lowerResponse.includes("problema") ||
+      lowerResponse.includes("falh") ||
+      lowerResponse.includes("configurad") ||
+      lowerResponse.includes("dificuldade");
+
+    if (isErrorResponse) {
+      console.log(
+        "[VoiceCommands] ⚠️ Error response detected, skipping TTS:",
+        response.substring(0, 100),
+      );
+    }
+
     // Respond based on mode
     if (
       voiceConfig.responseMode === "voice" ||
@@ -483,10 +502,15 @@ async function handleVoiceCommand(
     ) {
       console.log("[VoiceCommands] DEBUG - Entering voice response block");
       // Respond via TTS (ElevenLabs if configured, otherwise Discord native)
-      if (voiceConfig.ttsEnabled) {
+      // Skip TTS for error responses
+      if (voiceConfig.ttsEnabled && !isErrorResponse) {
         console.log("[VoiceCommands] DEBUG - About to call sendTTS");
         await sendTTS(guildId, response);
         console.log("[VoiceCommands] DEBUG - sendTTS completed");
+      } else if (isErrorResponse) {
+        console.log(
+          "[VoiceCommands] DEBUG - Skipping TTS due to error response",
+        );
       } else {
         console.log("[VoiceCommands] DEBUG - TTS disabled, skipping");
       }
