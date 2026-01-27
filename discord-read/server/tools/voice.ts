@@ -266,7 +266,7 @@ export const createSpeakInVoiceTool = (_env: Env) =>
         text: string;
         language?: string;
       };
-      const { guildId, text, language } = input;
+      const { guildId, text } = input;
 
       try {
         const { isTTSEnabled, hasActiveSession, getSessionInfo } = await import(
