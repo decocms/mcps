@@ -50,7 +50,7 @@ export async function getOrCreatePersistentApiKey(params: {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
+        Accept: "application/json, text/event-stream",
         Authorization: `Bearer ${temporaryToken}`,
       },
       body: JSON.stringify({
