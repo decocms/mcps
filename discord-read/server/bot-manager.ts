@@ -237,6 +237,13 @@ export async function configureVoiceSystemInternal(env: Env): Promise<void> {
             ? await client.guilds.fetch(guildId).catch(() => null)
             : null;
 
+          console.log("[VoiceCommands] DEBUG - Building system prompt with:", {
+            guildId,
+            guildName: guild?.name,
+            userId,
+            userName: username,
+          });
+
           const systemPrompt = getSystemPrompt({
             guildId,
             guildName: guild?.name,
@@ -244,6 +251,18 @@ export async function configureVoiceSystemInternal(env: Env): Promise<void> {
             userName: username,
             isDM: false,
           });
+
+          // Log a part of the system prompt to verify guild ID is included
+          const guildIdInPrompt = systemPrompt.includes(guildId);
+          console.log(
+            "[VoiceCommands] DEBUG - System prompt includes correct guildId:",
+            guildIdInPrompt,
+          );
+          if (!guildIdInPrompt) {
+            console.warn(
+              "[VoiceCommands] ⚠️ WARNING: guildId NOT found in system prompt!",
+            );
+          }
 
           const messages = [
             { role: "system" as const, content: systemPrompt },
