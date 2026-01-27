@@ -75,12 +75,34 @@ export const createJoinVoiceChannelTool = (_env: Env) =>
 
         // Cast to VoiceChannel
         const voiceChannel = channel as import("discord.js").VoiceChannel;
-        const success = await startVoiceSession(voiceChannel, guild);
+
+        // Find a text channel for TTS messages
+        let textChannelId: string | undefined;
+        const textChannels = guild.channels.cache.filter((c) => c.type === 0); // GUILD_TEXT
+
+        // Try to find a text channel with matching name
+        const matchingChannel = textChannels.find(
+          (c) =>
+            c.name === voiceChannel.name ||
+            c.name === `${voiceChannel.name}-text`,
+        );
+
+        if (matchingChannel) {
+          textChannelId = matchingChannel.id;
+        } else if (textChannels.size > 0) {
+          textChannelId = textChannels.first()?.id;
+        }
+
+        const success = await startVoiceSession(
+          voiceChannel,
+          guild,
+          textChannelId,
+        );
 
         return {
           success,
           message: success
-            ? `Joined voice channel: ${voiceChannel.name}`
+            ? `Joined voice channel: ${voiceChannel.name}${textChannelId ? ` (TTS to ${matchingChannel?.name || textChannels.first()?.name})` : ""}`
             : "Failed to join voice channel",
         };
       } catch (error) {
