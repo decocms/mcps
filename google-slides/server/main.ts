@@ -3,12 +3,10 @@
  */
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import {
-  createGoogleOAuth,
-  GOOGLE_SCOPES,
-} from "@decocms/mcps-shared/google-oauth";
+import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
 import { tools } from "./tools/index.ts";
+import { GOOGLE_SCOPES } from "./constants.ts";
 import type { Env } from "../shared/deco.gen.ts";
 
 export type { Env };

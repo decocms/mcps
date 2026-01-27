@@ -45,3 +45,9 @@ export const DEFAULTS = {
   USE_LEGACY_SQL: false,
   USE_QUERY_CACHE: true,
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  BIGQUERY: "https://www.googleapis.com/auth/bigquery",
+  BIGQUERY_READONLY: "https://www.googleapis.com/auth/bigquery.readonly",
+} as const;

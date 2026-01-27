@@ -31,3 +31,9 @@ export const MIME_TYPES = {
 
 export const DEFAULT_FIELDS =
   "id,name,mimeType,parents,createdTime,modifiedTime,size,webViewLink,webContentLink";
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  DRIVE: "https://www.googleapis.com/auth/drive",
+  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
+} as const;

@@ -41,3 +41,9 @@ export const DIMENSION = {
   ROWS: "ROWS",
   COLUMNS: "COLUMNS",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  SPREADSHEETS: "https://www.googleapis.com/auth/spreadsheets",
+  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
+} as const;
