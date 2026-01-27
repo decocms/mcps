@@ -272,7 +272,7 @@ export const createSpeakInVoiceTool = (_env: Env) =>
         const { isTTSEnabled, hasActiveSession, getSessionInfo } = await import(
           "../voice/index.ts"
         );
-        const { getDiscordClient } = await import("../discord-client.ts");
+        const { getDiscordClient } = await import("../discord/client.ts");
 
         if (!hasActiveSession(guildId)) {
           return {
