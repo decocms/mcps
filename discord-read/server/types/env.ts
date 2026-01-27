@@ -38,6 +38,13 @@ export const StateSchema = z.object({
       "OpenAI Whisper for audio transcription. If not set, audio files will not be processed.",
     ),
 
+  // ElevenLabs for Text-to-Speech (optional)
+  ELEVENLABS: BindingOf("@deco/elevenlabs")
+    .optional()
+    .describe(
+      "ElevenLabs for high-quality Text-to-Speech. If not set, Discord native TTS will be used.",
+    ),
+
   // Config do Discord Bot
   BOT_TOKEN: z.string().describe("Discord Bot Token"),
   COMMAND_PREFIX: z

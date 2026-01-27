@@ -45,9 +45,11 @@ export {
 
 export {
   // Voice Commands (Main Integration)
-  // Note: TTS now uses Discord's native TTS - no FFmpeg needed!
+  // Note: TTS uses ElevenLabs if configured, otherwise Discord's native TTS
   configureVoiceCommands,
   configureVoiceWhisper,
+  configureElevenLabs,
+  isElevenLabsConfigured,
   isVoiceEnabled,
   startVoiceSession,
   stopVoiceSession,

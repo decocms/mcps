@@ -200,6 +200,24 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             whisperConnectionId: whisper.value,
           });
         }
+
+        // Configure ElevenLabs for TTS if set
+        const elevenlabs = state?.ELEVENLABS;
+        const elevenlabsConnectionId =
+          elevenlabs && typeof elevenlabs.value === "string"
+            ? elevenlabs.value
+            : undefined;
+
+        if (elevenlabsConnectionId) {
+          const { configureElevenLabs } = await import("./voice/index.ts");
+          configureElevenLabs({
+            meshUrl,
+            organizationId,
+            token: persistentToken,
+            elevenlabsConnectionId,
+          });
+          console.log("[CONFIG] ElevenLabs configured for TTS");
+        }
       }
 
       // Helper function to configure voice system
