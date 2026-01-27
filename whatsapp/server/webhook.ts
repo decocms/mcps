@@ -88,7 +88,7 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
   const config = await readSenderConfig(from);
   if (!config) {
     const url = new URL(
-      `${env.MESH_URL}/store/deco-whatsapp-agent?serverName=deco/whatsapp-agent`,
+      `${env.MESH_URL}store/deco-whatsapp-agent?serverName=deco/whatsapp-agent`,
     ).toString();
     whatsappClient
       .sendCallToActionMessage({
