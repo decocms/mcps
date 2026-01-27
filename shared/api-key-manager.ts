@@ -23,7 +23,7 @@ export async function getOrCreatePersistentApiKey(params: {
   connectionId: string;
   temporaryToken: string;
 }): Promise<string | null> {
-  const { meshUrl, organizationId, connectionId, temporaryToken } = params;
+  const { meshUrl, connectionId, temporaryToken } = params;
 
   // If we already have an API key for this connection, return it
   const existingKey = persistentApiKeys.get(connectionId);
@@ -44,11 +44,13 @@ export async function getOrCreatePersistentApiKey(params: {
     const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
 
     // Create API Key via Mesh Self MCP endpoint (JSON-RPC)
+    // Accept: application/json MUST be first to get JSON response (not SSE)
+    console.log(`[API-KEY] Calling ${effectiveMeshUrl}/mcp/self`);
     const response = await fetch(`${effectiveMeshUrl}/mcp/self`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json, text/event-stream",
+        Accept: "application/json",
         Authorization: `Bearer ${temporaryToken}`,
       },
       body: JSON.stringify({
@@ -78,14 +80,21 @@ export async function getOrCreatePersistentApiKey(params: {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(
-        `[API-KEY] Failed to create API Key: ${response.status}`,
+        `[API-KEY] ❌ Failed to create API Key: ${response.status}`,
         errorText,
       );
+      console.error(`[API-KEY] URL used: ${effectiveMeshUrl}/mcp/self`);
       return null;
     }
 
+    const responseText = await response.text();
+    console.log(
+      `[API-KEY] Raw response (first 500 chars):`,
+      responseText.substring(0, 500),
+    );
+
     // MCP JSON-RPC response format
-    const jsonRpcResult = (await response.json()) as {
+    let jsonRpcResult: {
       result?: {
         content?: Array<{ type: string; text?: string }>;
         structuredContent?: {
@@ -96,6 +105,16 @@ export async function getOrCreatePersistentApiKey(params: {
       };
       error?: { code: number; message: string };
     };
+
+    try {
+      jsonRpcResult = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error(
+        `[API-KEY] ❌ Failed to parse response as JSON:`,
+        parseError,
+      );
+      return null;
+    }
 
     if (jsonRpcResult.error) {
       console.error("[API-KEY] API error:", jsonRpcResult.error.message);
