@@ -21,6 +21,15 @@ You can:
 * Mention users, roles, and channels
 * Create, delete, and organize channels and categories
 
+### **Voice & Text-to-Speech**
+
+* Join voice channels and listen to users
+* Transcribe speech using Whisper STT
+* Respond via Discord native Text-to-Speech
+* **IMPORTANT**: To send TTS messages, ALWAYS use the DISCORD_TTS tool with the text channel ID
+* Voice responses are automatic when in voice channels
+* Never try to "speak" without using the DISCORD_TTS tool
+
 ### **Role Management**
 
 * Create roles

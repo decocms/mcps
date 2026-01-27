@@ -94,13 +94,26 @@ async function sendTTSMessage(
   message: string,
 ): Promise<boolean> {
   const session = activeSessions.get(guildId);
-  if (!session?.textChannelId || !discordClient) {
+  if (!session?.textChannelId) {
+    console.warn("[VoiceCommands] ⚠️ No text channel configured for TTS");
+    return false;
+  }
+
+  if (!discordClient) {
+    console.warn("[VoiceCommands] ⚠️ Discord client not available for TTS");
     return false;
   }
 
   try {
+    console.log(
+      `[VoiceCommands] 🔊 Sending TTS to channel ${session.textChannelId}: "${message.substring(0, 50)}..."`,
+    );
+
     const channel = await discordClient.channels.fetch(session.textChannelId);
     if (!channel || !("send" in channel)) {
+      console.error(
+        "[VoiceCommands] ❌ Channel not found or not a text channel",
+      );
       return false;
     }
 
@@ -113,9 +126,10 @@ async function sendTTSMessage(
       tts: true, // Discord native TTS!
     });
 
+    console.log("[VoiceCommands] ✅ TTS message sent successfully");
     return true;
   } catch (error) {
-    console.error("[VoiceCommands] TTS message error:", error);
+    console.error("[VoiceCommands] ❌ TTS message error:", error);
     return false;
   }
 }
