@@ -14,18 +14,8 @@ import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { runSQL } from "../lib/db-sql.ts";
 import { cacheConnectionConfig } from "../lib/config-cache.ts";
-import type { Tool } from "@decocms/runtime";
 
-export const syncCacheTool: Tool<
-  z.ZodObject<{
-    force: z.ZodOptional<z.ZodBoolean>;
-  }>,
-  z.ZodObject<{
-    success: z.ZodBoolean;
-    synced: z.ZodNumber;
-    errors: z.ZodOptional<z.ZodArray<z.ZodString>>;
-  }>
-> = {
+export const syncCacheTool = {
   id: "SYNC_CONFIG_CACHE",
   description:
     "Sync all connection configs from DATABASE to local cache. Used for pod warm-up in K8s deployments.",
@@ -40,7 +30,13 @@ export const syncCacheTool: Tool<
     synced: z.number().describe("Number of configs synced to cache"),
     errors: z.array(z.string()).optional(),
   }),
-  async execute({ context, runtimeContext }) {
+  async execute({
+    context,
+    runtimeContext,
+  }: {
+    context: { force?: boolean };
+    runtimeContext: { env: unknown };
+  }) {
     const { force = false } = context;
     const env = runtimeContext.env as Env;
 

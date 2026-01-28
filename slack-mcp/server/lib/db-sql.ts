@@ -207,7 +207,13 @@ export async function readConnectionConfig(
 
   const row = results[0];
   // PostgreSQL JSONB columns are returned as objects, no need to parse
-  const responseConfig = row.response_config || undefined;
+  const responseConfig = row.response_config
+    ? (row.response_config as {
+        showOnlyFinalResponse?: boolean;
+        enableStreaming?: boolean;
+        showThinkingMessage?: boolean;
+      })
+    : undefined;
 
   return {
     connectionId: row.connection_id,

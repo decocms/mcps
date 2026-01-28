@@ -260,33 +260,6 @@ app.post("/slack/events", async (c) => {
     },
     410,
   );
-
-  const signature = c.req.header("x-slack-signature");
-  const timestamp = c.req.header("x-slack-request-timestamp");
-
-  // Verify the request with team's signing secret
-  const { verified, payload } = await verifySlackRequest(
-    rawBody,
-    signature ?? null,
-    timestamp ?? null,
-    teamConfig.signingSecret,
-  );
-
-  if (!verified || !payload) {
-    return c.json({ error: "Invalid signature" }, 401);
-  }
-
-  // Check if we should ignore this event
-  const botUserId = teamConfig.botUserId ?? botUserIdCache.get(teamId);
-  if (shouldIgnoreEvent(payload, botUserId)) {
-    return c.json({ ok: true });
-  }
-
-  // Process the event asynchronously with team config
-  processEventAsync(payload, teamConfig).catch(console.error);
-
-  // Acknowledge immediately (Slack expects response within 3 seconds)
-  return c.json({ ok: true });
 });
 
 /**
@@ -302,29 +275,6 @@ app.post("/slack/commands", async (c) => {
 
   // Legacy route - team-based lookup not supported with DATABASE binding
   return c.json({ error: "Legacy team-based route deprecated" }, 410);
-
-  const signature = c.req.header("x-slack-signature");
-  const timestamp = c.req.header("x-slack-request-timestamp");
-
-  // Verify the request with team's signing secret
-  const { verified } = await verifySlackRequest(
-    rawBody,
-    signature ?? null,
-    timestamp ?? null,
-    teamConfig.signingSecret,
-  );
-
-  if (!verified) {
-    return c.json({ error: "Invalid signature" }, 401);
-  }
-
-  // Acknowledge and process async
-  processSlashCommandAsync(command, teamConfig).catch(console.error);
-
-  return c.json({
-    response_type: "ephemeral",
-    text: "Processing your request...",
-  });
 });
 
 /**
@@ -341,34 +291,15 @@ app.post("/slack/interactive", async (c) => {
     return c.json({ error: "Missing payload" }, 400);
   }
 
-  let interactivePayload: { type: string; team?: { id: string } };
+  let _interactivePayload: { type: string; team?: { id: string } };
   try {
-    interactivePayload = JSON.parse(payloadStr);
+    _interactivePayload = JSON.parse(payloadStr);
   } catch {
     return c.json({ error: "Invalid payload" }, 400);
   }
 
   // Legacy route - team-based lookup not supported with DATABASE binding
   return c.json({ error: "Legacy team-based route deprecated" }, 410);
-
-  const signature = c.req.header("x-slack-signature");
-  const timestamp = c.req.header("x-slack-request-timestamp");
-
-  const { verified } = await verifySlackRequest(
-    rawBody,
-    signature ?? null,
-    timestamp ?? null,
-    teamConfig.signingSecret,
-  );
-
-  if (!verified) {
-    return c.json({ error: "Invalid signature" }, 401);
-  }
-
-  // Process asynchronously
-  processInteractiveAsync(interactivePayload, teamConfig).catch(console.error);
-
-  return c.json({ ok: true });
 });
 
 /**
@@ -468,95 +399,5 @@ async function processConnectionEventAsync(
   }
 }
 
-/**
- * Process Slack events asynchronously (legacy team-based)
- */
-async function processEventAsync(
-  payload: SlackWebhookPayload,
-  teamConfig: SlackTeamConfig,
-): Promise<void> {
-  if (!payload.event) return;
-
-  // IMPORTANT: Initialize Slack client with this team's token
-  if (teamConfig.botToken) {
-    initializeSlackClient({ botToken: teamConfig.botToken });
-  }
-
-  const event = payload.event;
-  const eventType = event.type;
-  const botUserId =
-    teamConfig.botUserId ?? botUserIdCache.get(`team:${teamConfig.teamId}`);
-
-  // Determine if bot was mentioned (for app_mention or message events)
-  let shouldProcess = false;
-  let cleanText = event.text ?? "";
-
-  if (eventType === "app_mention") {
-    // Always process app mentions
-    shouldProcess = true;
-    if (botUserId) {
-      cleanText = removeBotMention(cleanText, botUserId);
-    }
-  } else if (eventType === "message") {
-    // For messages, check if it's a DM or if bot was mentioned
-    const isDM = event.channel?.startsWith("D"); // DM channels start with D
-
-    if (isDM) {
-      // Always process DMs
-      shouldProcess = true;
-    } else if (botUserId && isBotMentioned(event.text ?? "", botUserId)) {
-      // Process channel messages that mention the bot
-      shouldProcess = true;
-      cleanText = removeBotMention(event.text ?? "", botUserId);
-    }
-  } else {
-    // Process other event types (reactions, channel events, etc.)
-    shouldProcess = true;
-  }
-
-  if (shouldProcess) {
-    await handleSlackEvent(
-      {
-        type: eventType,
-        payload: {
-          ...event,
-          text: cleanText,
-          original_text: event.text,
-        },
-        teamId: payload.team_id,
-        apiAppId: payload.api_app_id,
-      },
-      teamConfig,
-    );
-  }
-}
-
-/**
- * Process slash commands asynchronously (Multi-tenant)
- */
-async function processSlashCommandAsync(
-  command: Record<string, string>,
-  _teamConfig: SlackTeamConfig,
-): Promise<void> {
-  // TODO: Implement slash command handling with team config
-  if (command.response_url) {
-    await fetch(command.response_url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        response_type: "ephemeral",
-        text: `Received command: ${command.command} ${command.text}`,
-      }),
-    });
-  }
-}
-
-/**
- * Process interactive payloads asynchronously (Multi-tenant)
- */
-async function processInteractiveAsync(
-  _payload: { type: string },
-  _teamConfig: SlackTeamConfig,
-): Promise<void> {
-  // TODO: Implement interactive payload handling with team config
-}
+// Legacy functions removed - team-based routes are now deprecated
+// All event processing now uses connection-based routing via /slack/events/:connectionId
