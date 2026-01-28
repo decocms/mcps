@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.8",
-    "@decocms/runtime": "file:../../mesh/packages/runtime",
+    "@decocms/runtime": "^1.2.5",
     "@slack/web-api": "^7.8.0",
     "hono": "^4.7.4",
     "kysely": "^0.27.3",
