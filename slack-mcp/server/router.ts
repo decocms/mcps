@@ -45,7 +45,7 @@ import { getHealthStatus } from "./health.ts";
 // Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
 
-export function setBotUserId(userId: string): void {
+export function setBotUserId(_userId: string): void {
   // This is called from main.ts with the current connection's bot user ID
   // For multi-tenant, we store in cache when connection config is loaded
 }
