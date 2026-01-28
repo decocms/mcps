@@ -1,0 +1,14 @@
+# KV Store data (contains sensitive credentials)
+data/
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+
+

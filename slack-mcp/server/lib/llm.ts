@@ -71,7 +71,7 @@ async function callModelsAPI(
     agent: {
       id: agentId ?? null,
     },
-    stream: true,
+    stream,
   };
 
   const response = await fetch(url, {
@@ -206,27 +206,48 @@ export async function generateLLMResponse(
 
   try {
     const response = await callModelsAPI(config, apiMessages, false);
-    const result = (await response.json()) as {
-      parts?: Array<{ type: string; text?: string }>;
-      finishReason?: string;
-    };
 
-    // Extract text from parts
-    let text = "";
-    if (result.parts) {
-      for (const part of result.parts) {
-        if (part.type === "text" && part.text) {
-          text += part.text;
+    console.log("[LLM] Response status:", response.status);
+    console.log("[LLM] Response headers:", {
+      contentType: response.headers.get("content-type"),
+    });
+
+    // The API always returns SSE (text/event-stream), even with stream: false
+    // So we need to parse the SSE stream and collect all text
+    const responseText = await response.text();
+
+    let fullText = "";
+    const lines = responseText.split("\n");
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const dataStr = line.substring(6); // Remove "data: " prefix
+          const data = JSON.parse(dataStr);
+
+          // Collect text deltas (API uses 'delta' field, not 'text')
+          if (data.type === "text-delta" && data.delta) {
+            fullText += data.delta;
+          }
+          // Or collect from parts in final message
+          else if (data.parts) {
+            for (const part of data.parts) {
+              if (part.type === "text" && part.text) {
+                fullText += part.text;
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors (e.g., [DONE])
         }
       }
     }
 
     console.log("[LLM] Response received:", {
-      textLength: text.length,
-      finishReason: result.finishReason,
+      textLength: fullText.length,
     });
 
-    return text || "Desculpe, não consegui gerar uma resposta.";
+    return fullText || "Desculpe, não consegui gerar uma resposta.";
   } catch (error) {
     console.error("[LLM] Error calling Models API:", error);
     throw error;

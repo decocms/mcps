@@ -16,13 +16,28 @@ import {
   processSlackFiles,
   addReaction,
   removeReaction,
+  deleteMessage,
 } from "../../lib/slack-client.ts";
 import type {
   SlackEvent,
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";
-import { readTeamConfig, type SlackTeamConfig } from "../../lib/data.ts";
+// SlackTeamConfig type for compatibility
+type SlackTeamConfig = {
+  teamId: string;
+  organizationId: string;
+  meshUrl: string;
+  botToken: string;
+  signingSecret: string;
+  botUserId?: string;
+  configuredAt?: string;
+  responseConfig?: {
+    showOnlyFinalResponse?: boolean;
+    enableStreaming?: boolean;
+    showThinkingMessage?: boolean;
+  };
+};
 import {
   logger,
   pauseSlackLogging,
@@ -444,32 +459,6 @@ async function buildLLMMessages(
   );
 }
 
-/**
- * Publish event to Event Bus (fallback when LLM not configured)
- */
-async function publishToEventBus(
-  eventType: string,
-  messages: unknown[],
-  context: {
-    channel: string;
-    threadTs?: string;
-    messageTs: string;
-    userId?: string;
-    isDM?: boolean;
-  },
-  meshConfig: MeshConfig,
-): Promise<void> {
-  console.log("[EventHandler] LLM not configured, publishing to Event Bus");
-  await publishEvent(
-    {
-      type: eventType,
-      data: { messages, context },
-      subject: `${context.channel}:${context.threadTs ?? context.messageTs}`,
-    },
-    meshConfig,
-  );
-}
-
 // ============================================================================
 // Event Handlers
 // ============================================================================
@@ -521,15 +510,28 @@ async function handleAppMention(
   const { channel, user, text, ts, thread_ts, files } = event;
   console.log(`[EventHandler] App mention from ${user} in ${channel}`);
 
-  // Add eyes reaction immediately for quick feedback
-  await addReaction(channel, ts, "eyes");
+  // Check if we're in "show only final response" mode
+  const showOnlyFinal =
+    teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  // Send thinking message immediately
+  // Add eyes reaction immediately for quick feedback (unless in silent mode)
+  if (!showOnlyFinal) {
+    await addReaction(channel, ts, "eyes");
+  }
+
+  // Send thinking message if enabled (respects showOnlyFinal override)
   const replyTo = thread_ts ?? ts;
-  const thinkingMsg = await sendThinkingMessage(channel, replyTo);
+  const showThinking = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+  const thinkingMsg = showThinking
+    ? await sendThinkingMessage(channel, replyTo)
+    : null;
 
-  // Remove eyes reaction when we start processing
-  await removeReaction(channel, ts, "eyes");
+  // Remove eyes reaction when we start processing (unless in silent mode)
+  if (!showOnlyFinal) {
+    await removeReaction(channel, ts, "eyes");
+  }
 
   // Process attached files (images, audio, and text files)
   const { media, textFiles, transcriptions, audioWithoutWhisper } =
@@ -597,11 +599,13 @@ async function handleAppMention(
 
   // Check if LLM is configured
   if (!isLLMConfigured()) {
-    await publishToEventBus(
-      SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-      messages,
-      { channel, threadTs: replyTo, messageTs: ts, userId: user },
-      meshConfig,
+    const warningMsg =
+      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
+      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
+
+    await replyInThread(channel, replyTo, warningMsg);
+    console.log(
+      "[EventHandler] LLM not configured - sent configuration warning",
     );
     return;
   }
@@ -711,6 +715,7 @@ async function handleMessage(
       ts,
       mediaForLLM,
       meshConfig,
+      teamConfig,
     );
   } else if (thread_ts) {
     await handleThreadReply(
@@ -721,6 +726,7 @@ async function handleMessage(
       thread_ts,
       mediaForLLM,
       meshConfig,
+      teamConfig,
     );
   }
   // Regular channel messages without mention are ignored
@@ -741,25 +747,46 @@ async function handleDirectMessage(
     name: string;
   }>,
   meshConfig: MeshConfig,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   console.log(`[EventHandler] DM from ${user}`);
 
-  // Add eyes reaction immediately for quick feedback
-  await addReaction(channel, ts, "eyes");
+  // Check if we're in "show only final response" mode
+  const showOnlyFinal =
+    teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  const thinkingMsg = await sendThinkingMessage(channel);
+  // Add eyes reaction immediately for quick feedback (unless in silent mode)
+  if (!showOnlyFinal) {
+    await addReaction(channel, ts, "eyes");
+  }
 
-  // Remove eyes reaction when we start processing
-  await removeReaction(channel, ts, "eyes");
+  // Send thinking message if enabled (respects showOnlyFinal override)
+  const showThinking = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+  const thinkingMsg = showThinking ? await sendThinkingMessage(channel) : null;
+
+  // Remove eyes reaction when we start processing (unless in silent mode)
+  if (!showOnlyFinal) {
+    await removeReaction(channel, ts, "eyes");
+  }
 
   const messages = await buildLLMMessages(channel, text, ts, undefined, media);
 
   if (!isLLMConfigured()) {
-    await publishToEventBus(
-      SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-      messages,
-      { channel, messageTs: ts, userId: user, isDM: true },
-      meshConfig,
+    const warningMsg =
+      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
+      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
+
+    await sendMessage({ channel, text: warningMsg });
+
+    // Delete the thinking message if it exists
+    if (thinkingMsg?.ts) {
+      await deleteMessage(channel, thinkingMsg.ts);
+    }
+
+    console.log(
+      "[EventHandler] LLM not configured - sent configuration warning",
     );
     return;
   }
@@ -791,25 +818,48 @@ async function handleThreadReply(
     name: string;
   }>,
   meshConfig: MeshConfig,
+  teamConfig: SlackTeamConfig,
 ): Promise<void> {
   console.log(`[EventHandler] Thread reply from ${user}`);
 
-  // Add eyes reaction immediately for quick feedback
-  await addReaction(channel, ts, "eyes");
+  // Check if we're in "show only final response" mode
+  const showOnlyFinal =
+    teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  const thinkingMsg = await sendThinkingMessage(channel, threadTs);
+  // Add eyes reaction immediately for quick feedback (unless in silent mode)
+  if (!showOnlyFinal) {
+    await addReaction(channel, ts, "eyes");
+  }
 
-  // Remove eyes reaction when we start processing
-  await removeReaction(channel, ts, "eyes");
+  // Send thinking message if enabled (respects showOnlyFinal override)
+  const showThinking = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+  const thinkingMsg = showThinking
+    ? await sendThinkingMessage(channel, threadTs)
+    : null;
+
+  // Remove eyes reaction when we start processing (unless in silent mode)
+  if (!showOnlyFinal) {
+    await removeReaction(channel, ts, "eyes");
+  }
 
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
 
   if (!isLLMConfigured()) {
-    await publishToEventBus(
-      SLACK_EVENT_TYPES.OPERATOR_GENERATE,
-      messages,
-      { channel, threadTs, messageTs: ts, userId: user },
-      meshConfig,
+    const warningMsg =
+      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
+      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
+
+    await replyInThread(channel, threadTs, warningMsg);
+
+    // Delete the thinking message if it exists
+    if (thinkingMsg?.ts) {
+      await deleteMessage(channel, thinkingMsg.ts);
+    }
+
+    console.log(
+      "[EventHandler] LLM not configured - sent configuration warning",
     );
     return;
   }
@@ -913,7 +963,35 @@ export async function handleLLMResponse(
       await appendAssistantMessage(channel, threadIdentifier, text, responseTs);
     }
   } catch (error) {
-    await logger.error("Failed to send message", { error: String(error) });
+    // Handle specific Slack API errors
+    const errorMessage = String(error);
+
+    if (errorMessage.includes("channel_not_found")) {
+      await logger.warn("Channel not found - bot may not be in this channel", {
+        channel,
+        error: "channel_not_found",
+        help: "Add the bot to the channel or check if channel exists",
+      });
+      console.warn(
+        `[Event Handler] ⚠️ Cannot send message - channel ${channel} not found or bot not added`,
+      );
+      return; // Don't throw, just log and continue
+    }
+
+    if (errorMessage.includes("not_in_channel")) {
+      await logger.warn("Bot not in channel", {
+        channel,
+        error: "not_in_channel",
+        help: "Invite the bot to the channel with /invite @bot",
+      });
+      console.warn(
+        `[Event Handler] ⚠️ Cannot send message - bot not in channel ${channel}`,
+      );
+      return; // Don't throw, just log and continue
+    }
+
+    // For other errors, log and throw
+    await logger.error("Failed to send message", { error: errorMessage });
     throw error;
   }
 
@@ -998,15 +1076,11 @@ async function handleEventCallback(
   const eventType = event.type;
   const teamId = slackPayload.team_id ?? "unknown";
 
-  // Get team config for bot filtering
-  const savedTeamConfig = await readTeamConfig(teamId);
-  const botUserId = savedTeamConfig?.botUserId;
-
-  // Check if we should ignore this event
+  // Check if we should ignore this event (bot messages)
   if (
     shouldIgnoreEvent(
       slackPayload as Parameters<typeof shouldIgnoreEvent>[0],
-      botUserId,
+      undefined,
     )
   ) {
     console.log("[EventHandler] Ignoring bot/ignored event");
@@ -1019,8 +1093,8 @@ async function handleEventCallback(
     text: event.text?.substring(0, 100),
   });
 
-  // Create team config
-  const teamConfig: SlackTeamConfig = savedTeamConfig ?? {
+  // Create team config from current context
+  const teamConfig: SlackTeamConfig = {
     teamId,
     organizationId: config.organizationId,
     meshUrl: config.meshUrl,

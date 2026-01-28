@@ -8,14 +8,16 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings (AI connections)
-  EVENT_BUS: BindingOf("@deco/event-bus"),
-  DATABASE: BindingOf("@deco/postgres"),
-  MODEL_PROVIDER: BindingOf("@deco/llm").describe(
-    "AI Model Provider connection",
+  DATABASE: BindingOf("@deco/postgres").describe(
+    "PostgreSQL database connection (REQUIRED for multi-pod K8s deployments)",
   ),
-  AGENT: BindingOf("@deco/agent").describe(
-    "Agent with tools, resources and prompts",
-  ),
+  EVENT_BUS: BindingOf("@deco/event-bus").optional(),
+  MODEL_PROVIDER: BindingOf("@deco/llm")
+    .optional()
+    .describe("AI Model Provider connection"),
+  AGENT: BindingOf("@deco/agent")
+    .optional()
+    .describe("Agent with tools, resources and prompts"),
   LANGUAGE_MODEL: z
     .object({
       __type: z.literal("@deco/language-model"),
@@ -26,7 +28,10 @@ export const StateSchema = z.object({
         .loose()
         .describe("The language model to use for agent responses."),
     })
-    .required(),
+    .optional()
+    .describe(
+      "Language model for generating responses. Optional if you only want to use Slack tools without LLM.",
+    ),
   WHISPER: BindingOf("@deco/whisper")
     .optional()
     .describe(
@@ -109,11 +114,23 @@ export const StateSchema = z.object({
   // Response Configuration
   RESPONSE_CONFIG: z
     .object({
+      SHOW_ONLY_FINAL_RESPONSE: z
+        .boolean()
+        .default(false)
+        .describe(
+          "🎯 MODO SILENCIOSO: Apenas resposta final sem mensagens intermediárias. Quando ativo, desabilita streaming e mensagem de 'pensando'.",
+        ),
       ENABLE_STREAMING: z
         .boolean()
         .default(true)
         .describe(
           "Stream responses in real-time (message updates as LLM generates). Disable for a single final response.",
+        ),
+      SHOW_THINKING_MESSAGE: z
+        .boolean()
+        .default(true)
+        .describe(
+          'Show "🤔 Thinking..." message while processing. Disable for faster perceived response time.',
         ),
     })
     .optional()

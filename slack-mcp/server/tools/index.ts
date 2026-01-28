@@ -12,6 +12,7 @@ import { channelTools } from "./channels.ts";
 import { userTools } from "./users.ts";
 import { setupTools } from "./setup.ts";
 import { fileTools } from "./files.ts";
+import { syncCacheTool } from "./sync-cache.ts";
 
 type ToolFactory<E> = (env: E) => unknown;
 type ToolCollection<E> = ToolFactory<E>[];
@@ -44,4 +45,6 @@ export const tools: ToolCollection<Env> = [
   ...wrappedUserTools,
   ...wrappedSetupTools,
   ...wrappedFileTools,
+  // Admin/system tools (no Slack client needed)
+  () => syncCacheTool,
 ];
