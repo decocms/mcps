@@ -6,6 +6,10 @@
  * - Includes context: connectionId, teamName, organizationId
  * - Generates unique trace_id for request tracking
  * - Timing measurements for performance analysis
+ *
+ * Configuration via environment variables:
+ * - HYPERDX_API_KEY: HyperDX API key (optional, logs go to stdout by default)
+ * - LOG_LEVEL: "debug" | "info" | "warn" | "error" (default: "info")
  */
 
 export interface LogContext {
@@ -38,8 +42,26 @@ export interface LogContext {
   [key: string]: unknown;
 }
 
+type LogLevel = "debug" | "info" | "warn" | "error";
+
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
 export class HyperDXLogger {
   private service = "slack-mcp";
+  private minLevel: LogLevel;
+
+  constructor() {
+    // Read log level from env (default: info)
+    const envLevel = (process.env.LOG_LEVEL ?? "info").toLowerCase();
+    this.minLevel = (
+      ["debug", "info", "warn", "error"].includes(envLevel) ? envLevel : "info"
+    ) as LogLevel;
+  }
 
   /**
    * Log at info level
@@ -106,6 +128,13 @@ export class HyperDXLogger {
    * SECURITY: Sanitizes sensitive data before logging
    */
   private log(message: string, context: LogContext) {
+    const level = context.level ?? "info";
+
+    // Skip if below minimum log level
+    if (LOG_LEVELS[level] < LOG_LEVELS[this.minLevel]) {
+      return;
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       service: this.service,

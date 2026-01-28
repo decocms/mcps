@@ -79,10 +79,6 @@ async function fetchAgentSystemPrompt(
     });
 
     if (!response.ok) {
-      console.warn(
-        "[Slack MCP] Could not fetch agent system_prompt:",
-        response.status,
-      );
       return undefined;
     }
 
@@ -95,47 +91,15 @@ async function fetchAgentSystemPrompt(
     };
     const agent = result?.result?.structuredContent?.item;
 
-    if (agent?.system_prompt) {
-      console.log("[Slack MCP] Using agent system_prompt from:", agent.title);
-      return agent.system_prompt;
-    }
-
-    return undefined;
-  } catch (error) {
-    console.warn("[Slack MCP] Could not fetch agent system_prompt:", error);
+    return agent?.system_prompt ?? undefined;
+  } catch (_error) {
     return undefined;
   }
 }
 
-console.log("🚀 [Runtime] Initializing Slack MCP runtime...");
-console.log("🚀 [Runtime] StateSchema fields:", Object.keys(StateSchema.shape));
-
 // Define onChange separately to ensure it's not undefined
 const onChangeHandler = async (env: Env, config: any) => {
-  console.log(
-    "🟢 [onChange] FUNCTION CALLED! This proves onChange is registered!",
-  );
   try {
-    console.log("\n");
-    console.log("=".repeat(60));
-    console.log("🔔 🔔 🔔 [onChange] CONFIGURATION CHANGE DETECTED! 🔔 🔔 🔔");
-    console.log("=".repeat(60));
-    console.log("🔔 Timestamp:", new Date().toISOString());
-
-    // Log raw env to see what we're receiving
-    console.log(
-      "🔔 [onChange] Raw MESH_REQUEST_CONTEXT:",
-      env.MESH_REQUEST_CONTEXT ? "present" : "MISSING",
-    );
-    console.log(
-      "🔔 [onChange] Config callback:",
-      config ? "present" : "MISSING",
-    );
-    console.log(
-      "🔔 [onChange] State from config:",
-      config?.state ? "present" : "MISSING",
-    );
-
     // Use state from config callback (this is the correct source!)
     const state = config?.state ?? env.MESH_REQUEST_CONTEXT?.state;
     const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
@@ -143,25 +107,9 @@ const onChangeHandler = async (env: Env, config: any) => {
     const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
     const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
 
-    console.log("🔔 [onChange] Context:", {
-      meshUrl,
-      connectionId,
-      organizationId,
-      hasToken: !!temporaryToken,
-    });
-
     // Get Slack credentials from state
     const botToken = state?.SLACK_CREDENTIALS?.BOT_TOKEN;
     const signingSecret = state?.SLACK_CREDENTIALS?.SIGNING_SECRET;
-
-    console.log("🔔 [onChange] Slack Credentials:", {
-      hasBotToken: !!botToken,
-      hasSigningSecret: !!signingSecret,
-      botTokenPrefix: botToken ? botToken.substring(0, 10) + "..." : "missing",
-    });
-
-    // Get channel configuration
-    const logChannelId = state?.CHANNEL_CONFIG?.LOG_CHANNEL_ID;
 
     // Get LLM configuration (bindings)
     // Note: MODEL_PROVIDER and AGENT may come empty, use LANGUAGE_MODEL.connectionId as fallback
@@ -218,7 +166,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       }
     }
 
-    console.log("🔔 [onChange] Validating required fields...");
+    // Validate required fields
     if (
       !botToken ||
       !signingSecret ||
@@ -226,18 +174,14 @@ const onChangeHandler = async (env: Env, config: any) => {
       !organizationId ||
       !connectionId
     ) {
-      console.error("🔔 [onChange] ❌ Missing required fields!");
-      console.error("🔔 [onChange] Missing:", {
-        botToken: !botToken,
-        signingSecret: !signingSecret,
-        meshUrl: !meshUrl,
-        organizationId: !organizationId,
-        connectionId: !connectionId,
+      logger.warn("Missing required fields in configuration", {
+        connectionId: connectionId ?? "unknown",
+        hasBotToken: !!botToken,
+        hasSigningSecret: !!signingSecret,
+        hasMeshUrl: !!meshUrl,
       });
-      console.log("🔔 [onChange] Exiting without saving config.");
       return;
     }
-    console.log("🔔 [onChange] ✅ All required fields present");
 
     // Get or create persistent API Key (to avoid 5-minute JWT expiration)
     // The temporary token from Mesh expires in 5 minutes, but Slack webhooks
@@ -263,11 +207,6 @@ const onChangeHandler = async (env: Env, config: any) => {
 
       if (apiKey) {
         persistentToken = apiKey;
-        console.log("[CONFIG] Using persistent API Key for LLM calls");
-      } else {
-        console.log(
-          "[CONFIG] ⚠️ Could not create persistent API Key, using temporary token (may expire in 5 minutes)",
-        );
       }
     }
 
@@ -325,24 +264,9 @@ const onChangeHandler = async (env: Env, config: any) => {
     // Ensure database table exists (creates if not)
     try {
       await ensureConnectionsTable(env);
-      console.log("🔔 [onChange] ✅ Database table ensured");
-    } catch (error) {
-      console.error("🔔 [onChange] ❌ Failed to ensure database table:", error);
+    } catch (_error) {
       // Don't return - try to save anyway
     }
-
-    // Save connection configuration with persistent token
-    console.log("🔔 [onChange] 💾 Saving connection config to database...");
-    console.log("🔔 [onChange] Config to save:", {
-      connectionId,
-      organizationId,
-      meshUrl,
-      hasToken: !!persistentToken,
-      modelProviderId,
-      agentId,
-      hasBotToken: !!botToken,
-      hasSigningSecret: !!signingSecret,
-    });
 
     const configToSave: ConnectionConfig = {
       connectionId,
@@ -366,8 +290,6 @@ const onChangeHandler = async (env: Env, config: any) => {
 
     // Cache config for webhook router (which runs outside MCP context)
     cacheConnectionConfig(configToSave);
-
-    console.log("🔔 [onChange] ✅ Config saved to DATABASE and cached!");
 
     // Initialize Slack client to get additional info (teamId, botUserId, teamName)
     try {
@@ -427,22 +349,13 @@ const onChangeHandler = async (env: Env, config: any) => {
       });
     }
   } catch (error) {
-    console.error("\n");
-    console.error("❌".repeat(30));
-    console.error("❌ [onChange] FATAL ERROR!");
-    console.error("❌".repeat(30));
-    console.error("❌ Error:", error);
-    console.error(
-      "❌ Stack:",
-      error instanceof Error ? error.stack : "no stack",
-    );
-    console.error("❌".repeat(30));
-    throw error; // Re-throw to see in MCP response
+    logger.error("Fatal error in onChange handler", {
+      error: String(error),
+      connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+    });
+    throw error;
   }
 };
-
-console.log("🚀 [Runtime] onChange handler defined:", typeof onChangeHandler);
-console.log("🚀 [Runtime] Creating runtime with configuration...");
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
@@ -462,43 +375,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
 const PORT = process.env.PORT ?? 8080;
 
-/**
- * Note: Database table will be created automatically on first onChange call
- * via ensureConnectionsTable() - no migrations needed!
- */
-console.log(
-  "[Init] ✅ Database uses @deco/postgres binding (no migrations needed)",
-);
-
-/**
- * Initialize KV store with disk persistence (used for temporary thread data)
- */
+// Initialize KV store with disk persistence (used for thread data and config cache)
 await initializeKvStore("./data/slack-kv.json");
-
-/**
- * Setup periodic cleanup of orphaned API keys (every 1 hour)
- * Note: This won't work until we have access to env outside of request context
- * For now, cleanup is disabled. Consider moving to a scheduled task.
- */
-// const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hour
-// setInterval(async () => {
-//   console.log("[API-KEY] Running periodic cleanup...");
-//   // TODO: Need env context here - consider using a scheduled task instead
-//   // await cleanupOrphanedKeys(async (id) => await readConnectionConfig(env, id));
-// }, CLEANUP_INTERVAL);
-console.log(
-  "[API-KEY] Note: Periodic cleanup requires env context - consider EVENT_BUS cron instead",
-);
 
 /**
  * Warm-up: Sync DATABASE configs to cache on startup
  * Critical for K8s multi-pod deployments where new pods start with empty cache
  */
-console.log("[Warmup] 🔄 Syncing configs from DATABASE to cache...");
 setTimeout(async () => {
   try {
-    // Call SYNC_CONFIG_CACHE via SELF (requires MCP context)
-    // We use setTimeout to ensure server is fully started before calling
     const port = process.env.PORT ?? 8080;
     const response = await fetch(`http://localhost:${port}/mcp`, {
       method: "POST",
@@ -514,22 +399,15 @@ setTimeout(async () => {
       }),
     });
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log("[Warmup] ✅ Cache sync result:", result);
-    } else {
-      console.warn(
-        "[Warmup] ⚠️ Cache sync failed (will lazy-load on webhooks):",
-        response.status,
-      );
+    if (!response.ok) {
+      logger.warn("Cache sync failed on startup (will lazy-load)", {
+        status: response.status.toString(),
+      });
     }
-  } catch (error) {
-    console.warn(
-      "[Warmup] ⚠️ Cache sync failed (will lazy-load on webhooks):",
-      error,
-    );
+  } catch (_error) {
+    // Will lazy-load on first webhook
   }
-}, 2000); // Wait 2s for server to be ready
+}, 2000);
 
 /**
  * Serve requests:
@@ -537,52 +415,15 @@ setTimeout(async () => {
  * - MCP requests handled by runtime
  */
 serve(async (req, env, ctx) => {
-  const url = new URL(req.url);
-  const method = req.method;
-
-  // Log all MCP requests (not webhooks)
-  if (url.pathname === "/mcp") {
-    console.log(`\n🔵 [MCP Request] ${method} ${url.pathname}`);
-
-    // Try to parse JSON body for debugging
-    if (method === "POST") {
-      try {
-        const clone = req.clone();
-        const body = (await clone.json()) as {
-          method?: string;
-          params?: { name?: string };
-        };
-        console.log("🔵 [MCP Body]", JSON.stringify(body, null, 2));
-
-        // Log ON_MCP_CONFIGURATION calls
-        if (
-          body?.method === "tools/call" &&
-          body?.params?.name === "ON_MCP_CONFIGURATION"
-        ) {
-          console.log("🔴 [MCP] ON_MCP_CONFIGURATION tools/call received");
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }
-
   // Try webhook router first
   const webhookResponse = await webhookRouter.fetch(req, env, ctx);
 
   // If webhook router returned 404, fall back to MCP runtime
   if (webhookResponse.status === 404) {
-    const mcpResponse = await runtime.fetch(req, env, ctx);
-
-    // Log MCP response status
-    if (url.pathname === "/mcp") {
-      console.log(`🔵 [MCP Response] ${mcpResponse.status}`);
-    }
-
-    return mcpResponse;
+    return runtime.fetch(req, env, ctx);
   }
 
   return webhookResponse;
 });
 
-console.log(`\n🚀 Slack MCP Server started on http://localhost:${PORT}/mcp\n`);
+logger.info("Slack MCP Server started", { route: `/mcp`, port: Number(PORT) });
