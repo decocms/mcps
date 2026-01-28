@@ -537,7 +537,10 @@ serve(async (req, env, ctx) => {
     if (method === "POST") {
       try {
         const clone = req.clone();
-        const body = await clone.json();
+        const body = (await clone.json()) as {
+          method?: string;
+          params?: { name?: string };
+        };
         console.log("🔵 [MCP Body]", JSON.stringify(body, null, 2));
 
         // Log ON_MCP_CONFIGURATION calls
