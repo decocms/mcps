@@ -110,3 +110,4 @@ console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'configu
 
 Todos os MCPs do Google (Calendar, Drive, Docs, Sheets, etc.) usam as **mesmas credenciais OAuth**. Configure uma vez e use em todos!
 
+

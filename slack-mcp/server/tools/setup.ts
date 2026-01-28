@@ -7,11 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../types/env.ts";
-import {
-  getSlackClient,
-  getBotInfo,
-  ensureSlackClient,
-} from "../lib/slack-client.ts";
+import { getBotInfo, ensureSlackClient } from "../lib/slack-client.ts";
 import {
   getThreadMetadata,
   resetThread,

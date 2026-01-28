@@ -20,18 +20,32 @@ import {
   clearLLMConfig,
 } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
-import {
-  readConnectionConfig,
-  readTeamConfig,
-  type SlackConnectionConfig,
-  type SlackTeamConfig,
-} from "./lib/data.ts";
+import type { ConnectionConfig } from "./lib/db-sql.ts";
+import { getCachedConnectionConfig } from "./lib/config-cache.ts";
+
+// Legacy types for backwards compatibility
+type SlackConnectionConfig = ConnectionConfig;
+type SlackTeamConfig = {
+  teamId: string;
+  organizationId: string;
+  meshUrl: string;
+  botToken: string;
+  signingSecret: string;
+  botUserId?: string;
+  configuredAt?: string;
+  responseConfig?: {
+    showOnlyFinalResponse?: boolean;
+    enableStreaming?: boolean;
+    showThinkingMessage?: boolean;
+  };
+};
 import { initializeSlackClient } from "./lib/slack-client.ts";
+import { getHealthStatus } from "./health.ts";
 
 // Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
 
-export function setBotUserId(userId: string): void {
+export function setBotUserId(_userId: string): void {
   // This is called from main.ts with the current connection's bot user ID
   // For multi-tenant, we store in cache when connection config is loaded
 }
@@ -51,10 +65,12 @@ export function setBotUserIdForTeam(teamId: string, userId: string): void {
 export const app = new Hono();
 
 /**
- * Health check endpoint
+ * Health check endpoint with system metrics
  */
-app.get("/health", (c) => {
-  return c.json({ status: "ok", service: "slack-mcp" });
+app.get("/health", async (c) => {
+  const health = await getHealthStatus();
+  const statusCode = health.status === "ok" ? 200 : 503;
+  return c.json(health, statusCode);
 });
 
 /**
@@ -112,13 +128,46 @@ app.post("/slack/events/:connectionId", async (c) => {
     });
   }
 
-  // Lookup connection configuration
-  const connectionConfig = await readConnectionConfig(connectionId);
+  // Lookup connection configuration from persistent KV cache
+  // Note: Cache is populated by onChange (which has DATABASE binding access)
+  // Cache survives server restarts!
+  console.log(
+    `[Router] 🔍 Looking up connection config from persistent cache: ${connectionId}`,
+  );
+  let connectionConfig = await getCachedConnectionConfig(connectionId);
+
+  // LAZY LOADING: If cache miss, try to fetch from DATABASE
+  // This handles new K8s pods that start with empty cache
   if (!connectionConfig) {
-    console.error(`[Router] ❌ Connection not found: ${connectionId}`);
-    return c.json({ error: "Connection not configured" }, 403);
+    console.log(
+      `[Router] ⚠️ Cache miss for ${connectionId}, attempting lazy load from DATABASE...`,
+    );
+
+    // We don't have MCP context here, so we can't use DATABASE binding directly
+    // Instead, we'll return a helpful error that triggers a re-sync
+    console.error(
+      `[Router] ❌ Connection not found in persistent cache: ${connectionId}`,
+    );
+    console.error(`[Router] 💡 This means:`);
+    console.error(
+      `[Router]    1. New K8s pod with empty cache (call SYNC_CONFIG_CACHE tool to warm-up)`,
+    );
+    console.error(`[Router]    2. Or connection not yet saved in Mesh UI`);
+    console.error(`[Router]    - Connection ID: ${connectionId}`);
+    console.error(`[Router]    - Webhook: POST /slack/events/${connectionId}`);
+    return c.json(
+      {
+        error:
+          "Connection cache miss - pod may need warm-up. Call SYNC_CONFIG_CACHE tool or save config in Mesh UI.",
+        connectionId,
+        hint: "This typically happens on new K8s pods. The cache will be populated automatically within a few seconds.",
+      },
+      503, // Service Unavailable (temporary)
+    );
   }
-  console.log(`[Router] ✅ Connection loaded: ${connectionId}`);
+  console.log(
+    `[Router] ✅ Connection loaded from persistent cache: ${connectionId}`,
+  );
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -158,69 +207,18 @@ app.post("/slack/events/:connectionId", async (c) => {
  * Access: GET /debug?channel=C0A9RBGTTS9
  */
 app.get("/debug", async (c) => {
-  const { listTeamConfigs } = await import("./lib/data.ts");
-  const { sendMessage, getSlackClient, initializeSlackClient } = await import(
-    "./lib/slack-client.ts"
-  );
+  // Debug endpoint for testing (currently unused)
+  await import("./lib/slack-client.ts");
 
   const testChannel = c.req.query("channel");
   const results: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     testChannel,
+    note: "Legacy debug endpoint - now using DATABASE binding",
   };
 
-  // List all configured teams
-  try {
-    const teams = await listTeamConfigs();
-    results.configuredTeams = teams.map((t) => ({
-      teamId: t.teamId,
-      organizationId: t.organizationId,
-      meshUrl: t.meshUrl,
-      botUserId: t.botUserId,
-      configuredAt: t.configuredAt,
-      hasToken: !!t.botToken,
-      hasSigningSecret: !!t.signingSecret,
-    }));
-    results.teamCount = teams.length;
-
-    // Try to send test message if channel provided
-    if (testChannel && teams.length > 0) {
-      const firstTeam = teams[0];
-
-      // Initialize client with first team's token
-      if (firstTeam.botToken) {
-        initializeSlackClient({ botToken: firstTeam.botToken });
-
-        try {
-          const testResult = await sendMessage({
-            channel: testChannel,
-            text: `🔍 *Debug Test Message*\n\`\`\`\nTimestamp: ${new Date().toISOString()}\nTeam: ${firstTeam.teamId}\nOrg: ${firstTeam.organizationId}\nBot User: ${firstTeam.botUserId ?? "unknown"}\n\`\`\``,
-          });
-          results.testMessage = {
-            success: true,
-            ts: testResult?.ts,
-          };
-        } catch (sendError) {
-          results.testMessage = {
-            success: false,
-            error: String(sendError),
-          };
-        }
-      } else {
-        results.testMessage = {
-          success: false,
-          error: "No bot token in team config",
-        };
-      }
-    } else if (testChannel) {
-      results.testMessage = {
-        success: false,
-        error: "No teams configured - configure Slack connection in Mesh first",
-      };
-    }
-  } catch (error) {
-    results.error = String(error);
-  }
+  // Note: Can't list all teams without env context in GET route
+  // For debugging, check logs or use Mesh UI
 
   return c.json(results, 200);
 });
@@ -253,11 +251,15 @@ app.post("/slack/events", async (c) => {
     return c.json({ error: "Missing team_id" }, 400);
   }
 
-  // Lookup team configuration
-  const teamConfig = await readTeamConfig(teamId);
-  if (!teamConfig) {
-    return c.json({ error: "Team not configured" }, 403);
-  }
+  // Legacy route - team-based lookup not supported with DATABASE binding
+  // Please use /slack/events/:connectionId instead
+  return c.json(
+    {
+      error:
+        "Legacy team-based route deprecated - use /slack/events/:connectionId",
+    },
+    410,
+  );
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -298,17 +300,8 @@ app.post("/slack/commands", async (c) => {
     return c.json({ error: "Invalid command" }, 400);
   }
 
-  // Get team_id from command
-  const teamId = command.team_id;
-  if (!teamId) {
-    return c.json({ error: "Missing team_id" }, 400);
-  }
-
-  // Lookup team configuration
-  const teamConfig = await readTeamConfig(teamId);
-  if (!teamConfig) {
-    return c.json({ error: "Team not configured" }, 403);
-  }
+  // Legacy route - team-based lookup not supported with DATABASE binding
+  return c.json({ error: "Legacy team-based route deprecated" }, 410);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -355,17 +348,8 @@ app.post("/slack/interactive", async (c) => {
     return c.json({ error: "Invalid payload" }, 400);
   }
 
-  // Get team_id from interactive payload
-  const teamId = interactivePayload.team?.id;
-  if (!teamId) {
-    return c.json({ error: "Missing team_id" }, 400);
-  }
-
-  // Lookup team configuration
-  const teamConfig = await readTeamConfig(teamId);
-  if (!teamConfig) {
-    return c.json({ error: "Team not configured" }, 403);
-  }
+  // Legacy route - team-based lookup not supported with DATABASE binding
+  return c.json({ error: "Legacy team-based route deprecated" }, 410);
 
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
@@ -465,6 +449,7 @@ async function processConnectionEventAsync(
       signingSecret: connectionConfig.signingSecret,
       botUserId: connectionConfig.botUserId,
       configuredAt: connectionConfig.configuredAt,
+      responseConfig: connectionConfig.responseConfig,
     };
 
     await handleSlackEvent(

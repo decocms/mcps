@@ -186,3 +186,62 @@ export function clearPersistentApiKey(connectionId: string): void {
 export function hasPersistentApiKey(connectionId: string): boolean {
   return persistentApiKeys.has(connectionId);
 }
+
+/**
+ * Load API Key from KV Store (for restart recovery)
+ *
+ * Checks in-memory cache first, then tries to load from KV store.
+ * This allows API keys to survive server restarts.
+ */
+export async function loadApiKeyFromKV(
+  connectionId: string,
+  getConfigFn: (id: string) => Promise<{ meshToken?: string } | null>,
+): Promise<string | null> {
+  // 1. Check in-memory cache
+  const cached = persistentApiKeys.get(connectionId);
+  if (cached) return cached;
+
+  // 2. Try to load from KV (survives restarts)
+  try {
+    const config = await getConfigFn(connectionId);
+    if (config?.meshToken) {
+      persistentApiKeys.set(connectionId, config.meshToken);
+      console.log(`[API-KEY] Loaded from KV for ${connectionId}`);
+      return config.meshToken;
+    }
+  } catch (err) {
+    console.error(`[API-KEY] Failed to load from KV:`, err);
+  }
+
+  return null;
+}
+
+/**
+ * Cleanup orphaned API keys (connections that no longer exist)
+ *
+ * Should be called periodically to prevent memory leaks.
+ * Returns the number of keys cleaned up.
+ */
+export async function cleanupOrphanedKeys(
+  getConfigFn: (id: string) => Promise<any | null>,
+): Promise<number> {
+  let cleaned = 0;
+  for (const [connectionId] of persistentApiKeys) {
+    const config = await getConfigFn(connectionId);
+    if (!config) {
+      persistentApiKeys.delete(connectionId);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[API-KEY] Cleaned ${cleaned} orphaned keys`);
+  }
+  return cleaned;
+}
+
+/**
+ * Get count of cached API keys (for monitoring)
+ */
+export function getApiKeysCount(): number {
+  return persistentApiKeys.size;
+}
