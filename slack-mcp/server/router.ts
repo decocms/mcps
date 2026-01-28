@@ -21,12 +21,7 @@ import {
 } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import type { ConnectionConfig } from "./lib/db-sql.ts";
-import {
-  getCachedConnectionConfig,
-  cacheConnectionConfig,
-} from "./lib/config-cache.ts";
-import { runSQL } from "./lib/db-sql.ts";
-import type { Env } from "./types/env.ts";
+import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 
 // Legacy types for backwards compatibility
 type SlackConnectionConfig = ConnectionConfig;
@@ -212,9 +207,8 @@ app.post("/slack/events/:connectionId", async (c) => {
  * Access: GET /debug?channel=C0A9RBGTTS9
  */
 app.get("/debug", async (c) => {
-  const { sendMessage, initializeSlackClient } = await import(
-    "./lib/slack-client.ts"
-  );
+  // Debug endpoint for testing (currently unused)
+  await import("./lib/slack-client.ts");
 
   const testChannel = c.req.query("channel");
   const results: Record<string, unknown> = {

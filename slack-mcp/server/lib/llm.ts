@@ -237,7 +237,7 @@ export async function generateLLMResponse(
               }
             }
           }
-        } catch (e) {
+        } catch (_e) {
           // Ignore parse errors (e.g., [DONE])
         }
       }

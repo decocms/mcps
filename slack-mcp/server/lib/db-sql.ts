@@ -73,7 +73,7 @@ export async function ensureConnectionsTable(env: Env) {
       env,
       `ALTER TABLE slack_connections ADD COLUMN IF NOT EXISTS response_config JSONB`,
     );
-  } catch (error) {
+  } catch (_error) {
     // Ignore errors (column may already exist, or PostgreSQL version may not support IF NOT EXISTS)
     console.log("[DB-SQL] ℹ️ response_config column may already exist");
   }

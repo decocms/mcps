@@ -592,11 +592,6 @@ async function handleAppMention(
     true, // Clean bot mention
   );
 
-  const meshConfig = {
-    meshUrl: teamConfig.meshUrl,
-    organizationId: teamConfig.organizationId,
-  };
-
   // Check if LLM is configured
   if (!isLLMConfigured()) {
     const warningMsg =
@@ -1120,7 +1115,7 @@ async function routeEventToHandler(
   eventType: string,
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
-  const context: SlackEventContext = { type: eventType, payload: event };
+  // context is kept for future use (e.g., event logging)
 
   switch (eventType) {
     case "app_mention":

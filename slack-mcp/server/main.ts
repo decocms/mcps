@@ -38,7 +38,6 @@ import { setServerBaseUrl } from "./lib/serverConfig.ts";
 import {
   getOrCreatePersistentApiKey,
   loadApiKeyFromKV,
-  cleanupOrphanedKeys,
 } from "@decocms/mcps-shared/api-key-manager";
 import { initializeKvStore } from "./lib/kv.ts";
 
