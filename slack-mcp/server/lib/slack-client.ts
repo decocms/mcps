@@ -167,6 +167,27 @@ export async function getBotInfo(): Promise<{
   }
 }
 
+/**
+ * Get team info (workspace name)
+ */
+export async function getTeamInfo(): Promise<{
+  id: string;
+  name: string;
+} | null> {
+  if (!webClient) return null;
+
+  try {
+    const result = await webClient.team.info();
+    return {
+      id: result.team?.id as string,
+      name: result.team?.name as string,
+    };
+  } catch (error) {
+    console.error("[Slack] Failed to get team info:", error);
+    return null;
+  }
+}
+
 // ============================================================================
 // MESSAGE METHODS
 // ============================================================================

@@ -38,11 +38,7 @@ type SlackTeamConfig = {
     showThinkingMessage?: boolean;
   };
 };
-import {
-  logger,
-  pauseSlackLogging,
-  resumeSlackLogging,
-} from "../../lib/logger.ts";
+import { logger } from "../../lib/logger.ts";
 import { shouldIgnoreEvent } from "../../webhook.ts";
 
 // Import modular handlers
@@ -510,6 +506,20 @@ async function handleAppMention(
   const { channel, user, text, ts, thread_ts, files } = event;
   console.log(`[EventHandler] App mention from ${user} in ${channel}`);
 
+  // Log app mention received
+  logger.info("App mention received", {
+    connectionId: teamConfig.teamId,
+    teamId: teamConfig.teamId,
+    teamName: (teamConfig as any).teamName,
+    organizationId: teamConfig.organizationId,
+    eventType: "app_mention",
+    channel,
+    userId: user,
+    hasText: !!text,
+    textLength: text?.length || 0,
+    hasFiles: !!files?.length,
+  });
+
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
@@ -746,6 +756,20 @@ async function handleDirectMessage(
 ): Promise<void> {
   console.log(`[EventHandler] DM from ${user}`);
 
+  // Log direct message received
+  logger.info("Direct message received", {
+    connectionId: teamConfig.teamId,
+    teamId: teamConfig.teamId,
+    teamName: (teamConfig as any).teamName,
+    organizationId: teamConfig.organizationId,
+    eventType: "message",
+    channel,
+    userId: user,
+    hasText: !!text,
+    textLength: text?.length || 0,
+    hasMedia: !!media?.length,
+  });
+
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
@@ -816,6 +840,21 @@ async function handleThreadReply(
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
   console.log(`[EventHandler] Thread reply from ${user}`);
+
+  // Log thread reply received
+  logger.info("Thread reply received", {
+    connectionId: teamConfig.teamId,
+    teamId: teamConfig.teamId,
+    teamName: (teamConfig as any).teamName,
+    organizationId: teamConfig.organizationId,
+    eventType: "message",
+    channel,
+    userId: user,
+    hasText: !!text,
+    textLength: text?.length || 0,
+    hasMedia: !!media?.length,
+    threadTs,
+  });
 
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
@@ -953,7 +992,11 @@ export async function handleLLMResponse(
     }
 
     if (responseTs) {
-      await logger.messageSent(channel, text);
+      logger.info("Message sent", {
+        channel,
+        hasText: !!text,
+        textLength: text?.length || 0,
+      });
       const threadIdentifier = threadTs ?? messageTs ?? responseTs;
       await appendAssistantMessage(channel, threadIdentifier, text, responseTs);
     }
@@ -1011,13 +1054,9 @@ export async function handleSlackWebhookEvent(
   payload: unknown,
   config: MeshConfig,
 ): Promise<void> {
-  pauseSlackLogging();
-
   try {
     console.log("[EventHandler] ========================================");
     console.log("[EventHandler] Processing webhook from Mesh");
-
-    await logger.webhookProcessing("Webhook received", { ...config });
 
     // Validate payload
     if (!payload || typeof payload !== "object") {
@@ -1026,7 +1065,7 @@ export async function handleSlackWebhookEvent(
 
     const slackPayload = payload as SlackWebhookPayload;
 
-    await logger.webhookProcessing("Payload parsed", {
+    logger.info("Webhook payload parsed", {
       type: slackPayload.type,
       teamId: slackPayload.team_id,
       hasEvent: !!slackPayload.event,
@@ -1034,7 +1073,7 @@ export async function handleSlackWebhookEvent(
 
     // Handle URL verification
     if (slackPayload.type === "url_verification") {
-      await logger.success("URL Verification Challenge handled");
+      logger.info("URL verification challenge handled");
       return;
     }
 
@@ -1048,9 +1087,12 @@ export async function handleSlackWebhookEvent(
       return;
     }
 
-    await logger.webhookError(`Unknown payload type: ${slackPayload.type}`);
-  } finally {
-    resumeSlackLogging();
+    logger.warn(`Unknown payload type: ${slackPayload.type}`);
+  } catch (error) {
+    logger.error("Webhook processing error", {
+      error: String(error),
+    });
+    throw error;
   }
 }
 
@@ -1061,7 +1103,10 @@ async function handleEventCallback(
   slackPayload: SlackWebhookPayload,
   config: MeshConfig,
 ): Promise<void> {
-  await logger.webhookProcessing("Event callback received");
+  logger.info("Event callback received", {
+    hasEvent: !!slackPayload.event,
+    eventType: slackPayload.event?.type,
+  });
 
   if (!slackPayload.event) {
     throw new Error("Invalid event_callback - missing event");
@@ -1082,7 +1127,8 @@ async function handleEventCallback(
     return;
   }
 
-  await logger.eventReceived(eventType, {
+  logger.info("Event received", {
+    eventType,
     user: event.user,
     channel: event.channel,
     text: event.text?.substring(0, 100),
@@ -1102,7 +1148,10 @@ async function handleEventCallback(
   try {
     await routeEventToHandler(event, eventType, teamConfig);
   } catch (error) {
-    await logger.eventError(eventType, String(error));
+    logger.error("Event handling failed", {
+      eventType,
+      error: String(error),
+    });
     throw error;
   }
 }
@@ -1119,33 +1168,28 @@ async function routeEventToHandler(
 
   switch (eventType) {
     case "app_mention":
-      await logger.webhookProcessing(`Handling ${eventType}`);
+      logger.debug(`Handling app_mention`);
       await handleAppMention(event as SlackAppMentionEvent, teamConfig);
-      await logger.eventHandled(eventType);
       break;
 
     case "message":
-      await logger.webhookProcessing(`Handling ${eventType}`);
+      logger.debug(`Handling message`);
       await handleMessage(event as SlackMessageEvent, teamConfig);
-      await logger.eventHandled(eventType);
       break;
 
     case "reaction_added":
-      await logger.webhookProcessing(`Handling ${eventType}`);
+      logger.debug(`Handling reaction_added`);
       await handleReactionAdded(event, teamConfig);
-      await logger.eventHandled(eventType);
       break;
 
     case "channel_created":
-      await logger.webhookProcessing(`Handling ${eventType}`);
+      logger.debug(`Handling channel_created`);
       await handleChannelCreated(event, teamConfig);
-      await logger.eventHandled(eventType);
       break;
 
     case "member_joined_channel":
-      await logger.webhookProcessing(`Handling ${eventType}`);
+      logger.debug(`Handling member_joined_channel`);
       await handleMemberJoined(event, teamConfig);
-      await logger.eventHandled(eventType);
       break;
 
     default:

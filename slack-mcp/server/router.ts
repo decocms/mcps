@@ -22,6 +22,7 @@ import {
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import type { ConnectionConfig } from "./lib/db-sql.ts";
 import { getCachedConnectionConfig } from "./lib/config-cache.ts";
+import { logger, HyperDXLogger } from "./lib/logger.ts";
 
 // Legacy types for backwards compatibility
 type SlackConnectionConfig = ConnectionConfig;
@@ -32,6 +33,8 @@ type SlackTeamConfig = {
   botToken: string;
   signingSecret: string;
   botUserId?: string;
+  teamName?: string;
+  connectionName?: string;
   configuredAt?: string;
   responseConfig?: {
     showOnlyFinalResponse?: boolean;
@@ -109,52 +112,74 @@ app.get("/temp-files/:id", async (c) => {
  */
 app.post("/slack/events/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
+  const traceId = HyperDXLogger.generateTraceId();
+  const startTime = Date.now();
   const rawBody = await c.req.text();
+
+  // 1. Log webhook arrival
+  const signature = c.req.header("x-slack-signature");
+  const timestamp = c.req.header("x-slack-request-timestamp");
+  logger.info("Webhook received", {
+    connectionId,
+    trace_id: traceId,
+    route: "/slack/events/:connectionId",
+    method: "POST",
+    hasSignature: !!signature,
+    hasTimestamp: !!timestamp,
+    payloadSize: rawBody.length,
+    userAgent: c.req.header("user-agent"),
+  });
 
   // Parse payload
   let parsedPayload: SlackWebhookPayload;
   try {
     parsedPayload = JSON.parse(rawBody);
   } catch {
-    console.error("[Router] Failed to parse JSON");
+    logger.error("Failed to parse webhook payload", {
+      connectionId,
+      trace_id: traceId,
+      error: "Invalid JSON",
+    });
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
+  // 2. Log event type identified
+  logger.info("Event type identified", {
+    connectionId,
+    trace_id: traceId,
+    eventType: parsedPayload.type,
+    hasEvent: !!parsedPayload.event,
+    slackEventType: parsedPayload.event?.type,
+  });
+
   // Handle URL verification challenge (doesn't need connection config)
   if (parsedPayload.type === "url_verification") {
+    logger.info("URL verification challenge", {
+      connectionId,
+      trace_id: traceId,
+    });
     return new Response(parsedPayload.challenge, {
       status: 200,
       headers: { "Content-Type": "text/plain" },
     });
   }
 
-  // Lookup connection configuration from persistent KV cache
-  // Note: Cache is populated by onChange (which has DATABASE binding access)
-  // Cache survives server restarts!
-  console.log(
-    `[Router] 🔍 Looking up connection config from persistent cache: ${connectionId}`,
+  // 3. Lookup connection configuration from persistent KV cache
+  let connectionConfig = await logger.measure(
+    () => getCachedConnectionConfig(connectionId),
+    "Cache lookup",
+    { connectionId, trace_id: traceId },
   );
-  let connectionConfig = await getCachedConnectionConfig(connectionId);
 
   // LAZY LOADING: If cache miss, try to fetch from DATABASE
   // This handles new K8s pods that start with empty cache
   if (!connectionConfig) {
-    console.log(
-      `[Router] ⚠️ Cache miss for ${connectionId}, attempting lazy load from DATABASE...`,
-    );
-
-    // We don't have MCP context here, so we can't use DATABASE binding directly
-    // Instead, we'll return a helpful error that triggers a re-sync
-    console.error(
-      `[Router] ❌ Connection not found in persistent cache: ${connectionId}`,
-    );
-    console.error(`[Router] 💡 This means:`);
-    console.error(
-      `[Router]    1. New K8s pod with empty cache (call SYNC_CONFIG_CACHE tool to warm-up)`,
-    );
-    console.error(`[Router]    2. Or connection not yet saved in Mesh UI`);
-    console.error(`[Router]    - Connection ID: ${connectionId}`);
-    console.error(`[Router]    - Webhook: POST /slack/events/${connectionId}`);
+    logger.error("Connection config not found", {
+      connectionId,
+      trace_id: traceId,
+      error: "Cache miss - pod may need warm-up",
+      route: "/slack/events/:connectionId",
+    });
     return c.json(
       {
         error:
@@ -165,34 +190,94 @@ app.post("/slack/events/:connectionId", async (c) => {
       503, // Service Unavailable (temporary)
     );
   }
-  console.log(
-    `[Router] ✅ Connection loaded from persistent cache: ${connectionId}`,
-  );
 
-  const signature = c.req.header("x-slack-signature");
-  const timestamp = c.req.header("x-slack-request-timestamp");
+  // 4. Log cache hit with names
+  logger.info("Connection config found (cache hit)", {
+    connectionId,
+    connectionName: connectionConfig.connectionName,
+    trace_id: traceId,
+    teamId: connectionConfig.teamId,
+    teamName: connectionConfig.teamName,
+    organizationId: connectionConfig.organizationId,
+  });
 
   // Verify the request with connection's signing secret
-  const { verified, payload } = await verifySlackRequest(
-    rawBody,
-    signature ?? null,
-    timestamp ?? null,
-    connectionConfig.signingSecret,
+  const { verified, payload } = await logger.measure(
+    () =>
+      verifySlackRequest(
+        rawBody,
+        signature ?? null,
+        timestamp ?? null,
+        connectionConfig.signingSecret,
+      ),
+    "Signature verification",
+    { connectionId, trace_id: traceId },
   );
 
   if (!verified || !payload) {
+    logger.error("Invalid signature", {
+      connectionId,
+      trace_id: traceId,
+      teamId: connectionConfig.teamId,
+      teamName: connectionConfig.teamName,
+    });
     return c.json({ error: "Invalid signature" }, 401);
   }
+
+  // 5. Log signature verified
+  logger.info("Signature verified successfully", {
+    connectionId,
+    trace_id: traceId,
+    eventType: payload.event?.type,
+    channel: payload.event?.channel,
+    userId: payload.event?.user,
+    hasText: !!payload.event?.text,
+    textLength: payload.event?.text?.length || 0,
+    hasFiles: !!(payload.event as any)?.files?.length,
+  });
 
   // Check if we should ignore this event
   const botUserId =
     connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
   if (shouldIgnoreEvent(payload, botUserId)) {
+    logger.debug("Event ignored (bot message or duplicate)", {
+      connectionId,
+      trace_id: traceId,
+      eventType: payload.event?.type,
+    });
     return c.json({ ok: true });
   }
 
+  // 6. Log routing
+  logger.info("Routing to event handler", {
+    connectionId,
+    teamName: connectionConfig.teamName,
+    trace_id: traceId,
+    eventType: payload.event?.type,
+    channel: payload.event?.channel,
+    userId: payload.event?.user,
+  });
+
   // Process the event asynchronously
-  processConnectionEventAsync(payload, connectionConfig).catch(console.error);
+  processConnectionEventAsync(payload, connectionConfig, traceId).catch(
+    (error) => {
+      logger.error("Event processing failed", {
+        connectionId,
+        trace_id: traceId,
+        error: String(error),
+      });
+    },
+  );
+
+  const duration = Date.now() - startTime;
+
+  // 7. Log acknowledge
+  logger.info("Webhook acknowledged", {
+    connectionId,
+    trace_id: traceId,
+    duration,
+    status: "success",
+  });
 
   // Acknowledge immediately (Slack expects response within 3 seconds)
   return c.json({ ok: true });
@@ -308,16 +393,26 @@ app.post("/slack/interactive", async (c) => {
 async function processConnectionEventAsync(
   payload: SlackWebhookPayload,
   connectionConfig: SlackConnectionConfig,
+  traceId: string,
 ): Promise<void> {
   if (!payload.event) return;
+
+  // Log processing start
+  logger.info("Event processing started", {
+    connectionId: connectionConfig.connectionId,
+    trace_id: traceId,
+    eventType: payload.event.type,
+    channel: payload.event.channel,
+  });
 
   // IMPORTANT: Initialize Slack client with this connection's token
   // Each connection has its own Slack workspace credentials
   initializeSlackClient({ botToken: connectionConfig.botToken });
 
   // Configure LLM with this connection's settings
-  console.log("[Router] Connection config for LLM:", {
+  logger.info("LLM configuration", {
     connectionId: connectionConfig.connectionId,
+    trace_id: traceId,
     organizationId: connectionConfig.organizationId,
     meshUrl: connectionConfig.meshUrl,
     hasToken: !!connectionConfig.meshToken,
@@ -338,9 +433,10 @@ async function processConnectionEventAsync(
   } else {
     // Clear LLM config to prevent cross-tenant configuration leakage
     clearLLMConfig();
-    console.warn(
-      "[Router] LLM not configured - missing meshToken or modelProviderId",
-    );
+    logger.warn("LLM not configured - missing meshToken or modelProviderId", {
+      connectionId: connectionConfig.connectionId,
+      trace_id: traceId,
+    });
   }
 
   const event = payload.event;

@@ -59,7 +59,9 @@ export async function ensureConnectionsTable(env: Env) {
       bot_token TEXT NOT NULL,
       signing_secret TEXT NOT NULL,
       team_id TEXT,
+      team_name TEXT,
       bot_user_id TEXT,
+      connection_name TEXT,
       response_config JSONB,
       configured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -76,6 +78,26 @@ export async function ensureConnectionsTable(env: Env) {
   } catch (_error) {
     // Ignore errors (column may already exist, or PostgreSQL version may not support IF NOT EXISTS)
     console.log("[DB-SQL] ℹ️ response_config column may already exist");
+  }
+
+  // Add team_name column if it doesn't exist (migration for existing tables)
+  try {
+    await runSQL(
+      env,
+      `ALTER TABLE slack_connections ADD COLUMN IF NOT EXISTS team_name TEXT`,
+    );
+  } catch (_error) {
+    console.log("[DB-SQL] ℹ️ team_name column may already exist");
+  }
+
+  // Add connection_name column if it doesn't exist (migration for existing tables)
+  try {
+    await runSQL(
+      env,
+      `ALTER TABLE slack_connections ADD COLUMN IF NOT EXISTS connection_name TEXT`,
+    );
+  } catch (_error) {
+    console.log("[DB-SQL] ℹ️ connection_name column may already exist");
   }
 
   // Create indexes
@@ -102,7 +124,9 @@ export interface ConnectionConfig {
   botToken: string;
   signingSecret: string;
   teamId?: string;
+  teamName?: string;
   botUserId?: string;
+  connectionName?: string;
   responseConfig?: {
     showOnlyFinalResponse?: boolean;
     enableStreaming?: boolean;
@@ -129,10 +153,10 @@ export async function saveConnectionConfig(
     INSERT INTO slack_connections (
       connection_id, organization_id, mesh_url, mesh_token,
       model_provider_id, model_id, agent_id, system_prompt,
-      bot_token, signing_secret, team_id, bot_user_id,
+      bot_token, signing_secret, team_id, team_name, bot_user_id, connection_name,
       response_config,
       configured_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, NOW(), NOW())
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, NOW(), NOW())
     ON CONFLICT (connection_id) DO UPDATE SET
       organization_id = EXCLUDED.organization_id,
       mesh_url = EXCLUDED.mesh_url,
@@ -144,7 +168,9 @@ export async function saveConnectionConfig(
       bot_token = EXCLUDED.bot_token,
       signing_secret = EXCLUDED.signing_secret,
       team_id = EXCLUDED.team_id,
+      team_name = EXCLUDED.team_name,
       bot_user_id = EXCLUDED.bot_user_id,
+      connection_name = EXCLUDED.connection_name,
       response_config = EXCLUDED.response_config,
       updated_at = NOW()
   `,
@@ -160,7 +186,9 @@ export async function saveConnectionConfig(
       config.botToken,
       config.signingSecret,
       config.teamId || null,
+      config.teamName || null,
       config.botUserId || null,
+      config.connectionName || null,
       responseConfigJson,
     ],
   );
@@ -189,7 +217,9 @@ export async function readConnectionConfig(
     bot_token: string;
     signing_secret: string;
     team_id: string | null;
+    team_name: string | null;
     bot_user_id: string | null;
+    connection_name: string | null;
     response_config: string | null;
     configured_at: string;
     updated_at: string;
@@ -227,7 +257,9 @@ export async function readConnectionConfig(
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
+    teamName: row.team_name || undefined,
     botUserId: row.bot_user_id || undefined,
+    connectionName: row.connection_name || undefined,
     responseConfig,
     configuredAt: row.configured_at,
     updatedAt: row.updated_at,

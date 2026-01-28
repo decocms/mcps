@@ -135,6 +135,21 @@ export const StateSchema = z.object({
     })
     .optional()
     .describe("How the bot responds to messages"),
+
+  // Optional fields for HyperDX logging
+  CONNECTION_NAME: z
+    .string()
+    .optional()
+    .describe(
+      "Friendly name for this connection (e.g., 'Cliente Acme - Produção'). Used in HyperDX logs for easy identification.",
+    ),
+
+  HYPERDX_API_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "HyperDX API key for sending logs (optional, for enhanced monitoring). Logs are sent to stdout by default.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;

@@ -15,7 +15,11 @@ import { withRuntime } from "@decocms/runtime";
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
-import { initializeSlackClient, getBotInfo } from "./lib/slack-client.ts";
+import {
+  initializeSlackClient,
+  getBotInfo,
+  getTeamInfo,
+} from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
 import {
   configureLLM,
@@ -32,7 +36,7 @@ import {
   type ConnectionConfig,
 } from "./lib/db-sql.ts";
 import { cacheConnectionConfig } from "./lib/config-cache.ts";
-import { configureLogger, logger } from "./lib/logger.ts";
+import { logger } from "./lib/logger.ts";
 import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 import { setServerBaseUrl } from "./lib/serverConfig.ts";
 import {
@@ -365,12 +369,14 @@ const onChangeHandler = async (env: Env, config: any) => {
 
     console.log("🔔 [onChange] ✅ Config saved to DATABASE and cached!");
 
-    // Initialize Slack client to get additional info (teamId, botUserId)
+    // Initialize Slack client to get additional info (teamId, botUserId, teamName)
     try {
       initializeSlackClient({ botToken });
 
       // Get bot info (includes teamId)
       const botInfo = await getBotInfo();
+      // Get team info (includes workspace name)
+      const teamInfo = await getTeamInfo();
 
       if (botInfo?.teamId || botInfo?.userId) {
         // Update connection with Slack API data
@@ -388,27 +394,32 @@ const onChangeHandler = async (env: Env, config: any) => {
         }
       }
 
-      // Configure logger with log channel
-      configureLogger({ channelId: logChannelId });
+      // Update with team name and connection name
+      if (botInfo?.teamId || teamInfo?.name) {
+        const connectionName = config.CONNECTION_NAME || undefined;
+        const updatedConfig: ConnectionConfig = {
+          ...configToSave,
+          teamId: botInfo?.teamId,
+          teamName: teamInfo?.name,
+          connectionName,
+        };
+        await saveConnectionConfig(env, updatedConfig);
+        cacheConnectionConfig(updatedConfig);
+      }
+
+      // TODO: Configure logger with log channel (currently using HyperDX logging)
 
       // Build webhook URL
       const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
 
       // Log config received
-      await logger.configReceived({
-        meshUrl,
-        organizationId,
+      logger.info("Configuration received and saved", {
+        connectionId,
         teamId: botInfo?.teamId ?? "unknown",
+        teamName: (teamInfo?.name as any) ?? "unknown",
         botUserId: botInfo?.userId,
-        logChannelId: logChannelId ?? "not set",
         webhookUrl,
       });
-
-      // Send connection success log to Slack
-      await logger.connected(
-        botInfo?.teamId ?? connectionId,
-        botInfo?.userId ?? "unknown",
-      );
     } catch (error) {
       // Config is already saved, just log the error
       await logger.error("Failed to get Slack info", {
