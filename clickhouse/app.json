@@ -6,16 +6,15 @@
     "type": "HTTP",
     "url": "https://mcp.clickhouse.cloud/mcp"
   },
-  "description": "Access ClickHouse's powerful analytics database through MCP. Query data, manage databases, and get help with ClickHouse SQL instantly.",
+  "description": "Query and manage ClickHouse databases. Run SQL, explore schemas, and analyze data at scale.",
   "icon": "https://clickhouse.com/images/ch_gh_avatar.png",
   "unlisted": false,
   "metadata": {
     "categories": ["Database", "Analytics"],
     "official": true,
     "mesh_unlisted": true,
-    "tags": ["clickhouse", "database", "analytics", "sql", "olap", "data-warehouse", "real-time", "columnar"],
-    "short_description": "Access ClickHouse's powerful analytics database through MCP",
-    "mesh_description": "ClickHouse MCP provides intelligent access to ClickHouse, the fast open-source columnar database management system for online analytical processing (OLAP). This official MCP enables AI agents to interact with ClickHouse databases, run SQL queries, explore schemas, and get help with ClickHouse-specific SQL syntax. Perfect for real-time analytics, log analysis, time-series data, and business intelligence workloads. ClickHouse is known for its exceptional query performance, efficient compression, and ability to process billions of rows in seconds. The MCP helps developers and analysts leverage ClickHouse's full potential for data exploration, reporting, and building data-driven applications."
+    "tags": ["clickhouse", "database", "analytics", "sql", "olap", "data-warehouse"],
+    "short_description": "Query and manage ClickHouse databases with SQL",
+    "mesh_description": "ClickHouse MCP enables AI agents to interact with ClickHouse, the fast columnar database for real-time analytics. Run SQL queries, explore schemas, and analyze billions of rows in seconds. Perfect for log analysis, time-series data, and business intelligence."
   }
 }
-
