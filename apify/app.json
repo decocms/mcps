@@ -1,0 +1,25 @@
+{
+  "scopeName": "deco",
+  "name": "apify",
+  "friendlyName": "Apify",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-apify.decocache.com/mcp"
+  },
+  "description": "Run Apify actors for web scraping, automation, and data extraction tasks.",
+  "icon": "https://assets.decocache.com/mcp/apify-icon.svg",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["Automation", "Web Scraping"],
+    "official": false,
+    "tags": ["apify", "scraping", "automation", "actors", "data-extraction", "web-crawling"],
+    "short_description": "Run Apify actors for web scraping and automation tasks.",
+    "mesh_description": "The Apify MCP provides comprehensive integration with the Apify platform, enabling AI agents to run web scraping actors, manage automation tasks, and extract data from websites. This MCP allows listing available actors, getting actor details, running actors synchronously or asynchronously, and retrieving run results with dataset items. Perfect for building intelligent automation workflows, data collection pipelines, and web monitoring solutions. Authentication is done via Apify API token passed in the Authorization header."
+  }
+}
+

@@ -1,68 +1,21 @@
 /**
- * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * your MCP server at /mcp.
- */
-import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import {
-  type Env as DecoEnv,
-  StateSchema,
-  Scopes,
-} from "../shared/deco.gen.ts";
-
-import { createTools } from "./tools/index.ts";
-
-/**
- * This Env type is the main context object that is passed to
- * all of your Application.
+ * Apify MCP Server
  *
- * It includes all of the generated types from your
- * Deco bindings, along with the default ones.
+ * This MCP provides tools for interacting with Apify actors,
+ * running web scraping and automation tasks.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-  };
+import { withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
 
-const runtime = withRuntime<Env, typeof StateSchema>({
-  oauth: {
-    /**
-     * These scopes define the asking permissions of your
-     * app when a user is installing it. When a user authorizes
-     * your app for running Apify actors, you will be able to use
-     * `env.APIFY_CONTRACT` and charge for actor executions.
-     */
-    scopes: [
-      Scopes.APIFY_CONTRACT.CONTRACT_AUTHORIZE,
-      Scopes.APIFY_CONTRACT.CONTRACT_SETTLE,
-    ],
-    /**
-     * The state schema of your Application defines what
-     * your installed App state will look like. When a user
-     * is installing your App, they will have to fill in
-     * a form with the fields defined in the state schema.
-     *
-     * This is powerful for building multi-tenant apps,
-     * where you can have multiple users and projects
-     * sharing different configurations on the same app.
-     *
-     * When you define a binding dependency on another app,
-     * it will automatically be linked to your StateSchema on
-     * type generation. You can also `.extend` it to add more
-     * fields to the state schema, like asking for an API Key
-     * for connecting to a third-party service.
-     */
-    state: StateSchema,
-  },
-  tools: createTools as any,
-  /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
-   */
-  fetch: (req, env) => env.ASSETS.fetch(req),
+import { tools } from "./tools/index.ts";
+import type { Env } from "../shared/deco.gen.ts";
+
+export type { Env };
+
+const runtime = withRuntime<Env>({
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
-export default runtime;
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}
