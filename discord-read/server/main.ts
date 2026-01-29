@@ -83,10 +83,19 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Set database env for shared module
       setDatabaseEnv(env);
 
-      // Create tables first, then indexes
-      await ensureCollections(env);
-      await ensureIndexes(env);
-      console.log("[CONFIG] Database tables ready");
+      // Create tables first, then indexes (optional - skip if no database configured)
+      try {
+        await ensureCollections(env);
+        await ensureIndexes(env);
+        console.log("[CONFIG] Database tables ready");
+      } catch (error) {
+        console.log(
+          "[CONFIG] Database not available (Supabase or DATABASE binding required). Message indexing disabled.",
+        );
+        console.log(
+          "[CONFIG] To enable message indexing, set SUPABASE_URL + SUPABASE_ANON_KEY or configure DATABASE binding.",
+        );
+      }
 
       // Get configuration from state
       const state = env.MESH_REQUEST_CONTEXT?.state;
@@ -383,13 +392,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "MODEL_PROVIDER::*",
-      "*",
-    ],
+    scopes: ["EVENT_BUS::*", "CONNECTION::*", "MODEL_PROVIDER::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

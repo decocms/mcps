@@ -38,11 +38,17 @@ export async function runSQL<T = unknown>(
     );
   }
 
-  const response =
-    await _env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql,
-      params,
-    });
+  const database = _env.MESH_REQUEST_CONTEXT?.state?.DATABASE;
+  if (!database) {
+    throw new Error(
+      "[Database] DATABASE binding not available. Configure DATABASE binding or use Supabase.",
+    );
+  }
+
+  const response = await database.DATABASES_RUN_SQL({
+    sql,
+    params,
+  });
   // Response is typed as object but actually has .result property
   const data = response as
     | { result?: Array<{ results?: unknown[] }> }
