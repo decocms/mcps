@@ -1,0 +1,15 @@
+{
+  "name": "@decocms/mcp-gateway",
+  "version": "1.0.0",
+  "description": "Gateway to serve multiple MCPs through a single tunnel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.ts",
+    "dev": "bun run --hot server.ts",
+    "setup": "bun run setup.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

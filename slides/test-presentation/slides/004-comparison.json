@@ -1,0 +1,30 @@
+{
+  "id": "slide-004",
+  "layout": "two-column",
+  "title": "Before vs After",
+  "subtitle": "The transformation with Slides MCP",
+  "tag": "COMPARISON",
+  "backgroundColor": "dc-950",
+  "textColor": "light",
+  "accent": "purple",
+  "items": [
+    {
+      "title": "Traditional Approach",
+      "bullets": [
+        { "text": "Manual slide creation in PowerPoint" },
+        { "text": "Time-consuming formatting" },
+        { "text": "Inconsistent styling across slides" },
+        { "text": "Difficult to version control" }
+      ]
+    },
+    {
+      "title": "With Slides MCP",
+      "bullets": [
+        { "text": "AI-assisted content creation", "highlight": true },
+        { "text": "Automatic beautiful formatting", "highlight": true },
+        { "text": "Consistent design system", "highlight": true },
+        { "text": "Git-friendly JSON files", "highlight": true }
+      ]
+    }
+  ]
+}

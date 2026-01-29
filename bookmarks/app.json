@@ -1,0 +1,24 @@
+{
+  "scopeName": "deco",
+  "name": "bookmarks",
+  "friendlyName": "Bookmarks",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-bookmarks.decocache.com/mcp"
+  },
+  "description": "Bookmark management with AI enrichment via Perplexity and Firecrawl.",
+  "icon": "https://assets.decocache.com/decocms/bookmarks-icon.png",
+  "unlisted": false,
+  "bindings": {
+    "SUPABASE": "@supabase/supabase",
+    "PERPLEXITY": "@deco/perplexity",
+    "FIRECRAWL": "@deco/firecrawl"
+  },
+  "metadata": {
+    "categories": ["Productivity", "Research"],
+    "official": false,
+    "tags": ["bookmarks", "research", "ai", "perplexity", "firecrawl", "supabase"],
+    "short_description": "Manage and enrich bookmarks with AI research.",
+    "mesh_description": "The Bookmarks MCP provides tools for managing bookmarks stored in Supabase. It includes CRUD operations, full-text search, and AI enrichment capabilities. Use Perplexity to research bookmark content and Firecrawl to scrape page content. Import bookmarks from Chrome or Firefox exports. Each bookmark can store research summaries, insights from different perspectives (developer, founder, investor), and automatic classification with tags."
+  }
+}

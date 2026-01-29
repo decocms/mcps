@@ -1,0 +1,38 @@
+{
+  "title": "Test Presentation",
+  "subtitle": "January 2026",
+  "createdAt": "2026-01-22T00:00:00.000Z",
+  "updatedAt": "2026-01-22T00:00:00.000Z",
+  "slides": [
+    {
+      "id": "slide-001",
+      "file": "001-introduction.json",
+      "title": "Introduction",
+      "layout": "title"
+    },
+    {
+      "id": "slide-002",
+      "file": "002-key-metrics.json",
+      "title": "Key Metrics",
+      "layout": "stats"
+    },
+    {
+      "id": "slide-003",
+      "file": "003-features.json",
+      "title": "Key Features",
+      "layout": "list"
+    },
+    {
+      "id": "slide-004",
+      "file": "004-comparison.json",
+      "title": "Comparison",
+      "layout": "two-column"
+    },
+    {
+      "id": "slide-005",
+      "file": "005-quote.json",
+      "title": "Customer Quote",
+      "layout": "quote"
+    }
+  ]
+}
