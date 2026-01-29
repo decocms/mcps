@@ -9,7 +9,7 @@
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "check": "tsc --noEmit",
-    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outdir=dist/server",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
@@ -22,6 +22,7 @@
     "@snazzah/davey": "^0.1.9",
     "ai": "^6.0.27",
     "discord.js": "14.25.1",
+    "ffmpeg-static": "^5.2.0",
     "google-tts-api": "^2.0.2",
     "mammoth": "^1.11.0",
     "opusscript": "^0.1.1",
