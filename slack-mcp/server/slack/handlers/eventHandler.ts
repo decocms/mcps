@@ -622,9 +622,16 @@ async function handleAppMention(
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    console.log("[EventHandler] LLM response sent");
+    logger.info("App mention response sent", {
+      channel,
+      userId: user,
+    });
   } catch (error) {
-    console.error("[EventHandler] LLM error:", error);
+    logger.error("App mention LLM error", {
+      channel,
+      userId: user,
+      error: String(error),
+    });
   }
 }
 
@@ -815,9 +822,16 @@ async function handleDirectMessage(
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    console.log("[EventHandler] DM response sent");
+    logger.info("Direct message response sent", {
+      channel,
+      userId: user,
+    });
   } catch (error) {
-    console.error("[EventHandler] DM error:", error);
+    logger.error("Direct message LLM error", {
+      channel,
+      userId: user,
+      error: String(error),
+    });
   }
 }
 
@@ -904,9 +918,18 @@ async function handleThreadReply(
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    console.log("[EventHandler] Thread response sent");
+    logger.info("Thread reply response sent", {
+      channel,
+      userId: user,
+      threadTs,
+    });
   } catch (error) {
-    console.error("[EventHandler] Thread error:", error);
+    logger.error("Thread reply LLM error", {
+      channel,
+      userId: user,
+      threadTs,
+      error: String(error),
+    });
   }
 }
 
