@@ -1,0 +1,25 @@
+{
+  "scopeName": "deco",
+  "name": "perplexity",
+  "friendlyName": "Perplexity AI",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-perplexity.decocache.com/mcp"
+  },
+  "description": "Ask questions and have conversations with Perplexity AI. Get web-backed answers with real-time search capabilities.",
+  "icon": "https://assets.decocache.com/mcp/perplexity-icon.svg",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["AI", "Search"],
+    "official": false,
+    "tags": ["perplexity", "ai", "search", "llm", "web-search", "research", "questions"],
+    "short_description": "Ask questions and have conversations with Perplexity AI with web-backed answers.",
+    "mesh_description": "The Perplexity AI MCP provides comprehensive integration with Perplexity's AI search engine, enabling intelligent question-answering with real-time web search capabilities. This MCP allows AI agents to ask questions and get factual, up-to-date answers backed by web sources, have multi-turn conversations with context retention, control search parameters like domain filters and recency, and choose from various models including sonar, sonar-pro, and sonar-reasoning. The integration is perfect for research tasks, fact-checking, getting current information, and building intelligent assistants that need access to real-time web knowledge. Ideal for teams and individuals who need AI-powered research capabilities, accurate information retrieval, or want to augment their applications with web-backed AI responses. Authentication is done via API key passed in the Authorization header."
+  }
+}
+

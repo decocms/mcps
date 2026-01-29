@@ -1,12 +1,15 @@
 // Types for Perplexity API requests and responses
 import { z } from "zod";
-import {
-  type Message as SearchAIMessage,
-  MessageSchema as SearchAIMessageSchema,
-} from "@decocms/mcps-shared/search-ai";
 
-export type Message = SearchAIMessage;
-export const MessageSchema = SearchAIMessageSchema;
+// Message schema for chat-based interactions
+export const MessageSchema = z.object({
+  role: z
+    .enum(["system", "user", "assistant"])
+    .describe("The role of the message sender"),
+  content: z.string().describe("The content of the message"),
+});
+
+export type Message = z.infer<typeof MessageSchema>;
 
 export const PerplexityModels = [
   "sonar",
@@ -66,71 +69,3 @@ export interface ChatCompletionRequest {
   response_format?: ResponseFormat;
   web_search_options?: WebSearchOptions;
 }
-
-// Zod Schemas for validation and documentation
-
-const CommonChatOptionsSchema = z.object({
-  model: z
-    .enum([
-      "sonar",
-      "sonar-pro",
-      "sonar-deep-research",
-      "sonar-reasoning-pro",
-      "sonar-reasoning",
-    ])
-    .optional()
-    .describe("The model to use for generation. Defaults to 'sonar'"),
-  max_tokens: z
-    .number()
-    .optional()
-    .describe("Maximum number of tokens in the response"),
-  temperature: z
-    .number()
-    .min(0)
-    .max(2)
-    .optional()
-    .default(0.2)
-    .describe("Controls randomness (0-2). Lower is more focused"),
-  top_p: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .default(0.9)
-    .describe("Controls diversity via nucleus sampling (0-1)"),
-  search_domain_filter: z
-    .array(z.string())
-    .max(3)
-    .optional()
-    .describe("Limit search to specific domains (max 3)"),
-  return_images: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Include images in search results"),
-  return_related_questions: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Return related questions"),
-  search_recency_filter: z
-    .string()
-    .optional()
-    .describe("Filter by time (e.g., 'week', 'day', 'month')"),
-  search_context_size: z
-    .enum(["low", "medium", "high", "maximum"])
-    .optional()
-    .default("high")
-    .describe("Amount of web search context to include"),
-});
-
-export const ChatCompletionSchema = CommonChatOptionsSchema.extend({
-  prompt: z.string().describe("The text prompt or question to ask Perplexity"),
-});
-
-export const ChatWithMessagesSchema = CommonChatOptionsSchema.extend({
-  messages: z
-    .array(MessageSchema)
-    .min(1)
-    .describe("Array of conversation messages"),
-});

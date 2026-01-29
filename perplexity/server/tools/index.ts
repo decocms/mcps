@@ -1,16 +1,14 @@
 /**
- * Central export point for all tools organized by domain.
+ * Central export point for all Perplexity tools
  *
- * This file aggregates all tools from different domains into a single
- * export, making it easy to import all tools in main.ts while keeping
- * the domain separation.
+ * This file aggregates all tools into a single export,
+ * making it easy to import all tools in main.ts.
+ *
+ * Tools:
+ * - perplexityTools: Ask and Chat with Perplexity AI
  */
-import { userTools } from "@decocms/mcps-shared/tools/user";
-import { perplexityTools } from "./perplexity";
 
-// Export all tools from all domains
-export const tools = [...userTools, ...perplexityTools];
+import { perplexityTools } from "./perplexity.ts";
 
-// Re-export domain-specific tools for direct access if needed
-export { userTools } from "@decocms/mcps-shared/tools/user";
-export { perplexityTools } from "./perplexity";
+// Export all tools from all modules
+export const tools = [...perplexityTools];
