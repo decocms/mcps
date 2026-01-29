@@ -12,7 +12,6 @@
   "metadata": {
     "categories": ["Database", "Analytics"],
     "official": true,
-    "mesh_unlisted": true,
     "tags": ["clickhouse", "database", "analytics", "sql", "olap", "data-warehouse"],
     "short_description": "Query and manage ClickHouse databases with SQL",
     "mesh_description": "ClickHouse MCP enables AI agents to interact with ClickHouse, the fast columnar database for real-time analytics. Run SQL queries, explore schemas, and analyze billions of rows in seconds. Perfect for log analysis, time-series data, and business intelligence."
