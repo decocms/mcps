@@ -38,6 +38,12 @@ import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 import { setServerBaseUrl } from "./lib/serverConfig.ts";
 import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
 import { initializeKvStore } from "./lib/kv.ts";
+import { initializeRedisStore, isRedisInitialized } from "./lib/redis-store.ts";
+import {
+  isSupabaseConfigured,
+  getSupabaseClient,
+} from "./lib/supabase-client.ts";
+import { initializeConfigCacheCount } from "./lib/config-cache.ts";
 
 export { StateSchema };
 
@@ -353,9 +359,68 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
 const PORT = process.env.PORT ?? 8080;
 
-// Initialize KV store with disk persistence (used for thread data and config cache)
-// KV store persists to disk, so configs survive restarts (no need for DATABASE)
+// ============================================================================
+// Initialize Storage Layer for Config Persistence
+// ============================================================================
+// Priority: Supabase (SUPABASE_URL + SUPABASE_ANON_KEY) > Redis > KV Store
+
+// 1. Initialize Supabase (recommended for production)
+if (isSupabaseConfigured()) {
+  try {
+    console.log("[Supabase] Initializing client...");
+    const client = getSupabaseClient();
+    if (client) {
+      console.log(
+        "[Storage] Using Supabase for config persistence (multi-pod ready)",
+      );
+    } else {
+      console.log(
+        "[Supabase] ⚠️ Client initialization failed, falling back to Redis/KV",
+      );
+    }
+  } catch (error) {
+    console.error("[Supabase] ❌ Initialization error:", error);
+    console.log("[Supabase] Falling back to Redis/KV...");
+  }
+}
+
+// 2. Initialize Redis (alternative for multi-pod)
+const redisUrl = process.env.REDIS_URL;
+if (redisUrl) {
+  try {
+    console.log("[Redis] Initializing from environment variables...");
+    await initializeRedisStore({
+      url: redisUrl,
+      password: process.env.REDIS_PASSWORD,
+      db: process.env.REDIS_DB ? Number.parseInt(process.env.REDIS_DB) : 0,
+      keyPrefix: process.env.REDIS_KEY_PREFIX || "slack-mcp:",
+      ttlSeconds: process.env.REDIS_TTL_SECONDS
+        ? Number.parseInt(process.env.REDIS_TTL_SECONDS)
+        : undefined,
+    });
+    console.log("[Redis] ✅ Initialized successfully from environment");
+    if (!isSupabaseConfigured()) {
+      console.log(
+        "[Storage] Using Redis for config persistence (multi-pod ready)",
+      );
+    }
+  } catch (error) {
+    console.error("[Redis] ❌ Failed to initialize from environment:", error);
+    console.log("[Redis] Falling back to KV Store...");
+  }
+}
+
+// 3. Initialize KV Store (fallback for single-pod/dev)
 await initializeKvStore("./data/slack-kv.json");
+
+if (!isSupabaseConfigured() && !isRedisInitialized()) {
+  console.log(
+    "[Storage] Using KV Store for config persistence (single-pod/dev)",
+  );
+}
+
+// Initialize config cache count from storage
+await initializeConfigCacheCount();
 
 /**
  * Serve requests:

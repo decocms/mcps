@@ -12,15 +12,20 @@ import { promises as fs } from "fs";
 /**
  * Run all pending migrations
  */
-export async function migrate(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.warn(
-      "[Migrate] ⚠️ DATABASE_URL not set, skipping migrations (using in-memory DB)",
-    );
+export async function runMigrations(databaseUrl?: string): Promise<void> {
+  const dbUrl = databaseUrl || process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.warn("[Migrate] ⚠️ DATABASE_URL not set, skipping migrations");
     return;
   }
 
+  return migrate(dbUrl);
+}
+
+/**
+ * Internal migration function
+ */
+async function migrate(databaseUrl: string): Promise<void> {
   console.log("[Migrate] 🔄 Running database migrations...");
 
   const db = getDb(databaseUrl);
