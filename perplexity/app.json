@@ -7,7 +7,7 @@
     "url": "https://sites-perplexity.decocache.com/mcp"
   },
   "description": "Ask questions and have conversations with Perplexity AI. Get web-backed answers with real-time search capabilities.",
-  "icon": "https://assets.decocache.com/mcp/perplexity-icon.svg",
+  "icon": "https://assets.decocache.com/mcp/1b3b7880-e7a5-413b-8db2-601e84b22bcd/Perplexity.svg",
   "unlisted": false,
   "auth": {
     "type": "token",

@@ -7,7 +7,7 @@
     "url": "https://sites-apify.decocache.com/mcp"
   },
   "description": "Run Apify actors for web scraping, automation, and data extraction tasks.",
-  "icon": "https://assets.decocache.com/mcp/apify-icon.svg",
+  "icon": "https://apify.com/favicon.ico",
   "unlisted": false,
   "auth": {
     "type": "token",
