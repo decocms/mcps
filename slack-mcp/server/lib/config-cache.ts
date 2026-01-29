@@ -32,6 +32,7 @@ export interface ConnectionConfig {
   teamName?: string;
   botUserId?: string;
   connectionName?: string;
+  hyperDxApiKey?: string;
   responseConfig?: {
     showOnlyFinalResponse?: boolean;
     enableStreaming?: boolean;

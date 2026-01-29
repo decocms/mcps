@@ -267,6 +267,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       systemPrompt,
       botToken,
       signingSecret,
+      hyperDxApiKey: state?.HYPERDX_API_KEY,
       responseConfig: {
         showOnlyFinalResponse,
         enableStreaming,
@@ -304,8 +305,12 @@ const onChangeHandler = async (env: Env, config: any) => {
       await cacheConnectionConfig(updatedConfig);
 
       // Configure HyperDX logger with API key if provided
-      if (state?.HYPERDX_API_KEY) {
-        logger.setApiKey(state.HYPERDX_API_KEY);
+      const hyperDxKey = state?.HYPERDX_API_KEY;
+      console.log(
+        `[HyperDX] API Key from state: ${hyperDxKey ? "present (" + hyperDxKey.substring(0, 8) + "...)" : "NOT SET"}`,
+      );
+      if (hyperDxKey) {
+        logger.setApiKey(hyperDxKey);
         console.log("[HyperDX] Logger configured with API key");
       }
 

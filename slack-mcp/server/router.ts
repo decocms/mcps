@@ -191,7 +191,12 @@ app.post("/slack/events/:connectionId", async (c) => {
     );
   }
 
-  // 4. Log cache hit with names
+  // 4. Configure HyperDX logger if API key is in cached config (survives server restarts)
+  if (connectionConfig.hyperDxApiKey) {
+    logger.setApiKey(connectionConfig.hyperDxApiKey);
+  }
+
+  // 5. Log cache hit with names
   logger.info("Connection config found (cache hit)", {
     connectionId,
     connectionName: connectionConfig.connectionName,

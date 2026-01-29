@@ -157,10 +157,15 @@ export class HyperDXLogger {
 
     // If API key is configured, also send to HyperDX API
     if (this.apiKey) {
-      this.sendToHyperDX(logEntry).catch((error) => {
-        // Don't block on HyperDX send failures, just log to console
-        console.error("[HyperDX] Failed to send log:", error.message);
-      });
+      this.sendToHyperDX(logEntry)
+        .then(() => {
+          // Debug: uncomment to verify sends
+          // console.log("[HyperDX] ✅ Log sent successfully");
+        })
+        .catch((error) => {
+          // Don't block on HyperDX send failures, just log to console
+          console.error("[HyperDX] ❌ Failed to send log:", error.message);
+        });
     }
   }
 
@@ -168,12 +173,13 @@ export class HyperDXLogger {
    * Send log entry to HyperDX via HTTP
    */
   private async sendToHyperDX(logEntry: Record<string, unknown>) {
+    console.log(`[HyperDX] 📤 Sending log to ${this.hyperDxEndpoint}...`);
     try {
       const response = await fetch(this.hyperDxEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: this.apiKey!, // HyperDX expects raw API key, not Bearer
         },
         body: JSON.stringify({
           resourceLogs: [
@@ -211,11 +217,15 @@ export class HyperDXLogger {
         }),
       });
 
+      const body = await response.text();
       if (!response.ok) {
         throw new Error(
-          `HyperDX API returned ${response.status}: ${response.statusText}`,
+          `HyperDX API returned ${response.status}: ${response.statusText} - ${body}`,
         );
       }
+      console.log(
+        `[HyperDX] ✅ Log sent successfully (${response.status}) - Response: ${body || "(empty)"}`,
+      );
     } catch (error) {
       // Re-throw to be caught by caller
       throw error;
