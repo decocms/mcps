@@ -23,7 +23,7 @@ export async function getOrCreatePersistentApiKey(params: {
   connectionId: string;
   temporaryToken: string;
 }): Promise<string | null> {
-  const { meshUrl, connectionId, temporaryToken } = params;
+  const { meshUrl, organizationId, connectionId, temporaryToken } = params;
 
   // If we already have an API key for this connection, return it
   const existingKey = persistentApiKeys.get(connectionId);
@@ -70,6 +70,10 @@ export async function getOrCreatePersistentApiKey(params: {
               purpose: "mcp-persistent",
               connectionId,
               createdAt: new Date().toISOString(),
+              // CRITICAL: Include organization for decopilot API access
+              organization: {
+                id: organizationId,
+              },
             },
           },
         },

@@ -111,6 +111,10 @@ export async function callLLMWithStreaming(
   logger.info("LLM request started (streaming)", {
     channel: options.channel,
     messageCount: messages.length,
+    hasConfig: !!globalLLMConfig,
+    organizationId: globalLLMConfig?.organizationId,
+    modelProviderId: globalLLMConfig?.modelProviderId,
+    hasToken: !!globalLLMConfig?.token,
   });
 
   const response = await generateLLMResponseWithStreaming(

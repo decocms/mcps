@@ -56,7 +56,10 @@ async function callModelsAPI(
 
   console.log(`[LLM] Calling Decopilot API:`, {
     url,
+    organizationId,
     hasToken: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + "..." : "none",
+    modelProviderId,
     modelId,
     hasAgent: !!agentId,
     stream,
