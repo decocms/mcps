@@ -1,4 +1,4 @@
-# Perplexity AI MCP
+# Perplexity AI MCP  
 
 ## Project Description
 
