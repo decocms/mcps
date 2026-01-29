@@ -143,6 +143,14 @@ export const StateSchema = z.object({
     .describe(
       "Friendly name for this connection (e.g., 'Cliente Acme - Produção'). Used in logs for easy identification.",
     ),
+
+  // HyperDX Configuration
+  HYPERDX_API_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "HyperDX API key for advanced logging and observability. If not provided, logs will only go to stdout.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
