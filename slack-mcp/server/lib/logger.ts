@@ -54,13 +54,23 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 export class HyperDXLogger {
   private service = "slack-mcp";
   private minLevel: LogLevel;
+  private apiKey?: string;
+  private hyperDxEndpoint = "https://in-otel.hyperdx.io/v1/logs";
 
-  constructor() {
+  constructor(apiKey?: string) {
     // Read log level from env (default: info)
     const envLevel = (process.env.LOG_LEVEL ?? "info").toLowerCase();
     this.minLevel = (
       ["debug", "info", "warn", "error"].includes(envLevel) ? envLevel : "info"
     ) as LogLevel;
+    this.apiKey = apiKey;
+  }
+
+  /**
+   * Set HyperDX API key for direct ingestion
+   */
+  setApiKey(apiKey?: string) {
+    this.apiKey = apiKey;
   }
 
   /**
@@ -124,7 +134,7 @@ export class HyperDXLogger {
   }
 
   /**
-   * Internal log method - outputs JSON to stdout for HyperDX ingestion
+   * Internal log method - outputs JSON to stdout or sends to HyperDX API
    * SECURITY: Sanitizes sensitive data before logging
    */
   private log(message: string, context: LogContext) {
@@ -142,8 +152,74 @@ export class HyperDXLogger {
       ...context,
     };
 
-    // Log to stdout as JSON (HyperDX will ingest from K8s logs)
+    // Log to stdout (always, for local debugging and K8s fallback)
     console.log(JSON.stringify(logEntry));
+
+    // If API key is configured, also send to HyperDX API
+    if (this.apiKey) {
+      this.sendToHyperDX(logEntry).catch((error) => {
+        // Don't block on HyperDX send failures, just log to console
+        console.error("[HyperDX] Failed to send log:", error.message);
+      });
+    }
+  }
+
+  /**
+   * Send log entry to HyperDX via HTTP
+   */
+  private async sendToHyperDX(logEntry: Record<string, unknown>) {
+    try {
+      const response = await fetch(this.hyperDxEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          resourceLogs: [
+            {
+              resource: {
+                attributes: [
+                  {
+                    key: "service.name",
+                    value: { stringValue: this.service },
+                  },
+                ],
+              },
+              scopeLogs: [
+                {
+                  scope: { name: this.service },
+                  logRecords: [
+                    {
+                      timeUnixNano: `${Date.now() * 1000000}`,
+                      severityText: String(
+                        logEntry.level || "info",
+                      ).toUpperCase(),
+                      body: { stringValue: String(logEntry.body) },
+                      attributes: Object.entries(logEntry)
+                        .filter(([key]) => key !== "body" && key !== "level")
+                        .map(([key, value]) => ({
+                          key,
+                          value: { stringValue: String(value) },
+                        })),
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `HyperDX API returned ${response.status}: ${response.statusText}`,
+        );
+      }
+    } catch (error) {
+      // Re-throw to be caught by caller
+      throw error;
+    }
   }
 }
 

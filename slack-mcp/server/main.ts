@@ -329,7 +329,10 @@ const onChangeHandler = async (env: Env, config: any) => {
         cacheConnectionConfig(updatedConfig);
       }
 
-      // TODO: Configure logger with log channel (currently using HyperDX logging)
+      // Configure HyperDX logger with API key if provided
+      if (config.HYPERDX_API_KEY) {
+        logger.setApiKey(config.HYPERDX_API_KEY);
+      }
 
       // Build webhook URL
       const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
