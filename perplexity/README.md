@@ -2,7 +2,7 @@
 
 ## Project Description
 
-**Perplexity AI MCP** is a Model Context Protocol (MCP) server that integrates the Perplexity AI API to provide web-grounded answers. This project is hosted as a Cloudflare Workers application.
+**Perplexity AI MCP** is a Model Context Protocol (MCP) server that integrates the Perplexity AI API to provide web-grounded answers. This project runs on Bun with simple token-based authentication.
 
 ### Purpose
 
