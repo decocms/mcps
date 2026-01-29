@@ -1,22 +1,48 @@
 /**
  * Persistent Config Cache using KV Store
  *
- * Bridge between MCP context (has DATABASE binding) and webhook router (no MCP context).
- * Uses KV store for persistence - survives server restarts!
+ * Single source of truth for connection configurations.
+ * Uses KV store with disk persistence - survives server restarts!
  *
  * Flow:
- * 1. onChange (MCP context) → saves to DATABASE binding → saves to KV cache
- * 2. Webhook router → reads from KV cache (survives restarts!)
- * 3. Multi-pod K8s → DATABASE binding is source of truth, KV is per-pod cache
+ * 1. onChange (MCP context) → saves config to KV store
+ * 2. Webhook router → reads from KV store
+ * 3. Single-pod deployment → KV store on disk is all we need
  */
 
-import type { ConnectionConfig } from "./db-sql.ts";
 import { getKvStore } from "./kv.ts";
 
 const CONFIG_PREFIX = "config:";
 
 /**
- * Save config to persistent KV cache (called from onChange after DATABASE save)
+ * Connection configuration stored in KV
+ */
+export interface ConnectionConfig {
+  connectionId: string;
+  organizationId: string;
+  meshUrl: string;
+  meshToken?: string;
+  modelProviderId?: string;
+  modelId?: string;
+  agentId?: string;
+  systemPrompt?: string;
+  botToken: string;
+  signingSecret: string;
+  teamId?: string;
+  teamName?: string;
+  botUserId?: string;
+  connectionName?: string;
+  responseConfig?: {
+    showOnlyFinalResponse?: boolean;
+    enableStreaming?: boolean;
+    showThinkingMessage?: boolean;
+  };
+  configuredAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Save config to persistent KV store
  */
 export async function cacheConnectionConfig(
   config: ConnectionConfig,
@@ -30,14 +56,23 @@ export async function cacheConnectionConfig(
     configCacheCount++;
   }
 
-  await kv.set(key, config);
+  // Add timestamps
+  const configWithTimestamps = {
+    ...config,
+    updatedAt: new Date().toISOString(),
+    configuredAt: existing
+      ? (existing as ConnectionConfig).configuredAt
+      : new Date().toISOString(),
+  };
+
+  await kv.set(key, configWithTimestamps);
   console.log(
     `[ConfigCache] 💾 Cached config for ${config.connectionId} (persistent, total: ${configCacheCount})`,
   );
 }
 
 /**
- * Read config from persistent KV cache (used by webhook router)
+ * Read config from persistent KV store (used by webhook router)
  */
 export async function getCachedConnectionConfig(
   connectionId: string,
@@ -76,10 +111,10 @@ export function getConfigCacheSize(): number {
 }
 
 /**
- * List all cached connection IDs (not implemented - would require iterating KV)
+ * Initialize cache count from KV store on startup
  */
-export function listCachedConnectionIds(): string[] {
-  // Note: KVStore doesn't expose keys iteration
-  // For now, return empty array. Could be implemented by tracking IDs separately.
-  return [];
+export async function initializeConfigCacheCount(): Promise<void> {
+  // Note: This would require iterating KV keys
+  // For now, count will start at 0 and increment as configs are saved
+  configCacheCount = 0;
 }

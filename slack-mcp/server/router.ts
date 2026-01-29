@@ -20,7 +20,7 @@ import {
   clearLLMConfig,
 } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
-import type { ConnectionConfig } from "./lib/db-sql.ts";
+import type { ConnectionConfig } from "./lib/config-cache.ts";
 import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
 

@@ -8,9 +8,6 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings (AI connections)
-  DATABASE: BindingOf("@deco/postgres").describe(
-    "PostgreSQL database connection (REQUIRED for multi-pod K8s deployments)",
-  ),
   EVENT_BUS: BindingOf("@deco/event-bus").optional(),
   MODEL_PROVIDER: BindingOf("@deco/llm")
     .optional()

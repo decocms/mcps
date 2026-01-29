@@ -29,20 +29,14 @@ import {
   setBotUserId as setBotUserIdInHandler,
 } from "./slack/handlers/eventHandler.ts";
 import {
-  saveConnectionConfig,
-  updateConnectionSlackInfo,
-  readConnectionConfig,
-  ensureConnectionsTable,
+  cacheConnectionConfig,
+  getCachedConnectionConfig,
   type ConnectionConfig,
-} from "./lib/db-sql.ts";
-import { cacheConnectionConfig } from "./lib/config-cache.ts";
+} from "./lib/config-cache.ts";
 import { logger } from "./lib/logger.ts";
 import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 import { setServerBaseUrl } from "./lib/serverConfig.ts";
-import {
-  getOrCreatePersistentApiKey,
-  loadApiKeyFromKV,
-} from "@decocms/mcps-shared/api-key-manager";
+import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
 import { initializeKvStore } from "./lib/kv.ts";
 
 export { StateSchema };
@@ -189,20 +183,21 @@ const onChangeHandler = async (env: Env, config: any) => {
     // temporary token, which can then be used for all subsequent LLM calls.
     let persistentToken = temporaryToken;
     if (temporaryToken) {
-      // Try to load existing API key from database (survives restarts)
-      let apiKey = await loadApiKeyFromKV(
-        connectionId,
-        async (id) => await readConnectionConfig(env, id),
-      );
+      // Try to load existing API key from KV cache (survives restarts)
+      const cachedConfig = await getCachedConnectionConfig(connectionId);
+      let apiKey: string | undefined = cachedConfig?.meshToken;
 
       // If not found in KV, create a new one
       if (!apiKey) {
-        apiKey = await getOrCreatePersistentApiKey({
+        const newApiKey = await getOrCreatePersistentApiKey({
           meshUrl,
           organizationId,
           connectionId,
           temporaryToken,
         });
+        if (newApiKey) {
+          apiKey = newApiKey;
+        }
       }
 
       if (apiKey) {
@@ -261,13 +256,6 @@ const onChangeHandler = async (env: Env, config: any) => {
     // Configure thread manager
     configureThreadManager({ timeoutMinutes: threadTimeoutMin });
 
-    // Ensure database table exists (creates if not)
-    try {
-      await ensureConnectionsTable(env);
-    } catch (_error) {
-      // Don't return - try to save anyway
-    }
-
     const configToSave: ConnectionConfig = {
       connectionId,
       organizationId,
@@ -286,10 +274,8 @@ const onChangeHandler = async (env: Env, config: any) => {
       },
     };
 
-    await saveConnectionConfig(env, configToSave);
-
-    // Cache config for webhook router (which runs outside MCP context)
-    cacheConnectionConfig(configToSave);
+    // Save config to KV store (persists to disk)
+    await cacheConnectionConfig(configToSave);
 
     // Initialize Slack client to get additional info (teamId, botUserId, teamName)
     try {
@@ -300,34 +286,22 @@ const onChangeHandler = async (env: Env, config: any) => {
       // Get team info (includes workspace name)
       const teamInfo = await getTeamInfo();
 
-      if (botInfo?.teamId || botInfo?.userId) {
-        // Update connection with Slack API data
-        await updateConnectionSlackInfo(
-          env,
-          connectionId,
-          botInfo.teamId!,
-          botInfo.userId!,
-        );
-
-        // Cache bot user ID for event filtering
-        if (botInfo.userId) {
-          setBotUserIdForConnection(connectionId, botInfo.userId);
-          setBotUserIdInHandler(botInfo.userId);
-        }
+      // Cache bot user ID for event filtering
+      if (botInfo?.userId) {
+        setBotUserIdForConnection(connectionId, botInfo.userId);
+        setBotUserIdInHandler(botInfo.userId);
       }
 
-      // Update with team name and connection name
-      if (botInfo?.teamId || teamInfo?.name) {
-        const connectionName = config.CONNECTION_NAME || undefined;
-        const updatedConfig: ConnectionConfig = {
-          ...configToSave,
-          teamId: botInfo?.teamId,
-          teamName: teamInfo?.name,
-          connectionName,
-        };
-        await saveConnectionConfig(env, updatedConfig);
-        cacheConnectionConfig(updatedConfig);
-      }
+      // Update config with Slack info and save to KV
+      const connectionName = config.CONNECTION_NAME || undefined;
+      const updatedConfig: ConnectionConfig = {
+        ...configToSave,
+        teamId: botInfo?.teamId,
+        teamName: teamInfo?.name,
+        botUserId: botInfo?.userId,
+        connectionName,
+      };
+      await cacheConnectionConfig(updatedConfig);
 
       // Configure HyperDX logger with API key if provided
       if (config.HYPERDX_API_KEY) {
@@ -341,7 +315,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       logger.info("Configuration received and saved", {
         connectionId,
         teamId: botInfo?.teamId ?? "unknown",
-        teamName: (teamInfo?.name as any) ?? "unknown",
+        teamName: (teamInfo?.name as string) ?? "unknown",
         botUserId: botInfo?.userId,
         webhookUrl,
       });
@@ -363,12 +337,7 @@ const onChangeHandler = async (env: Env, config: any) => {
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: onChangeHandler,
-    scopes: [
-      "EVENT_BUS::*",
-      "MODEL_PROVIDER::*",
-      "DATABASE::DATABASES_RUN_SQL",
-      "*",
-    ],
+    scopes: ["EVENT_BUS::*", "MODEL_PROVIDER::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -379,38 +348,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 const PORT = process.env.PORT ?? 8080;
 
 // Initialize KV store with disk persistence (used for thread data and config cache)
+// KV store persists to disk, so configs survive restarts (no need for DATABASE)
 await initializeKvStore("./data/slack-kv.json");
-
-/**
- * Warm-up: Sync DATABASE configs to cache on startup
- * Critical for K8s multi-pod deployments where new pods start with empty cache
- */
-setTimeout(async () => {
-  try {
-    const port = process.env.PORT ?? 8080;
-    const response = await fetch(`http://localhost:${port}/mcp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: "warmup",
-        method: "tools/call",
-        params: {
-          name: "SYNC_CONFIG_CACHE",
-          arguments: { force: false },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      logger.warn("Cache sync failed on startup (will lazy-load)", {
-        status: response.status.toString(),
-      });
-    }
-  } catch (_error) {
-    // Will lazy-load on first webhook
-  }
-}, 2000);
 
 /**
  * Serve requests:
