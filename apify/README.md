@@ -1,4 +1,4 @@
-# Apify MCP
+# Apify MCP 
 
 ## Project Description
 
