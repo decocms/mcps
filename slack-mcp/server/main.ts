@@ -304,8 +304,9 @@ const onChangeHandler = async (env: Env, config: any) => {
       await cacheConnectionConfig(updatedConfig);
 
       // Configure HyperDX logger with API key if provided
-      if (config.HYPERDX_API_KEY) {
-        logger.setApiKey(config.HYPERDX_API_KEY);
+      if (state?.HYPERDX_API_KEY) {
+        logger.setApiKey(state.HYPERDX_API_KEY);
+        console.log("[HyperDX] Logger configured with API key");
       }
 
       // Build webhook URL
