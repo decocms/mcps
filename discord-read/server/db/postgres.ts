@@ -1,8 +1,7 @@
 /**
  * PostgreSQL Database Module
  *
- * Generic SQL runner using Supabase Client or DATABASE binding (fallback).
- * Priority: Supabase > DATABASE binding
+ * Generic SQL runner using Supabase Client only.
  */
 
 import type { Env } from "../types/env.ts";
@@ -12,57 +11,34 @@ import {
 } from "./supabase-client.ts";
 
 /**
- * Run a SQL query using Supabase or DATABASE binding
- * @param env - The environment containing the DATABASE binding (used as fallback)
+ * Run a SQL query using Supabase
+ * @param _env - The environment (not used, kept for compatibility)
  * @param sql - SQL query with ? or $1 placeholders
  * @param params - Parameters to substitute for placeholders
  * @returns The query results as an array of rows
  */
 export async function runSQL<T = unknown>(
-  env: Env,
+  _env: Env,
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  // Try Supabase first
-  if (isSupabaseConfigured()) {
-    try {
-      // Convert ? placeholders to $1, $2, etc for PostgreSQL
-      let sqlWithDollarPlaceholders = sql;
-      let paramIndex = 1;
-      while (sqlWithDollarPlaceholders.includes("?")) {
-        sqlWithDollarPlaceholders = sqlWithDollarPlaceholders.replace(
-          "?",
-          `$${paramIndex++}`,
-        );
-      }
-
-      return await supabaseRunSQL<T>(sqlWithDollarPlaceholders, params);
-    } catch (error) {
-      console.error(
-        "[Database] Supabase query failed, falling back to DATABASE binding:",
-        error,
-      );
-      // Fall through to DATABASE binding
-    }
-  }
-
-  // Fallback to DATABASE binding
-  if (!env.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
+  if (!isSupabaseConfigured()) {
     throw new Error(
-      "[Database] Neither Supabase nor DATABASE binding available. Set SUPABASE_URL+SUPABASE_ANON_KEY or configure DATABASE binding.",
+      "[Database] Supabase not configured. Set SUPABASE_URL + SUPABASE_ANON_KEY environment variables.",
     );
   }
 
-  const response =
-    await env.MESH_REQUEST_CONTEXT.state.DATABASE.DATABASES_RUN_SQL({
-      sql,
-      params,
-    });
-  // Response is typed as object but actually has .result property
-  const data = response as
-    | { result?: Array<{ results?: unknown[] }> }
-    | undefined;
-  return (data?.result?.[0]?.results ?? []) as T[];
+  // Convert ? placeholders to $1, $2, etc for PostgreSQL
+  let sqlWithDollarPlaceholders = sql;
+  let paramIndex = 1;
+  while (sqlWithDollarPlaceholders.includes("?")) {
+    sqlWithDollarPlaceholders = sqlWithDollarPlaceholders.replace(
+      "?",
+      `$${paramIndex++}`,
+    );
+  }
+
+  return await supabaseRunSQL<T>(sqlWithDollarPlaceholders, params);
 }
 
 /**

@@ -11,13 +11,6 @@ export const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 
-  // Database (opcional - usa Supabase se configurado)
-  DATABASE: BindingOf("@deco/postgres")
-    .optional()
-    .describe(
-      "PostgreSQL database binding (opcional se SUPABASE_URL estiver configurado)",
-    ),
-
   // AI Configuration (igual ao mcp-studio)
   MODEL_PROVIDER: BindingOf("@deco/llm").describe(
     "AI Model Provider connection",
