@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "slides",
+  "friendlyName": "Slides",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-slides.decocache.com/mcp"
+  },
+  "description": "AI-powered slide presentation builder with beautiful animations and GSAP transitions.",
+  "icon": "https://assets.decocache.com/decocms/slides-icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Design"],
+    "official": false,
+    "tags": ["slides", "presentation", "deck", "gsap", "animations", "react"],
+    "short_description": "Create beautiful slide presentations through AI conversation.",
+    "mesh_description": "The Slides MCP enables AI agents to create, edit, and manage beautiful slide presentations through natural conversation. It provides tools for initializing presentation decks, creating slides with various layouts (title, content, stats, two-column, list, quote, image, custom), managing style guides, and bundling presentations into single portable HTML files. The presentation engine uses React and GSAP for smooth animations, requires no build step (CDN-loaded dependencies), and supports responsive scaling. Ideal for investor updates, sales pitches, educational content, conference talks, or any scenario requiring professional presentations."
+  }
+}

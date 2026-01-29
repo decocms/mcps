@@ -1,0 +1,26 @@
+{
+  "scopeName": "deco",
+  "name": "blog",
+  "friendlyName": "Blog",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-blog.decocache.com/mcp"
+  },
+  "description": "AI-powered blog writing assistant with tone of voice and visual style guides.",
+  "icon": "https://assets.decocache.com/decocms/blog-icon.png",
+  "unlisted": false,
+  "bindings": {
+    "OBJECT_STORAGE": {
+      "binding": "@deco/object-storage",
+      "description": "Select a folder containing a blog/ subfolder with articles/, tone-of-voice.md, and visual-style.md"
+    },
+    "IMAGE_GENERATOR": "@deco/nanobanana"
+  },
+  "metadata": {
+    "categories": ["Productivity", "Content"],
+    "official": false,
+    "tags": ["blog", "writing", "articles", "tone-of-voice", "markdown"],
+    "short_description": "Write blog articles with consistent voice and style.",
+    "mesh_description": "The Blog MCP helps AI agents write blog articles with consistent tone of voice and visual style. It provides prompts for setting up a blog project, creating tone of voice guides, visual style guides for cover images, and workflows for writing and editing articles. Articles are stored as markdown files with YAML frontmatter in the git repository. The MCP includes tools for generating cover images and validating article structure. Ideal for personal blogs, company blogs, or any content that requires consistent voice and style."
+  }
+}

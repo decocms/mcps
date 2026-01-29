@@ -96,4 +96,200 @@ export interface Registry extends BindingRegistry {
       }>;
     },
   ];
+
+  /**
+   * Perplexity binding - matches official @perplexity-ai/mcp-server
+   *
+   * Tools: perplexity_ask, perplexity_reason, perplexity_research
+   * All accept messages array with role/content
+   */
+  "@deco/perplexity-ai": [
+    {
+      name: "perplexity_ask";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+        citations?: string[];
+      }>;
+    },
+    {
+      name: "perplexity_research";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+        citations?: string[];
+      }>;
+      opt?: true;
+    },
+    {
+      name: "perplexity_reason";
+      inputSchema: z.ZodType<{
+        messages: Array<{ role: string; content: string }>;
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+      }>;
+      opt?: true;
+    },
+  ];
+
+  /**
+   * Firecrawl binding - matches official firecrawl-mcp
+   *
+   * Tools: firecrawl_scrape, firecrawl_crawl, firecrawl_map, firecrawl_search, etc.
+   */
+  "@deco/firecrawl": [
+    {
+      name: "firecrawl_scrape";
+      inputSchema: z.ZodType<{
+        url: string;
+        formats?: string[];
+        onlyMainContent?: boolean;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+    },
+    {
+      name: "firecrawl_crawl";
+      inputSchema: z.ZodType<{
+        url: string;
+        maxDepth?: number;
+        limit?: number;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+      opt?: true;
+    },
+    {
+      name: "firecrawl_map";
+      inputSchema: z.ZodType<{
+        url: string;
+        search?: string;
+        limit?: number;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+      }>;
+      opt?: true;
+    },
+  ];
+
+  /**
+   * Local FS binding - matches @decocms/mcp-local-fs (Mesh-style names)
+   *
+   * Tools: FILE_READ, FILE_WRITE for basic file operations
+   */
+  "@deco/local-fs": [
+    {
+      name: "FILE_READ";
+      inputSchema: z.ZodType<{
+        path: string;
+        encoding?: "utf-8" | "base64";
+      }>;
+      outputSchema: z.ZodType<{
+        content: string;
+        metadata: {
+          id: string;
+          title: string;
+          path: string;
+          mimeType: string;
+          size: number;
+        };
+      }>;
+    },
+    {
+      name: "FILE_WRITE";
+      inputSchema: z.ZodType<{
+        path: string;
+        content: string;
+        encoding?: "utf-8" | "base64";
+        createParents?: boolean;
+        overwrite?: boolean;
+      }>;
+      outputSchema: z.ZodType<{
+        file: {
+          id: string;
+          title: string;
+          path: string;
+          mimeType: string;
+          size: number;
+        };
+      }>;
+    },
+    {
+      name: "FILE_DELETE";
+      inputSchema: z.ZodType<{
+        path: string;
+        recursive?: boolean;
+      }>;
+      outputSchema: z.ZodType<{
+        success: boolean;
+        path: string;
+      }>;
+      opt?: true;
+    },
+    {
+      name: "list_directory";
+      inputSchema: z.ZodType<{
+        path: string;
+      }>;
+      outputSchema: z.ZodType<string>;
+      opt?: true;
+    },
+  ];
+
+  /**
+   * MCP Filesystem binding - matches official @modelcontextprotocol/server-filesystem
+   *
+   * This is a drop-in compatible binding that works with:
+   * - @modelcontextprotocol/server-filesystem (official)
+   * - @decocms/mcp-local-fs (our implementation)
+   *
+   * Tools: read_file, write_file, list_directory, create_directory
+   */
+  "@deco/mcp-filesystem": [
+    {
+      name: "read_file";
+      inputSchema: z.ZodType<{
+        path: string;
+      }>;
+      outputSchema: z.ZodType<unknown>;
+    },
+    {
+      name: "write_file";
+      inputSchema: z.ZodType<{
+        path: string;
+        content: string;
+      }>;
+      outputSchema: z.ZodType<unknown>;
+    },
+    {
+      name: "list_directory";
+      inputSchema: z.ZodType<{
+        path: string;
+      }>;
+      outputSchema: z.ZodType<unknown>;
+      opt?: true;
+    },
+    {
+      name: "create_directory";
+      inputSchema: z.ZodType<{
+        path: string;
+      }>;
+      outputSchema: z.ZodType<unknown>;
+      opt?: true;
+    },
+  ];
 }

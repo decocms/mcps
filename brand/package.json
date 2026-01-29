@@ -1,0 +1,29 @@
+{
+  "name": "@decocms/brand",
+  "version": "1.0.0",
+  "description": "AI-powered brand research and design system generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "check": "tsc --noEmit"
+  },
+  "exports": {
+    "./tools": "./server/tools/index.ts"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.0.9",
+    "@decocms/runtime": "1.2.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.25.1",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
