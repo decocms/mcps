@@ -1,4 +1,4 @@
-# Awesome Bot Base  
+# Awesome Bot Base    
 
 > [!NOTE]   
 > This project **base** can be generated using the [Constant CLI](https://github.com/rinckodev/constatic/tree/master/tools/cli#readme)
@@ -22,4 +22,5 @@ This is the most complete discord bot base you've ever seen! Developed by [@rinc
 - [Responder](https://constatic-docs.vercel.app/docs/discord/responders)
 
 - [Events](https://constatic-docs.vercel.app/docs/discord/events)
+
 
