@@ -163,6 +163,7 @@ export const createSearchSkillsTool = (env: Env) =>
     inputSchema: z.object({
       query: z
         .string()
+        .min(1, "Search query cannot be empty")
         .describe("Search query (e.g., 'Track 1', 'color tokens', 'AI slop')"),
     }),
     outputSchema: z.object({
