@@ -199,13 +199,13 @@ export const createStartBotTool = (env: Env) =>
       })
       .strict(),
     execute: async () => {
-      // Check if BOT_TOKEN is configured
-      const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-      if (!botToken) {
+      // Check if Bot Token is configured in Authorization
+      const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+      if (!hasAuth) {
         return {
           success: false,
           message:
-            "BOT_TOKEN not configured. Please set it in the MCP configuration.",
+            "Discord Bot Token not configured. Please add it in the Authorization section of the Mesh Dashboard.",
         };
       }
 

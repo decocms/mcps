@@ -92,9 +92,9 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
   }
 
   // Check if we have the required config
-  const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-  if (!botToken) {
-    console.log("[BotManager] BOT_TOKEN not configured");
+  const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+  if (!hasAuth) {
+    console.log("[BotManager] Bot token not configured in Authorization");
     return false;
   }
 
@@ -106,16 +106,10 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     // Set database env
     setDatabaseEnv(env);
 
-    // Ensure database tables exist (optional - skip if no database configured)
-    try {
-      await ensureCollections(env);
-      await ensureIndexes(env);
-      console.log("[BotManager] Database ready");
-    } catch (dbError) {
-      console.log(
-        "[BotManager] Database not available. Message indexing disabled.",
-      );
-    }
+    // Ensure database tables exist
+    await ensureCollections(env);
+    await ensureIndexes(env);
+    console.log("[BotManager] Database ready");
 
     // Initialize Discord client
     await initializeDiscordClient(env);

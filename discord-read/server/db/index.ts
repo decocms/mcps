@@ -22,17 +22,40 @@ const collectionsQueries = {
     idempotent: guildsTableIdempotentQuery,
     indexes: guildsTableIndexesQuery,
   },
+  // Channels (referenced by messages)
+  channels: {
+    idempotent: discordQueries.channels.idempotent,
+    indexes: discordQueries.channels.indexes,
+  },
+  // Members (user info per guild)
+  members: {
+    idempotent: discordQueries.members.idempotent,
+    indexes: discordQueries.members.indexes,
+  },
+  // Messages
   messages: {
     idempotent: discordQueries.messages.idempotent,
     indexes: discordQueries.messages.indexes,
   },
+  // Reactions
   reactions: {
     idempotent: discordQueries.reactions.idempotent,
     indexes: discordQueries.reactions.indexes,
   },
+  // Channel context (custom prompts)
   channelContext: {
     idempotent: discordQueries.channelContext.idempotent,
     indexes: discordQueries.channelContext.indexes,
+  },
+  // Voice states (optional - for voice channel tracking)
+  voiceStates: {
+    idempotent: discordQueries.voiceStates.idempotent,
+    indexes: discordQueries.voiceStates.indexes,
+  },
+  // Audit log (optional - for moderation tracking)
+  auditLog: {
+    idempotent: discordQueries.auditLog.idempotent,
+    indexes: discordQueries.auditLog.indexes,
   },
 };
 

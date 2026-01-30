@@ -11,6 +11,7 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";
+import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
 // Super Admins - always have full permissions everywhere
 const SUPER_ADMINS = [
@@ -131,6 +132,8 @@ export async function indexMessage(
   message: Message,
   isDM: boolean = false,
 ): Promise<void> {
+  const traceId = HyperDXLogger.generateTraceId();
+
   try {
     const db = await import("../../../shared/db.ts");
 
@@ -220,10 +223,29 @@ export async function indexMessage(
       edited_at: message.editedAt,
     });
 
-    // Indexed successfully (removed log for performance)
+    logger.debug("Message indexed", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      guildName: message.guild?.name,
+      channelId: message.channel.id,
+      channelName: "name" in message.channel ? message.channel.name : undefined,
+      userId: message.author.id,
+      userName: message.author.username,
+      isBot: message.author.bot,
+      isDM,
+      hasAttachments: message.attachments.size > 0,
+      hasEmbeds: message.embeds.length > 0,
+      messageType: message.type,
+    });
   } catch (error) {
-    // Don't crash if indexing fails - just log
-    console.error(`[Message] Failed to index:`, error);
+    logger.error("Failed to index message", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -284,6 +306,20 @@ async function handleDefaultAgent(
   replyToMessage?: string,
 ): Promise<void> {
   const isDM = !message.guild;
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Processing AI agent request", {
+    trace_id: traceId,
+    messageId: message.id,
+    guildId: message.guild?.id,
+    guildName: message.guild?.name,
+    channelId: message.channel.id,
+    channelName: "name" in message.channel ? message.channel.name : undefined,
+    userId: message.author.id,
+    userName: message.author.username,
+    isDM,
+    hasReply: !!replyToMessage,
+  });
 
   // Empty input
   if (!userInput.trim()) {
@@ -518,11 +554,25 @@ async function handleDefaultAgent(
       }
     }
 
-    console.log(
-      `[Agent] Response sent (${durationMs}ms, streaming: ${!!thinkingMsg})`,
-    );
+    logger.info("AI agent response completed", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      userId: message.author.id,
+      duration: durationMs,
+      streaming: !!thinkingMsg,
+      responseLength: responseContent.length,
+    });
   } catch (error) {
-    console.error(`[Agent] Error:`, error);
+    logger.error("AI agent error", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      userId: message.author.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     const errorMsg = error instanceof Error ? error.message : String(error);
     let errorResponse: string;

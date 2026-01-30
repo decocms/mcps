@@ -8,6 +8,7 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings obrigatórias
+  DATABASE: BindingOf("@deco/postgres"),
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 
@@ -38,7 +39,7 @@ export const StateSchema = z.object({
     ),
 
   // Config do Discord Bot
-  BOT_TOKEN: z.string().describe("Discord Bot Token"),
+  // Note: BOT_TOKEN is now passed via Authorization header (auth.type: "token" in app.json)
   COMMAND_PREFIX: z
     .string()
     .default("!")
@@ -151,6 +152,14 @@ export const StateSchema = z.object({
     })
     .optional()
     .describe("Voice channel configuration for voice commands and TTS"),
+
+  // HyperDX Configuration
+  HYPERDX_API_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "HyperDX API key for advanced logging and observability. If not provided, logs will only go to stdout.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;

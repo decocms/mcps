@@ -17,6 +17,7 @@ import {
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
+import { getDiscordBotToken } from "../lib/env.ts";
 import {
   indexMessage,
   processCommand,
@@ -93,15 +94,15 @@ async function doInitialize(env: Env): Promise<Client> {
   // Set database environment for shared module
   setDatabaseEnv(env);
 
-  // Get bot token from state
-  const token = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-  console.log("[Discord] BOT_TOKEN present:", !!token);
-
-  if (!token) {
-    const stateKeys = Object.keys(env.MESH_REQUEST_CONTEXT?.state || {});
+  // Get bot token from Authorization header
+  let token: string;
+  try {
+    token = getDiscordBotToken(env);
+    console.log("[Discord] Bot token retrieved from Authorization header");
+  } catch (error) {
+    console.error("[Discord] Failed to get bot token:", error);
     throw new Error(
-      "[Discord] BOT_TOKEN not configured. Available keys: " +
-        stateKeys.join(", "),
+      "Discord Bot Token not provided. Please add it in the Authorization section of the Mesh Dashboard.",
     );
   }
 
@@ -224,14 +225,19 @@ function registerEventHandlers(client: Client, env: Env): void {
     // Removed verbose logging for better performance
 
     // Re-set database env (ensures it's available for this message)
-    setDatabaseEnv(currentEnv);
+    // Only set if we have a valid MESH_REQUEST_CONTEXT
+    if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
+      setDatabaseEnv(currentEnv);
+    }
 
     try {
       // Index the message (non-blocking, errors are logged but don't stop processing)
-      // Only index if Supabase is configured
-      indexMessage(message, isDM).catch((e) =>
-        console.log("[Message] Failed to index:", e.message),
-      );
+      // Only index if database is configured
+      if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
+        indexMessage(message, isDM).catch((e) =>
+          console.log("[Message] Failed to index:", e.message),
+        );
+      }
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;

@@ -26,7 +26,7 @@ export function getDatabaseEnv(): Env | null {
 }
 
 /**
- * Run a SQL query using Supabase
+ * Run a SQL query using the DATABASE binding
  */
 export async function runSQL<T = unknown>(
   sql: string,
@@ -38,9 +38,16 @@ export async function runSQL<T = unknown>(
     );
   }
 
-  // Use Supabase via db/postgres module
-  const { runSQL: postgresRunSQL } = await import("../server/db/postgres.ts");
-  return await postgresRunSQL<T>(_env, sql, params);
+  const response =
+    await _env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+      sql,
+      params,
+    });
+  // Response is typed as object but actually has .result property
+  const data = response as
+    | { result?: Array<{ results?: unknown[] }> }
+    | undefined;
+  return (data?.result?.[0]?.results ?? []) as T[];
 }
 
 // ============================================================================

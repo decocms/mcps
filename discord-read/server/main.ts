@@ -14,11 +14,7 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import {
-  updateEnv,
-  getCurrentEnv,
-  storeEssentialConfig,
-} from "./bot-manager.ts";
+import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import {
@@ -26,7 +22,7 @@ import {
   stopHeartbeat,
   resetSession,
 } from "./session-keeper.ts";
-import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
+import { logger, HyperDXLogger } from "./lib/logger.ts";
 
 export { StateSchema };
 
@@ -72,7 +68,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
-      console.log("[CONFIG] Configuration changed");
+      const traceId = HyperDXLogger.generateTraceId();
+
+      logger.info("Configuration changed", {
+        trace_id: traceId,
+        organizationId: env.MESH_REQUEST_CONTEXT?.organizationId,
+        connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+      });
 
       // Reset session status - we have fresh credentials from Mesh
       resetSession();
@@ -83,26 +85,29 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Set database env for shared module
       setDatabaseEnv(env);
 
-      // Create tables first, then indexes (optional - skip if no database configured)
-      try {
-        await ensureCollections(env);
-        await ensureIndexes(env);
-        console.log("[CONFIG] Database tables ready");
-      } catch (error) {
-        console.log(
-          "[CONFIG] Database not available (Supabase or DATABASE binding required). Message indexing disabled.",
-        );
-        console.log(
-          "[CONFIG] To enable message indexing, set SUPABASE_URL + SUPABASE_ANON_KEY or configure DATABASE binding.",
-        );
-      }
-
       // Get configuration from state
       const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
+
+      // Configure HyperDX logger if API key is provided
+      if (state?.HYPERDX_API_KEY) {
+        logger.setApiKey(state.HYPERDX_API_KEY);
+        logger.info("HyperDX logger configured", {
+          trace_id: traceId,
+          organizationId,
+        });
+      }
+
+      // Create tables first, then indexes
+      await ensureCollections(env);
+      await ensureIndexes(env);
+
+      logger.info("Database tables ready", {
+        trace_id: traceId,
+        organizationId,
+      });
 
       // Configure LLM if model provider is set
       const modelProvider = state?.MODEL_PROVIDER;
@@ -123,38 +128,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         typeof agent?.value === "string" ? agent.value : undefined;
       const modelId = languageModel?.value?.id;
 
-      // Get or create persistent API Key (to avoid 5-minute JWT expiration)
-      // The temporary token from Mesh expires in 5 minutes, but the Discord
-      // websocket needs to stay connected indefinitely. We create a persistent
-      // API Key using the temporary token, which can then be used for all
-      // subsequent LLM/DB calls.
-      let persistentToken = temporaryToken;
-      if (temporaryToken && meshUrl && organizationId && connectionId) {
-        const apiKey = await getOrCreatePersistentApiKey({
-          meshUrl,
-          organizationId,
-          connectionId,
-          temporaryToken,
-        });
-        if (apiKey) {
-          persistentToken = apiKey;
-          console.log("[CONFIG] Using persistent API Key for LLM calls");
-        } else {
-          console.log(
-            "[CONFIG] ⚠️ Could not create persistent API Key, using temporary token (may expire in 5 minutes)",
-          );
-        }
-      }
-
-      // Configure LLM module with persistent token
-      if (modelProviderId && persistentToken && meshUrl && organizationId) {
+      // Configure LLM module
+      if (modelProviderId && token && meshUrl && organizationId) {
         const { configureLLM, configureStreaming, configureWhisper } =
           await import("./llm.ts");
 
         configureLLM({
           meshUrl,
           organizationId,
-          token: persistentToken,
+          token,
           modelProviderId,
           modelId,
           agentId,
@@ -170,33 +152,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           modelId,
           agentId: agentId || "not set",
           streaming: enableStreaming,
-          usingPersistentApiKey: persistentToken !== temporaryToken,
-        });
-
-        // Get whisper connection ID if configured
-        const whisperConnectionId =
-          whisper && typeof whisper.value === "string"
-            ? whisper.value
-            : undefined;
-
-        // Store essential config for fallback when env is not available
-        storeEssentialConfig({
-          meshUrl,
-          organizationId,
-          persistentToken,
-          modelProviderId,
-          modelId,
-          agentId,
-          whisperConnectionId,
         });
 
         // Configure Whisper for audio transcription if set
-        if (whisperConnectionId) {
+        if (whisper && typeof whisper.value === "string") {
           configureWhisper({
             meshUrl,
             organizationId,
-            token: persistentToken,
-            whisperConnectionId,
+            token,
+            whisperConnectionId: whisper.value,
           });
           console.log("[CONFIG] Whisper configured for audio transcription");
 
@@ -205,167 +169,86 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           configureVoiceWhisper({
             meshUrl,
             organizationId,
-            token: persistentToken,
+            token,
             whisperConnectionId: whisper.value,
           });
         }
-
-        // Configure ElevenLabs for TTS if API key is set
-        const voiceConfig = state?.VOICE_CONFIG;
-        const elevenlabsApiKey = voiceConfig?.ELEVENLABS_API_KEY;
-        const elevenlabsVoiceId =
-          voiceConfig?.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
-
-        if (elevenlabsApiKey) {
-          const { configureElevenLabs } = await import("./voice/index.ts");
-          configureElevenLabs({
-            apiKey: elevenlabsApiKey,
-            voiceId: elevenlabsVoiceId,
-          });
-          console.log(
-            "[CONFIG] ElevenLabs configured for TTS with voice:",
-            elevenlabsVoiceId,
-          );
-        } else {
-          console.log(
-            "[CONFIG] ElevenLabs not configured - using Discord native TTS",
-          );
-        }
       }
 
-      // Helper function to configure voice system
-      const configureVoiceSystem = async () => {
-        // Voice is enabled by default - use defaults if VOICE_CONFIG not set or ENABLED not defined
-        const rawVoiceConfig = state?.VOICE_CONFIG;
-        const voiceConfig = {
-          ENABLED: rawVoiceConfig?.ENABLED ?? true, // Default to true
-          RESPONSE_MODE: rawVoiceConfig?.RESPONSE_MODE,
-          TTS_ENABLED: rawVoiceConfig?.TTS_ENABLED,
-          TTS_LANGUAGE: rawVoiceConfig?.TTS_LANGUAGE,
-          SILENCE_THRESHOLD_MS: rawVoiceConfig?.SILENCE_THRESHOLD_MS,
-          AUTO_JOIN_CHANNEL_ID: rawVoiceConfig?.AUTO_JOIN_CHANNEL_ID,
-        };
-        if (!voiceConfig.ENABLED) return;
-
-        const client = getDiscordClient();
-        if (!client) {
-          console.log(
-            "[CONFIG] Voice enabled but Discord client not ready yet",
-          );
-          return;
-        }
-
+      // Configure voice system if enabled
+      const voiceConfig = state?.VOICE_CONFIG;
+      if (voiceConfig?.ENABLED) {
         const { configureVoiceCommands, configureTTS } = await import(
           "./voice/index.ts"
         );
         const { generateResponse } = await import("./llm.ts");
         const { getSystemPrompt } = await import("./prompts/system.ts");
 
-        configureVoiceCommands(
-          client,
-          {
+        const client = getDiscordClient();
+        if (client) {
+          configureVoiceCommands(
+            client,
+            {
+              enabled: voiceConfig.ENABLED,
+              responseMode: voiceConfig.RESPONSE_MODE || "voice",
+              ttsEnabled: voiceConfig.TTS_ENABLED !== false,
+              ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
+              silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS || 1000,
+            },
+            {
+              // Voice command handler - uses LLM to process voice commands
+              processVoiceCommand: async (
+                userId: string,
+                username: string,
+                text: string,
+                guildId: string,
+              ) => {
+                const systemPrompt = getSystemPrompt({
+                  guildId,
+                  userId,
+                  userName: username,
+                  isDM: false,
+                });
+
+                const messages = [
+                  { role: "system" as const, content: systemPrompt },
+                  {
+                    role: "system" as const,
+                    content:
+                      "O usuário está falando através de um canal de voz. Responda de forma concisa e natural para ser falada em voz alta.",
+                  },
+                  { role: "user" as const, content: text },
+                ];
+
+                const response = await generateResponse(env, messages);
+                return response.content;
+              },
+            },
+          );
+
+          // Configure TTS
+          configureTTS({
+            enabled: voiceConfig.TTS_ENABLED !== false,
+            language: voiceConfig.TTS_LANGUAGE || "pt-BR",
+          });
+
+          console.log("[CONFIG] Voice commands configured:", {
             enabled: voiceConfig.ENABLED,
-            responseMode: voiceConfig.RESPONSE_MODE || "voice",
+            responseMode: voiceConfig.RESPONSE_MODE,
             ttsEnabled: voiceConfig.TTS_ENABLED !== false,
             ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
-            silenceThresholdMs: voiceConfig.SILENCE_THRESHOLD_MS || 1000,
-          },
-          {
-            // Voice command handler - uses LLM to process voice commands
-            processVoiceCommand: async (
-              userId: string,
-              username: string,
-              text: string,
-              guildId: string,
-            ) => {
-              console.log(
-                "[VoiceCommands] DEBUG - Processing voice command with guildId:",
-                guildId,
-              );
+          });
+        }
+      }
 
-              const systemPrompt = getSystemPrompt({
-                guildId,
-                userId,
-                userName: username,
-                isDM: false,
-              });
-
-              // Log a part of the system prompt to verify guild ID is included
-              const guildIdInPrompt = systemPrompt.includes(guildId);
-              console.log(
-                "[VoiceCommands] DEBUG - System prompt includes correct guildId:",
-                guildIdInPrompt,
-              );
-              if (!guildIdInPrompt) {
-                console.warn(
-                  "[VoiceCommands] ⚠️ WARNING: guildId NOT found in system prompt!",
-                );
-              }
-
-              // Log the CRITICAL section of the prompt
-              const criticalSection = systemPrompt.match(
-                /⚠️ \*\*CRITICAL\*\*:.*?985687648595243068/s,
-              );
-              if (criticalSection) {
-                console.log(
-                  "[VoiceCommands] DEBUG - CRITICAL prompt section found:",
-                  criticalSection[0].substring(0, 200),
-                );
-              } else {
-                console.warn(
-                  "[VoiceCommands] ⚠️ WARNING: CRITICAL section with hardcoded guild ID NOT found!",
-                );
-              }
-
-              const messages = [
-                { role: "system" as const, content: systemPrompt },
-                {
-                  role: "system" as const,
-                  content:
-                    "O usuário está falando através de um canal de voz. REGRAS OBRIGATÓRIAS:\n" +
-                    "1. Seja EXTREMAMENTE objetivo e direto\n" +
-                    "2. Máximo 2-3 frases curtas\n" +
-                    "3. Sem explicações longas ou detalhes desnecessários\n" +
-                    "4. Sem saudações ou introduções\n" +
-                    "5. Vá direto ao ponto\n" +
-                    "6. Se precisar usar uma tool, use e responda apenas o resultado\n" +
-                    "Exemplo BOM: 'Entrei no canal e mandei oi para o Lucas.'\n" +
-                    "Exemplo RUIM: 'Desculpe, estou tendo dificuldades...' [explicação longa]",
-                },
-                { role: "user" as const, content: text },
-              ];
-
-              const response = await generateResponse(env, messages);
-              return response.content;
-            },
-          },
-        );
-
-        // Configure TTS
-        configureTTS({
-          enabled: voiceConfig.TTS_ENABLED !== false,
-          language: voiceConfig.TTS_LANGUAGE || "pt-BR",
-        });
-
-        console.log("[CONFIG] Voice commands configured:", {
-          enabled: voiceConfig.ENABLED,
-          responseMode: voiceConfig.RESPONSE_MODE,
-          ttsEnabled: voiceConfig.TTS_ENABLED !== false,
-          ttsLanguage: voiceConfig.TTS_LANGUAGE || "pt-BR",
-        });
-      };
-
-      // Initialize Discord client if BOT_TOKEN is provided
-      const botToken = state?.BOT_TOKEN;
-      if (botToken && !discordInitialized && !getDiscordClient()) {
+      // Initialize Discord client if Authorization header is provided
+      const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+      if (hasAuth && !discordInitialized && !getDiscordClient()) {
         console.log("[CONFIG] Initializing Discord client...");
         try {
           await initializeDiscordClient(env);
           discordInitialized = true;
           console.log("[CONFIG] Discord client ready ✓");
-
-          // Configure voice system after client is initialized
-          await configureVoiceSystem();
 
           // Start heartbeat to keep Mesh session alive
           startHeartbeat(env, () => {
@@ -376,23 +259,31 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         } catch (error) {
           console.error("[CONFIG] Failed to initialize Discord:", error);
         }
-      } else if (botToken && discordInitialized) {
-        // Bot already running, reconfigure voice and restart heartbeat
-        await configureVoiceSystem();
-
+      } else if (hasAuth && discordInitialized) {
+        // Bot already running, just restart heartbeat with fresh credentials
         console.log("[CONFIG] Refreshing session heartbeat...");
         startHeartbeat(env, () => {
           console.log(
             "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
           );
         });
-      } else if (!botToken) {
-        console.log(
-          "[CONFIG] BOT_TOKEN not configured - Discord bot waiting...",
+      } else if (!hasAuth) {
+        logger.info(
+          "Discord Bot Token not configured - waiting for authorization",
+          {
+            trace_id: traceId,
+            organizationId,
+          },
         );
       }
     },
-    scopes: ["EVENT_BUS::*", "CONNECTION::*", "MODEL_PROVIDER::*", "*"],
+    scopes: [
+      "DATABASE::DATABASES_RUN_SQL",
+      "EVENT_BUS::*",
+      "CONNECTION::*",
+      "MODEL_PROVIDER::*",
+      "*",
+    ],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -450,22 +341,6 @@ process.on("beforeExit", () => gracefulShutdown("beforeExit"));
 
 // Also handle uncaught exceptions to cleanup
 process.on("uncaughtException", async (error) => {
-  // Check if this is a DAVE decryption error (Discord voice encryption)
-  // These are non-fatal and can be ignored
-  const errorMessage = error.message || String(error);
-  if (
-    errorMessage.includes("DecryptionFailed") ||
-    errorMessage.includes("Failed to decrypt") ||
-    errorMessage.includes("DAVE") ||
-    errorMessage.includes("UnencryptedWhenPassthroughDisabled")
-  ) {
-    console.warn(
-      "[Voice] DAVE decryption error (non-fatal, ignoring):",
-      errorMessage,
-    );
-    return; // Don't crash for voice decryption errors
-  }
-
   console.error("[CRASH] Uncaught exception:", error);
   await gracefulShutdown("uncaughtException");
 });
@@ -491,18 +366,18 @@ console.log(`
 ⚠️  Press Ctrl+C to gracefully shutdown the Discord bot.
 `);
 
-// Auto-start Discord bot if BOT_TOKEN is in environment
+// Auto-start Discord bot if BOT_TOKEN is in environment (for local development)
 const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
 if (envBotToken && !discordInitialized) {
   console.log(
-    "[STARTUP] BOT_TOKEN found in environment, starting Discord bot...",
+    "[STARTUP] Bot token found in environment, starting Discord bot...",
   );
 
-  // Create a minimal env with the token for startup
+  // Create a minimal env with the token as authorization for startup
   const startupEnv = {
     MESH_REQUEST_CONTEXT: {
+      authorization: `Bearer ${envBotToken}`,
       state: {
-        BOT_TOKEN: envBotToken,
         COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
         GUILD_ID: process.env.GUILD_ID,
       },
@@ -551,9 +426,11 @@ async function autoRestartCheck(): Promise<void> {
       return;
     }
 
-    const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-    if (!botToken) {
-      console.log("[AUTO-RESTART] No BOT_TOKEN configured, skipping restart");
+    const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+    if (!hasAuth) {
+      console.log(
+        "[AUTO-RESTART] No authorization configured, skipping restart",
+      );
       return;
     }
 
