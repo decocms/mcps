@@ -1,0 +1,13 @@
+{
+  "scopeName": "deco",
+  "name": "deco-skills",
+  "friendlyName": "Deco Skills",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://deco-skills.decocache.com/mcp"
+  },
+  "description": "Access deco's brand guidelines, writing style, product positioning, and CMS skills for content creation.",
+  "icon": "https://deco.cx/favicon.ico",
+  "unlisted": false
+}
+
