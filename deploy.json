@@ -65,7 +65,7 @@
     "platformName": "kubernetes-bun"
   },
   "discord-read": {
-    "site": "object-storage",
+    "site": "discord-read",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   },
@@ -121,6 +121,16 @@
   },
   "vtex-docs": {
     "site": "vtex-docs",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "perplexity": {
+    "site": "perplexity",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "apify": {
+    "site": "apify",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   }

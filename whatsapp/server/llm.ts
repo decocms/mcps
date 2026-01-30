@@ -1,6 +1,5 @@
+import { RuntimeEnv } from "./main";
 import { jsonSchema, parseJsonEventStream } from "ai";
-import { Env } from "./types/env";
-
 export interface TextPart {
   type: "text";
   text: string;
@@ -35,7 +34,6 @@ export interface Thread {
   lastActivity: number;
 }
 
-// Schema for the AI SDK data stream events including tool calls and results
 const streamEventSchema = jsonSchema<{
   type: string;
   id?: string;
@@ -68,35 +66,43 @@ const streamEventSchema = jsonSchema<{
   required: ["type"],
 });
 
-const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-4.5-sonnet";
-
-const systemPrompt = `
-If the user says you are dumb because you dont remember something, explain that you currently cannot remember tool calls, only text.
-`;
+function getBindings(env: RuntimeEnv) {
+  return {
+    MODEL_PROVIDER: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER,
+    LANGUAGE_MODEL: env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL,
+    EVENT_BUS: env.MESH_REQUEST_CONTEXT.state.EVENT_BUS,
+  };
+}
 
 export async function generateResponseForEvent(
-  env: Env,
+  env: RuntimeEnv,
   messages: ThreadMessage[],
   threadId: string,
   subject: string,
 ) {
+  const { EVENT_BUS, MODEL_PROVIDER, LANGUAGE_MODEL } = getBindings(env);
   const organizationId = env.MESH_REQUEST_CONTEXT.organizationId;
   if (!organizationId) {
     throw new Error("No organizationId found");
   }
 
-  const modelProviderId = env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value;
-  const languageModelId =
-    env.MESH_REQUEST_CONTEXT.state.LANGUAGE_MODEL?.value?.id;
-  const agentId = env.MESH_REQUEST_CONTEXT.state.AGENT?.value;
+  const modelProviderId = MODEL_PROVIDER?.value;
+  const languageModelId = LANGUAGE_MODEL?.value?.id;
 
   if (!modelProviderId) {
     throw new Error("MODEL_PROVIDER not configured");
   }
-
-  if (!agentId) {
-    throw new Error("AGENT not configured");
-  }
+  const body = {
+    model: {
+      connectionId: modelProviderId,
+      id: languageModelId ?? "anthropic/claude-haiku-4.5",
+    },
+    agent: {
+      id: null,
+    },
+    thread_id: threadId,
+    messages,
+  };
 
   const response = await fetch(
     (env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL) +
@@ -110,23 +116,7 @@ export async function generateResponseForEvent(
         Authorization: "Bearer " + env.MESH_REQUEST_CONTEXT.token,
         Accept: "text/event-stream",
       },
-      body: JSON.stringify({
-        model: {
-          connectionId: env.MESH_REQUEST_CONTEXT.state.MODEL_PROVIDER?.value,
-          id: languageModelId ?? DEFAULT_LANGUAGE_MODEL,
-        },
-        agent: {
-          id: env.MESH_REQUEST_CONTEXT.state.AGENT?.value,
-        },
-        threadId,
-        messages: [
-          {
-            role: "system",
-            parts: [{ type: "text", text: systemPrompt }],
-          },
-          ...messages,
-        ],
-      }),
+      body: JSON.stringify(body),
     },
   );
 
@@ -163,88 +153,21 @@ export async function generateResponseForEvent(
 
     if (type === "text-delta" && event.value.delta) {
       textContent += event.value.delta;
-    } else if (
-      type === "tool-call" &&
-      event.value.toolCallId &&
-      event.value.toolName
-    ) {
-      collectedParts.push({
-        type: "tool-call",
-        toolCallId: event.value.toolCallId,
-        toolName: event.value.toolName,
-        input: event.value.args ?? "{}",
-      });
-    } else if (
-      type === "tool-result" &&
-      event.value.toolCallId &&
-      event.value.toolName
-    ) {
-      collectedParts.push({
-        type: "tool-result",
-        toolCallId: event.value.toolCallId,
-        toolName: event.value.toolName,
-        output: event.value.output,
-        result: event.value.result,
-      });
     } else if (type === "text-end") {
       if (textContent) {
         collectedParts.unshift({ type: "text", text: textContent });
       }
-      publishEvent({
+      await EVENT_BUS.EVENT_PUBLISH({
+        type: "operator.text.completed",
+        subject,
         data: {
           text: textContent,
         },
-        organizationId,
-        type: "operator.text.completed",
-        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL,
-        subject,
       });
       textContent = "";
     } else if (type === "finish") {
-      publishEvent({
-        data: {
-          messageParts: collectedParts,
-        },
-        organizationId,
-        type: "operator.generation.completed",
-        meshUrl: env.MESH_REQUEST_CONTEXT.meshUrl ?? env.MESH_URL,
-        subject,
-      });
+      textContent = "";
       break;
     }
-  }
-}
-
-export async function publishEvent({
-  data,
-  organizationId,
-  type,
-  meshUrl,
-  subject,
-}: {
-  type: string;
-  data: unknown;
-  organizationId: string;
-  meshUrl: string;
-  subject?: string;
-}) {
-  const url = new URL(
-    `${meshUrl}/org/${organizationId}/events/${type}?subject=${subject}`,
-  );
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(
-      `Failed to publish event to mesh (${response.status}): ${
-        errorText || response.statusText
-      }`,
-    );
   }
 }

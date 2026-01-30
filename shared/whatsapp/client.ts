@@ -1,8 +1,4 @@
-import { env } from "../env";
-
-const BASE_URL = "https://graph.facebook.com/v23.0";
-const CTA_HEADER_IMAGE_URL =
-  "https://assets.decocache.com/decocms/8c4da0ff-9be6-4aa3-ad53-895f87756911/blog1.png";
+const BASE_URL = "https://graph.facebook.com/v24.0";
 
 export interface WhatsAppConfig {
   accessToken: string;
@@ -39,6 +35,9 @@ export class WhatsAppAPIClient {
       headers: this.headers,
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (!response.ok) {
+      throw new Error(`Failed to POST ${path}: ${response.statusText}`);
+    }
     return response.json() as Promise<T>;
   }
 
@@ -81,9 +80,9 @@ export class WhatsAppAPIClient {
 
   updateWebhook(
     phoneNumberId: string,
-    params: { webhookUrl: string; verifyToken: string },
+    params: { webhookUrl: string; verifyToken?: string },
   ) {
-    return this.post(`/${phoneNumberId}`, {
+    return this.post<{ success: boolean }>(`/${phoneNumberId}`, {
       webhook_configuration: {
         override_callback_uri: params.webhookUrl,
         verify_token: params.verifyToken,
@@ -222,12 +221,14 @@ export class WhatsAppAPIClient {
     url,
     text,
     cta_display_text,
+    cta_header_image_url,
   }: {
     phoneNumberId: string;
     to: string;
     url: string;
     text: string;
     cta_display_text: string;
+    cta_header_image_url: string;
   }) {
     return this.post<{ messages: { id: string }[] }>(
       `/${phoneNumberId}/messages`,
@@ -241,7 +242,7 @@ export class WhatsAppAPIClient {
           header: {
             type: "image",
             image: {
-              link: CTA_HEADER_IMAGE_URL,
+              link: cta_header_image_url,
             },
           },
           body: {
@@ -321,9 +322,15 @@ export class WhatsAppAPIClient {
   }
 }
 
-export const getWhatsappClient = () => {
+export const getWhatsappClient = ({
+  accessToken,
+  businessAccountId,
+}: {
+  accessToken: string;
+  businessAccountId: string;
+}) => {
   return new WhatsAppAPIClient({
-    accessToken: env.META_ACCESS_KEY,
-    businessAccountId: env.META_BUSINESS_ACCOUNT_ID,
+    accessToken,
+    businessAccountId,
   });
 };

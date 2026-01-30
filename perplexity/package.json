@@ -1,32 +1,25 @@
 {
   "name": "perplexity",
   "version": "1.0.0",
-  "description": "MCP server for Perplexity AI with web-backed answers",
+  "description": "Perplexity AI MCP Server - Web-backed AI answers and conversations",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "deco dev",
-    "configure": "deco configure",
-    "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
-    "check": "tsc --noEmit",
-    "build": "bun --bun vite build"
+    "dev": "bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@decocms/runtime": "0.24.0",
-    "zod": "^3.24.3"
+    "@decocms/runtime": "1.2.5",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.13.4",
-    "@cloudflare/workers-types": "^4.20251014.0",
-    "@decocms/mcps-shared": "1.0.0",
-    "@mastra/core": "^0.24.0",
-    "@modelcontextprotocol/sdk": "1.20.2",
-    "@types/mime-db": "^1.43.6",
+    "@decocms/mcps-shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.25.1",
     "deco-cli": "^0.28.0",
-    "typescript": "^5.7.2",
-    "vite": "7.2.0",
-    "wrangler": "^4.28.0"
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=22.0.0"

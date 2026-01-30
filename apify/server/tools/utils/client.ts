@@ -4,14 +4,8 @@ import type {
   ActorRunResponse,
   ActorsResponse,
   ActorRunsResponse,
-} from "./types";
-import type { Env } from "server/main";
-import {
-  assertEnvKey,
-  makeApiRequest,
-  parseApiError,
-} from "@decocms/mcps-shared/tools/utils/api-client";
-import { APIFY_API_BASE_URL } from "../../constants";
+} from "./types.ts";
+import { APIFY_API_BASE_URL } from "../../constants.ts";
 
 interface ApifyRequestOptions {
   body?: Record<string, unknown>;
@@ -24,68 +18,8 @@ interface DataWrapper<T> {
 }
 
 /**
- * Helper function to make requests to Apify API
- * Uses makeApiRequest as middleware and handles Apify-specific response formatting
- */
-async function makeApifyRequest<T = unknown>(
-  env: Env,
-  method: "GET" | "POST",
-  path: string,
-  options?: ApifyRequestOptions,
-): Promise<T> {
-  // Validate token only when making actual requests, not during tool creation
-  try {
-    assertEnvKey(env, "APIFY_TOKEN");
-  } catch {
-    throw new Error(
-      "APIFY_TOKEN is not set in environment. Please configure your Apify API token.",
-    );
-  }
-  const token = (env as unknown as Record<string, string>).APIFY_TOKEN;
-
-  let url = `${APIFY_API_BASE_URL}${path}`;
-
-  // Build query parameters
-  if (options?.query) {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(options.query)) {
-      if (value !== undefined) {
-        params.append(key, String(value));
-      }
-    }
-    const queryString = params.toString();
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-  }
-
-  const requestInit: RequestInit = {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  };
-
-  // Use makeApiRequest as middleware for fetch + error handling
-  const result = await makeApiRequest(url, requestInit, "Apify");
-
-  // MCPs don't support returning arrays directly - wrap in object
-  if (Array.isArray(result)) {
-    return { data: result } as unknown as T;
-  }
-
-  if (result && typeof result === "object" && "data" in result) {
-    return result as T;
-  }
-
-  return result as T;
-}
-
-/**
  * Standalone Apify API client for MCP
- * Handles API communication without depending on Deco's createHttpClient
+ * Handles API communication with Apify
  */
 export class ApifyClient {
   private baseUrl: string;
@@ -137,7 +71,8 @@ export class ApifyClient {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      await parseApiError(response, "Apify");
+      const error = await response.text();
+      throw new Error(`Apify API error: ${response.status} - ${error}`);
     }
 
     // Handle empty responses
@@ -323,180 +258,4 @@ export class ApifyClient {
       },
     );
   }
-}
-
-/**
- * Standalone functions that work with env directly (Sora pattern)
- */
-export async function listActors(
-  env: Env,
-  options?: {
-    limit?: number;
-    offset?: number;
-    my?: boolean;
-    desc?: boolean;
-  },
-): Promise<ActorsResponse> {
-  return makeApifyRequest(env, "GET", "/v2/acts", {
-    query: {
-      limit: options?.limit ?? 10,
-      offset: options?.offset ?? 0,
-      my: options?.my ?? false,
-      desc: options?.desc ?? true,
-    },
-  });
-}
-
-export async function getActor(env: Env, actorId: string): Promise<Actor> {
-  return makeApifyRequest(env, "GET", `/v2/acts/${actorId}`);
-}
-
-export async function runActorSync(
-  env: Env,
-  actorId: string,
-  input: Record<string, unknown>,
-  options?: {
-    timeout?: number;
-    memory?: number;
-    build?: string;
-  },
-): Promise<ActorRun> {
-  return makeApifyRequest(env, "POST", `/v2/acts/${actorId}/run-sync`, {
-    body: input,
-    query: {
-      timeout: options?.timeout,
-      memory: options?.memory,
-      build: options?.build,
-    },
-  });
-}
-
-export async function runActorSyncGetDatasetItems(
-  env: Env,
-  actorId: string,
-  input: Record<string, unknown>,
-  options?: {
-    timeout?: number;
-    memory?: number;
-    build?: string;
-  },
-): Promise<DataWrapper<Array<Record<string, unknown>>>> {
-  return makeApifyRequest(
-    env,
-    "POST",
-    `/v2/acts/${actorId}/run-sync-get-dataset-items`,
-    {
-      body: input,
-      query: {
-        timeout: options?.timeout,
-        memory: options?.memory,
-        build: options?.build,
-      },
-    },
-  );
-}
-
-export async function runActor(
-  env: Env,
-  actorId: string,
-  input: Record<string, unknown>,
-  options?: {
-    timeout?: number;
-    memory?: number;
-    build?: string;
-  },
-): Promise<ActorRunResponse> {
-  return makeApifyRequest(env, "POST", `/v2/acts/${actorId}/runs`, {
-    body: input,
-    query: {
-      timeout: options?.timeout,
-      memory: options?.memory,
-      build: options?.build,
-    },
-  });
-}
-
-export async function getActorRuns(
-  env: Env,
-  actorId: string,
-  options?: {
-    limit?: number;
-    offset?: number;
-    status?: string;
-    desc?: boolean;
-  },
-): Promise<ActorRunsResponse> {
-  return makeApifyRequest(env, "GET", `/v2/acts/${actorId}/runs`, {
-    query: {
-      limit: options?.limit ?? 10,
-      offset: options?.offset ?? 0,
-      status: options?.status,
-      desc: options?.desc ?? true,
-    },
-  });
-}
-
-export async function getActorRun(
-  env: Env,
-  actorId: string,
-  runId: string,
-): Promise<ActorRun> {
-  return makeApifyRequest(env, "GET", `/v2/acts/${actorId}/runs/${runId}`);
-}
-
-export async function getDatasetItems(
-  env: Env,
-  datasetId: string,
-  options?: {
-    format?: string;
-    limit?: number;
-    offset?: number;
-    clean?: boolean;
-  },
-): Promise<DataWrapper<Array<Record<string, unknown>>>> {
-  return makeApifyRequest(env, "GET", `/v2/datasets/${datasetId}/items`, {
-    query: {
-      format: options?.format ?? "json",
-      limit: options?.limit ?? 100,
-      offset: options?.offset ?? 0,
-      clean: options?.clean ?? true,
-    },
-  });
-}
-
-/**
- * Factory function to create an Apify client instance
- * Returns an object with methods that capture the env in closure (Sora pattern)
- */
-export function createApifyClient(env: Env) {
-  return {
-    listActors: (options?: Parameters<typeof listActors>[1]) =>
-      listActors(env, options),
-    getActor: (actorId: string) => getActor(env, actorId),
-    runActorSync: (
-      actorId: string,
-      input: Record<string, unknown>,
-      options?: Parameters<typeof runActorSync>[3],
-    ) => runActorSync(env, actorId, input, options),
-    runActorSyncGetDatasetItems: (
-      actorId: string,
-      input: Record<string, unknown>,
-      options?: Parameters<typeof runActorSyncGetDatasetItems>[3],
-    ) => runActorSyncGetDatasetItems(env, actorId, input, options),
-    runActor: (
-      actorId: string,
-      input: Record<string, unknown>,
-      options?: Parameters<typeof runActor>[3],
-    ) => runActor(env, actorId, input, options),
-    getActorRuns: (
-      actorId: string,
-      options?: Parameters<typeof getActorRuns>[2],
-    ) => getActorRuns(env, actorId, options),
-    getActorRun: (actorId: string, runId: string) =>
-      getActorRun(env, actorId, runId),
-    getDatasetItems: (
-      datasetId: string,
-      options?: Parameters<typeof getDatasetItems>[2],
-    ) => getDatasetItems(env, datasetId, options),
-  };
 }

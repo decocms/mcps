@@ -162,9 +162,48 @@ export async function getBotInfo(): Promise<{
       teamId: result.team_id as string,
     };
   } catch (error) {
-    console.error("[Slack] Failed to get bot info:", error);
+    const slackError = extractSlackError(error);
+    console.warn(`[Slack] Failed to get bot info: ${slackError}`);
     return null;
   }
+}
+
+/**
+ * Get team info (workspace name)
+ */
+export async function getTeamInfo(): Promise<{
+  id: string;
+  name: string;
+} | null> {
+  if (!webClient) return null;
+
+  try {
+    const result = await webClient.team.info();
+    return {
+      id: result.team?.id as string,
+      name: result.team?.name as string,
+    };
+  } catch (error) {
+    const slackError = extractSlackError(error);
+    console.warn(`[Slack] Failed to get team info: ${slackError}`);
+    return null;
+  }
+}
+
+/**
+ * Extract clean error message from Slack API error
+ */
+function extractSlackError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const err = error as { data?: { error?: string }; message?: string };
+    if (err.data?.error) {
+      return err.data.error;
+    }
+    if (err.message) {
+      return err.message;
+    }
+  }
+  return String(error);
 }
 
 // ============================================================================

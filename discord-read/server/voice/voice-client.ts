@@ -61,12 +61,16 @@ export async function joinVoiceChannelSafe(
     }
 
     // Create new connection
+    // Note: daveEncryption is disabled to avoid DecryptionFailed errors
+    // Discord's DAVE protocol is new and can cause issues with audio receive
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: guild.id,
       adapterCreator: guild.voiceAdapterCreator,
       selfDeaf: false, // IMPORTANT: false to HEAR users
       selfMute: false, // IMPORTANT: false to SPEAK (TTS)
+      // @ts-expect-error - daveEncryption exists in @discordjs/voice 0.19+
+      daveEncryption: false, // Disable DAVE to prevent decryption errors
     });
 
     // Wait for connection to be ready
@@ -102,6 +106,17 @@ export async function joinVoiceChannelSafe(
     connection.on(VoiceConnectionStatus.Destroyed, () => {
       console.log("[Voice] Connection destroyed");
       activeConnections.delete(guild.id);
+    });
+
+    // Handle errors (including DAVE decryption errors)
+    connection.on("error", (error) => {
+      console.error("[Voice] Connection error:", error.message);
+      // Don't destroy connection on decryption errors - they can be transient
+    });
+
+    // Handle receiver errors (DAVE protocol errors)
+    connection.receiver.speaking.on("error", (error) => {
+      console.error("[Voice] Receiver error:", error.message);
     });
 
     // Store connection info

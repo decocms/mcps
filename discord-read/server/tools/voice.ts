@@ -75,12 +75,34 @@ export const createJoinVoiceChannelTool = (_env: Env) =>
 
         // Cast to VoiceChannel
         const voiceChannel = channel as import("discord.js").VoiceChannel;
-        const success = await startVoiceSession(voiceChannel, guild);
+
+        // Find a text channel for TTS messages
+        let textChannelId: string | undefined;
+        const textChannels = guild.channels.cache.filter((c) => c.type === 0); // GUILD_TEXT
+
+        // Try to find a text channel with matching name
+        const matchingChannel = textChannels.find(
+          (c) =>
+            c.name === voiceChannel.name ||
+            c.name === `${voiceChannel.name}-text`,
+        );
+
+        if (matchingChannel) {
+          textChannelId = matchingChannel.id;
+        } else if (textChannels.size > 0) {
+          textChannelId = textChannels.first()?.id;
+        }
+
+        const success = await startVoiceSession(
+          voiceChannel,
+          guild,
+          textChannelId,
+        );
 
         return {
           success,
           message: success
-            ? `Joined voice channel: ${voiceChannel.name}`
+            ? `Joined voice channel: ${voiceChannel.name}${textChannelId ? ` (TTS to ${matchingChannel?.name || textChannels.first()?.name})` : ""}`
             : "Failed to join voice channel",
         };
       } catch (error) {
@@ -239,84 +261,6 @@ export const createVoiceStatusTool = (_env: Env) =>
   });
 
 /**
- * Speak text in voice channel (TTS)
- */
-export const createSpeakInVoiceTool = (_env: Env) =>
-  createPrivateTool({
-    id: "DISCORD_SPEAK_IN_VOICE",
-    description: "Speak text in the current voice channel using TTS",
-    inputSchema: z
-      .object({
-        guildId: z.string().describe("Guild ID where to speak"),
-        text: z.string().describe("Text to speak"),
-        language: z
-          .string()
-          .optional()
-          .describe("Language code (default: pt-BR)"),
-      })
-      .strict(),
-    outputSchema: z.object({
-      success: z.boolean(),
-      message: z.string().optional(),
-      error: z.string().optional(),
-    }),
-    execute: async ({ context }: { context: unknown }) => {
-      const input = context as {
-        guildId: string;
-        text: string;
-        language?: string;
-      };
-      const { guildId, text, language } = input;
-
-      try {
-        const {
-          getActiveConnection,
-          speakInChannel,
-          isTTSEnabled,
-          hasActiveSession,
-        } = await import("../voice/index.ts");
-
-        if (!hasActiveSession(guildId)) {
-          return {
-            success: false,
-            error: "Not connected to any voice channel in this guild",
-          };
-        }
-
-        if (!isTTSEnabled()) {
-          return {
-            success: false,
-            error: "TTS is disabled",
-          };
-        }
-
-        const connection = getActiveConnection(guildId);
-        if (!connection) {
-          return {
-            success: false,
-            error: "No active voice connection",
-          };
-        }
-
-        const success = await speakInChannel(connection, text, guildId, {
-          language: language || "pt-BR",
-        });
-
-        return {
-          success,
-          message: success ? "Speech completed" : "Failed to speak",
-        };
-      } catch (error) {
-        console.error("[Tool] DISCORD_SPEAK_IN_VOICE error:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    },
-  });
-
-/**
  * Join user's voice channel
  */
 export const createJoinUserVoiceTool = (_env: Env) =>
@@ -385,11 +329,79 @@ export const createJoinUserVoiceTool = (_env: Env) =>
     },
   });
 
+/**
+ * Send TTS message to a text channel (Discord native TTS)
+ * Simple tool that works without voice session - just sends tts: true message
+ */
+export const createTTSTool = (_env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_TTS",
+    description:
+      "Send a text-to-speech message to a Discord text channel. Discord will read the message aloud to users in the channel.",
+    inputSchema: z
+      .object({
+        channelId: z.string().describe("Text channel ID to send TTS message"),
+        text: z.string().describe("Text to be spoken via TTS (max 2000 chars)"),
+      })
+      .strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { channelId: string; text: string };
+      const { channelId, text } = input;
+
+      const client = getDiscordClient();
+      if (!client) {
+        return {
+          success: false,
+          error: "Discord client not initialized",
+        };
+      }
+
+      try {
+        const channel = await client.channels.fetch(channelId);
+        if (!channel || !("send" in channel)) {
+          return {
+            success: false,
+            error: "Channel not found or is not a text channel",
+          };
+        }
+
+        // Truncate if too long (Discord limit is 2000)
+        const truncated =
+          text.length > 1900 ? text.substring(0, 1900) + "..." : text;
+
+        await (channel as { send: Function }).send({
+          content: truncated,
+          tts: true, // Discord native TTS!
+        });
+
+        console.log(
+          `[Tool] DISCORD_TTS sent to ${channelId}: "${truncated.substring(0, 50)}..."`,
+        );
+
+        return {
+          success: true,
+          message: `TTS message sent to channel`,
+        };
+      } catch (error) {
+        console.error("[Tool] DISCORD_TTS error:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
 // Export all voice tools
 export const voiceTools = [
   createJoinVoiceChannelTool,
   createLeaveVoiceChannelTool,
   createVoiceStatusTool,
-  createSpeakInVoiceTool,
   createJoinUserVoiceTool,
+  createTTSTool,
 ];

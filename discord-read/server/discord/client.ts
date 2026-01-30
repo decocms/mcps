@@ -224,19 +224,14 @@ function registerEventHandlers(client: Client, env: Env): void {
     // Removed verbose logging for better performance
 
     // Re-set database env (ensures it's available for this message)
-    // Only set if we have a valid MESH_REQUEST_CONTEXT
-    if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-      setDatabaseEnv(currentEnv);
-    }
+    setDatabaseEnv(currentEnv);
 
     try {
       // Index the message (non-blocking, errors are logged but don't stop processing)
-      // Only index if database is configured
-      if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-        indexMessage(message, isDM).catch((e) =>
-          console.log("[Message] Failed to index:", e.message),
-        );
-      }
+      // Only index if Supabase is configured
+      indexMessage(message, isDM).catch((e) =>
+        console.log("[Message] Failed to index:", e.message),
+      );
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;

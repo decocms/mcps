@@ -7,7 +7,14 @@
  * Also handles sending responses via DM if configured.
  */
 
-import type { Guild, User, VoiceChannel, Client, DMChannel } from "discord.js";
+import type {
+  Guild,
+  User,
+  VoiceChannel,
+  Client,
+  DMChannel,
+  TextChannel,
+} from "discord.js";
 import type { VoiceConnection } from "@discordjs/voice";
 import {
   joinVoiceChannelSafe,
@@ -20,6 +27,8 @@ import {
   setAudioCompleteCallback,
   setupSpeakingListener,
   clearAllBuffers,
+  pauseListening,
+  resumeListening,
   type CompletedAudio,
 } from "./audio-receiver.ts";
 import {
@@ -27,14 +36,6 @@ import {
   configureWhisperSTT,
   isWhisperConfigured,
 } from "./transcription.ts";
-import {
-  speakInChannel,
-  configureTTS,
-  isTTSEnabled,
-  sayGreeting,
-  sayGoodbye,
-  cleanupPlayer,
-} from "./tts-speaker.ts";
 
 // ============================================================================
 // Types
@@ -62,7 +63,7 @@ export interface VoiceCommandHandler {
 // ============================================================================
 
 let voiceConfig: VoiceConfig = {
-  enabled: false,
+  enabled: true, // Voice enabled by default
   responseMode: "voice",
   ttsEnabled: true,
   ttsLanguage: "pt-BR",
@@ -72,16 +73,177 @@ let voiceConfig: VoiceConfig = {
 let discordClient: Client | null = null;
 let commandHandler: VoiceCommandHandler | null = null;
 
-// Track active voice sessions
+// ElevenLabs TTS configuration (using SDK directly)
+let elevenlabsConfig: {
+  apiKey: string;
+  voiceId: string;
+} | null = null;
+
+// Track active voice sessions (includes text channel for TTS)
 const activeSessions = new Map<
   string,
   {
     guildId: string;
     channelId: string;
+    textChannelId?: string;
     startedAt: Date;
     lastActivity: Date;
   }
 >();
+
+/**
+ * Send a TTS message using Discord's native TTS
+ * This is much simpler than generating audio - Discord reads it aloud
+ */
+async function sendTTSMessage(
+  guildId: string,
+  message: string,
+): Promise<boolean> {
+  const session = activeSessions.get(guildId);
+  if (!session?.textChannelId) {
+    console.warn("[VoiceCommands] ⚠️ No text channel configured for TTS");
+    return false;
+  }
+
+  if (!discordClient) {
+    console.warn("[VoiceCommands] ⚠️ Discord client not available for TTS");
+    return false;
+  }
+
+  try {
+    console.log(
+      `[VoiceCommands] 🔊 Sending TTS to channel ${session.textChannelId}: "${message.substring(0, 50)}..."`,
+    );
+
+    const channel = await discordClient.channels.fetch(session.textChannelId);
+    if (!channel || !("send" in channel)) {
+      console.error(
+        "[VoiceCommands] ❌ Channel not found or not a text channel",
+      );
+      return false;
+    }
+
+    // Discord TTS has 2000 char limit - truncate if needed
+    const truncated =
+      message.length > 1900 ? message.substring(0, 1900) + "..." : message;
+
+    await (channel as TextChannel).send({
+      content: truncated,
+      tts: true, // Discord native TTS!
+    });
+
+    console.log("[VoiceCommands] ✅ TTS message sent successfully");
+    return true;
+  } catch (error) {
+    console.error("[VoiceCommands] ❌ TTS message error:", error);
+    return false;
+  }
+}
+
+/**
+ * Send TTS audio using ElevenLabs SDK
+ * Generates high-quality audio and uploads to Discord
+ */
+async function sendTTSWithElevenLabs(
+  guildId: string,
+  message: string,
+): Promise<boolean> {
+  if (!elevenlabsConfig) {
+    console.warn("[VoiceCommands] ⚠️ ElevenLabs not configured");
+    return false;
+  }
+
+  const session = activeSessions.get(guildId);
+  if (!session?.textChannelId) {
+    console.warn("[VoiceCommands] ⚠️ No text channel configured for TTS");
+    return false;
+  }
+
+  if (!discordClient) {
+    console.warn("[VoiceCommands] ⚠️ Discord client not available");
+    return false;
+  }
+
+  try {
+    console.log(
+      `[VoiceCommands] 🎙️ Generating ElevenLabs TTS: "${message.substring(0, 50)}..."`,
+    );
+
+    // Import ElevenLabs SDK
+    const { ElevenLabsClient } = await import("@elevenlabs/elevenlabs-js");
+
+    // Create client with API key
+    const client = new ElevenLabsClient({
+      apiKey: elevenlabsConfig.apiKey,
+    });
+
+    // Generate audio in PCM 24kHz (will be upsampled to 48kHz for Discord)
+    const audio = await client.textToSpeech.convert(elevenlabsConfig.voiceId, {
+      text: message,
+      modelId: "eleven_multilingual_v2",
+      outputFormat: "pcm_24000", // 24kHz PCM - will upsample to 48kHz
+    });
+
+    // Convert stream to buffer
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of audio) {
+      chunks.push(chunk);
+    }
+    const audioBuffer = Buffer.concat(chunks);
+
+    console.log(
+      `[VoiceCommands] 🎙️ Generated ${audioBuffer.length} bytes of audio`,
+    );
+
+    // Get voice connection
+    const connection = getActiveConnection(guildId);
+    if (!connection) {
+      console.error("[VoiceCommands] ❌ No voice connection found");
+      return false;
+    }
+
+    // Play audio in voice channel
+    const { playAudioBuffer } = await import("./tts-speaker.ts");
+    const success = await playAudioBuffer(connection, audioBuffer, guildId);
+
+    if (success) {
+      console.log(
+        "[VoiceCommands] ✅ ElevenLabs TTS played successfully in voice",
+      );
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("[VoiceCommands] ❌ ElevenLabs TTS error:", error);
+    return false;
+  }
+}
+
+/**
+ * Send TTS - uses ElevenLabs if configured, otherwise Discord native
+ */
+async function sendTTS(guildId: string, message: string): Promise<boolean> {
+  console.log("[VoiceCommands] DEBUG - sendTTS called:", {
+    guildId,
+    messageLength: message.length,
+    hasElevenlabs: !!elevenlabsConfig,
+  });
+
+  if (elevenlabsConfig) {
+    console.log("[VoiceCommands] DEBUG - Trying ElevenLabs");
+    const success = await sendTTSWithElevenLabs(guildId, message);
+    if (success) {
+      console.log("[VoiceCommands] DEBUG - ElevenLabs success");
+      return true;
+    }
+    // Fallback to Discord native if ElevenLabs fails
+    console.log("[VoiceCommands] Falling back to Discord native TTS");
+  } else {
+    console.log("[VoiceCommands] DEBUG - No ElevenLabs, using Discord native");
+  }
+  return sendTTSMessage(guildId, message);
+}
 
 // ============================================================================
 // Configuration
@@ -99,13 +261,8 @@ export function configureVoiceCommands(
   voiceConfig = { ...voiceConfig, ...config };
   commandHandler = handler;
 
-  // Configure TTS
-  configureTTS({
-    enabled: voiceConfig.ttsEnabled,
-    language: voiceConfig.ttsLanguage,
-  });
-
   console.log("[VoiceCommands] Configured:", voiceConfig);
+  console.log("[VoiceCommands] Using Discord native TTS (no FFmpeg needed)");
 }
 
 /**
@@ -121,6 +278,27 @@ export function configureVoiceWhisper(config: {
 }
 
 /**
+ * Configure ElevenLabs for TTS (using SDK directly)
+ */
+export function configureElevenLabs(config: {
+  apiKey: string;
+  voiceId: string;
+}): void {
+  elevenlabsConfig = config;
+  console.log("[VoiceCommands] ElevenLabs TTS configured:", {
+    voiceId: config.voiceId,
+    hasApiKey: !!config.apiKey,
+  });
+}
+
+/**
+ * Check if ElevenLabs is configured
+ */
+export function isElevenLabsConfigured(): boolean {
+  return elevenlabsConfig !== null;
+}
+
+/**
  * Check if voice commands are enabled
  */
 export function isVoiceEnabled(): boolean {
@@ -133,10 +311,12 @@ export function isVoiceEnabled(): boolean {
 
 /**
  * Start listening in a voice channel
+ * @param textChannelId - Optional text channel ID for TTS responses
  */
 export async function startVoiceSession(
   channel: VoiceChannel,
   guild: Guild,
+  textChannelId?: string,
 ): Promise<boolean> {
   if (!voiceConfig.enabled) {
     console.log("[VoiceCommands] Voice is disabled");
@@ -176,17 +356,18 @@ export async function startVoiceSession(
       }
     });
 
-    // Track session
+    // Track session (include text channel for TTS)
     activeSessions.set(guild.id, {
       guildId: guild.id,
       channelId: channel.id,
+      textChannelId,
       startedAt: new Date(),
       lastActivity: new Date(),
     });
 
-    // Say greeting
-    if (voiceConfig.ttsEnabled) {
-      await sayGreeting(connection, guild.id, voiceConfig.ttsLanguage);
+    // Say greeting via TTS
+    if (voiceConfig.ttsEnabled && textChannelId) {
+      await sendTTS(guild.id, "Olá! Estou ouvindo no canal de voz.");
     }
 
     console.log(`[VoiceCommands] ✅ Voice session started in ${channel.name}`);
@@ -201,18 +382,13 @@ export async function startVoiceSession(
  * Stop voice session in a guild
  */
 export async function stopVoiceSession(guildId: string): Promise<boolean> {
-  const connection = getActiveConnection(guildId);
-
-  if (connection && voiceConfig.ttsEnabled) {
-    // Say goodbye before leaving
-    await sayGoodbye(connection, guildId, voiceConfig.ttsLanguage);
-    // Small delay to let the audio finish
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+  // Say goodbye via TTS before leaving
+  if (voiceConfig.ttsEnabled) {
+    await sendTTS(guildId, "Até logo! Saindo do canal de voz.");
   }
 
   // Clean up
   clearAllBuffers();
-  cleanupPlayer(guildId);
   activeSessions.delete(guildId);
 
   // Leave channel
@@ -235,6 +411,9 @@ async function handleVoiceCommand(
     return;
   }
 
+  // Pause listening while processing to prevent overlapping commands
+  pauseListening();
+
   // Update last activity
   const session = activeSessions.get(guildId);
   if (session) {
@@ -250,6 +429,7 @@ async function handleVoiceCommand(
     const transcription = await transcribeAudioBase64(audio);
     if (!transcription || !transcription.text) {
       console.log("[VoiceCommands] No transcription result");
+      resumeListening();
       return;
     }
 
@@ -267,6 +447,7 @@ async function handleVoiceCommand(
     ) {
       console.log("[VoiceCommands] Exit command detected");
       await stopVoiceSession(guildId);
+      // Don't resume listening - we're leaving
       return;
     }
 
@@ -280,6 +461,7 @@ async function handleVoiceCommand(
 
     if (!response) {
       console.log("[VoiceCommands] No response from LLM");
+      resumeListening();
       return;
     }
 
@@ -287,17 +469,56 @@ async function handleVoiceCommand(
       `[VoiceCommands] 🤖 Response: "${response.substring(0, 100)}${response.length > 100 ? "..." : ""}"`,
     );
 
+    console.log("[VoiceCommands] DEBUG - Voice config:", {
+      responseMode: voiceConfig.responseMode,
+      ttsEnabled: voiceConfig.ttsEnabled,
+      guildId,
+      hasResponse: !!response,
+    });
+
+    // Check if response contains error messages
+    const lowerResponse = response.toLowerCase();
+    const isErrorResponse =
+      lowerResponse.includes("desculpe") ||
+      lowerResponse.includes("não consigo") ||
+      lowerResponse.includes("nao consigo") ||
+      lowerResponse.includes("erro") ||
+      lowerResponse.includes("problema") ||
+      lowerResponse.includes("falh") ||
+      lowerResponse.includes("configurad") ||
+      lowerResponse.includes("dificuldade");
+
+    if (isErrorResponse) {
+      console.log(
+        "[VoiceCommands] ⚠️ Error response detected, skipping TTS:",
+        response.substring(0, 100),
+      );
+    }
+
     // Respond based on mode
     if (
       voiceConfig.responseMode === "voice" ||
       voiceConfig.responseMode === "both"
     ) {
-      // Respond via TTS in voice channel
-      if (isTTSEnabled()) {
-        await speakInChannel(connection, response, guildId, {
-          language: voiceConfig.ttsLanguage,
-        });
+      console.log("[VoiceCommands] DEBUG - Entering voice response block");
+      // Respond via TTS (ElevenLabs if configured, otherwise Discord native)
+      // Skip TTS for error responses
+      if (voiceConfig.ttsEnabled && !isErrorResponse) {
+        console.log("[VoiceCommands] DEBUG - About to call sendTTS");
+        await sendTTS(guildId, response);
+        console.log("[VoiceCommands] DEBUG - sendTTS completed");
+      } else if (isErrorResponse) {
+        console.log(
+          "[VoiceCommands] DEBUG - Skipping TTS due to error response",
+        );
+      } else {
+        console.log("[VoiceCommands] DEBUG - TTS disabled, skipping");
       }
+    } else {
+      console.log(
+        "[VoiceCommands] DEBUG - Skipping voice response, mode:",
+        voiceConfig.responseMode,
+      );
     }
 
     if (
@@ -310,14 +531,19 @@ async function handleVoiceCommand(
   } catch (error) {
     console.error("[VoiceCommands] Error handling command:", error);
 
-    // Try to speak error message
-    if (isTTSEnabled()) {
-      await speakInChannel(
-        connection,
-        "Desculpe, ocorreu um erro ao processar seu comando.",
+    // Try to speak error message via TTS
+    if (voiceConfig.ttsEnabled) {
+      await sendTTS(
         guildId,
-        { language: voiceConfig.ttsLanguage },
+        "Desculpe, ocorreu um erro ao processar seu comando.",
       );
+    }
+  } finally {
+    // Always resume listening after processing (unless we're leaving)
+    if (activeSessions.has(guildId)) {
+      // Small delay after TTS to avoid capturing the bot's own audio
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      resumeListening();
     }
   }
 }
@@ -422,7 +648,42 @@ export async function joinUserChannel(
     return false;
   }
 
-  return startVoiceSession(channel, guild);
+  // Find a text channel to send TTS messages to
+  // Try to find a text channel with the same name as the voice channel, or use the first available text channel
+  let textChannelId: string | undefined;
+
+  const textChannels = guild.channels.cache.filter(
+    (c) => c.type === 0, // 0 = GUILD_TEXT
+  );
+
+  // Try to find a text channel with the same name
+  const matchingChannel = textChannels.find(
+    (c) => c.name === channel.name || c.name === `${channel.name}-text`,
+  );
+
+  if (matchingChannel) {
+    textChannelId = matchingChannel.id;
+    console.log(
+      `[VoiceCommands] Using matching text channel: ${matchingChannel.name}`,
+    );
+  } else if (textChannels.size > 0) {
+    // Use the first available text channel
+    const firstChannel = textChannels.first();
+    if (firstChannel) {
+      textChannelId = firstChannel.id;
+      console.log(
+        `[VoiceCommands] Using first available text channel: ${firstChannel.name}`,
+      );
+    }
+  }
+
+  if (!textChannelId) {
+    console.warn(
+      "[VoiceCommands] ⚠️ No text channel found in guild - TTS will not work",
+    );
+  }
+
+  return startVoiceSession(channel, guild, textChannelId);
 }
 
 // ============================================================================
@@ -437,6 +698,24 @@ export {
   getMemberVoiceChannel,
 } from "./voice-client.ts";
 
-export { speakInChannel, isTTSEnabled, configureTTS } from "./tts-speaker.ts";
-
 export { isWhisperConfigured } from "./transcription.ts";
+
+/**
+ * Check if TTS is enabled (using Discord native TTS)
+ */
+export function isTTSEnabled(): boolean {
+  return voiceConfig.ttsEnabled;
+}
+
+/**
+ * Configure TTS settings (for Discord native TTS)
+ */
+export function configureTTS(config: {
+  enabled: boolean;
+  language?: string;
+}): void {
+  voiceConfig.ttsEnabled = config.enabled;
+  if (config.language) {
+    voiceConfig.ttsLanguage = config.language;
+  }
+}

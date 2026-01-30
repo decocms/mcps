@@ -38,8 +38,14 @@ export type AudioCompleteCallback = (audio: CompletedAudio) => Promise<void>;
 // Active audio buffers per user
 const audioBuffers = new Map<string, AudioBuffer>();
 
+// Track active subscriptions to prevent duplicates
+const activeSubscriptions = new Set<string>();
+
 // Registered callbacks
 let onAudioComplete: AudioCompleteCallback | null = null;
+
+// Processing lock - when true, ignore new audio input
+let isProcessingCommand = false;
 
 // Configuration
 const SILENCE_THRESHOLD_MS = 1500; // 1.5 seconds of silence before processing
@@ -60,6 +66,33 @@ export function setAudioCompleteCallback(
 }
 
 /**
+ * Pause audio listening (e.g., while processing a command)
+ * This prevents new audio from being captured while the bot is responding
+ */
+export function pauseListening(): void {
+  isProcessingCommand = true;
+  // Clear any in-progress audio buffers and subscriptions
+  audioBuffers.clear();
+  activeSubscriptions.clear();
+  console.log("[AudioReceiver] 🔇 Listening paused (processing command)");
+}
+
+/**
+ * Resume audio listening after command processing is complete
+ */
+export function resumeListening(): void {
+  isProcessingCommand = false;
+  console.log("[AudioReceiver] 🔊 Listening resumed");
+}
+
+/**
+ * Check if currently processing (not listening)
+ */
+export function isListeningPaused(): boolean {
+  return isProcessingCommand;
+}
+
+/**
  * Start listening to a user's audio in a voice connection
  * Discord sends Opus packets which we decode to PCM using prism-media
  */
@@ -68,13 +101,36 @@ export function subscribeToUser(
   userId: string,
   username: string,
 ): void {
+  // Prevent duplicate subscriptions (causes memory leak)
+  if (activeSubscriptions.has(userId)) {
+    return;
+  }
+
   try {
+    activeSubscriptions.add(userId);
+
     // Create audio stream for this user (returns Opus packets)
     const opusStream = connection.receiver.subscribe(userId, {
       end: {
         behavior: EndBehaviorType.AfterSilence,
         duration: SILENCE_THRESHOLD_MS,
       },
+    });
+
+    // Set max listeners to prevent warning
+    opusStream.setMaxListeners(20);
+
+    // Handle stream errors (including DAVE decryption errors)
+    opusStream.on("error", (error) => {
+      const errorMessage = error.message || String(error);
+      // Ignore DAVE decryption errors - they're transient
+      if (
+        errorMessage.includes("DecryptionFailed") ||
+        errorMessage.includes("Failed to decrypt")
+      ) {
+        return; // Silent ignore DAVE errors
+      }
+      console.error(`[AudioReceiver] Stream error for ${username}:`, error);
     });
 
     console.log(
@@ -125,14 +181,17 @@ export function subscribeToUser(
     // When stream ends (silence detected), process the audio
     opusDecoder.on("end", () => {
       console.log(`[AudioReceiver] Stream ended for ${username}`);
+      activeSubscriptions.delete(userId); // Allow re-subscription
       processCompletedAudio(userId);
     });
 
     opusDecoder.on("error", (error) => {
       console.error(`[AudioReceiver] Decoder error for ${username}:`, error);
+      activeSubscriptions.delete(userId);
       audioBuffers.delete(userId);
     });
   } catch (error) {
+    activeSubscriptions.delete(userId);
     console.error(`[AudioReceiver] Failed to subscribe to ${username}:`, error);
   }
 }
@@ -190,6 +249,11 @@ export function setupSpeakingListener(
   const receiver = connection.receiver;
 
   receiver.speaking.on("start", async (userId) => {
+    // Skip if processing a command (listening is paused)
+    if (isProcessingCommand) {
+      return;
+    }
+
     // Check if already listening to this user
     if (audioBuffers.has(userId)) {
       // Reset the buffer timing
