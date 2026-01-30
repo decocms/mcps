@@ -1,90 +1,91 @@
-# Como Criar um Novo MCP
+# Creating a New MCP
 
-## ⚠️ Importante
+## Important
 
-**Reutilize código compartilhado:** O diretório `/shared` centraliza utilitários, tools e lógicas comuns entre MCPs. Sempre verifique se já existe uma implementação antes de criar código duplicado. Isso mantém consistência e facilita manutenção.
+**Reuse shared code:** The `/shared` directory centralizes utilities, tools, and common logic between MCPs. Always check if an implementation already exists before creating duplicate code. This maintains consistency and makes maintenance easier.
 
-**Padrão de interfaces e bindings:** Todos os MCPs seguem o padrão do Deco Runtime com interfaces bem definidas, StateSchema para configuração e sistema de bindings para integração entre apps
+**Interface and binding patterns:** All MCPs follow the Deco Runtime pattern with well-defined interfaces, StateSchema for configuration, and a binding system for integration between apps.
 
-## Comando Rápido
+## Quick Start
 
 ```bash
-bun scripts/new.ts <nome-do-mcp>
+bun scripts/new.ts <mcp-name>
 ```
 
-O script vai perguntar se você quer uma view (interface web). Responda `y` para sim ou `n` para não.
+**Options:**
+- `--description "Description"` - Set a custom description
 
-**Opções:**
-- `--no-view` - Cria MCP sem interface (apenas API)
-- `--template minimal` - Usa template mínimo
-- `--description "Descrição"` - Define descrição customizada
-
-## Estrutura de um MCP
+## MCP Structure
 
 ```
-meu-mcp/
+my-mcp/
 ├── server/
-│   ├── main.ts              # Entry point principal
+│   ├── main.ts              # Main entry point
 │   ├── tools/
-│   │   ├── index.ts         # Exporta todas as tools
-│   │   ├── minha-tool.ts    # Implementação das tools
-│   │   └── utils/           # (opcional) utilitários auxiliares
-│   └── lib/                 # (opcional) clientes e libs externas
-├── shared/
-│   └── deco.gen.ts          # Tipos gerados automaticamente
+│   │   ├── index.ts         # Exports all tools
+│   │   └── my-tool.ts       # Tool implementations
+│   └── lib/                 # (optional) clients and external libs
 ├── package.json
-├── wrangler.toml            # Config do Cloudflare Workers
 └── tsconfig.json
 ```
 
-Se incluir view:
-```
-├── view/                     # Frontend React
-│   └── src/
-├── index.html
-└── vite.config.ts
-```
-
-## Configuração Básica
+## Basic Configuration
 
 ### 1. main.ts
-Define o StateSchema (configurações que o usuário preenche na instalação):
+
+Define the StateSchema (configuration that users fill when installing):
 
 ```typescript
-export const StateSchema = BaseStateSchema.extend({
-  apiKey: z.string().describe("Sua API key"),
-  // ... outros campos
+import { type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
+import { z } from "zod";
+
+import { tools } from "./tools/index.ts";
+
+export const StateSchema = z.object({
+  apiKey: z.string().describe("Your API key"),
+  // ... other fields
 });
+
+export type Env = DefaultEnv<typeof StateSchema>;
+
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    state: StateSchema,
+  },
+  tools,
+});
+
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}
 ```
 
 ### 2. tools/index.ts
-Exporta as tools que serão disponibilizadas:
+
+Export the tools that will be available:
 
 ```typescript
-import { userTools } from "@decocms/mcps-shared/tools/user";
-import { minhasTool } from "./minha-tool.ts";
+import { myTools } from "./my-tool.ts";
 
-export const tools = [
-  ...userTools,
-  ...minhasTool,
-];
+export const tools = [...myTools];
 ```
 
-### 3. Implementar Tools
-Crie arquivos em `server/tools/` com suas ferramentas usando o padrão MCP.
+### 3. Implement Tools
 
-## Após Criar
+Create files in `server/tools/` with your tools following the MCP pattern.
+
+## After Creating
 
 ```bash
-cd meu-mcp
+cd my-mcp
 bun install
-bun run dev     # Desenvolvimento local
-bun run deploy  # Deploy para produção
+bun run dev     # Local development
+bun run build   # Build for production
 ```
 
-## Exemplos de Referência
+## Reference Examples
 
-- **Minimal:** `template-minimal/` - MCP sem interface
-- **Com View:** `template-with-view/` - MCP com interface web
-- **Real:** `pinecone/`, `sora/`, `object-storage/` - MCPs em produção
-
+- **Simple API:** `perplexity/`, `hyperdx/` - Clean API-only MCPs
+- **With StateSchema:** `object-storage/` - Good configuration example
+- **With bindings:** `whatsapp/` - Shows binding integration
