@@ -20,7 +20,7 @@ bun run prepare
 
 ## Creating a New MCP
 
-Use the `new.ts` script to quickly scaffold a new MCP app from templates:
+Use the `new.ts` script to quickly scaffold a new MCP:
 
 ```bash
 bun run new <name> [options]
@@ -28,51 +28,22 @@ bun run new <name> [options]
 
 ### Options
 
-- `-t, --template <type>` - Template type: `minimal` or `with-view` (default: `with-view`)
-- `--no-view` - Remove view/frontend code (API only)
 - `-d, --description` - Description for package.json
 - `-h, --help` - Show help message
 
 ### Examples
 
-**Create an MCP with a React view:**
+**Create a new MCP:**
 
 ```bash
-bun run new weather-mcp
-```
-
-**Create an API-only MCP (no view):**
-
-```bash
-bun run new weather-api --no-view
-```
-
-**Create from minimal template:**
-
-```bash
-bun run new my-mcp --template minimal
+bun run new weather-api
 ```
 
 **Create with custom description:**
 
 ```bash
-bun run new weather-api --no-view --description "Weather forecast API"
+bun run new weather-api --description "Weather forecast API"
 ```
-
-### Templates
-
-- **`with-view`** - Full-featured MCP with a Vite + React view
-
-  - Includes Tailwind CSS, React Router, React Query
-  - Cloudflare Workers backend
-  - Perfect for MCPs that need a UI
-- **`minimal`** - Lightweight API-only MCP
-
-  - Just the server code, no frontend
-  - Smaller dependency footprint
-  - Perfect for pure API/tool MCPs
-
-The `minimal` template is automatically created from `template-with-view` when first needed.
 
 ### After Creating
 
@@ -90,10 +61,10 @@ This monorepo uses centralized GitHub Actions workflows with **automatic MCP dis
 
 ### How It Works
 
-- **🔍 Automatic MCP Discovery**: The workflows automatically find all directories with a `package.json` (excluding special folders like `scripts`, `shared`, etc.)
-- **🎯 Smart Change Detection**: Uses git diff to detect which MCPs have changed in each commit or PR
-- **🚀 Selective Deployment**: Only MCPs with actual changes are built and deployed
-- **⚡ Parallel Execution**: Multiple changed MCPs deploy simultaneously using GitHub's matrix strategy
+- **Automatic MCP Discovery**: The workflows automatically find all directories with a `package.json` (excluding special folders like `scripts`, `shared`, etc.)
+- **Smart Change Detection**: Uses git diff to detect which MCPs have changed in each commit or PR
+- **Selective Deployment**: Only MCPs with actual changes are built and deployed
+- **Parallel Execution**: Multiple changed MCPs deploy simultaneously using GitHub's matrix strategy
 
 ### Workflows
 
@@ -145,4 +116,3 @@ Just create a new directory with a `package.json` - that's it! The workflows wil
 3. Deploy it when changes are pushed
 
 No manual workflow configuration needed!
-
