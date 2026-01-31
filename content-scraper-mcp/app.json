@@ -1,13 +1,13 @@
 {
   "scopeName": "deco",
-  "name": "content-scrape",
-  "friendlyName": "Content Scrape",
+  "name": "content-scraper-mcp",
+  "friendlyName": "Content Scraper MCP",
   "connection": {
     "type": "HTTP",
-    "url": "https://content-scrape.decocache.com/mcp"
+    "url": "https://content-scraper-mcp.decocache.com/mcp"
   },
   "description": "Scrape web content from URLs using n8n workflow automation.",
-  "icon": "https://assets.decocache.com/mcp/content-scraper-icon.svg",
+  "icon": "https://assets.decocache.com/mcp/content-scraper-mcp-icon.svg",
   "unlisted": false,
   "metadata": {
     "categories": ["Data Extraction"],
