@@ -131,7 +131,7 @@ Obtém watermarks (última vez processada) por domínio:
 ## Desenvolvimento
 
 ```bash
-cd content-scraper
+cd content-scraper-mcp
 bun install
 bun run dev     # Desenvolvimento local
 bun run deploy  # Deploy para produção
@@ -140,7 +140,7 @@ bun run deploy  # Deploy para produção
 ## Arquitetura
 
 ```
-content-scraper/
+content-scraper-mcp/
 ├── server/
 │   ├── main.ts              # Entry point e StateSchema
 │   ├── lib/
