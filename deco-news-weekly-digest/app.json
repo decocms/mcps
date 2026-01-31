@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "deco-news-weekly-digest",
+  "friendlyName": "Deco News Weekly Digest",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://deco-news-weekly-digest.decocache.com/mcp"
+  },
+  "description": "Manage weekly digest articles for deco.cx news. Create, update, publish and organize articles for the weekly newsletter.",
+  "icon": "https://assets.decocache.com/mcp/deco-news-weekly-digest-icon.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Content Management"],
+    "official": true,
+    "tags": ["newsletter", "weekly-digest", "content", "articles", "news", "deco"],
+    "short_description": "Manage weekly digest articles for deco.cx news.",
+    "mesh_description": "The Deco News Weekly Digest MCP provides comprehensive tools for managing weekly digest articles for deco.cx news. This MCP enables AI agents to create, update, list, and publish articles in a structured database. Features include: listing articles with pagination and filtering by status/category, saving new articles with full metadata (title, content, summary, SEO fields, images), updating existing articles, publishing articles with automatic timestamp, searching by URL or slug, and deleting articles. Perfect for automating newsletter creation, content curation, and editorial workflows. Integrates with the same database as the content-scraper MCP for seamless content management across the deco ecosystem."
+  }
+}
+
