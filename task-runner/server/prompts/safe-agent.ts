@@ -142,10 +142,7 @@ ${context.recentContext}`);
 /**
  * Build a minimal prompt for quick tasks
  */
-export function buildQuickPrompt(
-  task: TaskInfo,
-  workspace: string,
-): string {
+export function buildQuickPrompt(task: TaskInfo, workspace: string): string {
   return `Working in: ${workspace}
 
 Task: ${task.title} (${task.id})

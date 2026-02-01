@@ -11,7 +11,10 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { getWorkspace } from "./workspace.ts";
-import { buildSafePrompt, detectCompletion as detectCompletionFromPrompt } from "../prompts/safe-agent.ts";
+import {
+  buildSafePrompt,
+  detectCompletion as detectCompletionFromPrompt,
+} from "../prompts/safe-agent.ts";
 import {
   addSession,
   updateSession,
@@ -304,9 +307,11 @@ export const createLoopStartTool = (_env: Env) =>
     }),
     execute: async ({ context }) => {
       const workspace = getWorkspace();
-      const maxIterations = context.maxIterations ?? loopConfig.defaultMaxIterations;
+      const maxIterations =
+        context.maxIterations ?? loopConfig.defaultMaxIterations;
       const maxTokens = context.maxTokens ?? loopConfig.defaultMaxTokens;
-      const qualityGates = context.qualityGates ?? loopConfig.defaultQualityGates;
+      const qualityGates =
+        context.qualityGates ?? loopConfig.defaultQualityGates;
       const singleIteration = context.singleIteration ?? false;
 
       // Initialize loop state
@@ -350,7 +355,11 @@ export const createLoopStartTool = (_env: Env) =>
           await updateTaskStatus(task.id, "in_progress", workspace);
 
           // EXECUTE: Call agent with safety constraints
-          const { output, tokensUsed } = await callAgent(task, workspace, qualityGates);
+          const { output, tokensUsed } = await callAgent(
+            task,
+            workspace,
+            qualityGates,
+          );
           loopState.totalTokens += tokensUsed;
 
           // DETECT: Check for completion token
