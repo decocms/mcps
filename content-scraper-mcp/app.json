@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "content-scraper-mcp",
+  "friendlyName": "Content Scraper MCP",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://content-scraper-mcp.decocache.com/mcp"
+  },
+  "description": "List and query scraped content from multiple sources stored in a database.",
+  "icon": "https://assets.decocache.com/mcp/content-scraper-mcp-icon.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Data Extraction"],
+    "official": false,
+    "tags": ["content", "database", "reddit", "linkedin", "twitter", "data-retrieval"],
+    "short_description": "List and query scraped content from multiple sources stored in a database.",
+    "mesh_description": "The Content Scraper MCP provides tools to list and query content that has been previously collected and stored in a database. It supports fetching content from multiple sources including general web content, Reddit, LinkedIn, and Twitter. Features include: pagination by index range, filtering by specific source table (contents, reddit, linkedin, twitter) or querying all sources at once, and filtering by week to get only recent content. Perfect for AI agents that need to access curated content collections for analysis, summarization, or content curation workflows."
+  }
+}
