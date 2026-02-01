@@ -309,16 +309,21 @@ export function parseClaudeEvent(
 /**
  * Extract tool call from Claude event
  */
-export function extractToolCall(
-  event: { type: string; [key: string]: unknown },
-): ToolCall | null {
+export function extractToolCall(event: {
+  type: string;
+  [key: string]: unknown;
+}): ToolCall | null {
   const timestamp = new Date().toISOString();
 
   // Claude stream-json format has tool_use nested inside:
   // {"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{...}}]}}
   if (event.type === "assistant" && event.message) {
     const message = event.message as {
-      content?: Array<{ type: string; name?: string; input?: Record<string, unknown> }>;
+      content?: Array<{
+        type: string;
+        name?: string;
+        input?: Record<string, unknown>;
+      }>;
     };
     const toolUse = message.content?.find((c) => c.type === "tool_use");
     if (toolUse && toolUse.name) {
@@ -345,9 +350,10 @@ export function extractToolCall(
 /**
  * Extract message from Claude event
  */
-export function extractMessage(
-  event: { type: string; [key: string]: unknown },
-): AgentMessage | null {
+export function extractMessage(event: {
+  type: string;
+  [key: string]: unknown;
+}): AgentMessage | null {
   const timestamp = new Date().toISOString();
 
   // Assistant text - direct format

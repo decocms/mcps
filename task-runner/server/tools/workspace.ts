@@ -122,4 +122,6 @@ export const createWorkspaceGetTool = (_env: Env) =>
 // Note: WORKSPACE_SET and WORKSPACE_GET are NOT exposed to agents.
 // The workspace is passed directly to tools like AGENT_SPAWN.
 // The tool creators are already exported above for debugging/admin use.
-export const workspaceTools: ((env: Env) => ReturnType<typeof createWorkspaceSetTool>)[] = [];
+export const workspaceTools: ((
+  env: Env,
+) => ReturnType<typeof createWorkspaceSetTool>)[] = [];

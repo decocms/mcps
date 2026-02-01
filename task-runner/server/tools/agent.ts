@@ -29,73 +29,227 @@ import {
   type AgentSession,
 } from "../sessions.ts";
 
-import { agentConfig, getAllowedToolsString } from "../config.ts";
+import {
+  agentConfig,
+  getAllowedToolsString,
+  getToolDescriptionsForPrompt,
+} from "../config.ts";
 
 // In-memory process references (for stopping)
-const runningProcesses: Map<string, { proc: ReturnType<typeof Bun.spawn>; abortController: AbortController }> = new Map();
+const runningProcesses: Map<
+  string,
+  { proc: ReturnType<typeof Bun.spawn>; abortController: AbortController }
+> = new Map();
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
+// ============================================================================
+// Types for enhanced task context
+// ============================================================================
+
+interface AcceptanceCriterion {
+  id: string;
+  description: string;
+  completed?: boolean;
+}
+
+interface QualityGate {
+  name: string;
+  command: string;
+  required: boolean;
+}
+
+interface TaskContext {
+  taskId: string;
+  taskTitle: string;
+  taskDescription?: string;
+  acceptanceCriteria?: AcceptanceCriterion[];
+  qualityGates?: QualityGate[];
+  workspace: string;
+}
+
 /**
- * Build the safety prompt for an agent
+ * Load quality gates from project config
  */
-function buildAgentPrompt(
-  taskId: string,
-  taskTitle: string,
-  taskDescription: string | undefined,
-  workspace: string,
-): string {
+async function loadQualityGates(workspace: string): Promise<QualityGate[]> {
+  try {
+    const configPath = `${workspace}/.beads/project-config.json`;
+    const content = await Bun.file(configPath).text();
+    const config = JSON.parse(content) as { qualityGates?: QualityGate[] };
+    return config.qualityGates ?? [];
+  } catch {
+    // Return defaults if no config
+    return [
+      { name: "Type Check", command: "bun run check", required: true },
+      { name: "Lint", command: "bun run lint", required: true },
+    ];
+  }
+}
+
+/**
+ * Load project memory summary
+ */
+async function loadMemorySummary(workspace: string): Promise<string> {
+  const summaries: string[] = [];
+
+  // Try to read MEMORY.md
+  try {
+    const memoryPath = `${workspace}/MEMORY.md`;
+    const content = await Bun.file(memoryPath).text();
+    // Get last 50 lines or 2000 chars
+    const lines = content.split("\n").slice(-50);
+    summaries.push("### From MEMORY.md:\n" + lines.join("\n").slice(-2000));
+  } catch {
+    // No memory file yet
+  }
+
+  // Try to read today's memory
   const today = new Date().toISOString().split("T")[0];
+  try {
+    const todayPath = `${workspace}/memory/${today}.md`;
+    const content = await Bun.file(todayPath).text();
+    summaries.push("### From today's notes:\n" + content.slice(-1000));
+  } catch {
+    // No today's notes yet
+  }
+
+  return summaries.length > 0
+    ? summaries.join("\n\n")
+    : "No project memory yet. Start writing discoveries to MEMORY.md";
+}
+
+/**
+ * Build the context-rich prompt for an agent
+ */
+async function buildAgentPrompt(ctx: TaskContext): Promise<string> {
+  const { taskId, taskTitle, taskDescription, acceptanceCriteria, workspace } =
+    ctx;
+
+  // Load project-specific data
+  const qualityGates = ctx.qualityGates ?? (await loadQualityGates(workspace));
+  const memorySummary = await loadMemorySummary(workspace);
+
+  // Build acceptance criteria section
+  let acceptanceCriteriaSection = "";
+  if (acceptanceCriteria && acceptanceCriteria.length > 0) {
+    acceptanceCriteriaSection = `
+## Acceptance Criteria (ALL must be verified)
+${acceptanceCriteria.map((c, i) => `${i + 1}. [ ] ${c.description}`).join("\n")}
+
+You must verify EACH criterion before completing. Check them off mentally as you work.
+`;
+  }
+
+  // Build quality gates section
+  const requiredGates = qualityGates.filter((g) => g.required);
+  let qualityGatesSection = "";
+  if (requiredGates.length > 0) {
+    qualityGatesSection = `
+## Quality Gates (ALL must pass)
+${requiredGates.map((g) => `- \`${g.command}\` (${g.name})`).join("\n")}
+
+Run these commands BEFORE outputting the completion token. If any fail, fix the issues first.
+`;
+  }
+
+  // Get tool descriptions for the prompt
+  const toolDescriptions = getToolDescriptionsForPrompt();
+
   return `You are working on a coding task in: ${workspace}
+
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning.
+Read existing code and documentation before making assumptions.
 
 ## MANDATORY SAFETY RULES
 1. COMMIT FREQUENTLY: After each logical change, run:
-   git add -A && git commit -m "descriptive message"
+   \`git add -A && git commit -m "descriptive message (${taskId})"\`
+   Always include the task ID in parentheses at the end of commit messages.
 2. NEVER DELETE DIRECTORIES: Do not use rm -rf, rimraf, or similar
 3. SMALL CHANGES: Make incremental changes, test after each
 4. ASK IF UNSURE: If requirements are unclear, explain what's unclear
+5. LAND THE PLANE: Always call SESSION_LAND before ending, even if incomplete
 
 ## Current Task
 **${taskTitle}** (ID: ${taskId})
 
 ${taskDescription || "No additional description provided."}
+${acceptanceCriteriaSection}
+${qualityGatesSection}
 
-## Project Memory
+${toolDescriptions}
 
-**At session start**, read existing memories to load context:
-- Check \`MEMORY.md\` for long-term project knowledge
-- Check \`memory/${today}.md\` for today's notes
+## Session Workflow
 
-**During work**, write discoveries and decisions:
-- Daily notes → append to \`memory/${today}.md\`
-- Durable facts, decisions, architecture insights → append to \`MEMORY.md\`
+### 1. At Session Start
+- Call \`mcp__task-runner__MEMORY_READ\` to load project context
+- Call \`mcp__task-runner__MEMORY_RECALL\` to search knowledge base for relevant past learnings
+- This gives you knowledge from previous agents working on this project
 
-**Examples of what to write:**
-- "Discovered that component X uses pattern Y"
-- "Decision: Using approach A over B because..."
-- "Important: The /api/v2 endpoints require auth header X-API-Key"
-- "Pattern: This project uses \${workspace}/sections for UI components"
+### 2. During Work
+- Commit frequently with descriptive messages including the task ID: \`git commit -m "Add feature X (${taskId})"\`
+- **LEARNED: pattern** - When you discover something worth remembering, call \`mcp__task-runner__MEMORY_KNOWLEDGE\`:
+  - Conventions: "API endpoints follow /v2/{resource}/{id} pattern"
+  - Gotchas: "Rate limit is 100 req/min - add exponential backoff"
+  - Patterns: "Component X uses pattern Y for state management"
+- If you fix an error, call \`mcp__task-runner__MEMORY_RECORD_ERROR\` to help future sessions
+- If you identify out-of-scope work, create follow-up tasks with \`mcp__task-runner__TASK_CREATE\`
 
-Memory files are Markdown. Append entries with timestamps. This builds project knowledge over time.
+### 3. Landing the Plane (MANDATORY before ending)
 
-## Beads Task Tracking
-- Task ID: ${taskId}
-- Status: in_progress
+**CRITICAL: You MUST call SESSION_LAND before outputting the completion token or ending the session.**
 
-## Quality Gates
-After completing, these should pass:
-- bun run check (if available)
-- bun run lint (if available)
+The SESSION_LAND tool handles:
+1. Running quality gates
+2. Committing all changes
+3. Recording learnings to memory
+4. Creating follow-up tasks for remaining work
+5. Generating a continuation prompt for the next session
 
-## Completion
-When done and verified:
-1. Commit all changes
-2. Write any important learnings to memory
-3. Output exactly: <promise>COMPLETE</promise>
+**NEVER end a session without calling SESSION_LAND. This ensures:**
+- Nothing is left uncommitted
+- Learnings are captured for future sessions
+- Follow-up work is tracked
+- Next agent can pick up where you left off
 
-If you cannot complete, explain why and do NOT output the completion token.
+### 4. Retrospective (for significant tasks)
+
+For complex tasks, consider running a retrospective after completion:
+\`mcp__task-runner__TASK_RETRO\`
+
+This captures:
+- What went well (reuse these approaches)
+- What could be improved (avoid these pitfalls)
+- Patterns discovered (add to knowledge base)
+- Recommendations for similar tasks
+
+## Project Memory (from previous sessions)
+
+${memorySummary}
+
+## Completion Protocol
+
+When you believe the task is complete:
+
+1. **Verify all acceptance criteria** are satisfied
+2. **Call SESSION_LAND** with:
+   - Summary of what was accomplished
+   - Key learnings from this session
+   - Any follow-up tasks for remaining work
+3. **Confirm SESSION_LAND reports all gates passed**
+4. **Output exactly:** <promise>COMPLETE</promise>
+
+If you CANNOT complete the task (blockers, unclear requirements, persistent errors):
+
+1. **Call SESSION_LAND** with:
+   - Summary of what was attempted
+   - Learnings from the attempt
+   - Description of what's blocking
+2. **Do NOT output the completion token**
+3. The SESSION_LAND tool will create a continuation prompt for the next session
+
+**REMEMBER: The plane has NOT landed until SESSION_LAND completes.**
 `;
 }
 
@@ -172,18 +326,20 @@ export const createAgentSpawnTool = (_env: Env) =>
       // Ensure log directory exists
       await ensureLogDir(workspace);
 
-      // Build the prompt
-      const prompt = buildAgentPrompt(
+      // Build the prompt with full context
+      const prompt = await buildAgentPrompt({
         taskId,
         taskTitle,
         taskDescription,
         workspace,
-      );
+      });
 
       // Create abort controller for timeout
       const abortController = new AbortController();
 
-      // Spawn Claude Code process with JSON output for structured logging
+      // Spawn Claude Code process with JSON output
+      // NOTE: Claude Code CLI doesn't support --mcp flag yet
+      // MCP tools are referenced in the prompt but called via Bash commands
       const proc = Bun.spawn(
         [
           agentConfig.claudePath,
@@ -259,7 +415,9 @@ export const createAgentSpawnTool = (_env: Env) =>
                   await addToolCall(workspace, sessionId, toolCall);
                   console.log(
                     `[${sessionId}] Tool: ${toolCall.name}`,
-                    toolCall.input ? JSON.stringify(toolCall.input).slice(0, 100) : "",
+                    toolCall.input
+                      ? JSON.stringify(toolCall.input).slice(0, 100)
+                      : "",
                   );
                 }
 
@@ -307,10 +465,22 @@ export const createAgentSpawnTool = (_env: Env) =>
           clearTimeout(timeoutId);
           runningProcesses.delete(sessionId);
 
-          // Determine status - exitCode 0 means success
-          // (stream-json output doesn't include <promise>COMPLETE</promise> marker)
-          const completed = exitCode === 0;
-          const status = completed ? "completed" : "failed";
+          // Determine status - check for explicit completion token
+          // The agent outputs <promise>COMPLETE</promise> when task is truly done
+          const hasCompletionToken = fullOutput.includes(
+            "<promise>COMPLETE</promise>",
+          );
+          const completed = exitCode === 0 && hasCompletionToken;
+          // If agent exited cleanly but didn't output completion token, it's "stopped" (incomplete)
+          const status: "completed" | "failed" | "stopped" = completed
+            ? "completed"
+            : exitCode === 0
+              ? "stopped" // Agent exited but didn't complete the task
+              : "failed";
+
+          console.log(
+            `[${sessionId}] Exit code: ${exitCode}, Has completion token: ${hasCompletionToken}, Status: ${status}`,
+          );
 
           // Update session
           await updateSession(workspace, sessionId, {
@@ -339,7 +509,11 @@ export const createAgentSpawnTool = (_env: Env) =>
               const tasksFile = Bun.file(tasksPath);
               const tasksContent = await tasksFile.text();
               const tasksData = JSON.parse(tasksContent) as {
-                tasks: Array<{ id: string; status: string; updatedAt?: string }>;
+                tasks: Array<{
+                  id: string;
+                  status: string;
+                  updatedAt?: string;
+                }>;
               };
 
               const task = tasksData.tasks.find((t) => t.id === taskId);
@@ -351,7 +525,11 @@ export const createAgentSpawnTool = (_env: Env) =>
             } catch {
               // Fallback: try bd CLI
               try {
-                await runCommand("bd", ["close", taskId, "--reason", "Completed by agent"], workspace);
+                await runCommand(
+                  "bd",
+                  ["close", taskId, "--reason", "Completed by agent"],
+                  workspace,
+                );
               } catch {
                 // Both methods failed, log but continue
                 console.error(`Failed to mark task ${taskId} as closed`);
@@ -410,11 +588,15 @@ export const createAgentStatusTool = (_env: Env) =>
       sessionId: z
         .string()
         .optional()
-        .describe("Specific session ID to check. If omitted, returns all sessions."),
+        .describe(
+          "Specific session ID to check. If omitted, returns all sessions.",
+        ),
       includeOutput: z
         .boolean()
         .optional()
-        .describe("Include the captured output (default: false for list, true for single)"),
+        .describe(
+          "Include the captured output (default: false for list, true for single)",
+        ),
     }),
     outputSchema: z.union([
       z.object({
@@ -457,7 +639,8 @@ export const createAgentStatusTool = (_env: Env) =>
         }
 
         // Check if process is still alive
-        const isAlive = session.status === "running" && (await isProcessAlive(session.pid));
+        const isAlive =
+          session.status === "running" && (await isProcessAlive(session.pid));
 
         // Get full output if requested
         let output = session.output;
@@ -567,6 +750,220 @@ export const createAgentStopTool = (_env: Env) =>
   });
 
 // ============================================================================
+// SESSION_LAND - "Land the plane" for agent sessions
+// Inspired by: https://github.com/steveyegge/beads/blob/main/AGENT_INSTRUCTIONS.md
+// ============================================================================
+
+export const createSessionLandTool = (_env: Env) =>
+  createPrivateTool({
+    id: "SESSION_LAND",
+    description: `"Land the plane" - properly complete a session with all cleanup.
+
+This tool ensures nothing is left incomplete:
+1. Runs quality gates (if they exist)
+2. Commits all changes to git
+3. Records any final learnings to memory
+4. Creates follow-up tasks for remaining work
+5. Provides a continuation prompt for the next session
+
+Call this BEFORE outputting <promise>COMPLETE</promise> or when you cannot continue.`,
+    inputSchema: z.object({
+      taskId: z.string().describe("Task ID being completed"),
+      summary: z.string().describe("Brief summary of what was accomplished"),
+      learnings: z
+        .array(z.string())
+        .optional()
+        .describe("Key learnings from this session"),
+      followUpTasks: z
+        .array(
+          z.object({
+            title: z.string(),
+            description: z.string().optional(),
+            priority: z.number().optional(),
+          }),
+        )
+        .optional()
+        .describe("Follow-up tasks to create for remaining work"),
+      blockers: z
+        .string()
+        .optional()
+        .describe("If incomplete, explain what's blocking"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      gateResults: z
+        .array(
+          z.object({
+            gate: z.string(),
+            passed: z.boolean(),
+          }),
+        )
+        .optional(),
+      allGatesPassed: z.boolean(),
+      committed: z.boolean(),
+      commitHash: z.string().optional(),
+      followUpTaskIds: z.array(z.string()),
+      continuationPrompt: z.string(),
+    }),
+    execute: async ({ context }) => {
+      const { taskId, summary, learnings, followUpTasks, blockers } = context;
+      const workspace = getWorkspace();
+
+      if (!workspace) {
+        return {
+          success: false,
+          allGatesPassed: false,
+          committed: false,
+          followUpTaskIds: [],
+          continuationPrompt: "",
+        };
+      }
+
+      const results = {
+        success: true,
+        gateResults: [] as Array<{ gate: string; passed: boolean }>,
+        allGatesPassed: true,
+        committed: false,
+        commitHash: undefined as string | undefined,
+        followUpTaskIds: [] as string[],
+        continuationPrompt: "",
+      };
+
+      // 1. Run quality gates
+      try {
+        const configPath = `${workspace}/.beads/project-config.json`;
+        const configContent = await Bun.file(configPath).text();
+        const config = JSON.parse(configContent) as {
+          qualityGates?: Array<{
+            name: string;
+            command: string;
+            required: boolean;
+          }>;
+        };
+
+        if (config.qualityGates && config.qualityGates.length > 0) {
+          for (const gate of config.qualityGates.filter((g) => g.required)) {
+            const [cmd, ...args] = gate.command.split(" ");
+            try {
+              const proc = Bun.spawn([cmd, ...args], {
+                cwd: workspace,
+                stdout: "pipe",
+                stderr: "pipe",
+              });
+              const exitCode = await proc.exited;
+              const passed = exitCode === 0;
+              results.gateResults.push({ gate: gate.name, passed });
+              if (!passed) results.allGatesPassed = false;
+            } catch {
+              results.gateResults.push({ gate: gate.name, passed: false });
+              results.allGatesPassed = false;
+            }
+          }
+        }
+      } catch {
+        // No quality gates configured
+      }
+
+      // 2. Record learnings to memory
+      if (learnings && learnings.length > 0) {
+        const today = new Date().toISOString().split("T")[0];
+        const memoryPath = `${workspace}/MEMORY.md`;
+        let memoryContent = "";
+        try {
+          memoryContent = await Bun.file(memoryPath).text();
+        } catch {
+          memoryContent =
+            "# Project Memory\n\nCurated knowledge about this project.\n";
+        }
+
+        const learningEntries = learnings
+          .map((l) => `- ${l} _(${today}, task ${taskId})_`)
+          .join("\n");
+
+        if (!memoryContent.includes("## Session Learnings")) {
+          memoryContent += "\n## Session Learnings\n\n";
+        }
+
+        // Append learnings
+        const insertPoint = memoryContent.indexOf("## Session Learnings") + 21;
+        const lineEnd = memoryContent.indexOf("\n", insertPoint);
+        memoryContent =
+          memoryContent.slice(0, lineEnd + 1) +
+          learningEntries +
+          "\n" +
+          memoryContent.slice(lineEnd + 1);
+
+        await Bun.write(memoryPath, memoryContent);
+      }
+
+      // 3. Create follow-up tasks
+      if (followUpTasks && followUpTasks.length > 0) {
+        const tasksPath = `${workspace}/.beads/tasks.json`;
+        try {
+          const tasksContent = await Bun.file(tasksPath).text();
+          const tasksData = JSON.parse(tasksContent) as {
+            tasks: Array<{ id: string }>;
+          };
+
+          for (const task of followUpTasks) {
+            const newId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+            tasksData.tasks.push({
+              id: newId,
+              title: task.title,
+              description: task.description || `Follow-up from ${taskId}`,
+              status: "open",
+              priority: task.priority ?? 2,
+              createdAt: new Date().toISOString(),
+            } as { id: string });
+            results.followUpTaskIds.push(newId);
+          }
+
+          await Bun.write(tasksPath, JSON.stringify(tasksData, null, 2));
+        } catch {
+          // No tasks file
+        }
+      }
+
+      // 4. Commit all changes
+      try {
+        await runCommand("git", ["add", "-A"], workspace);
+        const commitMsg = blockers
+          ? `WIP: ${taskId} - ${summary} (blocked: ${blockers.slice(0, 50)})`
+          : `task: ${taskId} - ${summary}`;
+        await runCommand("git", ["commit", "-m", commitMsg], workspace);
+
+        // Get commit hash
+        const hashResult = await runCommand(
+          "git",
+          ["rev-parse", "--short", "HEAD"],
+          workspace,
+        );
+        results.commitHash = hashResult.stdout.trim();
+        results.committed = true;
+      } catch {
+        // Commit might fail if no changes
+      }
+
+      // 5. Build continuation prompt
+      if (blockers) {
+        results.continuationPrompt = `Continue work on ${taskId}: "${summary}". 
+BLOCKED: ${blockers}
+Follow-up tasks created: ${results.followUpTaskIds.join(", ") || "none"}
+Next steps: Resolve the blocker and continue implementation.`;
+      } else if (results.followUpTaskIds.length > 0) {
+        results.continuationPrompt = `${taskId} completed: "${summary}".
+Follow-up tasks to pick up: ${results.followUpTaskIds.join(", ")}
+Recommend starting with: ${results.followUpTaskIds[0]}`;
+      } else {
+        results.continuationPrompt = `${taskId} completed: "${summary}".
+All work finished. Run \`TASK_LIST\` to see what's next.`;
+      }
+
+      return results;
+    },
+  });
+
+// ============================================================================
 // Export all agent tools
 // ============================================================================
 
@@ -574,4 +971,5 @@ export const agentTools = [
   createAgentSpawnTool,
   createAgentStatusTool,
   createAgentStopTool,
+  createSessionLandTool,
 ];
