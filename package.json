@@ -21,6 +21,7 @@
   },
   "workspaces": [
     "apify",
+    "task-runner",
     "blog-post-generator",
     "content-scraper",
     "data-for-seo",
