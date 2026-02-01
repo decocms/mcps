@@ -1,132 +1,76 @@
 # Content Scraper MCP
 
-MCP para extração, deduplicação e sumarização de conteúdo web usando Firecrawl e Supabase.
-
+MCP para listar e consultar conteúdo coletado de múltiplas fontes armazenado em um banco de dados.
 
 ## Funcionalidades
 
-- **Extração de Conteúdo**: Usa Firecrawl para extrair title, body, author e date de URLs
-- **Deduplicação por Fingerprint**: Gera hash SHA-256 de title + body para identificar conteúdo único
-- **Persistência de Estado**: Armazena registros no Supabase para evitar reprocessamento
-- **Watermarks por Domínio**: Rastreia última vez que cada domínio foi processado
-- **Resumos Focados em Insights**: Gera resumos curtos extraindo frases-chave
+- **Múltiplas Fontes**: Consulta conteúdo de diferentes origens (web, Reddit, LinkedIn, Twitter)
+- **Paginação**: Suporte a paginação por range de índices
+- **Filtro por Semana**: Opção de filtrar apenas conteúdo da última semana
+- **Query Flexível**: Busca em tabela específica ou em todas de uma vez
 
 ## Configuração
 
-### 1. Supabase - Criar Tabelas
+### 1. Banco de Dados
 
-Execute no SQL Editor do seu projeto Supabase:
+O MCP espera um banco de dados com as seguintes tabelas:
 
-```sql
--- Tabela de conteúdo processado
-CREATE TABLE scraped_content (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  url TEXT UNIQUE NOT NULL,
-  fingerprint TEXT NOT NULL,
-  domain TEXT NOT NULL,
-  title TEXT NOT NULL,
-  first_seen_at TIMESTAMPTZ NOT NULL,
-  last_seen_at TIMESTAMPTZ NOT NULL,
-  updated_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+- `contents` - Conteúdo geral da web
+- `reddit_content_scrape` - Conteúdo coletado do Reddit
+- `linkedin_content_scrape` - Conteúdo coletado do LinkedIn
+- `twitter_content_scrape` - Conteúdo coletado do Twitter
 
--- Índices para performance
-CREATE INDEX idx_scraped_content_domain ON scraped_content(domain);
-CREATE INDEX idx_scraped_content_fingerprint ON scraped_content(fingerprint);
-CREATE INDEX idx_scraped_content_url ON scraped_content(url);
+### 2. Instalar o MCP
 
--- Tabela de watermarks por domínio
-CREATE TABLE scraper_watermarks (
-  domain TEXT PRIMARY KEY,
-  last_processed_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### 2. Firecrawl API Key
-
-Obtenha sua API key em https://firecrawl.dev
-
-### 3. Instalar o MCP
-
-Ao instalar, preencha:
-- `firecrawlApiKey`: Sua chave de API do Firecrawl
-- `supabaseUrl`: URL do seu projeto Supabase (ex: https://xxx.supabase.co)
-- `supabaseKey`: Service role key ou anon key com RLS configurado
+Ao instalar, configure:
+- `database.apiUrl`: URL da API do banco de dados
+- `database.token`: Token de autenticação
 
 ## Tools Disponíveis
 
-### `process_urls`
+### `LIST_SCRAPED_CONTENT`
 
-Processa uma lista de URLs:
-- Extrai conteúdo limpo usando Firecrawl
-- Gera fingerprint único (SHA-256 de title + body normalizado)
-- Verifica se já existe no Supabase
-- Salva novo conteúdo ou atualiza se fingerprint mudou
-- Retorna resumo focado em insights
+Lista conteúdo já coletado e salvo no banco de dados.
 
 **Input:**
 ```json
 {
-  "urls": ["https://example.com/article-1", "https://example.com/article-2"],
-  "generateSummaries": true
+  "table": "all",
+  "startIndex": 1,
+  "endIndex": 100,
+  "onlyThisWeek": false
 }
 ```
+
+**Parâmetros:**
+- `table`: Qual fonte consultar - `"all"`, `"contents"`, `"reddit"`, `"linkedin"`, ou `"twitter"`
+- `startIndex`: Índice inicial (padrão: 1)
+- `endIndex`: Índice final (padrão: 100)
+- `onlyThisWeek`: Se `true`, retorna apenas conteúdo da última semana
 
 **Output:**
 ```json
 {
-  "processed": [
+  "success": true,
+  "results": [
     {
-      "url": "https://example.com/article-1",
-      "status": "new",
-      "title": "Article Title",
-      "summary": "Key insights from the content...",
-      "fingerprint": "abc123...",
-      "domain": "example.com"
+      "table": "contents",
+      "data": [...],
+      "count": 50
+    },
+    {
+      "table": "reddit",
+      "data": [...],
+      "count": 30
     }
   ],
-  "stats": {
-    "total": 2,
-    "new": 1,
-    "updated": 0,
-    "unchanged": 1,
-    "errors": 0
+  "totalCount": 80,
+  "range": {
+    "startIndex": 1,
+    "endIndex": 100
   }
 }
 ```
-
-### `check_updates`
-
-Verifica status de URLs processadas anteriormente sem re-extrair:
-
-**Input:**
-```json
-{
-  "domain": "example.com"
-}
-```
-
-### `get_watermarks`
-
-Obtém watermarks (última vez processada) por domínio:
-
-**Input:**
-```json
-{
-  "domain": "example.com"
-}
-```
-
-## Lógica de Deduplicação
-
-1. **Normalização**: title e body são normalizados (lowercase, whitespace colapsado, Unicode normalizado)
-2. **Fingerprint**: SHA-256 do texto normalizado `title|body`
-3. **Verificação**:
-   - Se URL não existe → conteúdo **novo**
-   - Se URL existe mas fingerprint diferente → **update**
-   - Se URL existe e fingerprint igual → **ignorar**
 
 ## Desenvolvimento
 
@@ -144,16 +88,12 @@ content-scraper-mcp/
 ├── server/
 │   ├── main.ts              # Entry point e StateSchema
 │   ├── lib/
-│   │   ├── firecrawl.ts     # Cliente Firecrawl API
-│   │   ├── supabase.ts      # Cliente Supabase para persistência
-│   │   ├── content.ts       # Normalização, fingerprint, resumo
-│   │   └── types.ts         # Tipos compartilhados
-│   └── tools/
-│       ├── index.ts         # Exporta todas as tools
-│       └── scraper.ts       # Tools de processamento
-├── shared/
-│   └── deco.gen.ts          # Tipos gerados
+│   │   └── db-client.ts     # Cliente para o banco de dados
+│   ├── tools/
+│   │   ├── index.ts         # Exporta todas as tools
+│   │   └── content-scrape.ts # Tool de listagem de conteúdo
+│   └── types/
+│       └── env.ts           # Tipos de ambiente
 ├── package.json
-├── wrangler.toml
 └── tsconfig.json
 ```
