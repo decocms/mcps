@@ -147,10 +147,20 @@ You must verify EACH criterion before completing. Check them off mentally as you
   let qualityGatesSection = "";
   if (requiredGates.length > 0) {
     qualityGatesSection = `
-## Quality Gates (ALL must pass)
+## Quality Gates (ALL must pass - MANDATORY)
 ${requiredGates.map((g) => `- \`${g.command}\` (${g.name})`).join("\n")}
 
-Run these commands BEFORE outputting the completion token. If any fail, fix the issues first.
+**CRITICAL: ALL quality gates must pass before you can complete the task.**
+
+- Run each gate command and verify it exits with code 0
+- If ANY gate fails, YOU MUST FIX IT before completing
+- This includes ALL errors in the codebase, not just ones you introduced
+- Pre-existing errors are YOUR responsibility - fix them or the task is incomplete
+- Do NOT output <promise>COMPLETE</promise> until all gates pass
+- Do NOT rationalize "these errors existed before" - that is not acceptable
+- If you cannot fix a gate failure, explain why and do NOT mark the task complete
+
+**SESSION_LAND will verify gates pass. If they fail, success=false and task remains incomplete.**
 `;
   }
 
@@ -232,20 +242,25 @@ ${memorySummary}
 
 When you believe the task is complete:
 
-1. **Verify all acceptance criteria** are satisfied
-2. **Call SESSION_LAND** with:
+1. **Run all quality gates manually first** - do not rely on SESSION_LAND to catch failures
+2. **Fix ALL gate failures** - even pre-existing ones. You are responsible for the whole codebase.
+3. **Verify all acceptance criteria** are satisfied
+4. **Call SESSION_LAND** with:
    - Summary of what was accomplished
    - Key learnings from this session
    - Any follow-up tasks for remaining work
-3. **Confirm SESSION_LAND reports all gates passed**
-4. **Output exactly:** <promise>COMPLETE</promise>
+5. **Check SESSION_LAND response** - if allGatesPassed=false, FIX THE ISSUES and try again
+6. **Only when allGatesPassed=true**, output: <promise>COMPLETE</promise>
 
-If you CANNOT complete the task (blockers, unclear requirements, persistent errors):
+**CRITICAL: If SESSION_LAND returns success=false or allGatesPassed=false, the task is NOT complete.**
+You MUST fix the failing gates before outputting the completion token.
+
+If you CANNOT complete the task (blockers, unclear requirements, gates you cannot fix):
 
 1. **Call SESSION_LAND** with:
    - Summary of what was attempted
    - Learnings from the attempt
-   - Description of what's blocking
+   - Description of what's blocking (including which gates failed and why you can't fix them)
 2. **Do NOT output the completion token**
 3. The SESSION_LAND tool will create a continuation prompt for the next session
 
@@ -820,7 +835,7 @@ Call this BEFORE outputting <promise>COMPLETE</promise> or when you cannot conti
       }
 
       const results = {
-        success: true,
+        success: true, // Will be set to false if required gates fail
         gateResults: [] as Array<{ gate: string; passed: boolean }>,
         allGatesPassed: true,
         committed: false,
@@ -853,10 +868,14 @@ Call this BEFORE outputting <promise>COMPLETE</promise> or when you cannot conti
               const exitCode = await proc.exited;
               const passed = exitCode === 0;
               results.gateResults.push({ gate: gate.name, passed });
-              if (!passed) results.allGatesPassed = false;
+              if (!passed) {
+                results.allGatesPassed = false;
+                results.success = false; // Task cannot be marked complete if gates fail
+              }
             } catch {
               results.gateResults.push({ gate: gate.name, passed: false });
               results.allGatesPassed = false;
+              results.success = false;
             }
           }
         }
