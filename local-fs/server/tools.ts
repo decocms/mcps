@@ -1304,9 +1304,233 @@ export function registerTools(server: McpServer, storage: LocalFileStorage) {
     }),
   );
 
-  // Note: Beads/task tools have been moved to task-runner MCP
-  // Note: Beads/task tools have been moved to task-runner MCP
-  // local-fs should only handle pure file operations
+  // ============================================================
+  // EXEC TOOL - Execute commands in the workspace
+  // ============================================================
+
+  // EXEC - Execute a command in the workspace directory
+  server.registerTool(
+    "EXEC",
+    {
+      title: "Execute Command",
+      description:
+        "Execute a shell command in the workspace directory. " +
+        "Returns stdout, stderr, and exit code. " +
+        "Use this for running build tools, linters, dev servers, etc. " +
+        "Commands run with the workspace as the current working directory.",
+      inputSchema: {
+        command: z
+          .string()
+          .describe(
+            "The command to execute (e.g., 'deno task start', 'npm run build')",
+          ),
+        timeout: z
+          .number()
+          .optional()
+          .default(30000)
+          .describe("Timeout in milliseconds (default: 30000)"),
+        background: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Run in background and return immediately (for long-running processes like dev servers)",
+          ),
+      },
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    withLogging("EXEC", async (args): Promise<CallToolResult> => {
+      try {
+        const { spawn } = await import("node:child_process");
+        const { promisify } = await import("node:util");
+
+        if (args.background) {
+          // For background processes, spawn detached and return immediately
+          const [cmd, ...cmdArgs] = args.command.split(" ");
+          const child = spawn(cmd, cmdArgs, {
+            cwd: storage.root,
+            detached: true,
+            stdio: "ignore",
+            shell: true,
+          });
+          child.unref();
+
+          const result = {
+            success: true,
+            background: true,
+            pid: child.pid,
+            message: `Started background process: ${args.command} (PID: ${child.pid})`,
+          };
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            structuredContent: result,
+          };
+        }
+
+        // For foreground processes, wait for completion
+        const { exec } = await import("node:child_process");
+        const execPromise = promisify(exec);
+
+        const { stdout, stderr } = await execPromise(args.command, {
+          cwd: storage.root,
+          timeout: args.timeout,
+          maxBuffer: 10 * 1024 * 1024, // 10MB
+        });
+
+        const result = {
+          success: true,
+          exitCode: 0,
+          stdout: stdout.trim(),
+          stderr: stderr.trim(),
+        };
+
+        const text =
+          [
+            result.stdout && `stdout:\n${result.stdout}`,
+            result.stderr && `stderr:\n${result.stderr}`,
+          ]
+            .filter(Boolean)
+            .join("\n\n") || "Command completed successfully (no output)";
+
+        return {
+          content: [{ type: "text", text }],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        const result = {
+          success: false,
+          exitCode: error.code ?? 1,
+          stdout: error.stdout?.trim() ?? "",
+          stderr: error.stderr?.trim() ?? error.message,
+          error: error.message,
+        };
+
+        const text = [
+          `Error: ${error.message}`,
+          result.stdout && `stdout:\n${result.stdout}`,
+          result.stderr && `stderr:\n${result.stderr}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
+        return {
+          content: [{ type: "text", text }],
+          structuredContent: result,
+          isError: true,
+        };
+      }
+    }),
+  );
+
+  // DENO_TASK - Convenience tool for running deno tasks
+  server.registerTool(
+    "DENO_TASK",
+    {
+      title: "Run Deno Task",
+      description:
+        "Run a deno task from the deno.json/deno.jsonc file. " +
+        "Equivalent to running 'deno task <name>' in the workspace.",
+      inputSchema: {
+        task: z
+          .string()
+          .describe("The task name (e.g., 'start', 'build', 'dev')"),
+        background: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run in background (for dev servers)"),
+      },
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    withLogging("DENO_TASK", async (args): Promise<CallToolResult> => {
+      try {
+        const { spawn, exec } = await import("node:child_process");
+        const { promisify } = await import("node:util");
+
+        const command = `deno task ${args.task}`;
+
+        if (args.background) {
+          const child = spawn("deno", ["task", args.task], {
+            cwd: storage.root,
+            detached: true,
+            stdio: "ignore",
+            shell: true,
+          });
+          child.unref();
+
+          const result = {
+            success: true,
+            background: true,
+            pid: child.pid,
+            task: args.task,
+            message: `Started deno task '${args.task}' in background (PID: ${child.pid})`,
+          };
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            structuredContent: result,
+          };
+        }
+
+        const execPromise = promisify(exec);
+        const { stdout, stderr } = await execPromise(command, {
+          cwd: storage.root,
+          timeout: 60000, // 1 minute for tasks
+          maxBuffer: 10 * 1024 * 1024,
+        });
+
+        const result = {
+          success: true,
+          task: args.task,
+          exitCode: 0,
+          stdout: stdout.trim(),
+          stderr: stderr.trim(),
+        };
+
+        const text = [
+          `Task '${args.task}' completed`,
+          result.stdout && `stdout:\n${result.stdout}`,
+          result.stderr && `stderr:\n${result.stderr}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
+        return {
+          content: [{ type: "text", text }],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        const result = {
+          success: false,
+          task: args.task,
+          exitCode: error.code ?? 1,
+          stdout: error.stdout?.trim() ?? "",
+          stderr: error.stderr?.trim() ?? error.message,
+          error: error.message,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error running task '${args.task}': ${error.message}`,
+            },
+          ],
+          structuredContent: result,
+          isError: true,
+        };
+      }
+    }),
+  );
 }
 
 // ============================================================
