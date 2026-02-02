@@ -19,7 +19,6 @@
     "@decocms/bindings": "^1.0.8",
     "@decocms/runtime": "^1.2.6",
     "@discordjs/voice": "^0.19.0",
-    "@elevenlabs/elevenlabs-js": "^2.33.0",
     "@supabase/supabase-js": "^2.47.10",
     "discord.js": "14.25.1",
     "google-tts-api": "^2.0.2",

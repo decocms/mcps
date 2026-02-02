@@ -25,6 +25,18 @@ import { logger, HyperDXLogger } from "./lib/logger.ts";
 
 export { StateSchema };
 
+// ============================================================================
+// STARTUP DEBUGGING
+// ============================================================================
+console.log("=".repeat(80));
+console.log("[STARTUP] Discord MCP Server initializing...");
+console.log(`[STARTUP] Node.js version: ${process.version}`);
+console.log(`[STARTUP] Bun version: ${Bun.version}`);
+console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
+console.log(`[STARTUP] PORT: ${process.env.PORT || "not set"}`);
+console.log(`[STARTUP] Working directory: ${process.cwd()}`);
+console.log("=".repeat(80));
+
 // Track Discord client state
 let discordInitialized = false;
 
@@ -341,9 +353,18 @@ process.on("uncaughtException", async (error) => {
 // ============================================================================
 // START HTTP SERVER FIRST (before any Discord initialization)
 // ============================================================================
-console.log("[SERVER] Starting HTTP server (port auto-configured)...");
+console.log("[SERVER] Starting HTTP server...");
+console.log(
+  `[SERVER] PORT env variable: ${process.env.PORT || "not set (will use default)"}`,
+);
 
-serve(runtime.fetch);
+try {
+  serve(runtime.fetch);
+  console.log("[SERVER] ✅ serve() called successfully");
+} catch (error) {
+  console.error("[SERVER] ❌ Failed to start server:", error);
+  throw error;
+}
 
 console.log(`
 ╔══════════════════════════════════════════════════════════╗
