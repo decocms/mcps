@@ -77,6 +77,24 @@ async function callModelsAPI(
     stream,
   };
 
+  // Log detalhado do body da requisição (para debug)
+  console.log(
+    "[LLM] Request body:",
+    JSON.stringify(
+      {
+        ...body,
+        messages: body.messages.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          partsCount: msg.parts?.length || 0,
+          partsTypes: msg.parts?.map((p: any) => p.type) || [],
+        })),
+      },
+      null,
+      2,
+    ),
+  );
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -88,7 +106,19 @@ async function callModelsAPI(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[LLM] API error:", errorText);
+    console.error("[LLM] API error response:", {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      body: errorText,
+    });
+
+    // Log o body da requisição que causou o erro
+    console.error(
+      "[LLM] Request that caused error:",
+      JSON.stringify(body, null, 2),
+    );
+
     throw new Error(
       `Mesh Models API call failed (${response.status}): ${errorText}`,
     );
@@ -200,11 +230,30 @@ export async function generateLLMResponse(
 ): Promise<string> {
   const { systemPrompt } = config;
 
+  // Log input messages
+  console.log(
+    "[LLM] Input messages:",
+    JSON.stringify(
+      messages.map((m) => ({
+        role: m.role,
+        contentLength: m.content?.length || 0,
+        hasImages: !!m.images?.length,
+        imagesCount: m.images?.length || 0,
+      })),
+      null,
+      2,
+    ),
+  );
+
   // Convert messages to the format expected by Models API
   const apiMessages = messagesToPrompt(messages, systemPrompt);
 
   console.log("[LLM] Calling Models API (generate):", {
     messageCount: apiMessages.length,
+    config: {
+      ...config,
+      token: config.token ? `${config.token.substring(0, 10)}...` : "none",
+    },
   });
 
   try {
@@ -300,10 +349,31 @@ export async function generateLLMResponseWithStreaming(
 ): Promise<string> {
   const { systemPrompt } = config;
 
+  // Log input messages
+  console.log(
+    "[LLM Streaming] Input messages:",
+    JSON.stringify(
+      messages.map((m) => ({
+        role: m.role,
+        contentLength: m.content?.length || 0,
+        hasImages: !!m.images?.length,
+        imagesCount: m.images?.length || 0,
+      })),
+      null,
+      2,
+    ),
+  );
+
   // Convert messages to the format expected by Models API
   const apiMessages = messagesToPrompt(messages, systemPrompt);
 
-  console.log("[LLM Streaming] Calling Models API (stream)");
+  console.log("[LLM Streaming] Calling Models API (stream):", {
+    messageCount: apiMessages.length,
+    config: {
+      ...config,
+      token: config.token ? `${config.token.substring(0, 10)}...` : "none",
+    },
+  });
 
   try {
     const response = await callModelsAPI(config, apiMessages, true);

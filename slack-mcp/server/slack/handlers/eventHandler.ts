@@ -831,6 +831,9 @@ async function handleDirectMessage(
       channel,
       userId: user,
       error: String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      messagesCount: messages.length,
     });
   }
 }
