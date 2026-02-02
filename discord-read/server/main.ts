@@ -286,8 +286,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   prompts: [],
 });
 
-const PORT = process.env.PORT;
-
 // Graceful shutdown handler - destroy Discord client when process exits
 async function gracefulShutdown(signal: string) {
   console.log(`\n[SHUTDOWN] Received ${signal}, shutting down...`);
@@ -343,10 +341,7 @@ process.on("uncaughtException", async (error) => {
 // ============================================================================
 // START HTTP SERVER FIRST (before any Discord initialization)
 // ============================================================================
-const SERVER_PORT = PORT || "8001";
-console.log(
-  `[SERVER] Starting HTTP server on port ${SERVER_PORT} (from ${PORT ? "PORT env" : "default"})...`,
-);
+console.log("[SERVER] Starting HTTP server (port auto-configured)...");
 
 serve(runtime.fetch);
 
@@ -354,7 +349,7 @@ console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║              Discord MCP Server Started                  ║
 ╠══════════════════════════════════════════════════════════╣
-║  MCP Server:    http://0.0.0.0:${String(SERVER_PORT).padEnd(5)}                  ║
+║  Status:        ✅ HTTP Server Ready                      ║
 ║  Discord Bot:   Waiting for configuration...             ║
 ╚══════════════════════════════════════════════════════════╝
 `);
