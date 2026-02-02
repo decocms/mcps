@@ -1,4 +1,4 @@
-# Discord MCP - Bot com Configuração Persistente
+# Discord MCP - Bot com Configuração Persistente    
 
 Bot Discord com suporte a IA, comandos de voz, indexação de mensagens e gerenciamento de servidores.
 
