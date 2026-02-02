@@ -340,14 +340,22 @@ process.on("uncaughtException", async (error) => {
   await gracefulShutdown("uncaughtException");
 });
 
+// ============================================================================
+// START HTTP SERVER FIRST (before any Discord initialization)
+// ============================================================================
+const SERVER_PORT = PORT || "8001";
+console.log(
+  `[SERVER] Starting HTTP server on port ${SERVER_PORT} (from ${PORT ? "PORT env" : "default"})...`,
+);
+
 serve(runtime.fetch);
 
 console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║              Discord MCP Server Started                  ║
 ╠══════════════════════════════════════════════════════════╣
-║  MCP Server:    http://localhost:${String(PORT).padEnd(5)}                  ║
-║  Discord Bot:   Initializing...                          ║
+║  MCP Server:    http://0.0.0.0:${String(SERVER_PORT).padEnd(5)}                  ║
+║  Discord Bot:   Waiting for configuration...             ║
 ╚══════════════════════════════════════════════════════════╝
 `);
 
@@ -361,47 +369,56 @@ console.log(`
 ⚠️  Press Ctrl+C to gracefully shutdown the Discord bot.
 `);
 
+// ============================================================================
+// DELAYED BOT INITIALIZATION (non-blocking, runs after HTTP server is ready)
+// ============================================================================
+
+// Check if we're in build phase
+const isBuildTime = process.env.NODE_ENV === "production" && !process.env.PORT;
+
 // Auto-start Discord bot if BOT_TOKEN is in environment (for local development)
 // Skip during build to prevent hanging
-const isBuildTime = process.env.NODE_ENV === "production" && !process.env.PORT;
 const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
 
+// Use setImmediate to ensure HTTP server is fully ready before bot initialization
 if (envBotToken && !discordInitialized && !isBuildTime) {
-  console.log(
-    "[STARTUP] Bot token found in environment, starting Discord bot...",
-  );
+  setImmediate(() => {
+    console.log(
+      "[STARTUP] Bot token found in environment, starting Discord bot (deferred)...",
+    );
 
-  // Create a minimal env with the token as authorization for startup
-  const startupEnv = {
-    MESH_REQUEST_CONTEXT: {
-      authorization: `Bearer ${envBotToken}`,
-      state: {
-        COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
-        GUILD_ID: process.env.GUILD_ID,
+    // Create a minimal env with the token as authorization for startup
+    const startupEnv = {
+      MESH_REQUEST_CONTEXT: {
+        authorization: `Bearer ${envBotToken}`,
+        state: {
+          COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
+          GUILD_ID: process.env.GUILD_ID,
+        },
       },
-    },
-  } as Env;
+    } as Env;
 
-  // Update global env
-  updateEnv(startupEnv);
-  setDatabaseEnv(startupEnv);
+    // Update global env
+    updateEnv(startupEnv);
+    setDatabaseEnv(startupEnv);
 
-  // Initialize Discord client
-  initializeDiscordClient(startupEnv)
-    .then(() => {
-      discordInitialized = true;
-      console.log("[STARTUP] Discord bot started from environment ✓");
+    // Initialize Discord client (non-blocking)
+    initializeDiscordClient(startupEnv)
+      .then(() => {
+        discordInitialized = true;
+        console.log("[STARTUP] Discord bot started from environment ✓");
 
-      // Start heartbeat (will use env vars, may not have full Mesh context)
-      startHeartbeat(startupEnv, () => {
-        console.log(
-          "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-        );
+        // Start heartbeat (will use env vars, may not have full Mesh context)
+        startHeartbeat(startupEnv, () => {
+          console.log(
+            "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          );
+        });
+      })
+      .catch((error) => {
+        console.error("[STARTUP] Failed to start Discord bot:", error);
       });
-    })
-    .catch((error) => {
-      console.error("[STARTUP] Failed to start Discord bot:", error);
-    });
+  });
 } else if (isBuildTime) {
   console.log("[BUILD] Skipping bot auto-start during build phase");
 }
@@ -459,12 +476,18 @@ async function autoRestartCheck(): Promise<void> {
 }
 
 // Start auto-restart cron (skip during build)
+// Use setImmediate to ensure this runs after HTTP server is ready
 if (!isBuildTime) {
-  autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
-  console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+  setImmediate(() => {
+    autoRestartInterval = setInterval(
+      autoRestartCheck,
+      AUTO_RESTART_INTERVAL_MS,
+    );
+    console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
 
-  // Run initial check after 5 seconds (give time for normal startup)
-  setTimeout(autoRestartCheck, 5000);
+    // Run initial check after 30 seconds (give time for normal startup and HTTP server)
+    setTimeout(autoRestartCheck, 30000);
+  });
 } else {
   console.log("[BUILD] Skipping auto-restart cron during build phase");
 }
