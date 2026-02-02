@@ -55,6 +55,15 @@ export const StateSchema = z.object({
       ),
     token: z.string().describe("Token de autenticação Bearer para a API"),
   }),
+  // API Keys for scraping
+  openrouterApiKey: z
+    .string()
+    .optional()
+    .describe("OpenRouter API key for LLM analysis (required for scraping)"),
+  apifyApiToken: z
+    .string()
+    .optional()
+    .describe("Apify API token for LinkedIn scraping (required for LinkedIn)"),
   urlFields: z.object({
     urls: z.array(UrlEntrySchema).describe("URLs to scrape content from"),
   }),
