@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
+import type { Env } from "../types/env.ts";
 
 /**
  * Embedded skill content - stored directly in code to avoid filesystem issues in production
@@ -405,75 +406,79 @@ function getSkillContent(skillId: string): string | null {
 // GET_WEEKLY_REPORT_PUBLISHING_SKILL Tool
 // =============================================================================
 
-export const getWeeklyReportPublishingSkillTool = createPrivateTool({
-  id: "GET_WEEKLY_REPORT_PUBLISHING_SKILL",
-  description:
-    "Returns the Weekly Report Publishing skill documentation. This skill teaches how to publish weekly digest reports to the deco_weekly_report database table, including schema, SQL examples, and best practices.",
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    success: z.boolean(),
-    skill: z.string().describe("The complete skill documentation in Markdown"),
-    skill_name: z.string().describe("Name of the skill"),
-    summary: z.string().describe("Brief summary of what the skill teaches"),
-    error: z.string().optional(),
-  }),
-  execute: async () => {
-    const skillContent = getSkillContent("weekly-report-publishing");
+export const getWeeklyReportPublishingSkillTool = (_env: Env) =>
+  createPrivateTool({
+    id: "GET_WEEKLY_REPORT_PUBLISHING_SKILL",
+    description:
+      "Returns the Weekly Report Publishing skill documentation. This skill teaches how to publish weekly digest reports to the deco_weekly_report database table, including schema, SQL examples, and best practices.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      success: z.boolean(),
+      skill: z
+        .string()
+        .describe("The complete skill documentation in Markdown"),
+      skill_name: z.string().describe("Name of the skill"),
+      summary: z.string().describe("Brief summary of what the skill teaches"),
+      error: z.string().optional(),
+    }),
+    execute: async () => {
+      const skillContent = getSkillContent("weekly-report-publishing");
 
-    if (!skillContent) {
+      if (!skillContent) {
+        return {
+          success: false,
+          skill: "",
+          skill_name: "Weekly Report Publishing",
+          summary: "",
+          error: "Skill not found",
+        };
+      }
+
       return {
-        success: false,
-        skill: "",
+        success: true,
+        skill: skillContent,
         skill_name: "Weekly Report Publishing",
-        summary: "",
-        error: "Skill not found",
+        summary:
+          "This skill teaches how to publish Weekly Digest reports to the deco_weekly_report database table. It includes the complete table schema, required and recommended fields, SQL INSERT/UPDATE examples, URL and slug patterns, special character handling, and a publishing checklist.",
       };
-    }
-
-    return {
-      success: true,
-      skill: skillContent,
-      skill_name: "Weekly Report Publishing",
-      summary:
-        "This skill teaches how to publish Weekly Digest reports to the deco_weekly_report database table. It includes the complete table schema, required and recommended fields, SQL INSERT/UPDATE examples, URL and slug patterns, special character handling, and a publishing checklist.",
-    };
-  },
-});
+    },
+  });
 
 // =============================================================================
 // LIST_AVAILABLE_SKILLS Tool
 // =============================================================================
 
-export const listAvailableSkillsTool = createPrivateTool({
-  id: "LIST_AVAILABLE_SKILLS",
-  description:
-    "Lists all available skills/documentation that can be retrieved.",
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    success: z.boolean(),
-    skills: z.array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        description: z.string(),
-        tool_to_access: z.string(),
-      }),
-    ),
-  }),
-  execute: async () => {
-    return {
-      success: true,
-      skills: SKILLS_REGISTRY.map(
-        ({ id, name, description, tool_to_access }) => ({
-          id,
-          name,
-          description,
-          tool_to_access,
+export const listAvailableSkillsTool = (_env: Env) =>
+  createPrivateTool({
+    id: "LIST_AVAILABLE_SKILLS",
+    description:
+      "Lists all available skills/documentation that can be retrieved.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      success: z.boolean(),
+      skills: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          description: z.string(),
+          tool_to_access: z.string(),
         }),
       ),
-    };
-  },
-});
+    }),
+    execute: async () => {
+      return {
+        success: true,
+        skills: SKILLS_REGISTRY.map(
+          ({ id, name, description, tool_to_access }) => ({
+            id,
+            name,
+            description,
+            tool_to_access,
+          }),
+        ),
+      };
+    },
+  });
 
 /**
  * Export all skills tools
