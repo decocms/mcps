@@ -60,6 +60,15 @@ function getLastWeekDate(): string {
 }
 
 /**
+ * Get the correct week column name for each table
+ * - contents table uses "publication_week"
+ * - linkedin/reddit/twitter tables use "week_date"
+ */
+function getWeekColumnName(tableName: string): string {
+  return tableName === "contents" ? "publication_week" : "week_date";
+}
+
+/**
  * Query a single table with pagination and optional week/score filters
  */
 async function queryTable(
@@ -76,7 +85,8 @@ async function queryTable(
   // Build WHERE conditions
   const conditions: string[] = [];
   if (onlyThisWeek) {
-    conditions.push(`week_date = '${getLastWeekDate()}'`);
+    const weekColumn = getWeekColumnName(tableName);
+    conditions.push(`${weekColumn} = '${getLastWeekDate()}'`);
   }
   if (highScoreOnly) {
     conditions.push(`post_score >= 0.85`);

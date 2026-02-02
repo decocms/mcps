@@ -1,36 +1,38 @@
 # Content Scraper MCP
 
-MCP para listar e consultar conteúdo coletado de múltiplas fontes armazenado em um banco de dados.
+MCP for listing and querying scraped content from multiple sources stored in a database.
 
-## Funcionalidades
+## Features
 
-- **Múltiplas Fontes**: Consulta conteúdo de diferentes origens (web, Reddit, LinkedIn, Twitter)
-- **Paginação**: Suporte a paginação por range de índices
-- **Filtro por Semana**: Opção de filtrar apenas conteúdo da última semana
-- **Query Flexível**: Busca em tabela específica ou em todas de uma vez
+- **Multiple Sources**: Query content from different origins (web, Reddit, LinkedIn, Twitter)
+- **Pagination**: Support for pagination by index range
+- **Week Filter**: Option to filter only this week's content
+- **Flexible Query**: Search in a specific table or all at once
+- **Skills**: Documentation for LLMs to learn how to interact with the system
 
-## Configuração
+## Configuration
 
-### 1. Banco de Dados
+### 1. Database
 
-O MCP espera um banco de dados com as seguintes tabelas:
+The MCP expects a database with the following tables:
 
-- `contents` - Conteúdo geral da web
-- `reddit_content_scrape` - Conteúdo coletado do Reddit
-- `linkedin_content_scrape` - Conteúdo coletado do LinkedIn
-- `twitter_content_scrape` - Conteúdo coletado do Twitter
+- `contents` - General web content
+- `reddit_content_scrape` - Reddit scraped content
+- `linkedin_content_scrape` - LinkedIn scraped content
+- `twitter_content_scrape` - Twitter scraped content
+- `deco_weekly_report` - Weekly digest reports
 
-### 2. Instalar o MCP
+### 2. Install the MCP
 
-Ao instalar, configure:
-- `database.apiUrl`: URL da API do banco de dados
-- `database.token`: Token de autenticação
+When installing, configure:
+- `database.apiUrl`: Database API URL
+- `database.token`: Authentication token
 
-## Tools Disponíveis
+## Available Tools
 
 ### `LIST_SCRAPED_CONTENT`
 
-Lista conteúdo já coletado e salvo no banco de dados.
+Lists content already scraped and saved in the database.
 
 **Input:**
 ```json
@@ -42,11 +44,11 @@ Lista conteúdo já coletado e salvo no banco de dados.
 }
 ```
 
-**Parâmetros:**
-- `table`: Qual fonte consultar - `"all"`, `"contents"`, `"reddit"`, `"linkedin"`, ou `"twitter"`
-- `startIndex`: Índice inicial (padrão: 1)
-- `endIndex`: Índice final (padrão: 100)
-- `onlyThisWeek`: Se `true`, retorna apenas conteúdo da última semana
+**Parameters:**
+- `table`: Which source to query - `"all"`, `"contents"`, `"reddit"`, `"linkedin"`, or `"twitter"`
+- `startIndex`: Start index (default: 1)
+- `endIndex`: End index (default: 100)
+- `onlyThisWeek`: If `true`, returns only this week's content
 
 **Output:**
 ```json
@@ -72,28 +74,93 @@ Lista conteúdo já coletado e salvo no banco de dados.
 }
 ```
 
-## Desenvolvimento
+### `GET_WEEKLY_REPORT_PUBLISHING_SKILL`
+
+Returns the Weekly Report Publishing skill documentation. This skill teaches how to publish weekly digest reports to the `deco_weekly_report` database table.
+
+**Input:**
+```json
+{}
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "skill": "# Weekly Report Publishing Skill...",
+  "skill_name": "Weekly Report Publishing",
+  "summary": "This skill teaches how to publish Weekly Digest reports..."
+}
+```
+
+### `LIST_AVAILABLE_SKILLS`
+
+Lists all available skills/documentation that can be retrieved.
+
+**Input:**
+```json
+{}
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "skills": [
+    {
+      "id": "weekly-report-publishing",
+      "name": "Weekly Report Publishing",
+      "description": "Teaches how to publish weekly digest reports...",
+      "tool_to_access": "GET_WEEKLY_REPORT_PUBLISHING_SKILL"
+    }
+  ]
+}
+```
+
+## Skills
+
+The MCP includes skills (documentation for LLMs) that teach how to interact with the system:
+
+### Weekly Report Publishing
+
+**Path:** `skills/weekly-report-publishing/SKILL.md`
+
+**Tool:** `GET_WEEKLY_REPORT_PUBLISHING_SKILL`
+
+Skill that teaches an LLM how to publish Weekly Reports to the `deco_weekly_report` table. Includes:
+
+- Complete table schema
+- INSERT, UPDATE, and SELECT examples
+- URL and slug patterns
+- Special character handling
+- Publishing checklist
+
+## Development
 
 ```bash
 cd content-scraper
 bun install
-bun run dev     # Desenvolvimento local
-bun run deploy  # Deploy para produção
+bun run dev     # Local development
+bun run deploy  # Deploy to production
 ```
 
-## Arquitetura
+## Architecture
 
 ```
 content-scraper/
 ├── server/
-│   ├── main.ts              # Entry point e StateSchema
+│   ├── main.ts              # Entry point and StateSchema
 │   ├── lib/
-│   │   └── db-client.ts     # Cliente para o banco de dados
+│   │   └── db-client.ts     # Database client
 │   ├── tools/
-│   │   ├── index.ts         # Exporta todas as tools
-│   │   └── content-scrape.ts # Tool de listagem de conteúdo
+│   │   ├── index.ts         # Exports all tools
+│   │   ├── content-scrape.ts # Content listing tool
+│   │   └── skills.ts        # Skills tools
 │   └── types/
-│       └── env.ts           # Tipos de ambiente
+│       └── env.ts           # Environment types
+├── skills/
+│   └── weekly-report-publishing/
+│       └── SKILL.md         # Weekly Report publishing skill
 ├── package.json
 └── tsconfig.json
 ```
