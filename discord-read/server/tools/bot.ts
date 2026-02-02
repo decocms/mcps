@@ -32,7 +32,7 @@ export const createStartBotTool = (env: Env) =>
         guilds: z.number().optional(),
       })
       .strict(),
-    execute: async (_args: any, context: any) => {
+    execute: async (context: any) => {
       const env = context?.env;
 
       console.log("[Tool] DISCORD_BOT_START called");
