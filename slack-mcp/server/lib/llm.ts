@@ -72,7 +72,7 @@ async function callModelsAPI(
       connectionId: modelProviderId,
     },
     agent: {
-      id: agentId ?? null,
+      id: agentId || "",
     },
     stream,
   };
