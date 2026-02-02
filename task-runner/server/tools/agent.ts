@@ -61,6 +61,21 @@ interface QualityGate {
   required: boolean;
 }
 
+interface SiteContext {
+  /** Whether this is a Deco site */
+  isDeco?: boolean;
+  /** Dev server URL if running */
+  serverUrl?: string;
+  /** List of page paths available */
+  pages?: string[];
+  /** Deco imports found in deno.json */
+  decoImports?: string[];
+  /** Site type (e.g., "deco", "next", "unknown") */
+  siteType?: string;
+  /** Additional site-specific guidelines */
+  guidelines?: string;
+}
+
 interface TaskContext {
   taskId: string;
   taskTitle: string;
@@ -68,6 +83,7 @@ interface TaskContext {
   acceptanceCriteria?: AcceptanceCriterion[];
   qualityGates?: QualityGate[];
   workspace: string;
+  siteContext?: SiteContext;
 }
 
 /**
@@ -121,11 +137,66 @@ async function loadMemorySummary(workspace: string): Promise<string> {
 }
 
 /**
+ * Build site context section for the prompt
+ */
+function buildSiteContextSection(siteContext?: SiteContext): string {
+  if (!siteContext) return "";
+
+  const sections: string[] = [];
+
+  if (siteContext.isDeco) {
+    sections.push(`## Site Context (Deco Site)
+
+This workspace contains a **Deco site**. Use the skills and patterns from the \`skills/\` folder.`);
+
+    if (siteContext.serverUrl) {
+      sections.push(`- **Dev Server:** Running at ${siteContext.serverUrl}`);
+    }
+
+    if (siteContext.pages && siteContext.pages.length > 0) {
+      sections.push(`- **Available Pages:**
+${siteContext.pages.map((p) => `  - ${p}`).join("\n")}`);
+    }
+
+    if (siteContext.decoImports && siteContext.decoImports.length > 0) {
+      sections.push(
+        `- **Deco Imports:** ${siteContext.decoImports.slice(0, 5).join(", ")}${siteContext.decoImports.length > 5 ? "..." : ""}`,
+      );
+    }
+
+    sections.push(`
+### Deco Site Patterns
+- Page configs are in \`.deco/blocks/pages-{slug}.json\`
+- Sections go in \`sections/{ComponentName}.tsx\`
+- Use the color system: dc-950 (darkest) to dc-100 (lightest), primary-light (#D0EC1A)
+- Always provide default props in sections
+- Check \`skills/decocms-landing-pages/SKILL.md\` for detailed patterns`);
+  } else if (siteContext.siteType) {
+    sections.push(`## Site Context
+
+Site type: ${siteContext.siteType}`);
+  }
+
+  if (siteContext.guidelines) {
+    sections.push(`### Site Guidelines
+${siteContext.guidelines}`);
+  }
+
+  return sections.join("\n\n");
+}
+
+/**
  * Build the context-rich prompt for an agent
  */
 async function buildAgentPrompt(ctx: TaskContext): Promise<string> {
-  const { taskId, taskTitle, taskDescription, acceptanceCriteria, workspace } =
-    ctx;
+  const {
+    taskId,
+    taskTitle,
+    taskDescription,
+    acceptanceCriteria,
+    workspace,
+    siteContext,
+  } = ctx;
 
   // Load project-specific data
   const qualityGates = ctx.qualityGates ?? (await loadQualityGates(workspace));
@@ -238,6 +309,8 @@ This captures:
 
 ${memorySummary}
 
+${buildSiteContextSection(siteContext)}
+
 ## Completion Protocol
 
 When you believe the task is complete:
@@ -312,6 +385,29 @@ export const createAgentSpawnTool = (_env: Env) =>
         .number()
         .optional()
         .describe("Timeout in milliseconds (default: 30 minutes)"),
+      siteContext: z
+        .object({
+          isDeco: z
+            .boolean()
+            .optional()
+            .describe("Whether this is a Deco site"),
+          serverUrl: z
+            .string()
+            .optional()
+            .describe("Dev server URL if running"),
+          pages: z.array(z.string()).optional().describe("List of page paths"),
+          decoImports: z
+            .array(z.string())
+            .optional()
+            .describe("Deco imports found"),
+          siteType: z.string().optional().describe("Site type"),
+          guidelines: z
+            .string()
+            .optional()
+            .describe("Site-specific guidelines"),
+        })
+        .optional()
+        .describe("Site context for Deco/web projects"),
     }),
     outputSchema: z.object({
       sessionId: z.string().describe("Unique session ID for this agent run"),
@@ -329,7 +425,8 @@ export const createAgentSpawnTool = (_env: Env) =>
       } else {
         workspace = getWorkspace();
       }
-      const { taskId, taskTitle, taskDescription, timeout } = context;
+      const { taskId, taskTitle, taskDescription, timeout, siteContext } =
+        context;
 
       // Clean up any stale sessions from previous runs
       await cleanupStaleSessions(workspace);
@@ -347,6 +444,7 @@ export const createAgentSpawnTool = (_env: Env) =>
         taskTitle,
         taskDescription,
         workspace,
+        siteContext,
       });
 
       // Create abort controller for timeout
