@@ -263,23 +263,39 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           discordInitialized = true;
           console.log("[CONFIG] Discord client ready ✓");
 
-          // Start heartbeat to keep Mesh session alive
+          // Start heartbeat ONLY if we have a Mesh token
+          // (bot started via onChange with Mesh credentials, not via Supabase config)
+          const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+          if (meshToken) {
+            console.log("[CONFIG] Starting Mesh session heartbeat...");
+            startHeartbeat(env, () => {
+              console.log(
+                "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+              );
+            });
+          } else {
+            console.log(
+              "[CONFIG] ℹ️ Bot started without Mesh session (via Supabase). No heartbeat needed.",
+            );
+          }
+        } catch (error) {
+          console.error("[CONFIG] Failed to initialize Discord:", error);
+        }
+      } else if (hasAuth && discordInitialized) {
+        // Bot already running, refresh heartbeat ONLY if we have a Mesh token
+        const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+        if (meshToken) {
+          console.log("[CONFIG] Refreshing session heartbeat...");
           startHeartbeat(env, () => {
             console.log(
               "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
             );
           });
-        } catch (error) {
-          console.error("[CONFIG] Failed to initialize Discord:", error);
-        }
-      } else if (hasAuth && discordInitialized) {
-        // Bot already running, just restart heartbeat with fresh credentials
-        console.log("[CONFIG] Refreshing session heartbeat...");
-        startHeartbeat(env, () => {
+        } else {
           console.log(
-            "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+            "[CONFIG] ℹ️ No Mesh token available. Skipping heartbeat.",
           );
-        });
+        }
       } else if (!hasAuth) {
         logger.info(
           "Discord Bot Token not configured - waiting for authorization",
@@ -425,12 +441,20 @@ async function autoRestartCheck(): Promise<void> {
       discordInitialized = true;
       console.log("[AUTO-RESTART] Bot restarted successfully ✓");
 
-      // Restart heartbeat
-      startHeartbeat(env, () => {
+      // Restart heartbeat ONLY if we have a Mesh token
+      const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+      if (meshToken) {
+        console.log("[AUTO-RESTART] Restarting Mesh session heartbeat...");
+        startHeartbeat(env, () => {
+          console.log(
+            "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          );
+        });
+      } else {
         console.log(
-          "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          "[AUTO-RESTART] ℹ️ No Mesh token available. Skipping heartbeat.",
         );
-      });
+      }
     } catch (error) {
       console.error(
         "[AUTO-RESTART] Failed to restart bot:",
