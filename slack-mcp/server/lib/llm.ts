@@ -78,6 +78,7 @@ async function callModelsAPI(
     },
     agent: {
       id: agentId || "",
+      mode: "smart_tool_selection",
     },
     stream,
   };
