@@ -77,8 +77,14 @@ export function buildQualityGates(gates?: string[]): string {
 
   return `## Quality Gates
 
-Before marking complete, ensure these commands pass (if available):
+Before marking complete, run these commands (if available):
 ${qualityGates.map((g) => `- \`${g}\``).join("\n")}
+
+**IMPORTANT - Scope of responsibility:**
+- Only fix errors in files YOU modified during this task
+- If the codebase has PRE-EXISTING errors (errors in files you didn't touch), do NOT try to fix them
+- If quality gates fail due to pre-existing issues, WARN about them and proceed with your task
+- Your job is to not make things worse, not to fix everything
 
 If a command is not available in this project, skip it.`;
 }
@@ -91,11 +97,15 @@ export function buildCompletionSection(): string {
 
 When the task is FULLY complete:
 1. Ensure all changes are committed
-2. Verify quality gates pass (or explain why they don't apply)
-3. Output exactly: \`<promise>COMPLETE</promise>\`
+2. Run quality gates
+3. If gates fail ONLY in files you modified, fix those errors
+4. If gates fail in files you DID NOT modify, WARN about pre-existing issues and continue
+5. Output exactly: \`<promise>COMPLETE</promise>\`
 
-**IMPORTANT**: Only output the completion token if the task is truly finished.
-If you cannot complete the task, explain what's blocking you and do NOT output the token.`;
+**IMPORTANT**:
+- Only output the completion token if YOUR task is truly finished
+- Pre-existing codebase issues are NOT your responsibility to fix
+- If you cannot complete the task, explain what's blocking you and do NOT output the token`;
 }
 
 /**
