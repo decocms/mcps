@@ -14,7 +14,7 @@ import type {
 } from "../types/content.ts";
 import type { DatabaseClient } from "./db-client.ts";
 import { analyzeRedditPost } from "./llm.ts";
-import { sleep, generateContentHash } from "./utils.ts";
+import { sleep, generateContentHash, getPublicationWeek } from "./utils.ts";
 
 // Rate limiting
 const DELAY_BETWEEN_POSTS = 300;
@@ -23,19 +23,6 @@ const DELAY_BETWEEN_SUBREDDITS = 2000;
 interface RedditScraperContext {
   dbClient: DatabaseClient;
   openrouterApiKey: string;
-}
-
-/**
- * Calculate week date from timestamp
- */
-function getWeekDate(timestamp: number): string {
-  const date = new Date(timestamp * 1000);
-  const year = date.getFullYear();
-  const oneJan = new Date(year, 0, 1);
-  const weekNum = Math.ceil(
-    ((date.getTime() - oneJan.getTime()) / 86400000 + oneJan.getDay() + 1) / 7,
-  );
-  return `${year}-w${String(weekNum).padStart(2, "0")}`;
 }
 
 /**
@@ -82,9 +69,9 @@ async function redditContentExistsByPermalink(
   client: DatabaseClient,
   permalink: string,
 ): Promise<boolean> {
-  const escapedPermalink = permalink.replace(/'/g, "''");
-  const result = await client.query(
-    `SELECT COUNT(*) as count FROM reddit_content_scrape WHERE permalink = '${escapedPermalink}'`,
+  const result = await client.queryParams(
+    "SELECT COUNT(*) as count FROM reddit_content_scrape WHERE permalink = ?",
+    [permalink],
   );
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -96,9 +83,9 @@ async function redditContentExistsByHash(
   client: DatabaseClient,
   contentHash: string,
 ): Promise<boolean> {
-  const escapedHash = contentHash.replace(/'/g, "''");
-  const result = await client.query(
-    `SELECT COUNT(*) as count FROM reddit_content_scrape WHERE content_hash = '${escapedHash}'`,
+  const result = await client.queryParams(
+    "SELECT COUNT(*) as count FROM reddit_content_scrape WHERE content_hash = ?",
+    [contentHash],
   );
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -110,33 +97,29 @@ async function createRedditContent(
   client: DatabaseClient,
   input: RedditContentInsert,
 ): Promise<void> {
-  const escapeStr = (s: string | null) =>
-    s ? `'${s.replace(/'/g, "''")}'` : "NULL";
-
-  const sql = `
-    INSERT INTO reddit_content_scrape (
+  await client.queryParams(
+    `INSERT INTO reddit_content_scrape (
       title, author, subreddit, selftext, url, permalink,
       score, num_comments, created_at, type, authority, post_score, week_date, content_hash
     )
-    VALUES (
-      ${escapeStr(input.title)},
-      ${escapeStr(input.author)},
-      ${escapeStr(input.subreddit)},
-      ${escapeStr(input.selftext)},
-      ${escapeStr(input.url)},
-      ${escapeStr(input.permalink)},
-      ${input.score},
-      ${input.num_comments},
-      ${input.created_at},
-      ${escapeStr(input.type)},
-      ${input.authority},
-      ${input.post_score},
-      ${escapeStr(input.week_date)},
-      ${escapeStr(input.content_hash ?? null)}
-    )
-  `;
-
-  await client.query(sql);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      input.title,
+      input.author,
+      input.subreddit,
+      input.selftext,
+      input.url,
+      input.permalink,
+      input.score,
+      input.num_comments,
+      input.created_at,
+      input.type,
+      input.authority,
+      input.post_score,
+      input.week_date,
+      input.content_hash ?? null,
+    ],
+  );
 }
 
 /**
@@ -280,7 +263,7 @@ async function processRedditPosts(
         type: type,
         authority: authority,
         post_score: postScore,
-        week_date: getWeekDate(post.created_utc),
+        week_date: getPublicationWeek(new Date(post.created_utc * 1000)),
         content_hash: contentHash,
       };
 

@@ -7,7 +7,11 @@
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
-import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
+import {
+  createDatabaseClient,
+  type DatabaseClient,
+  buildSqlQuery,
+} from "../lib/db-client.ts";
 import type { LinkedInContent, RedditContent } from "../types/content.ts";
 
 /**
@@ -232,19 +236,26 @@ export const getListLinkedInPostsTool = (env: Env) =>
       }
 
       try {
-        const whereClause = week
-          ? `WHERE week_date = '${week.replace(/'/g, "''")}'`
-          : "WHERE post_score > 0";
+        const baseQuery = week
+          ? buildSqlQuery(
+              `SELECT id, post_id, url, author_name, author_headline, content,
+                      num_likes, num_comments, num_reposts, published_at, 
+                      post_score, week_date
+               FROM linkedin_content_scrape 
+               WHERE week_date = ?
+               ORDER BY scraped_at DESC, post_score DESC
+               LIMIT ?`,
+              [week, limit],
+            )
+          : `SELECT id, post_id, url, author_name, author_headline, content,
+                    num_likes, num_comments, num_reposts, published_at, 
+                    post_score, week_date
+             FROM linkedin_content_scrape 
+             WHERE post_score > 0
+             ORDER BY scraped_at DESC, post_score DESC
+             LIMIT ${limit}`;
 
-        const result = await client.query(
-          `SELECT id, post_id, url, author_name, author_headline, content,
-                  num_likes, num_comments, num_reposts, published_at, 
-                  post_score, week_date
-           FROM linkedin_content_scrape 
-           ${whereClause}
-           ORDER BY scraped_at DESC, post_score DESC
-           LIMIT ${limit}`,
-        );
+        const result = await client.query(baseQuery);
 
         const posts = (result.rows as unknown as LinkedInContent[]).map(
           (post) => ({
@@ -334,18 +345,24 @@ export const getListRedditPostsTool = (env: Env) =>
       }
 
       try {
-        const whereClause = subreddit
-          ? `WHERE subreddit = '${subreddit.replace(/'/g, "''")}'`
-          : "WHERE post_score > 0";
+        const baseQuery = subreddit
+          ? buildSqlQuery(
+              `SELECT id, title, author, subreddit, url, permalink,
+                      score, num_comments, type, post_score, week_date
+               FROM reddit_content_scrape 
+               WHERE subreddit = ?
+               ORDER BY scraped_at DESC, post_score DESC
+               LIMIT ?`,
+              [subreddit, limit],
+            )
+          : `SELECT id, title, author, subreddit, url, permalink,
+                    score, num_comments, type, post_score, week_date
+             FROM reddit_content_scrape 
+             WHERE post_score > 0
+             ORDER BY scraped_at DESC, post_score DESC
+             LIMIT ${limit}`;
 
-        const result = await client.query(
-          `SELECT id, title, author, subreddit, url, permalink,
-                  score, num_comments, type, post_score, week_date
-           FROM reddit_content_scrape 
-           ${whereClause}
-           ORDER BY scraped_at DESC, post_score DESC
-           LIMIT ${limit}`,
-        );
+        const result = await client.query(baseQuery);
 
         const posts = (result.rows as unknown as RedditContent[]).map(
           (post) => ({

@@ -55,9 +55,9 @@ async function linkedInContentExistsByPostId(
   client: DatabaseClient,
   postId: string,
 ): Promise<boolean> {
-  const escapedPostId = postId.replace(/'/g, "''");
-  const result = await client.query(
-    `SELECT COUNT(*) as count FROM linkedin_content_scrape WHERE post_id = '${escapedPostId}'`,
+  const result = await client.queryParams(
+    "SELECT COUNT(*) as count FROM linkedin_content_scrape WHERE post_id = ?",
+    [postId],
   );
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -69,9 +69,9 @@ async function linkedInContentExistsByHash(
   client: DatabaseClient,
   contentHash: string,
 ): Promise<boolean> {
-  const escapedHash = contentHash.replace(/'/g, "''");
-  const result = await client.query(
-    `SELECT COUNT(*) as count FROM linkedin_content_scrape WHERE content_hash = '${escapedHash}'`,
+  const result = await client.queryParams(
+    "SELECT COUNT(*) as count FROM linkedin_content_scrape WHERE content_hash = ?",
+    [contentHash],
   );
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -84,38 +84,35 @@ async function createLinkedInContent(
   input: LinkedInContentInsert,
 ): Promise<void> {
   const now = new Date().toISOString();
-  const escapeStr = (s: string | null) =>
-    s ? `'${s.replace(/'/g, "''")}'` : "NULL";
 
-  const sql = `
-    INSERT INTO linkedin_content_scrape (
+  await client.queryParams(
+    `INSERT INTO linkedin_content_scrape (
       post_id, url, author_name, author_headline, author_profile_url, author_profile_image,
       content, num_likes, num_comments, num_reposts, post_type, media_url, published_at,
       scraped_at, post_score, type, week_date, content_hash
     )
-    VALUES (
-      ${escapeStr(input.post_id)},
-      ${escapeStr(input.url)},
-      ${escapeStr(input.author_name)},
-      ${escapeStr(input.author_headline)},
-      ${escapeStr(input.author_profile_url)},
-      ${escapeStr(input.author_profile_image)},
-      ${escapeStr(input.content)},
-      ${input.num_likes},
-      ${input.num_comments},
-      ${input.num_reposts},
-      ${escapeStr(input.post_type)},
-      ${escapeStr(input.media_url)},
-      ${escapeStr(input.published_at)},
-      '${now}',
-      ${input.post_score},
-      ${escapeStr(input.type)},
-      ${escapeStr(input.week_date)},
-      ${escapeStr(input.content_hash ?? null)}
-    )
-  `;
-
-  await client.query(sql);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      input.post_id,
+      input.url,
+      input.author_name,
+      input.author_headline,
+      input.author_profile_url,
+      input.author_profile_image,
+      input.content,
+      input.num_likes,
+      input.num_comments,
+      input.num_reposts,
+      input.post_type,
+      input.media_url,
+      input.published_at,
+      now,
+      input.post_score,
+      input.type,
+      input.week_date,
+      input.content_hash ?? null,
+    ],
+  );
 }
 
 /**

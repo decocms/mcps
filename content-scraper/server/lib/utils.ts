@@ -14,16 +14,37 @@ export function generateId(): string {
 }
 
 /**
- * Calculate publication week in ISO format (YYYY-wWW)
+ * Calculate publication week in ISO-8601 format (YYYY-wWW)
+ *
+ * ISO-8601 rules:
+ * - Weeks start on Monday
+ * - Week 1 is the week containing the first Thursday of the year
+ *   (equivalently: the week containing January 4th)
+ * - The ISO year may differ from calendar year at year boundaries
  */
 export function getPublicationWeek(date: Date): string {
-  const year = date.getFullYear();
-  const firstDayOfYear = new Date(year, 0, 1);
-  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-  const weekNumber = Math.ceil(
-    (pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7,
+  // Create a copy to avoid mutating the original
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
   );
-  return `${year}-w${weekNumber.toString().padStart(2, "0")}`;
+
+  // Set to nearest Thursday: current date + 4 - current day number
+  // Make Sunday's day number 7
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+
+  // Get first day of the year that Thursday falls in
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+
+  // Calculate full weeks between yearStart and Thursday
+  const weekNum = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+
+  // The ISO year is the year that Thursday falls in
+  const isoYear = d.getUTCFullYear();
+
+  return `${isoYear}-w${weekNum.toString().padStart(2, "0")}`;
 }
 
 /**

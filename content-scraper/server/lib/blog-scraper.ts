@@ -48,9 +48,9 @@ async function articleExistsByUrl(
   client: DatabaseClient,
   url: string,
 ): Promise<boolean> {
-  const escapedUrl = url.replace(/'/g, "''");
-  const result = await client.query(
-    `SELECT COUNT(*) as count FROM contents WHERE article_url = '${escapedUrl}'`,
+  const result = await client.queryParams(
+    "SELECT COUNT(*) as count FROM contents WHERE article_url = ?",
+    [url],
   );
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -63,33 +63,29 @@ async function upsertArticle(
   input: ArticleInsert,
 ): Promise<void> {
   const now = new Date().toISOString();
-  const escapedTitle = input.title.replace(/'/g, "''");
-  const escapedUrl = input.url.replace(/'/g, "''");
-  const escapedSummary = input.summary.replace(/'/g, "''");
-  const keyPointsJson = JSON.stringify(input.key_points).replace(/'/g, "''");
+  const keyPointsJson = JSON.stringify(input.key_points);
 
-  const sql = `
-    INSERT INTO contents (blog_id, article_title, article_url, published_at, publication_week, summary, key_points, post_score, created_at)
-    VALUES (
-      '${input.blog_id}',
-      '${escapedTitle}',
-      '${escapedUrl}',
-      '${input.published_at}',
-      '${input.publication_week}',
-      '${escapedSummary}',
-      '${keyPointsJson}',
-      ${input.post_score},
-      '${now}'
-    )
+  await client.queryParams(
+    `INSERT INTO contents (blog_id, article_title, article_url, published_at, publication_week, summary, key_points, post_score, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT (article_url) DO UPDATE SET
       article_title = EXCLUDED.article_title,
       summary = EXCLUDED.summary,
       key_points = EXCLUDED.key_points,
       post_score = EXCLUDED.post_score,
-      updated_at = datetime('now')
-  `;
-
-  await client.query(sql);
+      updated_at = datetime('now')`,
+    [
+      input.blog_id,
+      input.title,
+      input.url,
+      input.published_at,
+      input.publication_week,
+      input.summary,
+      keyPointsJson,
+      input.post_score,
+      now,
+    ],
+  );
 }
 
 /**
