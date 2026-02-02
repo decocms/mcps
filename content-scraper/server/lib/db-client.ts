@@ -71,7 +71,7 @@ export function escapeSqlValue(value: SqlValue): string {
  */
 export function buildSqlQuery(template: string, params: SqlValue[]): string {
   let paramIndex = 0;
-  return template.replace(/\?/g, () => {
+  const result = template.replace(/\?/g, () => {
     if (paramIndex >= params.length) {
       throw new Error(
         `SQL build: missing parameter at index ${paramIndex}. Template has more ? than params provided.`,
@@ -79,8 +79,13 @@ export function buildSqlQuery(template: string, params: SqlValue[]): string {
     }
     return escapeSqlValue(params[paramIndex++]);
   });
+  if (paramIndex < params.length) {
+    throw new Error(
+      `SQL build: ${params.length - paramIndex} unused parameter(s). Template has fewer ? than params provided.`,
+    );
+  }
+  return result;
 }
-
 export interface DatabaseClient {
   query(sqlQuery: string): Promise<QueryResult>;
   /**
