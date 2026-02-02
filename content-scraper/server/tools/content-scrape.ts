@@ -60,7 +60,7 @@ function getLastWeekDate(): string {
 }
 
 /**
- * Query a single table with pagination and optional week filter
+ * Query a single table with pagination and optional week/score filters
  */
 async function queryTable(
   client: DatabaseClient,
@@ -68,18 +68,27 @@ async function queryTable(
   startIndex: number,
   endIndex: number,
   onlyThisWeek: boolean = false,
+  highScoreOnly: boolean = false,
 ): Promise<{ table: string; data: Record<string, unknown>[] }> {
   const limit = endIndex - startIndex + 1;
   const offset = startIndex - 1;
 
-  const whereClause = onlyThisWeek
-    ? `WHERE week_date = '${getLastWeekDate()}'`
-    : "";
+  // Build WHERE conditions
+  const conditions: string[] = [];
+  if (onlyThisWeek) {
+    conditions.push(`week_date = '${getLastWeekDate()}'`);
+  }
+  if (highScoreOnly) {
+    conditions.push(`post_score >= 0.85`);
+  }
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const query = `
     SELECT * FROM ${tableName}
     ${whereClause}
-    ORDER BY id
+    ORDER BY post_score DESC, id
     LIMIT ${limit}
     OFFSET ${offset}
   `;
@@ -124,6 +133,12 @@ export const getContentScrapeTool = (env: Env) =>
         .describe(
           "If true, returns only content from the last week (default: false)",
         ),
+      highScoreOnly: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, returns only content with post_score > 85% (default: false)",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -152,10 +167,15 @@ export const getContentScrapeTool = (env: Env) =>
         .string()
         .optional()
         .describe("The week_date value used for filtering (for debugging)"),
+      highScoreFilter: z
+        .boolean()
+        .optional()
+        .describe("Whether high score filter (>85%) was applied"),
       error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { table, startIndex, endIndex, onlyThisWeek } = context;
+      const { table, startIndex, endIndex, onlyThisWeek, highScoreOnly } =
+        context;
 
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
@@ -224,6 +244,7 @@ export const getContentScrapeTool = (env: Env) =>
                   startIndex,
                   endIndex,
                   onlyThisWeek,
+                  highScoreOnly,
                 );
                 results.push({
                   table: key,
@@ -249,6 +270,7 @@ export const getContentScrapeTool = (env: Env) =>
               startIndex,
               endIndex,
               onlyThisWeek,
+              highScoreOnly,
             );
             results.push({
               table,
@@ -269,6 +291,7 @@ export const getContentScrapeTool = (env: Env) =>
               endIndex,
             },
             weekDateFilter: weekDateUsed,
+            highScoreFilter: highScoreOnly || undefined,
           };
         } finally {
           await client.close();
