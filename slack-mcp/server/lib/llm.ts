@@ -48,13 +48,18 @@ async function callModelsAPI(
   } = config;
 
   // When running locally with a tunnel, use localhost for internal API calls
-  const isTunnel = meshUrl.includes(".deco.host");
-  const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
+  // Only use localhost if meshUrl contains "localhost" (not production tunnels)
+  const isLocalTunnel =
+    meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
+  const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
 
   // Use the decopilot endpoint (new Mesh API)
   const url = `${effectiveMeshUrl}/api/${organizationId}/decopilot/stream`;
 
   console.log(`[LLM] Calling Decopilot API:`, {
+    originalMeshUrl: meshUrl,
+    isLocalTunnel,
+    effectiveMeshUrl,
     url,
     organizationId,
     hasToken: !!token,

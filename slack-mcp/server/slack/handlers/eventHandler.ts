@@ -96,9 +96,11 @@ async function transcribeAudio(
     console.log(`[Whisper] Transcribing audio: ${filename} (${mimeType})`);
     console.log(`[Whisper] Audio URL: ${audioUrl.substring(0, 50)}...`);
 
-    // Use localhost for tunnel URLs
-    const isTunnel = whisperConfig.meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isTunnel
+    // Use localhost for LOCAL tunnel URLs only (not production)
+    const isLocalTunnel =
+      whisperConfig.meshUrl.includes("localhost") &&
+      whisperConfig.meshUrl.includes(".deco.host");
+    const effectiveMeshUrl = isLocalTunnel
       ? "http://localhost:3000"
       : whisperConfig.meshUrl;
 

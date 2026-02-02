@@ -57,9 +57,10 @@ async function fetchAgentSystemPrompt(
   token: string,
 ): Promise<string | undefined> {
   try {
-    // Use localhost for tunnel URLs (server-to-server communication)
-    const isTunnel = meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
+    // Use localhost for LOCAL tunnel URLs only (not production)
+    const isLocalTunnel =
+      meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
+    const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
 
     const response = await fetch(`${effectiveMeshUrl}/mcp`, {
       method: "POST",
