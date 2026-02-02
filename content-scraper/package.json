@@ -1,5 +1,5 @@
 {
-  "name": "content-scraper-mcp",
+  "name": "content-scraper",
   "version": "1.0.0",
   "description": "Content extraction, deduplication and summarization MCP using Firecrawl and Supabase",
   "private": true,

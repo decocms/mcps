@@ -75,7 +75,7 @@ Lista conteúdo já coletado e salvo no banco de dados.
 ## Desenvolvimento
 
 ```bash
-cd content-scraper-mcp
+cd content-scraper
 bun install
 bun run dev     # Desenvolvimento local
 bun run deploy  # Deploy para produção
@@ -84,7 +84,7 @@ bun run deploy  # Deploy para produção
 ## Arquitetura
 
 ```
-content-scraper-mcp/
+content-scraper/
 ├── server/
 │   ├── main.ts              # Entry point e StateSchema
 │   ├── lib/

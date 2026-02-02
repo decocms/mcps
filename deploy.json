@@ -34,8 +34,8 @@
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   },
-  "content-scraper-mcp": {
-    "site": "content-scraper-mcp",
+  "content-scraper": {
+    "site": "content-scraper",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
   },
