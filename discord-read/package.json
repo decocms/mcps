@@ -11,6 +11,8 @@
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
+    "start": "NODE_ENV=production bun run dist/server/main.js",
+    "build:start": "bun run build && bun run start",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
@@ -20,6 +22,7 @@
     "@discordjs/voice": "^0.19.0",
     "@elevenlabs/elevenlabs-js": "^2.33.0",
     "@snazzah/davey": "^0.1.9",
+    "@supabase/supabase-js": "^2.47.10",
     "ai": "^6.0.27",
     "discord.js": "14.25.1",
     "google-tts-api": "^2.0.2",

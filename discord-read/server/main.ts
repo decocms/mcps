@@ -7,7 +7,6 @@
 
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
-import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import {
   initializeDiscordClient,
   getDiscordClient,
@@ -101,8 +100,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       }
 
       // Create tables first, then indexes
-      await ensureCollections(env);
-      await ensureIndexes(env);
+      // Database tables are managed via Supabase - no need to ensure here
+      console.log("[Setup] Skipping database initialization (using Supabase)");
 
       logger.info("Database tables ready", {
         trace_id: traceId,
@@ -279,13 +278,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "MODEL_PROVIDER::*",
-      "*",
-    ],
+    scopes: ["EVENT_BUS::*", "CONNECTION::*", "MODEL_PROVIDER::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

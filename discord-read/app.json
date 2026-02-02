@@ -14,9 +14,6 @@
     "header": "Authorization",
     "prefix": "Bearer"
   },
-  "bindings": {
-    "DATABASE": "@deco/postgres"
-  },
   "metadata": {
     "categories": ["Communication", "Automation", "AI"],
     "official": false,

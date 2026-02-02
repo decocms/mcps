@@ -71,7 +71,12 @@ export async function initializeDiscordClient(env: Env): Promise<Client> {
   // If there's an existing client that's not ready, destroy it
   if (client) {
     console.log("[Discord] Destroying previous unready client...");
-    client.destroy();
+    try {
+      client.removeAllListeners();
+      client.destroy();
+    } catch (error) {
+      console.error("[Discord] Error destroying client:", error);
+    }
     client = null;
     eventsRegistered = false;
   }
@@ -94,16 +99,80 @@ async function doInitialize(env: Env): Promise<Client> {
   // Set database environment for shared module
   setDatabaseEnv(env);
 
-  // Get bot token from Authorization header
+  // Try to load config from Supabase first
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  console.log(
+    `[Discord] Looking for saved config for connection: ${connectionId}`,
+  );
+
+  const { getDiscordConfig } = await import("../lib/config-cache.ts");
+  const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
+
   let token: string;
-  try {
-    token = getDiscordBotToken(env);
-    console.log("[Discord] Bot token retrieved from Authorization header");
-  } catch (error) {
-    console.error("[Discord] Failed to get bot token:", error);
-    throw new Error(
-      "Discord Bot Token not provided. Please add it in the Authorization section of the Mesh Dashboard.",
+
+  if (savedConfig?.botToken) {
+    // Use token from Supabase config
+    token = savedConfig.botToken;
+    console.log("[Discord] ✅ Bot token loaded from Supabase config");
+    console.log(
+      `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
     );
+  } else {
+    // Fallback to Authorization header (for backward compatibility)
+    try {
+      token = getDiscordBotToken(env);
+      console.log(
+        "[Discord] ⚠️ Bot token retrieved from Authorization header (fallback)",
+      );
+      console.log(
+        "[Discord] 💾 Auto-saving configuration to Supabase for future deployments...",
+      );
+
+      // Auto-save configuration for next deployment
+      try {
+        const { setDiscordConfig } = await import("../lib/config-cache.ts");
+        const organizationId =
+          env.MESH_REQUEST_CONTEXT?.organizationId || "default-org";
+        const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl || "";
+
+        await setDiscordConfig({
+          connectionId,
+          organizationId,
+          meshUrl,
+          botToken: token,
+          commandPrefix: "!",
+          authorizedGuilds: [], // All guilds by default
+          // Copy AI config if available
+          modelProviderId:
+            (env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER
+              ?.value as string) || undefined,
+          modelId:
+            (env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL?.value as any)
+              ?.id || undefined,
+          agentId:
+            (env.MESH_REQUEST_CONTEXT?.state?.AGENT?.value as string) ||
+            undefined,
+        });
+        console.log("[Discord] ✅ Configuration auto-saved to Supabase!");
+        console.log(
+          "[Discord] 🚀 Bot will now start automatically on next deployment",
+        );
+      } catch (saveError) {
+        console.warn(
+          "[Discord] ⚠️ Failed to auto-save configuration:",
+          saveError,
+        );
+        console.log(
+          "[Discord] Bot will work now but may not start on next deployment",
+        );
+      }
+    } catch (error) {
+      console.error("[Discord] Failed to get bot token:", error);
+      throw new Error(
+        "Discord Bot Token not configured. Use DISCORD_SAVE_CONFIG tool to save configuration or add token in Authorization header.",
+      );
+    }
   }
 
   // Create client with required intents
@@ -162,6 +231,13 @@ export function getDiscordClient(): Client | null {
  * Register all event handlers for the Discord client.
  */
 function registerEventHandlers(client: Client, env: Env): void {
+  // CRITICAL: Remove ALL existing listeners to prevent duplicates on hot reload
+  console.log("[Discord] Clearing existing event listeners...");
+  client.removeAllListeners();
+
+  // Reset flag
+  eventsRegistered = false;
+
   // Prevent double registration
   if (eventsRegistered) {
     console.log("[Discord] Events already registered, skipping...");
@@ -225,19 +301,13 @@ function registerEventHandlers(client: Client, env: Env): void {
     // Removed verbose logging for better performance
 
     // Re-set database env (ensures it's available for this message)
-    // Only set if we have a valid MESH_REQUEST_CONTEXT
-    if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-      setDatabaseEnv(currentEnv);
-    }
+    setDatabaseEnv(currentEnv);
 
     try {
-      // Index the message (non-blocking, errors are logged but don't stop processing)
-      // Only index if database is configured
-      if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-        indexMessage(message, isDM).catch((e) =>
-          console.log("[Message] Failed to index:", e.message),
-        );
-      }
+      // TODO: Re-enable message indexing with Supabase
+      // indexMessage(message, isDM).catch((e) =>
+      //   console.log("[Message] Failed to index:", e.message),
+      // );
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;

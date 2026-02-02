@@ -1,13 +1,14 @@
 /**
  * Shared Database Module
  *
- * Database operations using the DATABASE binding.
+ * Database operations using Supabase.
  * Used by both Discord bot and MCP server.
  */
 
+import { getSupabaseClient } from "../server/lib/supabase-client.ts";
 import type { Env } from "../server/types/env.ts";
 
-// Global environment reference (set when MCP server starts)
+// Global environment reference (kept for compatibility but not used for DB)
 let _env: Env | null = null;
 
 /**
@@ -26,28 +27,26 @@ export function getDatabaseEnv(): Env | null {
 }
 
 /**
- * Run a SQL query using the DATABASE binding
+ * Run a SQL query using Supabase RPC
+ * Note: This requires a stored function in Supabase to execute arbitrary SQL
+ * For now, we'll use direct table operations instead
  */
 export async function runSQL<T = unknown>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  if (!_env) {
+  const client = getSupabaseClient();
+  if (!client) {
     throw new Error(
-      "[Database] Environment not initialized. Call setDatabaseEnv first.",
+      "[Database] Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
     );
   }
 
-  const response =
-    await _env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
-      sql,
-      params,
-    });
-  // Response is typed as object but actually has .result property
-  const data = response as
-    | { result?: Array<{ results?: unknown[] }> }
-    | undefined;
-  return (data?.result?.[0]?.results ?? []) as T[];
+  // TODO: Implement this using Supabase RPC or migrate to direct table operations
+  console.warn(
+    "[Database] runSQL called but not fully implemented with Supabase yet",
+  );
+  return [];
 }
 
 // ============================================================================
@@ -64,31 +63,55 @@ export interface GuildData {
 }
 
 export async function upsertGuild(guild: GuildData): Promise<void> {
-  await runSQL(
-    `INSERT INTO guilds (id, name, icon, owner_id, command_prefix, log_channel_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-     ON CONFLICT (id) DO UPDATE SET
-       name = EXCLUDED.name,
-       icon = EXCLUDED.icon,
-       owner_id = EXCLUDED.owner_id,
-       updated_at = NOW()`,
-    [
-      guild.id,
-      guild.name || null,
-      guild.icon || null,
-      guild.owner_id || null,
-      guild.command_prefix || "!",
-      guild.log_channel_id || null,
-    ],
-  );
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn(
+      "[Database] Supabase not configured. Skipping guild indexing.",
+    );
+    return;
+  }
+
+  const row = {
+    id: guild.id,
+    name: guild.name || null,
+    icon: guild.icon || null,
+    owner_id: guild.owner_id || null,
+    command_prefix: guild.command_prefix || "!",
+    log_channel_id: guild.log_channel_id || null,
+  };
+
+  const { error } = await client.from("guilds").upsert(row, {
+    onConflict: "id",
+  });
+
+  if (error) {
+    console.error("[Database] Failed to upsert guild:", error);
+    throw new Error(`Failed to upsert guild: ${error.message}`);
+  }
 }
 
 export async function getGuild(id: string): Promise<GuildData | null> {
-  const result = await runSQL<GuildData>(
-    `SELECT * FROM guilds WHERE id = ? LIMIT 1`,
-    [id],
-  );
-  return result[0] || null;
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn("[Database] Supabase not configured.");
+    return null;
+  }
+
+  const { data, error } = await client
+    .from("guilds")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null; // Not found
+    }
+    console.error("[Database] Failed to get guild:", error);
+    return null;
+  }
+
+  return data as GuildData;
 }
 
 // ============================================================================
@@ -144,85 +167,89 @@ export interface MessageData {
 }
 
 export async function upsertMessage(msg: MessageData): Promise<void> {
-  await runSQL(
-    `INSERT INTO discord_message (
-      id, guild_id, channel_id, channel_name, channel_type, parent_channel_id, thread_id, is_dm,
-      author_id, author_username, author_global_name, author_avatar, author_bot,
-      content, content_clean, type, pinned, tts, flags,
-      webhook_id, application_id, interaction,
-      mention_everyone, mention_users, mention_roles, mention_channels,
-      attachments, embeds, stickers, components,
-      reply_to_id, message_reference, edit_history,
-      deleted, deleted_at, deleted_by_id, deleted_by_username, bulk_deleted,
-      created_at, edited_at, indexed_at, last_updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-    ON CONFLICT (id) DO UPDATE SET
-      content = EXCLUDED.content,
-      content_clean = EXCLUDED.content_clean,
-      pinned = EXCLUDED.pinned,
-      edited_at = EXCLUDED.edited_at,
-      attachments = EXCLUDED.attachments,
-      embeds = EXCLUDED.embeds,
-      components = EXCLUDED.components,
-      flags = EXCLUDED.flags,
-      channel_type = COALESCE(EXCLUDED.channel_type, discord_message.channel_type),
-      parent_channel_id = COALESCE(EXCLUDED.parent_channel_id, discord_message.parent_channel_id),
-      edit_history = COALESCE(
-        discord_message.edit_history || EXCLUDED.edit_history,
-        EXCLUDED.edit_history
-      ),
-      last_updated_at = NOW()`,
-    [
-      msg.id,
-      msg.guild_id || null,
-      msg.channel_id,
-      msg.channel_name || null,
-      msg.channel_type ?? null,
-      msg.parent_channel_id || null,
-      msg.thread_id || null,
-      msg.is_dm ?? false,
-      msg.author_id,
-      msg.author_username,
-      msg.author_global_name || null,
-      msg.author_avatar || null,
-      msg.author_bot,
-      msg.content || null,
-      msg.content_clean || null,
-      msg.type,
-      msg.pinned,
-      msg.tts,
-      msg.flags || 0,
-      msg.webhook_id || null,
-      msg.application_id || null,
-      msg.interaction ? JSON.stringify(msg.interaction) : null,
-      msg.mention_everyone,
-      msg.mention_users ? JSON.stringify(msg.mention_users) : null,
-      msg.mention_roles ? JSON.stringify(msg.mention_roles) : null,
-      msg.mention_channels ? JSON.stringify(msg.mention_channels) : null,
-      msg.attachments ? JSON.stringify(msg.attachments) : null,
-      msg.embeds ? JSON.stringify(msg.embeds) : null,
-      msg.stickers ? JSON.stringify(msg.stickers) : null,
-      msg.components ? JSON.stringify(msg.components) : null,
-      msg.reply_to_id || null,
-      msg.message_reference ? JSON.stringify(msg.message_reference) : null,
-      msg.edit_history ? JSON.stringify(msg.edit_history) : null,
-      msg.deleted || false,
-      msg.deleted_at?.toISOString() || null,
-      msg.deleted_by_id || null,
-      msg.deleted_by_username || null,
-      msg.bulk_deleted || false,
-      msg.created_at.toISOString(),
-      msg.edited_at?.toISOString() || null,
-    ],
-  );
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn(
+      "[Database] Supabase not configured. Skipping message indexing.",
+    );
+    return;
+  }
+
+  const row = {
+    id: msg.id,
+    guild_id: msg.guild_id || null,
+    channel_id: msg.channel_id,
+    channel_name: msg.channel_name || null,
+    channel_type: msg.channel_type ?? null,
+    parent_channel_id: msg.parent_channel_id || null,
+    thread_id: msg.thread_id || null,
+    is_dm: msg.is_dm ?? false,
+    author_id: msg.author_id,
+    author_username: msg.author_username,
+    author_global_name: msg.author_global_name || null,
+    author_avatar: msg.author_avatar || null,
+    author_bot: msg.author_bot,
+    content: msg.content || null,
+    content_clean: msg.content_clean || null,
+    type: msg.type,
+    pinned: msg.pinned,
+    tts: msg.tts,
+    flags: msg.flags || 0,
+    webhook_id: msg.webhook_id || null,
+    application_id: msg.application_id || null,
+    interaction: msg.interaction || null,
+    mention_everyone: msg.mention_everyone,
+    mention_users: msg.mention_users || null,
+    mention_roles: msg.mention_roles || null,
+    mention_channels: msg.mention_channels || null,
+    attachments: msg.attachments || null,
+    embeds: msg.embeds || null,
+    stickers: msg.stickers || null,
+    components: msg.components || null,
+    reply_to_id: msg.reply_to_id || null,
+    message_reference: msg.message_reference || null,
+    edit_history: msg.edit_history || null,
+    deleted: msg.deleted || false,
+    deleted_at: msg.deleted_at?.toISOString() || null,
+    deleted_by_id: msg.deleted_by_id || null,
+    deleted_by_username: msg.deleted_by_username || null,
+    bulk_deleted: msg.bulk_deleted || false,
+    created_at: msg.created_at.toISOString(),
+    edited_at: msg.edited_at?.toISOString() || null,
+  };
+
+  const { error } = await client.from("discord_message").upsert(row, {
+    onConflict: "id",
+  });
+
+  if (error) {
+    console.error("[Database] Failed to upsert message:", error);
+    throw new Error(`Failed to upsert message: ${error.message}`);
+  }
 }
 
 export async function getMessage(id: string): Promise<MessageData | null> {
-  const result = await runSQL<MessageData>(
-    `SELECT * FROM discord_message WHERE id = ? LIMIT 1`,
-    [id],
-  );
-  return result[0] || null;
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn("[Database] Supabase not configured.");
+    return null;
+  }
+
+  const { data, error } = await client
+    .from("discord_message")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null; // Not found
+    }
+    console.error("[Database] Failed to get message:", error);
+    return null;
+  }
+
+  return data as MessageData;
 }
 
 export async function getRecentMessages(
@@ -299,6 +326,14 @@ export async function updateMessageContent(
   newContent: string | null,
   editedAt: Date,
 ): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn(
+      "[Database] Supabase not configured. Skipping message update.",
+    );
+    return;
+  }
+
   // First get the current content to add to history
   const current = await getMessage(messageId);
   if (!current) return;
@@ -313,15 +348,19 @@ export async function updateMessageContent(
     (current.edit_history as MessageEditHistoryEntry[]) || [];
   const newHistory = [...existingHistory, historyEntry];
 
-  await runSQL(
-    `UPDATE discord_message SET
-      content = ?,
-      edited_at = ?,
-      edit_history = ?,
-      last_updated_at = NOW()
-    WHERE id = ?`,
-    [newContent, editedAt.toISOString(), JSON.stringify(newHistory), messageId],
-  );
+  const { error } = await client
+    .from("discord_message")
+    .update({
+      content: newContent,
+      edited_at: editedAt.toISOString(),
+      edit_history: newHistory,
+      last_updated_at: new Date().toISOString(),
+    })
+    .eq("id", messageId);
+
+  if (error) {
+    console.error("[Database] Failed to update message content:", error);
+  }
 }
 
 /**
@@ -654,13 +693,29 @@ export async function getChannelContext(
   guildId: string,
   channelId: string,
 ): Promise<ChannelContextData | null> {
-  const result = await runSQL<ChannelContextData>(
-    `SELECT * FROM discord_channel_context 
-     WHERE guild_id = ? AND channel_id = ? AND enabled = TRUE 
-     LIMIT 1`,
-    [guildId, channelId],
-  );
-  return result[0] || null;
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn("[Database] Supabase not configured.");
+    return null;
+  }
+
+  const { data, error } = await client
+    .from("discord_channel_context")
+    .select("*")
+    .eq("guild_id", guildId)
+    .eq("channel_id", channelId)
+    .eq("enabled", true)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null; // Not found
+    }
+    console.error("[Database] Failed to get channel context:", error);
+    return null;
+  }
+
+  return data as ChannelContextData;
 }
 
 /**
@@ -669,26 +724,32 @@ export async function getChannelContext(
 export async function upsertChannelContext(
   data: ChannelContextData,
 ): Promise<void> {
-  await runSQL(
-    `INSERT INTO discord_channel_context (
-      guild_id, channel_id, channel_name, system_prompt, enabled,
-      created_at, updated_at, created_by_id, created_by_username
-    ) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
-    ON CONFLICT (guild_id, channel_id) DO UPDATE SET
-      channel_name = EXCLUDED.channel_name,
-      system_prompt = EXCLUDED.system_prompt,
-      enabled = EXCLUDED.enabled,
-      updated_at = NOW()`,
-    [
-      data.guild_id,
-      data.channel_id,
-      data.channel_name || null,
-      data.system_prompt,
-      data.enabled ?? true,
-      data.created_by_id,
-      data.created_by_username,
-    ],
-  );
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn(
+      "[Database] Supabase not configured. Skipping channel context save.",
+    );
+    return;
+  }
+
+  const row = {
+    guild_id: data.guild_id,
+    channel_id: data.channel_id,
+    channel_name: data.channel_name || null,
+    system_prompt: data.system_prompt,
+    enabled: data.enabled ?? true,
+    created_by_id: data.created_by_id,
+    created_by_username: data.created_by_username,
+  };
+
+  const { error } = await client.from("discord_channel_context").upsert(row, {
+    onConflict: "guild_id, channel_id",
+  });
+
+  if (error) {
+    console.error("[Database] Failed to upsert channel context:", error);
+    throw new Error(`Failed to upsert channel context: ${error.message}`);
+  }
 }
 
 /**
@@ -698,10 +759,21 @@ export async function deleteChannelContext(
   guildId: string,
   channelId: string,
 ): Promise<void> {
-  await runSQL(
-    `DELETE FROM discord_channel_context WHERE guild_id = ? AND channel_id = ?`,
-    [guildId, channelId],
-  );
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn("[Database] Supabase not configured.");
+    return;
+  }
+
+  const { error } = await client
+    .from("discord_channel_context")
+    .delete()
+    .eq("guild_id", guildId)
+    .eq("channel_id", channelId);
+
+  if (error) {
+    console.error("[Database] Failed to delete channel context:", error);
+  }
 }
 
 /**
@@ -710,10 +782,23 @@ export async function deleteChannelContext(
 export async function listChannelContexts(
   guildId: string,
 ): Promise<ChannelContextData[]> {
-  return runSQL<ChannelContextData>(
-    `SELECT * FROM discord_channel_context 
-     WHERE guild_id = ? AND enabled = TRUE
-     ORDER BY channel_name ASC`,
-    [guildId],
-  );
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn("[Database] Supabase not configured.");
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("discord_channel_context")
+    .select("*")
+    .eq("guild_id", guildId)
+    .eq("enabled", true)
+    .order("channel_name", { ascending: true });
+
+  if (error) {
+    console.error("[Database] Failed to list channel contexts:", error);
+    return [];
+  }
+
+  return (data || []) as ChannelContextData[];
 }

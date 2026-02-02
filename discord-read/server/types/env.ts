@@ -8,7 +8,6 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings obrigatórias
-  DATABASE: BindingOf("@deco/postgres"),
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 

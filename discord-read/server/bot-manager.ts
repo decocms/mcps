@@ -11,7 +11,6 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import {
   startHeartbeat,
   stopHeartbeat,
@@ -91,11 +90,24 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     return getDiscordClient()?.isReady() ?? false;
   }
 
-  // Check if we have the required config
+  // Check if we have a saved config or authorization header
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  const { getDiscordConfig } = await import("./lib/config-cache.ts");
+  const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
+
   const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
-  if (!hasAuth) {
-    console.log("[BotManager] Bot token not configured in Authorization");
+  const hasSavedConfig = !!savedConfig?.botToken;
+
+  if (!hasAuth && !hasSavedConfig) {
+    console.log(
+      "[BotManager] Bot not configured. Use DISCORD_SAVE_CONFIG to save configuration or add token in Authorization header.",
+    );
     return false;
+  }
+
+  if (hasSavedConfig) {
+    console.log("[BotManager] Found saved configuration in Supabase");
   }
 
   // Start initialization
@@ -107,8 +119,10 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     setDatabaseEnv(env);
 
     // Ensure database tables exist
-    await ensureCollections(env);
-    await ensureIndexes(env);
+    // Database tables are managed via Supabase - no need to ensure here
+    console.log(
+      "[BotManager] Skipping database initialization (using Supabase)",
+    );
     console.log("[BotManager] Database ready");
 
     // Initialize Discord client
