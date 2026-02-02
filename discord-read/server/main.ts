@@ -362,8 +362,11 @@ console.log(`
 `);
 
 // Auto-start Discord bot if BOT_TOKEN is in environment (for local development)
+// Skip during build to prevent hanging
+const isBuildTime = process.env.NODE_ENV === "production" && !process.env.PORT;
 const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
-if (envBotToken && !discordInitialized) {
+
+if (envBotToken && !discordInitialized && !isBuildTime) {
   console.log(
     "[STARTUP] Bot token found in environment, starting Discord bot...",
   );
@@ -399,6 +402,8 @@ if (envBotToken && !discordInitialized) {
     .catch((error) => {
       console.error("[STARTUP] Failed to start Discord bot:", error);
     });
+} else if (isBuildTime) {
+  console.log("[BUILD] Skipping bot auto-start during build phase");
 }
 
 // ============================================================================
@@ -453,9 +458,13 @@ async function autoRestartCheck(): Promise<void> {
   }
 }
 
-// Start auto-restart cron
-autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
-console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+// Start auto-restart cron (skip during build)
+if (!isBuildTime) {
+  autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
+  console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
 
-// Run initial check after 5 seconds (give time for normal startup)
-setTimeout(autoRestartCheck, 5000);
+  // Run initial check after 5 seconds (give time for normal startup)
+  setTimeout(autoRestartCheck, 5000);
+} else {
+  console.log("[BUILD] Skipping auto-restart cron during build phase");
+}
