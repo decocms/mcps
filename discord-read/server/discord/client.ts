@@ -132,32 +132,43 @@ async function doInitialize(env: Env): Promise<Client> {
       // Auto-save configuration for next deployment
       try {
         const { setDiscordConfig } = await import("../lib/config-cache.ts");
-        const organizationId =
-          env.MESH_REQUEST_CONTEXT?.organizationId || "default-org";
-        const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl || "";
+        const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+        const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
 
-        await setDiscordConfig({
-          connectionId,
-          organizationId,
-          meshUrl,
-          botToken: token,
-          commandPrefix: "!",
-          authorizedGuilds: [], // All guilds by default
-          // Copy AI config if available
-          modelProviderId:
-            (env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER
-              ?.value as string) || undefined,
-          modelId:
-            (env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL?.value as any)
-              ?.id || undefined,
-          agentId:
-            (env.MESH_REQUEST_CONTEXT?.state?.AGENT?.value as string) ||
-            undefined,
-        });
-        console.log("[Discord] ✅ Configuration auto-saved to Supabase!");
-        console.log(
-          "[Discord] 🚀 Bot will now start automatically on next deployment",
-        );
+        // Only auto-save if we have valid Mesh context data
+        if (!organizationId || !meshUrl) {
+          console.warn(
+            "[Discord] ⚠️ Skipping auto-save: missing organizationId or meshUrl",
+          );
+          console.log(
+            "[Discord] Bot will work now but may not start on next deployment",
+          );
+        } else {
+          const state = env.MESH_REQUEST_CONTEXT?.state as any;
+          await setDiscordConfig({
+            connectionId,
+            organizationId,
+            meshUrl,
+            botToken: token,
+            meshToken: env.MESH_REQUEST_CONTEXT?.token || undefined,
+            commandPrefix: (state?.COMMAND_PREFIX as string) || "!",
+            authorizedGuilds:
+              (state?.AUTHORIZED_GUILDS as string)
+                ?.split(",")
+                .map((id) => id.trim()) || [],
+            ownerId: (state?.OWNER_ID as string) || undefined,
+            // Copy AI config if available
+            modelProviderId:
+              (state?.MODEL_PROVIDER?.value as string) || undefined,
+            modelId: (state?.LANGUAGE_MODEL?.value as any)?.id || undefined,
+            agentId: (state?.AGENT?.value as string) || undefined,
+            systemPrompt: (state?.SYSTEM_PROMPT as string) || undefined,
+          });
+          console.log("[Discord] ✅ Configuration auto-saved to Supabase!");
+          console.log(
+            "[Discord] 🚀 Bot will now start automatically on next deployment",
+          );
+        }
       } catch (saveError) {
         console.warn(
           "[Discord] ⚠️ Failed to auto-save configuration:",

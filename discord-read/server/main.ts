@@ -25,6 +25,18 @@ import { logger, HyperDXLogger } from "./lib/logger.ts";
 
 export { StateSchema };
 
+// ============================================================================
+// STARTUP DEBUGGING
+// ============================================================================
+console.log("=".repeat(80));
+console.log("[STARTUP] Discord MCP Server initializing...");
+console.log(`[STARTUP] Node.js version: ${process.version}`);
+console.log(`[STARTUP] Bun version: ${Bun.version}`);
+console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
+console.log(`[STARTUP] PORT: ${process.env.PORT || "not set"}`);
+console.log(`[STARTUP] Working directory: ${process.cwd()}`);
+console.log("=".repeat(80));
+
 // Track Discord client state
 let discordInitialized = false;
 
@@ -251,23 +263,39 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           discordInitialized = true;
           console.log("[CONFIG] Discord client ready ✓");
 
-          // Start heartbeat to keep Mesh session alive
+          // Start heartbeat ONLY if we have a Mesh token
+          // (bot started via onChange with Mesh credentials, not via Supabase config)
+          const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+          if (meshToken) {
+            console.log("[CONFIG] Starting Mesh session heartbeat...");
+            startHeartbeat(env, () => {
+              console.log(
+                "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+              );
+            });
+          } else {
+            console.log(
+              "[CONFIG] ℹ️ Bot started without Mesh session (via Supabase). No heartbeat needed.",
+            );
+          }
+        } catch (error) {
+          console.error("[CONFIG] Failed to initialize Discord:", error);
+        }
+      } else if (hasAuth && discordInitialized) {
+        // Bot already running, refresh heartbeat ONLY if we have a Mesh token
+        const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+        if (meshToken) {
+          console.log("[CONFIG] Refreshing session heartbeat...");
           startHeartbeat(env, () => {
             console.log(
               "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
             );
           });
-        } catch (error) {
-          console.error("[CONFIG] Failed to initialize Discord:", error);
-        }
-      } else if (hasAuth && discordInitialized) {
-        // Bot already running, just restart heartbeat with fresh credentials
-        console.log("[CONFIG] Refreshing session heartbeat...");
-        startHeartbeat(env, () => {
+        } else {
           console.log(
-            "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+            "[CONFIG] ℹ️ No Mesh token available. Skipping heartbeat.",
           );
-        });
+        }
       } else if (!hasAuth) {
         logger.info(
           "Discord Bot Token not configured - waiting for authorization",
@@ -285,8 +313,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   tools: tools as any,
   prompts: [],
 });
-
-const PORT = process.env.PORT;
 
 // Graceful shutdown handler - destroy Discord client when process exits
 async function gracefulShutdown(signal: string) {
@@ -343,18 +369,24 @@ process.on("uncaughtException", async (error) => {
 // ============================================================================
 // START HTTP SERVER FIRST (before any Discord initialization)
 // ============================================================================
-const SERVER_PORT = PORT || "8001";
+console.log("[SERVER] Starting HTTP server...");
 console.log(
-  `[SERVER] Starting HTTP server on port ${SERVER_PORT} (from ${PORT ? "PORT env" : "default"})...`,
+  `[SERVER] PORT env variable: ${process.env.PORT || "not set (will use default)"}`,
 );
 
-serve(runtime.fetch);
+try {
+  serve(runtime.fetch);
+  console.log("[SERVER] ✅ serve() called successfully");
+} catch (error) {
+  console.error("[SERVER] ❌ Failed to start server:", error);
+  throw error;
+}
 
 console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║              Discord MCP Server Started                  ║
 ╠══════════════════════════════════════════════════════════╣
-║  MCP Server:    http://0.0.0.0:${String(SERVER_PORT).padEnd(5)}                  ║
+║  Status:        ✅ HTTP Server Ready                      ║
 ║  Discord Bot:   Waiting for configuration...             ║
 ╚══════════════════════════════════════════════════════════╝
 `);
@@ -370,58 +402,11 @@ console.log(`
 `);
 
 // ============================================================================
-// DELAYED BOT INITIALIZATION (non-blocking, runs after HTTP server is ready)
+// BOT INITIALIZATION
 // ============================================================================
-
-// Check if we're in build phase
-const isBuildTime = process.env.NODE_ENV === "production" && !process.env.PORT;
-
-// Auto-start Discord bot if BOT_TOKEN is in environment (for local development)
-// Skip during build to prevent hanging
-const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
-
-// Use setImmediate to ensure HTTP server is fully ready before bot initialization
-if (envBotToken && !discordInitialized && !isBuildTime) {
-  setImmediate(() => {
-    console.log(
-      "[STARTUP] Bot token found in environment, starting Discord bot (deferred)...",
-    );
-
-    // Create a minimal env with the token as authorization for startup
-    const startupEnv = {
-      MESH_REQUEST_CONTEXT: {
-        authorization: `Bearer ${envBotToken}`,
-        state: {
-          COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
-          GUILD_ID: process.env.GUILD_ID,
-        },
-      },
-    } as Env;
-
-    // Update global env
-    updateEnv(startupEnv);
-    setDatabaseEnv(startupEnv);
-
-    // Initialize Discord client (non-blocking)
-    initializeDiscordClient(startupEnv)
-      .then(() => {
-        discordInitialized = true;
-        console.log("[STARTUP] Discord bot started from environment ✓");
-
-        // Start heartbeat (will use env vars, may not have full Mesh context)
-        startHeartbeat(startupEnv, () => {
-          console.log(
-            "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-          );
-        });
-      })
-      .catch((error) => {
-        console.error("[STARTUP] Failed to start Discord bot:", error);
-      });
-  });
-} else if (isBuildTime) {
-  console.log("[BUILD] Skipping bot auto-start during build phase");
-}
+// Bot will be initialized via:
+// 1. onChange configuration callback (when Mesh sends config)
+// 2. DISCORD_BOT_START tool (manual start)
 
 // ============================================================================
 // Auto-Restart Cron Job (every 1 hour)
@@ -456,12 +441,20 @@ async function autoRestartCheck(): Promise<void> {
       discordInitialized = true;
       console.log("[AUTO-RESTART] Bot restarted successfully ✓");
 
-      // Restart heartbeat
-      startHeartbeat(env, () => {
+      // Restart heartbeat ONLY if we have a Mesh token
+      const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+      if (meshToken) {
+        console.log("[AUTO-RESTART] Restarting Mesh session heartbeat...");
+        startHeartbeat(env, () => {
+          console.log(
+            "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          );
+        });
+      } else {
         console.log(
-          "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+          "[AUTO-RESTART] ℹ️ No Mesh token available. Skipping heartbeat.",
         );
-      });
+      }
     } catch (error) {
       console.error(
         "[AUTO-RESTART] Failed to restart bot:",
@@ -475,19 +468,12 @@ async function autoRestartCheck(): Promise<void> {
   }
 }
 
-// Start auto-restart cron (skip during build)
+// Start auto-restart cron
 // Use setImmediate to ensure this runs after HTTP server is ready
-if (!isBuildTime) {
-  setImmediate(() => {
-    autoRestartInterval = setInterval(
-      autoRestartCheck,
-      AUTO_RESTART_INTERVAL_MS,
-    );
-    console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+setImmediate(() => {
+  autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
+  console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
 
-    // Run initial check after 30 seconds (give time for normal startup and HTTP server)
-    setTimeout(autoRestartCheck, 30000);
-  });
-} else {
-  console.log("[BUILD] Skipping auto-restart cron during build phase");
-}
+  // Run initial check after 30 seconds (give time for normal startup and HTTP server)
+  setTimeout(autoRestartCheck, 30000);
+});
