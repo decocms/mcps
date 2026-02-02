@@ -106,18 +106,32 @@ async function callModelsAPI(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[LLM] API error response:", {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      body: errorText,
-    });
+
+    // Tentar parsear o erro como JSON para ver detalhes de validação
+    let parsedError = null;
+    try {
+      parsedError = JSON.parse(errorText);
+    } catch {
+      // Se não for JSON, usar o texto direto
+    }
+
+    console.error("[LLM] ❌ API ERROR RESPONSE:");
+    console.error("Status:", response.status, response.statusText);
+    console.error(
+      "Headers:",
+      JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2),
+    );
+    console.error("Error body (raw):", errorText);
+    if (parsedError) {
+      console.error(
+        "Error body (parsed):",
+        JSON.stringify(parsedError, null, 2),
+      );
+    }
 
     // Log o body da requisição que causou o erro
-    console.error(
-      "[LLM] Request that caused error:",
-      JSON.stringify(body, null, 2),
-    );
+    console.error("\n[LLM] ❌ REQUEST THAT CAUSED ERROR:");
+    console.error(JSON.stringify(body, null, 2));
 
     throw new Error(
       `Mesh Models API call failed (${response.status}): ${errorText}`,
