@@ -207,6 +207,9 @@ export async function handleLLMCall(
     logger.error("LLM response failed", {
       channel,
       error: String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      messagesCount: messages.length,
     });
 
     const errorMsg = `❌ ${ERROR_MESSAGES.PROCESSING_ERROR}`;

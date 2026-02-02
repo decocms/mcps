@@ -57,9 +57,10 @@ async function fetchAgentSystemPrompt(
   token: string,
 ): Promise<string | undefined> {
   try {
-    // Use localhost for tunnel URLs (server-to-server communication)
-    const isTunnel = meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
+    // Use localhost for LOCAL tunnel URLs only (not production)
+    const isLocalTunnel =
+      meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
+    const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
 
     const response = await fetch(`${effectiveMeshUrl}/mcp`, {
       method: "POST",
@@ -129,6 +130,7 @@ const onChangeHandler = async (env: Env, config: any) => {
         : undefined);
     const agentId: string | undefined =
       typeof agent?.value === "string" ? agent.value : undefined;
+    const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
 
     // Get context configuration (with defaults from schema)
     const contextConfig = state?.CONTEXT_CONFIG;
@@ -231,6 +233,7 @@ const onChangeHandler = async (env: Env, config: any) => {
         modelProviderId,
         modelId: languageModel?.value?.id,
         agentId,
+        agentMode,
         systemPrompt,
       });
     }

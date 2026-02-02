@@ -49,6 +49,7 @@ export interface LLMConfig {
   modelProviderId: string;
   modelId?: string;
   agentId?: string;
+  agentMode?: "passthrough" | "smart_tool_selection" | "code_execution";
   systemPrompt?: string;
 }
 
@@ -218,11 +219,14 @@ async function callDecopilotAPI(
     modelProviderId,
     modelId = DEFAULT_LANGUAGE_MODEL,
     agentId,
+    agentMode = "smart_tool_selection",
   } = config;
 
   // When running locally with a tunnel, use localhost for internal API calls
-  const isTunnel = meshUrl.includes(".deco.host");
-  const effectiveMeshUrl = isTunnel ? "http://localhost:3000" : meshUrl;
+  // Only use localhost if meshUrl contains "localhost" (not production tunnels)
+  const isLocalTunnel =
+    meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
+  const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
 
   // Use the decopilot endpoint (new Mesh API)
   const url = `${effectiveMeshUrl}/api/${organizationId}/decopilot/stream`;
@@ -242,7 +246,8 @@ async function callDecopilotAPI(
       connectionId: modelProviderId,
     },
     agent: {
-      id: agentId ?? null,
+      id: agentId || "",
+      mode: agentMode,
     },
     stream: true,
   };

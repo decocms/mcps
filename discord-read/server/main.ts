@@ -126,6 +126,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           : undefined);
       const agentId: string | undefined =
         typeof agent?.value === "string" ? agent.value : undefined;
+      const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
       const modelId = languageModel?.value?.id;
 
       // Configure LLM module
@@ -140,6 +141,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           modelProviderId,
           modelId,
           agentId,
+          agentMode,
         });
 
         // Configure streaming (default: enabled)
