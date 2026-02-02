@@ -133,15 +133,24 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     // Configure voice system after bot starts
     await configureVoiceSystemInternal(env);
 
-    // Start session heartbeat to keep Mesh connection alive
-    startHeartbeat(env, () => {
+    // Start session heartbeat ONLY if we have a Mesh token
+    // (bot started via onChange, not via manual tool)
+    const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+    if (meshToken) {
+      console.log("[BotManager] Starting Mesh session heartbeat...");
+      startHeartbeat(env, () => {
+        console.log(
+          "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
+        );
+        console.log(
+          "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
+        );
+      });
+    } else {
       console.log(
-        "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
+        "[BotManager] ℹ️ Bot started without Mesh session (via tool/Supabase config). No heartbeat needed.",
       );
-      console.log(
-        "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
-      );
-    });
+    }
 
     return true;
   } catch (error) {
