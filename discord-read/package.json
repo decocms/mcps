@@ -9,7 +9,7 @@
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "check": "tsc --noEmit",
-    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outdir=dist --entry-naming [dir]/[name].js",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outdir=dist/server --entry-naming [name].js",
     "build": "bun run build:server",
     "start": "NODE_ENV=production bun run dist/main.js",
     "build:start": "bun run build && bun run start",
