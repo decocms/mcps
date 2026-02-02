@@ -38,10 +38,11 @@ export const StateSchema = z.object({
   }),
 });
 
-type State = z.infer<typeof StateSchema>;
-
-export type Env = DefaultEnv<typeof StateSchema> & {
-  DECO_CHAT_REQUEST_CONTEXT: {
-    state: State;
-  };
-};
+/**
+ * This Env type is the main context object that is passed to
+ * all of your Application.
+ *
+ * It includes all of the generated types from your
+ * Deco bindings, along with the default ones.
+ */
+export type Env = DefaultEnv<typeof StateSchema>;
