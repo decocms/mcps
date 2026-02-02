@@ -32,10 +32,17 @@ export const createStartBotTool = (env: Env) =>
         guilds: z.number().optional(),
       })
       .strict(),
-    execute: async (params: any) => {
-      const { env } = params;
+    execute: async (_args: any, context: any) => {
+      const env = context?.env;
 
       console.log("[Tool] DISCORD_BOT_START called");
+
+      if (!env) {
+        return {
+          success: false,
+          message: "Environment not available in tool context",
+        };
+      }
 
       try {
         const started = await ensureBotRunning(env);

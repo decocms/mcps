@@ -386,58 +386,11 @@ console.log(`
 `);
 
 // ============================================================================
-// DELAYED BOT INITIALIZATION (non-blocking, runs after HTTP server is ready)
+// BOT INITIALIZATION
 // ============================================================================
-
-// Check if we're in build phase
-const isBuildTime = process.env.NODE_ENV === "production" && !process.env.PORT;
-
-// Auto-start Discord bot if BOT_TOKEN is in environment (for local development)
-// Skip during build to prevent hanging
-const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
-
-// Use setImmediate to ensure HTTP server is fully ready before bot initialization
-if (envBotToken && !discordInitialized && !isBuildTime) {
-  setImmediate(() => {
-    console.log(
-      "[STARTUP] Bot token found in environment, starting Discord bot (deferred)...",
-    );
-
-    // Create a minimal env with the token as authorization for startup
-    const startupEnv = {
-      MESH_REQUEST_CONTEXT: {
-        authorization: `Bearer ${envBotToken}`,
-        state: {
-          COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
-          GUILD_ID: process.env.GUILD_ID,
-        },
-      },
-    } as Env;
-
-    // Update global env
-    updateEnv(startupEnv);
-    setDatabaseEnv(startupEnv);
-
-    // Initialize Discord client (non-blocking)
-    initializeDiscordClient(startupEnv)
-      .then(() => {
-        discordInitialized = true;
-        console.log("[STARTUP] Discord bot started from environment ✓");
-
-        // Start heartbeat (will use env vars, may not have full Mesh context)
-        startHeartbeat(startupEnv, () => {
-          console.log(
-            "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-          );
-        });
-      })
-      .catch((error) => {
-        console.error("[STARTUP] Failed to start Discord bot:", error);
-      });
-  });
-} else if (isBuildTime) {
-  console.log("[BUILD] Skipping bot auto-start during build phase");
-}
+// Bot will be initialized via:
+// 1. onChange configuration callback (when Mesh sends config)
+// 2. DISCORD_BOT_START tool (manual start)
 
 // ============================================================================
 // Auto-Restart Cron Job (every 1 hour)
@@ -491,19 +444,12 @@ async function autoRestartCheck(): Promise<void> {
   }
 }
 
-// Start auto-restart cron (skip during build)
+// Start auto-restart cron
 // Use setImmediate to ensure this runs after HTTP server is ready
-if (!isBuildTime) {
-  setImmediate(() => {
-    autoRestartInterval = setInterval(
-      autoRestartCheck,
-      AUTO_RESTART_INTERVAL_MS,
-    );
-    console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+setImmediate(() => {
+  autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
+  console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
 
-    // Run initial check after 30 seconds (give time for normal startup and HTTP server)
-    setTimeout(autoRestartCheck, 30000);
-  });
-} else {
-  console.log("[BUILD] Skipping auto-restart cron during build phase");
-}
+  // Run initial check after 30 seconds (give time for normal startup and HTTP server)
+  setTimeout(autoRestartCheck, 30000);
+});
