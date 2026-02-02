@@ -38,6 +38,15 @@ export const StateSchema = z.object({
       "OpenAI Whisper for audio transcription. If not set, audio files will not be processed.",
     ),
 
+  // Agent Mode Configuration
+  AGENT_MODE: z
+    .enum(["passthrough", "smart_tool_selection", "code_execution"])
+    .default("smart_tool_selection")
+    .optional()
+    .describe(
+      "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
+    ),
+
   // Config do Discord Bot
   // Note: BOT_TOKEN is now passed via Authorization header (auth.type: "token" in app.json)
   COMMAND_PREFIX: z

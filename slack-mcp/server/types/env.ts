@@ -35,6 +35,15 @@ export const StateSchema = z.object({
       "OpenAI Whisper for audio transcription. If not set, audio files will be sent directly to LLM.",
     ),
 
+  // Agent Mode Configuration
+  AGENT_MODE: z
+    .enum(["passthrough", "smart_tool_selection", "code_execution"])
+    .default("smart_tool_selection")
+    .optional()
+    .describe(
+      "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
+    ),
+
   // Webhook URL (read-only template)
   WEBHOOK_URL: z
     .string()

@@ -14,6 +14,7 @@ export interface LLMConfig {
   modelProviderId: string;
   modelId?: string;
   agentId?: string;
+  agentMode?: "passthrough" | "smart_tool_selection" | "code_execution";
   systemPrompt?: string;
 }
 
@@ -45,6 +46,7 @@ async function callModelsAPI(
     modelProviderId,
     modelId = DEFAULT_LANGUAGE_MODEL,
     agentId,
+    agentMode = "smart_tool_selection",
   } = config;
 
   // When running locally with a tunnel, use localhost for internal API calls
@@ -78,7 +80,7 @@ async function callModelsAPI(
     },
     agent: {
       id: agentId || "",
-      mode: "smart_tool_selection",
+      mode: agentMode,
     },
     stream,
   };
