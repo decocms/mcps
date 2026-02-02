@@ -1,10 +1,10 @@
 {
   "scopeName": "deco",
   "name": "content-scraper",
-  "friendlyName": "Content Scraper MCP",
+  "friendlyName": "Content Scraper",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-content-scraper.decocache.com/mcp"
+    "url": "https://content-scraper.decocache.com/mcp"
   },
   "description": "List and query scraped content from multiple sources stored in a database.",
   "icon": "https://assets.decocache.com/mcp/content-scraper-icon.svg",
