@@ -23,8 +23,26 @@ export interface QualityGate {
   source: "auto" | "manual"; // auto = detected from package.json, manual = user-defined
 }
 
+export interface QualityGateResult {
+  gate: string;
+  command: string;
+  passed: boolean;
+  output: string;
+  duration: number;
+}
+
+export interface QualityGatesBaseline {
+  verified: boolean;
+  verifiedAt: string;
+  allPassed: boolean;
+  acknowledged: boolean; // User acknowledged pre-existing failures
+  failingGates: string[]; // Names of gates that were failing
+  results: QualityGateResult[];
+}
+
 export interface ProjectConfig {
   qualityGates: QualityGate[];
+  qualityGatesBaseline?: QualityGatesBaseline;
   completionToken: string;
   memoryDir: string;
   lastUpdated: string;
@@ -408,6 +426,214 @@ export const createProjectConfigGetTool = (_env: Env) =>
   });
 
 // ============================================================================
+// QUALITY_GATES_VERIFY
+// ============================================================================
+
+export const createQualityGatesVerifyTool = (_env: Env) =>
+  createPrivateTool({
+    id: "QUALITY_GATES_VERIFY",
+    description:
+      "Run quality gates to establish a baseline. Must be done before creating tasks. Returns current state and allows acknowledging pre-existing failures.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      allPassed: z.boolean(),
+      results: z.array(
+        z.object({
+          gate: z.string(),
+          command: z.string(),
+          passed: z.boolean(),
+          output: z.string(),
+          duration: z.number(),
+        }),
+      ),
+      baseline: z.object({
+        verified: z.boolean(),
+        verifiedAt: z.string(),
+        allPassed: z.boolean(),
+        acknowledged: z.boolean(),
+        failingGates: z.array(z.string()),
+      }),
+    }),
+    execute: async () => {
+      const workspace = getWorkspace();
+      const config = await loadProjectConfig(workspace);
+      const requiredGates = config.qualityGates.filter((g) => g.required);
+
+      const results: QualityGateResult[] = [];
+
+      for (const gate of requiredGates) {
+        const start = Date.now();
+        try {
+          const [cmd, ...args] = gate.command.split(" ");
+          const proc = Bun.spawn([cmd, ...args], {
+            cwd: workspace,
+            stdout: "pipe",
+            stderr: "pipe",
+          });
+
+          const stdout = await new Response(proc.stdout).text();
+          const stderr = await new Response(proc.stderr).text();
+          const exitCode = await proc.exited;
+
+          results.push({
+            gate: gate.name,
+            command: gate.command,
+            passed: exitCode === 0,
+            output: (stdout + stderr).slice(-500),
+            duration: Date.now() - start,
+          });
+        } catch (error) {
+          results.push({
+            gate: gate.name,
+            command: gate.command,
+            passed: false,
+            output: error instanceof Error ? error.message : String(error),
+            duration: Date.now() - start,
+          });
+        }
+      }
+
+      const allPassed = results.every((r) => r.passed);
+      const failingGates = results.filter((r) => !r.passed).map((r) => r.gate);
+
+      // Update baseline - not acknowledged yet if there are failures
+      const baseline: QualityGatesBaseline = {
+        verified: true,
+        verifiedAt: new Date().toISOString(),
+        allPassed,
+        acknowledged: allPassed, // Auto-acknowledge if all pass
+        failingGates,
+        results,
+      };
+
+      config.qualityGatesBaseline = baseline;
+      await saveProjectConfig(workspace, config);
+
+      return {
+        allPassed,
+        results,
+        baseline: {
+          verified: baseline.verified,
+          verifiedAt: baseline.verifiedAt,
+          allPassed: baseline.allPassed,
+          acknowledged: baseline.acknowledged,
+          failingGates: baseline.failingGates,
+        },
+      };
+    },
+  });
+
+// ============================================================================
+// QUALITY_GATES_ACKNOWLEDGE
+// ============================================================================
+
+export const createQualityGatesAcknowledgeTool = (_env: Env) =>
+  createPrivateTool({
+    id: "QUALITY_GATES_ACKNOWLEDGE",
+    description:
+      "Acknowledge pre-existing quality gate failures. After acknowledging, agents will NOT attempt to fix these failures - they will focus only on their assigned task.",
+    inputSchema: z.object({
+      acknowledge: z.boolean().describe("Set to true to acknowledge failures"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      baseline: z
+        .object({
+          verified: z.boolean(),
+          allPassed: z.boolean(),
+          acknowledged: z.boolean(),
+          failingGates: z.array(z.string()),
+        })
+        .optional(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const workspace = getWorkspace();
+      const config = await loadProjectConfig(workspace);
+
+      if (!config.qualityGatesBaseline?.verified) {
+        return {
+          success: false,
+          error:
+            "No baseline verified. Run QUALITY_GATES_VERIFY first to establish baseline.",
+        };
+      }
+
+      if (config.qualityGatesBaseline.allPassed) {
+        return {
+          success: true,
+          baseline: {
+            verified: true,
+            allPassed: true,
+            acknowledged: true,
+            failingGates: [],
+          },
+        };
+      }
+
+      config.qualityGatesBaseline.acknowledged = context.acknowledge;
+      await saveProjectConfig(workspace, config);
+
+      return {
+        success: true,
+        baseline: {
+          verified: config.qualityGatesBaseline.verified,
+          allPassed: config.qualityGatesBaseline.allPassed,
+          acknowledged: config.qualityGatesBaseline.acknowledged,
+          failingGates: config.qualityGatesBaseline.failingGates,
+        },
+      };
+    },
+  });
+
+// ============================================================================
+// QUALITY_GATES_BASELINE_GET
+// ============================================================================
+
+export const createQualityGatesBaselineGetTool = (_env: Env) =>
+  createPrivateTool({
+    id: "QUALITY_GATES_BASELINE_GET",
+    description: "Get the current quality gates baseline verification status",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      hasBaseline: z.boolean(),
+      baseline: z
+        .object({
+          verified: z.boolean(),
+          verifiedAt: z.string(),
+          allPassed: z.boolean(),
+          acknowledged: z.boolean(),
+          failingGates: z.array(z.string()),
+        })
+        .optional(),
+      canCreateTasks: z.boolean(),
+    }),
+    execute: async () => {
+      const workspace = getWorkspace();
+      const config = await loadProjectConfig(workspace);
+
+      const baseline = config.qualityGatesBaseline;
+      const hasBaseline = !!baseline?.verified;
+      const canCreateTasks =
+        hasBaseline && (baseline.allPassed || baseline.acknowledged);
+
+      return {
+        hasBaseline,
+        baseline: baseline
+          ? {
+              verified: baseline.verified,
+              verifiedAt: baseline.verifiedAt,
+              allPassed: baseline.allPassed,
+              acknowledged: baseline.acknowledged,
+              failingGates: baseline.failingGates,
+            }
+          : undefined,
+        canCreateTasks,
+      };
+    },
+  });
+
+// ============================================================================
 // Export all quality gate tools
 // ============================================================================
 
@@ -417,4 +643,7 @@ export const qualityGateTools = [
   createQualityGatesAddTool,
   createQualityGatesRunTool,
   createProjectConfigGetTool,
+  createQualityGatesVerifyTool,
+  createQualityGatesAcknowledgeTool,
+  createQualityGatesBaselineGetTool,
 ];
