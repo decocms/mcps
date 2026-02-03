@@ -223,9 +223,13 @@ export async function upsertMessage(msg: MessageData): Promise<void> {
   });
 
   if (error) {
-    console.error("[Database] Failed to upsert message:", error);
+    console.error("[Database] ❌ Failed to upsert message:", error);
     throw new Error(`Failed to upsert message: ${error.message}`);
   }
+
+  console.log(
+    `[Database] ✅ Message saved: ${msg.id} from ${msg.author_username}`,
+  );
 }
 
 export async function getMessage(id: string): Promise<MessageData | null> {

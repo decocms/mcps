@@ -320,9 +320,14 @@ function registerEventHandlers(client: Client, env: Env): void {
 
     try {
       // Index all messages to Supabase (async, don't await)
-      indexMessage(message, isDM).catch((e) =>
-        console.log("[Message] Failed to index:", e.message),
+      console.log(
+        `[Message] 📝 Indexing message ${message.id} from ${message.author.username}`,
       );
+      indexMessage(message, isDM)
+        .then(() => console.log(`[Message] ✅ Indexed message ${message.id}`))
+        .catch((e) =>
+          console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
+        );
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
