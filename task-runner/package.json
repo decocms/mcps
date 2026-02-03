@@ -1,0 +1,26 @@
+{
+  "name": "mcp-task-runner",
+  "version": "1.0.0",
+  "description": "Task Runner MCP - Beads integration, Ralph loop, agent orchestration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "PORT=8100 bun run --watch server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.25.1",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
