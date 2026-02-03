@@ -14,6 +14,9 @@ import type {
   GetQueryResultsResponse,
   TableSchema,
   TableRow,
+  JobsListResponse,
+  Job,
+  ProjectsListResponse,
 } from "./types.ts";
 
 export interface BigQueryClientConfig {
@@ -277,6 +280,84 @@ export class BigQueryClient {
       cacheHit: response.cacheHit || false,
       totalBytesProcessed: response.totalBytesProcessed || "0",
     };
+  }
+
+  // ==================== Job Methods ====================
+
+  /**
+   * List jobs in a project
+   */
+  async listJobs(
+    projectId: string,
+    options?: {
+      maxResults?: number;
+      pageToken?: string;
+      allUsers?: boolean;
+      stateFilter?: string[];
+      projection?: "full" | "minimal";
+    },
+  ): Promise<JobsListResponse> {
+    const url = new URL(ENDPOINTS.JOBS(projectId));
+
+    if (options?.maxResults) {
+      url.searchParams.set("maxResults", String(options.maxResults));
+    }
+    if (options?.pageToken) {
+      url.searchParams.set("pageToken", options.pageToken);
+    }
+    if (options?.allUsers !== undefined) {
+      url.searchParams.set("allUsers", String(options.allUsers));
+    }
+    if (options?.stateFilter) {
+      options.stateFilter.forEach((state) =>
+        url.searchParams.append("stateFilter", state),
+      );
+    }
+    if (options?.projection) {
+      url.searchParams.set("projection", options.projection);
+    }
+
+    return this.request<JobsListResponse>(url.toString());
+  }
+
+  /**
+   * Get a specific job by ID
+   */
+  async getJob(
+    projectId: string,
+    jobId: string,
+    options?: {
+      location?: string;
+    },
+  ): Promise<Job> {
+    const url = new URL(ENDPOINTS.JOB(projectId, jobId));
+
+    if (options?.location) {
+      url.searchParams.set("location", options.location);
+    }
+
+    return this.request<Job>(url.toString());
+  }
+
+  // ==================== Project Methods ====================
+
+  /**
+   * List all projects
+   */
+  async listProjects(options?: {
+    maxResults?: number;
+    pageToken?: string;
+  }): Promise<ProjectsListResponse> {
+    const url = new URL(ENDPOINTS.PROJECTS);
+
+    if (options?.maxResults) {
+      url.searchParams.set("maxResults", String(options.maxResults));
+    }
+    if (options?.pageToken) {
+      url.searchParams.set("pageToken", options.pageToken);
+    }
+
+    return this.request<ProjectsListResponse>(url.toString());
   }
 }
 

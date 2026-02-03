@@ -6,15 +6,15 @@
     "type": "HTTP",
     "url": "https://sites-google-big-query.decocache.com/mcp"
   },
-  "description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, and explore table schemas.",
+  "description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, explore schemas, monitor jobs, and discover projects.",
   "icon": "https://cdn.worldvectorlogo.com/logos/google-bigquery-logo-1.svg",
   "unlisted": false,
   "metadata": {
     "categories": ["Data Analysis"],
     "official": false,
     "tags": ["google", "bigquery", "sql", "data-warehouse", "analytics", "big-data", "cloud"],
-    "short_description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, and explore table schemas.",
-    "mesh_description": "The Google BigQuery MCP provides comprehensive access to Google's serverless data warehouse platform, enabling AI agents to execute SQL queries, manage datasets, explore table schemas, and analyze large-scale data. This MCP supports running standard SQL and legacy SQL queries, retrieving query results, managing BigQuery datasets and tables, exploring table metadata and column definitions, and accessing query job history. It enables advanced data analytics workflows including cross-dataset joins, complex aggregations, time-series analysis, and integration with machine learning models. The integration is designed for data analysts, data scientists, and business intelligence applications that need programmatic access to BigQuery for data exploration, reporting, or automated analytics pipelines. Supports query optimization, cost management through query previews, and streaming data access. Ideal for building data-driven AI applications, automated reporting systems, or intelligent data exploration tools."
+    "short_description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, explore schemas, monitor jobs, and discover projects.",
+    "mesh_description": "The Google BigQuery MCP provides comprehensive access to Google's serverless data warehouse platform, enabling AI agents to execute SQL queries, manage datasets, explore table schemas, monitor query jobs, and analyze large-scale data. This MCP supports running standard SQL and legacy SQL queries, retrieving query results, managing BigQuery datasets and tables, exploring table metadata and column definitions, accessing query job history, monitoring job status, and discovering available projects. It enables advanced data analytics workflows including cross-dataset joins, complex aggregations, time-series analysis, and integration with machine learning models. The integration is designed for data analysts, data scientists, and business intelligence applications that need programmatic access to BigQuery for data exploration, reporting, job monitoring, or automated analytics pipelines. Supports query optimization, cost management through query previews, job status tracking, and multi-project access. Ideal for building data-driven AI applications, automated reporting systems, intelligent data exploration tools, or query monitoring dashboards."
   }
 }
 

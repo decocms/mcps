@@ -197,3 +197,43 @@ export interface GetQueryResultsResponse {
   errors?: ErrorProto[];
   cacheHit?: boolean;
 }
+
+export interface JobsListResponse {
+  kind: string;
+  etag?: string;
+  nextPageToken?: string;
+  jobs?: JobListEntry[];
+}
+
+export interface JobListEntry {
+  id?: string;
+  kind?: string;
+  jobReference?: JobReference;
+  state?: string;
+  configuration?: JobConfiguration;
+  status?: JobStatus;
+  statistics?: JobStatistics;
+  errorResult?: ErrorProto;
+}
+
+// ==================== Project Types ====================
+
+export interface Project {
+  kind: string;
+  id: string;
+  numericId?: string;
+  projectReference: ProjectReference;
+  friendlyName?: string;
+}
+
+export interface ProjectReference {
+  projectId: string;
+}
+
+export interface ProjectsListResponse {
+  kind: string;
+  etag?: string;
+  nextPageToken?: string;
+  projects?: Project[];
+  totalItems?: number;
+}
