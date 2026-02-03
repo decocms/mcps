@@ -28,8 +28,12 @@ export { StateSchema };
 // ============================================================================
 // STARTUP DEBUGGING
 // ============================================================================
+// Generate unique instance ID to detect multiple instances running
+const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 console.log("=".repeat(80));
 console.log("[STARTUP] Discord MCP Server initializing...");
+console.log(`[STARTUP] 🆔 Instance ID: ${INSTANCE_ID}`);
 console.log(`[STARTUP] Node.js version: ${process.version}`);
 console.log(`[STARTUP] Bun version: ${Bun.version}`);
 console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
@@ -451,11 +455,8 @@ async function autoRestartCheck(): Promise<void> {
       const meshToken = env.MESH_REQUEST_CONTEXT?.token;
       if (meshToken) {
         console.log("[AUTO-RESTART] Restarting Mesh session heartbeat...");
-        startHeartbeat(env, () => {
-          console.log(
-            "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-          );
-        });
+        // IMPORTANT: Use shared callback to avoid memory leak
+        startHeartbeat(env, sessionExpiredCallback);
       } else {
         console.log(
           "[AUTO-RESTART] ℹ️ No Mesh token available. Skipping heartbeat.",

@@ -48,6 +48,9 @@ let client: Client | null = null;
 let eventsRegistered = false;
 let initializingPromise: Promise<Client> | null = null;
 
+// Instance ID for debugging multiple instances
+const CLIENT_INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 // Debounce for message processing
 const processedMessageIds = new Set<string>();
 const MESSAGE_CACHE_TTL = 10000; // 10 seconds
@@ -209,7 +212,8 @@ async function doInitialize(env: Env): Promise<Client> {
 
   // Login and wait for ready
   await client.login(token);
-  console.log(`[Discord] Logged in as ${client.user?.tag}`);
+  console.log(`[Discord] 🤖 Logged in as ${client.user?.tag}`);
+  console.log(`[Discord] 🆔 Client Instance: ${CLIENT_INSTANCE_ID}`);
 
   // Wait for the client to be fully ready
   if (client && !client.isReady()) {
@@ -383,6 +387,9 @@ function registerEventHandlers(client: Client, env: Env): void {
       }
 
       if (prefix) {
+        console.log(
+          `[Discord] 📨 Processing command from ${message.author.username} (Instance: ${CLIENT_INSTANCE_ID})`,
+        );
         await processCommand(
           message,
           prefix,
