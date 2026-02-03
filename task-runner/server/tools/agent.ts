@@ -61,6 +61,14 @@ interface QualityGate {
   required: boolean;
 }
 
+interface QualityGatesBaseline {
+  verified: boolean;
+  verifiedAt: string;
+  allPassed: boolean;
+  acknowledged: boolean;
+  failingGates: string[];
+}
+
 interface SiteContext {
   /** Whether this is a Deco site */
   isDeco?: boolean;
@@ -87,20 +95,31 @@ interface TaskContext {
 }
 
 /**
- * Load quality gates from project config
+ * Load quality gates and baseline from project config
  */
-async function loadQualityGates(workspace: string): Promise<QualityGate[]> {
+async function loadQualityGatesWithBaseline(workspace: string): Promise<{
+  gates: QualityGate[];
+  baseline?: QualityGatesBaseline;
+}> {
   try {
     const configPath = `${workspace}/.beads/project-config.json`;
     const content = await Bun.file(configPath).text();
-    const config = JSON.parse(content) as { qualityGates?: QualityGate[] };
-    return config.qualityGates ?? [];
+    const config = JSON.parse(content) as {
+      qualityGates?: QualityGate[];
+      qualityGatesBaseline?: QualityGatesBaseline;
+    };
+    return {
+      gates: config.qualityGates ?? [],
+      baseline: config.qualityGatesBaseline,
+    };
   } catch {
     // Return defaults if no config
-    return [
-      { name: "Type Check", command: "bun run check", required: true },
-      { name: "Lint", command: "bun run lint", required: true },
-    ];
+    return {
+      gates: [
+        { name: "Type Check", command: "bun run check", required: true },
+        { name: "Lint", command: "bun run lint", required: true },
+      ],
+    };
   }
 }
 
@@ -199,7 +218,8 @@ async function buildAgentPrompt(ctx: TaskContext): Promise<string> {
   } = ctx;
 
   // Load project-specific data
-  const qualityGates = ctx.qualityGates ?? (await loadQualityGates(workspace));
+  const { gates: qualityGates, baseline } =
+    await loadQualityGatesWithBaseline(workspace);
   const memorySummary = await loadMemorySummary(workspace);
 
   // Build acceptance criteria section
@@ -213,11 +233,49 @@ You must verify EACH criterion before completing. Check them off mentally as you
 `;
   }
 
-  // Build quality gates section
+  // Build quality gates section based on baseline status
   const requiredGates = qualityGates.filter((g) => g.required);
   let qualityGatesSection = "";
+
   if (requiredGates.length > 0) {
-    qualityGatesSection = `
+    const hasAcknowledgedFailures =
+      baseline?.verified &&
+      !baseline.allPassed &&
+      baseline.acknowledged &&
+      baseline.failingGates.length > 0;
+
+    if (hasAcknowledgedFailures) {
+      // Pre-existing failures acknowledged - agent should NOT try to fix them
+      const failingGateNames = baseline.failingGates;
+      const passingGates = requiredGates.filter(
+        (g) => !failingGateNames.includes(g.name),
+      );
+
+      qualityGatesSection = `
+## Quality Gates - PRE-EXISTING FAILURES ACKNOWLEDGED
+
+**IMPORTANT: The following gates were ALREADY FAILING before your task started:**
+${failingGateNames.map((name) => `- ⚠️ ${name} (PRE-EXISTING FAILURE - DO NOT FIX)`).join("\n")}
+
+**Do NOT attempt to fix these pre-existing failures.** The user has acknowledged them.
+Focus ONLY on your assigned task. Do not try to "solve the world."
+
+${passingGates.length > 0 ? `**Gates you MUST maintain passing:**\n${passingGates.map((g) => `- \`${g.command}\` (${g.name})`).join("\n")}\n\nIf your changes cause these gates to fail, YOU must fix that.` : ""}
+
+**Your responsibility:**
+- Complete your task without breaking gates that were passing
+- Do NOT spend time on pre-existing failures
+- If you accidentally break a passing gate, fix that regression
+- Focus on task completion, not codebase-wide cleanup
+
+**SESSION_LAND behavior:**
+- Will check gates that were passing before
+- Pre-existing failures are excluded from verification
+- Your task succeeds if you complete the work without new regressions
+`;
+    } else {
+      // Normal mode - all gates must pass
+      qualityGatesSection = `
 ## Quality Gates (ALL must pass - MANDATORY)
 ${requiredGates.map((g) => `- \`${g.command}\` (${g.name})`).join("\n")}
 
@@ -225,14 +283,12 @@ ${requiredGates.map((g) => `- \`${g.command}\` (${g.name})`).join("\n")}
 
 - Run each gate command and verify it exits with code 0
 - If ANY gate fails, YOU MUST FIX IT before completing
-- This includes ALL errors in the codebase, not just ones you introduced
-- Pre-existing errors are YOUR responsibility - fix them or the task is incomplete
 - Do NOT output <promise>COMPLETE</promise> until all gates pass
-- Do NOT rationalize "these errors existed before" - that is not acceptable
 - If you cannot fix a gate failure, explain why and do NOT mark the task complete
 
 **SESSION_LAND will verify gates pass. If they fail, success=false and task remains incomplete.**
 `;
+    }
   }
 
   // Get tool descriptions for the prompt
