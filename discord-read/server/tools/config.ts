@@ -340,7 +340,7 @@ export const createClearCacheTool = (env: Env) =>
  * The bot will use this API key instead of session tokens, solving the
  * "session expired" problem.
  */
-export const createGenerateApiKeyTool = (env: Env) =>
+export const createGenerateApiKeyTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_GENERATE_API_KEY",
     description:
@@ -354,7 +354,9 @@ export const createGenerateApiKeyTool = (env: Env) =>
         expiresAt: z.string().nullable(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (params: any) => {
+      const { env } = params;
+
       // Check if Supabase is configured
       if (!isSupabaseConfigured()) {
         return {
@@ -365,12 +367,12 @@ export const createGenerateApiKeyTool = (env: Env) =>
         };
       }
 
-      // Get current connection context
+      // Get current connection context from params.env (runtime env)
       const connectionId =
-        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
-      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+      const organizationId = env?.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env?.MESH_REQUEST_CONTEXT?.meshUrl;
+      const token = env?.MESH_REQUEST_CONTEXT?.token;
 
       if (!organizationId || !meshUrl || !token) {
         return {
@@ -410,7 +412,7 @@ export const createGenerateApiKeyTool = (env: Env) =>
         // Uses the MCP JSONRPC protocol format at /mcp/self
         const createApiKeyUrl = `${meshUrl}/mcp/self`;
 
-        const state = env.MESH_REQUEST_CONTEXT?.state as Record<
+        const state = env?.MESH_REQUEST_CONTEXT?.state as Record<
           string,
           unknown
         >;
