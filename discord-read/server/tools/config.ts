@@ -393,9 +393,9 @@ export const createGenerateApiKeyTool = (env: Env) =>
       }
 
       try {
-        // Call Mesh MCP endpoint to create an API key
-        // Uses the MCP JSONRPC protocol format
-        const createApiKeyUrl = `${meshUrl}/mcp`;
+        // Call Mesh Self MCP endpoint to create an API key
+        // Uses the MCP JSONRPC protocol format at /mcp/self
+        const createApiKeyUrl = `${meshUrl}/mcp/self`;
 
         const state = env.MESH_REQUEST_CONTEXT?.state as Record<
           string,
