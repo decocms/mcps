@@ -17,6 +17,7 @@ import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
+import { app as webhookRouter } from "./router.ts";
 
 export { StateSchema };
 
@@ -120,7 +121,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const modelProvider = state?.MODEL_PROVIDER;
       const agent = state?.AGENT;
       const languageModel = state?.LANGUAGE_MODEL;
-      const whisper = state?.WHISPER;
 
       // Extract values
       const languageModelConnectionId = languageModel?.value?.connectionId;
@@ -138,8 +138,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
       // Configure LLM module
       if (modelProviderId && token && meshUrl && organizationId) {
-        const { configureLLM, configureStreaming, configureWhisper } =
-          await import("./llm.ts");
+        const { configureLLM, configureStreaming } = await import("./llm.ts");
 
         configureLLM({
           meshUrl,
@@ -162,17 +161,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           agentId: agentId || "not set",
           streaming: enableStreaming,
         });
-
-        // Configure Whisper for audio transcription if set
-        if (whisper && typeof whisper.value === "string") {
-          configureWhisper({
-            meshUrl,
-            organizationId,
-            token,
-            whisperConnectionId: whisper.value,
-          });
-          console.log("[CONFIG] Whisper configured for audio transcription");
-        }
       }
 
       // NOTE: Discord client is NOT auto-initialized on config save
@@ -249,9 +237,26 @@ console.log(
   `[SERVER] PORT env variable: ${process.env.PORT || "not set (will use default)"}`,
 );
 
+/**
+ * Serve requests:
+ * - Webhook routes handled by webhookRouter (/discord/interactions, /health)
+ * - MCP requests handled by runtime
+ */
 try {
-  serve(runtime.fetch);
+  serve(async (req, env, ctx) => {
+    // Try webhook router first
+    const webhookResponse = await webhookRouter.fetch(req, env, ctx);
+
+    // If webhook router returned 404, fall back to MCP runtime
+    if (webhookResponse.status === 404) {
+      return runtime.fetch(req, env, ctx);
+    }
+
+    return webhookResponse;
+  });
   console.log("[SERVER] ✅ serve() called successfully");
+  console.log("[SERVER] Webhook endpoint: /discord/interactions/:connectionId");
+  console.log("[SERVER] Health check: /health");
 } catch (error) {
   console.error("[SERVER] ❌ Failed to start server:", error);
   throw error;

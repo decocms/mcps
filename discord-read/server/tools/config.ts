@@ -30,6 +30,11 @@ export const createSaveConfigTool = (env: Env) =>
         botToken: z
           .string()
           .describe("Discord bot token (from Discord Developer Portal)"),
+        discordPublicKey: z
+          .string()
+          .describe(
+            "Discord application public key (from Discord Developer Portal > General Information)",
+          ),
         authorizedGuilds: z
           .array(z.string())
           .optional()
@@ -74,6 +79,7 @@ export const createSaveConfigTool = (env: Env) =>
       const { context, env } = params;
       const {
         botToken,
+        discordPublicKey,
         authorizedGuilds,
         ownerId,
         commandPrefix,
@@ -84,6 +90,7 @@ export const createSaveConfigTool = (env: Env) =>
         meshApiKey,
       } = context as {
         botToken: string;
+        discordPublicKey: string;
         authorizedGuilds?: string[];
         ownerId?: string;
         commandPrefix?: string;
@@ -120,6 +127,7 @@ export const createSaveConfigTool = (env: Env) =>
         meshToken: undefined, // Will be set by mesh
         meshApiKey, // Non-expiring API key for LLM calls
         botToken,
+        discordPublicKey,
         authorizedGuilds: authorizedGuilds || [],
         ownerId,
         commandPrefix: commandPrefix || "!",

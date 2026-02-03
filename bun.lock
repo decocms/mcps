@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "@decocms/mcps",
@@ -157,8 +158,10 @@
         "@decocms/runtime": "^1.2.6",
         "@discordjs/voice": "^0.19.0",
         "@supabase/supabase-js": "^2.47.10",
+        "discord-interactions": "^4.1.0",
         "discord.js": "14.25.1",
         "google-tts-api": "^2.0.2",
+        "hono": "^4.0.0",
         "prism-media": "^1.3.5",
         "zod": "^4.0.0",
       },
@@ -1948,6 +1951,8 @@
     "dingbat-to-unicode": ["dingbat-to-unicode@1.0.1", "", {}, "sha512-98l0sW87ZT58pU4i61wa2OHwxbiYSbuxsCBozaVnYX2iCnr3bLM3fIes1/ej7h1YdOKuKt/MLs706TVnALA65w=="],
 
     "discord-api-types": ["discord-api-types@0.38.38", "", {}, "sha512-7qcM5IeZrfb+LXW07HvoI5L+j4PQeMZXEkSm1htHAHh4Y9JSMXBWjy/r7zmUCOj4F7zNjMcm7IMWr131MT2h0Q=="],
+
+    "discord-interactions": ["discord-interactions@4.4.0", "", {}, "sha512-jjJx8iwAeJcj8oEauV43fue9lNqkf38fy60aSs2+G8D1nJmDxUIrk08o3h0F3wgwuBWWJUZO+X/VgfXsxpCiJA=="],
 
     "discord-read": ["discord-read@workspace:discord-read"],
 
