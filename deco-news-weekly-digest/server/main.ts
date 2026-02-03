@@ -16,7 +16,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     scopes: [],
     state: StateSchema,
   },
-  tools,
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
 serve(runtime.fetch);
