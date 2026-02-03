@@ -11,13 +11,6 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import {
-  startHeartbeat,
-  stopHeartbeat,
-  isSessionActive,
-  getSessionStatus,
-} from "./session-keeper.ts";
-
 // Global state
 let botInitializing = false;
 let _botInitialized = false;
@@ -37,16 +30,6 @@ interface StoredConfig {
   whisperConnectionId?: string;
 }
 let _storedConfig: StoredConfig | null = null;
-
-// Shared callback to avoid creating closures that capture `env` (memory leak prevention)
-function sessionExpiredCallback(): void {
-  console.log(
-    "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
-  );
-  console.log(
-    "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
-  );
-}
 
 /**
  * Store essential config for fallback when env is not available
@@ -144,19 +127,6 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     // Configure voice system after bot starts
     await configureVoiceSystemInternal(env);
 
-    // Start session heartbeat ONLY if we have a Mesh token
-    // (bot started via onChange, not via manual tool)
-    const meshToken = env.MESH_REQUEST_CONTEXT?.token;
-    if (meshToken) {
-      console.log("[BotManager] Starting Mesh session heartbeat...");
-      // IMPORTANT: Use shared callback to avoid memory leak from closures capturing `env`
-      startHeartbeat(env, sessionExpiredCallback);
-    } else {
-      console.log(
-        "[BotManager] ℹ️ Bot started without Mesh session (via tool/Supabase config). No heartbeat needed.",
-      );
-    }
-
     return true;
   } catch (error) {
     console.error("[BotManager] Failed to start bot:", error);
@@ -178,13 +148,11 @@ export function isBotRunning(): boolean {
  */
 export function getBotStatus() {
   const client = getDiscordClient();
-  const sessionStatus = getSessionStatus();
 
   if (!client || !client.isReady()) {
     return {
       running: false,
       initializing: botInitializing,
-      meshSession: sessionStatus,
     };
   }
 
@@ -194,7 +162,6 @@ export function getBotStatus() {
     user: client.user?.tag,
     guilds: client.guilds.cache.size,
     uptime: client.uptime,
-    meshSession: sessionStatus,
   };
 }
 
@@ -202,7 +169,6 @@ export function getBotStatus() {
  * Shutdown the bot.
  */
 export async function shutdownBot(): Promise<void> {
-  stopHeartbeat();
   await shutdownDiscordClient();
   _botInitialized = false;
   botInitializing = false;
@@ -330,18 +296,4 @@ export async function configureVoiceSystemInternal(env: Env): Promise<void> {
   } catch (error) {
     console.error("[BotManager] Failed to configure voice:", error);
   }
-}
-
-/**
- * Check if the Mesh session is active
- */
-export function isMeshSessionActive(): boolean {
-  return isSessionActive();
-}
-
-/**
- * Get detailed session status
- */
-export function getMeshSessionStatus() {
-  return getSessionStatus();
 }
