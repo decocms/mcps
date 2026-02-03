@@ -265,43 +265,26 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         }
       }
 
-      // Initialize Discord client if Authorization header is provided
+      // NOTE: Discord client is NOT auto-initialized on config save
+      // User must manually start the bot using DISCORD_BOT_START tool
+      // This prevents issues with multiple instances and unwanted bot starts
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
-      if (hasAuth && !discordInitialized && !getDiscordClient()) {
-        console.log("[CONFIG] Initializing Discord client...");
-        try {
-          await initializeDiscordClient(env);
-          discordInitialized = true;
-          console.log("[CONFIG] Discord client ready ✓");
-
-          // Start heartbeat ONLY if we have a Mesh token
-          // (bot started via onChange with Mesh credentials, not via Supabase config)
+      if (hasAuth) {
+        // If bot is already running, just refresh the heartbeat
+        if (discordInitialized && getDiscordClient()) {
           const meshToken = env.MESH_REQUEST_CONTEXT?.token;
           if (meshToken) {
-            console.log("[CONFIG] Starting Mesh session heartbeat...");
-            // IMPORTANT: Don't capture `env` in callback to avoid memory leak
-            startHeartbeat(env, sessionExpiredCallback);
-          } else {
             console.log(
-              "[CONFIG] ℹ️ Bot started without Mesh session (via Supabase). No heartbeat needed.",
+              "[CONFIG] Bot running, refreshing session heartbeat...",
             );
+            startHeartbeat(env, sessionExpiredCallback);
           }
-        } catch (error) {
-          console.error("[CONFIG] Failed to initialize Discord:", error);
-        }
-      } else if (hasAuth && discordInitialized) {
-        // Bot already running, refresh heartbeat ONLY if we have a Mesh token
-        const meshToken = env.MESH_REQUEST_CONTEXT?.token;
-        if (meshToken) {
-          console.log("[CONFIG] Refreshing session heartbeat...");
-          // IMPORTANT: Don't capture `env` in callback to avoid memory leak
-          startHeartbeat(env, sessionExpiredCallback);
         } else {
           console.log(
-            "[CONFIG] ℹ️ No Mesh token available. Skipping heartbeat.",
+            "[CONFIG] ℹ️ Bot not started. Use DISCORD_BOT_START tool to start the bot.",
           );
         }
-      } else if (!hasAuth) {
+      } else {
         logger.info(
           "Discord Bot Token not configured - waiting for authorization",
           {
