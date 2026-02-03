@@ -12,6 +12,7 @@ import { allDiscordTools } from "./discord/index.ts";
 import { configTools } from "./config.ts";
 import { botTools } from "./bot.ts";
 import { databaseTools } from "./database.ts";
+import { slashCommandTools } from "./slash-commands.ts";
 
 // Wrap each tool factory to update env on every call
 function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
@@ -27,10 +28,12 @@ const wrappedConfigTools = configTools.map(wrapWithEnvUpdate);
 const wrappedBotTools = botTools.map(wrapWithEnvUpdate);
 const wrappedDatabaseTools = databaseTools.map(wrapWithEnvUpdate);
 const wrappedDiscordTools = allDiscordTools.map(wrapWithEnvUpdate);
+const wrappedSlashCommandTools = slashCommandTools.map(wrapWithEnvUpdate);
 
 export const tools: ToolCollection<Env> = [
   ...wrappedConfigTools,
   ...wrappedBotTools,
   ...wrappedDatabaseTools,
   ...wrappedDiscordTools,
+  ...wrappedSlashCommandTools,
 ];

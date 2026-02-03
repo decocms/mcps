@@ -18,6 +18,7 @@ import {
 import { getDiscordConfig } from "./lib/config-cache.ts";
 import { ensureBotRunning, isBotRunning } from "./bot-manager.ts";
 import { getCurrentEnv } from "./bot-manager.ts";
+import { getSupabaseClient } from "./lib/supabase-client.ts";
 
 export const app = new Hono();
 
@@ -90,16 +91,48 @@ app.post("/discord/interactions/:connectionId", async (c) => {
 
     console.log(`[Webhook] Processing slash command: /${command.command}`);
 
+    // Check if command is registered and enabled in database
+    const client = getSupabaseClient();
+    if (client) {
+      const guildId = payload.guild_id || null;
+
+      const { data: dbCommand } = await client
+        .from("discord_slash_commands")
+        .select("*")
+        .eq("connection_id", connectionId)
+        .eq("command_name", command.command)
+        .eq("guild_id", guildId)
+        .eq("enabled", true)
+        .single();
+
+      if (!dbCommand) {
+        console.log(
+          `[Webhook] Command /${command.command} not found or disabled in database`,
+        );
+        return c.json(
+          createInteractionResponse(
+            InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            `❌ Command not registered or disabled: \`/${command.command}\``,
+            true,
+          ),
+        );
+      }
+
+      console.log(
+        `[Webhook] Command /${command.command} found in database and enabled`,
+      );
+    }
+
     // Handle /start command
     if (command.command === "start") {
       return await handleStartCommand(connectionId, payload);
     }
 
-    // Unknown command
+    // Command exists but no handler - inform user
     return c.json(
       createInteractionResponse(
         InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        `❌ Unknown command: \`/${command.command}\``,
+        `⚠️ Command \`/${command.command}\` is registered but handler not implemented yet.`,
         true,
       ),
     );
