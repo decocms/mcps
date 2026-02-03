@@ -182,12 +182,16 @@ async function doInitialize(env: Env): Promise<Client> {
 
     // Store essential config for LLM fallback (uses API key if available)
     const effectiveToken = getEffectiveMeshToken(savedConfig);
+    const isUsingApiKey = !!savedConfig.meshApiKey;
+    console.log(
+      `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+    );
     if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
       storeEssentialConfig({
         meshUrl: savedConfig.meshUrl,
         organizationId: savedConfig.organizationId,
         persistentToken: effectiveToken,
-        isApiKey: !!savedConfig.meshApiKey, // true if using API key
+        isApiKey: isUsingApiKey,
         modelProviderId: savedConfig.modelProviderId,
         modelId: savedConfig.modelId,
         agentId: savedConfig.agentId,
