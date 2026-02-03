@@ -40,30 +40,32 @@ const CategoryEnum = z.enum([
 ]);
 
 /**
- * Schema for a weekly report article (output - all fields optional for flexibility)
+ * Schema for a weekly report article (output - all fields optional, allows extra fields from DB)
  */
-const ArticleSchema = z.object({
-  id: z.number().optional(),
-  url: z.string().optional(),
-  title: z.string().optional(),
-  source_title: z.string().optional(),
-  status: z.string().optional(),
-  created_at: z.string().optional(),
-  content: z.string().optional(),
-  slug: z.string().optional(),
-  summary: z.string().optional(),
-  key_points: z.string().optional(),
-  meta_title: z.string().optional(),
-  meta_description: z.string().optional(),
-  keywords: z.string().optional(),
-  category: z.string().optional(),
-  tags: z.string().optional(),
-  author: z.string().optional(),
-  reading_time: z.number().int().optional(),
-  published_at: z.string().optional(),
-  image_url: z.string().optional(),
-  image_alt_text: z.string().optional(),
-});
+const ArticleSchema = z
+  .object({
+    id: z.number().optional(),
+    url: z.string().optional(),
+    title: z.string().optional(),
+    source_title: z.string().optional(),
+    status: z.string().optional(),
+    created_at: z.string().optional(),
+    content: z.string().optional(),
+    slug: z.string().optional(),
+    summary: z.string().optional(),
+    key_points: z.string().optional(),
+    meta_title: z.string().optional(),
+    meta_description: z.string().optional(),
+    keywords: z.string().optional(),
+    category: z.string().optional(),
+    tags: z.string().optional(),
+    author: z.string().optional(),
+    reading_time: z.number().int().optional(),
+    published_at: z.string().optional(),
+    image_url: z.string().optional(),
+    image_alt_text: z.string().optional(),
+  })
+  .passthrough();
 
 type Article = z.infer<typeof ArticleSchema>;
 
