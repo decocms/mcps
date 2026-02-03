@@ -61,6 +61,18 @@ async function getChangedFiles(): Promise<string[]> {
   }
 }
 
+// Files that affect all MCPs when changed (infrastructure/shared files)
+// NOTE: deploy.json is NOT included here - it's used as a filter, not a trigger
+const GLOBAL_FILES = [
+  ".github/workflows/deploy.yml",
+  ".github/workflows/deploy-preview.yml",
+  "scripts/deploy.ts",
+  "scripts/detect-changed-mcps.ts",
+  "scripts/filter-deployable-mcps.ts",
+  "package.json",
+  "bun.lockb",
+];
+
 // Determine which MCPs have changes
 async function getChangedMcps(): Promise<string[]> {
   const allMcps = getAllMcps();
@@ -76,6 +88,18 @@ async function getChangedMcps(): Promise<string[]> {
   const changedMcps = new Set<string>();
 
   for (const file of changedFiles) {
+    // Check if it's a global file that affects all MCPs
+    const isGlobalFile = GLOBAL_FILES.some(
+      (globalFile) => file === globalFile || file.startsWith(globalFile),
+    );
+
+    if (isGlobalFile) {
+      console.error(
+        `⚠️ Global file changed: ${file} - This will trigger deploy for ALL MCPs`,
+      );
+      return allMcps;
+    }
+
     // Check if file is in an MCP directory
     for (const mcp of allMcps) {
       if (file.startsWith(`${mcp}/`)) {

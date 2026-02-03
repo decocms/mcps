@@ -43,11 +43,15 @@ jobs:
           CHANGED_MCPS=$(bun run scripts/detect-changed-mcps.ts "$PREVIOUS_COMMIT" HEAD)
           echo "Changed MCPs: $CHANGED_MCPS"
           
+          # Filter against deploy.json (only deploy MCPs that are listed there)
+          DEPLOYABLE_MCPS=$(bun run scripts/filter-deployable-mcps.ts "$CHANGED_MCPS")
+          echo "Deployable MCPs: $DEPLOYABLE_MCPS"
+          
           # Set outputs
-          echo "mcps=$CHANGED_MCPS" >> $GITHUB_OUTPUT
+          echo "mcps=$DEPLOYABLE_MCPS" >> $GITHUB_OUTPUT
           
           # Check if array is not empty
-          if [ "$CHANGED_MCPS" = "[]" ]; then
+          if [ "$DEPLOYABLE_MCPS" = "[]" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
