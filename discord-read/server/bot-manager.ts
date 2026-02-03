@@ -29,7 +29,8 @@ let _currentEnv: Env | null = null;
 interface StoredConfig {
   meshUrl: string;
   organizationId: string;
-  persistentToken: string;
+  persistentToken: string; // API key (preferred) or session token
+  isApiKey: boolean; // true if persistentToken is an API key (never expires)
   modelProviderId?: string;
   modelId?: string;
   agentId?: string;

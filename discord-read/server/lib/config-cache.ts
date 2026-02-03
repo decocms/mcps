@@ -19,7 +19,8 @@ export interface DiscordConfig {
   connectionId: string;
   organizationId: string;
   meshUrl: string;
-  meshToken?: string;
+  meshToken?: string; // Session token (expires in ~5 min)
+  meshApiKey?: string; // Persistent API key (never expires) - PREFERRED
   modelProviderId?: string;
   modelId?: string;
   agentId?: string;
@@ -30,6 +31,21 @@ export interface DiscordConfig {
   commandPrefix?: string; // Command prefix (default: "!")
   configuredAt?: string;
   updatedAt?: string;
+}
+
+/**
+ * Get the effective Mesh token for API calls
+ * Prefers API key (never expires) over session token (expires)
+ */
+export function getEffectiveMeshToken(
+  config: DiscordConfig,
+): string | undefined {
+  // Prefer API key (persistent, never expires)
+  if (config.meshApiKey) {
+    return config.meshApiKey;
+  }
+  // Fallback to session token (may expire)
+  return config.meshToken;
 }
 
 /**
@@ -67,6 +83,7 @@ export async function getDiscordConfig(
     organizationId: row.organization_id,
     meshUrl: row.mesh_url,
     meshToken: row.mesh_token || undefined,
+    meshApiKey: row.mesh_api_key || undefined, // Persistent API key (preferred)
     modelProviderId: row.model_provider_id || undefined,
     modelId: row.model_id || undefined,
     agentId: row.agent_id || undefined,

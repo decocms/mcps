@@ -320,6 +320,173 @@ export const createClearCacheTool = (env: Env) =>
     },
   });
 
+/**
+ * Generate and save a persistent Mesh API Key
+ *
+ * This creates an API key that never expires and saves it to the config.
+ * The bot will use this API key instead of session tokens, solving the
+ * "session expired" problem.
+ */
+export const createGenerateApiKeyTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GENERATE_API_KEY",
+    description:
+      "Generate a persistent Mesh API Key for this Discord bot. This solves the 'session expired' problem by creating a key that never expires. The bot will automatically use this key for LLM and other API calls.",
+    inputSchema: z.object({}).strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        hasApiKey: z.boolean(),
+        expiresAt: z.string().nullable(),
+      })
+      .strict(),
+    execute: async () => {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        return {
+          success: false,
+          message: "Supabase not configured. Cannot save API key.",
+          hasApiKey: false,
+          expiresAt: null,
+        };
+      }
+
+      // Get current connection context
+      const connectionId =
+        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
+
+      if (!organizationId || !meshUrl || !token) {
+        return {
+          success: false,
+          message:
+            "Missing Mesh context. Please click 'Save' in the Mesh Dashboard first to establish a session.",
+          hasApiKey: false,
+          expiresAt: null,
+        };
+      }
+
+      // Load existing config
+      const existingConfig = await getDiscordConfig(connectionId);
+      if (!existingConfig) {
+        return {
+          success: false,
+          message:
+            "No saved configuration found. Use DISCORD_SAVE_CONFIG first to save bot configuration.",
+          hasApiKey: false,
+          expiresAt: null,
+        };
+      }
+
+      // Check if already has API key
+      if (existingConfig.meshApiKey) {
+        return {
+          success: true,
+          message:
+            "API Key already exists for this connection. The bot is configured to use the persistent key.",
+          hasApiKey: true,
+          expiresAt: null, // API keys don't expire
+        };
+      }
+
+      try {
+        // Call Mesh API to create an API key
+        // API Key needs permissions for Decopilot and connections
+        const createApiKeyUrl = `${meshUrl}/api/${organizationId}/tools/call`;
+
+        const state = env.MESH_REQUEST_CONTEXT?.state as any;
+        const modelProviderId = state?.MODEL_PROVIDER?.value;
+        const agentId = state?.AGENT?.value;
+
+        // Build permissions - need access to Decopilot, model provider, and agent
+        const permissions: Record<string, string[]> = {
+          self: ["*"], // All management tools
+        };
+
+        // Add connection-specific permissions if model provider is configured
+        if (modelProviderId) {
+          permissions[modelProviderId] = ["*"];
+        }
+
+        const response = await fetch(createApiKeyUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tool: "API_KEY_CREATE",
+            input: {
+              name: `Discord Bot - ${connectionId}`,
+              permissions,
+              // No expiresIn = never expires!
+              metadata: {
+                createdFor: "discord-mcp",
+                connectionId,
+              },
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            "[GenerateApiKey] Failed to create API key:",
+            errorText,
+          );
+          return {
+            success: false,
+            message: `Failed to create API key: ${response.status} ${errorText}`,
+            hasApiKey: false,
+            expiresAt: null,
+          };
+        }
+
+        const result = await response.json();
+        const apiKey = result.output?.key || result.key;
+
+        if (!apiKey) {
+          console.error("[GenerateApiKey] No key in response:", result);
+          return {
+            success: false,
+            message: "API key creation succeeded but no key was returned",
+            hasApiKey: false,
+            expiresAt: null,
+          };
+        }
+
+        // Save the API key to the config
+        await setDiscordConfig({
+          ...existingConfig,
+          meshApiKey: apiKey,
+        });
+
+        console.log(
+          `[GenerateApiKey] ✅ API Key created and saved for ${connectionId}`,
+        );
+
+        return {
+          success: true,
+          message:
+            "API Key created and saved successfully! The bot will now use this persistent key for all API calls. Session expiration is no longer a problem.",
+          hasApiKey: true,
+          expiresAt: null, // Never expires
+        };
+      } catch (error) {
+        console.error("[GenerateApiKey] Error:", error);
+        return {
+          success: false,
+          message: `Error creating API key: ${error instanceof Error ? error.message : String(error)}`,
+          hasApiKey: false,
+          expiresAt: null,
+        };
+      }
+    },
+  });
+
 // Export all config tools
 export const configTools = [
   createSaveConfigTool,
@@ -327,4 +494,5 @@ export const configTools = [
   createDeleteConfigTool,
   createCacheStatsTool,
   createClearCacheTool,
+  createGenerateApiKeyTool,
 ];

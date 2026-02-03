@@ -109,7 +109,10 @@ async function doInitialize(env: Env): Promise<Client> {
     `[Discord] Looking for saved config for connection: ${connectionId}`,
   );
 
-  const { getDiscordConfig } = await import("../lib/config-cache.ts");
+  const { getDiscordConfig, getEffectiveMeshToken } = await import(
+    "../lib/config-cache.ts"
+  );
+  const { storeEssentialConfig } = await import("../bot-manager.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
   let token: string;
@@ -121,6 +124,23 @@ async function doInitialize(env: Env): Promise<Client> {
     console.log(
       `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
     );
+
+    // Store essential config for LLM fallback (uses API key if available)
+    const effectiveToken = getEffectiveMeshToken(savedConfig);
+    if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
+      storeEssentialConfig({
+        meshUrl: savedConfig.meshUrl,
+        organizationId: savedConfig.organizationId,
+        persistentToken: effectiveToken,
+        isApiKey: !!savedConfig.meshApiKey, // true if using API key
+        modelProviderId: savedConfig.modelProviderId,
+        modelId: savedConfig.modelId,
+        agentId: savedConfig.agentId,
+      });
+      console.log(
+        `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
+      );
+    }
   } else {
     // Fallback to Authorization header (for backward compatibility)
     try {
