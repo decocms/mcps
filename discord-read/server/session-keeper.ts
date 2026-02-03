@@ -7,6 +7,8 @@
  */
 
 import type { Env } from "./types/env.ts";
+// Import bot-manager at module level to avoid repeated dynamic imports
+import { getCurrentEnv, getStoredConfig } from "./bot-manager.ts";
 
 // Intervalo do heartbeat (3 minutos - antes dos 5 min de timeout)
 const HEARTBEAT_INTERVAL_MS = 3 * 60 * 1000;
@@ -141,33 +143,23 @@ export function startHeartbeat(
   // Faz um heartbeat inicial
   doHeartbeat(env);
 
-  // Configura o intervalo
+  // Configura o intervalo - usando imports estáticos para evitar memory leak
   heartbeatInterval = setInterval(() => {
-    // Importa o getCurrentEnv e getStoredConfig para pegar o env/config mais recente
-    import("./bot-manager.ts")
-      .then(({ getCurrentEnv, getStoredConfig }) => {
-        const currentEnv = getCurrentEnv();
-        if (currentEnv) {
-          doHeartbeat(currentEnv);
-        } else {
-          // Fallback: use stored config to do heartbeat
-          const storedConfig = getStoredConfig();
-          if (storedConfig) {
-            // Create a minimal env-like object for heartbeat check
-            doHeartbeatWithConfig(storedConfig);
-          } else {
-            console.log(
-              "[SessionKeeper] ⚠️ No env or stored config available for heartbeat",
-            );
-          }
-        }
-      })
-      .catch((error) => {
-        console.error(
-          "[SessionKeeper] Failed to import bot-manager:",
-          error instanceof Error ? error.message : String(error),
+    const currentEnv = getCurrentEnv();
+    if (currentEnv) {
+      doHeartbeat(currentEnv);
+    } else {
+      // Fallback: use stored config to do heartbeat
+      const storedConfig = getStoredConfig();
+      if (storedConfig) {
+        // Create a minimal env-like object for heartbeat check
+        doHeartbeatWithConfig(storedConfig);
+      } else {
+        console.log(
+          "[SessionKeeper] ⚠️ No env or stored config available for heartbeat",
         );
-      });
+      }
+    }
   }, HEARTBEAT_INTERVAL_MS);
 }
 

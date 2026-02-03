@@ -44,6 +44,13 @@ let discordInitialized = false;
 const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
 let autoRestartInterval: ReturnType<typeof setInterval> | null = null;
 
+// Shared callback to avoid creating closures that capture `env` (memory leak prevention)
+function sessionExpiredCallback(): void {
+  console.log(
+    "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
+  );
+}
+
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   events: {
     handlers: {
@@ -268,11 +275,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           const meshToken = env.MESH_REQUEST_CONTEXT?.token;
           if (meshToken) {
             console.log("[CONFIG] Starting Mesh session heartbeat...");
-            startHeartbeat(env, () => {
-              console.log(
-                "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-              );
-            });
+            // IMPORTANT: Don't capture `env` in callback to avoid memory leak
+            startHeartbeat(env, sessionExpiredCallback);
           } else {
             console.log(
               "[CONFIG] ℹ️ Bot started without Mesh session (via Supabase). No heartbeat needed.",
@@ -286,11 +290,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         const meshToken = env.MESH_REQUEST_CONTEXT?.token;
         if (meshToken) {
           console.log("[CONFIG] Refreshing session heartbeat...");
-          startHeartbeat(env, () => {
-            console.log(
-              "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-            );
-          });
+          // IMPORTANT: Don't capture `env` in callback to avoid memory leak
+          startHeartbeat(env, sessionExpiredCallback);
         } else {
           console.log(
             "[CONFIG] ℹ️ No Mesh token available. Skipping heartbeat.",
@@ -330,14 +331,19 @@ async function gracefulShutdown(signal: string) {
     console.log("[SHUTDOWN] Stopping session heartbeat...");
     stopHeartbeat();
 
-    // Stop all voice sessions
+    // Stop all voice sessions and clear references (memory leak prevention)
     try {
-      const { stopAllSessions, disconnectAll } = await import(
-        "./voice/index.ts"
-      );
+      const {
+        stopAllSessions,
+        disconnectAll,
+        clearVoiceCommands,
+        clearAudioCallback,
+      } = await import("./voice/index.ts");
       console.log("[SHUTDOWN] Stopping voice sessions...");
       await stopAllSessions();
       disconnectAll();
+      clearVoiceCommands();
+      clearAudioCallback();
     } catch {
       // Voice module might not be loaded
     }
