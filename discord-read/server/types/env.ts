@@ -30,13 +30,6 @@ export const StateSchema = z.object({
     })
     .required(),
 
-  // Whisper for audio transcription (optional)
-  WHISPER: BindingOf("@deco/whisper")
-    .optional()
-    .describe(
-      "OpenAI Whisper for audio transcription. If not set, audio files will not be processed.",
-    ),
-
   // Agent Mode Configuration
   AGENT_MODE: z
     .enum(["passthrough", "smart_tool_selection", "code_execution"])

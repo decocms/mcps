@@ -19,6 +19,17 @@ import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
 import { getDiscordBotToken } from "../lib/env.ts";
 import {
+  publishMessageCreated,
+  publishMessageDeleted,
+  publishMessageUpdated,
+  publishMemberJoined,
+  publishMemberLeft,
+  publishMemberRoleAdded,
+  publishMemberRoleRemoved,
+  publishReactionAdded,
+  publishReactionRemoved,
+} from "../lib/event-publisher.ts";
+import {
   indexMessage,
   processCommand,
   handleMessageDelete,
@@ -408,6 +419,11 @@ function registerEventHandlers(client: Client, env: Env): void {
           console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
         );
 
+      // Publish message.created event to EVENT_BUS (async, don't await)
+      publishMessageCreated(currentEnv, message).catch(() => {
+        /* ignore */
+      });
+
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
 
@@ -511,8 +527,18 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionAdd(reaction, user);
+
+        // Publish event
+        publishReactionAdded(currentEnv, reaction, user).catch(() => {
+          /* ignore */
+        });
       } catch (error) {
         console.error("[Discord] Error handling reaction add:", error);
       }
@@ -527,8 +553,18 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionRemove(reaction, user);
+
+        // Publish event
+        publishReactionRemoved(currentEnv, reaction, user).catch(() => {
+          /* ignore */
+        });
       } catch (error) {
         console.error("[Discord] Error handling reaction remove:", error);
       }
@@ -561,8 +597,13 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message delete event
   client.on("messageDelete", async (message) => {
     if (!message.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageDelete(message);
+      // Publish event
+      publishMessageDeleted(currentEnv, message).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling message delete:", error);
     }
@@ -582,8 +623,15 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message update/edit event
   client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageUpdate(oldMessage, newMessage);
+      // Publish event (only if both messages are available)
+      if (oldMessage.partial) await oldMessage.fetch();
+      if (newMessage.partial) await newMessage.fetch();
+      publishMessageUpdated(currentEnv, oldMessage, newMessage).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
     }
@@ -621,8 +669,13 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member join event
   client.on("guildMemberAdd", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberJoin(member);
+      // Publish event
+      publishMemberJoined(currentEnv, member).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
     }
@@ -630,8 +683,13 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member leave event
   client.on("guildMemberRemove", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberLeave(member);
+      // Publish event
+      publishMemberLeft(currentEnv, member).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling member leave:", error);
     }
@@ -639,8 +697,41 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member update event
   client.on("guildMemberUpdate", async (oldMember, newMember) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberUpdate(newMember);
+
+      // Detect role changes and publish events
+      const oldRoles = oldMember.roles.cache;
+      const newRoles = newMember.roles.cache;
+
+      // Roles added
+      newRoles.forEach((role) => {
+        if (!oldRoles.has(role.id)) {
+          publishMemberRoleAdded(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
+
+      // Roles removed
+      oldRoles.forEach((role) => {
+        if (!newRoles.has(role.id)) {
+          publishMemberRoleRemoved(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
     } catch (error) {
       console.error("[Discord] Error handling member update:", error);
     }
