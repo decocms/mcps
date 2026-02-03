@@ -120,47 +120,6 @@ export const StateSchema = z.object({
     .optional()
     .describe("How the bot responds to messages"),
 
-  // Voice Configuration (Fase 2)
-  VOICE_CONFIG: z
-    .object({
-      ENABLED: z
-        .boolean()
-        .default(true)
-        .describe("Enable voice channel features"),
-      AUTO_JOIN_CHANNEL_ID: z
-        .string()
-        .optional()
-        .describe("Voice channel ID to auto-join on startup"),
-      RESPONSE_MODE: z
-        .enum(["voice", "dm", "both"])
-        .default("voice")
-        .describe("How to respond to voice commands: voice (TTS), dm, or both"),
-      TTS_ENABLED: z
-        .boolean()
-        .default(true)
-        .describe("Enable Text-to-Speech responses in voice channel"),
-      TTS_LANGUAGE: z
-        .string()
-        .default("pt-BR")
-        .describe("Language for TTS (e.g., pt-BR, en-US)"),
-      SILENCE_THRESHOLD_MS: z
-        .number()
-        .default(1000)
-        .describe("Milliseconds of silence before processing audio"),
-      ELEVENLABS_API_KEY: z
-        .string()
-        .optional()
-        .describe(
-          "ElevenLabs API Key for high-quality TTS (if not set, uses Discord native TTS)",
-        ),
-      ELEVENLABS_VOICE_ID: z
-        .string()
-        .default("JBFqnCBsd6RMkjVDRZzb")
-        .describe("ElevenLabs Voice ID to use (default: George)"),
-    })
-    .optional()
-    .describe("Voice channel configuration for voice commands and TTS"),
-
   // HyperDX Configuration
   HYPERDX_API_KEY: z
     .string()

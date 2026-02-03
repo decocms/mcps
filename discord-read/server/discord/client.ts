@@ -276,7 +276,6 @@ async function doInitialize(env: Env): Promise<Client> {
       GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildVoiceStates, // For voice channel features
     ],
     partials: [Partials.Message, Partials.Reaction, Partials.User],
   });
