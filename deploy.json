@@ -133,5 +133,10 @@
     "site": "apify",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun"
+  },
+  "discord-read": {
+    "site": "discord-read",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
   }
 }

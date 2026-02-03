@@ -11,13 +11,13 @@ import {
   type Message,
   type MessageReaction,
   type User,
+  type GuildMember,
   type PartialMessageReaction,
   type PartialUser,
 } from "discord.js";
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
-import { getDiscordBotToken } from "../lib/env.ts";
 import {
   publishMessageCreated,
   publishMessageDeleted,
@@ -472,10 +472,16 @@ function registerEventHandlers(client: Client, env: Env): void {
 
         await handleReactionAdd(reaction, user);
 
-        // Publish event
-        publishReactionAdded(currentEnv, reaction, user).catch(() => {
-          /* ignore */
-        });
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionAdded(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction add:", error);
       }
@@ -498,10 +504,16 @@ function registerEventHandlers(client: Client, env: Env): void {
 
         await handleReactionRemove(reaction, user);
 
-        // Publish event
-        publishReactionRemoved(currentEnv, reaction, user).catch(() => {
-          /* ignore */
-        });
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionRemoved(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction remove:", error);
       }
@@ -537,10 +549,12 @@ function registerEventHandlers(client: Client, env: Env): void {
     const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageDelete(message);
-      // Publish event
-      publishMessageDeleted(currentEnv, message).catch(() => {
-        /* ignore */
-      });
+      // Publish event (only if not partial)
+      if (!message.partial) {
+        publishMessageDeleted(currentEnv, message as Message).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message delete:", error);
     }
@@ -563,12 +577,18 @@ function registerEventHandlers(client: Client, env: Env): void {
     const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageUpdate(oldMessage, newMessage);
-      // Publish event (only if both messages are available)
+      // Publish event (only if both messages are available and not partial)
       if (oldMessage.partial) await oldMessage.fetch();
       if (newMessage.partial) await newMessage.fetch();
-      publishMessageUpdated(currentEnv, oldMessage, newMessage).catch(() => {
-        /* ignore */
-      });
+      if (!oldMessage.partial && !newMessage.partial) {
+        publishMessageUpdated(
+          currentEnv,
+          oldMessage as Message,
+          newMessage as Message,
+        ).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
     }
@@ -623,10 +643,12 @@ function registerEventHandlers(client: Client, env: Env): void {
     const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberLeave(member);
-      // Publish event
-      publishMemberLeft(currentEnv, member).catch(() => {
-        /* ignore */
-      });
+      // Publish event (only if not partial)
+      if (!member.partial) {
+        publishMemberLeft(currentEnv, member as GuildMember).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling member leave:", error);
     }
