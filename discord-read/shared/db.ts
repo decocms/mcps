@@ -876,6 +876,7 @@ export interface ChannelContextData {
   channel_id: string;
   channel_name?: string | null;
   system_prompt: string;
+  auto_respond?: boolean; // If true, bot responds to ALL messages in this channel (no mention needed)
   enabled?: boolean;
   created_at?: Date;
   updated_at?: Date;
@@ -934,6 +935,7 @@ export async function upsertChannelContext(
     channel_id: data.channel_id,
     channel_name: data.channel_name || null,
     system_prompt: data.system_prompt,
+    auto_respond: data.auto_respond ?? false,
     enabled: data.enabled ?? true,
     created_by_id: data.created_by_id,
     created_by_username: data.created_by_username,

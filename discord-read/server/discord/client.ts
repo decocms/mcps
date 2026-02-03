@@ -48,6 +48,55 @@ let client: Client | null = null;
 let eventsRegistered = false;
 let initializingPromise: Promise<Client> | null = null;
 
+// Cache for auto_respond channels to avoid DB queries on every message
+interface AutoRespondCacheEntry {
+  autoRespond: boolean;
+  timestamp: number;
+}
+const autoRespondCache = new Map<string, AutoRespondCacheEntry>();
+const AUTO_RESPOND_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Check if a channel has auto_respond enabled (with caching)
+ */
+async function isAutoRespondChannel(
+  guildId: string,
+  channelId: string,
+): Promise<boolean> {
+  const cacheKey = `${guildId}:${channelId}`;
+  const cached = autoRespondCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < AUTO_RESPOND_CACHE_TTL) {
+    return cached.autoRespond;
+  }
+
+  try {
+    const db = await import("../../shared/db.ts");
+    const channelContext = await db.getChannelContext(guildId, channelId);
+    const autoRespond = channelContext?.auto_respond ?? false;
+
+    autoRespondCache.set(cacheKey, {
+      autoRespond,
+      timestamp: Date.now(),
+    });
+
+    return autoRespond;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Invalidate auto_respond cache for a channel (call when setting changes)
+ */
+export function invalidateAutoRespondCache(
+  guildId: string,
+  channelId: string,
+): void {
+  const cacheKey = `${guildId}:${channelId}`;
+  autoRespondCache.delete(cacheKey);
+}
+
 // Instance ID for debugging multiple instances
 const CLIENT_INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -408,6 +457,21 @@ function registerEventHandlers(client: Client, env: Env): void {
           }
         } catch {
           // Silently fail - reply detection is optional
+        }
+      }
+
+      // Check for auto_respond channel (no mention/prefix needed)
+      if (!prefix && !isDM && message.guild?.id) {
+        const autoRespond = await isAutoRespondChannel(
+          message.guild.id,
+          message.channel.id,
+        );
+        if (autoRespond) {
+          prefix = "AUTO_RESPOND";
+          content = message.content;
+          console.log(
+            `[Discord] 🤖 Auto-respond channel detected: ${message.channel.id}`,
+          );
         }
       }
 
