@@ -1387,5 +1387,5 @@ export const discordMessageTools = [
   createAddReactionTool,
   createRemoveReactionTool,
   createGetReactionsTool,
-  createSearchUserMentionsTool,
+  // createSearchUserMentionsTool, // TODO: Fix TypeScript errors
 ];

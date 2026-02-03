@@ -181,102 +181,39 @@ async function doInitialize(env: Env): Promise<Client> {
   const { storeEssentialConfig } = await import("../bot-manager.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
-  let token: string;
-
-  if (savedConfig?.botToken) {
-    // Use token from Supabase config
-    token = savedConfig.botToken;
-    console.log("[Discord] ✅ Bot token loaded from Supabase config");
-    console.log(
-      `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+  if (!savedConfig?.botToken) {
+    throw new Error(
+      `Discord Bot Token not configured for connection '${connectionId}'. ` +
+        "Please use DISCORD_SAVE_CONFIG to save your bot token first.",
     );
+  }
 
-    // Store essential config for LLM fallback (uses API key if available)
-    const effectiveToken = getEffectiveMeshToken(savedConfig);
-    const isUsingApiKey = !!savedConfig.meshApiKey;
+  // Use token from Supabase config
+  const token = savedConfig.botToken;
+  console.log("[Discord] ✅ Bot token loaded from Supabase config");
+  console.log(
+    `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+  );
+
+  // Store essential config for LLM fallback (uses API key if available)
+  const effectiveToken = getEffectiveMeshToken(savedConfig);
+  const isUsingApiKey = !!savedConfig.meshApiKey;
+  console.log(
+    `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+  );
+  if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
+    storeEssentialConfig({
+      meshUrl: savedConfig.meshUrl,
+      organizationId: savedConfig.organizationId,
+      persistentToken: effectiveToken,
+      isApiKey: isUsingApiKey,
+      modelProviderId: savedConfig.modelProviderId,
+      modelId: savedConfig.modelId,
+      agentId: savedConfig.agentId,
+    });
     console.log(
-      `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+      `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
     );
-    if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
-      storeEssentialConfig({
-        meshUrl: savedConfig.meshUrl,
-        organizationId: savedConfig.organizationId,
-        persistentToken: effectiveToken,
-        isApiKey: isUsingApiKey,
-        modelProviderId: savedConfig.modelProviderId,
-        modelId: savedConfig.modelId,
-        agentId: savedConfig.agentId,
-      });
-      console.log(
-        `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
-      );
-    }
-  } else {
-    // Fallback to Authorization header (for backward compatibility)
-    try {
-      token = getDiscordBotToken(env);
-      console.log(
-        "[Discord] ⚠️ Bot token retrieved from Authorization header (fallback)",
-      );
-      console.log(
-        "[Discord] 💾 Auto-saving configuration to Supabase for future deployments...",
-      );
-
-      // Auto-save configuration for next deployment
-      try {
-        const { setDiscordConfig } = await import("../lib/config-cache.ts");
-        const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-        const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-
-        // Only auto-save if we have valid Mesh context data
-        if (!organizationId || !meshUrl) {
-          console.warn(
-            "[Discord] ⚠️ Skipping auto-save: missing organizationId or meshUrl",
-          );
-          console.log(
-            "[Discord] Bot will work now but may not start on next deployment",
-          );
-        } else {
-          const state = env.MESH_REQUEST_CONTEXT?.state as any;
-          await setDiscordConfig({
-            connectionId,
-            organizationId,
-            meshUrl,
-            botToken: token,
-            meshToken: env.MESH_REQUEST_CONTEXT?.token || undefined,
-            commandPrefix: (state?.COMMAND_PREFIX as string) || "!",
-            authorizedGuilds:
-              (state?.AUTHORIZED_GUILDS as string)
-                ?.split(",")
-                .map((id) => id.trim()) || [],
-            ownerId: (state?.OWNER_ID as string) || undefined,
-            // Copy AI config if available
-            modelProviderId:
-              (state?.MODEL_PROVIDER?.value as string) || undefined,
-            modelId: (state?.LANGUAGE_MODEL?.value as any)?.id || undefined,
-            agentId: (state?.AGENT?.value as string) || undefined,
-            systemPrompt: (state?.SYSTEM_PROMPT as string) || undefined,
-          });
-          console.log("[Discord] ✅ Configuration auto-saved to Supabase!");
-          console.log(
-            "[Discord] 🚀 Bot will now start automatically on next deployment",
-          );
-        }
-      } catch (saveError) {
-        console.warn(
-          "[Discord] ⚠️ Failed to auto-save configuration:",
-          saveError,
-        );
-        console.log(
-          "[Discord] Bot will work now but may not start on next deployment",
-        );
-      }
-    } catch (error) {
-      console.error("[Discord] Failed to get bot token:", error);
-      throw new Error(
-        "Discord Bot Token not configured. Use DISCORD_SAVE_CONFIG tool to save configuration or add token in Authorization header.",
-      );
-    }
   }
 
   // Create client with required intents
