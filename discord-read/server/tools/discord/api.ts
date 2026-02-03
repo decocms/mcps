@@ -77,6 +77,16 @@ export async function discordAPI<T>(
   endpoint: string,
   options: DiscordAPIOptions = {},
 ): Promise<T> {
+  // IMPORTANT: Check if bot is connected before making API calls
+  const { getDiscordClient } = await import("../discord/client.ts");
+  const client = getDiscordClient();
+
+  if (!client || !client.isReady()) {
+    throw new Error(
+      "Discord bot is not connected. Please start the bot first using DISCORD_BOT_START tool.",
+    );
+  }
+
   // Try to get token from passed env first, then fall back to global env
   let botToken: string;
   try {
