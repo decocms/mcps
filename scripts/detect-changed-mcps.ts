@@ -56,7 +56,7 @@ async function getChangedFiles(): Promise<string[]> {
     return result.trim().split("\n").filter(Boolean);
   } catch (error) {
     console.error("Error getting git diff:", error);
-    // Fallback: check all MCPs
+    // Return empty array - don't fallback to all MCPs
     return [];
   }
 }
@@ -80,9 +80,12 @@ async function getChangedMcps(): Promise<string[]> {
 
   if (changedFiles.length === 0) {
     console.error(
-      "No changed files detected or git diff failed, checking all MCPs",
+      "No changed files detected (empty commit or git diff failed)",
     );
-    return allMcps;
+    console.error(
+      "ℹ️  To deploy specific MCPs manually, use workflow_dispatch with the 'mcps' input",
+    );
+    return [];
   }
 
   const changedMcps = new Set<string>();

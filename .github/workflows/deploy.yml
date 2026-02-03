@@ -2,6 +2,12 @@ name: Deploy MCPs (Production)
 
 on:
   workflow_dispatch:
+    inputs:
+      mcps:
+        description: 'MCPs to deploy (comma-separated, e.g. "discord-read,slack-mcp"). Leave empty to detect from changes.'
+        required: false
+        type: string
+        default: ''
   push:
     branches:
       - main
@@ -24,24 +30,34 @@ jobs:
       - name: Detect changed MCPs
         id: detect
         run: |
-          # Get the previous commit to compare against
-          PREVIOUS_COMMIT="${{ github.event.before }}"
+          # Check if MCPs were manually specified via workflow_dispatch
+          MANUAL_MCPS="${{ github.event.inputs.mcps }}"
           
-          # Handle case where there's no valid previous commit (first push, squash merge, force push)
-          if [ "$PREVIOUS_COMMIT" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS_COMMIT" ]; then
-            echo "No valid previous commit, comparing against HEAD~1"
-            PREVIOUS_COMMIT="HEAD~1"
+          if [ -n "$MANUAL_MCPS" ]; then
+            echo "📋 Manual deployment triggered for: $MANUAL_MCPS"
+            # Convert comma-separated list to JSON array
+            CHANGED_MCPS=$(echo "$MANUAL_MCPS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
+            echo "Changed MCPs: $CHANGED_MCPS"
+          else
+            # Get the previous commit to compare against
+            PREVIOUS_COMMIT="${{ github.event.before }}"
+            
+            # Handle case where there's no valid previous commit (first push, squash merge, force push)
+            if [ "$PREVIOUS_COMMIT" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS_COMMIT" ]; then
+              echo "No valid previous commit, comparing against HEAD~1"
+              PREVIOUS_COMMIT="HEAD~1"
+            fi
+            
+            # Verify the commit exists, fallback to HEAD~1 if not
+            if ! git cat-file -e "$PREVIOUS_COMMIT" 2>/dev/null; then
+              echo "Previous commit not found, comparing against HEAD~1"
+              PREVIOUS_COMMIT="HEAD~1"
+            fi
+            
+            # Detect changed MCPs
+            CHANGED_MCPS=$(bun run scripts/detect-changed-mcps.ts "$PREVIOUS_COMMIT" HEAD)
+            echo "Changed MCPs: $CHANGED_MCPS"
           fi
-          
-          # Verify the commit exists, fallback to HEAD~1 if not
-          if ! git cat-file -e "$PREVIOUS_COMMIT" 2>/dev/null; then
-            echo "Previous commit not found, comparing against HEAD~1"
-            PREVIOUS_COMMIT="HEAD~1"
-          fi
-          
-          # Detect changed MCPs
-          CHANGED_MCPS=$(bun run scripts/detect-changed-mcps.ts "$PREVIOUS_COMMIT" HEAD)
-          echo "Changed MCPs: $CHANGED_MCPS"
           
           # Filter against deploy.json (only deploy MCPs that are listed there)
           DEPLOYABLE_MCPS=$(bun run scripts/filter-deployable-mcps.ts "$CHANGED_MCPS")
