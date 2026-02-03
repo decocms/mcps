@@ -40,14 +40,14 @@ const CategoryEnum = z.enum([
 ]);
 
 /**
- * Schema for a weekly report article
+ * Schema for a weekly report article (output - all fields optional for flexibility)
  */
 const ArticleSchema = z.object({
   id: z.number().optional(),
-  url: z.string().url(),
-  title: z.string(),
+  url: z.string().optional(),
+  title: z.string().optional(),
   source_title: z.string().optional(),
-  status: StatusEnum.default("draft"),
+  status: z.string().optional(),
   created_at: z.string().optional(),
   content: z.string().optional(),
   slug: z.string().optional(),
@@ -56,7 +56,7 @@ const ArticleSchema = z.object({
   meta_title: z.string().optional(),
   meta_description: z.string().optional(),
   keywords: z.string().optional(),
-  category: CategoryEnum.optional(),
+  category: z.string().optional(),
   tags: z.string().optional(),
   author: z.string().optional(),
   reading_time: z.number().int().optional(),
