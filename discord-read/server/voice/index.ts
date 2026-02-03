@@ -25,6 +25,7 @@ export {
   setupSpeakingListener,
   pcmToWav,
   clearAllBuffers,
+  clearAudioCallback,
   getActiveBufferCount,
   type AudioBuffer,
   type CompletedAudio,
@@ -47,6 +48,7 @@ export {
   // Voice Commands (Main Integration)
   // Note: TTS uses ElevenLabs if configured, otherwise Discord's native TTS
   configureVoiceCommands,
+  clearVoiceCommands,
   configureVoiceWhisper,
   configureElevenLabs,
   isElevenLabsConfigured,

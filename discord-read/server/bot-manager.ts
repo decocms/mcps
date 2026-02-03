@@ -37,6 +37,16 @@ interface StoredConfig {
 }
 let _storedConfig: StoredConfig | null = null;
 
+// Shared callback to avoid creating closures that capture `env` (memory leak prevention)
+function sessionExpiredCallback(): void {
+  console.log(
+    "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
+  );
+  console.log(
+    "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
+  );
+}
+
 /**
  * Store essential config for fallback when env is not available
  */
@@ -138,14 +148,8 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     const meshToken = env.MESH_REQUEST_CONTEXT?.token;
     if (meshToken) {
       console.log("[BotManager] Starting Mesh session heartbeat...");
-      startHeartbeat(env, () => {
-        console.log(
-          "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
-        );
-        console.log(
-          "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
-        );
-      });
+      // IMPORTANT: Use shared callback to avoid memory leak from closures capturing `env`
+      startHeartbeat(env, sessionExpiredCallback);
     } else {
       console.log(
         "[BotManager] ℹ️ Bot started without Mesh session (via tool/Supabase config). No heartbeat needed.",

@@ -360,7 +360,16 @@ export function createAudioCollector(): Transform {
  */
 export function clearAllBuffers(): void {
   audioBuffers.clear();
+  activeSubscriptions.clear();
   console.log("[AudioReceiver] All audio buffers cleared");
+}
+
+/**
+ * Clear callback reference (for cleanup/shutdown)
+ */
+export function clearAudioCallback(): void {
+  onAudioComplete = null;
+  console.log("[AudioReceiver] Audio callback cleared");
 }
 
 /**

@@ -251,18 +251,36 @@ async function sendTTS(guildId: string, message: string): Promise<boolean> {
 
 /**
  * Configure voice command system
+ * NOTE: This is called multiple times when config changes, so we need to be careful
+ * not to create memory leaks from retained closures
  */
 export function configureVoiceCommands(
   client: Client,
   config: Partial<VoiceConfig>,
   handler: VoiceCommandHandler,
 ): void {
+  // Clear previous handler reference to allow GC (memory leak prevention)
+  if (commandHandler !== null && commandHandler !== handler) {
+    console.log(
+      "[VoiceCommands] Replacing previous command handler (clearing old reference)",
+    );
+  }
+
   discordClient = client;
   voiceConfig = { ...voiceConfig, ...config };
   commandHandler = handler;
 
   console.log("[VoiceCommands] Configured:", voiceConfig);
   console.log("[VoiceCommands] Using Discord native TTS (no FFmpeg needed)");
+}
+
+/**
+ * Clear voice command configuration (for cleanup/shutdown)
+ */
+export function clearVoiceCommands(): void {
+  discordClient = null;
+  commandHandler = null;
+  console.log("[VoiceCommands] Configuration cleared");
 }
 
 /**
