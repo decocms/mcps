@@ -393,15 +393,18 @@ export const createGenerateApiKeyTool = (env: Env) =>
       }
 
       try {
-        // Call Mesh API to create an API key
-        // API Key needs permissions for Decopilot and connections
-        const createApiKeyUrl = `${meshUrl}/api/${organizationId}/tools/call`;
+        // Call Mesh MCP endpoint to create an API key
+        // Uses the MCP JSONRPC protocol format
+        const createApiKeyUrl = `${meshUrl}/mcp`;
 
-        const state = env.MESH_REQUEST_CONTEXT?.state as any;
-        const modelProviderId = state?.MODEL_PROVIDER?.value;
-        const agentId = state?.AGENT?.value;
+        const state = env.MESH_REQUEST_CONTEXT?.state as Record<
+          string,
+          unknown
+        >;
+        const modelProviderId = (state?.MODEL_PROVIDER as { value?: string })
+          ?.value;
 
-        // Build permissions - need access to Decopilot, model provider, and agent
+        // Build permissions - need access to Decopilot, model provider, and the current connection
         const permissions: Record<string, string[]> = {
           self: ["*"], // All management tools
         };
@@ -411,15 +414,18 @@ export const createGenerateApiKeyTool = (env: Env) =>
           permissions[modelProviderId] = ["*"];
         }
 
-        const response = await fetch(createApiKeyUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tool: "API_KEY_CREATE",
-            input: {
+        // Add current connection permissions
+        if (connectionId) {
+          permissions[`conn_${connectionId}`] = ["*"];
+        }
+
+        // Use MCP JSONRPC format
+        const mcpRequest = {
+          jsonrpc: "2.0",
+          method: "tools/call",
+          params: {
+            name: "API_KEY_CREATE",
+            arguments: {
               name: `Discord Bot - ${connectionId}`,
               permissions,
               // No expiresIn = never expires!
@@ -428,7 +434,18 @@ export const createGenerateApiKeyTool = (env: Env) =>
                 connectionId,
               },
             },
-          }),
+          },
+          id: Date.now(),
+        };
+
+        const response = await fetch(createApiKeyUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          body: JSON.stringify(mcpRequest),
         });
 
         if (!response.ok) {
@@ -445,14 +462,50 @@ export const createGenerateApiKeyTool = (env: Env) =>
           };
         }
 
-        const result = await response.json();
-        const apiKey = result.output?.key || result.key;
+        // Type for MCP JSONRPC response
+        interface McpResponse {
+          jsonrpc: string;
+          id?: number;
+          error?: { code: number; message: string };
+          result?: {
+            structuredContent?: { key?: string; [key: string]: unknown };
+            content?: Array<{ type: string; text: string }>;
+          };
+        }
 
-        if (!apiKey) {
-          console.error("[GenerateApiKey] No key in response:", result);
+        const mcpResponse = (await response.json()) as McpResponse;
+        console.log(
+          "[GenerateApiKey] MCP Response:",
+          JSON.stringify(mcpResponse, null, 2),
+        );
+
+        // MCP JSONRPC response format: { jsonrpc: "2.0", result: { structuredContent: {...} }, id: ... }
+        // Or error format: { jsonrpc: "2.0", error: { code, message }, id: ... }
+        if (mcpResponse.error) {
           return {
             success: false,
-            message: "API key creation succeeded but no key was returned",
+            message: `MCP Error: ${mcpResponse.error.message || JSON.stringify(mcpResponse.error)}`,
+            hasApiKey: false,
+            expiresAt: null,
+          };
+        }
+
+        // The result can be in structuredContent or parsed from content text
+        const resultData =
+          mcpResponse.result?.structuredContent ||
+          (mcpResponse.result?.content?.[0]?.text
+            ? (JSON.parse(mcpResponse.result.content[0].text) as {
+                key?: string;
+              })
+            : null);
+
+        const apiKey = resultData?.key;
+
+        if (!apiKey) {
+          console.error("[GenerateApiKey] No key in response:", mcpResponse);
+          return {
+            success: false,
+            message: `API key creation succeeded but no key was returned. Response: ${JSON.stringify(mcpResponse)}`,
             hasApiKey: false,
             expiresAt: null,
           };

@@ -108,15 +108,21 @@ const MESSAGE_CACHE_TTL = 10000; // 10 seconds
  * Initialize the Discord client with the given environment.
  */
 export async function initializeDiscordClient(env: Env): Promise<Client> {
+  console.log(
+    `[Discord] 🆔 initializeDiscordClient called (Instance: ${CLIENT_INSTANCE_ID})`,
+  );
+
   // If already initializing, wait for it
   if (initializingPromise) {
-    console.log("[Discord] Already initializing, waiting...");
+    console.log("[Discord] ⏳ Already initializing, waiting...");
     return initializingPromise;
   }
 
   // Check if already initialized and ready
   if (client?.isReady()) {
-    console.log("[Discord] Client already initialized and ready");
+    console.log(
+      `[Discord] ✅ Client already initialized and ready (guilds: ${client.guilds.cache.size})`,
+    );
     return client;
   }
 
@@ -315,20 +321,21 @@ export function getDiscordClient(): Client | null {
  * Register all event handlers for the Discord client.
  */
 function registerEventHandlers(client: Client, env: Env): void {
+  // Check how many listeners exist before cleanup
+  const existingListeners = client.eventNames().length;
+  console.log(
+    `[Discord] 🔍 Existing event listeners before cleanup: ${existingListeners}`,
+  );
+
   // CRITICAL: Remove ALL existing listeners to prevent duplicates on hot reload
   console.log("[Discord] Clearing existing event listeners...");
   client.removeAllListeners();
-
-  // Reset flag
   eventsRegistered = false;
 
-  // Prevent double registration
-  if (eventsRegistered) {
-    console.log("[Discord] Events already registered, skipping...");
-    return;
-  }
+  console.log(
+    `[Discord] 📝 Registering event handlers (Instance: ${CLIENT_INSTANCE_ID})...`,
+  );
   eventsRegistered = true;
-  console.log("[Discord] Registering event handlers...");
   // Ready event (use 'clientReady' for Discord.js v15+)
   client.once("clientReady", () => {
     const prefix = env.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
