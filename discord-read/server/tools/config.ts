@@ -54,6 +54,12 @@ export const createSaveConfigTool = (env: Env) =>
           .string()
           .optional()
           .describe("Custom system prompt for AI agent"),
+        meshApiKey: z
+          .string()
+          .optional()
+          .describe(
+            "Mesh API Key (non-expiring) for LLM calls. Generate one in Mesh Dashboard > API Keys.",
+          ),
       })
       .strict(),
     outputSchema: z
@@ -75,6 +81,7 @@ export const createSaveConfigTool = (env: Env) =>
         modelId,
         agentId,
         systemPrompt,
+        meshApiKey,
       } = context as {
         botToken: string;
         authorizedGuilds?: string[];
@@ -84,6 +91,7 @@ export const createSaveConfigTool = (env: Env) =>
         modelId?: string;
         agentId?: string;
         systemPrompt?: string;
+        meshApiKey?: string;
       };
 
       // Check if Supabase is configured
@@ -110,6 +118,7 @@ export const createSaveConfigTool = (env: Env) =>
         organizationId,
         meshUrl,
         meshToken: undefined, // Will be set by mesh
+        meshApiKey, // Non-expiring API key for LLM calls
         botToken,
         authorizedGuilds: authorizedGuilds || [],
         ownerId,
@@ -123,13 +132,17 @@ export const createSaveConfigTool = (env: Env) =>
       try {
         await setDiscordConfig(config);
 
+        const apiKeyStatus = meshApiKey
+          ? " API Key saved - LLM calls will use this key."
+          : "";
+
         return {
           success: true,
           message: `Discord bot configuration saved successfully! ${
             authorizedGuilds && authorizedGuilds.length > 0
               ? `Bot authorized for ${authorizedGuilds.length} guild(s).`
               : "Bot can be used in all guilds."
-          }`,
+          }${apiKeyStatus}`,
           connectionId,
           supabaseConfigured: true,
         };
