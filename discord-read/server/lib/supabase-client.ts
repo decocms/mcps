@@ -14,7 +14,8 @@ export interface DiscordConnectionRow {
   connection_id: string;
   organization_id: string;
   mesh_url: string;
-  mesh_token: string | null;
+  mesh_token: string | null; // Session token (expires)
+  mesh_api_key: string | null; // Persistent API key (never expires) - PREFERRED
   model_provider_id: string | null;
   model_id: string | null;
   agent_id: string | null;
@@ -85,6 +86,7 @@ export async function saveConnectionConfig(config: {
   organizationId: string;
   meshUrl: string;
   meshToken?: string;
+  meshApiKey?: string; // Persistent API key (preferred over meshToken)
   modelProviderId?: string;
   modelId?: string;
   agentId?: string;
@@ -106,6 +108,7 @@ export async function saveConnectionConfig(config: {
     organization_id: config.organizationId,
     mesh_url: config.meshUrl,
     mesh_token: config.meshToken || null,
+    mesh_api_key: config.meshApiKey || null,
     model_provider_id: config.modelProviderId || null,
     model_id: config.modelId || null,
     agent_id: config.agentId || null,

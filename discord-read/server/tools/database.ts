@@ -9,6 +9,8 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getSupabaseClient } from "../lib/supabase-client.ts";
+import { invalidateChannelContextCache } from "../discord/handlers/messageHandler.ts";
+import { invalidateAutoRespondCache } from "../discord/client.ts";
 
 /**
  * Query Discord messages (read-only, scoped to connection)
@@ -325,9 +327,227 @@ export const createMessageStatsTool = (env: Env) =>
     },
   });
 
+/**
+ * Query channel contexts (custom prompts per channel)
+ */
+export const createQueryChannelContextsTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_QUERY_CHANNEL_CONTEXTS",
+    description:
+      "Query channel contexts (custom system prompts and auto-respond settings) from the database.",
+    inputSchema: z
+      .object({
+        guildId: z.string().describe("Guild ID to query contexts for"),
+        channelId: z
+          .string()
+          .optional()
+          .describe("Filter by specific channel ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        contexts: z.array(
+          z.object({
+            guild_id: z.string(),
+            channel_id: z.string(),
+            channel_name: z.string().nullable(),
+            system_prompt: z.string(),
+            auto_respond: z.boolean(),
+            enabled: z.boolean(),
+            created_by_username: z.string(),
+            created_at: z.string(),
+            updated_at: z.string(),
+          }),
+        ),
+        total: z.number(),
+        message: z.string().optional(),
+      })
+      .strict(),
+    execute: async (params: any) => {
+      const { context } = params;
+      const { guildId, channelId } = context as {
+        guildId: string;
+        channelId?: string;
+      };
+
+      const client = getSupabaseClient();
+      if (!client) {
+        return {
+          success: false,
+          contexts: [],
+          total: 0,
+          message: "Database not configured",
+        };
+      }
+
+      try {
+        let query = client
+          .from("discord_channel_context")
+          .select("*", { count: "exact" })
+          .eq("guild_id", guildId);
+
+        if (channelId) {
+          query = query.eq("channel_id", channelId);
+        }
+
+        const { data, error, count } = await query.order("channel_name");
+
+        if (error) {
+          return {
+            success: false,
+            contexts: [],
+            total: 0,
+            message: `Query failed: ${error.message}`,
+          };
+        }
+
+        return {
+          success: true,
+          contexts: data || [],
+          total: count || 0,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          contexts: [],
+          total: 0,
+          message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        };
+      }
+    },
+  });
+
+/**
+ * Set channel auto-respond setting
+ */
+export const createSetChannelAutoRespondTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_SET_CHANNEL_AUTO_RESPOND",
+    description:
+      "Enable or disable auto-respond for a channel. When enabled, the bot will respond to ALL messages in the channel without needing to be mentioned.",
+    inputSchema: z
+      .object({
+        guildId: z.string().describe("Guild ID"),
+        channelId: z.string().describe("Channel ID"),
+        channelName: z
+          .string()
+          .optional()
+          .describe("Channel name for reference"),
+        autoRespond: z
+          .boolean()
+          .describe("Whether to auto-respond to all messages in this channel"),
+        systemPrompt: z
+          .string()
+          .optional()
+          .describe(
+            "Custom system prompt for this channel. Required if auto_respond is being enabled for the first time.",
+          ),
+        createdById: z.string().describe("User ID who is setting this"),
+        createdByUsername: z.string().describe("Username who is setting this"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async (params: any) => {
+      const { context } = params;
+      const {
+        guildId,
+        channelId,
+        channelName,
+        autoRespond,
+        systemPrompt,
+        createdById,
+        createdByUsername,
+      } = context as {
+        guildId: string;
+        channelId: string;
+        channelName?: string;
+        autoRespond: boolean;
+        systemPrompt?: string;
+        createdById: string;
+        createdByUsername: string;
+      };
+
+      const client = getSupabaseClient();
+      if (!client) {
+        return {
+          success: false,
+          message: "Database not configured",
+        };
+      }
+
+      try {
+        // Check if context already exists
+        const { data: existing } = await client
+          .from("discord_channel_context")
+          .select("*")
+          .eq("guild_id", guildId)
+          .eq("channel_id", channelId)
+          .single();
+
+        if (!existing && autoRespond && !systemPrompt) {
+          return {
+            success: false,
+            message:
+              "A system prompt is required when enabling auto-respond for a new channel.",
+          };
+        }
+
+        const row = {
+          guild_id: guildId,
+          channel_id: channelId,
+          channel_name: channelName || existing?.channel_name || null,
+          system_prompt:
+            systemPrompt ||
+            existing?.system_prompt ||
+            "You are a helpful assistant.",
+          auto_respond: autoRespond,
+          enabled: true,
+          created_by_id: createdById,
+          created_by_username: createdByUsername,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await client
+          .from("discord_channel_context")
+          .upsert(row, { onConflict: "guild_id, channel_id" });
+
+        if (error) {
+          return {
+            success: false,
+            message: `Failed to update: ${error.message}`,
+          };
+        }
+
+        // Invalidate caches so new setting takes effect immediately
+        invalidateChannelContextCache(guildId, channelId);
+        invalidateAutoRespondCache(guildId, channelId);
+
+        return {
+          success: true,
+          message: autoRespond
+            ? `Auto-respond ENABLED for channel ${channelName || channelId}. Bot will now respond to ALL messages without needing to be mentioned.`
+            : `Auto-respond DISABLED for channel ${channelName || channelId}. Users must mention the bot to get a response.`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        };
+      }
+    },
+  });
+
 // Export all database tools
 export const databaseTools = [
   createQueryMessagesTool,
   createQueryGuildsTool,
   createMessageStatsTool,
+  createQueryChannelContextsTool,
+  createSetChannelAutoRespondTool,
 ];

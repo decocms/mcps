@@ -575,27 +575,37 @@ async function handleDefaultAgent(
     });
 
     const errorMsg = error instanceof Error ? error.message : String(error);
-    let errorResponse: string;
 
-    // Check for common errors and provide helpful messages
-    if (errorMsg.includes("Organization context is required")) {
-      errorResponse =
-        `⚠️ **Sessão expirada!**\n\n` +
-        `O token de autenticação com o Mesh expirou.\n\n` +
-        `**Solução:** Vá no Mesh Dashboard e clique em "Save" na configuração deste MCP para renovar a sessão.`;
-    } else if (
-      errorMsg.includes("Database") &&
-      errorMsg.includes("not initialized")
+    // Silently handle session/auth errors - don't spam the chat
+    if (
+      errorMsg.includes("Organization context is required") ||
+      errorMsg.includes("session expired") ||
+      errorMsg.includes("401") ||
+      errorMsg.includes("403")
     ) {
-      errorResponse =
-        `⚠️ **Banco de dados não inicializado!**\n\n` +
-        `Use o comando no Mesh: \`DISCORD_START_BOT\` ou clique em "Save" na config.`;
+      console.log(
+        "[Agent] ⚠️ Session/auth error - not sending to chat:",
+        errorMsg,
+      );
+      // Just delete the thinking message if it exists
+      if (thinkingMsg) {
+        try {
+          await thinkingMsg.delete();
+        } catch {
+          // Ignore delete errors
+        }
+      }
+      return;
+    }
+
+    // For other errors, show a user-friendly message
+    let errorResponse: string;
+    if (errorMsg.includes("Database") && errorMsg.includes("not initialized")) {
+      errorResponse = `⚠️ Bot não está totalmente inicializado. Tente novamente em alguns segundos.`;
     } else if (errorMsg.includes("timed out") || errorMsg.includes("aborted")) {
-      errorResponse =
-        `⏱️ **Timeout!** A requisição demorou muito.\n\n` +
-        `Isso pode acontecer se o modelo estiver sobrecarregado. Tente novamente.`;
+      errorResponse = `⏱️ A requisição demorou muito. Tente novamente.`;
     } else {
-      errorResponse = `❌ Erro ao processar sua mensagem.\n\n\`\`\`${errorMsg.slice(0, 500)}\`\`\``;
+      errorResponse = `❌ Erro ao processar sua mensagem.`;
     }
 
     // Update thinking message with error, or send new message
