@@ -1,6 +1,6 @@
 # Discord MCP - Bot com Configuração Persistente    
 
-Bot Discord com suporte a IA, comandos de voz, indexação de mensagens e gerenciamento de servidores.
+Bot Discord avançado com suporte a IA, webhooks, slash commands, event bus, indexação de mensagens e gerenciamento completo de servidores.
 
 ## 🚀 Como Usar
 
@@ -16,9 +16,13 @@ await DISCORD_SAVE_CONFIG({
   commandPrefix: "!",
   modelProviderId: "openai-connection-id", // opcional
   modelId: "gpt-4", // opcional
-  systemPrompt: "Você é um bot útil do Discord..." // opcional
+  systemPrompt: "Você é um bot útil do Discord...", // opcional
+  meshApiKey: "mesh_key_...", // opcional - API key persistente (recomendado)
+  discordPublicKey: "your_discord_public_key" // opcional - para webhooks
 });
 ```
+
+**💡 Dica:** Use `DISCORD_GENERATE_API_KEY` para criar uma API key persistente que nunca expira!
 
 ### 2. Iniciar o Bot
 
@@ -53,6 +57,7 @@ await DISCORD_BOT_STOP({});
 - `DISCORD_SAVE_CONFIG` - Salvar configuração no Supabase
 - `DISCORD_LOAD_CONFIG` - Carregar configuração salva
 - `DISCORD_DELETE_CONFIG` - Remover configuração
+- `DISCORD_GENERATE_API_KEY` - Gerar API key persistente (nunca expira)
 - `DISCORD_CONFIG_CACHE_STATS` - Estatísticas do cache
 - `DISCORD_CONFIG_CLEAR_CACHE` - Limpar cache
 
@@ -61,18 +66,41 @@ await DISCORD_BOT_STOP({});
 - `DISCORD_BOT_STOP` - Parar o bot
 - `DISCORD_BOT_STATUS` - Status do bot
 
-### Discord API
+### Discord API - Mensagens
 - `DISCORD_SEND_MESSAGE` - Enviar mensagem
 - `DISCORD_GET_CHANNEL_MESSAGES` - Buscar mensagens
+- `DISCORD_EDIT_MESSAGE` - Editar mensagem
+- `DISCORD_DELETE_MESSAGE` - Deletar mensagem
+- `DISCORD_PIN_MESSAGE` - Fixar mensagem
+- `DISCORD_SEARCH_USER_MENTIONS` - Buscar menções de usuário
+
+### Discord API - Servidores e Canais
 - `DISCORD_GET_GUILDS` - Listar servidores
 - `DISCORD_GET_CHANNELS` - Listar canais
-- `DISCORD_GET_MEMBERS` - Listar membros
-- E muitas outras...
+- `DISCORD_CREATE_CHANNEL` - Criar canal
+- `DISCORD_EDIT_CHANNEL` - Editar canal
+- `DISCORD_DELETE_CHANNEL` - Deletar canal
 
-### Voz
-- `DISCORD_JOIN_VOICE_CHANNEL` - Entrar em canal de voz
-- `DISCORD_LEAVE_VOICE_CHANNEL` - Sair de canal de voz
-- `DISCORD_SPEAK_TEXT` - Falar texto (TTS)
+### Discord API - Membros e Roles
+- `DISCORD_GET_MEMBERS` - Listar membros
+- `DISCORD_EDIT_MEMBER` - Editar membro
+- `DISCORD_BAN_MEMBER` - Banir membro
+- `DISCORD_KICK_MEMBER` - Expulsar membro
+- `DISCORD_GET_ROLES` - Listar roles
+- `DISCORD_CREATE_ROLE` - Criar role
+- `DISCORD_ASSIGN_ROLE` - Atribuir role
+
+### Database - Análise e Contexto
+- `DISCORD_QUERY_MESSAGES` - Consultar mensagens indexadas
+- `DISCORD_QUERY_GUILDS` - Consultar servidores
+- `DISCORD_MESSAGE_STATS` - Estatísticas de mensagens
+- `DISCORD_QUERY_CHANNEL_CONTEXTS` - Listar contextos de canal
+- `DISCORD_SET_CHANNEL_AUTO_RESPOND` - Configurar resposta automática
+
+### Slash Commands (Webhooks)
+- `DISCORD_REGISTER_SLASH_COMMAND` - Registrar comando /slash
+- `DISCORD_UNREGISTER_SLASH_COMMAND` - Remover comando
+- `DISCORD_LIST_SLASH_COMMANDS` - Listar comandos registrados
 
 ## 🔧 Configuração do Supabase
 
@@ -89,7 +117,9 @@ CREATE TABLE discord_connections (
   organization_id TEXT NOT NULL,
   mesh_url TEXT NOT NULL,
   mesh_token TEXT,
+  mesh_api_key TEXT, -- API key persistente (recomendado)
   bot_token TEXT NOT NULL,
+  discord_public_key TEXT, -- Para webhooks
   authorized_guilds TEXT[],
   owner_id TEXT,
   command_prefix TEXT DEFAULT '!' NOT NULL,
@@ -104,12 +134,69 @@ CREATE TABLE discord_connections (
 CREATE INDEX idx_discord_connections_org ON discord_connections(organization_id);
 ```
 
+**📄 Schema Completo:** Execute `SUPABASE_SECURITY_FINAL.sql` para criar todas as tabelas com RLS.
+
 ### 3. Configurar Variáveis de Ambiente
 
 ```bash
 export SUPABASE_URL=https://seu-projeto.supabase.co
 export SUPABASE_ANON_KEY=sua-chave-aqui
 ```
+
+## 🔌 Webhooks e Slash Commands
+
+O bot suporta Discord Interactions via webhooks para criar comandos /slash nativos.
+
+### Configurar Webhook URL
+
+No Discord Developer Portal:
+1. Vá em "General Information"
+2. Configure "Interactions Endpoint URL": `https://seu-mcp.deco.site/discord/interactions/seu-connection-id`
+3. Copie a "Public Key" e salve na configuração
+
+### Registrar Slash Commands
+
+```typescript
+// Registrar comando /start
+await DISCORD_REGISTER_SLASH_COMMAND({
+  commandName: "start",
+  commandDescription: "Iniciar o bot se ele estiver offline",
+  toolId: "DISCORD_BOT_START",
+  isGlobal: true
+});
+
+// Comando com opções
+await DISCORD_REGISTER_SLASH_COMMAND({
+  commandName: "echo",
+  commandDescription: "Repetir uma mensagem",
+  toolId: "DISCORD_SEND_MESSAGE",
+  commandOptions: [
+    {
+      type: 3, // STRING
+      name: "message",
+      description: "Mensagem para repetir",
+      required: true
+    }
+  ]
+});
+```
+
+### Event Bus Integration
+
+O bot publica eventos para o Mesh Event Bus automaticamente:
+
+**Eventos Publicados:**
+- `discord.message.created` - Nova mensagem
+- `discord.message.deleted` - Mensagem deletada
+- `discord.message.updated` - Mensagem editada
+- `discord.member.joined` - Membro entrou
+- `discord.member.left` - Membro saiu
+- `discord.member.role.added` - Role atribuída
+- `discord.member.role.removed` - Role removida
+- `discord.reaction.added` - Reação adicionada
+- `discord.reaction.removed` - Reação removida
+
+Outros MCPs podem se inscrever nesses eventos para reagir automaticamente.
 
 ## 🏃 Desenvolvimento Local
 
@@ -132,13 +219,28 @@ bun run build:start
 
 ## 🎯 Recursos
 
+### Core
 - ✅ **Configuração Persistente** - Token e settings salvos no Supabase
+- ✅ **API Key Persistente** - Nunca expira, elimina problemas de sessão
 - ✅ **Multi-tenant** - Suporta múltiplas conexões com configurações diferentes
 - ✅ **Cache Inteligente** - Cache de 30s para performance
 - ✅ **Guilds Autorizados** - Controle quais servidores podem usar o bot
+
+### IA e Automação
 - ✅ **IA Integrada** - Suporte a múltiplos modelos (GPT-4, Claude, etc)
-- ✅ **Comandos de Voz** - TTS/STT com Whisper e ElevenLabs
+- ✅ **Auto-respond** - Canais podem responder automaticamente sem mencionar o bot
+- ✅ **Contexto por Canal** - System prompts personalizados por canal
+- ✅ **Indexação Automática** - Todas as mensagens indexadas no Supabase
+
+### Webhooks e Interatividade
+- ✅ **Slash Commands** - Comandos /nativos do Discord via webhooks
+- ✅ **Webhook Verification** - Suporte completo ao Discord Interactions
+- ✅ **Event Bus** - Publica eventos de Discord para outros MCPs
+
+### Gerenciamento
 - ✅ **Gerenciamento Completo** - Mensagens, canais, roles, membros, etc
+- ✅ **Busca Avançada** - Buscar menções de usuários com contexto de threads
+- ✅ **Análise de Dados** - Estatísticas de mensagens, atividade, etc
 
 ## 🔐 Segurança
 
@@ -192,29 +294,71 @@ Para mais detalhes, veja:
 ## 🤝 Exemplo de Fluxo Completo
 
 ```typescript
-// 1. Salvar configuração
+// 1. Gerar API key persistente (recomendado)
+await DISCORD_GENERATE_API_KEY({});
+// Retorna: { success: true, hasApiKey: true, message: "API Key criada!" }
+
+// 2. Salvar configuração (API key já salva automaticamente)
 await DISCORD_SAVE_CONFIG({
   botToken: "Bot.MTIzNDU2...",
   authorizedGuilds: ["987654321"],
   modelProviderId: "openai",
-  modelId: "gpt-4"
+  modelId: "gpt-4",
+  discordPublicKey: "abc123..." // Para webhooks
 });
 
-// 2. Iniciar bot
+// 3. Iniciar bot
 await DISCORD_BOT_START({});
+// Retorna: { success: true, botTag: "MyBot#1234", guilds: 5 }
 
-// 3. Enviar mensagem
+// 4. Configurar auto-respond em um canal
+await DISCORD_SET_CHANNEL_AUTO_RESPOND({
+  guildId: "987654321",
+  channelId: "123456789",
+  autoRespond: true
+});
+
+// 5. Registrar slash command
+await DISCORD_REGISTER_SLASH_COMMAND({
+  commandName: "help",
+  commandDescription: "Mostrar ajuda",
+  toolId: "DISCORD_SEND_MESSAGE"
+});
+
+// 6. Enviar mensagem
 await DISCORD_SEND_MESSAGE({
   channelId: "123456789",
-  content: "Olá! 👋"
+  content: "Bot online! 🤖"
 });
 
-// 4. Verificar status
+// 7. Buscar menções de um usuário
+await DISCORD_SEARCH_USER_MENTIONS({
+  guild_id: "987654321",
+  user_id: "111222333",
+  days: 7
+});
+
+// 8. Verificar status
 await DISCORD_BOT_STATUS({});
 
-// 5. Parar bot (quando não precisar mais)
+// 9. Parar bot (quando não precisar mais)
 await DISCORD_BOT_STOP({});
 ```
+
+## 🔒 API Key vs Session Token
+
+### Session Token (Padrão)
+- ❌ Expira após algumas horas
+- ❌ Requer cliques em "Save" no Mesh periodicamente
+- ❌ Causa erro "Organization context is required"
+
+### API Key Persistente (Recomendado)
+- ✅ Nunca expira
+- ✅ Configurar uma vez e esquecer
+- ✅ Sem erros de autenticação
+- ✅ Gerado com `DISCORD_GENERATE_API_KEY`
+
+**Migração:** Se você já usa session token, basta executar `DISCORD_GENERATE_API_KEY` e a API key será salva automaticamente.
 
 ## 📝 License
 
