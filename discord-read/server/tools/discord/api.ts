@@ -77,34 +77,25 @@ export async function discordAPI<T>(
   endpoint: string,
   options: DiscordAPIOptions = {},
 ): Promise<T> {
-  // IMPORTANT: Check if bot is connected before making API calls
-  const { getDiscordClient } = await import("../discord/client.ts");
-  const client = getDiscordClient();
-
-  if (!client || !client.isReady()) {
-    throw new Error(
-      "Discord bot is not connected. Please start the bot first using DISCORD_BOT_START tool.",
-    );
-  }
-
-  // Try to get token from passed env first, then fall back to global env
+  // Get bot token from Supabase - REST API doesn't need the bot to be "connected" via WebSocket
+  // We only need a valid bot token to make HTTP requests to Discord API
   let botToken: string;
   try {
-    botToken = getDiscordBotToken(env);
-  } catch {
+    botToken = await getDiscordBotToken(env);
+  } catch (error) {
     // Fallback: try to get from global env (set when Discord bot started)
     const globalEnv = getCurrentEnv();
     if (globalEnv) {
       try {
-        botToken = getDiscordBotToken(globalEnv);
+        botToken = await getDiscordBotToken(globalEnv);
       } catch {
         throw new Error(
-          "Discord Bot Token not configured. Make sure the bot is initialized and Authorization is set.",
+          `Discord Bot Token not found: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     } else {
       throw new Error(
-        "Discord Bot Token not configured. Make sure the bot is initialized and Authorization is set.",
+        `Discord Bot Token not found: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

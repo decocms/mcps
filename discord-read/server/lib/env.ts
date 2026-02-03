@@ -1,29 +1,29 @@
 import type { Env } from "../types/env.ts";
 
 /**
- * Get Discord Bot Token from Authorization header
- * The token is used directly as the Discord Bot Token
+ * Get Discord Bot Token from Supabase configuration
+ *
+ * IMPORTANT: This retrieves the DISCORD bot token, not the Mesh token!
+ * The Discord bot token is stored in Supabase via DISCORD_SAVE_CONFIG.
  *
  * @param env - The environment containing the mesh request context
- * @returns The Discord Bot Token to use for authentication
- * @throws Error with 401 status if not authenticated
+ * @returns The Discord Bot Token to use for authentication with Discord API
+ * @throws Error if bot token is not configured
  */
-export const getDiscordBotToken = (env: Env): string => {
-  const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
+export const getDiscordBotToken = async (env: Env): Promise<string> => {
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
 
-  if (!authorization) {
-    throw new Error("Unauthorized: Missing authorization header");
+  // Load Discord config from Supabase (includes botToken)
+  const { getDiscordConfig } = await import("./config-cache.ts");
+  const config = await getDiscordConfig(connectionId);
+
+  if (!config?.botToken) {
+    throw new Error(
+      `Discord Bot Token not configured for connection '${connectionId}'. ` +
+        "Please use DISCORD_SAVE_CONFIG to save your bot token first.",
+    );
   }
 
-  // Extract token from "Bearer <token>" format
-  const token = authorization.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : authorization;
-
-  if (!token) {
-    throw new Error("Unauthorized: Invalid authorization format");
-  }
-
-  // Use the token directly as the Discord Bot Token
-  return token;
+  return config.botToken;
 };
