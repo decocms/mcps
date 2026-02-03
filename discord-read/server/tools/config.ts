@@ -540,7 +540,7 @@ export const createGenerateApiKeyTool = (env: Env) =>
     },
   });
 
-// Export all config tools
+// Export all config tools (v2 - fixed MCP endpoint)
 export const configTools = [
   createSaveConfigTool,
   createLoadConfigTool,
