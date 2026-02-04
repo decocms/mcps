@@ -84,9 +84,12 @@ app.post("/discord/interactions/:connectionId", async (c) => {
     `[Webhook] Signature verified, type: ${payload.type}, command: ${payload.data?.name}`,
   );
 
-  // Handle PING (verification challenge)
-  if (payload.type === InteractionType.PING) {
-    console.log(`[Webhook] Responding to PING challenge`);
+  // Handle PING (verification challenge) - type 1
+  // Also handle type 0 as PING (Discord sometimes sends this during verification)
+  if (payload.type === InteractionType.PING || payload.type === 0) {
+    console.log(
+      `[Webhook] Responding to PING challenge (type: ${payload.type})`,
+    );
     return c.json({ type: InteractionResponseType.PONG });
   }
 
