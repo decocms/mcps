@@ -66,7 +66,11 @@ async function createMCP(options: CreateOptions) {
 
   // Copy template
   console.log("Copying template files...");
-  await copyDirectory(sourcePath, destPath, ["node_modules", "dist"]);
+  await copyDirectory(sourcePath, destPath, [
+    "node_modules",
+    "dist",
+    "app.json",
+  ]);
 
   // Customize files
   console.log("Customizing files...");
@@ -87,9 +91,34 @@ async function createMCP(options: CreateOptions) {
   if (existsSync(readmePath)) {
     await writeFile(
       readmePath,
-      `# ${name}\n\n${description || "Your MCP server description goes here."}\n`,
+      `# ${name}\n\n${description || "Your MCP server description goes here."}\n\n## Getting Started\n\n1. Configure your MCP in \`server/types/env.ts\`\n2. Implement tools in \`server/tools/\`\n3. Rename \`app.json.example\` to \`app.json\` and customize\n4. Add to \`deploy.json\` for deployment\n5. Test with \`bun run dev\`\n\nSee [template-minimal/README.md](../template-minimal/README.md) for detailed instructions.\n`,
       "utf-8",
     );
+  }
+
+  // Rename app.json.example to app.json if it exists
+  const appJsonExamplePath = join(destPath, "app.json.example");
+  const appJsonPath = join(destPath, "app.json");
+  if (existsSync(appJsonExamplePath)) {
+    const appJsonContent = await readFile(appJsonExamplePath, "utf-8");
+    const appJson = JSON.parse(appJsonContent);
+
+    // Update basic fields
+    appJson.name = name;
+    appJson.friendlyName = name
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+    appJson.connection.url = `https://sites-${name}.decocache.com/mcp`;
+    appJson.description = description || `${appJson.friendlyName} MCP server`;
+    appJson.metadata.short_description = appJson.description;
+
+    await writeFile(
+      appJsonPath,
+      JSON.stringify(appJson, null, 2) + "\n",
+      "utf-8",
+    );
+    console.log("✓ Created app.json from template");
   }
 
   // Update root package.json workspaces
@@ -113,7 +142,20 @@ async function createMCP(options: CreateOptions) {
   console.log("Next steps:");
   console.log(`  cd ${name}`);
   console.log("  bun install");
-  console.log("  bun run dev");
+  console.log("");
+  console.log("Configuration:");
+  console.log("  1. Edit server/types/env.ts (StateSchema)");
+  console.log("  2. Edit app.json (metadata for store)");
+  console.log("  3. Implement tools in server/tools/");
+  console.log("");
+  console.log("Development:");
+  console.log("  bun run dev          # Start local server");
+  console.log("  bun run fmt          # Format code");
+  console.log("  bun run lint         # Lint code");
+  console.log("");
+  console.log("Deployment:");
+  console.log("  - Add to deploy.json for auto-deployment");
+  console.log("  - Create PR (never commit directly to main)");
   console.log("");
 }
 

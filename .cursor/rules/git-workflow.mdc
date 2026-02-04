@@ -1,0 +1,318 @@
+---
+description: Git workflow rules - branching strategy, commit conventions, and CI/CD process
+alwaysApply: true
+---
+
+# Git Workflow
+
+## Golden Rule
+
+🚨 **NEVER commit directly to `main` branch** 🚨
+
+Always work in feature branches and create Pull Requests.
+
+## Branch Naming
+
+Use semantic branch names:
+
+```bash
+feat/<feature-name>      # New features
+fix/<bug-description>    # Bug fixes
+chore/<task-name>        # Maintenance tasks
+docs/<what-changed>      # Documentation only
+refactor/<what-changed>  # Code refactoring
+```
+
+### Examples
+```bash
+feat/google-calendar-mcp
+feat/add-event-bus-support
+fix/slack-webhook-validation
+fix/discord-bot-timeout
+chore/update-dependencies
+chore/cleanup-old-mcps
+docs/update-readme
+refactor/improve-state-schema
+```
+
+## Creating a Branch
+
+```bash
+# From main, create and switch to new branch
+git checkout main
+git pull origin main
+git checkout -b feat/my-new-feature
+
+# Make your changes
+# ...
+
+# Stage and commit
+git add .
+git commit -m "feat(my-mcp): add new feature"
+
+# Push to remote
+git push origin feat/my-new-feature
+```
+
+## Commit Message Convention
+
+Use **semantic commits** in English:
+
+### Format
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+- `feat` - New feature
+- `fix` - Bug fix
+- `chore` - Maintenance (deps, config, etc.)
+- `docs` - Documentation changes
+- `refactor` - Code refactoring (no feature/bug change)
+- `test` - Adding or updating tests
+- `perf` - Performance improvements
+- `style` - Code style changes (formatting, etc.)
+
+### Scope
+- Usually the MCP name (e.g., `slack-mcp`, `google-calendar`)
+- Or the affected area (e.g., `shared`, `scripts`, `ci`)
+
+### Examples
+
+```bash
+# Good commits ✅
+git commit -m "feat(slack-mcp): add voice channel support"
+git commit -m "fix(discord-read): handle missing guild name"
+git commit -m "chore(deps): update @decocms/runtime to v2.0"
+git commit -m "docs(google-calendar): add setup instructions"
+git commit -m "refactor(shared): extract retry middleware"
+git commit -m "feat(event-bus): add cron support for recurring events"
+
+# Bad commits ❌
+git commit -m "wip"
+git commit -m "fix stuff"
+git commit -m "updates"
+git commit -m "Adicionado feature X"  # Wrong language
+```
+
+### Multi-line Commits
+For complex changes, use body and footer:
+
+```bash
+git commit -m "feat(mcp-studio): add workflow execution engine
+
+Implements event-driven workflow orchestrator with:
+- Step dependency resolution
+- Code and tool step execution
+- Error handling and retries
+
+Closes #123"
+```
+
+## Pre-commit Checklist
+
+Before committing, ALWAYS run:
+
+```bash
+# Format code
+bun run fmt
+
+# Lint code
+bun run lint
+
+# Type check
+bun run check
+
+# Run tests (optional but recommended)
+bun test
+```
+
+**Quick command:**
+```bash
+bun run fmt && bun run lint && git add . && git commit
+```
+
+## Pull Request Process
+
+1. **Push your branch**
+   ```bash
+   git push origin feat/my-feature
+   ```
+
+2. **Create Pull Request**
+   - Go to GitHub repository
+   - Click "New Pull Request"
+   - Select your branch
+   - Fill in PR template
+
+3. **PR Title**
+   Use same format as commits:
+   ```
+   feat(mcp-name): add new capability
+   ```
+
+4. **PR Description**
+   Include:
+   - Summary of changes
+   - Testing notes
+   - Screenshots (for UI changes)
+   - Related issues (e.g., "Closes #123")
+
+5. **Wait for CI**
+   - CI automatically runs checks
+   - Format check (`bun run fmt --check`)
+   - Linting (`bun run lint`)
+   - Type checking (`bun run check`)
+
+6. **Review and Merge**
+   - Request review if needed
+   - Address feedback
+   - Once approved and CI passes, merge to `main`
+
+## CI/CD Pipeline
+
+### Checks (runs on all PRs)
+Workflow: [.github/workflows/checks.yml](../.github/workflows/checks.yml)
+
+```yaml
+- Format check (bun run fmt --check)
+- Linting (bun run lint)
+- Type checking (bun run check)
+```
+
+**If checks fail:**
+- Fix locally
+- Run `bun run fmt && bun run lint`
+- Commit and push fixes
+
+### Deploy (runs on push to main)
+Workflow: [.github/workflows/deploy.yml](../.github/workflows/deploy.yml)
+
+**What happens:**
+1. Detects changed MCPs (compares commits)
+2. Filters against [deploy.json](../deploy.json)
+3. Builds and deploys changed MCPs in parallel
+4. Only MCPs listed in `deploy.json` are deployed
+
+**Example:**
+- You change `slack-mcp/` and `perplexity/`
+- Both are in `deploy.json`
+- Both get deployed automatically to production
+
+### Preview Deployments (PRs)
+Workflow: [.github/workflows/deploy-preview.yml](../.github/workflows/deploy-preview.yml)
+
+**What happens:**
+1. Detects changed MCPs in PR
+2. Deploys preview versions
+3. Comments on PR with preview URLs
+4. Updates comment on new commits
+
+**Example comment:**
+```
+Preview Deployments:
+- slack-mcp: https://slack-mcp-pr-123.preview.decocache.com
+- perplexity: https://perplexity-pr-123.preview.decocache.com
+```
+
+## Common Workflows
+
+### Fix a bug
+```bash
+git checkout main
+git pull
+git checkout -b fix/describe-the-bug
+# Make fixes
+bun run fmt && bun run lint
+git add .
+git commit -m "fix(mcp-name): description of fix"
+git push origin fix/describe-the-bug
+# Create PR
+```
+
+### Add new MCP
+```bash
+git checkout main
+git pull
+git checkout -b feat/new-mcp-name
+bun scripts/new.ts new-mcp-name --description "What it does"
+cd new-mcp-name
+# Implement MCP
+# Add to deploy.json
+bun run fmt && bun run lint
+git add .
+git commit -m "feat(new-mcp-name): initial implementation"
+git push origin feat/new-mcp-name
+# Create PR
+```
+
+### Update dependencies
+```bash
+git checkout main
+git pull
+git checkout -b chore/update-deps
+bun update
+bun run check  # Ensure no breaking changes
+git add bun.lock package.json
+git commit -m "chore(deps): update dependencies"
+git push origin chore/update-deps
+# Create PR
+```
+
+## Troubleshooting
+
+### "CI checks failed"
+1. Check the error in GitHub Actions
+2. Fix locally:
+   ```bash
+   bun run fmt
+   bun run lint
+   bun run check
+   ```
+3. Commit and push fixes
+
+### "Merge conflicts"
+```bash
+git checkout main
+git pull
+git checkout your-branch
+git merge main
+# Resolve conflicts in editor
+git add .
+git commit -m "chore: resolve merge conflicts"
+git push
+```
+
+### "Forgot to run fmt before commit"
+```bash
+bun run fmt
+git add .
+git commit --amend --no-edit
+git push --force-with-lease
+```
+
+## Best Practices
+
+✅ **DO:**
+- Create small, focused PRs
+- Write descriptive commit messages
+- Run fmt/lint before committing
+- Keep branches up to date with main
+- Delete branches after merging
+
+❌ **DON'T:**
+- Commit directly to main
+- Force push to shared branches (except your own)
+- Commit commented-out code
+- Mix unrelated changes in one commit
+- Use vague commit messages
+
+## References
+
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [GitHub Flow](https://guides.github.com/introduction/flow/)
+- [.github/workflows/](../.github/workflows/) - CI/CD configuration
