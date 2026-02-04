@@ -59,7 +59,7 @@ jobs:
             echo "Changed MCPs: $CHANGED_MCPS"
           fi
           
-          # Filter against deploy.json (only deploy MCPs that are listed there)
+          # Filter deployable MCPs (in deploy.json OR has app.json for registry publish)
           DEPLOYABLE_MCPS=$(bun run scripts/filter-deployable-mcps.ts "$CHANGED_MCPS")
           echo "Deployable MCPs: $DEPLOYABLE_MCPS"
           

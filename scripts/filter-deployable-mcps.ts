@@ -1,9 +1,12 @@
 #!/usr/bin/env bun
 
 /**
- * Filters a list of MCPs against deploy.json to get only deployable ones
+ * Filters a list of MCPs to get deployable ones:
+ * 1. MCPs in deploy.json (internal servers - will be deployed)
+ * 2. MCPs with app.json (external servers - will be published to registry)
+ *
  * Usage: bun run scripts/filter-deployable-mcps.ts ["mcp1","mcp2","mcp3"]
- * Outputs: JSON array of MCPs that are in deploy.json
+ * Outputs: JSON array of deployable MCPs
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -30,35 +33,59 @@ try {
 
 // Read deploy.json
 const deployJsonPath = join(process.cwd(), "deploy.json");
-if (!existsSync(deployJsonPath)) {
-  console.error("❌ Error: deploy.json not found");
-  console.error("⚠️ Falling back to deploying all changed MCPs");
-  console.log(JSON.stringify(mcps));
-  process.exit(0);
+let deployableMcps: string[] = [];
+
+if (existsSync(deployJsonPath)) {
+  const deployConfig = JSON.parse(readFileSync(deployJsonPath, "utf-8"));
+  deployableMcps = Object.keys(deployConfig);
 }
 
-const deployConfig = JSON.parse(readFileSync(deployJsonPath, "utf-8"));
-const deployableMcps = Object.keys(deployConfig);
+// Filter MCPs that are either:
+// 1. In deploy.json (internal servers)
+// 2. Have app.json (external servers - registry publish)
+const filteredMcps = mcps.filter((mcp) => {
+  // Check if in deploy.json
+  if (deployableMcps.includes(mcp)) {
+    return true;
+  }
 
-// Filter MCPs that are in deploy.json
-const filteredMcps = mcps.filter((mcp) => deployableMcps.includes(mcp));
+  // Check if has app.json (for registry publish)
+  const appJsonPath = join(process.cwd(), mcp, "app.json");
+  if (existsSync(appJsonPath)) {
+    return true;
+  }
 
-// Log skipped MCPs to stderr (won't interfere with JSON output)
-const skippedMcps = mcps.filter((mcp) => !deployableMcps.includes(mcp));
+  return false;
+});
+
+// Log details to stderr (won't interfere with JSON output)
+const inDeployJson = filteredMcps.filter((mcp) => deployableMcps.includes(mcp));
+const hasAppJson = filteredMcps.filter(
+  (mcp) =>
+    !deployableMcps.includes(mcp) &&
+    existsSync(join(process.cwd(), mcp, "app.json")),
+);
+const skippedMcps = mcps.filter((mcp) => !filteredMcps.includes(mcp));
+
+if (inDeployJson.length > 0) {
+  console.error(
+    `\n🚀 Will deploy ${inDeployJson.length} MCP(s) (in deploy.json): ${inDeployJson.join(", ")}`,
+  );
+}
+
+if (hasAppJson.length > 0) {
+  console.error(
+    `\n📦 Will publish ${hasAppJson.length} MCP(s) to registry (app.json): ${hasAppJson.join(", ")}`,
+  );
+}
+
 if (skippedMcps.length > 0) {
   console.error(
-    `\n⏭️  Skipping ${skippedMcps.length} MCP(s) not in deploy.json: ${skippedMcps.join(", ")}`,
-  );
-  console.error(
-    "ℹ️  To enable auto-deploy for these MCPs, add them to deploy.json",
+    `\n⏭️  Skipping ${skippedMcps.length} MCP(s) (no deploy.json entry or app.json): ${skippedMcps.join(", ")}`,
   );
 }
 
-if (filteredMcps.length > 0) {
-  console.error(
-    `\n✅ Will deploy ${filteredMcps.length} MCP(s): ${filteredMcps.join(", ")}`,
-  );
-} else {
+if (filteredMcps.length === 0) {
   console.error("\n📭 No deployable MCPs after filtering");
 }
 
