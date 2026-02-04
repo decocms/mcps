@@ -1,4 +1,5 @@
 import type { Env } from "../types/env.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 import { getClientFromEnv } from "../lib/dataforseo.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
@@ -16,6 +17,7 @@ export const createGoogleTrendsTool = (env: Env) =>
     inputSchema: googleTrendsInputSchema,
     outputSchema: googleTrendsOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GOOGLE_TRENDS", env);
       const client = getClientFromEnv(env);
       const result = await client.getGoogleTrends(
         context.keywords,
@@ -24,6 +26,7 @@ export const createGoogleTrendsTool = (env: Env) =>
         context.timeRange,
         context.category,
       );
+      logToolSuccess("DATAFORSEO_GOOGLE_TRENDS");
       return { data: result };
     },
   });
@@ -36,6 +39,7 @@ export const createKeywordDifficultyTool = (env: Env) =>
     inputSchema: keywordDifficultyInputSchema,
     outputSchema: keywordDifficultyOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_KEYWORD_DIFFICULTY", env);
       const client = getClientFromEnv(env);
       const result = await client.getKeywordDifficulty(
         context.keywords,
@@ -44,6 +48,7 @@ export const createKeywordDifficultyTool = (env: Env) =>
         context.languageCode,
         context.locationCode,
       );
+      logToolSuccess("DATAFORSEO_KEYWORD_DIFFICULTY");
       return { data: result };
     },
   });

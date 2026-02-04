@@ -1,4 +1,5 @@
 import type { Env } from "../types/env.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 import { getClientFromEnv } from "../lib/dataforseo.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
@@ -18,6 +19,7 @@ export const createOrganicSerpTool = (env: Env) =>
     inputSchema: organicSerpInputSchema,
     outputSchema: organicSerpOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_ORGANIC_SERP", env);
       const client = getClientFromEnv(env);
       const result = await client.getOrganicSerpLive(
         context.keyword,
@@ -26,6 +28,7 @@ export const createOrganicSerpTool = (env: Env) =>
         context.device,
         context.depth,
       );
+      logToolSuccess("DATAFORSEO_GET_ORGANIC_SERP");
       return { data: result };
     },
   });
@@ -38,6 +41,7 @@ export const createNewsSerpTool = (env: Env) =>
     inputSchema: newsSerpInputSchema,
     outputSchema: newsSerpOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_NEWS_SERP", env);
       const client = getClientFromEnv(env);
       const result = await client.getNewsSerpLive(
         context.keyword,
@@ -46,6 +50,7 @@ export const createNewsSerpTool = (env: Env) =>
         context.sortBy,
         context.timeRange,
       );
+      logToolSuccess("DATAFORSEO_GET_NEWS_SERP");
       return { data: result };
     },
   });
@@ -58,6 +63,7 @@ export const createHistoricalSerpTool = (env: Env) =>
     inputSchema: historicalSerpInputSchema,
     outputSchema: historicalSerpOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_HISTORICAL_SERP", env);
       const client = getClientFromEnv(env);
       const result = await client.getHistoricalSerp(
         context.keyword,
@@ -68,6 +74,7 @@ export const createHistoricalSerpTool = (env: Env) =>
         context.dateFrom,
         context.dateTo,
       );
+      logToolSuccess("DATAFORSEO_HISTORICAL_SERP");
       return { data: result };
     },
   });

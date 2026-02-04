@@ -1,4 +1,5 @@
 import type { Env } from "../types/env.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 import { getClientFromEnv } from "../lib/dataforseo.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
@@ -18,8 +19,10 @@ export const createBacklinksOverviewTool = (env: Env) =>
     inputSchema: backlinksOverviewInputSchema,
     outputSchema: backlinksOverviewOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_BACKLINKS_OVERVIEW", env);
       const client = getClientFromEnv(env);
       const result = await client.getBacklinksOverview(context.target);
+      logToolSuccess("DATAFORSEO_GET_BACKLINKS_OVERVIEW");
       return { data: result };
     },
   });
@@ -32,12 +35,14 @@ export const createBacklinksTool = (env: Env) =>
     inputSchema: backlinksInputSchema,
     outputSchema: backlinksOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_BACKLINKS", env);
       const client = getClientFromEnv(env);
       const result = await client.getBacklinks(
         context.target,
         context.limit,
         context.offset,
       );
+      logToolSuccess("DATAFORSEO_GET_BACKLINKS");
       return { data: result };
     },
   });
@@ -50,12 +55,14 @@ export const createReferringDomainsTool = (env: Env) =>
     inputSchema: referringDomainsInputSchema,
     outputSchema: referringDomainsOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_REFERRING_DOMAINS", env);
       const client = getClientFromEnv(env);
       const result = await client.getReferringDomains(
         context.target,
         context.limit,
         context.offset,
       );
+      logToolSuccess("DATAFORSEO_GET_REFERRING_DOMAINS");
       return { data: result };
     },
   });

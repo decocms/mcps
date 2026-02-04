@@ -1,4 +1,5 @@
 import type { Env } from "../types/env.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 import { getClientFromEnv } from "../lib/dataforseo.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
@@ -16,6 +17,7 @@ export const createKeywordSuggestionsTool = (env: Env) =>
     inputSchema: keywordSuggestionsInputSchema,
     outputSchema: keywordSuggestionsOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_KEYWORD_SUGGESTIONS", env);
       const client = getClientFromEnv(env);
       const result = await client.getKeywordSuggestions(
         context.keyword,
@@ -25,6 +27,7 @@ export const createKeywordSuggestionsTool = (env: Env) =>
         context.locationCode,
         context.limit,
       );
+      logToolSuccess("DATAFORSEO_KEYWORD_SUGGESTIONS");
       return { data: result };
     },
   });
@@ -37,6 +40,7 @@ export const createKeywordIdeasTool = (env: Env) =>
     inputSchema: keywordIdeasInputSchema,
     outputSchema: keywordIdeasOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_KEYWORD_IDEAS", env);
       const client = getClientFromEnv(env);
       const result = await client.getKeywordIdeas(
         context.keywords,
@@ -46,6 +50,7 @@ export const createKeywordIdeasTool = (env: Env) =>
         context.locationCode,
         context.limit,
       );
+      logToolSuccess("DATAFORSEO_KEYWORD_IDEAS");
       return { data: result };
     },
   });

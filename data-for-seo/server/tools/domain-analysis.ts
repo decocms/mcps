@@ -1,4 +1,5 @@
 import type { Env } from "../types/env.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 import { getClientFromEnv } from "../lib/dataforseo.ts";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import {
@@ -18,6 +19,7 @@ export const createRankedKeywordsTool = (env: Env) =>
     inputSchema: rankedKeywordsInputSchema,
     outputSchema: rankedKeywordsOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_RANKED_KEYWORDS", env);
       const client = getClientFromEnv(env);
       const result = await client.getRankedKeywords(
         context.target,
@@ -28,6 +30,7 @@ export const createRankedKeywordsTool = (env: Env) =>
         context.limit,
         context.offset,
       );
+      logToolSuccess("DATAFORSEO_RANKED_KEYWORDS");
       return { data: result };
     },
   });
@@ -40,8 +43,10 @@ export const createDomainRankTool = (env: Env) =>
     inputSchema: domainRankInputSchema,
     outputSchema: domainRankOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_DOMAIN_RANK", env);
       const client = getClientFromEnv(env);
       const result = await client.getDomainRank(context.target);
+      logToolSuccess("DATAFORSEO_DOMAIN_RANK");
       return { data: result };
     },
   });
@@ -54,6 +59,7 @@ export const createCompetitorsDomainTool = (env: Env) =>
     inputSchema: competitorsDomainInputSchema,
     outputSchema: competitorsDomainOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_COMPETITORS_DOMAIN", env);
       const client = getClientFromEnv(env);
       const result = await client.getCompetitorsDomain(
         context.target,
@@ -63,6 +69,7 @@ export const createCompetitorsDomainTool = (env: Env) =>
         context.locationCode,
         context.limit,
       );
+      logToolSuccess("DATAFORSEO_COMPETITORS_DOMAIN");
       return { data: result };
     },
   });

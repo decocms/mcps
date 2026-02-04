@@ -7,6 +7,7 @@ import {
   relatedKeywordsInputSchema,
   relatedKeywordsOutputSchema,
 } from "./schemas.ts";
+import { logToolExecution, logToolSuccess } from "./_helpers.ts";
 
 export const createSearchVolumeTool = (env: Env) =>
   createPrivateTool({
@@ -16,6 +17,7 @@ export const createSearchVolumeTool = (env: Env) =>
     inputSchema: searchVolumeInputSchema,
     outputSchema: searchVolumeOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_SEARCH_VOLUME", env);
       const client = getClientFromEnv(env);
       const result = await client.getSearchVolume(
         context.keywords,
@@ -24,6 +26,7 @@ export const createSearchVolumeTool = (env: Env) =>
         context.languageCode,
         context.locationCode,
       );
+      logToolSuccess("DATAFORSEO_GET_SEARCH_VOLUME");
       return { data: result };
     },
   });
@@ -36,6 +39,7 @@ export const createRelatedKeywordsTool = (env: Env) =>
     inputSchema: relatedKeywordsInputSchema,
     outputSchema: relatedKeywordsOutputSchema,
     execute: async ({ context }) => {
+      logToolExecution("DATAFORSEO_GET_RELATED_KEYWORDS", env);
       const client = getClientFromEnv(env);
       const result = await client.getRelatedKeywords(
         context.keyword,
@@ -46,6 +50,7 @@ export const createRelatedKeywordsTool = (env: Env) =>
         context.depth,
         context.limit,
       );
+      logToolSuccess("DATAFORSEO_GET_RELATED_KEYWORDS");
       return { data: result };
     },
   });
