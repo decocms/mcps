@@ -5,6 +5,18 @@ globs: ["**/server/**/*.ts", "**/types/**/*.ts"]
 
 # Creating New MCPs
 
+## 🚨 CRITICAL REMINDER: app.json is MANDATORY
+
+**NEVER forget to create `app.json`!** This file is REQUIRED for:
+- Publishing MCP to the store
+- Providing metadata for discovery
+- Configuring connection URLs
+- Setting categories and tags
+
+⚠️ **If you're migrating or creating an MCP and there's no `app.json`, CREATE IT IMMEDIATELY!**
+
+See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc) for complete documentation.
+
 ## Quick Start
 
 ```bash
@@ -17,6 +29,7 @@ This creates the basic structure. Then customize the files as needed.
 
 ```
 my-mcp/
+├── app.json                 # 🚨 MANDATORY! Store metadata for publishing
 ├── server/
 │   ├── main.ts              # Entry point with runtime configuration
 │   ├── tools/
@@ -25,11 +38,85 @@ my-mcp/
 │   ├── types/
 │   │   └── env.ts           # StateSchema and Env type definition
 │   └── lib/                 # (optional) API clients and helpers
-├── app.json                 # Store metadata (required for publishing)
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
+
+**Note**: `app.json` is at the root level, not in `server/`!
+
+## deploy.json Entry (Deployment Configuration)
+
+**Location**: Repository root `/deploy.json` (shared by all MCPs)
+
+Every MCP **MUST** have an entry in the repository's `deploy.json` to enable automatic deployment.
+
+### Format
+
+```json
+{
+  "my-mcp": {
+    "site": "my-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  }
+}
+```
+
+### Field Requirements
+
+| Field | Value | Description |
+|-------|-------|-------------|
+| `site` | Folder name | Must match MCP folder name exactly |
+| `entrypoint` | `"./dist/server/main.js"` | Standard for all Bun MCPs |
+| `platformName` | `"kubernetes-bun"` | Standard runtime platform |
+
+### Important Rules
+
+1. **Alphabetical Order**: Insert your entry in alphabetical order by key name
+2. **Folder Name Match**: The JSON key and `"site"` must match your folder name
+3. **URL Consistency**: The `"site"` value determines the deployment URL:
+   - Entry: `"data-for-seo"`
+   - URL: `https://sites-data-for-seo.decocache.com/mcp`
+4. **Must Match app.json**: The URL in `app.json` must match the deployed URL
+
+### Example (data-for-seo)
+
+```json
+{
+  "content-scraper": { ... },
+  "data-for-seo": {
+    "site": "data-for-seo",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-big-query": { ... }
+}
+```
+
+### Without deploy.json Entry
+
+❌ MCP won't deploy automatically on merge to main  
+❌ CI/CD will skip your MCP  
+❌ `app.json` URL will point to non-existent endpoint
+
+## ⚠️ Mandatory Files Checklist
+
+Before considering an MCP "complete", ensure these files exist:
+
+| File | Location | Required? | Purpose |
+|------|----------|-----------|---------|
+| `app.json` | Root | 🚨 **MANDATORY** | Store metadata, discovery, deployment config |
+| Entry in `deploy.json` | Root (repo) | 🚨 **MANDATORY** | Enable auto-deployment to production |
+| `server/main.ts` | server/ | ✅ Required | Entry point with runtime |
+| `server/types/env.ts` | server/types/ | ✅ Required | StateSchema and Env type |
+| `server/tools/index.ts` | server/tools/ | ✅ Required | Export all tools |
+| `package.json` | Root | ✅ Required | Dependencies and scripts |
+| `README.md` | Root | ✅ Required | Documentation |
+| `tsconfig.json` | Root | ✅ Required | TypeScript config |
+
+**Missing `app.json`?** → Your MCP cannot be published! Create it NOW.
+**Missing entry in `deploy.json`?** → Your MCP won't auto-deploy! Add it NOW.
 
 ## main.ts Pattern
 
@@ -226,14 +313,61 @@ export const myToolFactory = (env: Env) =>
 
 ## Next Steps After Creation
 
-1. ✅ Implement tools in `server/tools/`
-2. ✅ Configure StateSchema in `server/types/env.ts`
-3. ✅ Create `app.json` with store metadata
-4. ✅ Add to [deploy.json](../deploy.json) for deployment
-5. ✅ Write README.md
+### 🚨 MANDATORY STEPS (Cannot skip!)
+
+1. ✅ **CREATE `app.json`** - REQUIRED for store publishing!
+   - Location: `my-mcp/app.json` (at MCP root, NOT in server/)
+   - See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc)
+   - Must include: scopeName, name, friendlyName, connection, description, icon
+   - Add metadata with categories, tags, and mesh_description
+   - `connection.url` MUST be: `https://sites-{folder-name}.decocache.com/mcp`
+
+2. ✅ **ADD TO [deploy.json](../deploy.json)** - REQUIRED for auto-deployment!
+   - Location: Repository root `deploy.json` (NOT inside your MCP folder!)
+   - Add entry in **alphabetical order** by MCP name
+   - Example:
+   ```json
+   {
+     "my-mcp": {
+       "site": "my-mcp",
+       "entrypoint": "./dist/server/main.js",
+       "platformName": "kubernetes-bun"
+     }
+   }
+   ```
+   - The `"site"` value must match your folder name
+   - Without this, CI/CD won't deploy your MCP automatically!
+
+### Standard Steps
+
+3. ✅ Implement tools in `server/tools/`
+4. ✅ Configure StateSchema in `server/types/env.ts`
+5. ✅ Write comprehensive README.md
 6. ✅ Test locally with `bun run dev`
-7. ✅ Run `bun run fmt && bun run lint`
+7. ✅ Run `bun run fmt && bun run lint && bun run check`
 8. ✅ Create PR for review
+
+### Pre-Commit Checklist
+
+Before committing, verify:
+
+**Files & Configuration:**
+- [ ] `app.json` exists at MCP root level (e.g., `my-mcp/app.json`)
+- [ ] `app.json` has all required fields (scopeName, name, friendlyName, connection, description, icon)
+- [ ] `connection.url` matches pattern: `https://sites-{folder-name}.decocache.com/mcp`
+- [ ] `mesh_description` is under 1500 characters
+- [ ] **MCP added to repository root `deploy.json`** (in alphabetical order)
+- [ ] Entry in `deploy.json` has correct site name matching folder
+
+**Code Quality:**
+- [ ] All tools have `[ASYNC]` prefix if async (takes >1 second)
+- [ ] All tools document: response time, cost, plan requirements
+- [ ] README.md documents all tools with examples
+- [ ] Code passes `bun run fmt && bun run lint && bun run check`
+
+**Deployment Verification:**
+- [ ] Confirmed `connection.url` in `app.json` matches `site` in `deploy.json`
+- [ ] Folder name = site name = URL subdomain (e.g., `data-for-seo` → `sites-data-for-seo.decocache.com`)
 
 ## Reference Examples
 

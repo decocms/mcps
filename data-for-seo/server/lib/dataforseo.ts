@@ -1,6 +1,6 @@
-import { DATAFORSEO_BASE_URL } from "../constants";
+import { DATAFORSEO_BASE_URL } from "../constants.ts";
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
-import type { Env } from "../main";
+import type { Env } from "../types/env.ts";
 
 export interface DataForSeoClientConfig {
   login: string;
@@ -289,6 +289,210 @@ async function getReferringDomains(
   );
 }
 
+// Google Trends API
+async function getGoogleTrends(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  locationName: string = "United States",
+  locationCode?: number,
+  timeRange: string = "today 12-m",
+  category?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google_trends/explore/live",
+    "POST",
+    [
+      {
+        keywords,
+        location_name: locationName,
+        location_code: locationCode,
+        time_range: timeRange,
+        category_code: category,
+        type: "web_search",
+      },
+    ],
+  );
+}
+
+// Keyword Difficulty API (DataForSEO Labs)
+async function getKeywordDifficulty(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/keyword_difficulty/live",
+    "POST",
+    [
+      {
+        keywords,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+      },
+    ],
+  );
+}
+
+// Domain Analysis API (DataForSEO Labs)
+async function getRankedKeywords(
+  config: DataForSeoClientConfig,
+  target: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+  offset?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/ranked_keywords/live",
+    "POST",
+    [
+      {
+        target,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+        offset,
+      },
+    ],
+  );
+}
+
+async function getDomainRank(
+  config: DataForSeoClientConfig,
+  target: string,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/domain_rank_overview/live",
+    "POST",
+    [
+      {
+        target,
+      },
+    ],
+  );
+}
+
+async function getCompetitorsDomain(
+  config: DataForSeoClientConfig,
+  target: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/competitors/live",
+    "POST",
+    [
+      {
+        target,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+// Keyword Suggestions API
+async function getKeywordSuggestions(
+  config: DataForSeoClientConfig,
+  keyword: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google/keyword_suggestions/live",
+    "POST",
+    [
+      {
+        keyword,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+async function getKeywordIdeas(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google/keyword_ideas/live",
+    "POST",
+    [
+      {
+        keywords,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+// Historical SERP API (DataForSEO Labs)
+async function getHistoricalSerp(
+  config: DataForSeoClientConfig,
+  keyword: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/historical_serp/live",
+    "POST",
+    [
+      {
+        keyword,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        date_from: dateFrom,
+        date_to: dateTo,
+      },
+    ],
+  );
+}
+
 export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
   // Keywords
   getSearchVolume: (
@@ -365,13 +569,148 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
     getBacklinks(config, target, limit, offset),
   getReferringDomains: (target: string, limit?: number, offset?: number) =>
     getReferringDomains(config, target, limit, offset),
+
+  // Google Trends
+  getGoogleTrends: (
+    keywords: string[],
+    locationName?: string,
+    locationCode?: number,
+    timeRange?: string,
+    category?: number,
+  ) =>
+    getGoogleTrends(
+      config,
+      keywords,
+      locationName,
+      locationCode,
+      timeRange,
+      category,
+    ),
+
+  // Keyword Difficulty
+  getKeywordDifficulty: (
+    keywords: string[],
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+  ) =>
+    getKeywordDifficulty(
+      config,
+      keywords,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+    ),
+
+  // Domain Analysis
+  getRankedKeywords: (
+    target: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+    offset?: number,
+  ) =>
+    getRankedKeywords(
+      config,
+      target,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+      offset,
+    ),
+  getDomainRank: (target: string) => getDomainRank(config, target),
+  getCompetitorsDomain: (
+    target: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getCompetitorsDomain(
+      config,
+      target,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+
+  // Keyword Suggestions
+  getKeywordSuggestions: (
+    keyword: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getKeywordSuggestions(
+      config,
+      keyword,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+  getKeywordIdeas: (
+    keywords: string[],
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getKeywordIdeas(
+      config,
+      keywords,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+
+  // Historical SERP
+  getHistoricalSerp: (
+    keyword: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    dateFrom?: string,
+    dateTo?: string,
+  ) =>
+    getHistoricalSerp(
+      config,
+      keyword,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      dateFrom,
+      dateTo,
+    ),
 });
 
 // Helper to create client from environment
 export const getClientFromEnv = (env: Env) => {
-  const state = env.DECO_REQUEST_CONTEXT.state;
+  const state = env.MESH_REQUEST_CONTEXT?.state;
+  if (!state?.API_CREDENTIALS) {
+    throw new Error(
+      "DataForSEO credentials not configured. Please set API_CREDENTIALS in the MCP settings.",
+    );
+  }
   return createDataForSeoClient({
-    login: state.login,
-    password: state.password,
+    login: state.API_CREDENTIALS.login,
+    password: state.API_CREDENTIALS.password,
   });
 };
