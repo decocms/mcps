@@ -1,5 +1,5 @@
 # Discord MCP - Bot com Configuração Persistente
-
+   
 > **Status**: Production-ready | **Last Deploy**: 2026-02-03
 
 Bot Discord avançado com suporte a IA, webhooks, slash commands, event bus, indexação de mensagens e gerenciamento completo de servidores.
