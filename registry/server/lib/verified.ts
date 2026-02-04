@@ -19,6 +19,7 @@ export const VERIFIED_SERVERS: string[] = [
   "io.prisma/mcp",
   "com.postman/postman-mcp-server",
   "ai.exa/exa",
+  "ai.stilla/mcp",
   "com.linear/linear",
   "io.github.timescale/pg-aiguide",
   "com.microsoft/microsoft-learn-mcp",
@@ -75,6 +76,17 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
         src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT28y_F_fqSBA5jWMYdru_JwbZnYgi3gOfZSg&s",
       },
     ],
+  },
+  "ai.stilla/mcp": {
+    icons: [
+      {
+        src: "https://assets.decocache.com/decocms/99fb9196-48bd-4c56-896f-af1997de0467/app-icon.webp",
+      },
+    ],
+    repository: {
+      url: "https://api.stilla.ai/mcp",
+      source: "remote",
+    },
   },
 };
 
