@@ -15,14 +15,21 @@ This MCP server allows client applications to:
 
 ### Key Features
 
-- 🔍 **Keyword Research**: Search volume, difficulty, trends, suggestions, and ideas (6 tools)
-- 📊 **SERP Analysis**: Organic, news, and historical SERP data (3 tools)
-- 🎯 **Domain Analysis**: Ranked keywords, authority, and competitor discovery (3 tools)
-- 🔗 **Backlink Analysis**: Overview, detailed backlinks, and referring domains (3 tools)
-- 🔄 **Real-time Data**: Live API endpoints with 2-15 second response times
-- 🌐 **Multi-language Support**: Analyze data for different languages and locations
-- 💰 **Pay-as-you-go**: All tools work with credit-based pricing (no monthly plans required)
-- 🛠️ **MCP Tools**: 15 tools total, easy integration with MCP-compatible AI assistants
+- 🔍 **Keyword Research**: Search volume and related keywords (2 tools)  
+- 📊 **SERP Analysis**: Organic and news SERP data (2 tools)  
+- 🎯 **Domain Analysis**: Ranked keywords and domain authority (2 tools)  
+- 🔄 **Real-time Data**: Live API endpoints with 2-8 second response times  
+- 🌐 **Multi-language Support**: Analyze data for different languages and locations  
+- 💰 **Pay-as-you-go**: All tools work with credit-based pricing (no monthly plans required)  
+- 🛠️ **MCP Tools**: 6 working tools total, easy integration with MCP-compatible AI assistants
+
+> **⚠️ Note**: Some tools require additional DataForSEO subscriptions or are not available:
+> - **Backlinks API** (3 tools) - Requires Backlinks subscription ($99/month)
+> - **Google Trends** (1 tool) - API parameter issues (under investigation)
+> - **Keyword Difficulty** (1 tool) - Not available via live API
+> - **Keyword Suggestions** (2 tools) - Not available via live API
+> - **Competitors Discovery** (1 tool) - Not available via live API  
+> - **Historical SERP** (1 tool) - Not available via live API
 
 ## Setup / Installation
 
@@ -73,21 +80,29 @@ This creates a production bundle at `dist/server/main.js`.
 
 > **⚠️ Important:** All tools are **ASYNCHRONOUS** and make live API calls to DataForSEO. Response times vary from 2-15 seconds depending on the endpoint.
 
-### 📊 Summary: 15 Tools Total
+### 📊 Summary: 6 Working Tools ✅
 
-| Category | Tools | Best For |
-|----------|-------|----------|
-| **Keywords** (4) | Search Volume, Related Keywords, Trends, Difficulty | Keyword research, trends, and difficulty analysis |
-| **Domain Analysis** (3) | Ranked Keywords, Domain Rank, Competitors | Competitive intelligence and domain authority |
-| **Keyword Suggestions** (2) | Autocomplete Suggestions, Keyword Ideas | Long-tail discovery and content ideation |
-| **SERP** (3) | Organic SERP, News SERP, Historical SERP | Ranking analysis and SERP tracking |
-| **Backlinks** (3) | Overview, Backlinks List, Referring Domains | Link building and domain authority |
+| Category | Tools | Best For | Status |
+|----------|-------|----------|--------|
+| **Keywords** (2) | Search Volume, Related Keywords | Keyword research and discovery | ✅ Working |
+| **Domain Analysis** (2) | Ranked Keywords, Domain Rank | Competitive intelligence and authority | ✅ Working |
+| **SERP** (2) | Organic SERP, News SERP | Ranking analysis and monitoring | ✅ Working |
+
+### ⚠️ Tools Not Available (9 tools)
+
+| Category | Tools | Status | Reason |
+|----------|-------|--------|--------|
+| **Backlinks** (3) | Overview, List, Referring Domains | 🔒 Requires Subscription | Need $99/month Backlinks plan |
+| **Google Trends** (1) | Trends Explore | ⚠️ API Issue | Parameter validation error |
+| **Keyword Research** (3) | Difficulty, Suggestions, Ideas | ❌ Not Available | Not in live API |
+| **Domain Analysis** (1) | Competitors Discovery | ❌ Not Available | Not in live API |
+| **SERP** (1) | Historical SERP | ❌ Not Available | Not in live API |
 
 ---
 
 ### Keywords Tools (4 tools)
 
-#### `DATAFORSEO_GET_SEARCH_VOLUME` 
+#### `DATAFORSEO_GET_SEARCH_VOLUME`
 **[ASYNC - Standard Plan]** Get search volume, CPC, and competition data for up to 1000 keywords at once.
 
 **Response Time:** 2-5 seconds  
@@ -109,7 +124,7 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_GET_RELATED_KEYWORDS` 
+#### `DATAFORSEO_GET_RELATED_KEYWORDS`
 **[ASYNC - DataForSEO Labs]** Get keyword suggestions with semantic relationships.
 
 **Response Time:** 3-10 seconds  

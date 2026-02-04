@@ -24,12 +24,14 @@ export const StateSchema = z.object({
         .string()
         .describe(
           "DataForSEO API Login from https://app.dataforseo.com/api-access",
-        ),
+        )
+        .optional(),
       password: z
         .string()
         .describe(
           "DataForSEO API Password/Token from https://app.dataforseo.com/api-access (NOT your account password)",
-        ),
+        )
+        .optional(),
     })
     .describe("DataForSEO authentication credentials"),
 });

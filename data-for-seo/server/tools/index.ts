@@ -32,13 +32,18 @@ function wrapWithLogging(toolFactory: ToolFactory, index: number): ToolFactory {
 }
 
 // Aggregate all DataForSEO tool factories
+// Note: Some tools require specific subscriptions or are not available in all plans
 const dataForSeoTools = [
   ...keywordTools,
   ...serpTools,
-  ...backlinkTools,
-  ...googleTrendsTools,
-  ...domainAnalysisTools,
-  ...keywordSuggestionsTools,
+  // Backlinks tools require Backlinks API subscription
+  // ...backlinkTools,
+  // Google Trends has parameter issues with the current API
+  // ...googleTrendsTools,
+  // Domain Analysis tools (only include working ones)
+  ...domainAnalysisTools.slice(0, 2), // Ranked Keywords and Domain Rank only
+  // Keyword Suggestions tools return 404 (not available in API)
+  // ...keywordSuggestionsTools,
 ];
 
 console.log("[DataForSEO Tools] Total tool factories:", dataForSeoTools.length);
