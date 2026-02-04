@@ -27,6 +27,7 @@ export interface DiscordConfig {
   systemPrompt?: string;
   botToken: string;
   discordPublicKey?: string; // Discord application public key (for webhook verification)
+  discordApplicationId?: string; // Discord application ID (for slash commands)
   authorizedGuilds?: string[]; // List of guild IDs that can use this bot
   ownerId?: string; // Discord user ID of the bot owner
   commandPrefix?: string; // Command prefix (default: "!")
@@ -91,6 +92,7 @@ export async function getDiscordConfig(
     systemPrompt: row.system_prompt || undefined,
     botToken: row.bot_token,
     discordPublicKey: row.discord_public_key || undefined,
+    discordApplicationId: row.discord_application_id || undefined,
     authorizedGuilds: row.authorized_guilds || undefined,
     ownerId: row.owner_id || undefined,
     commandPrefix: row.command_prefix || "!",
