@@ -8,9 +8,15 @@
 import { keywordTools } from "./keywords.ts";
 import { serpTools } from "./serp.ts";
 import { backlinkTools } from "./backlinks.ts";
+import { googleTrendsTools } from "./google-trends.ts";
 
 // Aggregate all DataForSEO tool factories
-const dataForSeoTools = [...keywordTools, ...serpTools, ...backlinkTools];
+const dataForSeoTools = [
+  ...keywordTools,
+  ...serpTools,
+  ...backlinkTools,
+  ...googleTrendsTools,
+];
 
 // Export all tools from all domains
 export const tools = [...dataForSeoTools];
@@ -19,3 +25,4 @@ export const tools = [...dataForSeoTools];
 export { keywordTools } from "./keywords.ts";
 export { serpTools } from "./serp.ts";
 export { backlinkTools } from "./backlinks.ts";
+export { googleTrendsTools } from "./google-trends.ts";

@@ -125,3 +125,80 @@ export const referringDomainsOutputSchema = z.object({
     .any()
     .describe("List of referring domains with ranks and backlink counts"),
 });
+
+// Google Trends Input Schemas
+export const googleTrendsInputSchema = z.object({
+  keywords: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .describe("Array of 1-5 keywords to compare trends"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  timeRange: z
+    .enum([
+      "now 1-d",
+      "now 7-d",
+      "today 1-m",
+      "today 3-m",
+      "today 12-m",
+      "today 5-y",
+      "2004-present",
+    ])
+    .optional()
+    .describe("Time range for trends data. Defaults to 'today 12-m'"),
+  category: z.number().optional().describe("Category ID (0 = All categories)"),
+});
+
+// Google Trends Output Schemas
+export const googleTrendsOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Google Trends data including interest over time, regional interest, and related queries",
+    ),
+});
+
+// Keyword Difficulty Input Schemas
+export const keywordDifficultyInputSchema = z.object({
+  keywords: z
+    .array(z.string())
+    .min(1)
+    .max(100)
+    .describe("Array of 1-100 keywords to analyze difficulty"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+});
+
+// Keyword Difficulty Output Schemas
+export const keywordDifficultyOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Keyword difficulty score (0-100) with competitive metrics and ranking data",
+    ),
+});

@@ -289,6 +289,57 @@ async function getReferringDomains(
   );
 }
 
+// Google Trends API
+async function getGoogleTrends(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  locationName: string = "United States",
+  locationCode?: number,
+  timeRange: string = "today 12-m",
+  category?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google_trends/explore/live",
+    "POST",
+    [
+      {
+        keywords,
+        location_name: locationName,
+        location_code: locationCode,
+        time_range: timeRange,
+        category_code: category,
+        type: "web_search",
+      },
+    ],
+  );
+}
+
+// Keyword Difficulty API (DataForSEO Labs)
+async function getKeywordDifficulty(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/keyword_difficulty/live",
+    "POST",
+    [
+      {
+        keywords,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+      },
+    ],
+  );
+}
+
 export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
   // Keywords
   getSearchVolume: (
@@ -365,6 +416,40 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
     getBacklinks(config, target, limit, offset),
   getReferringDomains: (target: string, limit?: number, offset?: number) =>
     getReferringDomains(config, target, limit, offset),
+
+  // Google Trends
+  getGoogleTrends: (
+    keywords: string[],
+    locationName?: string,
+    locationCode?: number,
+    timeRange?: string,
+    category?: number,
+  ) =>
+    getGoogleTrends(
+      config,
+      keywords,
+      locationName,
+      locationCode,
+      timeRange,
+      category,
+    ),
+
+  // Keyword Difficulty
+  getKeywordDifficulty: (
+    keywords: string[],
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+  ) =>
+    getKeywordDifficulty(
+      config,
+      keywords,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+    ),
 });
 
 // Helper to create client from environment

@@ -70,7 +70,7 @@ This creates a production bundle at `dist/server/main.js`.
 
 > **⚠️ Important:** All tools are **ASYNCHRONOUS** and make live API calls to DataForSEO. Response times vary from 2-10 seconds depending on the endpoint.
 
-### Keywords Tools (2 tools)
+### Keywords Tools (4 tools)
 
 #### `DATAFORSEO_GET_SEARCH_VOLUME` 
 **[ASYNC - Standard Plan]** Get search volume, CPC, and competition data for up to 1000 keywords at once.
@@ -115,6 +115,72 @@ This creates a production bundle at `dist/server/main.js`.
 ```
 
 **Returns:** Up to 1000 related keywords with search volume, competition, and SERP data
+
+---
+
+#### `DATAFORSEO_GOOGLE_TRENDS` 
+**[ASYNC - Standard Plan]** Get Google Trends data for up to 5 keywords including interest over time, regional interest, and related queries.
+
+**Response Time:** 3-8 seconds  
+**Cost:** ~0.01 credits per request (very affordable!)  
+**Plan Required:** All plans
+
+**Input:**
+```typescript
+{
+  keywords: string[];              // 1-5 keywords to compare trends
+  locationName?: string;           // Default: "United States"
+  locationCode?: number;           // Alternative to locationName
+  timeRange?: string;              // "now 1-d", "now 7-d", "today 1-m", "today 3-m", 
+                                   // "today 12-m", "today 5-y", "2004-present"
+  category?: number;               // Category ID (0 = All categories)
+}
+```
+
+**Returns:** Interest over time (trend graphs), regional interest by location, related queries, rising queries
+
+**Use Cases:**
+- Track keyword popularity trends over time
+- Identify seasonal patterns in search behavior
+- Compare multiple keywords trending patterns
+- Find trending related queries
+- Analyze regional interest distribution
+
+---
+
+#### `DATAFORSEO_KEYWORD_DIFFICULTY` 
+**[ASYNC - DataForSEO Labs]** Get keyword difficulty scores (0-100) for up to 100 keywords at once.
+
+**Response Time:** 3-10 seconds  
+**Cost:** ~0.05 credits per keyword (excellent value!)  
+**Plan Required:** All plans (DataForSEO Labs)
+
+**Input:**
+```typescript
+{
+  keywords: string[];              // 1-100 keywords to analyze
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+}
+```
+
+**Returns:** Difficulty score (0-100, lower = easier to rank), competitive metrics, top-ranking domains, ranking complexity analysis
+
+**Difficulty Score Interpretation:**
+- **0-20**: Very Easy - Low competition, great for new websites
+- **21-40**: Easy - Moderate competition, achievable with good content
+- **41-60**: Medium - Competitive, requires SEO strategy
+- **61-80**: Hard - Highly competitive, established sites dominate
+- **81-100**: Very Hard - Extremely competitive, major brands/authority sites
+
+**Use Cases:**
+- Evaluate keyword competitiveness before targeting
+- Build content strategy around low-difficulty keywords
+- Prioritize keyword opportunities by difficulty vs. search volume
+- Competitive analysis for SEO planning
+- Batch analyze keyword lists for content calendars
 
 ---
 
@@ -271,6 +337,7 @@ data-for-seo/
 │       ├── index.ts    # Tools aggregator
 │       ├── schemas.ts  # Zod schemas
 │       ├── keywords.ts # Keyword tools (2 tools)
+│       ├── google-trends.ts # Google Trends & Difficulty (2 tools)
 │       ├── serp.ts     # SERP tools (2 tools)
 │       └── backlinks.ts # Backlink tools (3 tools)
 ├── package.json
