@@ -703,12 +703,38 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
 
 // Helper to create client from environment
 export const getClientFromEnv = (env: Env) => {
+  console.log("[DataForSEO] Getting client from env");
+  console.log(
+    "[DataForSEO] MESH_REQUEST_CONTEXT exists:",
+    !!env.MESH_REQUEST_CONTEXT,
+  );
+  console.log("[DataForSEO] state exists:", !!env.MESH_REQUEST_CONTEXT?.state);
+  console.log(
+    "[DataForSEO] API_CREDENTIALS exists:",
+    !!env.MESH_REQUEST_CONTEXT?.state?.API_CREDENTIALS,
+  );
+
   const state = env.MESH_REQUEST_CONTEXT?.state;
+
+  if (state?.API_CREDENTIALS) {
+    console.log(
+      "[DataForSEO] ✅ Credentials found - login:",
+      state.API_CREDENTIALS.login?.substring(0, 5) + "...",
+    );
+  } else {
+    console.log("[DataForSEO] ❌ NO CREDENTIALS FOUND");
+    console.log(
+      "[DataForSEO] Full state keys:",
+      state ? Object.keys(state) : "null",
+    );
+  }
+
   if (!state?.API_CREDENTIALS) {
     throw new Error(
       "DataForSEO credentials not configured. Please set API_CREDENTIALS in the MCP settings.",
     );
   }
+
   return createDataForSeoClient({
     login: state.API_CREDENTIALS.login,
     password: state.API_CREDENTIALS.password,
