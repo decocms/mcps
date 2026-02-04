@@ -42,6 +42,7 @@ app.post("/discord/interactions/:connectionId", async (c) => {
   const rawBody = await c.req.text();
 
   console.log(`[Webhook] Received interaction for connection: ${connectionId}`);
+  console.log(`[Webhook] Raw body: ${rawBody.substring(0, 500)}`);
 
   // Get connection config to retrieve public key
   const config = await getDiscordConfig(connectionId);
