@@ -100,9 +100,11 @@ await DISCORD_BOT_STOP({});
 - `DISCORD_SET_CHANNEL_AUTO_RESPOND` - Configurar resposta automática
 
 ### Slash Commands (Webhooks)
-- `DISCORD_REGISTER_SLASH_COMMAND` - Registrar comando /slash
-- `DISCORD_UNREGISTER_SLASH_COMMAND` - Remover comando
-- `DISCORD_LIST_SLASH_COMMANDS` - Listar comandos registrados
+- `DISCORD_REGISTER_SLASH_COMMAND` - Registrar comando /slash no Discord
+- `DISCORD_DELETE_SLASH_COMMAND` - Remover comando do Discord e banco
+- `DISCORD_LIST_SLASH_COMMANDS` - Listar comandos (database/discord/both)
+- `DISCORD_TOGGLE_SLASH_COMMAND` - Ativar/desativar comando
+- `DISCORD_SYNC_SLASH_COMMANDS` - Sincronizar comandos entre Discord e banco
 
 ## 🔧 Configuração do Supabase
 
@@ -156,30 +158,75 @@ No Discord Developer Portal:
 2. Configure "Interactions Endpoint URL": `https://seu-mcp.deco.site/discord/interactions/seu-connection-id`
 3. Copie a "Public Key" e salve na configuração
 
-### Registrar Slash Commands
+### Gerenciar Slash Commands
 
 ```typescript
-// Registrar comando /start
+// 1. Registrar comando /start (global)
 await DISCORD_REGISTER_SLASH_COMMAND({
   commandName: "start",
-  commandDescription: "Iniciar o bot se ele estiver offline",
-  toolId: "DISCORD_BOT_START",
-  isGlobal: true
+  description: "Iniciar o bot se ele estiver offline",
+  enabled: true
 });
 
-// Comando com opções
+// 2. Registrar comando guild-specific com opções
 await DISCORD_REGISTER_SLASH_COMMAND({
   commandName: "echo",
-  commandDescription: "Repetir uma mensagem",
-  toolId: "DISCORD_SEND_MESSAGE",
-  commandOptions: [
+  description: "Repetir uma mensagem",
+  guildId: "123456789",
+  options: [
     {
-      type: 3, // STRING
+      type: "STRING",
       name: "message",
       description: "Mensagem para repetir",
       required: true
     }
   ]
+});
+
+// 3. Listar comandos do banco de dados
+await DISCORD_LIST_SLASH_COMMANDS({
+  source: "database"
+});
+
+// 4. Listar comandos diretamente do Discord (via API)
+await DISCORD_LIST_SLASH_COMMANDS({
+  source: "discord",
+  guildId: "123456789" // opcional
+});
+
+// 5. Comparar banco vs Discord (detectar diferenças)
+await DISCORD_LIST_SLASH_COMMANDS({
+  source: "both"
+});
+// Retorna: commands com inDatabase/inDiscord flags
+
+// 6. Sincronizar: importar comandos do Discord para o banco
+await DISCORD_SYNC_SLASH_COMMANDS({
+  action: "import",
+  guildId: "123456789",
+  dryRun: true // preview antes de aplicar
+});
+
+// 7. Sincronizar: limpar comandos órfãos do banco
+await DISCORD_SYNC_SLASH_COMMANDS({
+  action: "clean",
+  dryRun: false // aplicar mudanças
+});
+
+// 8. Sincronização completa (import + clean)
+await DISCORD_SYNC_SLASH_COMMANDS({
+  action: "full-sync"
+});
+
+// 9. Desativar comando (sem deletar)
+await DISCORD_TOGGLE_SLASH_COMMAND({
+  commandId: "cmd-uuid-from-db",
+  enabled: false
+});
+
+// 10. Deletar comando do Discord e banco
+await DISCORD_DELETE_SLASH_COMMAND({
+  commandId: "cmd-uuid-from-db"
 });
 ```
 
