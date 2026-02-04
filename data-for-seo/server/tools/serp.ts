@@ -6,6 +6,8 @@ import {
   organicSerpOutputSchema,
   newsSerpInputSchema,
   newsSerpOutputSchema,
+  historicalSerpInputSchema,
+  historicalSerpOutputSchema,
 } from "./schemas.ts";
 
 export const createOrganicSerpTool = (env: Env) =>
@@ -48,4 +50,30 @@ export const createNewsSerpTool = (env: Env) =>
     },
   });
 
-export const serpTools = [createOrganicSerpTool, createNewsSerpTool];
+export const createHistoricalSerpTool = (env: Env) =>
+  createPrivateTool({
+    id: "DATAFORSEO_HISTORICAL_SERP",
+    description:
+      "[ASYNC - DataForSEO Labs] Get historical SERP ranking data for a keyword over time. Shows how rankings changed for top domains, useful for analyzing algorithm updates, seasonal trends, and SERP volatility. Supports custom date ranges (default: last 30 days). Response time: 5-12 seconds. Cost: ~0.05 credits per request (valuable for trend analysis!).",
+    inputSchema: historicalSerpInputSchema,
+    outputSchema: historicalSerpOutputSchema,
+    execute: async ({ context }) => {
+      const client = getClientFromEnv(env);
+      const result = await client.getHistoricalSerp(
+        context.keyword,
+        context.languageName,
+        context.locationName,
+        context.languageCode,
+        context.locationCode,
+        context.dateFrom,
+        context.dateTo,
+      );
+      return { data: result };
+    },
+  });
+
+export const serpTools = [
+  createOrganicSerpTool,
+  createNewsSerpTool,
+  createHistoricalSerpTool,
+];

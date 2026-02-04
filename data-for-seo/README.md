@@ -7,19 +7,22 @@
 ### Purpose
 
 This MCP server allows client applications to:
-- Perform keyword research with search volume and competition data
-- Analyze SERP results (organic and news)
-- Get backlink analysis and domain metrics
-- Track SEO metrics programmatically
+- Perform comprehensive keyword research and competitive analysis
+- Analyze SERP results (organic, news, and historical trends)
+- Get backlink analysis and domain authority metrics
+- Discover competitors and ranked keywords automatically
+- Track SEO metrics and trends programmatically
 
 ### Key Features
 
-- 🔍 **Keyword Research**: Search volume, CPC, competition, and related keywords
-- 📊 **SERP Analysis**: Organic and news search results
-- 🔗 **Backlink Analysis**: Domain metrics, backlinks, and referring domains
-- 🔄 **Real-time Data**: Live API endpoints for immediate results
+- 🔍 **Keyword Research**: Search volume, difficulty, trends, suggestions, and ideas (6 tools)
+- 📊 **SERP Analysis**: Organic, news, and historical SERP data (3 tools)
+- 🎯 **Domain Analysis**: Ranked keywords, authority, and competitor discovery (3 tools)
+- 🔗 **Backlink Analysis**: Overview, detailed backlinks, and referring domains (3 tools)
+- 🔄 **Real-time Data**: Live API endpoints with 2-15 second response times
 - 🌐 **Multi-language Support**: Analyze data for different languages and locations
-- 🛠️ **MCP Tools**: Easy integration with MCP-compatible AI assistants
+- 💰 **Pay-as-you-go**: All tools work with credit-based pricing (no monthly plans required)
+- 🛠️ **MCP Tools**: 15 tools total, easy integration with MCP-compatible AI assistants
 
 ## Setup / Installation
 
@@ -68,7 +71,19 @@ This creates a production bundle at `dist/server/main.js`.
 
 ## Available MCP Tools
 
-> **⚠️ Important:** All tools are **ASYNCHRONOUS** and make live API calls to DataForSEO. Response times vary from 2-10 seconds depending on the endpoint.
+> **⚠️ Important:** All tools are **ASYNCHRONOUS** and make live API calls to DataForSEO. Response times vary from 2-15 seconds depending on the endpoint.
+
+### 📊 Summary: 15 Tools Total
+
+| Category | Tools | Best For |
+|----------|-------|----------|
+| **Keywords** (4) | Search Volume, Related Keywords, Trends, Difficulty | Keyword research, trends, and difficulty analysis |
+| **Domain Analysis** (3) | Ranked Keywords, Domain Rank, Competitors | Competitive intelligence and domain authority |
+| **Keyword Suggestions** (2) | Autocomplete Suggestions, Keyword Ideas | Long-tail discovery and content ideation |
+| **SERP** (3) | Organic SERP, News SERP, Historical SERP | Ranking analysis and SERP tracking |
+| **Backlinks** (3) | Overview, Backlinks List, Referring Domains | Link building and domain authority |
+
+---
 
 ### Keywords Tools (4 tools)
 
@@ -184,7 +199,157 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-### SERP Tools (2 tools)
+### Domain Analysis Tools (3 tools)
+
+#### `DATAFORSEO_RANKED_KEYWORDS` 
+**[ASYNC - DataForSEO Labs]** Get ALL keywords a domain ranks for in Google with positions, search volume, and estimated traffic.
+
+**Response Time:** 5-15 seconds  
+**Cost:** ~0.02 credits per request (excellent value!)  
+**Plan Required:** All plans (DataForSEO Labs)
+
+**Input:**
+```typescript
+{
+  target: string;                  // Domain to analyze (e.g., "example.com")
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+  limit?: number;                  // Max 1000 per request
+  offset?: number;                 // For pagination
+}
+```
+
+**Returns:** Complete list of keywords with rankings (position 1-100), search volume, CPC, traffic estimates, URL that ranks
+
+**Use Cases:**
+- Discover ALL keywords a competitor ranks for
+- Find keyword gaps between your site and competitors
+- Identify low-hanging fruit opportunities (high volume, low competition)
+- Content strategy based on competitor success
+- Estimate organic traffic for any domain
+
+---
+
+#### `DATAFORSEO_DOMAIN_RANK` 
+**[ASYNC - DataForSEO Labs]** Get comprehensive domain authority metrics and organic performance overview.
+
+**Response Time:** 2-5 seconds  
+**Cost:** ~0.01 credits per request (very affordable!)  
+**Plan Required:** All plans (DataForSEO Labs)
+
+**Input:**
+```typescript
+{
+  target: string;                  // Domain to analyze (e.g., "example.com")
+}
+```
+
+**Returns:** Domain rank score, total organic keywords count, estimated traffic, organic cost (traffic value), visibility score
+
+**Use Cases:**
+- Quick domain authority assessment
+- Compare domain strength across competitors
+- Track domain growth over time
+- Complement backlink data with authority metrics
+- Evaluate potential link partners or acquisition targets
+
+---
+
+#### `DATAFORSEO_COMPETITORS_DOMAIN` 
+**[ASYNC - DataForSEO Labs]** Automatically discover competitor domains based on common keyword rankings.
+
+**Response Time:** 5-12 seconds  
+**Cost:** ~0.05 credits per request (great value!)  
+**Plan Required:** All plans (DataForSEO Labs)
+
+**Input:**
+```typescript
+{
+  target: string;                  // Your domain (e.g., "yoursite.com")
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+  limit?: number;                  // Max 100 competitors
+}
+```
+
+**Returns:** List of competitor domains with common keywords count, organic keywords overlap, estimated traffic, competitive metrics
+
+**Use Cases:**
+- Automated competitor discovery (no manual research!)
+- Identify direct and indirect competitors
+- Analyze keyword overlap and competitive gaps
+- Build competitive intelligence reports
+- Find new market opportunities
+
+---
+
+### Keyword Suggestions Tools (2 tools)
+
+#### `DATAFORSEO_KEYWORD_SUGGESTIONS` 
+**[ASYNC - Standard Plan]** Get keyword suggestions from Google Autocomplete with search volume data.
+
+**Response Time:** 2-5 seconds  
+**Cost:** ~0.003 credits per request (extremely affordable!)  
+**Plan Required:** All plans
+
+**Input:**
+```typescript
+{
+  keyword: string;                 // Seed keyword for suggestions
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+  limit?: number;                  // Max 1000 suggestions
+}
+```
+
+**Returns:** Google Autocomplete suggestions with search volume, CPC, competition data
+
+**Use Cases:**
+- Discover long-tail keyword variations
+- Understand how users actually search
+- Content ideation based on user intent
+- PPC campaign keyword expansion
+- Voice search optimization (natural language queries)
+
+---
+
+#### `DATAFORSEO_KEYWORD_IDEAS` 
+**[ASYNC - Standard Plan]** Get keyword ideas using Google's internal keyword matching algorithm.
+
+**Response Time:** 3-8 seconds  
+**Cost:** ~0.003 credits per request (very cheap!)  
+**Plan Required:** All plans
+
+**Input:**
+```typescript
+{
+  keywords: string[];              // 1-5 seed keywords
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+  limit?: number;                  // Max 1000 ideas
+}
+```
+
+**Returns:** Related keyword ideas with search volume, competition, CPC, and relevance metrics
+
+**Use Cases:**
+- Alternative to Related Keywords (different algorithm)
+- Keyword brainstorming for content clusters
+- Discover semantic keyword variations
+- PPC campaign planning
+- Content gap analysis
+
+---
+
+### SERP Tools (3 tools)
 
 #### `DATAFORSEO_GET_ORGANIC_SERP`
 **[ASYNC - Live SERP]** Get real-time organic search results from Google.
@@ -227,6 +392,37 @@ This creates a production bundle at `dist/server/main.js`.
 ```
 
 **Returns:** News articles with titles, sources, timestamps, snippets, thumbnails
+
+---
+
+#### `DATAFORSEO_HISTORICAL_SERP`
+**[ASYNC - DataForSEO Labs]** Get historical SERP ranking data showing how rankings changed over time.
+
+**Response Time:** 5-12 seconds  
+**Cost:** ~0.05 credits per request  
+**Plan Required:** All plans (DataForSEO Labs)
+
+**Input:**
+```typescript
+{
+  keyword: string;
+  languageName?: string;           // Default: "English"
+  locationName?: string;           // Default: "United States"
+  languageCode?: string;           // Alternative to languageName
+  locationCode?: number;           // Alternative to locationName
+  dateFrom?: string;               // YYYY-MM-DD (default: 30 days ago)
+  dateTo?: string;                 // YYYY-MM-DD (default: today)
+}
+```
+
+**Returns:** Historical ranking data showing position changes for top domains over time, SERP volatility metrics
+
+**Use Cases:**
+- Analyze Google algorithm update impacts
+- Track seasonal ranking fluctuations
+- Measure SERP volatility and stability
+- Understand long-term ranking trends
+- Identify ranking patterns and opportunities
 
 ---
 
@@ -334,12 +530,14 @@ data-for-seo/
 │   ├── lib/            # Client libraries
 │   │   └── dataforseo.ts # DataForSEO API client
 │   └── tools/          # MCP tools
-│       ├── index.ts    # Tools aggregator
-│       ├── schemas.ts  # Zod schemas
-│       ├── keywords.ts # Keyword tools (2 tools)
-│       ├── google-trends.ts # Google Trends & Difficulty (2 tools)
-│       ├── serp.ts     # SERP tools (2 tools)
-│       └── backlinks.ts # Backlink tools (3 tools)
+│       ├── index.ts             # Tools aggregator
+│       ├── schemas.ts           # Zod schemas
+│       ├── keywords.ts          # Keyword tools (2 tools)
+│       ├── google-trends.ts     # Google Trends & Difficulty (2 tools)
+│       ├── domain-analysis.ts   # Domain Analysis (3 tools)
+│       ├── keyword-suggestions.ts # Keyword Suggestions (2 tools)
+│       ├── serp.ts              # SERP tools (3 tools)
+│       └── backlinks.ts         # Backlink tools (3 tools)
 ├── package.json
 ├── tsconfig.json
 └── README.md

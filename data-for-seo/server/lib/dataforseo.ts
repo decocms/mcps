@@ -340,6 +340,159 @@ async function getKeywordDifficulty(
   );
 }
 
+// Domain Analysis API (DataForSEO Labs)
+async function getRankedKeywords(
+  config: DataForSeoClientConfig,
+  target: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+  offset?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/ranked_keywords/live",
+    "POST",
+    [
+      {
+        target,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+        offset,
+      },
+    ],
+  );
+}
+
+async function getDomainRank(
+  config: DataForSeoClientConfig,
+  target: string,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/domain_rank_overview/live",
+    "POST",
+    [
+      {
+        target,
+      },
+    ],
+  );
+}
+
+async function getCompetitorsDomain(
+  config: DataForSeoClientConfig,
+  target: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/competitors/live",
+    "POST",
+    [
+      {
+        target,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+// Keyword Suggestions API
+async function getKeywordSuggestions(
+  config: DataForSeoClientConfig,
+  keyword: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google/keyword_suggestions/live",
+    "POST",
+    [
+      {
+        keyword,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+async function getKeywordIdeas(
+  config: DataForSeoClientConfig,
+  keywords: string[],
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  limit?: number,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/keywords_data/google/keyword_ideas/live",
+    "POST",
+    [
+      {
+        keywords,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        limit,
+      },
+    ],
+  );
+}
+
+// Historical SERP API (DataForSEO Labs)
+async function getHistoricalSerp(
+  config: DataForSeoClientConfig,
+  keyword: string,
+  languageName: string = "English",
+  locationName: string = "United States",
+  languageCode?: string,
+  locationCode?: number,
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<DataForSeoTaskResponse> {
+  return makeDataForSeoRequest(
+    config,
+    "/dataforseo_labs/google/historical_serp/live",
+    "POST",
+    [
+      {
+        keyword,
+        language_name: languageName,
+        location_name: locationName,
+        language_code: languageCode,
+        location_code: locationCode,
+        date_from: dateFrom,
+        date_to: dateTo,
+      },
+    ],
+  );
+}
+
 export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
   // Keywords
   getSearchVolume: (
@@ -449,6 +602,102 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
       locationName,
       languageCode,
       locationCode,
+    ),
+
+  // Domain Analysis
+  getRankedKeywords: (
+    target: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+    offset?: number,
+  ) =>
+    getRankedKeywords(
+      config,
+      target,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+      offset,
+    ),
+  getDomainRank: (target: string) => getDomainRank(config, target),
+  getCompetitorsDomain: (
+    target: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getCompetitorsDomain(
+      config,
+      target,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+
+  // Keyword Suggestions
+  getKeywordSuggestions: (
+    keyword: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getKeywordSuggestions(
+      config,
+      keyword,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+  getKeywordIdeas: (
+    keywords: string[],
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    limit?: number,
+  ) =>
+    getKeywordIdeas(
+      config,
+      keywords,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      limit,
+    ),
+
+  // Historical SERP
+  getHistoricalSerp: (
+    keyword: string,
+    languageName?: string,
+    locationName?: string,
+    languageCode?: string,
+    locationCode?: number,
+    dateFrom?: string,
+    dateTo?: string,
+  ) =>
+    getHistoricalSerp(
+      config,
+      keyword,
+      languageName,
+      locationName,
+      languageCode,
+      locationCode,
+      dateFrom,
+      dateTo,
     ),
 });
 
