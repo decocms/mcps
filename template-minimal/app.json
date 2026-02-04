@@ -1,0 +1,13 @@
+{
+  "scopeName": "deco",
+  "name": "mcp-template-minimal",
+  "friendlyName": "MCP Template (Minimal)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-template-minimal.decocache.com/mcp"
+  },
+  "description": "Minimal template for creating new MCP servers with modern patterns",
+  "icon": "https://assets.decocache.com/mcp/template.svg",
+  "unlisted": true
+}
+

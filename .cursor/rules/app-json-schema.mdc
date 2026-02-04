@@ -1,0 +1,250 @@
+---
+description: app.json schema for publishing MCPs to the store
+globs: ["**/app.json"]
+---
+
+# app.json Schema
+
+The `app.json` file contains metadata for publishing your MCP to the store.
+
+## Required Fields
+
+```json
+{
+  "scopeName": "deco",
+  "name": "my-mcp",
+  "friendlyName": "My MCP",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-my-mcp.decocache.com/mcp"
+  },
+  "description": "Short description of what this MCP does",
+  "icon": "https://assets.decocache.com/mcp/.../icon.png",
+  "unlisted": false
+}
+```
+
+## Field Reference
+
+### scopeName
+- **Type**: `string`
+- **Values**:
+  - `"deco"` - For internal/Deco-built MCPs
+  - `"cloudflare"`, `"supabase"`, etc. - For official provider MCPs
+- **Example**: `"deco"` or `"cloudflare"`
+
+### name
+- **Type**: `string`
+- **Format**: kebab-case, unique identifier
+- **Example**: `"google-calendar"`, `"slack-mcp"`
+
+### friendlyName
+- **Type**: `string`
+- **Format**: Human-readable display name
+- **Example**: `"Google Calendar"`, `"Slack MCP"`
+
+### connection
+
+#### For HTTP/SSE MCPs:
+```jsonc
+{
+  "type": "HTTP",  // or "SSE"
+  "url": "https://sites-{folder-name}.decocache.com/mcp"
+}
+```
+
+**URL Pattern**: `https://sites-{folder-name}.decocache.com/mcp`
+- The `{folder-name}` must match the MCP's folder name in the repository
+- Example: Folder `google-calendar` → URL `https://sites-google-calendar.decocache.com/mcp`
+
+#### For Bindings:
+```json
+{
+  "type": "BINDING"
+}
+```
+- Used for MCPs that are bindings (event-bus, postgres, connection, etc.)
+- These should have `"unlisted": true`
+
+### description
+- **Type**: `string`
+- **Length**: Short, concise (1-2 sentences)
+- **Purpose**: Shown in store listings
+- **Example**: `"Integrate and manage your Google Calendar. Create, edit and delete events."`
+
+### icon
+- **Type**: `string` (URL)
+- **Format**: PNG or SVG, square aspect ratio recommended
+- **Example**: `"https://assets.decocache.com/mcp/{uuid}/icon.png"`
+
+### unlisted
+- **Type**: `boolean`
+- **Values**:
+  - `false` - Show in public store (default for user-facing MCPs)
+  - `true` - Hide from store (for bindings or internal MCPs)
+
+## Optional Metadata
+
+### metadata
+Additional rich metadata for better discovery:
+
+```json
+{
+  "metadata": {
+    "categories": ["Productivity", "Communication"],
+    "official": false,
+    "tags": ["calendar", "scheduling", "events", "google"],
+    "short_description": "Same as description field",
+    "mesh_description": "Detailed description (max 1500 chars)"
+  }
+}
+```
+
+#### categories
+- **Type**: `string[]`
+- **Common values**: 
+  - `"Productivity"`, `"Communication"`, `"AI"`, `"Search"`
+  - `"Documentation"`, `"Automation"`, `"Database"`
+  - `"Development"`, `"Analytics"`, `"Marketing"`
+
+#### official
+- **Type**: `boolean`
+- **Use**: `true` for official provider MCPs (e.g., Supabase, Cloudflare)
+- **Default**: `false`
+
+#### tags
+- **Type**: `string[]`
+- **Purpose**: Improve search and filtering
+- **Example**: `["slack", "bot", "ai-agent", "automation"]`
+
+#### mesh_description
+- **Type**: `string`
+- **Length**: **Maximum 1500 characters**
+- **Purpose**: Detailed description shown on MCP detail page
+- **Content**: 
+  - What the MCP does
+  - Key features (use bullet format: `**Feature** - description`)
+  - Use cases
+  - Authentication method
+  - Special capabilities
+
+**Example**:
+```json
+{
+  "mesh_description": "The Google Calendar MCP provides comprehensive integration with Google Calendar, enabling full programmatic control over calendar events and schedules. **Key Features** - Create, read, update, and delete calendar events. **Availability** - Check user availability across multiple calendars. **Recurring Events** - Set up and manage recurring events. **Time Zones** - Handle events across different time zones. **Permissions** - Manage calendar sharing and permissions. Ideal for building intelligent scheduling assistants, automated meeting coordinators, and calendar-aware applications. Provides secure OAuth-based authentication for calendar access."
+}
+```
+
+### auth
+Authentication configuration (optional, for token-based auth):
+
+```json
+{
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  }
+}
+```
+
+## Complete Examples
+
+### Standard HTTP MCP
+
+```json
+{
+  "scopeName": "deco",
+  "name": "perplexity",
+  "friendlyName": "Perplexity AI",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-perplexity.decocache.com/mcp"
+  },
+  "description": "Ask questions and have conversations with Perplexity AI with web-backed answers.",
+  "icon": "https://assets.decocache.com/mcp/.../Perplexity.svg",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["AI", "Search"],
+    "official": false,
+    "tags": ["perplexity", "ai", "search", "web-search"],
+    "short_description": "Ask questions with web-backed answers.",
+    "mesh_description": "The Perplexity AI MCP provides comprehensive integration with Perplexity's AI search engine, enabling intelligent question-answering with real-time web search capabilities. This MCP allows AI agents to ask questions and get factual, up-to-date answers backed by web sources, have multi-turn conversations with context retention, and control search parameters. Perfect for research tasks, fact-checking, and getting current information. Authentication via API key."
+  }
+}
+```
+
+### Official Provider MCP
+
+```json
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-docs-mcp",
+  "friendlyName": "Cloudflare Docs",
+  "connection": {
+    "type": "SSE",
+    "url": "https://docs.mcp.cloudflare.com/sse"
+  },
+  "description": "Access Cloudflare's comprehensive documentation through natural language.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Documentation"],
+    "official": true,
+    "tags": ["documentation", "cloudflare", "learning"],
+    "short_description": "Access Cloudflare documentation",
+    "mesh_description": "Cloudflare Docs MCP provides intelligent access to Cloudflare's extensive documentation covering all products and services. Search through detailed API references, tutorials, best practices guides, and troubleshooting documentation. The MCP uses semantic search to understand your questions and provide contextually relevant answers. Perfect for developers building on Cloudflare's platform."
+  }
+}
+```
+
+### Binding MCP
+
+```json
+{
+  "scopeName": "deco",
+  "name": "event-subscriber",
+  "connection": {
+    "type": "BINDING"
+  },
+  "description": "Event Subscriber Binding for MCPs. Implements ON_EVENTS to receive CloudEvents.",
+  "icon": "https://assets.decocache.com/mcp/.../icon.png",
+  "unlisted": true,
+  "tools": []
+}
+```
+
+Note: The `tools` array would contain the binding's tool definitions. See [event-bus/app.json](../event-bus/app.json) for a complete example.
+
+## Adding to Deployment
+
+After creating `app.json`, add your MCP to [deploy.json](../deploy.json):
+
+```json
+{
+  "my-mcp": {
+    "site": "my-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  }
+}
+```
+
+## Checklist
+
+Before publishing, ensure:
+
+- ✅ `scopeName` is correct (`"deco"` for internal MCPs)
+- ✅ `name` matches folder name and is unique
+- ✅ `connection.url` follows pattern `https://sites-{folder-name}.decocache.com/mcp`
+- ✅ `description` is clear and concise
+- ✅ `icon` URL is accessible
+- ✅ `mesh_description` is under 1500 characters
+- ✅ `categories` and `tags` are relevant
+- ✅ Added to [deploy.json](../deploy.json)
+- ✅ Tested locally with `bun run dev`
