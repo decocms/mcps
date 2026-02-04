@@ -9,7 +9,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../types/env.ts";
 import { getSupabaseClient } from "../lib/supabase-client.ts";
-import { getDiscordConfig } from "../lib/config-cache.ts";
+import { getDiscordBotToken } from "../lib/env.ts";
 
 /**
  * Slash Command Option Types
@@ -301,9 +301,6 @@ export const createListSlashCommandsTool = (_env: Env) =>
 
       const client = getSupabaseClient();
 
-      // Get bot config for Discord API access
-      const config = await getDiscordConfig(connectionId);
-
       try {
         // Fetch from database
         if (source === "database" || source === "both") {
@@ -363,15 +360,18 @@ export const createListSlashCommandsTool = (_env: Env) =>
           // If source === "both", continue to fetch from Discord
           const dbCommands = data || [];
 
-          if (!config) {
+          // Get bot token using secure method (doesn't expose discord_connections to tools)
+          let botToken: string;
+          try {
+            botToken = await getDiscordBotToken(env);
+          } catch (error) {
             return {
               success: false,
               commands: [],
-              message: "Connection not configured for Discord API access",
+              message: error instanceof Error ? error.message : String(error),
             };
           }
 
-          const botToken = config.botToken;
           const applicationId = botToken.split(".")[0];
 
           // Fetch from Discord
@@ -444,15 +444,18 @@ export const createListSlashCommandsTool = (_env: Env) =>
 
         // Fetch from Discord only
         if (source === "discord") {
-          if (!config) {
+          // Get bot token using secure method
+          let botToken: string;
+          try {
+            botToken = await getDiscordBotToken(env);
+          } catch (error) {
             return {
               success: false,
               commands: [],
-              message: "Connection not configured",
+              message: error instanceof Error ? error.message : String(error),
             };
           }
 
-          const botToken = config.botToken;
           const applicationId = botToken.split(".")[0];
 
           const discordResult = await fetchCommandsFromDiscord({
@@ -570,17 +573,18 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
         };
       }
 
-      // Get bot config to retrieve token and application ID
-      const config = await getDiscordConfig(connectionId);
-      if (!config) {
+      // Get bot token using secure method (doesn't expose discord_connections to tools)
+      let botToken: string;
+      try {
+        botToken = await getDiscordBotToken(env);
+      } catch (error) {
         return {
           success: false,
-          message: "Connection not configured. Save config first.",
+          message: error instanceof Error ? error.message : String(error),
         };
       }
 
-      // Extract application ID from bot token (format: Bot.APPLICATION_ID.xxx)
-      const botToken = config.botToken;
+      // Extract application ID from bot token (format: APPLICATION_ID.xxx)
       const applicationId = botToken.split(".")[0];
 
       try {
@@ -693,16 +697,17 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
           };
         }
 
-        // Get bot config
-        const config = await getDiscordConfig(connectionId);
-        if (!config) {
+        // Get bot token using secure method
+        let botToken: string;
+        try {
+          botToken = await getDiscordBotToken(env);
+        } catch (error) {
           return {
             success: false,
-            message: "Connection not configured",
+            message: error instanceof Error ? error.message : String(error),
           };
         }
 
-        const botToken = config.botToken;
         const applicationId = botToken.split(".")[0];
 
         // Delete from Discord if command_id exists
@@ -886,16 +891,18 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
         };
       }
 
-      const config = await getDiscordConfig(connectionId);
-      if (!config) {
+      // Get bot token using secure method
+      let botToken: string;
+      try {
+        botToken = await getDiscordBotToken(env);
+      } catch (error) {
         return {
           success: false,
-          message: "Connection not configured",
+          message: error instanceof Error ? error.message : String(error),
         };
       }
 
       try {
-        const botToken = config.botToken;
         const applicationId = botToken.split(".")[0];
 
         // Fetch from Discord
