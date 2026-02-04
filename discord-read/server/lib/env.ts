@@ -14,35 +14,15 @@ import type { Env } from "../types/env.ts";
 export const getDiscordBotToken = async (env: Env): Promise<string> => {
   // 1️⃣ PRIORITY: Check Authorization header (direct API usage)
   // When app.json has auth:null, the token goes through unchanged
-  console.log("[DEBUG getDiscordBotToken] Checking authorization...", {
-    hasContext: !!env.MESH_REQUEST_CONTEXT,
-    hasAuth: !!env.MESH_REQUEST_CONTEXT?.authorization,
-    authLength: env.MESH_REQUEST_CONTEXT?.authorization?.length,
-    authPreview: env.MESH_REQUEST_CONTEXT?.authorization?.slice(0, 30),
-    connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
-  });
-
   const authHeader = env.MESH_REQUEST_CONTEXT?.authorization;
   if (authHeader) {
     // Remove "Bearer " prefix if present
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    console.log("[DEBUG getDiscordBotToken] After cleanup:", {
-      tokenLength: token.length,
-      tokenPreview: token.slice(0, 30),
-      passesValidation: token && token.length > 20,
-    });
     if (token && token.length > 20) {
       // Basic validation (Discord bot tokens are long)
-      console.log(
-        "[Auth] ✅ Using Discord Bot Token from Authorization header",
-      );
       return token;
     }
   }
-
-  console.log(
-    "[DEBUG getDiscordBotToken] ❌ No valid auth header, trying Supabase...",
-  );
 
   // 2️⃣ FALLBACK: Load from Supabase configuration
   const connectionId =
@@ -62,6 +42,5 @@ export const getDiscordBotToken = async (env: Env): Promise<string> => {
     );
   }
 
-  console.log("[Auth] Using Discord Bot Token from Supabase config");
   return config.botToken;
 };

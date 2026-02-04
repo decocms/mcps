@@ -4,7 +4,7 @@
  * Tools for managing channels and threads.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../../types/env.ts";
 import { discordAPI } from "./api.ts";
@@ -31,7 +31,7 @@ const ChannelType = {
 // ============================================================================
 
 export const createListGuildChannelsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_LIST_CHANNELS",
     description: "List all channels from a Discord guild",
     inputSchema: z
@@ -96,7 +96,7 @@ export const createListGuildChannelsTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateChannelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_CREATE_CHANNEL",
     description: "Create a new channel in a Discord guild",
     inputSchema: z
@@ -179,7 +179,7 @@ export const createCreateChannelTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_CREATE_THREAD",
     description: "Create a thread or forum post in a Discord channel",
     inputSchema: z
@@ -269,7 +269,7 @@ export const createCreateThreadTool = (env: Env) =>
 // ============================================================================
 
 export const createGetActiveThreadsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_ACTIVE_THREADS",
     description:
       "Get all active threads in a Discord server (includes forum posts)",
@@ -326,7 +326,7 @@ export const createGetActiveThreadsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetArchivedThreadsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_ARCHIVED_THREADS",
     description: "Get archived threads from a Discord channel",
     inputSchema: z
@@ -396,7 +396,7 @@ export const createGetArchivedThreadsTool = (env: Env) =>
 // ============================================================================
 
 export const createJoinThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_JOIN_THREAD",
     description: "Join a thread with the bot",
     inputSchema: z
@@ -417,7 +417,7 @@ export const createJoinThreadTool = (env: Env) =>
   });
 
 export const createLeaveThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_LEAVE_THREAD",
     description: "Leave a thread with the bot",
     inputSchema: z

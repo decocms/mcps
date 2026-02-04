@@ -4,7 +4,7 @@
  * Tools for sending, editing, deleting, and managing messages.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../../types/env.ts";
 import { discordAPI, discordAPIBatch, encodeEmoji } from "./api.ts";
@@ -14,7 +14,7 @@ import { discordAPI, discordAPIBatch, encodeEmoji } from "./api.ts";
 // ============================================================================
 
 export const createSendMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_SEND_MESSAGE",
     description: "Send a message to a Discord channel",
     inputSchema: z
@@ -102,7 +102,7 @@ export const createSendMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createEditMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_EDIT_MESSAGE",
     description: "Edit a message in a Discord channel",
     inputSchema: z
@@ -157,7 +157,7 @@ export const createEditMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_DELETE_MESSAGE",
     description:
       "Delete one or more messages from a Discord channel. For multiple messages, they are deleted sequentially with automatic rate limit handling.",
@@ -272,7 +272,7 @@ export const createDeleteMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createBulkDeleteMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_BULK_DELETE_MESSAGES",
     description:
       "Delete multiple messages at once using Discord's bulk delete endpoint. " +
@@ -367,7 +367,7 @@ export const createBulkDeleteMessagesTool = (env: Env) =>
 // ============================================================================
 
 export const createPurgeChannelMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_PURGE_MESSAGES",
     description:
       "Intelligently purge messages from a channel. Automatically uses bulk delete for recent messages (<14 days) " +
@@ -664,7 +664,7 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
 // ============================================================================
 
 export const createGetMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_MESSAGE",
     description: "Get a specific message from a Discord channel",
     inputSchema: z
@@ -712,7 +712,7 @@ export const createGetMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createGetChannelMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_CHANNEL_MESSAGES",
     description: "Get messages from a Discord channel",
     inputSchema: z
@@ -795,7 +795,7 @@ export const createGetChannelMessagesTool = (env: Env) =>
 // ============================================================================
 
 export const createPinMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_PIN_MESSAGE",
     description: "Pin a message in a Discord channel",
     inputSchema: z
@@ -827,7 +827,7 @@ export const createPinMessageTool = (env: Env) =>
   });
 
 export const createUnpinMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_UNPIN_MESSAGE",
     description: "Unpin a message in a Discord channel",
     inputSchema: z
@@ -859,7 +859,7 @@ export const createUnpinMessageTool = (env: Env) =>
   });
 
 export const createGetPinnedMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_PINNED_MESSAGES",
     description: "Get all pinned messages from a Discord channel",
     inputSchema: z
@@ -909,7 +909,7 @@ export const createGetPinnedMessagesTool = (env: Env) =>
 // ============================================================================
 
 export const createAddReactionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_ADD_REACTION",
     description: "Add an emoji reaction to a Discord message",
     inputSchema: z
@@ -942,7 +942,7 @@ export const createAddReactionTool = (env: Env) =>
   });
 
 export const createRemoveReactionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_REMOVE_REACTION",
     description: "Remove bot's reaction from a message",
     inputSchema: z
@@ -971,7 +971,7 @@ export const createRemoveReactionTool = (env: Env) =>
   });
 
 export const createGetReactionsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GET_REACTIONS",
     description: "Get users who reacted to a message with a specific emoji",
     inputSchema: z
