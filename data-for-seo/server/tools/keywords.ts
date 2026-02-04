@@ -1,12 +1,12 @@
-import type { Env } from "../main";
-import { getClientFromEnv } from "../lib/dataforseo";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import type { Env } from "../types/env.ts";
+import { getClientFromEnv } from "../lib/dataforseo.ts";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import {
   searchVolumeInputSchema,
   searchVolumeOutputSchema,
   relatedKeywordsInputSchema,
   relatedKeywordsOutputSchema,
-} from "./schemas";
+} from "./schemas.ts";
 
 export const createSearchVolumeTool = (env: Env) =>
   createPrivateTool({

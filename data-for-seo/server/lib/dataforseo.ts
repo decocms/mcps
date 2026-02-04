@@ -1,6 +1,6 @@
-import { DATAFORSEO_BASE_URL } from "../constants";
+import { DATAFORSEO_BASE_URL } from "../constants.ts";
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
-import type { Env } from "../main";
+import type { Env } from "../types/env.ts";
 
 export interface DataForSeoClientConfig {
   login: string;
@@ -369,9 +369,14 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
 
 // Helper to create client from environment
 export const getClientFromEnv = (env: Env) => {
-  const state = env.DECO_REQUEST_CONTEXT.state;
+  const state = env.MESH_REQUEST_CONTEXT?.state;
+  if (!state?.API_CREDENTIALS) {
+    throw new Error(
+      "DataForSEO credentials not configured. Please set API_CREDENTIALS in the MCP settings.",
+    );
+  }
   return createDataForSeoClient({
-    login: state.login,
-    password: state.password,
+    login: state.API_CREDENTIALS.login,
+    password: state.API_CREDENTIALS.password,
   });
 };
