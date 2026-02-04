@@ -5,6 +5,18 @@ globs: ["**/server/**/*.ts", "**/types/**/*.ts"]
 
 # Creating New MCPs
 
+## 🚨 CRITICAL REMINDER: app.json is MANDATORY
+
+**NEVER forget to create `app.json`!** This file is REQUIRED for:
+- Publishing MCP to the store
+- Providing metadata for discovery
+- Configuring connection URLs
+- Setting categories and tags
+
+⚠️ **If you're migrating or creating an MCP and there's no `app.json`, CREATE IT IMMEDIATELY!**
+
+See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc) for complete documentation.
+
 ## Quick Start
 
 ```bash
@@ -17,6 +29,7 @@ This creates the basic structure. Then customize the files as needed.
 
 ```
 my-mcp/
+├── app.json                 # 🚨 MANDATORY! Store metadata for publishing
 ├── server/
 │   ├── main.ts              # Entry point with runtime configuration
 │   ├── tools/
@@ -25,11 +38,28 @@ my-mcp/
 │   ├── types/
 │   │   └── env.ts           # StateSchema and Env type definition
 │   └── lib/                 # (optional) API clients and helpers
-├── app.json                 # Store metadata (required for publishing)
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
+
+**Note**: `app.json` is at the root level, not in `server/`!
+
+## ⚠️ Mandatory Files Checklist
+
+Before considering an MCP "complete", ensure these files exist:
+
+| File | Location | Required? | Purpose |
+|------|----------|-----------|---------|
+| `app.json` | Root | 🚨 **MANDATORY** | Store metadata, discovery, deployment config |
+| `server/main.ts` | server/ | ✅ Required | Entry point with runtime |
+| `server/types/env.ts` | server/types/ | ✅ Required | StateSchema and Env type |
+| `server/tools/index.ts` | server/tools/ | ✅ Required | Export all tools |
+| `package.json` | Root | ✅ Required | Dependencies and scripts |
+| `README.md` | Root | ✅ Required | Documentation |
+| `tsconfig.json` | Root | ✅ Required | TypeScript config |
+
+**Missing `app.json`?** → Your MCP cannot be published! Create it NOW.
 
 ## main.ts Pattern
 
@@ -226,14 +256,44 @@ export const myToolFactory = (env: Env) =>
 
 ## Next Steps After Creation
 
-1. ✅ Implement tools in `server/tools/`
-2. ✅ Configure StateSchema in `server/types/env.ts`
-3. ✅ Create `app.json` with store metadata
-4. ✅ Add to [deploy.json](../deploy.json) for deployment
-5. ✅ Write README.md
+### 🚨 MANDATORY STEPS (Cannot skip!)
+
+1. ✅ **CREATE `app.json`** - REQUIRED for store publishing!
+   - See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc)
+   - Must include: scopeName, name, friendlyName, connection, description, icon
+   - Add metadata with categories, tags, and mesh_description
+
+2. ✅ **Add to [deploy.json](../deploy.json)** - REQUIRED for deployment!
+   ```json
+   {
+     "my-mcp": {
+       "site": "my-mcp",
+       "entrypoint": "./dist/server/main.js",
+       "platformName": "kubernetes-bun"
+     }
+   }
+   ```
+
+### Standard Steps
+
+3. ✅ Implement tools in `server/tools/`
+4. ✅ Configure StateSchema in `server/types/env.ts`
+5. ✅ Write comprehensive README.md
 6. ✅ Test locally with `bun run dev`
-7. ✅ Run `bun run fmt && bun run lint`
+7. ✅ Run `bun run fmt && bun run lint && bun run check`
 8. ✅ Create PR for review
+
+### Pre-Commit Checklist
+
+Before committing, verify:
+- [ ] `app.json` exists at root level
+- [ ] `app.json` has all required fields (scopeName, name, friendlyName, connection, description, icon)
+- [ ] `connection.url` matches pattern: `https://sites-{folder-name}.decocache.com/mcp`
+- [ ] `mesh_description` is under 1500 characters
+- [ ] Added to `deploy.json`
+- [ ] All tools have `[ASYNC]` prefix if async (takes >1 second)
+- [ ] README.md documents all tools
+- [ ] Code passes `bun run fmt && bun run lint && bun run check`
 
 ## Reference Examples
 
