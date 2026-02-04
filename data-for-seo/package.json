@@ -12,7 +12,7 @@
         "dev:link": "deco link -p 3003 -- PORT=3003 bun run dev"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.5",
+    "@decocms/runtime": "^1.2.6",
     "zod": "^4.0.0"
   },
   "devDependencies": {

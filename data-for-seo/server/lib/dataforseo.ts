@@ -709,6 +709,8 @@ export const getClientFromEnv = (env: Env) => {
     JSON.stringify(env.MESH_REQUEST_CONTEXT, null, 2),
   );
 
+  console.log("[DataForSEO] env:", env.MESH_REQUEST_CONTEXT);
+
   const state = env.MESH_REQUEST_CONTEXT?.state;
 
   if (state?.API_CREDENTIALS) {
