@@ -6,16 +6,8 @@ import type { Env } from "../types/env.ts";
 export function logToolExecution(toolId: string, env: Env): void {
   console.log(`[${toolId}] Executing...`);
   console.log(
-    `[${toolId}] env.MESH_REQUEST_CONTEXT:`,
-    !!env.MESH_REQUEST_CONTEXT,
-  );
-  console.log(
-    `[${toolId}] env.MESH_REQUEST_CONTEXT.state:`,
-    !!env.MESH_REQUEST_CONTEXT?.state,
-  );
-  console.log(
-    `[${toolId}] env.MESH_REQUEST_CONTEXT.state.API_CREDENTIALS:`,
-    !!env.MESH_REQUEST_CONTEXT?.state?.API_CREDENTIALS,
+    `[${toolId}] MESH_REQUEST_CONTEXT:`,
+    JSON.stringify(env.MESH_REQUEST_CONTEXT, null, 2),
   );
 }
 

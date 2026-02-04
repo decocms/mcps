@@ -705,13 +705,8 @@ export const createDataForSeoClient = (config: DataForSeoClientConfig) => ({
 export const getClientFromEnv = (env: Env) => {
   console.log("[DataForSEO] Getting client from env");
   console.log(
-    "[DataForSEO] MESH_REQUEST_CONTEXT exists:",
-    !!env.MESH_REQUEST_CONTEXT,
-  );
-  console.log("[DataForSEO] state exists:", !!env.MESH_REQUEST_CONTEXT?.state);
-  console.log(
-    "[DataForSEO] API_CREDENTIALS exists:",
-    !!env.MESH_REQUEST_CONTEXT?.state?.API_CREDENTIALS,
+    "[DataForSEO] MESH_REQUEST_CONTEXT:",
+    JSON.stringify(env.MESH_REQUEST_CONTEXT, null, 2),
   );
 
   const state = env.MESH_REQUEST_CONTEXT?.state;

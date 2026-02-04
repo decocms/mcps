@@ -29,12 +29,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     onChange: async (env) => {
       console.log("[DataForSEO Main] 🔄 Configuration changed!");
       console.log(
-        "[DataForSEO Main] MESH_REQUEST_CONTEXT exists:",
-        !!env.MESH_REQUEST_CONTEXT,
-      );
-      console.log(
-        "[DataForSEO Main] state exists:",
-        !!env.MESH_REQUEST_CONTEXT?.state,
+        "[DataForSEO Main] MESH_REQUEST_CONTEXT:",
+        JSON.stringify(env.MESH_REQUEST_CONTEXT, null, 2),
       );
 
       const state = env.MESH_REQUEST_CONTEXT?.state;
