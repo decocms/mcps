@@ -718,9 +718,14 @@ export const getClientFromEnv = (env: Env) => {
     );
   } else {
     console.log("[DataForSEO] ❌ NO CREDENTIALS FOUND");
+    console.log("[DataForSEO] state is:", state);
     console.log(
-      "[DataForSEO] Full state keys:",
-      state ? Object.keys(state) : "null",
+      "[DataForSEO] MESH_REQUEST_CONTEXT keys:",
+      env.MESH_REQUEST_CONTEXT ? Object.keys(env.MESH_REQUEST_CONTEXT) : "null",
+    );
+    console.log(
+      "[DataForSEO] Full MESH_REQUEST_CONTEXT when state is missing:",
+      JSON.stringify(env.MESH_REQUEST_CONTEXT, null, 2),
     );
   }
 

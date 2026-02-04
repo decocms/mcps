@@ -8,7 +8,8 @@
     "dev": "bun run --hot server/main.ts",
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
-    "build": "bun run build:server"
+    "build": "bun run build:server",
+        "dev:link": "deco link -p 3003 -- PORT=3003 bun run dev"
   },
   "dependencies": {
     "@decocms/runtime": "1.2.5",
