@@ -77,7 +77,7 @@ export async function discordAPI<T>(
   endpoint: string,
   options: DiscordAPIOptions = {},
 ): Promise<T> {
-  // Get bot token from Supabase - REST API doesn't need the bot to be "connected" via WebSocket
+  // Get bot token - REST API doesn't need the bot to be "connected" via WebSocket
   // We only need a valid bot token to make HTTP requests to Discord API
   let botToken: string;
   try {

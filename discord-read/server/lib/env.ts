@@ -20,7 +20,6 @@ export const getDiscordBotToken = async (env: Env): Promise<string> => {
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (token && token.length > 20) {
       // Basic validation (Discord bot tokens are long)
-      console.log("[Auth] Using Discord Bot Token from Authorization header");
       return token;
     }
   }
@@ -43,6 +42,5 @@ export const getDiscordBotToken = async (env: Env): Promise<string> => {
     );
   }
 
-  console.log("[Auth] Using Discord Bot Token from Supabase config");
   return config.botToken;
 };
