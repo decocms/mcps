@@ -134,6 +134,67 @@ function getDiscordOptionType(type: string): number {
 }
 
 /**
+ * Fetch commands from Discord API
+ */
+async function fetchCommandsFromDiscord(params: {
+  applicationId: string;
+  botToken: string;
+  guildId?: string;
+}): Promise<{
+  success: boolean;
+  commands?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    options?: any[];
+    guild_id?: string;
+  }>;
+  error?: string;
+}> {
+  const { applicationId, botToken, guildId } = params;
+
+  const baseUrl = `https://discord.com/api/v10/applications/${applicationId}`;
+  const url = guildId
+    ? `${baseUrl}/guilds/${guildId}/commands`
+    : `${baseUrl}/commands`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Discord API error: ${response.status} ${errorText}`,
+      };
+    }
+
+    const commands = (await response.json()) as Array<{
+      id: string;
+      name: string;
+      description: string;
+      options?: any[];
+      guild_id?: string;
+    }>;
+
+    return {
+      success: true,
+      commands,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
  * Delete a command from Discord API
  */
 async function deleteCommandFromDiscord(params: {
@@ -182,17 +243,23 @@ export const createListSlashCommandsTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_LIST_SLASH_COMMANDS",
     description:
-      "List all registered slash commands for this Discord connection.",
+      "List slash commands from database, Discord API, or both. Use 'source' parameter to choose.",
     inputSchema: z
       .object({
+        source: z
+          .enum(["database", "discord", "both"])
+          .default("database")
+          .describe(
+            "Source to list from: 'database' (local DB), 'discord' (Discord API), or 'both' (shows sync status)",
+          ),
         guildId: z
           .string()
           .optional()
-          .describe("Filter by guild ID (omit for all commands)"),
+          .describe("Filter by guild ID (omit for global commands)"),
         enabled: z
           .boolean()
           .optional()
-          .describe("Filter by enabled status (omit for all)"),
+          .describe("Filter by enabled status (database only)"),
       })
       .strict(),
     outputSchema: z
@@ -200,15 +267,18 @@ export const createListSlashCommandsTool = (_env: Env) =>
         success: z.boolean(),
         commands: z.array(
           z.object({
-            id: z.string(),
+            id: z.string().optional(),
             commandName: z.string(),
             description: z.string(),
-            commandId: z.string().nullable(),
-            guildId: z.string().nullable(),
-            enabled: z.boolean(),
-            options: z.any().nullable(),
-            createdAt: z.string(),
-            updatedAt: z.string(),
+            commandId: z.string().nullable().optional(),
+            guildId: z.string().nullable().optional(),
+            enabled: z.boolean().optional(),
+            options: z.any().nullable().optional(),
+            createdAt: z.string().optional(),
+            updatedAt: z.string().optional(),
+            source: z.string().optional(),
+            inDatabase: z.boolean().optional(),
+            inDiscord: z.boolean().optional(),
           }),
         ),
         message: z.string().optional(),
@@ -216,7 +286,12 @@ export const createListSlashCommandsTool = (_env: Env) =>
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
-      const { guildId, enabled } = context as {
+      const {
+        source = "database",
+        guildId,
+        enabled,
+      } = context as {
+        source?: "database" | "discord" | "both";
         guildId?: string;
         enabled?: boolean;
       };
@@ -225,55 +300,195 @@ export const createListSlashCommandsTool = (_env: Env) =>
         env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
 
       const client = getSupabaseClient();
-      if (!client) {
-        return {
-          success: false,
-          commands: [],
-          message: "Supabase not configured",
-        };
-      }
+
+      // Get bot config for Discord API access
+      const config = await getDiscordConfig(connectionId);
 
       try {
-        let query = client
-          .from("discord_slash_commands")
-          .select("*")
-          .eq("connection_id", connectionId)
-          .order("created_at", { ascending: false });
+        // Fetch from database
+        if (source === "database" || source === "both") {
+          if (!client) {
+            return {
+              success: false,
+              commands: [],
+              message: "Supabase not configured",
+            };
+          }
 
-        if (guildId !== undefined) {
-          query = query.eq("guild_id", guildId);
-        }
+          let query = client
+            .from("discord_slash_commands")
+            .select("*")
+            .eq("connection_id", connectionId)
+            .order("created_at", { ascending: false });
 
-        if (enabled !== undefined) {
-          query = query.eq("enabled", enabled);
-        }
+          if (guildId !== undefined) {
+            query = query.eq("guild_id", guildId);
+          }
 
-        const { data, error } = await query;
+          if (enabled !== undefined) {
+            query = query.eq("enabled", enabled);
+          }
 
-        if (error) {
+          const { data, error } = await query;
+
+          if (error) {
+            return {
+              success: false,
+              commands: [],
+              message: `Failed to fetch from database: ${error.message}`,
+            };
+          }
+
+          if (source === "database") {
+            const commands = (data || []).map((row: any) => ({
+              id: row.id,
+              commandName: row.command_name,
+              description: row.description,
+              commandId: row.command_id,
+              guildId: row.guild_id,
+              enabled: row.enabled,
+              options: row.options,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+              source: "database",
+            }));
+
+            return {
+              success: true,
+              commands,
+              message: `Found ${commands.length} command(s) in database`,
+            };
+          }
+
+          // If source === "both", continue to fetch from Discord
+          const dbCommands = data || [];
+
+          if (!config) {
+            return {
+              success: false,
+              commands: [],
+              message: "Connection not configured for Discord API access",
+            };
+          }
+
+          const botToken = config.botToken;
+          const applicationId = botToken.split(".")[0];
+
+          // Fetch from Discord
+          const discordResult = await fetchCommandsFromDiscord({
+            applicationId,
+            botToken,
+            guildId,
+          });
+
+          if (!discordResult.success) {
+            return {
+              success: false,
+              commands: [],
+              message: `Failed to fetch from Discord: ${discordResult.error}`,
+            };
+          }
+
+          const discordCommands = discordResult.commands || [];
+
+          // Merge and compare
+          const commandMap = new Map<string, any>();
+
+          // Add database commands
+          for (const row of dbCommands) {
+            const key = `${row.command_name}-${row.guild_id || "global"}`;
+            commandMap.set(key, {
+              id: row.id,
+              commandName: row.command_name,
+              description: row.description,
+              commandId: row.command_id,
+              guildId: row.guild_id,
+              enabled: row.enabled,
+              options: row.options,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+              inDatabase: true,
+              inDiscord: false,
+            });
+          }
+
+          // Check Discord commands
+          for (const cmd of discordCommands) {
+            const key = `${cmd.name}-${cmd.guild_id || "global"}`;
+            const existing = commandMap.get(key);
+
+            if (existing) {
+              existing.inDiscord = true;
+            } else {
+              commandMap.set(key, {
+                commandName: cmd.name,
+                description: cmd.description,
+                commandId: cmd.id,
+                guildId: cmd.guild_id || null,
+                options: cmd.options || null,
+                inDatabase: false,
+                inDiscord: true,
+                source: "discord-only",
+              });
+            }
+          }
+
+          const commands = Array.from(commandMap.values());
+
           return {
-            success: false,
-            commands: [],
-            message: `Failed to fetch commands: ${error.message}`,
+            success: true,
+            commands,
+            message: `Found ${commands.length} command(s). Database: ${dbCommands.length}, Discord: ${discordCommands.length}`,
           };
         }
 
-        const commands = (data || []).map((row: any) => ({
-          id: row.id,
-          commandName: row.command_name,
-          description: row.description,
-          commandId: row.command_id,
-          guildId: row.guild_id,
-          enabled: row.enabled,
-          options: row.options,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }));
+        // Fetch from Discord only
+        if (source === "discord") {
+          if (!config) {
+            return {
+              success: false,
+              commands: [],
+              message: "Connection not configured",
+            };
+          }
+
+          const botToken = config.botToken;
+          const applicationId = botToken.split(".")[0];
+
+          const discordResult = await fetchCommandsFromDiscord({
+            applicationId,
+            botToken,
+            guildId,
+          });
+
+          if (!discordResult.success) {
+            return {
+              success: false,
+              commands: [],
+              message: `Failed to fetch from Discord: ${discordResult.error}`,
+            };
+          }
+
+          const commands = (discordResult.commands || []).map((cmd) => ({
+            commandName: cmd.name,
+            description: cmd.description,
+            commandId: cmd.id,
+            guildId: cmd.guild_id || null,
+            options: cmd.options || null,
+            source: "discord",
+          }));
+
+          return {
+            success: true,
+            commands,
+            message: `Found ${commands.length} command(s) in Discord`,
+          };
+        }
 
         return {
-          success: true,
-          commands,
-          message: `Found ${commands.length} command(s)`,
+          success: false,
+          commands: [],
+          message: "Invalid source parameter",
         };
       } catch (error) {
         return {
@@ -605,10 +820,226 @@ export const createToggleSlashCommandTool = (_env: Env) =>
     },
   });
 
+// ============================================================================
+// SYNC SLASH COMMANDS
+// ============================================================================
+
+export const createSyncSlashCommandsTool = (_env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_SYNC_SLASH_COMMANDS",
+    description:
+      "Sync slash commands between Discord API and database. Can import missing commands from Discord to DB, or clean orphaned commands from DB.",
+    inputSchema: z
+      .object({
+        action: z
+          .enum(["import", "clean", "full-sync"])
+          .describe(
+            "'import' (add Discord commands to DB), 'clean' (remove DB commands not in Discord), 'full-sync' (both)",
+          ),
+        guildId: z
+          .string()
+          .optional()
+          .describe("Guild ID to sync (omit for global commands)"),
+        dryRun: z
+          .boolean()
+          .default(false)
+          .describe("Preview changes without applying them"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        imported: z.number().optional(),
+        cleaned: z.number().optional(),
+        changes: z
+          .array(
+            z.object({
+              action: z.string(),
+              commandName: z.string(),
+              commandId: z.string().optional(),
+            }),
+          )
+          .optional(),
+      })
+      .strict(),
+    execute: async (params: any) => {
+      const { env, context } = params;
+      const {
+        action,
+        guildId,
+        dryRun = false,
+      } = context as {
+        action: "import" | "clean" | "full-sync";
+        guildId?: string;
+        dryRun?: boolean;
+      };
+
+      const connectionId =
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+
+      const client = getSupabaseClient();
+      if (!client) {
+        return {
+          success: false,
+          message: "Supabase not configured",
+        };
+      }
+
+      const config = await getDiscordConfig(connectionId);
+      if (!config) {
+        return {
+          success: false,
+          message: "Connection not configured",
+        };
+      }
+
+      try {
+        const botToken = config.botToken;
+        const applicationId = botToken.split(".")[0];
+
+        // Fetch from Discord
+        const discordResult = await fetchCommandsFromDiscord({
+          applicationId,
+          botToken,
+          guildId,
+        });
+
+        if (!discordResult.success) {
+          return {
+            success: false,
+            message: `Failed to fetch from Discord: ${discordResult.error}`,
+          };
+        }
+
+        const discordCommands = discordResult.commands || [];
+
+        // Fetch from database
+        let query = client
+          .from("discord_slash_commands")
+          .select("*")
+          .eq("connection_id", connectionId);
+
+        if (guildId !== undefined) {
+          query = query.eq("guild_id", guildId);
+        }
+
+        const { data: dbCommands, error } = await query;
+
+        if (error) {
+          return {
+            success: false,
+            message: `Failed to fetch from database: ${error.message}`,
+          };
+        }
+
+        const dbCommandsMap = new Map(
+          (dbCommands || []).map((cmd: any) => [
+            `${cmd.command_name}-${cmd.guild_id || "global"}`,
+            cmd,
+          ]),
+        );
+
+        const discordCommandsMap = new Map(
+          discordCommands.map((cmd) => [
+            `${cmd.name}-${cmd.guild_id || "global"}`,
+            cmd,
+          ]),
+        );
+
+        const changes: Array<{
+          action: string;
+          commandName: string;
+          commandId?: string;
+        }> = [];
+        let imported = 0;
+        let cleaned = 0;
+
+        // Import missing commands from Discord to DB
+        if (action === "import" || action === "full-sync") {
+          for (const [key, discordCmd] of discordCommandsMap) {
+            if (!dbCommandsMap.has(key)) {
+              changes.push({
+                action: "import",
+                commandName: discordCmd.name,
+                commandId: discordCmd.id,
+              });
+
+              if (!dryRun) {
+                await client.from("discord_slash_commands").insert({
+                  connection_id: connectionId,
+                  command_id: discordCmd.id,
+                  command_name: discordCmd.name,
+                  description: discordCmd.description,
+                  options: discordCmd.options
+                    ? JSON.stringify(discordCmd.options)
+                    : null,
+                  guild_id: discordCmd.guild_id || null,
+                  enabled: true,
+                });
+                imported++;
+              }
+            }
+          }
+        }
+
+        // Clean orphaned commands from DB
+        if (action === "clean" || action === "full-sync") {
+          for (const [key, dbCmd] of dbCommandsMap) {
+            if (!discordCommandsMap.has(key)) {
+              changes.push({
+                action: "clean",
+                commandName: dbCmd.command_name,
+                commandId: dbCmd.id,
+              });
+
+              if (!dryRun) {
+                await client
+                  .from("discord_slash_commands")
+                  .delete()
+                  .eq("id", dbCmd.id);
+                cleaned++;
+              }
+            }
+          }
+        }
+
+        const prefix = dryRun ? "[DRY RUN] " : "";
+        let message = `${prefix}Sync completed. `;
+
+        if (action === "import" || action === "full-sync") {
+          message += `Imported: ${dryRun ? changes.filter((c) => c.action === "import").length : imported}. `;
+        }
+
+        if (action === "clean" || action === "full-sync") {
+          message += `Cleaned: ${dryRun ? changes.filter((c) => c.action === "clean").length : cleaned}.`;
+        }
+
+        return {
+          success: true,
+          message,
+          imported: dryRun
+            ? changes.filter((c) => c.action === "import").length
+            : imported,
+          cleaned: dryRun
+            ? changes.filter((c) => c.action === "clean").length
+            : cleaned,
+          changes: changes.length > 0 ? changes : undefined,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
 // Export all tools
 export const slashCommandTools = [
   createListSlashCommandsTool,
   createRegisterSlashCommandTool,
   createDeleteSlashCommandTool,
   createToggleSlashCommandTool,
+  createSyncSlashCommandsTool,
 ];
