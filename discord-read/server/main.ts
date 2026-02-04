@@ -187,8 +187,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             .filter(Boolean)
         : [];
 
-      // If we have a connection ID and Discord Public Key, sync to config-cache
-      if (connectionId && discordPublicKey && organizationId && meshUrl) {
+      // If we have a connection ID, sync to config-cache (discordPublicKey is optional but needed for webhooks)
+      if (connectionId && organizationId && meshUrl) {
         // Try to load existing config to preserve other fields
         const existingConfig = await getDiscordConfig(connectionId);
 
