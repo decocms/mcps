@@ -96,7 +96,7 @@ const { mimeType, imageData } = extractImageData(inlineData);
 
 ```typescript
 import { S3Client } from "@aws-sdk/client-s3";
-import { createTool } from "@decocms/runtime/mastra";
+import { createTool } from "@decocms/runtime/tools";
 import {
   S3StorageAdapter,
   saveImage,

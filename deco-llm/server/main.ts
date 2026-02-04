@@ -57,7 +57,6 @@ const runtime = withRuntime<
   Registry
 >({
   tools: (env) => {
-    // @ts-expect-error: TODO: fix this later
     return tools(env, {
       start: async (modelInfo, params) => {
         const amount = calculatePreAuthAmount(modelInfo, params);

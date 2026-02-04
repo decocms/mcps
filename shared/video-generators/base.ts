@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { saveVideo } from "./storage";
 import { ObjectStorage } from "../storage";
 import {

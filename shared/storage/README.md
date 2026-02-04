@@ -177,7 +177,7 @@ const { url } = await saveImage(storage, {
 ### Example 3: New MCP with Storage
 
 ```typescript
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { createStorageFromEnv } from "@decocms/mcps-shared/storage";
 import { z } from "zod";
 

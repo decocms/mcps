@@ -20,7 +20,7 @@ import {
   createStreamableTool,
 } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { getOpenRouterApiKey } from "server/lib/env.ts";
+import { getOpenRouterApiKey } from "../lib/env.ts";
 import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
