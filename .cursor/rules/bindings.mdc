@@ -89,7 +89,7 @@ async function getUser(env: Env, userId: string) {
     params: [userId],
   });
   
-  const rows = response.result[0]?.results ?? [];
+  const rows = response?.result[0]?.results ?? [];
   return rows[0];
 }
 
@@ -113,7 +113,7 @@ export async function runSQL<T = unknown>(
     sql,
     params,
   });
-  return (response.result[0]?.results ?? []) as T[];
+  return (response?.result[0]?.results ?? []) as T[];
 }
 
 // Usage:

@@ -176,7 +176,7 @@ bun run fmt && bun run lint && git add . && git commit
 ## CI/CD Pipeline
 
 ### Checks (runs on all PRs)
-Workflow: [.github/workflows/checks.yml](../.github/workflows/checks.yml)
+Workflow: [.github/workflows/checks.yml](../../.github/workflows/checks.yml)
 
 ```yaml
 - Format check (bun run fmt --check)
@@ -190,7 +190,7 @@ Workflow: [.github/workflows/checks.yml](../.github/workflows/checks.yml)
 - Commit and push fixes
 
 ### Deploy (runs on push to main)
-Workflow: [.github/workflows/deploy.yml](../.github/workflows/deploy.yml)
+Workflow: [.github/workflows/deploy.yml](../../.github/workflows/deploy.yml)
 
 **What happens:**
 1. Detects changed MCPs (compares commits)
@@ -204,7 +204,7 @@ Workflow: [.github/workflows/deploy.yml](../.github/workflows/deploy.yml)
 - Both get deployed automatically to production
 
 ### Preview Deployments (PRs)
-Workflow: [.github/workflows/deploy-preview.yml](../.github/workflows/deploy-preview.yml)
+Workflow: [.github/workflows/deploy-preview.yml](../../.github/workflows/deploy-preview.yml)
 
 **What happens:**
 1. Detects changed MCPs in PR
@@ -315,4 +315,4 @@ git push --force-with-lease
 
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [GitHub Flow](https://guides.github.com/introduction/flow/)
-- [.github/workflows/](../.github/workflows/) - CI/CD configuration
+- [.github/workflows/](../../.github/workflows/) - CI/CD configuration

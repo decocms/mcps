@@ -204,6 +204,7 @@ export const tools = [myToolFactory];
 ```typescript
 // server/tools/my-tool.ts
 import { createPrivateTool } from "@decocms/runtime";
+import { z } from "zod";
 import type { Env } from "../types/env.ts";
 
 export const myToolFactory = (env: Env) =>

@@ -45,14 +45,17 @@ After creating your MCP:
    - Update all fields (name, url, description, icon)
    - See `.cursor/rules/app-json-schema.mdc` for complete schema
 
-4. **Add to deploy.json** for automatic deployment
-
-5. **Test locally**
+4. **Test locally**
    ```bash
    bun run dev
    ```
 
-6. **Format and lint**
+5. **Enable automatic deployment** (optional)
+   - Add your MCP to `deploy.json` in the root
+   - This enables auto-deploy to production on merge to main
+   - See other MCPs in `deploy.json` for examples
+
+6. **Format and lint** (before committing)
    ```bash
    bun run fmt && bun run lint
    ```

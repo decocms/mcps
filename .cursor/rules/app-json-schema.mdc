@@ -46,7 +46,7 @@ The `app.json` file contains metadata for publishing your MCP to the store.
 ### connection
 
 #### For HTTP/SSE MCPs:
-```json
+```jsonc
 {
   "type": "HTTP",  // or "SSE"
   "url": "https://sites-{folder-name}.decocache.com/mcp"
@@ -215,9 +215,11 @@ Authentication configuration (optional, for token-based auth):
   "description": "Event Subscriber Binding for MCPs. Implements ON_EVENTS to receive CloudEvents.",
   "icon": "https://assets.decocache.com/mcp/.../icon.png",
   "unlisted": true,
-  "tools": [...]
+  "tools": []
 }
 ```
+
+Note: The `tools` array would contain the binding's tool definitions. See [event-bus/app.json](../event-bus/app.json) for a complete example.
 
 ## Adding to Deployment
 
