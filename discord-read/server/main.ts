@@ -211,6 +211,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           meshToken: token,
           botToken,
           discordPublicKey,
+          discordApplicationId,
           authorizedGuilds,
           ownerId: botOwnerId,
           commandPrefix,
