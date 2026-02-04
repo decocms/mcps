@@ -86,19 +86,15 @@ app.post("/discord/interactions/:connectionId", async (c) => {
   );
   console.log(`[Webhook] Full payload: ${JSON.stringify(payload)}`);
 
-  // Handle PING (verification challenge) - type 1
-  // Discord sends type: 1 for PING challenge
-  if (payload.type === InteractionType.PING) {
-    console.log(`[Webhook] Responding to PING challenge`);
-    return c.json({ type: InteractionResponseType.PONG });
+  // Handle type 0 - Discord URL verification (returns 204 No Content)
+  if (payload.type === 0) {
+    console.log(`[Webhook] URL verification (type 0) - returning 204`);
+    return new Response(null, { status: 204 });
   }
 
-  // If type is 0 or undefined, it might be a malformed request
-  // Try to respond with PONG anyway for verification purposes
-  if (payload.type === 0 || payload.type === undefined) {
-    console.log(
-      `[Webhook] Unknown type ${payload.type}, responding with PONG for verification`,
-    );
+  // Handle PING (type 1) - Discord interaction verification (returns PONG)
+  if (payload.type === InteractionType.PING) {
+    console.log(`[Webhook] PING challenge (type 1) - returning PONG`);
     return c.json({ type: InteractionResponseType.PONG });
   }
 
