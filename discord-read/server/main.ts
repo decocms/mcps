@@ -18,6 +18,11 @@ import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
 import { app as webhookRouter } from "./router.ts";
+import {
+  setDiscordConfig,
+  getDiscordConfig,
+  type DiscordConfig,
+} from "./lib/config-cache.ts";
 
 export { StateSchema };
 
@@ -161,6 +166,73 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           agentId: agentId || "not set",
           streaming: enableStreaming,
         });
+      }
+
+      // ======================================================================
+      // Sync StateSchema fields to config-cache for webhook endpoint
+      // ======================================================================
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
+      const discordPublicKey = state?.DISCORD_PUBLIC_KEY;
+      const discordApplicationId = state?.DISCORD_APPLICATION_ID;
+      const authorizedGuildsStr = state?.AUTHORIZED_GUILDS;
+      const botOwnerId = state?.BOT_OWNER_ID;
+      const commandPrefix = state?.COMMAND_PREFIX || "!";
+
+      // Parse authorized guilds (comma-separated string to array)
+      const authorizedGuilds = authorizedGuildsStr
+        ? authorizedGuildsStr
+            .split(",")
+            .map((g) => g.trim())
+            .filter(Boolean)
+        : [];
+
+      // If we have a connection ID and Discord Public Key, sync to config-cache
+      if (connectionId && discordPublicKey && organizationId && meshUrl) {
+        // Try to load existing config to preserve other fields
+        const existingConfig = await getDiscordConfig(connectionId);
+
+        // Extract bot token from authorization header (Bearer token)
+        let botToken = existingConfig?.botToken || "";
+        if (authorization) {
+          const authMatch = authorization.match(/^Bearer\s+(.+)$/i);
+          if (authMatch) {
+            botToken = authMatch[1];
+          }
+        }
+
+        const configToSave: DiscordConfig = {
+          // Preserve existing config fields
+          ...(existingConfig || {}),
+          // Update with current values
+          connectionId,
+          organizationId,
+          meshUrl,
+          meshToken: token,
+          botToken,
+          discordPublicKey,
+          authorizedGuilds,
+          ownerId: botOwnerId,
+          commandPrefix,
+          modelProviderId,
+          modelId,
+          agentId,
+          updatedAt: new Date().toISOString(),
+        };
+
+        await setDiscordConfig(configToSave);
+        console.log(
+          `[CONFIG] ✅ Synced StateSchema to config-cache for webhook endpoint`,
+        );
+        console.log(
+          `[CONFIG] Discord Public Key: ${discordPublicKey ? "✓ configured" : "✗ missing"}`,
+        );
+        console.log(
+          `[CONFIG] Application ID: ${discordApplicationId || "not set"}`,
+        );
+        console.log(
+          `[CONFIG] Authorized Guilds: ${authorizedGuilds.length > 0 ? authorizedGuilds.join(", ") : "all"}`,
+        );
       }
 
       // NOTE: Discord client is NOT auto-initialized on config save
