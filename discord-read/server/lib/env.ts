@@ -1,10 +1,10 @@
 import type { Env } from "../types/env.ts";
 
 /**
- * Get Discord Bot Token from custom header or Supabase configuration
+ * Get Discord Bot Token from Authorization header or Supabase configuration
  *
  * Priority:
- * 1. X-Discord-Bot-Token header (for direct API usage without Mesh auth)
+ * 1. Authorization header (for direct API usage: "Authorization: YOUR_BOT_TOKEN")
  * 2. Supabase config (via DISCORD_SAVE_CONFIG) - for persistent bots
  *
  * @param env - The environment containing the mesh request context
@@ -12,14 +12,17 @@ import type { Env } from "../types/env.ts";
  * @throws Error if bot token is not configured
  */
 export const getDiscordBotToken = async (env: Env): Promise<string> => {
-  // 1️⃣ PRIORITY: Check for X-Discord-Bot-Token custom header
-  // This allows direct API usage: curl -H "X-Discord-Bot-Token: YOUR_BOT_TOKEN"
-  const customToken = (env as any).X_DISCORD_BOT_TOKEN;
-  if (customToken) {
-    console.log(
-      "[Auth] Using Discord Bot Token from X-Discord-Bot-Token header",
-    );
-    return customToken;
+  // 1️⃣ PRIORITY: Check Authorization header (direct API usage)
+  // When app.json has auth:null, the token goes through unchanged
+  const authHeader = env.MESH_REQUEST_CONTEXT?.authorization;
+  if (authHeader) {
+    // Remove "Bearer " prefix if present
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (token && token.length > 20) {
+      // Basic validation (Discord bot tokens are long)
+      console.log("[Auth] Using Discord Bot Token from Authorization header");
+      return token;
+    }
   }
 
   // 2️⃣ FALLBACK: Load from Supabase configuration
@@ -33,8 +36,9 @@ export const getDiscordBotToken = async (env: Env): Promise<string> => {
     throw new Error(
       `Discord Bot Token not configured.\n\n` +
         `Options:\n` +
-        `1. Direct API: Pass token in custom header:\n` +
-        `   "X-Discord-Bot-Token: YOUR_DISCORD_BOT_TOKEN"\n` +
+        `1. Direct API: Pass token in Authorization header:\n` +
+        `   "Authorization: YOUR_DISCORD_BOT_TOKEN" or\n` +
+        `   "Authorization: Bearer YOUR_DISCORD_BOT_TOKEN"\n` +
         `2. Via Mesh: Use DISCORD_SAVE_CONFIG tool to save bot token for connection '${connectionId}'`,
     );
   }
