@@ -105,7 +105,8 @@ async function makeDataForSeoRequest(
   }
 
   const url = `${DATAFORSEO_BASE_URL}${endpoint}`;
-  const basicAuth = btoa(`${config.login}:${config.password}`);
+  // Trim credentials to remove any accidental whitespace
+  const basicAuth = btoa(`${config.login.trim()}:${config.password.trim()}`);
 
   const options: RequestInit = {
     method,

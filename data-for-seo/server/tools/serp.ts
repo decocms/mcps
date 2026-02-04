@@ -82,5 +82,6 @@ export const createHistoricalSerpTool = (env: Env) =>
 export const serpTools = [
   createOrganicSerpTool,
   createNewsSerpTool,
-  createHistoricalSerpTool,
+  // Historical SERP not available via live API (returns 404)
+  // createHistoricalSerpTool,
 ];
