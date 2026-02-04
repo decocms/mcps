@@ -50,6 +50,20 @@ app.post("/discord/interactions/:connectionId", async (c) => {
     return c.json({ error: "Connection not configured" }, 404);
   }
 
+  // Check if Discord Public Key is configured
+  if (!config.discordPublicKey) {
+    console.error(
+      `[Webhook] Discord Public Key not configured for ${connectionId}`,
+    );
+    return c.json(
+      {
+        error:
+          "Discord Public Key not configured. Set DISCORD_PUBLIC_KEY in Mesh Dashboard.",
+      },
+      400,
+    );
+  }
+
   // Verify Discord signature
   const signature = c.req.header("x-signature-ed25519");
   const timestamp = c.req.header("x-signature-timestamp");

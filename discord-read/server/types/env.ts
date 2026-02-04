@@ -39,7 +39,40 @@ export const StateSchema = z.object({
       "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
     ),
 
+  // ============================================================================
+  // Discord Webhook Configuration (required for /interactions endpoint)
+  // ============================================================================
+  DISCORD_PUBLIC_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "Discord Application Public Key (from Discord Developer Portal > General Information). Required for webhook signature verification.",
+    ),
+
+  DISCORD_APPLICATION_ID: z
+    .string()
+    .optional()
+    .describe(
+      "Discord Application ID (from Discord Developer Portal). Required for slash commands registration.",
+    ),
+
+  AUTHORIZED_GUILDS: z
+    .string()
+    .optional()
+    .describe(
+      "List of authorized Guild IDs separated by comma (e.g., '123456789,987654321'). Leave empty to allow all guilds.",
+    ),
+
+  BOT_OWNER_ID: z
+    .string()
+    .optional()
+    .describe(
+      "Discord User ID of the bot owner. Used for admin-only commands.",
+    ),
+
+  // ============================================================================
   // Config do Discord Bot
+  // ============================================================================
   // Note: BOT_TOKEN is now passed via Authorization header (auth.type: "token" in app.json)
   COMMAND_PREFIX: z
     .string()
