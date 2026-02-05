@@ -19,7 +19,6 @@
         "./search-ai": "./search-ai/index.ts",
         "./serve": "./serve.ts",
         "./registry": "./registry.ts",
-        "./google-oauth": "./google-oauth.ts",
         "./whatsapp": "./whatsapp/index.ts",
         "./api-key-manager": "./api-key-manager.ts"
     },

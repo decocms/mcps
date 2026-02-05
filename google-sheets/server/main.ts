@@ -3,7 +3,7 @@
  */
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
+import { createGoogleOAuth } from "@decocms/mcps-shared-v2/google-oauth";
 
 import { tools } from "./tools/index.ts";
 import { GOOGLE_SCOPES } from "./constants.ts";
