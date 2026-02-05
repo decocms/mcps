@@ -120,7 +120,28 @@ app.post("/discord/interactions/:connectionId", async (c) => {
 
     console.log(`[Webhook] Processing slash command: /${command.command}`);
 
-    // Check if command is registered and enabled in database
+    // Built-in commands (don't require database registration)
+    const BUILTIN_COMMANDS = ["start", "stop", "status", "help"];
+
+    // Handle built-in commands first (no database check needed)
+    if (BUILTIN_COMMANDS.includes(command.command)) {
+      console.log(`[Webhook] Built-in command: /${command.command}`);
+
+      if (command.command === "start") {
+        return await handleStartCommand(connectionId, payload);
+      }
+
+      // TODO: Add handlers for other built-in commands
+      return c.json(
+        createInteractionResponse(
+          InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          `⚠️ Built-in command \`/${command.command}\` handler not implemented yet.`,
+          true,
+        ),
+      );
+    }
+
+    // For custom commands, check if registered and enabled in database
     const client = getSupabaseClient();
     if (client) {
       const guildId = payload.guild_id || null;
@@ -152,12 +173,7 @@ app.post("/discord/interactions/:connectionId", async (c) => {
       );
     }
 
-    // Handle /start command
-    if (command.command === "start") {
-      return await handleStartCommand(connectionId, payload);
-    }
-
-    // Command exists but no handler - inform user
+    // Custom command exists but no handler - inform user
     return c.json(
       createInteractionResponse(
         InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
