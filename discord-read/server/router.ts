@@ -86,15 +86,22 @@ app.post("/discord/interactions/:connectionId", async (c) => {
   );
   console.log(`[Webhook] Full payload: ${JSON.stringify(payload)}`);
 
-  // Handle type 0 - Discord URL verification (returns 204 No Content)
+  // Handle type 0 - Discord Webhook Events URL verification (returns 204 No Content)
+  // Docs: https://discord.com/developers/docs/events/webhook-events#preparing-for-events
   if (payload.type === 0) {
-    console.log(`[Webhook] URL verification (type 0) - returning 204`);
-    return new Response(null, { status: 204 });
+    console.log(
+      `[Webhook] Webhook Events URL verification (type 0) - returning 204`,
+    );
+    return new Response(null, {
+      status: 204,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  // Handle PING (type 1) - Discord interaction verification (returns PONG)
+  // Handle type 1 - Discord Interactions Endpoint PING (returns PONG)
+  // Docs: https://discord.com/developers/docs/interactions/receiving-and-responding
   if (payload.type === InteractionType.PING) {
-    console.log(`[Webhook] PING challenge (type 1) - returning PONG`);
+    console.log(`[Webhook] Interactions PING (type 1) - returning PONG`);
     return c.json({ type: InteractionResponseType.PONG });
   }
 
