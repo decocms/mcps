@@ -43,12 +43,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         console.error("Error ensuring tables and indexes:", error);
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "*",
-    ],
     state: StateSchema,
   },
   tools,
