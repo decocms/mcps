@@ -5,7 +5,7 @@
  * The API key is retrieved from the Bearer token in the connection.
  */
 
-import { createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createHyperDXClient } from "../lib/client.ts";
@@ -19,7 +19,7 @@ import {
  * SEARCH_LOGS - Simple log search tool
  */
 export const createSearchLogsTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "SEARCH_LOGS",
     description:
       "Search logs from HyperDX. Returns distinct log messages matching your query with their occurrence count. Use this to find errors, debug issues, or explore log data.",
@@ -54,7 +54,6 @@ export const createSearchLogsTool = (_env: Env) =>
       ),
       total: z.number(),
     }),
-    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
@@ -95,7 +94,7 @@ const DEFAULT_GROUP_BY = ["body", "service", "site"];
  * GET_LOG_DETAILS - Get detailed log entries with trace context
  */
 export const createGetLogDetailsTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "GET_LOG_DETAILS",
     description:
       "Get detailed log entries with custom fields from HyperDX. Group by any fields you want to see in the results.",
@@ -137,7 +136,6 @@ export const createGetLogDetailsTool = (_env: Env) =>
         }),
       ),
     }),
-    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
@@ -173,13 +171,12 @@ export const createGetLogDetailsTool = (_env: Env) =>
  * QUERY_CHART_DATA - Query time series chart data from HyperDX
  */
 export const createQueryChartDataTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "QUERY_CHART_DATA",
     description:
       "Query time series chart data from HyperDX. Returns aggregated metrics over time with support for multiple series, grouping, and various aggregation functions. Use this to analyze logs, spans, and metrics.",
     inputSchema: queryChartDataInputSchema,
     outputSchema: queryChartDataOutputSchema,
-    // IMPORTANT: Use runtimeContext.env (from current request) not env (from tool creation)
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
