@@ -2,9 +2,10 @@
  * Discord Webhook Utilities
  *
  * Handles Discord webhook verification and payload processing.
+ * Uses tweetnacl for Ed25519 signature verification (more reliable than discord-interactions).
  */
 
-import { verifyKey } from "discord-interactions";
+import nacl from "tweetnacl";
 
 /**
  * Discord Interaction Types
@@ -36,7 +37,7 @@ export enum InteractionResponseType {
 export interface DiscordInteraction {
   id: string;
   application_id: string;
-  type: InteractionType;
+  type: InteractionType | number; // Allow number for type 0 (webhook events verification)
   data?: {
     id: string;
     name: string;
@@ -67,11 +68,91 @@ export interface DiscordInteraction {
   };
   token: string;
   version: number;
-  message?: any;
+  message?: unknown;
 }
 
 /**
- * Verify Discord webhook signature using Ed25519
+ * Convert hex string to Uint8Array
+ */
+function hexToUint8Array(hex: string): Uint8Array {
+  if (hex.length % 2 !== 0) {
+    throw new Error("Invalid hex string: odd length");
+  }
+
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Verify Discord webhook signature using Ed25519 (tweetnacl)
+ *
+ * @param body - Raw request body as string (not parsed)
+ * @param signature - X-Signature-Ed25519 header
+ * @param timestamp - X-Signature-Timestamp header
+ * @param publicKey - Discord Public Key (from Developer Portal)
+ * @returns true if signature is valid, false otherwise
+ */
+export function verifyDiscordSignature(
+  body: string,
+  signature: string | null,
+  timestamp: string | null,
+  publicKey: string,
+): boolean {
+  if (!signature || !timestamp) {
+    console.error("[Webhook] Missing signature or timestamp headers");
+    return false;
+  }
+
+  try {
+    // Validate timestamp (reject requests older than 5 minutes)
+    const now = Math.floor(Date.now() / 1000);
+    const requestTime = parseInt(timestamp, 10);
+
+    if (isNaN(requestTime)) {
+      console.error("[Webhook] Invalid timestamp format");
+      return false;
+    }
+
+    const timeDiff = Math.abs(now - requestTime);
+    if (timeDiff > 300) {
+      // 5 minutes
+      console.warn(
+        `[Webhook] Request timestamp too old: ${timeDiff}s difference`,
+      );
+      return false;
+    }
+
+    // Build the message that Discord signed
+    const message = timestamp + body;
+
+    // Convert from hex to bytes
+    const signatureBytes = hexToUint8Array(signature);
+    const publicKeyBytes = hexToUint8Array(publicKey);
+    const messageBytes = new TextEncoder().encode(message);
+
+    // Verify signature using Ed25519
+    const isValid = nacl.sign.detached.verify(
+      messageBytes,
+      signatureBytes,
+      publicKeyBytes,
+    );
+
+    if (!isValid) {
+      console.error("[Webhook] Invalid signature");
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error("[Webhook] Error verifying Discord signature:", error);
+    return false;
+  }
+}
+
+/**
+ * Verify Discord webhook signature and parse payload
  */
 export function verifyDiscordRequest(
   rawBody: string,
@@ -79,21 +160,22 @@ export function verifyDiscordRequest(
   timestamp: string | null,
   publicKey: string,
 ): { verified: boolean; payload: DiscordInteraction | null } {
-  if (!signature || !timestamp) {
+  const isValid = verifyDiscordSignature(
+    rawBody,
+    signature,
+    timestamp,
+    publicKey,
+  );
+
+  if (!isValid) {
     return { verified: false, payload: null };
   }
 
   try {
-    const isValid = verifyKey(rawBody, signature, timestamp, publicKey);
-
-    if (!isValid) {
-      return { verified: false, payload: null };
-    }
-
     const payload = JSON.parse(rawBody) as DiscordInteraction;
     return { verified: true, payload };
   } catch (error) {
-    console.error("[Webhook] Verification error:", error);
+    console.error("[Webhook] Failed to parse payload:", error);
     return { verified: false, payload: null };
   }
 }
