@@ -1,0 +1,36 @@
+{
+    "name": "@decocms/mcps-shared-v2",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Shared dependencies for Deco CMS MCPs (v2 - uses @decocms/runtime/tools)",
+    "scripts": {
+        "check": "tsc --noEmit"
+    },
+    "exports": {
+        "./vite-plugin": "./deco-vite-plugin.ts",
+        "./tools/user": "./tools/user.ts",
+        "./tools/file-management": "./tools/file-management/index.ts",
+        "./tools": "./tools/index.ts",
+        "./tools/utils/api-client": "./tools/utils/api-client.ts",
+        "./tools/utils/middleware": "./tools/utils/middleware.ts",
+        "./image-generators": "./image-generators/index.ts",
+        "./image-analyzers": "./image-analyzers/index.ts",
+        "./video-generators": "./video-generators/index.ts",
+        "./audio-transcribers": "./audio-transcribers/index.ts",
+        "./storage": "./storage/index.ts",
+        "./search-ai": "./search-ai/index.ts",
+        "./serve": "./serve.ts",
+        "./registry": "./registry.ts",
+        "./google-oauth": "./google-oauth.ts",
+        "./whatsapp": "./whatsapp/index.ts",
+        "./api-key-manager": "./api-key-manager.ts"
+    },
+    "devDependencies": {
+        "@decocms/bindings": "^1.0.8",
+        "@decocms/runtime": "^1.1.8",
+        "@types/bun": "^1.2.14",
+        "vite": "7.2.0",
+        "zod": "^4.0.0"
+    }
+}

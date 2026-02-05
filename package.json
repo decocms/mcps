@@ -54,6 +54,7 @@
     "registry",
     "replicate",
     "shared",
+    "shared-v2",
     "slack-mcp",
     "sora",
     "template-minimal",
