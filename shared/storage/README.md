@@ -1,6 +1,6 @@
 # Storage - Shared Module
 
-Unified storage module for all MCPs. Provides a consistent interface for working with different object storage providers.
+Unified storage module for all MCPs. Provides a consistent interface for working with different object storage  providers.
 
 ## 🚀 Quick Start
 
