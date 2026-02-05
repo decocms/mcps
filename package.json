@@ -14,7 +14,9 @@
     "new": "bun scripts/new.ts",
     "fmt": "oxfmt",
     "lint": "oxlint",
-    "check": "bun run --filter=* check",
+    "check": "bun scripts/check-parallel.ts",
+    "check:changed": "bun scripts/check-parallel.ts --changed",
+    "check:all": "bun run --filter=* check",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
     "prepare": "sh scripts/setup-hooks.sh",
     "build": "bun run ./scripts/build-mcp.ts"

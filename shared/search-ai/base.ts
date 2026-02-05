@@ -5,7 +5,7 @@
  * search AI providers like Perplexity, ChatGPT Search, Google Gemini, etc.
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import {
   AskInputSchema,
   ChatInputSchema,

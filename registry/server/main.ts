@@ -59,7 +59,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
-  bindings: [],
   cors: {
     origin: (origin) => {
       // Allow localhost and configured origins

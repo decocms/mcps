@@ -73,13 +73,15 @@ export interface AdSet {
 }
 
 export interface Targeting {
+  [x: string]: unknown;
   age_min?: number;
   age_max?: number;
   genders?: number[];
   geo_locations?: {
+    [x: string]: unknown;
     countries?: string[];
-    regions?: Array<{ key: string; name: string }>;
-    cities?: Array<{ key: string; name: string }>;
+    regions?: Array<{ [x: string]: unknown; key: string; name: string }>;
+    cities?: Array<{ [x: string]: unknown; key: string; name: string }>;
   };
   interests?: Array<{ id: string; name: string }>;
   behaviors?: Array<{ id: string; name: string }>;

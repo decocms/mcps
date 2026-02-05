@@ -6,7 +6,7 @@
  * It standardizes the creation of file upload, list, get, delete, and search tools.
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import {
   fileUploadInputSchema,
   fileUploadOutputSchema,
