@@ -141,19 +141,39 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
       const modelId = languageModel?.value?.id;
 
+      // Get existing config to check for persistent API key
+      const currentConnectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const savedConfig = currentConnectionId
+        ? await getDiscordConfig(currentConnectionId)
+        : null;
+
+      // Use API key if available (never expires), otherwise use session token (expires in 5 min)
+      const effectiveToken = savedConfig?.meshApiKey || token;
+      const isUsingApiKey = !!savedConfig?.meshApiKey;
+
       // Configure LLM module
-      if (modelProviderId && token && meshUrl && organizationId) {
+      if (modelProviderId && effectiveToken && meshUrl && organizationId) {
         const { configureLLM, configureStreaming } = await import("./llm.ts");
 
         configureLLM({
           meshUrl,
           organizationId,
-          token,
+          token: effectiveToken,
           modelProviderId,
           modelId,
           agentId,
           agentMode,
         });
+
+        console.log(
+          `[CONFIG] LLM token: ${isUsingApiKey ? "🔑 API Key (persistent)" : "⏱️ Session token (expires in 5 min)"}`,
+        );
+
+        if (!isUsingApiKey) {
+          console.warn(
+            "[CONFIG] ⚠️ Using session token which expires in 5 min. Generate an API key using DISCORD_GENERATE_API_KEY tool for persistent LLM access.",
+          );
+        }
 
         // Configure streaming (default: enabled)
         const enableStreaming =
