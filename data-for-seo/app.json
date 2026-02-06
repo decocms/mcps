@@ -1,0 +1,31 @@
+{
+  "scopeName": "deco",
+  "name": "data-for-seo",
+  "friendlyName": "DataForSEO",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-data-for-seo.decocache.com/mcp"
+  },
+  "description": "Comprehensive SEO data analysis with DataForSEO API. Get keyword research, SERP analysis, and backlink data.",
+  "icon": "https://assets.decocache.com/mcp/data-for-seo/icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["SEO", "Analytics", "Marketing"],
+    "official": false,
+    "tags": [
+      "seo",
+      "keywords",
+      "serp",
+      "backlinks",
+      "search-engine",
+      "analytics",
+      "marketing",
+      "google",
+      "search-volume",
+      "competition"
+    ],
+    "short_description": "Comprehensive SEO data analysis with keyword research, SERP analysis, and backlink insights.",
+    "mesh_description": "The DataForSEO MCP provides comprehensive integration with DataForSEO's API for professional SEO data analysis and research. This MCP enables AI agents to perform advanced keyword research with search volume and competition data for up to 1000 keywords at once, analyze real-time Google SERP results (organic and news) with device-specific data, get detailed backlink analysis including domain metrics and referring domains, and track SEO performance across multiple languages and locations. **Key Features**: **Keyword Research** - Get search volume, CPC, competition level, and monthly trends. Find related keywords with semantic relationships using DataForSEO Labs. **SERP Analysis** - Real-time organic search results with rankings, SERP features, and snippets. Google News results with time range filtering. **Backlink Intelligence** - Comprehensive backlink overviews with domain ranks. Detailed backlink lists with anchor text and dofollow status. Referring domains analysis with pagination support. All tools are asynchronous (2-10 second response times) and support multi-language/location analysis. Perfect for SEO professionals, digital marketers, content strategists, and developers building SEO tools or AI agents that need access to comprehensive search engine data. Requires DataForSEO API credentials (available in all plans, costs vary by endpoint: ~0.002-0.1 credits per request)."
+  }
+}
+

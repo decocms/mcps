@@ -17,7 +17,11 @@ export type { Env };
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: createGoogleOAuth({
-    scopes: [GOOGLE_SCOPES.BIGQUERY, GOOGLE_SCOPES.BIGQUERY_READONLY],
+    scopes: [
+      GOOGLE_SCOPES.BIGQUERY,
+      GOOGLE_SCOPES.BIGQUERY_READONLY,
+      GOOGLE_SCOPES.CLOUD_PLATFORM_READ_ONLY,
+    ],
   }),
 });
 

@@ -155,6 +155,52 @@ export const createQueryTool = (env: Env) =>
   });
 
 // ============================================================================
+// Get Dataset Tool
+// ============================================================================
+
+export const createGetDatasetTool = (env: Env) =>
+  createPrivateTool({
+    id: "bigquery_get_dataset",
+    description:
+      "Get detailed information about a specific BigQuery dataset. Returns dataset metadata including location, creation time, and description.",
+    inputSchema: z.object({
+      projectId: z.string().describe("Google Cloud project ID"),
+      datasetId: z.string().describe("Dataset ID"),
+    }),
+    outputSchema: z.object({
+      dataset: DatasetSchema.describe("Dataset information"),
+      creationTime: z.string().optional().describe("Dataset creation time"),
+      lastModifiedTime: z
+        .string()
+        .optional()
+        .describe("Last modification time"),
+    }),
+    execute: async ({ context }) => {
+      const client = new BigQueryClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const dataset = await client.getDataset(
+        context.projectId,
+        context.datasetId,
+      );
+
+      return {
+        dataset: {
+          id: dataset.id,
+          datasetId: dataset.datasetReference.datasetId,
+          projectId: dataset.datasetReference.projectId,
+          friendlyName: dataset.friendlyName,
+          description: dataset.description,
+          location: dataset.location,
+        },
+        creationTime: dataset.creationTime,
+        lastModifiedTime: dataset.lastModifiedTime,
+      };
+    },
+  });
+
+// ============================================================================
 // List Datasets Tool
 // ============================================================================
 
@@ -347,6 +393,7 @@ export const createGetTableSchemaTool = (env: Env) =>
 
 export const bigqueryTools = [
   createQueryTool,
+  createGetDatasetTool,
   createListDatasetsTool,
   createListTablesTool,
   createGetTableSchemaTool,

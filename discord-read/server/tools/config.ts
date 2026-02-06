@@ -30,6 +30,11 @@ export const createSaveConfigTool = (env: Env) =>
         botToken: z
           .string()
           .describe("Discord bot token (from Discord Developer Portal)"),
+        discordPublicKey: z
+          .string()
+          .describe(
+            "Discord application public key (from Discord Developer Portal > General Information)",
+          ),
         authorizedGuilds: z
           .array(z.string())
           .optional()
@@ -74,6 +79,7 @@ export const createSaveConfigTool = (env: Env) =>
       const { context, env } = params;
       const {
         botToken,
+        discordPublicKey,
         authorizedGuilds,
         ownerId,
         commandPrefix,
@@ -84,6 +90,7 @@ export const createSaveConfigTool = (env: Env) =>
         meshApiKey,
       } = context as {
         botToken: string;
+        discordPublicKey: string;
         authorizedGuilds?: string[];
         ownerId?: string;
         commandPrefix?: string;
@@ -120,6 +127,7 @@ export const createSaveConfigTool = (env: Env) =>
         meshToken: undefined, // Will be set by mesh
         meshApiKey, // Non-expiring API key for LLM calls
         botToken,
+        discordPublicKey,
         authorizedGuilds: authorizedGuilds || [],
         ownerId,
         commandPrefix: commandPrefix || "!",
@@ -152,6 +160,154 @@ export const createSaveConfigTool = (env: Env) =>
           message: `Failed to save configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
           connectionId,
           supabaseConfigured: true,
+        };
+      }
+    },
+  });
+
+/**
+ * Update Discord bot configuration (partial update)
+ */
+export const createUpdateConfigTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_UPDATE_CONFIG",
+    description:
+      "Update specific fields in Discord bot configuration without needing to provide all fields. Use this to update system prompt, model settings, etc.",
+    inputSchema: z
+      .object({
+        systemPrompt: z
+          .string()
+          .optional()
+          .describe("Update custom system prompt for AI agent"),
+        modelProviderId: z
+          .string()
+          .optional()
+          .describe("Update model provider connection ID"),
+        modelId: z.string().optional().describe("Update model ID to use"),
+        agentId: z.string().optional().describe("Update agent ID to use"),
+        commandPrefix: z
+          .string()
+          .optional()
+          .describe("Update command prefix for bot commands"),
+        authorizedGuilds: z
+          .array(z.string())
+          .optional()
+          .describe("Update list of authorized guild IDs"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("Update Discord user ID of the bot owner"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        message: z.string(),
+        updatedFields: z.array(z.string()).optional(),
+      })
+      .strict(),
+    execute: async (params: any) => {
+      const { context, env } = params;
+      const {
+        systemPrompt,
+        modelProviderId,
+        modelId,
+        agentId,
+        commandPrefix,
+        authorizedGuilds,
+        ownerId,
+      } = context as {
+        systemPrompt?: string;
+        modelProviderId?: string;
+        modelId?: string;
+        agentId?: string;
+        commandPrefix?: string;
+        authorizedGuilds?: string[];
+        ownerId?: string;
+      };
+
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        return {
+          success: false,
+          message:
+            "Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.",
+        };
+      }
+
+      // Get connection ID from env
+      const connectionId =
+        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+
+      try {
+        // Load existing configuration
+        const existingConfig = await getDiscordConfig(connectionId);
+        if (!existingConfig) {
+          return {
+            success: false,
+            message:
+              "No existing configuration found. Use DISCORD_SAVE_CONFIG to create one first.",
+          };
+        }
+
+        // Build updated config (only update provided fields)
+        const updatedFields: string[] = [];
+        const updates: Partial<DiscordConfig> = {};
+
+        if (systemPrompt !== undefined) {
+          updates.systemPrompt = systemPrompt;
+          updatedFields.push("systemPrompt");
+        }
+        if (modelProviderId !== undefined) {
+          updates.modelProviderId = modelProviderId;
+          updatedFields.push("modelProviderId");
+        }
+        if (modelId !== undefined) {
+          updates.modelId = modelId;
+          updatedFields.push("modelId");
+        }
+        if (agentId !== undefined) {
+          updates.agentId = agentId;
+          updatedFields.push("agentId");
+        }
+        if (commandPrefix !== undefined) {
+          updates.commandPrefix = commandPrefix;
+          updatedFields.push("commandPrefix");
+        }
+        if (authorizedGuilds !== undefined) {
+          updates.authorizedGuilds = authorizedGuilds;
+          updatedFields.push("authorizedGuilds");
+        }
+        if (ownerId !== undefined) {
+          updates.ownerId = ownerId;
+          updatedFields.push("ownerId");
+        }
+
+        if (updatedFields.length === 0) {
+          return {
+            success: false,
+            message: "No fields provided to update",
+          };
+        }
+
+        // Merge with existing config
+        const newConfig: DiscordConfig = {
+          ...existingConfig,
+          ...updates,
+        };
+
+        // Save updated config
+        await setDiscordConfig(newConfig);
+
+        return {
+          success: true,
+          message: `Configuration updated successfully! Updated: ${updatedFields.join(", ")}`,
+          updatedFields,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to update configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
         };
       }
     },
@@ -340,7 +496,7 @@ export const createClearCacheTool = (env: Env) =>
  * The bot will use this API key instead of session tokens, solving the
  * "session expired" problem.
  */
-export const createGenerateApiKeyTool = (env: Env) =>
+export const createGenerateApiKeyTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_GENERATE_API_KEY",
     description:
@@ -354,7 +510,9 @@ export const createGenerateApiKeyTool = (env: Env) =>
         expiresAt: z.string().nullable(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (params: any) => {
+      const { env } = params;
+
       // Check if Supabase is configured
       if (!isSupabaseConfigured()) {
         return {
@@ -365,12 +523,12 @@ export const createGenerateApiKeyTool = (env: Env) =>
         };
       }
 
-      // Get current connection context
+      // Get current connection context from params.env (runtime env)
       const connectionId =
-        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
-      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-      const token = env.MESH_REQUEST_CONTEXT?.token;
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+      const organizationId = env?.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env?.MESH_REQUEST_CONTEXT?.meshUrl;
+      const token = env?.MESH_REQUEST_CONTEXT?.token;
 
       if (!organizationId || !meshUrl || !token) {
         return {
@@ -410,7 +568,7 @@ export const createGenerateApiKeyTool = (env: Env) =>
         // Uses the MCP JSONRPC protocol format at /mcp/self
         const createApiKeyUrl = `${meshUrl}/mcp/self`;
 
-        const state = env.MESH_REQUEST_CONTEXT?.state as Record<
+        const state = env?.MESH_REQUEST_CONTEXT?.state as Record<
           string,
           unknown
         >;
@@ -556,6 +714,7 @@ export const createGenerateApiKeyTool = (env: Env) =>
 // Export all config tools (v2 - fixed MCP endpoint)
 export const configTools = [
   createSaveConfigTool,
+  createUpdateConfigTool,
   createLoadConfigTool,
   createDeleteConfigTool,
   createCacheStatsTool,

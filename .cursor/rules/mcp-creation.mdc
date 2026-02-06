@@ -1,0 +1,380 @@
+---
+description: Rules and patterns for creating new MCPs - structure, StateSchema organization, and best practices
+globs: ["**/server/**/*.ts", "**/types/**/*.ts"]
+---
+
+# Creating New MCPs
+
+## 🚨 CRITICAL REMINDER: app.json is MANDATORY
+
+**NEVER forget to create `app.json`!** This file is REQUIRED for:
+- Publishing MCP to the store
+- Providing metadata for discovery
+- Configuring connection URLs
+- Setting categories and tags
+
+⚠️ **If you're migrating or creating an MCP and there's no `app.json`, CREATE IT IMMEDIATELY!**
+
+See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc) for complete documentation.
+
+## Quick Start
+
+```bash
+bun scripts/new.ts <mcp-name> --description "Your MCP description"
+```
+
+This creates the basic structure. Then customize the files as needed.
+
+## MCP Structure
+
+```
+my-mcp/
+├── app.json                 # 🚨 MANDATORY! Store metadata for publishing
+├── server/
+│   ├── main.ts              # Entry point with runtime configuration
+│   ├── tools/
+│   │   ├── index.ts         # Export all tools
+│   │   └── my-tool.ts       # Tool implementations
+│   ├── types/
+│   │   └── env.ts           # StateSchema and Env type definition
+│   └── lib/                 # (optional) API clients and helpers
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+**Note**: `app.json` is at the root level, not in `server/`!
+
+## deploy.json Entry (Deployment Configuration)
+
+**Location**: Repository root `/deploy.json` (shared by all MCPs)
+
+Every MCP **MUST** have an entry in the repository's `deploy.json` to enable automatic deployment.
+
+### Format
+
+```json
+{
+  "my-mcp": {
+    "site": "my-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  }
+}
+```
+
+### Field Requirements
+
+| Field | Value | Description |
+|-------|-------|-------------|
+| `site` | Folder name | Must match MCP folder name exactly |
+| `entrypoint` | `"./dist/server/main.js"` | Standard for all Bun MCPs |
+| `platformName` | `"kubernetes-bun"` | Standard runtime platform |
+
+### Important Rules
+
+1. **Alphabetical Order**: Insert your entry in alphabetical order by key name
+2. **Folder Name Match**: The JSON key and `"site"` must match your folder name
+3. **URL Consistency**: The `"site"` value determines the deployment URL:
+   - Entry: `"data-for-seo"`
+   - URL: `https://sites-data-for-seo.decocache.com/mcp`
+4. **Must Match app.json**: The URL in `app.json` must match the deployed URL
+
+### Example (data-for-seo)
+
+```json
+{
+  "content-scraper": { ... },
+  "data-for-seo": {
+    "site": "data-for-seo",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  },
+  "google-big-query": { ... }
+}
+```
+
+### Without deploy.json Entry
+
+❌ MCP won't deploy automatically on merge to main  
+❌ CI/CD will skip your MCP  
+❌ `app.json` URL will point to non-existent endpoint
+
+## ⚠️ Mandatory Files Checklist
+
+Before considering an MCP "complete", ensure these files exist:
+
+| File | Location | Required? | Purpose |
+|------|----------|-----------|---------|
+| `app.json` | Root | 🚨 **MANDATORY** | Store metadata, discovery, deployment config |
+| Entry in `deploy.json` | Root (repo) | 🚨 **MANDATORY** | Enable auto-deployment to production |
+| `server/main.ts` | server/ | ✅ Required | Entry point with runtime |
+| `server/types/env.ts` | server/types/ | ✅ Required | StateSchema and Env type |
+| `server/tools/index.ts` | server/tools/ | ✅ Required | Export all tools |
+| `package.json` | Root | ✅ Required | Dependencies and scripts |
+| `README.md` | Root | ✅ Required | Documentation |
+| `tsconfig.json` | Root | ✅ Required | TypeScript config |
+
+**Missing `app.json`?** → Your MCP cannot be published! Create it NOW.
+**Missing entry in `deploy.json`?** → Your MCP won't auto-deploy! Add it NOW.
+
+## main.ts Pattern
+
+```typescript
+import { withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
+import { tools } from "./tools/index.ts";
+import { type Env, StateSchema } from "./types/env.ts";
+
+export type { Env };
+
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    state: StateSchema,
+  },
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
+});
+
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}
+```
+
+## StateSchema Organization Pattern
+
+⭐ **Use grouped objects to create organized sections in the Mesh UI form.**
+
+Reference: [slack-mcp/server/types/env.ts](../slack-mcp/server/types/env.ts)
+
+### Recommended Order
+
+```typescript
+import { BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { z } from "zod";
+
+export const StateSchema = z.object({
+  // ========================================
+  // 1. BINDINGS (at the top)
+  // ========================================
+  EVENT_BUS: BindingOf("@deco/event-bus").optional(),
+  DATABASE: BindingOf("@deco/postgres"),
+  MODEL_PROVIDER: BindingOf("@deco/llm")
+    .optional()
+    .describe("AI Model Provider connection"),
+
+  // ========================================
+  // 2. MODE SELECTION (enums)
+  // ========================================
+  EXECUTION_MODE: z
+    .enum(["sync", "async", "batch"])
+    .default("sync")
+    .describe("How requests are processed"),
+
+  // ========================================
+  // 3. READONLY TEMPLATES (webhooks, URLs)
+  // ========================================
+  WEBHOOK_URL: z
+    .string()
+    .default("https://sites-my-mcp.decocache.com/webhook/{connectionId}")
+    .readonly()
+    .describe("Webhook URL - replace {connectionId} with your connection ID from the browser URL"),
+
+  // ========================================
+  // 4. CREDENTIALS (grouped objects)
+  // ========================================
+  API_CREDENTIALS: z
+    .object({
+      API_KEY: z.string().describe("Your API key from the provider dashboard"),
+      API_SECRET: z.string().describe("Your API secret (keep this secure)"),
+    })
+    .describe("Service authentication credentials"),
+
+  // ========================================
+  // 5. FEATURE CONFIGURATIONS (grouped with defaults)
+  // ========================================
+  CACHE_CONFIG: z
+    .object({
+      ENABLED: z.boolean().default(true).describe("Enable response caching"),
+      TTL_SECONDS: z.number().default(300).describe("Cache time-to-live in seconds"),
+      MAX_SIZE: z.number().default(100).describe("Maximum cached items"),
+    })
+    .optional()
+    .describe("Caching behavior configuration"),
+
+  RATE_LIMIT_CONFIG: z
+    .object({
+      REQUESTS_PER_MINUTE: z.number().default(60).describe("Max requests per minute"),
+      BURST_SIZE: z.number().default(10).describe("Burst capacity for spikes"),
+    })
+    .optional()
+    .describe("Rate limiting settings"),
+
+  // ========================================
+  // 6. OPTIONAL SIMPLE FIELDS (at the end)
+  // ========================================
+  CONNECTION_NAME: z
+    .string()
+    .optional()
+    .describe("Friendly name for this connection (appears in logs)"),
+
+  DEBUG_MODE: z
+    .boolean()
+    .default(false)
+    .optional()
+    .describe("Enable verbose logging for debugging"),
+});
+
+export type Env = DefaultEnv<typeof StateSchema>;
+```
+
+### StateSchema Best Practices
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| **Grouped objects** | Create collapsible sections in UI | `CACHE_CONFIG: z.object({...})` |
+| **`.describe()`** | Add help text (shows in UI) | `.describe("API key from dashboard")` |
+| **`.optional()`** | Make field/group optional | `EVENT_BUS: BindingOf(...).optional()` |
+| **`.default()`** | Provide default values | `.default(300)` |
+| **`.readonly()`** | Template fields users shouldn't edit | `.readonly()` for webhook URLs |
+| **`.enum()`** | Dropdown selection | `z.enum(["option1", "option2"])` |
+
+### Benefits of Grouped Organization
+
+✅ **Better UX**: Collapsible sections reduce cognitive load
+✅ **Logical grouping**: Related settings together
+✅ **Optional sections**: Entire groups can be optional
+✅ **Clear hierarchy**: Visual structure in the form
+✅ **Easier validation**: Group-level validation rules
+
+## Google OAuth Integration
+
+For Google services, use the shared OAuth implementation:
+
+```typescript
+import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
+
+const runtime = withRuntime<Env>({
+  oauth: createGoogleOAuth({
+    scopes: [
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events",
+    ],
+  }),
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
+});
+```
+
+**Example**: See [google-calendar/server/main.ts](../google-calendar/server/main.ts)
+
+## Using Shared Utilities
+
+**ALWAYS check [shared/](../shared/) before creating utilities!**
+
+Available modules:
+- **Middleware**: Retry, logging, timeout ([shared/tools/utils/middleware](../shared/tools/utils/))
+- **File management**: Upload, download, list schemas ([shared/tools/file-management](../shared/tools/file-management/))
+- **Image generators**: Unified interface ([shared/image-generators](../shared/image-generators/))
+- **Audio transcribers**: Whisper abstraction ([shared/audio-transcribers](../shared/audio-transcribers/))
+- **Google OAuth**: OAuth flow ([shared/google-oauth.ts](../shared/google-oauth.ts))
+
+Full documentation: [shared/README.md](../shared/README.md)
+
+## Tools Implementation
+
+```typescript
+// server/tools/index.ts
+import { myToolFactory } from "./my-tool.ts";
+
+export const tools = [myToolFactory];
+```
+
+```typescript
+// server/tools/my-tool.ts
+import { createPrivateTool } from "@decocms/runtime";
+import { z } from "zod";
+import type { Env } from "../types/env.ts";
+
+export const myToolFactory = (env: Env) =>
+  createPrivateTool({
+    id: "my_tool_name",
+    description: "What this tool does",
+    inputSchema: z.object({
+      param: z.string().describe("Parameter description"),
+    }),
+    outputSchema: z.object({
+      result: z.string(),
+    }),
+    execute: async ({ input }) => {
+      // Implementation
+      return { result: "success" };
+    },
+  });
+```
+
+## Next Steps After Creation
+
+### 🚨 MANDATORY STEPS (Cannot skip!)
+
+1. ✅ **CREATE `app.json`** - REQUIRED for store publishing!
+   - Location: `my-mcp/app.json` (at MCP root, NOT in server/)
+   - See [app-json-schema.mdc](./.cursor/rules/app-json-schema.mdc)
+   - Must include: scopeName, name, friendlyName, connection, description, icon
+   - Add metadata with categories, tags, and mesh_description
+   - `connection.url` MUST be: `https://sites-{folder-name}.decocache.com/mcp`
+
+2. ✅ **ADD TO [deploy.json](../deploy.json)** - REQUIRED for auto-deployment!
+   - Location: Repository root `deploy.json` (NOT inside your MCP folder!)
+   - Add entry in **alphabetical order** by MCP name
+   - Example:
+   ```json
+   {
+     "my-mcp": {
+       "site": "my-mcp",
+       "entrypoint": "./dist/server/main.js",
+       "platformName": "kubernetes-bun"
+     }
+   }
+   ```
+   - The `"site"` value must match your folder name
+   - Without this, CI/CD won't deploy your MCP automatically!
+
+### Standard Steps
+
+3. ✅ Implement tools in `server/tools/`
+4. ✅ Configure StateSchema in `server/types/env.ts`
+5. ✅ Write comprehensive README.md
+6. ✅ Test locally with `bun run dev`
+7. ✅ Run `bun run fmt && bun run lint && bun run check`
+8. ✅ Create PR for review
+
+### Pre-Commit Checklist
+
+Before committing, verify:
+
+**Files & Configuration:**
+- [ ] `app.json` exists at MCP root level (e.g., `my-mcp/app.json`)
+- [ ] `app.json` has all required fields (scopeName, name, friendlyName, connection, description, icon)
+- [ ] `connection.url` matches pattern: `https://sites-{folder-name}.decocache.com/mcp`
+- [ ] `mesh_description` is under 1500 characters
+- [ ] **MCP added to repository root `deploy.json`** (in alphabetical order)
+- [ ] Entry in `deploy.json` has correct site name matching folder
+
+**Code Quality:**
+- [ ] All tools have `[ASYNC]` prefix if async (takes >1 second)
+- [ ] All tools document: response time, cost, plan requirements
+- [ ] README.md documents all tools with examples
+- [ ] Code passes `bun run fmt && bun run lint && bun run check`
+
+**Deployment Verification:**
+- [ ] Confirmed `connection.url` in `app.json` matches `site` in `deploy.json`
+- [ ] Folder name = site name = URL subdomain (e.g., `data-for-seo` → `sites-data-for-seo.decocache.com`)
+
+## Reference Examples
+
+| Example | What to Learn |
+|---------|---------------|
+| [perplexity/](../perplexity/) | Simple API-only MCP |
+| [google-calendar/](../google-calendar/) | Google OAuth + API |
+| [slack-mcp/](../slack-mcp/) | Complex StateSchema organization |
+| [mcp-studio/](../mcp-studio/) | Bindings + event handlers |
+| [object-storage/](../object-storage/) | File management |

@@ -11,13 +11,24 @@ import {
   type Message,
   type MessageReaction,
   type User,
+  type GuildMember,
   type PartialMessageReaction,
   type PartialUser,
 } from "discord.js";
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
-import { getDiscordBotToken } from "../lib/env.ts";
+import {
+  publishMessageCreated,
+  publishMessageDeleted,
+  publishMessageUpdated,
+  publishMemberJoined,
+  publishMemberLeft,
+  publishMemberRoleAdded,
+  publishMemberRoleRemoved,
+  publishReactionAdded,
+  publishReactionRemoved,
+} from "../lib/event-publisher.ts";
 import {
   indexMessage,
   processCommand,
@@ -170,102 +181,39 @@ async function doInitialize(env: Env): Promise<Client> {
   const { storeEssentialConfig } = await import("../bot-manager.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
-  let token: string;
-
-  if (savedConfig?.botToken) {
-    // Use token from Supabase config
-    token = savedConfig.botToken;
-    console.log("[Discord] ✅ Bot token loaded from Supabase config");
-    console.log(
-      `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+  if (!savedConfig?.botToken) {
+    throw new Error(
+      `Discord Bot Token not configured for connection '${connectionId}'. ` +
+        "Please use DISCORD_SAVE_CONFIG to save your bot token first.",
     );
+  }
 
-    // Store essential config for LLM fallback (uses API key if available)
-    const effectiveToken = getEffectiveMeshToken(savedConfig);
-    const isUsingApiKey = !!savedConfig.meshApiKey;
+  // Use token from Supabase config
+  const token = savedConfig.botToken;
+  console.log("[Discord] ✅ Bot token loaded from Supabase config");
+  console.log(
+    `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+  );
+
+  // Store essential config for LLM fallback (uses API key if available)
+  const effectiveToken = getEffectiveMeshToken(savedConfig);
+  const isUsingApiKey = !!savedConfig.meshApiKey;
+  console.log(
+    `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+  );
+  if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
+    storeEssentialConfig({
+      meshUrl: savedConfig.meshUrl,
+      organizationId: savedConfig.organizationId,
+      persistentToken: effectiveToken,
+      isApiKey: isUsingApiKey,
+      modelProviderId: savedConfig.modelProviderId,
+      modelId: savedConfig.modelId,
+      agentId: savedConfig.agentId,
+    });
     console.log(
-      `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+      `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
     );
-    if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
-      storeEssentialConfig({
-        meshUrl: savedConfig.meshUrl,
-        organizationId: savedConfig.organizationId,
-        persistentToken: effectiveToken,
-        isApiKey: isUsingApiKey,
-        modelProviderId: savedConfig.modelProviderId,
-        modelId: savedConfig.modelId,
-        agentId: savedConfig.agentId,
-      });
-      console.log(
-        `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
-      );
-    }
-  } else {
-    // Fallback to Authorization header (for backward compatibility)
-    try {
-      token = getDiscordBotToken(env);
-      console.log(
-        "[Discord] ⚠️ Bot token retrieved from Authorization header (fallback)",
-      );
-      console.log(
-        "[Discord] 💾 Auto-saving configuration to Supabase for future deployments...",
-      );
-
-      // Auto-save configuration for next deployment
-      try {
-        const { setDiscordConfig } = await import("../lib/config-cache.ts");
-        const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-        const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-
-        // Only auto-save if we have valid Mesh context data
-        if (!organizationId || !meshUrl) {
-          console.warn(
-            "[Discord] ⚠️ Skipping auto-save: missing organizationId or meshUrl",
-          );
-          console.log(
-            "[Discord] Bot will work now but may not start on next deployment",
-          );
-        } else {
-          const state = env.MESH_REQUEST_CONTEXT?.state as any;
-          await setDiscordConfig({
-            connectionId,
-            organizationId,
-            meshUrl,
-            botToken: token,
-            meshToken: env.MESH_REQUEST_CONTEXT?.token || undefined,
-            commandPrefix: (state?.COMMAND_PREFIX as string) || "!",
-            authorizedGuilds:
-              (state?.AUTHORIZED_GUILDS as string)
-                ?.split(",")
-                .map((id) => id.trim()) || [],
-            ownerId: (state?.OWNER_ID as string) || undefined,
-            // Copy AI config if available
-            modelProviderId:
-              (state?.MODEL_PROVIDER?.value as string) || undefined,
-            modelId: (state?.LANGUAGE_MODEL?.value as any)?.id || undefined,
-            agentId: (state?.AGENT?.value as string) || undefined,
-            systemPrompt: (state?.SYSTEM_PROMPT as string) || undefined,
-          });
-          console.log("[Discord] ✅ Configuration auto-saved to Supabase!");
-          console.log(
-            "[Discord] 🚀 Bot will now start automatically on next deployment",
-          );
-        }
-      } catch (saveError) {
-        console.warn(
-          "[Discord] ⚠️ Failed to auto-save configuration:",
-          saveError,
-        );
-        console.log(
-          "[Discord] Bot will work now but may not start on next deployment",
-        );
-      }
-    } catch (error) {
-      console.error("[Discord] Failed to get bot token:", error);
-      throw new Error(
-        "Discord Bot Token not configured. Use DISCORD_SAVE_CONFIG tool to save configuration or add token in Authorization header.",
-      );
-    }
   }
 
   // Create client with required intents
@@ -276,7 +224,6 @@ async function doInitialize(env: Env): Promise<Client> {
       GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildVoiceStates, // For voice channel features
     ],
     partials: [Partials.Message, Partials.Reaction, Partials.User],
   });
@@ -409,6 +356,11 @@ function registerEventHandlers(client: Client, env: Env): void {
           console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
         );
 
+      // Publish message.created event to EVENT_BUS (async, don't await)
+      publishMessageCreated(currentEnv, message).catch(() => {
+        /* ignore */
+      });
+
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
 
@@ -512,8 +464,24 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionAdd(reaction, user);
+
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionAdded(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction add:", error);
       }
@@ -528,8 +496,24 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionRemove(reaction, user);
+
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionRemoved(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction remove:", error);
       }
@@ -562,8 +546,15 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message delete event
   client.on("messageDelete", async (message) => {
     if (!message.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageDelete(message);
+      // Publish event (only if not partial)
+      if (!message.partial) {
+        publishMessageDeleted(currentEnv, message as Message).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message delete:", error);
     }
@@ -583,8 +574,21 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message update/edit event
   client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageUpdate(oldMessage, newMessage);
+      // Publish event (only if both messages are available and not partial)
+      if (oldMessage.partial) await oldMessage.fetch();
+      if (newMessage.partial) await newMessage.fetch();
+      if (!oldMessage.partial && !newMessage.partial) {
+        publishMessageUpdated(
+          currentEnv,
+          oldMessage as Message,
+          newMessage as Message,
+        ).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
     }
@@ -622,8 +626,13 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member join event
   client.on("guildMemberAdd", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberJoin(member);
+      // Publish event
+      publishMemberJoined(currentEnv, member).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
     }
@@ -631,8 +640,15 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member leave event
   client.on("guildMemberRemove", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberLeave(member);
+      // Publish event (only if not partial)
+      if (!member.partial) {
+        publishMemberLeft(currentEnv, member as GuildMember).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling member leave:", error);
     }
@@ -640,8 +656,41 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member update event
   client.on("guildMemberUpdate", async (oldMember, newMember) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberUpdate(newMember);
+
+      // Detect role changes and publish events
+      const oldRoles = oldMember.roles.cache;
+      const newRoles = newMember.roles.cache;
+
+      // Roles added
+      newRoles.forEach((role) => {
+        if (!oldRoles.has(role.id)) {
+          publishMemberRoleAdded(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
+
+      // Roles removed
+      oldRoles.forEach((role) => {
+        if (!newRoles.has(role.id)) {
+          publishMemberRoleRemoved(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
     } catch (error) {
       console.error("[Discord] Error handling member update:", error);
     }

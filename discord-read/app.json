@@ -9,11 +9,7 @@
   "description": "Discord bot with AI streaming responses, voice channel support, message indexing and server management tools.",
   "icon": "https://assets.decocache.com/mcp/discord/app.png",
   "unlisted": false,
-  "auth": {
-    "type": "token",
-    "header": "Authorization",
-    "prefix": "Bearer"
-  },
+  "auth": null,
   "metadata": {
     "categories": ["Communication", "Automation", "AI"],
     "official": false,

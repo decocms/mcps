@@ -34,15 +34,6 @@ You can:
 * Mention users, roles, and channels
 * Create, delete, and organize channels and categories
 
-### **Voice & Text-to-Speech**
-
-* Join voice channels and listen to users
-* Transcribe speech using Whisper STT
-* Respond via Discord native Text-to-Speech
-* **IMPORTANT**: To send TTS messages, ALWAYS use the DISCORD_TTS tool with the text channel ID
-* Voice responses are automatic when in voice channels
-* Never try to "speak" without using the DISCORD_TTS tool
-
 ### **Role Management**
 
 * Create roles
@@ -220,8 +211,6 @@ Before assigning or removing roles:
 | "Ban user" | \`DISCORD_BAN_MEMBER\` | - |
 | "Timeout user" | \`DISCORD_TIMEOUT_MEMBER\` (duration_minutes) | \`DISCORD_EDIT_MEMBER\` |
 | "Remove timeout" | \`DISCORD_REMOVE_TIMEOUT\` | - |
-| "Mute in voice" | \`DISCORD_EDIT_MEMBER\` (mute: true) | - |
-| "Deafen in voice" | \`DISCORD_EDIT_MEMBER\` (deaf: true) | - |
 | "Change nickname" | \`DISCORD_EDIT_MEMBER\` (nick: "new") | - |
 
 ### **Decision Rules**
@@ -265,7 +254,6 @@ The database has the following main tables:
 * \`discord_message_reaction\` - Message reactions
 * \`discord_channel\` - Channel information
 * \`discord_member\` - Member data and roles
-* \`discord_voice_state\` - Voice channel presence
 * \`discord_audit_log\` - Moderation actions
 * \`guilds\` - Server information
 * \`discord_agent_config\` - AI agent configurations
@@ -414,7 +402,7 @@ export function getSystemPrompt(context?: {
       prompt += `\n\n---\n\n## **Current Context**\n\n${contextInfo.join("\n")}`;
       prompt += `\n\n⚠️ **CRITICAL**: When using Discord tools, **ALWAYS use the guild_id shown above** (${context.guildId ? `\`${context.guildId}\`` : "from context"}).`;
       prompt += `\n\n**Examples**:`;
-      prompt += `\n- ✅ CORRECT: Use \`guildId: "985687648595243068"\` when joining voice channels`;
+      prompt += `\n- ✅ CORRECT: Use \`guildId: "${context.guildId}"\` when calling Discord tools`;
       prompt += `\n- ❌ WRONG: Never guess or use a different guild ID`;
       prompt += `\n- ❌ WRONG: Never use server names as IDs`;
     }

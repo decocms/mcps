@@ -1,0 +1,232 @@
+---
+description: General rules for MCPs repository - overview, structure, and common commands
+alwaysApply: true
+---
+
+# MCPs Repository - General Guidelines
+
+## Repository Structure
+
+This is a **monorepo** containing multiple Model Context Protocol (MCP) servers. Each MCP lives in its own folder at the root level.
+
+```
+mcps/
+├── my-mcp/           # Individual MCP
+├── another-mcp/      # Another MCP
+├── shared/           # Shared code and utilities
+├── scripts/          # Repository scripts
+├── deploy.json       # Deployment configuration
+└── .github/          # CI/CD workflows
+```
+
+## Shared Code Philosophy
+
+**ALWAYS check the [shared/](../shared/) directory before creating new code.**
+
+The `/shared` folder contains:
+- **Common utilities** (API clients, middleware, helpers)
+- **Google OAuth** implementation ([shared/google-oauth.ts](../shared/google-oauth.ts))
+- **File management** tools and schemas
+- **Image/video generators** abstraction
+- **Audio transcribers** abstraction
+
+See [shared/README.md](../shared/README.md) for full documentation.
+
+## TypeScript Best Practices
+
+**🚨 CRITICAL: Strong Typing Required**
+
+### Never Use
+❌ **NEVER** use `any`
+❌ **NEVER** use `unknown` without proper type guards
+❌ **NEVER** use untyped parameters or return values
+
+### Always Do
+✅ **ALWAYS** define proper TypeScript interfaces/types
+✅ **ALWAYS** type function parameters and return values
+✅ **ALWAYS** type API responses with interfaces
+
+### When You Don't Know the Type
+
+If you don't know the exact type:
+1. 📖 **Search the API documentation** for response schemas
+2. 🔍 **Ask for example responses** from the API/service
+3. 🧪 **Test the API endpoint** and inspect the response
+4. 📝 **Create proper interfaces** based on the actual data structure
+
+### Example: Typing API Responses
+
+**Bad:**
+```typescript
+async function getUser(id: string) {  // ❌ No return type
+  const response = await fetch(`/api/users/${id}`);
+  const data = await response.json();  // ❌ any type
+  return data;
+}
+```
+
+**Good:**
+```typescript
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+interface ApiResponse<T> {
+  data: T;
+  success: boolean;
+  error?: string;
+}
+
+async function getUser(id: string): Promise<User> {  // ✅ Typed
+  const response = await fetch(`/api/users/${id}`);
+  const result: ApiResponse<User> = await response.json();  // ✅ Typed
+  
+  if (!result.success) {
+    throw new Error(result.error ?? "Failed to fetch user");
+  }
+  
+  return result.data;
+}
+```
+
+### When Integrating Third-Party APIs
+
+1. Check if official TypeScript types exist (npm: `@types/package-name`)
+2. Read API documentation for request/response schemas
+3. Create interfaces in a `types/` directory
+4. Add JSDoc comments with links to API docs
+
+```typescript
+/**
+ * Slack API - User object
+ * @see https://api.slack.com/types/user
+ */
+interface SlackUser {
+  id: string;
+  name: string;
+  real_name: string;
+  profile: {
+    email?: string;
+    image_192?: string;
+  };
+}
+```
+
+### Type Guards for Runtime Safety
+
+When dealing with external data, use type guards:
+
+```typescript
+function isUser(data: unknown): data is User {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "id" in data &&
+    "name" in data &&
+    typeof data.id === "string" &&
+    typeof data.name === "string"
+  );
+}
+
+const response = await fetch("/api/user");
+const data: unknown = await response.json();
+
+if (isUser(data)) {
+  // ✅ data is now typed as User
+  console.log(data.name);
+} else {
+  throw new Error("Invalid user data");
+}
+```
+
+## Key Commands
+
+### Creating New MCPs
+```bash
+bun scripts/new.ts <mcp-name>
+# Options:
+#   --description "Description text"
+```
+
+This script:
+- Creates MCP structure from template
+- Adds to workspace in root `package.json`
+- Sets up TypeScript configuration
+
+### Development
+```bash
+cd my-mcp
+bun install
+bun run dev        # Start local server
+```
+
+### Code Quality (ALWAYS run before commit)
+```bash
+bun run fmt        # Format code with Biome
+bun run lint       # Lint code with oxlint
+bun run check      # TypeScript type checking
+```
+
+### Testing
+```bash
+bun test           # Run all tests
+bun test .         # Run tests in current directory
+```
+
+## Deployment
+
+### Adding MCP to Deployment
+To enable automatic deployment, add your MCP to [deploy.json](../deploy.json):
+
+```json
+{
+  "my-mcp": {
+    "site": "my-mcp",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun"
+  }
+}
+```
+
+### URL Pattern
+All MCPs follow this URL pattern:
+```
+https://sites-{folder-name}.decocache.com/mcp
+```
+
+Example: folder `google-calendar` → `https://sites-google-calendar.decocache.com/mcp`
+
+### Deployment Flow
+1. Push changes to a branch
+2. Create Pull Request
+3. CI runs checks automatically
+4. Merge to `main`
+5. **Auto-deploy** for MCPs listed in `deploy.json`
+
+## File Naming Conventions
+
+- **Folders**: `kebab-case` (e.g., `google-calendar`, `slack-mcp`)
+- **Files in shared packages**: `kebab-case` (enforced by oxlint)
+- **Components**: `PascalCase` (e.g., `UserProfile.tsx`)
+- **Utilities**: `camelCase` (e.g., `formatDate.ts`)
+
+## Important Files
+
+- **[CREATING_NEW_MCP.md](../CREATING_NEW_MCP.md)** - Complete guide for creating MCPs
+- **[shared/README.md](../shared/README.md)** - Shared utilities documentation
+- **[deploy.json](../deploy.json)** - Deployment configuration
+- **[.github/workflows/](../.github/workflows/)** - CI/CD configuration
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Create MCP | `bun scripts/new.ts <name>` |
+| Format | `bun run fmt` |
+| Lint | `bun run lint` |
+| Type check | `bun run check` |
+| Test | `bun test` |
+| Local dev | `cd <mcp> && bun run dev` |
