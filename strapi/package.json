@@ -1,5 +1,5 @@
 {
-  "name": "strapi-mcp",
+  "name": "strapi",
   "version": "1.0.0",
   "description": "Strapi CMS MCP Server - Content management and API integration",
   "private": true,
