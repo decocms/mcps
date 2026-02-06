@@ -145,3 +145,76 @@ export interface CreateBrandInput {
   Active?: boolean;
   MenuHome?: boolean;
 }
+
+// ============ COLLECTION TYPES ============
+
+export interface Collection {
+  Id: number;
+  Name: string;
+  Description: string;
+  Searchable: boolean;
+  Highlight: boolean;
+  DateFrom: string;
+  DateTo: string;
+  TotalProducts: number;
+  Type: "Manual" | "Automatic" | "Hybrid";
+}
+
+export interface CollectionListItem {
+  id: number;
+  name: string;
+  searchable: boolean;
+  highlight: boolean;
+  dateFrom: string;
+  dateTo: string;
+  totalSku: number;
+  totalProducts: number;
+  type: "Manual" | "Automatic" | "Hybrid";
+  lastModifiedBy: string | null;
+}
+
+export interface CollectionListResponse {
+  paging: {
+    page: number;
+    perPage: number;
+    total: number;
+    pages: number;
+  };
+  items: CollectionListItem[];
+}
+
+export interface CreateCollectionInput {
+  Name: string;
+  Description?: string;
+  Searchable?: boolean;
+  Highlight?: boolean;
+  DateFrom: string;
+  DateTo: string;
+}
+
+export interface CollectionProduct {
+  ProductId: number;
+  SkuId: number;
+  Position: number;
+  ProductName: string;
+  SkuImageUrl: string;
+}
+
+export interface CollectionProductsResponse {
+  Data: CollectionProduct[];
+  Page: number;
+  Size: number;
+  TotalRows: number;
+  TotalPage: number;
+}
+
+export interface CollectionImportResponse {
+  TotalItemProcessed: number;
+  TotalErrorsProcessed: number;
+  TotalProductsProcessed: number;
+  Errors: string[];
+}
+
+export interface AddSkuToCollectionInput {
+  SkuId: number;
+}

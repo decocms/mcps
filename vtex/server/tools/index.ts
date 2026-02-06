@@ -36,6 +36,19 @@ import {
   deletePrice,
   listPriceTables,
 } from "./price/index.ts";
+import {
+  listCollections,
+  searchCollections,
+  getCollection,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+  getCollectionProducts,
+  addSkuToCollection,
+  addMultipleSkusToCollection,
+  removeSkuFromCollection,
+  removeMultipleSkusFromCollection,
+} from "./collection/index.ts";
 
 export const tools = [
   // Product
@@ -75,4 +88,16 @@ export const tools = [
   updateFixedPrice,
   deletePrice,
   listPriceTables,
+  // Collection (Beta)
+  listCollections,
+  searchCollections,
+  getCollection,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+  getCollectionProducts,
+  addSkuToCollection,
+  addMultipleSkusToCollection,
+  removeSkuFromCollection,
+  removeMultipleSkusFromCollection,
 ];

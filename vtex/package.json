@@ -20,6 +20,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260206.0",
     "@decocms/mcps-shared": "1.0.0",
     "@hey-api/client-fetch": "^0.8.0",
     "@hey-api/openapi-ts": "^0.66.1",

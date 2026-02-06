@@ -13,6 +13,12 @@ import type {
   CreateCategoryInput,
   Brand,
   CreateBrandInput,
+  Collection,
+  CollectionListResponse,
+  CreateCollectionInput,
+  CollectionProductsResponse,
+  CollectionImportResponse,
+  AddSkuToCollectionInput,
 } from "../types/catalog.ts";
 import type { Order, OrderList } from "../types/order.ts";
 import type { InventoryBySku, Warehouse } from "../types/logistics.ts";
@@ -314,5 +320,155 @@ export class VTEXClient {
 
   async listPriceTables() {
     return this.request<PriceTable[]>("GET", "/api/pricing/tables");
+  }
+
+  // ============ CATALOG - COLLECTIONS (Beta) ============
+
+  async listCollections(params?: { page?: number; pageSize?: number }) {
+    return this.request<CollectionListResponse>(
+      "GET",
+      "/api/catalog_system/pvt/collection/search",
+      { params },
+    );
+  }
+
+  async searchCollections(searchTerms: string) {
+    return this.request<CollectionListResponse>(
+      "GET",
+      `/api/catalog_system/pvt/collection/search/${encodeURIComponent(searchTerms)}`,
+    );
+  }
+
+  async getCollection(collectionId: number) {
+    return this.request<Collection>(
+      "GET",
+      `/api/catalog/pvt/collection/${collectionId}`,
+    );
+  }
+
+  async createCollection(data: CreateCollectionInput) {
+    return this.request<Collection>("POST", "/api/catalog/pvt/collection/", {
+      body: data,
+    });
+  }
+
+  async updateCollection(
+    collectionId: number,
+    data: Partial<CreateCollectionInput>,
+  ) {
+    return this.request<Collection>(
+      "PUT",
+      `/api/catalog/pvt/collection/${collectionId}`,
+      { body: data },
+    );
+  }
+
+  async deleteCollection(collectionId: number) {
+    return this.request<void>(
+      "DELETE",
+      `/api/catalog/pvt/collection/${collectionId}`,
+    );
+  }
+
+  async getCollectionProducts(
+    collectionId: number,
+    params?: { page?: number; pageSize?: number },
+  ) {
+    return this.request<CollectionProductsResponse>(
+      "GET",
+      `/api/catalog/pvt/collection/${collectionId}/products`,
+      { params },
+    );
+  }
+
+  async addSkuToCollection(
+    collectionId: number,
+    data: AddSkuToCollectionInput,
+  ) {
+    return this.request<{ SkuId: number; ProductId: number }>(
+      "POST",
+      `/api/catalog/pvt/collection/${collectionId}/stockkeepingunit`,
+      { body: data },
+    );
+  }
+
+  async removeSkuFromCollection(collectionId: number, skuId: number) {
+    return this.request<void>(
+      "DELETE",
+      `/api/catalog/pvt/collection/${collectionId}/stockkeepingunit/${skuId}`,
+    );
+  }
+
+  async getCollectionImportFileExample(): Promise<ArrayBuffer> {
+    const url = `${this.baseUrl}/api/catalog/pvt/collection/stockkeepingunit/importfileexample`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`VTEX API Error: ${response.status} - ${text}`);
+    }
+
+    return response.arrayBuffer();
+  }
+
+  async importProductsToCollection(
+    collectionId: number,
+    fileContent: ArrayBuffer,
+    fileName: string,
+  ) {
+    const formData = new FormData();
+    const blob = new Blob([fileContent], {
+      type: "application/vnd.ms-excel",
+    });
+    formData.append("file", blob, fileName);
+
+    const url = `${this.baseUrl}/api/catalog/pvt/collection/${collectionId}/stockkeepingunit/importinsert`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-VTEX-API-AppKey": this.headers["X-VTEX-API-AppKey"],
+        "X-VTEX-API-AppToken": this.headers["X-VTEX-API-AppToken"],
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`VTEX API Error: ${response.status} - ${text}`);
+    }
+
+    return response.json() as Promise<CollectionImportResponse>;
+  }
+
+  async removeProductsFromCollectionByFile(
+    collectionId: number,
+    fileContent: ArrayBuffer,
+    fileName: string,
+  ) {
+    const formData = new FormData();
+    const blob = new Blob([fileContent], {
+      type: "application/vnd.ms-excel",
+    });
+    formData.append("file", blob, fileName);
+
+    const url = `${this.baseUrl}/api/catalog/pvt/collection/${collectionId}/stockkeepingunit/importexclude`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-VTEX-API-AppKey": this.headers["X-VTEX-API-AppKey"],
+        "X-VTEX-API-AppToken": this.headers["X-VTEX-API-AppToken"],
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`VTEX API Error: ${response.status} - ${text}`);
+    }
+
+    return response.json() as Promise<CollectionImportResponse>;
   }
 }
