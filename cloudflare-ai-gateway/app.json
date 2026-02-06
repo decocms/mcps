@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-ai-gateway-mcp",
+  "friendlyName": "Cloudflare AI Gateway",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://ai-gateway.mcp.cloudflare.com/mcp"
+  },
+  "description": "Manage AI API requests through Cloudflare AI Gateway. Monitor usage, cache responses, implement rate limiting, and control costs across multiple AI providers.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["AI/ML", "API Management"],
+    "official": true,
+    "tags": ["cloudflare", "ai", "gateway", "openai", "anthropic", "rate-limiting", "caching", "monitoring"],
+    "short_description": "Manage AI API requests with monitoring, caching, rate limiting, and cost control",
+    "mesh_description": "Cloudflare AI Gateway MCP provides unified management and control for AI API requests across multiple providers. This official MCP enables you to route requests through Cloudflare's global network for improved reliability and speed, cache AI responses to reduce costs and latency, implement rate limiting and request quotas per user or application, monitor AI API usage with detailed analytics and logging, implement fallback logic across multiple AI providers, control costs with spending limits and alerts, add authentication and access control to AI endpoints, and anonymize or redact sensitive data in requests. The platform supports all major AI providers including OpenAI, Anthropic, Google, Azure OpenAI, Hugging Face, and more. Perfect for applications using multiple AI models, managing AI costs at scale, ensuring reliability with automatic failover, monitoring AI usage patterns, and implementing governance policies. Use natural language to configure gateways, analyze usage patterns, optimize costs, set rate limits, and troubleshoot API issues across your AI infrastructure."
+  }
+}
+

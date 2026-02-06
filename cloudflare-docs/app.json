@@ -3,8 +3,8 @@
   "name": "cloudflare-docs-mcp",
   "friendlyName": "Cloudflare Docs",
   "connection": {
-    "type": "SSE",
-    "url": "https://docs.mcp.cloudflare.com/sse"
+    "type": "HTTP",
+    "url": "https://docs.mcp.cloudflare.com/mcp"
   },
   "description": "Access Cloudflare's comprehensive documentation through natural language. Search, query, and get help with Cloudflare products and APIs instantly.",
   "icon": "https://www.cloudflare.com/favicon.ico",
