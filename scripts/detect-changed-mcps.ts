@@ -12,7 +12,7 @@
  */
 
 import { $ } from "bun";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 
 const args = process.argv.slice(2);
@@ -73,7 +73,44 @@ function fileMatchesWatchFolder(file: string, watchFolders: string[]): boolean {
   return false;
 }
 
-// Determine which MCPs have changes based on watchFolders
+// Discover MCPs that have app.json but are NOT in deploy.json (external/registry-only MCPs)
+function discoverRegistryOnlyMcps(deployConfig: DeployJson): string[] {
+  const rootDir = process.cwd();
+  const deployMcpNames = new Set(Object.keys(deployConfig));
+  const registryOnlyMcps: string[] = [];
+
+  try {
+    const entries = readdirSync(rootDir);
+    for (const entry of entries) {
+      // Skip non-directories and common non-MCP folders
+      if (
+        entry.startsWith(".") ||
+        entry === "node_modules" ||
+        entry === "scripts" ||
+        entry === "shared"
+      ) {
+        continue;
+      }
+
+      const entryPath = join(rootDir, entry);
+      if (!statSync(entryPath).isDirectory()) {
+        continue;
+      }
+
+      // If it has app.json but is NOT in deploy.json, it's a registry-only MCP
+      const appJsonPath = join(entryPath, "app.json");
+      if (existsSync(appJsonPath) && !deployMcpNames.has(entry)) {
+        registryOnlyMcps.push(entry);
+      }
+    }
+  } catch (error) {
+    console.error("⚠️  Error scanning for registry-only MCPs:", error);
+  }
+
+  return registryOnlyMcps;
+}
+
+// Determine which MCPs have changes based on watchFolders and app.json presence
 async function getChangedMcps(): Promise<string[]> {
   const deployConfig = loadDeployConfig();
   const changedFiles = await getChangedFiles();
@@ -99,7 +136,7 @@ async function getChangedMcps(): Promise<string[]> {
   const changedMcps = new Set<string>();
   const mcpsWithoutWatchFolders: string[] = [];
 
-  // Only consider MCPs that have watchFolders defined
+  // 1. Check MCPs in deploy.json that have watchFolders
   for (const [mcpName, config] of Object.entries(deployConfig)) {
     if (!config.watchFolders || config.watchFolders.length === 0) {
       mcpsWithoutWatchFolders.push(mcpName);
@@ -113,6 +150,25 @@ async function getChangedMcps(): Promise<string[]> {
         console.error(`\n✅ ${mcpName} triggered by: ${file}`);
         console.error(`   watchFolders: [${config.watchFolders.join(", ")}]`);
         break; // No need to check more files for this MCP
+      }
+    }
+  }
+
+  // 2. Check registry-only MCPs (have app.json but NOT in deploy.json)
+  const registryOnlyMcps = discoverRegistryOnlyMcps(deployConfig);
+  if (registryOnlyMcps.length > 0) {
+    console.error(
+      `\n📦 Registry-only MCPs found: ${registryOnlyMcps.join(", ")}`,
+    );
+  }
+
+  for (const mcpName of registryOnlyMcps) {
+    // Check if any changed file is inside this MCP's directory
+    for (const file of changedFiles) {
+      if (file.startsWith(`${mcpName}/`)) {
+        changedMcps.add(mcpName);
+        console.error(`\n✅ ${mcpName} (registry-only) triggered by: ${file}`);
+        break;
       }
     }
   }
