@@ -113,137 +113,9 @@ export const createStrapiGetMediaByIdTool = (env: Env) =>
     },
   });
 
-export const createStrapiUploadMediaTool = (env: Env) =>
-  createTool({
-    id: "STRAPI_UPLOAD_MEDIA",
-    description: "Faz upload de um arquivo de mídia para o Strapi CMS.",
-    inputSchema: z.object({
-      fileData: z.string().describe("Dados do arquivo em base64 ou URL"),
-      fileName: z.string().describe("Nome do arquivo"),
-      alternativeText: z
-        .string()
-        .optional()
-        .describe("Texto alternativo para o arquivo"),
-      caption: z.string().optional().describe("Legenda do arquivo"),
-      folder: z
-        .union([z.string(), z.number()])
-        .optional()
-        .describe("ID da pasta onde salvar o arquivo"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      data: z.any().optional(),
-      error: z.string().optional(),
-    }),
-    execute: async ({
-      context: { fileData, fileName, alternativeText, caption, folder },
-    }) => {
-      try {
-        // Nota: Esta implementação é simplificada. Em um cenário real,
-        // você precisaria lidar com FormData para upload de arquivos
-        const uploadData: any = {
-          files: {
-            name: fileName,
-            data: fileData,
-          },
-        };
-
-        if (alternativeText) uploadData.fileInfo = { alternativeText };
-        if (caption) uploadData.fileInfo = { ...uploadData.fileInfo, caption };
-        if (folder) uploadData.folder = folder;
-
-        const response = await makeRequest(
-          env,
-          "api/upload",
-          "POST",
-          undefined,
-          uploadData,
-          true,
-        );
-
-        if (!response.success) {
-          return {
-            success: false,
-            error: `Erro ao fazer upload do arquivo: ${response.status}`,
-          };
-        }
-
-        const responseData = response.data as any;
-        return {
-          success: true,
-          data: responseData?.data || responseData,
-        };
-      } catch (error: any) {
-        return {
-          success: false,
-          error:
-            error?.message || "Erro desconhecido ao fazer upload do arquivo",
-        };
-      }
-    },
-  });
-
-export const createStrapiUpdateMediaTool = (env: Env) =>
-  createTool({
-    id: "STRAPI_UPDATE_MEDIA",
-    description: "Atualiza informações de um arquivo de mídia no Strapi CMS.",
-    inputSchema: z.object({
-      id: z.union([z.string(), z.number()]).describe("ID do arquivo de mídia"),
-      name: z.string().optional().describe("Novo nome do arquivo"),
-      alternativeText: z.string().optional().describe("Novo texto alternativo"),
-      caption: z.string().optional().describe("Nova legenda"),
-      folder: z
-        .union([z.string(), z.number()])
-        .optional()
-        .describe("Nova pasta"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      data: z.any().optional(),
-      error: z.string().optional(),
-    }),
-    execute: async ({
-      context: { id, name, alternativeText, caption, folder },
-    }) => {
-      try {
-        const updateData: any = {};
-
-        if (name !== undefined) updateData.name = name;
-        if (alternativeText !== undefined)
-          updateData.alternativeText = alternativeText;
-        if (caption !== undefined) updateData.caption = caption;
-        if (folder !== undefined) updateData.folder = folder;
-
-        const response = await makeRequest(
-          env,
-          `api/upload/files/${id}`,
-          "PUT",
-          undefined,
-          updateData,
-          true,
-        );
-
-        if (!response.success) {
-          return {
-            success: false,
-            error: `Erro ao atualizar arquivo de mídia: ${response.status}`,
-          };
-        }
-
-        const responseData = response.data as any;
-        return {
-          success: true,
-          data: responseData?.data || responseData,
-        };
-      } catch (error: any) {
-        return {
-          success: false,
-          error:
-            error?.message || "Erro desconhecido ao atualizar arquivo de mídia",
-        };
-      }
-    },
-  });
+// Note: Upload and Update Media tools are not implemented yet.
+// Strapi upload requires multipart/form-data, which is complex to implement in MCP.
+// These tools will be added in a future PR when FormData support is available.
 
 export const createStrapiDeleteMediaTool = (env: Env) =>
   createTool({
@@ -362,9 +234,6 @@ export const createStrapiGetMediaFoldersTool = (env: Env) =>
 export const strapiMediaTools = [
   createStrapiGetMediaTool,
   createStrapiGetMediaByIdTool,
-  // TODO: Upload and update require FormData implementation
-  // createStrapiUploadMediaTool,
-  // createStrapiUpdateMediaTool,
   createStrapiDeleteMediaTool,
   createStrapiGetMediaFoldersTool,
 ];
