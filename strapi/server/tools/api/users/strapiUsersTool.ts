@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 
 export const createStrapiGetUsersTool = (env: Env) =>
@@ -42,8 +43,20 @@ export const createStrapiGetUsersTool = (env: Env) =>
       try {
         const params: Record<string, any> = {};
 
-        if (filters) params.filters = filters;
-        if (populate) params.populate = populate;
+        if (filters) {
+          try {
+            params.filters = JSON.parse(filters);
+          } catch {
+            params.filters = filters;
+          }
+        }
+        if (populate) {
+          try {
+            params.populate = JSON.parse(populate);
+          } catch {
+            params.populate = populate;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 
@@ -91,12 +104,19 @@ export const createStrapiGetUserByIdTool = (env: Env) =>
     }),
     execute: async ({ context: { id, populate } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const params: Record<string, any> = {};
-        if (populate) params.populate = populate;
+        if (populate) {
+          try {
+            params.populate = JSON.parse(populate);
+          } catch {
+            params.populate = populate;
+          }
+        }
 
         const response = await makeRequest(
           env,
-          `api/users/${id}`,
+          `api/users/${safeId}`,
           "GET",
           params,
         );
@@ -143,7 +163,13 @@ export const createStrapiGetCurrentUserTool = (env: Env) =>
     execute: async ({ context: { populate } }) => {
       try {
         const params: Record<string, any> = {};
-        if (populate) params.populate = populate;
+        if (populate) {
+          try {
+            params.populate = JSON.parse(populate);
+          } catch {
+            params.populate = populate;
+          }
+        }
 
         const response = await makeRequest(env, "api/users/me", "GET", params);
 
@@ -265,6 +291,7 @@ export const createStrapiUpdateUserTool = (env: Env) =>
       context: { id, username, email, password, confirmed, blocked, role },
     }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const userData: any = {};
 
         if (username !== undefined) userData.username = username;
@@ -276,7 +303,7 @@ export const createStrapiUpdateUserTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/users/${id}`,
+          `api/users/${safeId}`,
           "PUT",
           undefined,
           userData,
@@ -320,9 +347,10 @@ export const createStrapiDeleteUserTool = (env: Env) =>
     }),
     execute: async ({ context: { id } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/users/${id}`,
+          `api/users/${safeId}`,
           "DELETE",
           undefined,
           undefined,

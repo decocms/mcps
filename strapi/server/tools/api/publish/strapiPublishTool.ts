@@ -9,6 +9,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 import type {
   StrapiPublishResponse,
@@ -47,10 +48,13 @@ export const createStrapiPublishContentTool = (env: Env) =>
       context: { contentType, documentId },
     }): Promise<ToolResponse<StrapiPublishResponse["data"]>> => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
+        const safeDocumentId = sanitizePathSegment(documentId, "documentId");
+
         // Try v5 action endpoint first
         const response = await makeRequest(
           env,
-          `api/${contentType}/${documentId}/actions/publish`,
+          `api/${safeContentType}/${safeDocumentId}/actions/publish`,
           "POST",
           undefined,
           {},
@@ -69,7 +73,7 @@ export const createStrapiPublishContentTool = (env: Env) =>
         if (response.status === 404) {
           const fallbackResponse = await makeRequest(
             env,
-            `api/${contentType}/${documentId}`,
+            `api/${safeContentType}/${safeDocumentId}`,
             "PUT",
             undefined,
             { data: { publishedAt: new Date().toISOString() } },
@@ -137,10 +141,13 @@ export const createStrapiUnpublishContentTool = (env: Env) =>
       context: { contentType, documentId },
     }): Promise<ToolResponse<StrapiPublishResponse["data"]>> => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
+        const safeDocumentId = sanitizePathSegment(documentId, "documentId");
+
         // Try v5 action endpoint first
         const response = await makeRequest(
           env,
-          `api/${contentType}/${documentId}/actions/unpublish`,
+          `api/${safeContentType}/${safeDocumentId}/actions/unpublish`,
           "POST",
           undefined,
           {},
@@ -159,7 +166,7 @@ export const createStrapiUnpublishContentTool = (env: Env) =>
         if (response.status === 404) {
           const fallbackResponse = await makeRequest(
             env,
-            `api/${contentType}/${documentId}`,
+            `api/${safeContentType}/${safeDocumentId}`,
             "PUT",
             undefined,
             { data: { publishedAt: null } },
@@ -234,6 +241,7 @@ export const createStrapiGetContentByStatusTool = (env: Env) =>
     }),
     execute: async ({ context: { contentType, status, sort, pagination } }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         const params: Record<string, unknown> = {
           publicationState: status === "draft" ? "preview" : "live",
         };
@@ -248,7 +256,7 @@ export const createStrapiGetContentByStatusTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}`,
+          `api/${safeContentType}`,
           "GET",
           params,
         );

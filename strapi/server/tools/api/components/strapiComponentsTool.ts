@@ -9,6 +9,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 import type {
   StrapiComponentSchema,
@@ -92,9 +93,10 @@ export const createStrapiGetComponentDetailTool = (env: Env) =>
       context: { uid },
     }): Promise<ToolResponse<StrapiComponentSchema>> => {
       try {
+        const safeUid = sanitizePathSegment(uid, "uid");
         const response = await makeRequest(
           env,
-          `api/content-type-builder/components/${uid}`,
+          `api/content-type-builder/components/${safeUid}`,
           "GET",
         );
 

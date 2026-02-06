@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 
 export const createStrapiContentTypesTool = (env: Env) =>
@@ -80,9 +81,10 @@ export const createStrapiContentTypeDetailTool = (env: Env) =>
     }),
     execute: async ({ context: { uid } }) => {
       try {
+        const safeUid = sanitizePathSegment(uid, "uid");
         const response = await makeRequest(
           env,
-          `api/content-type-builder/content-types/${uid}`,
+          `api/content-type-builder/content-types/${safeUid}`,
           "GET",
         );
 

@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 
 export const createStrapiGetContentTool = (env: Env) =>
@@ -48,6 +49,7 @@ export const createStrapiGetContentTool = (env: Env) =>
       context: { contentType, filters, populate, sort, pagination },
     }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         const params: Record<string, any> = {};
 
         if (filters) {
@@ -57,13 +59,19 @@ export const createStrapiGetContentTool = (env: Env) =>
             params.filters = filters;
           }
         }
-        if (populate) params.populate = populate;
+        if (populate) {
+          try {
+            params.populate = JSON.parse(populate);
+          } catch {
+            params.populate = populate;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 
         const response = await makeRequest(
           env,
-          `api/${contentType}`,
+          `api/${safeContentType}`,
           "GET",
           params,
         );
@@ -116,6 +124,8 @@ export const createStrapiGetContentByIdTool = (env: Env) =>
     }),
     execute: async ({ context: { contentType, id, populate } }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
+        const safeId = sanitizePathSegment(id, "id");
         const params: Record<string, any> = {};
         if (populate) {
           // Try to parse as JSON for deep populate, fallback to string
@@ -128,7 +138,7 @@ export const createStrapiGetContentByIdTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}/${id}`,
+          `api/${safeContentType}/${safeId}`,
           "GET",
           params,
         );
@@ -180,6 +190,7 @@ export const createStrapiCreateContentTool = (env: Env) =>
     }),
     execute: async ({ context: { contentType, data } }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         let parsedData: any;
         try {
           parsedData = JSON.parse(data);
@@ -192,7 +203,7 @@ export const createStrapiCreateContentTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}`,
+          `api/${safeContentType}`,
           "POST",
           undefined,
           { data: parsedData },
@@ -251,6 +262,8 @@ export const createStrapiUpdateContentTool = (env: Env) =>
     }),
     execute: async ({ context: { contentType, id, data } }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
+        const safeId = sanitizePathSegment(id, "id");
         let parsedData: any;
         try {
           parsedData = JSON.parse(data);
@@ -263,7 +276,7 @@ export const createStrapiUpdateContentTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}/${id}`,
+          `api/${safeContentType}/${safeId}`,
           "PUT",
           undefined,
           { data: parsedData },
@@ -319,9 +332,11 @@ export const createStrapiDeleteContentTool = (env: Env) =>
     }),
     execute: async ({ context: { contentType, id } }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/${contentType}/${id}`,
+          `api/${safeContentType}/${safeId}`,
           "DELETE",
           undefined,
           undefined,

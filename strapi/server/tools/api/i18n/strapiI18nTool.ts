@@ -9,6 +9,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 import type { StrapiLocale, ToolResponse } from "../../../types/strapi.ts";
 
@@ -151,9 +152,10 @@ export const createStrapiDeleteLocaleTool = (env: Env) =>
       context: { id },
     }): Promise<ToolResponse<StrapiLocale>> => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/i18n/locales/${id}`,
+          `api/i18n/locales/${safeId}`,
           "DELETE",
           undefined,
           undefined,
@@ -234,6 +236,7 @@ export const createStrapiGetContentByLocaleTool = (env: Env) =>
       context: { contentType, locale, filters, populate, sort, pagination },
     }) => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         const params: Record<string, unknown> = {
           locale,
         };
@@ -257,7 +260,7 @@ export const createStrapiGetContentByLocaleTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}`,
+          `api/${safeContentType}`,
           "GET",
           params,
         );

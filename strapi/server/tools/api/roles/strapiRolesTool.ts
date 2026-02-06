@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 
 export const createStrapiGetRolesTool = (env: Env) =>
@@ -36,7 +37,13 @@ export const createStrapiGetRolesTool = (env: Env) =>
       try {
         const params: Record<string, any> = {};
 
-        if (filters) params.filters = filters;
+        if (filters) {
+          try {
+            params.filters = JSON.parse(filters);
+          } catch {
+            params.filters = filters;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 
@@ -83,9 +90,10 @@ export const createStrapiGetRoleByIdTool = (env: Env) =>
     }),
     execute: async ({ context: { id } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/users-permissions/roles/${id}`,
+          `api/users-permissions/roles/${safeId}`,
           "GET",
         );
 
@@ -202,6 +210,7 @@ export const createStrapiUpdateRoleTool = (env: Env) =>
       context: { id, name, description, type, permissions },
     }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const roleData: any = {};
 
         if (name !== undefined) roleData.name = name;
@@ -220,7 +229,7 @@ export const createStrapiUpdateRoleTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/users-permissions/roles/${id}`,
+          `api/users-permissions/roles/${safeId}`,
           "PUT",
           undefined,
           roleData,
@@ -264,9 +273,10 @@ export const createStrapiDeleteRoleTool = (env: Env) =>
     }),
     execute: async ({ context: { id } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/users-permissions/roles/${id}`,
+          `api/users-permissions/roles/${safeId}`,
           "DELETE",
           undefined,
           undefined,
@@ -329,7 +339,13 @@ export const createStrapiGetPermissionsTool = (env: Env) =>
       try {
         const params: Record<string, any> = {};
 
-        if (filters) params.filters = filters;
+        if (filters) {
+          try {
+            params.filters = JSON.parse(filters);
+          } catch {
+            params.filters = filters;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 

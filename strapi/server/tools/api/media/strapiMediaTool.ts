@@ -1,6 +1,10 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import {
+  sanitizePathSegment,
+  MAX_UPLOAD_SIZE_BYTES,
+} from "../../../lib/sanitize.ts";
 import { validateExternalUrl } from "../../../lib/url-validator.ts";
 import type { Env } from "../../../types/env.ts";
 
@@ -38,7 +42,13 @@ export const createStrapiGetMediaTool = (env: Env) =>
       try {
         const params: Record<string, any> = {};
 
-        if (filters) params.filters = filters;
+        if (filters) {
+          try {
+            params.filters = JSON.parse(filters);
+          } catch {
+            params.filters = filters;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 
@@ -86,9 +96,10 @@ export const createStrapiGetMediaByIdTool = (env: Env) =>
     }),
     execute: async ({ context: { id } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/upload/files/${id}`,
+          `api/upload/files/${safeId}`,
           "GET",
         );
 
@@ -167,8 +178,25 @@ export const createStrapiUploadMediaTool = (env: Env) =>
           };
         }
 
+        // Check file size from Content-Length header before downloading body
+        const contentLength = fileResponse.headers.get("content-length");
+        if (contentLength && Number(contentLength) > MAX_UPLOAD_SIZE_BYTES) {
+          return {
+            success: false,
+            error: `Arquivo muito grande: ${Math.round(Number(contentLength) / 1024 / 1024)}MB. Limite: ${MAX_UPLOAD_SIZE_BYTES / 1024 / 1024}MB`,
+          };
+        }
+
         // Get file blob
         const fileBlob = await fileResponse.blob();
+
+        // Double-check actual blob size
+        if (fileBlob.size > MAX_UPLOAD_SIZE_BYTES) {
+          return {
+            success: false,
+            error: `Arquivo muito grande: ${Math.round(fileBlob.size / 1024 / 1024)}MB. Limite: ${MAX_UPLOAD_SIZE_BYTES / 1024 / 1024}MB`,
+          };
+        }
 
         // Extract filename from URL if not provided
         const finalFileName =
@@ -257,6 +285,7 @@ export const createStrapiUpdateMediaTool = (env: Env) =>
       context: { id, name, alternativeText, caption, folder },
     }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         // Build fileInfo object with only provided fields
         const fileInfo: Record<string, string | number> = {};
         if (name !== undefined) fileInfo.name = name;
@@ -276,7 +305,7 @@ export const createStrapiUpdateMediaTool = (env: Env) =>
         // Strapi accepts JSON for updating file metadata
         const response = await makeRequest(
           env,
-          `api/upload/files/${id}`,
+          `api/upload/files/${safeId}`,
           "PUT",
           undefined,
           fileInfo,
@@ -321,9 +350,10 @@ export const createStrapiDeleteMediaTool = (env: Env) =>
     }),
     execute: async ({ context: { id } }) => {
       try {
+        const safeId = sanitizePathSegment(id, "id");
         const response = await makeRequest(
           env,
-          `api/upload/files/${id}`,
+          `api/upload/files/${safeId}`,
           "DELETE",
           undefined,
           undefined,
@@ -385,7 +415,13 @@ export const createStrapiGetMediaFoldersTool = (env: Env) =>
       try {
         const params: Record<string, any> = {};
 
-        if (filters) params.filters = filters;
+        if (filters) {
+          try {
+            params.filters = JSON.parse(filters);
+          } catch {
+            params.filters = filters;
+          }
+        }
         if (sort) params.sort = sort;
         if (pagination) params.pagination = pagination;
 

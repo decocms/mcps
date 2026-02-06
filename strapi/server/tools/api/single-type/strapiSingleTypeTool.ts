@@ -10,6 +10,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 import type {
   StrapiSingleTypeResponse,
@@ -55,6 +56,10 @@ export const createStrapiGetSingleTypeTool = (env: Env) =>
       context: { singularApiId, populate, locale },
     }): Promise<ToolResponse<StrapiSingleTypeResponse["data"]>> => {
       try {
+        const safeSingularApiId = sanitizePathSegment(
+          singularApiId,
+          "singularApiId",
+        );
         const params: Record<string, unknown> = {};
 
         if (populate) {
@@ -68,7 +73,7 @@ export const createStrapiGetSingleTypeTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${singularApiId}`,
+          `api/${safeSingularApiId}`,
           "GET",
           params,
         );
@@ -132,6 +137,10 @@ export const createStrapiUpdateSingleTypeTool = (env: Env) =>
       context: { singularApiId, data, locale },
     }): Promise<ToolResponse<StrapiSingleTypeResponse["data"]>> => {
       try {
+        const safeSingularApiId = sanitizePathSegment(
+          singularApiId,
+          "singularApiId",
+        );
         let parsedData: Record<string, unknown>;
         try {
           parsedData = JSON.parse(data) as Record<string, unknown>;
@@ -147,7 +156,7 @@ export const createStrapiUpdateSingleTypeTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${singularApiId}`,
+          `api/${safeSingularApiId}`,
           "PUT",
           Object.keys(params).length > 0 ? params : undefined,
           { data: parsedData },
@@ -203,9 +212,13 @@ export const createStrapiDeleteSingleTypeTool = (env: Env) =>
       context: { singularApiId },
     }): Promise<ToolResponse<StrapiSingleTypeResponse["data"]>> => {
       try {
+        const safeSingularApiId = sanitizePathSegment(
+          singularApiId,
+          "singularApiId",
+        );
         const response = await makeRequest(
           env,
-          `api/${singularApiId}`,
+          `api/${safeSingularApiId}`,
           "DELETE",
           undefined,
           undefined,

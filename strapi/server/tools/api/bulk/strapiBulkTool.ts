@@ -9,6 +9,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { sanitizePathSegment } from "../../../lib/sanitize.ts";
 import type { Env } from "../../../types/env.ts";
 import type {
   StrapiBulkActionResponse,
@@ -48,6 +49,7 @@ export const createStrapiBulkDeleteTool = (env: Env) =>
       ToolResponse<StrapiBulkActionResponse> & { count?: number }
     > => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         let parsedIds: (string | number)[];
         try {
           parsedIds = JSON.parse(ids) as (string | number)[];
@@ -76,7 +78,7 @@ export const createStrapiBulkDeleteTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}/actions/bulkDelete`,
+          `api/${safeContentType}/actions/bulkDelete`,
           "POST",
           undefined,
           body,
@@ -140,6 +142,7 @@ export const createStrapiBulkPublishTool = (env: Env) =>
       ToolResponse<StrapiBulkActionResponse> & { count?: number }
     > => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         let parsedIds: (string | number)[];
         try {
           parsedIds = JSON.parse(ids) as (string | number)[];
@@ -167,7 +170,7 @@ export const createStrapiBulkPublishTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}/actions/bulkPublish`,
+          `api/${safeContentType}/actions/bulkPublish`,
           "POST",
           undefined,
           body,
@@ -231,6 +234,7 @@ export const createStrapiBulkUnpublishTool = (env: Env) =>
       ToolResponse<StrapiBulkActionResponse> & { count?: number }
     > => {
       try {
+        const safeContentType = sanitizePathSegment(contentType, "contentType");
         let parsedIds: (string | number)[];
         try {
           parsedIds = JSON.parse(ids) as (string | number)[];
@@ -258,7 +262,7 @@ export const createStrapiBulkUnpublishTool = (env: Env) =>
 
         const response = await makeRequest(
           env,
-          `api/${contentType}/actions/bulkUnpublish`,
+          `api/${safeContentType}/actions/bulkUnpublish`,
           "POST",
           undefined,
           body,

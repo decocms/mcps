@@ -2,6 +2,22 @@ import type { Env } from "../types/env.ts";
 import { getStrapiApiEndpoint, getStrapiApiToken } from "./env.ts";
 import qs from "qs";
 
+/**
+ * Validate that an endpoint doesn't contain path traversal sequences.
+ * This is a defense-in-depth check on the final composed endpoint.
+ */
+function validateEndpoint(endpoint: string): void {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(endpoint);
+  } catch {
+    decoded = endpoint;
+  }
+  if (decoded.includes("..")) {
+    throw new Error("Endpoint inválido: sequência de path traversal detectada");
+  }
+}
+
 export const makeRequest = async (
   env: Env,
   endpoint: string,
@@ -25,6 +41,9 @@ export const makeRequest = async (
       "AUTHORIZATION REQUIRED: POST, PUT, and DELETE operations require explicit user authorization.",
     );
   }
+
+  // Validate endpoint to prevent path traversal
+  validateEndpoint(endpoint);
 
   const apiEndpoint = getStrapiApiEndpoint(env);
   const apiToken = getStrapiApiToken(env);
