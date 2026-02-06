@@ -38,3 +38,9 @@ export const BULLET_GLYPH_PRESET = {
     "NUMBERED_UPPERROMAN_UPPERALPHA_DECIMAL",
   NUMBERED_ZERODECIMAL_ALPHA_ROMAN: "NUMBERED_ZERODECIMAL_ALPHA_ROMAN",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  DOCUMENTS: "https://www.googleapis.com/auth/documents",
+  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
+} as const;

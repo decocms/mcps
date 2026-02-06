@@ -12,12 +12,13 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@decocms/runtime": "^1.1.3",
+    "@decocms/runtime": "1.2.5",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@decocms/mcps-shared": "workspace:*",
     "@modelcontextprotocol/sdk": "1.25.1",
+    "bun-types": "^1.3.7",
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   },
@@ -25,4 +26,3 @@
     "node": ">=22.0.0"
   }
 }
-

@@ -17,6 +17,7 @@ import {
 } from "../../lib/slack-client.ts";
 import { formatForSlack, buildResponseBlocks } from "../../lib/format.ts";
 import type { MessageWithImages } from "./context-builder.ts";
+import { logger } from "../../lib/logger.ts";
 
 // Global LLM config set by main.ts
 let globalLLMConfig: LLMConfig | null = null;
@@ -41,7 +42,16 @@ export function configureLLM(config: LLMConfig): void {
     modelId: config.modelId,
     agentId: config.agentId,
     hasToken: !!config.token,
+    hasSystemPrompt: !!config.systemPrompt,
   });
+}
+
+/**
+ * Clear LLM configuration (prevents cross-tenant config leakage)
+ */
+export function clearLLMConfig(): void {
+  globalLLMConfig = null;
+  console.log("[LLMHandler] Config cleared");
 }
 
 /**
@@ -98,7 +108,14 @@ export async function callLLMWithStreaming(
     return callLLMWithoutStreaming(messages, options);
   }
 
-  console.log("[LLMHandler] Calling LLM with streaming");
+  logger.info("LLM request started (streaming)", {
+    channel: options.channel,
+    messageCount: messages.length,
+    hasConfig: !!globalLLMConfig,
+    organizationId: globalLLMConfig?.organizationId,
+    modelProviderId: globalLLMConfig?.modelProviderId,
+    hasToken: !!globalLLMConfig?.token,
+  });
 
   const response = await generateLLMResponseWithStreaming(
     messages,
@@ -122,7 +139,10 @@ export async function callLLMWithStreaming(
     },
   );
 
-  console.log("[LLMHandler] Streaming complete");
+  logger.info("LLM response sent successfully (streaming)", {
+    channel: options.channel,
+    responseLength: response.length,
+  });
   return response;
 }
 
@@ -139,7 +159,10 @@ export async function callLLMWithoutStreaming(
 
   const { channel, replyTo, useBlocks = true } = options;
 
-  console.log("[LLMHandler] Calling LLM without streaming");
+  logger.info("LLM request started (non-streaming)", {
+    channel: options.channel,
+    messageCount: messages.length,
+  });
 
   const response = await generateLLMResponse(messages, globalLLMConfig);
   const formattedResponse = formatForSlack(response);
@@ -154,7 +177,10 @@ export async function callLLMWithoutStreaming(
     await sendMessage({ channel, text: formattedResponse, blocks });
   }
 
-  console.log("[LLMHandler] Response sent");
+  logger.info("LLM response sent successfully (non-streaming)", {
+    channel: options.channel,
+    responseLength: response.length,
+  });
   return response;
 }
 
@@ -178,7 +204,13 @@ export async function handleLLMCall(
       await callLLMWithoutStreaming(messages, options);
     }
   } catch (error) {
-    console.error("[LLMHandler] Error:", error);
+    logger.error("LLM response failed", {
+      channel,
+      error: String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      messagesCount: messages.length,
+    });
 
     const errorMsg = `❌ ${ERROR_MESSAGES.PROCESSING_ERROR}`;
 

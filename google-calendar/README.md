@@ -108,6 +108,7 @@ bun run build
       { "email": "john@company.com" },
       { "email": "mary@company.com" }
     ],
+    "guestsCanSeeOtherGuests": false,
     "sendUpdates": "all"
   }
 }

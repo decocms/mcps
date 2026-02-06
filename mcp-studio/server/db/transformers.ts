@@ -69,8 +69,15 @@ export function transformDbRowToExecution(
     workflow_id: row.workflow_id as string,
     title: row.title ?? "",
     virtual_mcp_id: row.gateway_id ?? "",
+    running_steps: [] as string[],
     completed_steps: { success: [], error: [] } as unknown as
-      | { success: string[]; error: string[] }
+      | {
+          success: {
+            name: string;
+            completed_at_epoch_ms: number;
+          }[];
+          error: string[];
+        }
       | undefined,
     start_at_epoch_ms: toNumberOrNull(row.start_at_epoch_ms),
     started_at_epoch_ms: toNumberOrNull(row.started_at_epoch_ms),
@@ -85,6 +92,9 @@ export function transformDbRowToExecution(
     error: safeJsonParse(row.error) ?? undefined,
   };
 
+  if (row.running_steps) {
+    transformed.running_steps = row.running_steps as unknown as string[];
+  }
   if (row.success_steps) {
     transformed.completed_steps!.success = row.success_steps as never[];
   }
@@ -92,6 +102,7 @@ export function transformDbRowToExecution(
     transformed.completed_steps!.error = row.error_steps as never[];
   }
   if (
+    !transformed.running_steps.length &&
     !transformed.completed_steps!.success.length &&
     !transformed.completed_steps!.error.length
   ) {

@@ -12,7 +12,6 @@
   "metadata": {
     "categories": ["Documentation"],
     "official": true,
-    "mesh_unlisted": true,
     "tags": ["documentation", "api-reference", "guides", "tutorials", "cloudflare", "learning", "support", "knowledge-base"],
     "short_description": "Access Cloudflare's comprehensive documentation through natural language",
     "mesh_description": "Cloudflare Docs MCP provides intelligent access to Cloudflare's extensive documentation covering all products and services. This official documentation assistant helps you find information about Workers, Pages, R2 Storage, D1 Database, Queues, Durable Objects, KV, Stream, Images, CDN, DNS, SSL/TLS, WAF, DDoS Protection, Load Balancing, Argo, Spectrum, Magic Transit, and more. Search through detailed API references with code examples in multiple languages, step-by-step tutorials for common use cases, best practices guides, troubleshooting documentation, and architectural patterns. The MCP uses semantic search to understand your questions and provide contextually relevant answers, combining information from multiple documentation pages when needed. Get instant access to product limits, pricing details, feature comparisons, migration guides, security recommendations, and performance optimization tips. Perfect for developers building on Cloudflare's platform, the MCP can explain complex concepts, suggest solutions to problems, and guide you through configuration steps with clear, actionable information."

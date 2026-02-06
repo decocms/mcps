@@ -7,7 +7,11 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { TikTokClient, getAccessToken } from "../lib/tiktok-client.ts";
+import {
+  TikTokClient,
+  getAccessToken,
+  getDefaultAdvertiserId,
+} from "../lib/tiktok-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -55,10 +59,10 @@ const MetricSchema = z.enum([
 
 const ReportRowSchema = z.object({
   dimensions: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .describe("Dimension values (campaign_id, stat_time_day, etc.)"),
   metrics: z
-    .record(z.number())
+    .record(z.string(), z.number())
     .describe("Metric values (spend, impressions, clicks, etc.)"),
 });
 
@@ -79,7 +83,10 @@ export const createGetReportTool = (env: Env) =>
     description:
       "Get performance report data for campaigns, ad groups, or ads. Supports custom date ranges, dimensions, and metrics.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       data_level: DataLevelSchema.describe(
         "Data level: AUCTION_ADVERTISER, AUCTION_CAMPAIGN, AUCTION_ADGROUP, AUCTION_AD",
       ),
@@ -127,6 +134,13 @@ export const createGetReportTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
@@ -164,7 +178,7 @@ export const createGetReportTool = (env: Env) =>
             ];
 
       const result = await client.getReport({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         data_level: context.data_level,
         dimensions,
         metrics,
@@ -196,7 +210,10 @@ export const createGetCampaignReportTool = (env: Env) =>
     description:
       "Get performance report for campaigns. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
         .string()
         .describe("Start date (format: YYYY-MM-DD, required)"),
@@ -224,12 +241,19 @@ export const createGetCampaignReportTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.getReport({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         data_level: "AUCTION_CAMPAIGN",
         dimensions: ["campaign_id", "stat_time_day"],
         metrics: [
@@ -269,7 +293,10 @@ export const createGetAdGroupReportTool = (env: Env) =>
     description:
       "Get performance report for ad groups. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
         .string()
         .describe("Start date (format: YYYY-MM-DD, required)"),
@@ -301,12 +328,19 @@ export const createGetAdGroupReportTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.getReport({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         data_level: "AUCTION_ADGROUP",
         dimensions: ["adgroup_id", "stat_time_day"],
         metrics: [
@@ -347,7 +381,10 @@ export const createGetAdReportTool = (env: Env) =>
     description:
       "Get performance report for individual ads. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
         .string()
         .describe("Start date (format: YYYY-MM-DD, required)"),
@@ -383,12 +420,19 @@ export const createGetAdReportTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.getReport({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         data_level: "AUCTION_AD",
         dimensions: ["ad_id", "stat_time_day"],
         metrics: [
@@ -438,7 +482,10 @@ export const createGetAdvertiserInfoTool = (env: Env) =>
     inputSchema: z.object({
       advertiser_ids: z
         .array(z.string())
-        .describe("List of advertiser IDs to retrieve (required)"),
+        .optional()
+        .describe(
+          "List of advertiser IDs to retrieve (optional if configured in MCP)",
+        ),
     }),
     outputSchema: z.object({
       advertisers: z
@@ -457,12 +504,26 @@ export const createGetAdvertiserInfoTool = (env: Env) =>
         .describe("List of advertiser information"),
     }),
     execute: async ({ context }) => {
+      let advertiserIds = context.advertiser_ids;
+      if (!advertiserIds || advertiserIds.length === 0) {
+        const defaultId = getDefaultAdvertiserId(env);
+        if (defaultId) {
+          advertiserIds = [defaultId];
+        }
+      }
+
+      if (!advertiserIds || advertiserIds.length === 0) {
+        throw new Error(
+          "advertiser_ids is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const advertisers = await client.getAdvertiserInfo({
-        advertiser_ids: context.advertiser_ids,
+        advertiser_ids: advertiserIds,
       });
 
       return {

@@ -7,7 +7,6 @@
 
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
-import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import {
   initializeDiscordClient,
   getDiscordClient,
@@ -17,13 +16,31 @@ import { setDatabaseEnv } from "../shared/db.ts";
 import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
+import { logger, HyperDXLogger } from "./lib/logger.ts";
+import { app as webhookRouter } from "./router.ts";
 import {
-  startHeartbeat,
-  stopHeartbeat,
-  resetSession,
-} from "./session-keeper.ts";
+  setDiscordConfig,
+  getDiscordConfig,
+  type DiscordConfig,
+} from "./lib/config-cache.ts";
 
 export { StateSchema };
+
+// ============================================================================
+// STARTUP DEBUGGING
+// ============================================================================
+// Generate unique instance ID to detect multiple instances running
+const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+console.log("=".repeat(80));
+console.log("[STARTUP] Discord MCP Server initializing...");
+console.log(`[STARTUP] 🆔 Instance ID: ${INSTANCE_ID}`);
+console.log(`[STARTUP] Node.js version: ${process.version}`);
+console.log(`[STARTUP] Bun version: ${Bun.version}`);
+console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
+console.log(`[STARTUP] PORT: ${process.env.PORT || "not set"}`);
+console.log(`[STARTUP] Working directory: ${process.cwd()}`);
+console.log("=".repeat(80));
 
 // Track Discord client state
 let discordInitialized = false;
@@ -67,10 +84,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   },
   configuration: {
     onChange: async (env) => {
-      console.log("[CONFIG] Configuration changed");
+      const traceId = HyperDXLogger.generateTraceId();
 
-      // Reset session status - we have fresh credentials from Mesh
-      resetSession();
+      logger.info("Configuration changed", {
+        trace_id: traceId,
+        organizationId: env.MESH_REQUEST_CONTEXT?.organizationId,
+        connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+      });
 
       // Update global env for Discord bot handlers
       updateEnv(env);
@@ -78,58 +98,193 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Set database env for shared module
       setDatabaseEnv(env);
 
-      // Create tables first, then indexes
-      await ensureCollections(env);
-      await ensureIndexes(env);
-      console.log("[CONFIG] Database tables ready");
+      // Get configuration from state
+      const state = env.MESH_REQUEST_CONTEXT?.state;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const token = env.MESH_REQUEST_CONTEXT?.token;
 
-      // Initialize Discord client if BOT_TOKEN is provided
-      const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-      if (botToken && !discordInitialized && !getDiscordClient()) {
-        console.log("[CONFIG] Initializing Discord client...");
-        try {
-          await initializeDiscordClient(env);
-          discordInitialized = true;
-          console.log("[CONFIG] Discord client ready ✓");
-
-          // Start heartbeat to keep Mesh session alive
-          startHeartbeat(env, () => {
-            console.log(
-              "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-            );
-          });
-        } catch (error) {
-          console.error("[CONFIG] Failed to initialize Discord:", error);
-        }
-      } else if (botToken && discordInitialized) {
-        // Bot already running, just restart heartbeat with fresh credentials
-        console.log("[CONFIG] Refreshing session heartbeat...");
-        startHeartbeat(env, () => {
-          console.log(
-            "[CONFIG] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-          );
+      // Configure HyperDX logger if API key is provided
+      if (state?.HYPERDX_API_KEY) {
+        logger.setApiKey(state.HYPERDX_API_KEY);
+        logger.info("HyperDX logger configured", {
+          trace_id: traceId,
+          organizationId,
         });
-      } else if (!botToken) {
+      }
+
+      // Create tables first, then indexes
+      // Database tables are managed via Supabase - no need to ensure here
+      console.log("[Setup] Skipping database initialization (using Supabase)");
+
+      logger.info("Database tables ready", {
+        trace_id: traceId,
+        organizationId,
+      });
+
+      // Configure LLM if model provider is set
+      const modelProvider = state?.MODEL_PROVIDER;
+      const agent = state?.AGENT;
+      const languageModel = state?.LANGUAGE_MODEL;
+
+      // Extract values
+      const languageModelConnectionId = languageModel?.value?.connectionId;
+      const modelProviderId: string | undefined =
+        (typeof modelProvider?.value === "string"
+          ? modelProvider.value
+          : undefined) ||
+        (typeof languageModelConnectionId === "string"
+          ? languageModelConnectionId
+          : undefined);
+      const agentId: string | undefined =
+        typeof agent?.value === "string" ? agent.value : undefined;
+      const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
+      const modelId = languageModel?.value?.id;
+
+      // Get existing config to check for persistent API key
+      const currentConnectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const savedConfig = currentConnectionId
+        ? await getDiscordConfig(currentConnectionId)
+        : null;
+
+      // Use API key if available (never expires), otherwise use session token (expires in 5 min)
+      const effectiveToken = savedConfig?.meshApiKey || token;
+      const isUsingApiKey = !!savedConfig?.meshApiKey;
+
+      // Configure LLM module
+      if (modelProviderId && effectiveToken && meshUrl && organizationId) {
+        const { configureLLM, configureStreaming } = await import("./llm.ts");
+
+        configureLLM({
+          meshUrl,
+          organizationId,
+          token: effectiveToken,
+          modelProviderId,
+          modelId,
+          agentId,
+          agentMode,
+        });
+
         console.log(
-          "[CONFIG] BOT_TOKEN not configured - Discord bot waiting...",
+          `[CONFIG] LLM token: ${isUsingApiKey ? "🔑 API Key (persistent)" : "⏱️ Session token (expires in 5 min)"}`,
+        );
+
+        if (!isUsingApiKey) {
+          console.warn(
+            "[CONFIG] ⚠️ Using session token which expires in 5 min. Generate an API key using DISCORD_GENERATE_API_KEY tool for persistent LLM access.",
+          );
+        }
+
+        // Configure streaming (default: enabled)
+        const enableStreaming =
+          state?.RESPONSE_CONFIG?.ENABLE_STREAMING ?? true;
+        configureStreaming(enableStreaming);
+
+        console.log("[CONFIG] LLM configured:", {
+          modelProviderId,
+          modelId,
+          agentId: agentId || "not set",
+          streaming: enableStreaming,
+        });
+      }
+
+      // ======================================================================
+      // Sync StateSchema fields to config-cache for webhook endpoint
+      // ======================================================================
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
+      const discordPublicKey = state?.DISCORD_PUBLIC_KEY;
+      const discordApplicationId = state?.DISCORD_APPLICATION_ID;
+      const authorizedGuildsStr = state?.AUTHORIZED_GUILDS;
+      const botOwnerId = state?.BOT_OWNER_ID;
+      const commandPrefix = state?.COMMAND_PREFIX || "!";
+
+      // Parse authorized guilds (comma-separated string to array)
+      const authorizedGuilds = authorizedGuildsStr
+        ? authorizedGuildsStr
+            .split(",")
+            .map((g) => g.trim())
+            .filter(Boolean)
+        : [];
+
+      // If we have a connection ID, sync to config-cache (discordPublicKey is optional but needed for webhooks)
+      if (connectionId && organizationId && meshUrl) {
+        // Try to load existing config to preserve other fields
+        const existingConfig = await getDiscordConfig(connectionId);
+
+        // Extract bot token from authorization header (Bearer token)
+        let botToken = existingConfig?.botToken || "";
+        if (authorization) {
+          const authMatch = authorization.match(/^Bearer\s+(.+)$/i);
+          if (authMatch) {
+            botToken = authMatch[1];
+          }
+        }
+
+        const configToSave: DiscordConfig = {
+          // Preserve existing config fields
+          ...(existingConfig || {}),
+          // Update with current values
+          connectionId,
+          organizationId,
+          meshUrl,
+          meshToken: token,
+          botToken,
+          discordPublicKey,
+          discordApplicationId,
+          authorizedGuilds,
+          ownerId: botOwnerId,
+          commandPrefix,
+          modelProviderId,
+          modelId,
+          agentId,
+          updatedAt: new Date().toISOString(),
+        };
+
+        await setDiscordConfig(configToSave);
+        console.log(
+          `[CONFIG] ✅ Synced StateSchema to config-cache for webhook endpoint`,
+        );
+        console.log(
+          `[CONFIG] Discord Public Key: ${discordPublicKey ? "✓ configured" : "✗ missing"}`,
+        );
+        console.log(
+          `[CONFIG] Application ID: ${discordApplicationId || "not set"}`,
+        );
+        console.log(
+          `[CONFIG] Authorized Guilds: ${authorizedGuilds.length > 0 ? authorizedGuilds.join(", ") : "all"}`,
+        );
+      }
+
+      // NOTE: Discord client is NOT auto-initialized on config save
+      // User must manually start the bot using DISCORD_BOT_START tool
+      // This prevents issues with multiple instances and unwanted bot starts
+      const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+      if (hasAuth) {
+        if (discordInitialized && getDiscordClient()) {
+          console.log("[CONFIG] ✅ Bot is running");
+        } else {
+          console.log(
+            "[CONFIG] ℹ️ Bot not started. Use DISCORD_BOT_START tool to start the bot.",
+          );
+        }
+      } else {
+        logger.info(
+          "Discord Bot Token not configured - waiting for authorization",
+          {
+            trace_id: traceId,
+            organizationId,
+          },
         );
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "MODEL_PROVIDER::*",
-      "*",
-    ],
+    scopes: ["EVENT_BUS::*", "CONNECTION::*", "MODEL_PROVIDER::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools: tools as any,
   prompts: [],
 });
-
-const PORT = process.env.PORT;
 
 // Graceful shutdown handler - destroy Discord client when process exits
 async function gracefulShutdown(signal: string) {
@@ -142,10 +297,6 @@ async function gracefulShutdown(signal: string) {
       clearInterval(autoRestartInterval);
       autoRestartInterval = null;
     }
-
-    // Stop session heartbeat
-    console.log("[SHUTDOWN] Stopping session heartbeat...");
-    stopHeartbeat();
 
     const client = getDiscordClient();
     if (client) {
@@ -171,14 +322,45 @@ process.on("uncaughtException", async (error) => {
   await gracefulShutdown("uncaughtException");
 });
 
-serve(runtime.fetch);
+// ============================================================================
+// START HTTP SERVER FIRST (before any Discord initialization)
+// ============================================================================
+console.log("[SERVER] Starting HTTP server...");
+console.log(
+  `[SERVER] PORT env variable: ${process.env.PORT || "not set (will use default)"}`,
+);
+
+/**
+ * Serve requests:
+ * - Webhook routes handled by webhookRouter (/discord/interactions, /health)
+ * - MCP requests handled by runtime
+ */
+try {
+  serve(async (req, env, ctx) => {
+    // Try webhook router first
+    const webhookResponse = await webhookRouter.fetch(req, env, ctx);
+
+    // If webhook router returned 404, fall back to MCP runtime
+    if (webhookResponse.status === 404) {
+      return runtime.fetch(req, env, ctx);
+    }
+
+    return webhookResponse;
+  });
+  console.log("[SERVER] ✅ serve() called successfully");
+  console.log("[SERVER] Webhook endpoint: /discord/interactions/:connectionId");
+  console.log("[SERVER] Health check: /health");
+} catch (error) {
+  console.error("[SERVER] ❌ Failed to start server:", error);
+  throw error;
+}
 
 console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║              Discord MCP Server Started                  ║
 ╠══════════════════════════════════════════════════════════╣
-║  MCP Server:    http://localhost:${String(PORT).padEnd(5)}                  ║
-║  Discord Bot:   Initializing...                          ║
+║  Status:        ✅ HTTP Server Ready                      ║
+║  Discord Bot:   Waiting for configuration...             ║
 ╚══════════════════════════════════════════════════════════╝
 `);
 
@@ -192,45 +374,12 @@ console.log(`
 ⚠️  Press Ctrl+C to gracefully shutdown the Discord bot.
 `);
 
-// Auto-start Discord bot if BOT_TOKEN is in environment
-const envBotToken = process.env.BOT_TOKEN || process.env.DISCORD_BOT_TOKEN;
-if (envBotToken && !discordInitialized) {
-  console.log(
-    "[STARTUP] BOT_TOKEN found in environment, starting Discord bot...",
-  );
-
-  // Create a minimal env with the token for startup
-  const startupEnv = {
-    MESH_REQUEST_CONTEXT: {
-      state: {
-        BOT_TOKEN: envBotToken,
-        COMMAND_PREFIX: process.env.COMMAND_PREFIX || "!",
-        GUILD_ID: process.env.GUILD_ID,
-      },
-    },
-  } as Env;
-
-  // Update global env
-  updateEnv(startupEnv);
-  setDatabaseEnv(startupEnv);
-
-  // Initialize Discord client
-  initializeDiscordClient(startupEnv)
-    .then(() => {
-      discordInitialized = true;
-      console.log("[STARTUP] Discord bot started from environment ✓");
-
-      // Start heartbeat (will use env vars, may not have full Mesh context)
-      startHeartbeat(startupEnv, () => {
-        console.log(
-          "[STARTUP] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-        );
-      });
-    })
-    .catch((error) => {
-      console.error("[STARTUP] Failed to start Discord bot:", error);
-    });
-}
+// ============================================================================
+// BOT INITIALIZATION
+// ============================================================================
+// Bot will be initialized via:
+// 1. onChange configuration callback (when Mesh sends config)
+// 2. DISCORD_BOT_START tool (manual start)
 
 // ============================================================================
 // Auto-Restart Cron Job (every 1 hour)
@@ -252,9 +401,11 @@ async function autoRestartCheck(): Promise<void> {
       return;
     }
 
-    const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-    if (!botToken) {
-      console.log("[AUTO-RESTART] No BOT_TOKEN configured, skipping restart");
+    const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+    if (!hasAuth) {
+      console.log(
+        "[AUTO-RESTART] No authorization configured, skipping restart",
+      );
       return;
     }
 
@@ -262,13 +413,6 @@ async function autoRestartCheck(): Promise<void> {
       await initializeDiscordClient(env);
       discordInitialized = true;
       console.log("[AUTO-RESTART] Bot restarted successfully ✓");
-
-      // Restart heartbeat
-      startHeartbeat(env, () => {
-        console.log(
-          "[AUTO-RESTART] ⚠️ Mesh session expired! Click 'Save' in Dashboard to refresh.",
-        );
-      });
     } catch (error) {
       console.error(
         "[AUTO-RESTART] Failed to restart bot:",
@@ -283,8 +427,11 @@ async function autoRestartCheck(): Promise<void> {
 }
 
 // Start auto-restart cron
-autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
-console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
+// Use setImmediate to ensure this runs after HTTP server is ready
+setImmediate(() => {
+  autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
+  console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
 
-// Run initial check after 5 seconds (give time for normal startup)
-setTimeout(autoRestartCheck, 5000);
+  // Run initial check after 30 seconds (give time for normal startup and HTTP server)
+  setTimeout(autoRestartCheck, 30000);
+});

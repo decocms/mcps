@@ -5,6 +5,7 @@
  */
 
 import type { GuildMember, PartialGuildMember } from "discord.js";
+import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
 // ============================================================================
 // Member Join Handler
@@ -14,9 +15,16 @@ import type { GuildMember, PartialGuildMember } from "discord.js";
  * Handle member joining a guild
  */
 export async function handleMemberJoin(member: GuildMember): Promise<void> {
-  console.log(
-    `[Member] Joined: ${member.user.username} (${member.id}) in ${member.guild.name}`,
-  );
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Member joined", {
+    trace_id: traceId,
+    userId: member.id,
+    userName: member.user.username,
+    guildId: member.guild.id,
+    guildName: member.guild.name,
+    isBot: member.user.bot,
+  });
 
   try {
     const db = await import("../../../shared/db.ts");
@@ -54,9 +62,15 @@ export async function handleMemberJoin(member: GuildMember): Promise<void> {
 export async function handleMemberLeave(
   member: GuildMember | PartialGuildMember,
 ): Promise<void> {
-  console.log(
-    `[Member] Left: ${member.user?.username || member.id} in ${member.guild.name}`,
-  );
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Member left", {
+    trace_id: traceId,
+    userId: member.id,
+    userName: member.user?.username,
+    guildId: member.guild.id,
+    guildName: member.guild.name,
+  });
 
   try {
     const db = await import("../../../shared/db.ts");

@@ -47,6 +47,11 @@ export interface SlackTeamConfig {
   signingSecret: string;
   botUserId?: string;
   configuredAt: string;
+  responseConfig?: {
+    showOnlyFinalResponse?: boolean;
+    enableStreaming?: boolean;
+    showThinkingMessage?: boolean;
+  };
 }
 
 /**

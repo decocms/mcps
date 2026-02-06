@@ -18,6 +18,7 @@ import {
   deleteCache,
   deleteCacheByPrefix,
 } from "./cache.ts";
+import mammoth from "mammoth";
 
 let webClient: WebClient | null = null;
 let currentBotToken: string | null = null;
@@ -161,9 +162,48 @@ export async function getBotInfo(): Promise<{
       teamId: result.team_id as string,
     };
   } catch (error) {
-    console.error("[Slack] Failed to get bot info:", error);
+    const slackError = extractSlackError(error);
+    console.warn(`[Slack] Failed to get bot info: ${slackError}`);
     return null;
   }
+}
+
+/**
+ * Get team info (workspace name)
+ */
+export async function getTeamInfo(): Promise<{
+  id: string;
+  name: string;
+} | null> {
+  if (!webClient) return null;
+
+  try {
+    const result = await webClient.team.info();
+    return {
+      id: result.team?.id as string,
+      name: result.team?.name as string,
+    };
+  } catch (error) {
+    const slackError = extractSlackError(error);
+    console.warn(`[Slack] Failed to get team info: ${slackError}`);
+    return null;
+  }
+}
+
+/**
+ * Extract clean error message from Slack API error
+ */
+function extractSlackError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const err = error as { data?: { error?: string }; message?: string };
+    if (err.data?.error) {
+      return err.data.error;
+    }
+    if (err.message) {
+      return err.message;
+    }
+  }
+  return String(error);
 }
 
 // ============================================================================
@@ -716,16 +756,12 @@ export async function downloadSlackFile(
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-    // Use expected mime type if provided and response is generic
-    const finalMimeType =
-      expectedMimeType &&
-      (contentType === "application/octet-stream" ||
-        contentType.includes("text/html"))
-        ? expectedMimeType
-        : contentType;
+    // Always prefer expected mime type if provided, as Slack's file metadata is more reliable
+    // than the Content-Type header from the download endpoint
+    const finalMimeType = expectedMimeType || contentType;
 
     console.log(
-      `[Slack] File downloaded: ${base64.length} chars, type: ${finalMimeType}`,
+      `[Slack] File downloaded: ${base64.length} chars, type: ${finalMimeType}${expectedMimeType ? ` (from metadata, server sent: ${contentType})` : ""}`,
     );
 
     return {
@@ -753,6 +789,243 @@ export function isImageFile(mimeType: string): boolean {
 }
 
 /**
+ * Check if a file is a text file that can be read as plain text
+ */
+export function isTextFile(mimeType: string, filename: string): boolean {
+  const textMimeTypes = [
+    "text/plain",
+    "text/csv",
+    "text/html",
+    "text/css",
+    "text/javascript",
+    "text/markdown",
+    "text/xml",
+    "application/json",
+    "application/xml",
+    "application/yaml",
+    "application/x-yaml",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  // Check by mime type
+  if (textMimeTypes.includes(mimeType.toLowerCase())) {
+    return true;
+  }
+
+  // Check by file extension
+  const ext = filename.toLowerCase().split(".").pop();
+  const textExtensions = [
+    "txt",
+    "json",
+    "csv",
+    "md",
+    "markdown",
+    "yaml",
+    "yml",
+    "js",
+    "ts",
+    "tsx",
+    "jsx",
+    "py",
+    "rb",
+    "go",
+    "java",
+    "c",
+    "cpp",
+    "h",
+    "rs",
+    "sh",
+    "bash",
+    "sql",
+    "log",
+    "env",
+    "config",
+    "conf",
+    "pdf",
+    "docx",
+  ];
+
+  return ext ? textExtensions.includes(ext) : false;
+}
+
+/**
+ * Get language identifier for syntax highlighting from filename
+ */
+export function getLanguageFromFilename(filename: string): string {
+  const ext = filename.toLowerCase().split(".").pop();
+  const languageMap: Record<string, string> = {
+    js: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    jsx: "javascript",
+    py: "python",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    h: "c",
+    sh: "bash",
+    bash: "bash",
+    sql: "sql",
+    json: "json",
+    yaml: "yaml",
+    yml: "yaml",
+    md: "markdown",
+    html: "html",
+    css: "css",
+    xml: "xml",
+    log: "log",
+  };
+
+  return ext && languageMap[ext] ? languageMap[ext] : "";
+}
+
+/**
+ * Download a text file from Slack and return its content
+ */
+export async function downloadTextFile(
+  url: string,
+  maxSize: number = 500_000, // 500KB max
+): Promise<string | null> {
+  if (!currentBotToken) {
+    console.error("[Slack] Cannot download file - no bot token");
+    return null;
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${currentBotToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[Slack] Failed to download text file: ${response.status} ${response.statusText}`,
+      );
+      return null;
+    }
+
+    // Check content length
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > maxSize) {
+      console.warn(
+        `[Slack] Text file too large: ${contentLength} bytes (max: ${maxSize})`,
+      );
+      return null;
+    }
+
+    const text = await response.text();
+
+    // Truncate if still too large
+    if (text.length > maxSize) {
+      console.warn(
+        `[Slack] Text file truncated: ${text.length} chars > ${maxSize}`,
+      );
+      return text.substring(0, maxSize) + "\n\n[... truncated]";
+    }
+
+    return text;
+  } catch (error) {
+    console.error("[Slack] Error downloading text file:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract text from a PDF buffer
+ */
+async function extractTextFromPDF(buffer: Buffer): Promise<string | null> {
+  try {
+    // Dynamic import to handle CJS module
+    const pdfParseModule = await import("pdf-parse");
+    // @ts-ignore - pdf-parse has non-standard exports
+    const pdfParse = pdfParseModule.default || pdfParseModule;
+    const data = await pdfParse(buffer);
+    return data.text;
+  } catch (error) {
+    console.error("[Slack] Error extracting text from PDF:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract text from a DOCX buffer
+ */
+async function extractTextFromDOCX(buffer: Buffer): Promise<string | null> {
+  try {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value;
+  } catch (error) {
+    console.error("[Slack] Error extracting text from DOCX:", error);
+    return null;
+  }
+}
+
+/**
+ * Download and extract text from PDF/DOCX files
+ */
+async function downloadAndExtractDocumentText(
+  url: string,
+  mimeType: string,
+  maxSize: number = 500_000, // 500KB max after extraction
+): Promise<string | null> {
+  if (!currentBotToken) {
+    console.error("[Slack] Cannot download file - no bot token");
+    return null;
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${currentBotToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[Slack] Failed to download document: ${response.status} ${response.statusText}`,
+      );
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    let extractedText: string | null = null;
+
+    if (mimeType === "application/pdf") {
+      extractedText = await extractTextFromPDF(buffer);
+    } else if (
+      mimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      extractedText = await extractTextFromDOCX(buffer);
+    }
+
+    if (!extractedText) {
+      return null;
+    }
+
+    // Truncate if too large
+    if (extractedText.length > maxSize) {
+      console.warn(
+        `[Slack] Extracted text truncated: ${extractedText.length} chars > ${maxSize}`,
+      );
+      return extractedText.substring(0, maxSize) + "\n\n[... truncated]";
+    }
+
+    return extractedText;
+  } catch (error) {
+    console.error("[Slack] Error downloading/extracting document:", error);
+    return null;
+  }
+}
+
+/**
  * Process files from a Slack message and convert to LLM-ready format
  */
 export async function processSlackFiles(
@@ -760,48 +1033,111 @@ export async function processSlackFiles(
     url_private: string;
     mimetype: string;
     name: string;
+    size?: number;
   }>,
 ): Promise<
   Array<{
-    type: "image";
+    type: "image" | "audio" | "text";
     data: string;
     mimeType: string;
     name: string;
   }>
 > {
   const processedFiles: Array<{
-    type: "image";
+    type: "image" | "audio" | "text";
     data: string;
     mimeType: string;
     name: string;
   }> = [];
 
   for (const file of files) {
-    // Only process images for now
-    if (!isImageFile(file.mimetype)) {
-      console.log(
-        `[Slack] Skipping non-image file: ${file.name} (${file.mimetype})`,
-      );
-      continue;
-    }
+    const isImage = isImageFile(file.mimetype);
+    const isAudio = file.mimetype.startsWith("audio/");
+    const isText = isTextFile(file.mimetype, file.name);
 
-    const downloaded = await downloadSlackFile(file.url_private, file.mimetype);
-    if (downloaded) {
-      // Double-check it's actually an image after download
-      if (!isImageFile(downloaded.mimeType)) {
-        console.error(
-          `[Slack] File ${file.name} is not an image after download: ${downloaded.mimeType}`,
-        );
-        continue;
+    console.log(`[Slack] Processing file:`, {
+      name: file.name,
+      mimetype: file.mimetype,
+      size: file.size,
+      isImage,
+      isAudio,
+      isText,
+      url_private_present: !!file.url_private,
+    });
+
+    // Process images, audio, and text files
+    if (isImage || isAudio) {
+      const downloaded = await downloadSlackFile(
+        file.url_private,
+        file.mimetype,
+      );
+      if (downloaded) {
+        processedFiles.push({
+          type: isAudio ? "audio" : "image",
+          data: downloaded.data,
+          mimeType: downloaded.mimeType,
+          name: file.name,
+        });
+
+        if (isAudio) {
+          console.log(
+            `[Slack] 🎵 Downloaded audio: ${file.name} (${downloaded.mimeType}, ${downloaded.data.length} chars)`,
+          );
+        } else {
+          console.log(
+            `[Slack] Downloaded image: ${file.name} (${downloaded.mimeType})`,
+          );
+        }
       }
-      processedFiles.push({
-        type: "image",
-        data: downloaded.data,
-        mimeType: downloaded.mimeType,
-        name: file.name,
-      });
+    } else if (isText) {
+      const MAX_TEXT_FILE_SIZE = 500_000; // 500KB
+      const isPDF = file.mimetype === "application/pdf";
+      const isDOCX =
+        file.mimetype ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+      let textContent: string | null = null;
+
+      if (isPDF || isDOCX) {
+        // Extract text from PDF/DOCX
+        console.log(
+          `[Slack] 📄 Extracting text from ${isPDF ? "PDF" : "DOCX"}: ${file.name}`,
+        );
+        textContent = await downloadAndExtractDocumentText(
+          file.url_private,
+          file.mimetype,
+          MAX_TEXT_FILE_SIZE,
+        );
+      } else {
+        // Check file size for plain text files
+        if (file.size && file.size > MAX_TEXT_FILE_SIZE) {
+          console.warn(
+            `[Slack] Text file too large: ${file.name} (${file.size} bytes > ${MAX_TEXT_FILE_SIZE})`,
+          );
+          continue;
+        }
+
+        textContent = await downloadTextFile(
+          file.url_private,
+          MAX_TEXT_FILE_SIZE,
+        );
+      }
+
+      if (textContent) {
+        processedFiles.push({
+          type: "text",
+          data: textContent,
+          mimeType: file.mimetype,
+          name: file.name,
+        });
+
+        console.log(
+          `[Slack] 📄 Downloaded text file: ${file.name} (${file.mimetype}, ${textContent.length} chars)`,
+        );
+      }
+    } else {
       console.log(
-        `[Slack] Downloaded image: ${file.name} (${downloaded.mimeType})`,
+        `[Slack] Skipping unsupported file type: ${file.name} (${file.mimetype})`,
       );
     }
   }

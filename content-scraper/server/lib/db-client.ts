@@ -9,8 +9,90 @@ export interface QueryResult {
   rowCount: number;
 }
 
+/**
+ * SQL parameter value types
+ */
+export type SqlValue = string | number | boolean | null;
+
+/**
+ * Safely escape a SQL value to prevent SQL injection.
+ * This is a centralized, vetted escaping function.
+ *
+ * Handles:
+ * - null/undefined → NULL
+ * - numbers → direct value
+ * - booleans → 1/0
+ * - strings → escaped and quoted
+ *   - Single quotes escaped as ''
+ *   - Backslashes escaped as \\
+ *   - Null bytes removed
+ *   - Control characters removed
+ */
+export function escapeSqlValue(value: SqlValue): string {
+  if (value === null || value === undefined) {
+    return "NULL";
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new Error("SQL escape: non-finite numbers not allowed");
+    }
+    return String(value);
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "1" : "0";
+  }
+
+  // String escaping
+  const escaped = value
+    // Remove null bytes (can cause truncation attacks)
+    .replace(/\0/g, "")
+    // Remove other control characters (except newlines and tabs)
+    .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    // Escape backslashes first
+    .replace(/\\/g, "\\\\")
+    // Escape single quotes
+    .replace(/'/g, "''");
+
+  return `'${escaped}'`;
+}
+
+/**
+ * Build a parameterized SQL query safely.
+ *
+ * Usage:
+ *   buildSqlQuery(
+ *     "SELECT * FROM users WHERE name = ? AND age > ?",
+ *     ["John", 25]
+ *   )
+ *
+ * Returns: "SELECT * FROM users WHERE name = 'John' AND age > 25"
+ */
+export function buildSqlQuery(template: string, params: SqlValue[]): string {
+  let paramIndex = 0;
+  const result = template.replace(/\?/g, () => {
+    if (paramIndex >= params.length) {
+      throw new Error(
+        `SQL build: missing parameter at index ${paramIndex}. Template has more ? than params provided.`,
+      );
+    }
+    return escapeSqlValue(params[paramIndex++]);
+  });
+  if (paramIndex < params.length) {
+    throw new Error(
+      `SQL build: ${params.length - paramIndex} unused parameter(s). Template has fewer ? than params provided.`,
+    );
+  }
+  return result;
+}
 export interface DatabaseClient {
   query(sqlQuery: string): Promise<QueryResult>;
+  /**
+   * Execute a parameterized SQL query safely.
+   * Uses ? placeholders for parameters.
+   */
+  queryParams(template: string, params: SqlValue[]): Promise<QueryResult>;
   testConnection(): Promise<boolean>;
   close(): Promise<void>;
 }
@@ -76,6 +158,14 @@ export class DecoApiClient implements DatabaseClient {
   constructor(apiUrl: string, token: string) {
     this.apiUrl = apiUrl;
     this.token = token;
+  }
+
+  async queryParams(
+    template: string,
+    params: SqlValue[],
+  ): Promise<QueryResult> {
+    const sql = buildSqlQuery(template, params);
+    return this.query(sql);
   }
 
   async query(sqlQuery: string): Promise<QueryResult> {

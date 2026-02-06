@@ -53,3 +53,9 @@ export const EVENT_STATUS = {
   TENTATIVE: "tentative",
   CANCELLED: "cancelled",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  CALENDAR: "https://www.googleapis.com/auth/calendar",
+  CALENDAR_EVENTS: "https://www.googleapis.com/auth/calendar.events",
+} as const;

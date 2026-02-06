@@ -27,20 +27,78 @@ const TABLE_NAMES: Record<Exclude<TableType, "all">, string> = {
 };
 
 /**
- * Query a single table with pagination
+ * Get ISO 8601 week number for a given date
+ */
+function getISOWeek(date: Date): { year: number; week: number } {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  // Set to nearest Thursday: current date + 4 - current day number (Monday=1, Sunday=7)
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  // Get first day of year
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate week number
+  const weekNum = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return { year: d.getUTCFullYear(), week: weekNum };
+}
+
+/**
+ * Get last week's ISO 8601 week in format "YYYY-wWW"
+ * Returns the week before the current week
+ */
+function getLastWeekDate(): string {
+  const now = new Date();
+  // Subtract 7 days to get last week
+  now.setDate(now.getDate() - 7);
+
+  const { year, week } = getISOWeek(now);
+  const paddedWeek = week.toString().padStart(2, "0");
+  return `${year}-w${paddedWeek}`;
+}
+
+/**
+ * Get the correct week column name for each table
+ * - contents table uses "publication_week"
+ * - linkedin/reddit/twitter tables use "week_date"
+ */
+function getWeekColumnName(tableName: string): string {
+  return tableName === "contents" ? "publication_week" : "week_date";
+}
+
+/**
+ * Query a single table with pagination and optional week/score filters
  */
 async function queryTable(
   client: DatabaseClient,
   tableName: string,
   startIndex: number,
   endIndex: number,
+  onlyThisWeek: boolean = false,
+  highScoreOnly: boolean = false,
 ): Promise<{ table: string; data: Record<string, unknown>[] }> {
   const limit = endIndex - startIndex + 1;
   const offset = startIndex - 1;
 
+  // Build WHERE conditions
+  const conditions: string[] = [];
+  if (onlyThisWeek) {
+    const weekColumn = getWeekColumnName(tableName);
+    conditions.push(`${weekColumn} = '${getLastWeekDate()}'`);
+  }
+  if (highScoreOnly) {
+    conditions.push(`post_score >= 0.85`);
+  }
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
   const query = `
     SELECT * FROM ${tableName}
-    ORDER BY id
+    ${whereClause}
+    ORDER BY post_score DESC, id
     LIMIT ${limit}
     OFFSET ${offset}
   `;
@@ -58,57 +116,76 @@ async function queryTable(
  */
 export const getContentScrapeTool = (env: Env) =>
   createPrivateTool({
-    id: "get_content_scrape",
+    id: "LIST_SCRAPED_CONTENT",
     description:
-      "Busca conteúdo coletado do banco de dados. " +
-      "Pode buscar de uma tabela específica (contents, reddit, linkedin, twitter) ou de todas. " +
-      "Suporta paginação por range de índices.",
+      "Lists content that has been collected and saved to the database. " +
+      "Can fetch from a specific source (contents, reddit, linkedin, twitter) or all of them. " +
+      "Supports pagination by index range and filtering by current week.",
     inputSchema: z.object({
       table: TableEnum.default("all").describe(
-        'Qual tabela buscar: "all" para todas, ou "contents", "reddit", "linkedin", "twitter" para uma específica',
+        'Which table to fetch: "all" for all tables, or "contents", "reddit", "linkedin", "twitter" for a specific one',
       ),
       startIndex: z
         .number()
         .int()
         .positive()
         .default(1)
-        .describe(
-          "Índice inicial - a partir de qual item começar (default: 1)",
-        ),
+        .describe("Start index - which item to start from (default: 1)"),
       endIndex: z
         .number()
         .int()
         .positive()
         .default(100)
-        .describe("Índice final - até qual item buscar (default: 100)"),
+        .describe("End index - which item to fetch up to (default: 100)"),
+      onlyThisWeek: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, returns only content from the last week (default: false)",
+        ),
+      highScoreOnly: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, returns only content with post_score > 85% (default: false)",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       results: z
         .array(
           z.object({
-            table: z.string().describe("Nome da tabela"),
+            table: z.string().describe("Table name"),
             data: z
               .array(z.record(z.string(), z.unknown()))
-              .describe("Dados retornados da tabela"),
-            count: z.number().describe("Quantidade de registros retornados"),
+              .describe("Data returned from the table"),
+            count: z.number().describe("Number of records returned"),
           }),
         )
         .optional(),
       totalCount: z
         .number()
         .optional()
-        .describe("Total de registros retornados"),
+        .describe("Total number of records returned"),
       range: z
         .object({
           startIndex: z.number(),
           endIndex: z.number(),
         })
         .optional(),
+      weekDateFilter: z
+        .string()
+        .optional()
+        .describe("The week_date value used for filtering (for debugging)"),
+      highScoreFilter: z
+        .boolean()
+        .optional()
+        .describe("Whether high score filter (>85%) was applied"),
       error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { table, startIndex, endIndex } = context;
+      const { table, startIndex, endIndex, onlyThisWeek, highScoreOnly } =
+        context;
 
       try {
         const state = env.MESH_REQUEST_CONTEXT?.state;
@@ -176,6 +253,8 @@ export const getContentScrapeTool = (env: Env) =>
                   tableName,
                   startIndex,
                   endIndex,
+                  onlyThisWeek,
+                  highScoreOnly,
                 );
                 results.push({
                   table: key,
@@ -200,6 +279,8 @@ export const getContentScrapeTool = (env: Env) =>
               tableName,
               startIndex,
               endIndex,
+              onlyThisWeek,
+              highScoreOnly,
             );
             results.push({
               table,
@@ -209,6 +290,7 @@ export const getContentScrapeTool = (env: Env) =>
           }
 
           const totalCount = results.reduce((sum, r) => sum + r.count, 0);
+          const weekDateUsed = onlyThisWeek ? getLastWeekDate() : undefined;
 
           return {
             success: true,
@@ -218,6 +300,8 @@ export const getContentScrapeTool = (env: Env) =>
               startIndex,
               endIndex,
             },
+            weekDateFilter: weekDateUsed,
+            highScoreFilter: highScoreOnly || undefined,
           };
         } finally {
           await client.close();

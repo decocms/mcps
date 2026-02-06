@@ -7,7 +7,11 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
-import { TikTokClient, getAccessToken } from "../lib/tiktok-client.ts";
+import {
+  TikTokClient,
+  getAccessToken,
+  getDefaultAdvertiserId,
+} from "../lib/tiktok-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -62,7 +66,10 @@ export const createListCampaignsTool = (env: Env) =>
     description:
       "List all campaigns for an advertiser with optional filters for name, objective, and status.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_ids: z
         .array(z.string())
         .optional()
@@ -93,12 +100,19 @@ export const createListCampaignsTool = (env: Env) =>
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.listCampaigns({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_ids: context.campaign_ids,
         filtering: {
           campaign_name: context.campaign_name,
@@ -125,19 +139,29 @@ export const createGetCampaignTool = (env: Env) =>
     description:
       "Get detailed information about a specific campaign by its ID.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_id: z.string().describe("Campaign ID to retrieve"),
     }),
     outputSchema: z.object({
       campaign: CampaignSchema.nullable().describe("Campaign details"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.listCampaigns({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_ids: [context.campaign_id],
       });
 
@@ -157,7 +181,10 @@ export const createCreateCampaignTool = (env: Env) =>
     description:
       "Create a new advertising campaign. Requires advertiser ID, name, and objective type.",
     inputSchema: z.object({
-      advertiser_id: z.string().describe("Advertiser ID (required)"),
+      advertiser_id: z
+        .string()
+        .optional()
+        .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_name: z.string().describe("Campaign name (required)"),
       objective_type: CampaignObjectiveSchema.describe(
         "Campaign objective (required). Options: TRAFFIC, APP_PROMOTION, WEB_CONVERSIONS, PRODUCT_SALES, REACH, VIDEO_VIEWS, LEAD_GENERATION, COMMUNITY_INTERACTION",
@@ -180,12 +207,19 @@ export const createCreateCampaignTool = (env: Env) =>
       message: z.string().describe("Result message"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.createCampaign({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_name: context.campaign_name,
         objective_type: context.objective_type,
         budget_mode: context.budget_mode,
@@ -212,7 +246,10 @@ export const createUpdateCampaignTool = (env: Env) =>
       "Update an existing campaign. Only provided fields will be updated. At least one field to update must be provided.",
     inputSchema: z
       .object({
-        advertiser_id: z.string().describe("Advertiser ID (required)"),
+        advertiser_id: z
+          .string()
+          .optional()
+          .describe("Advertiser ID (optional if configured in MCP)"),
         campaign_id: z.string().describe("Campaign ID to update (required)"),
         campaign_name: z.string().optional().describe("New campaign name"),
         budget_mode: BudgetModeSchema.optional().describe("New budget mode"),
@@ -242,12 +279,19 @@ export const createUpdateCampaignTool = (env: Env) =>
       message: z.string().describe("Result message"),
     }),
     execute: async ({ context }) => {
+      const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
+      if (!advertiserId) {
+        throw new Error(
+          "advertiser_id is required (provide it in the tool call or configure a default in the MCP)",
+        );
+      }
+
       const client = new TikTokClient({
         accessToken: getAccessToken(env),
       });
 
       const result = await client.updateCampaign({
-        advertiser_id: context.advertiser_id,
+        advertiser_id: advertiserId,
         campaign_id: context.campaign_id,
         campaign_name: context.campaign_name,
         budget_mode: context.budget_mode,

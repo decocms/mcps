@@ -8,13 +8,12 @@ import z from "zod";
 
 export const StateSchema = z.object({
   // Bindings (AI connections)
-  EVENT_BUS: BindingOf("@deco/event-bus").required(),
-  DATABASE: BindingOf("@deco/postgres").required(),
+  EVENT_BUS: BindingOf("@deco/event-bus").optional(),
   MODEL_PROVIDER: BindingOf("@deco/llm")
-    .required()
+    .optional()
     .describe("AI Model Provider connection"),
   AGENT: BindingOf("@deco/agent")
-    .required()
+    .optional()
     .describe("Agent with tools, resources and prompts"),
   LANGUAGE_MODEL: z
     .object({
@@ -26,7 +25,24 @@ export const StateSchema = z.object({
         .loose()
         .describe("The language model to use for agent responses."),
     })
-    .required(),
+    .optional()
+    .describe(
+      "Language model for generating responses. Optional if you only want to use Slack tools without LLM.",
+    ),
+  WHISPER: BindingOf("@deco/whisper")
+    .optional()
+    .describe(
+      "OpenAI Whisper for audio transcription. If not set, audio files will be sent directly to LLM.",
+    ),
+
+  // Agent Mode Configuration
+  AGENT_MODE: z
+    .enum(["passthrough", "smart_tool_selection", "code_execution"])
+    .default("smart_tool_selection")
+    .optional()
+    .describe(
+      "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
+    ),
 
   // Webhook URL (read-only template)
   WEBHOOK_URL: z
@@ -104,15 +120,43 @@ export const StateSchema = z.object({
   // Response Configuration
   RESPONSE_CONFIG: z
     .object({
+      SHOW_ONLY_FINAL_RESPONSE: z
+        .boolean()
+        .default(false)
+        .describe(
+          "🎯 MODO SILENCIOSO: Apenas resposta final sem mensagens intermediárias. Quando ativo, desabilita streaming e mensagem de 'pensando'.",
+        ),
       ENABLE_STREAMING: z
         .boolean()
         .default(true)
         .describe(
           "Stream responses in real-time (message updates as LLM generates). Disable for a single final response.",
         ),
+      SHOW_THINKING_MESSAGE: z
+        .boolean()
+        .default(true)
+        .describe(
+          'Show "🤔 Thinking..." message while processing. Disable for faster perceived response time.',
+        ),
     })
     .optional()
     .describe("How the bot responds to messages"),
+
+  // Optional field for logging identification
+  CONNECTION_NAME: z
+    .string()
+    .optional()
+    .describe(
+      "Friendly name for this connection (e.g., 'Cliente Acme - Produção'). Used in logs for easy identification.",
+    ),
+
+  // HyperDX Configuration
+  HYPERDX_API_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "HyperDX API key for advanced logging and observability. If not provided, logs will only go to stdout.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;

@@ -16,6 +16,7 @@ import {
   deleteAllReactions,
   getReactionUserIds,
 } from "../../../shared/db.ts";
+import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
 /**
  * Handle a reaction being added to a message.
@@ -64,9 +65,15 @@ export async function handleReactionAdd(
     user_ids: userIds,
   });
 
-  console.log(
-    `[Reaction] Added ${reaction.emoji.name} to message ${reaction.message.id} by ${user.username}`,
-  );
+  const traceId = HyperDXLogger.generateTraceId();
+  logger.debug("Reaction added", {
+    trace_id: traceId,
+    messageId: reaction.message.id,
+    reactionEmoji: reaction.emoji.name || "unknown",
+    userId: user.id,
+    userName: user.username,
+    count: reaction.count || 1,
+  });
 }
 
 /**

@@ -1,0 +1,22 @@
+{
+  "scopeName": "deco",
+  "name": "google-apps-script",
+  "friendlyName": "Google Apps Script",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-apps-script.decocache.com/mcp"
+  },
+  "description": "Manage and execute Google Apps Script projects programmatically.",
+  "icon": "https://assets.decocache.com/decocms/4a35d182-7f4d-4978-a592-ccaff1707c80/google-apps-script.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Development"],
+    "official": false,
+    "tags": ["google", "apps-script", "automation", "scripting", "development", "javascript"],
+    "short_description": "Manage and execute Google Apps Script projects programmatically.",
+    "mesh_description": "The Google Apps Script MCP provides comprehensive integration with Google Apps Script API, enabling full programmatic control over script projects. This MCP allows AI agents to create and manage Apps Script projects, read and update script files, execute functions remotely, manage versions and deployments, and monitor script executions. It supports advanced features including deployment configuration, version control, and execution logging. Perfect for automating Google Workspace workflows, building custom integrations, and managing script-based applications. Ideal for users who need to programmatically manage Apps Script projects or execute automation scripts. Provides secure OAuth-based authentication."
+  }
+}
+
+
+

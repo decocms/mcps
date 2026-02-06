@@ -18,11 +18,14 @@
         "./storage": "./storage/index.ts",
         "./search-ai": "./search-ai/index.ts",
         "./serve": "./serve.ts",
-        "./registry": "./registry.ts"
+        "./registry": "./registry.ts",
+        "./google-oauth": "./google-oauth.ts",
+        "./whatsapp": "./whatsapp/index.ts",
+        "./api-key-manager": "./api-key-manager.ts"
     },
     "devDependencies": {
-        "@decocms/bindings": "^1.0.7",
-        "@decocms/runtime": "^1.1.3",
+        "@decocms/bindings": "1.0.7",
+        "@decocms/runtime": "1.1.3",
         "@types/bun": "^1.2.14",
         "vite": "7.2.0",
         "zod": "^4.0.0"

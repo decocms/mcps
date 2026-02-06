@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "ES2024"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -13,7 +13,6 @@
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
     "allowJs": true,
 
     /* Linting */
@@ -26,17 +25,8 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "shared/*": ["./shared/*"],
-      "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"]
-    },
-
-    /* Types */
-    "types": ["@cloudflare/workers-types"]
+      "server/*": ["./server/*"]
+    }
   },
-  "include": [
-    "server",
-    "shared",
-    "vite.config.ts"
-  ]
+  "include": ["server"]
 }

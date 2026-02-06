@@ -6,14 +6,15 @@
     "type": "HTTP",
     "url": "https://sites-discord-read.decocache.com/mcp"
   },
-  "description": "Discord bot with full server management, AI agent commands, message indexing and moderation tools.",
+  "description": "Discord bot with AI streaming responses, voice channel support, message indexing and server management tools.",
   "icon": "https://assets.decocache.com/mcp/discord/app.png",
   "unlisted": false,
+  "auth": null,
   "metadata": {
-    "categories": ["Communication", "Automation"],
+    "categories": ["Communication", "Automation", "AI"],
     "official": false,
-    "tags": ["discord", "bot", "moderation", "ai-agent", "messages", "roles", "members", "server-management", "webhooks", "automation"],
-    "short_description": "Discord bot with full server management, AI agent commands, message indexing and moderation tools.",
-    "mesh_description": "The Discord MCP provides comprehensive integration with Discord servers, enabling AI agents to manage and automate Discord communities. This MCP includes a full-featured Discord bot that indexes messages, tracks reactions, and logs moderation actions to a PostgreSQL database. AI agents can send, edit, and delete messages; search message history; manage channels and threads; create, edit, and assign roles; moderate members (kick, ban, timeout, mute); and execute webhooks. The bot supports both prefix commands and @mentions, works in servers and DMs, and maintains conversation context for natural AI interactions. Built-in tools include member search by username, role management, channel organization, and database queries for historical data including deleted/edited messages. Ideal for community managers, moderators, and developers who want to automate Discord server management, build custom moderation workflows, or create AI-powered community assistants. Supports real-time message indexing, audit logging, and integration with the Mesh platform for AI model selection."
+    "tags": ["discord", "bot", "ai-agent", "streaming", "voice", "tts", "messages", "roles", "members", "server-management", "webhooks", "automation", "whisper"],
+    "short_description": "Discord bot with AI streaming responses, voice channel support (TTS/STT), and server management tools.",
+    "mesh_description": "The Discord MCP provides comprehensive integration with Discord servers, enabling AI agents to manage and automate Discord communities. Key features include: **Streaming AI Responses** - Real-time message editing shows responses as they generate, similar to ChatGPT. **Voice Channel Support** - Bot can join voice channels, listen to users via Whisper transcription, and respond with Text-to-Speech (TTS). **File Processing** - Supports images (vision), audio (Whisper), PDF, DOCX, and text files. **Message Indexing** - Tracks messages, reactions, edits, and deletions in PostgreSQL. **Moderation Tools** - Kick, ban, timeout, mute members; manage roles and channels. **Context Awareness** - Maintains conversation history for natural interactions. Works with @mentions, prefix commands, and DMs. Configurable streaming, context limits, and voice settings. Ideal for building AI-powered community assistants with multimodal capabilities."
   }
 }

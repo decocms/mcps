@@ -11,21 +11,40 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { ensureCollections, ensureIndexes } from "./db/index.ts";
-import {
-  startHeartbeat,
-  stopHeartbeat,
-  resetSession,
-  isSessionActive,
-  getSessionStatus,
-} from "./session-keeper.ts";
-
 // Global state
 let botInitializing = false;
 let _botInitialized = false;
 
 // Store the latest env globally for access in event handlers
 let _currentEnv: Env | null = null;
+
+// Store essential config that doesn't depend on env (for fallback)
+interface StoredConfig {
+  meshUrl: string;
+  organizationId: string;
+  persistentToken: string; // API key (preferred) or session token
+  isApiKey: boolean; // true if persistentToken is an API key (never expires)
+  modelProviderId?: string;
+  modelId?: string;
+  agentId?: string;
+  whisperConnectionId?: string;
+}
+let _storedConfig: StoredConfig | null = null;
+
+/**
+ * Store essential config for fallback when env is not available
+ */
+export function storeEssentialConfig(config: StoredConfig): void {
+  _storedConfig = config;
+  console.log("[BotManager] Essential config stored for fallback");
+}
+
+/**
+ * Get stored essential config
+ */
+export function getStoredConfig(): StoredConfig | null {
+  return _storedConfig;
+}
 
 /**
  * Update the stored environment (called when new requests come in)
@@ -34,8 +53,6 @@ export function updateEnv(env: Env): void {
   _currentEnv = env;
   // Also update database env
   setDatabaseEnv(env);
-  // Reset session status since we got fresh credentials
-  resetSession();
 }
 
 /**
@@ -67,11 +84,24 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     return getDiscordClient()?.isReady() ?? false;
   }
 
-  // Check if we have the required config
-  const botToken = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-  if (!botToken) {
-    console.log("[BotManager] BOT_TOKEN not configured");
+  // Check if we have a saved config or authorization header
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  const { getDiscordConfig } = await import("./lib/config-cache.ts");
+  const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
+
+  const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
+  const hasSavedConfig = !!savedConfig?.botToken;
+
+  if (!hasAuth && !hasSavedConfig) {
+    console.log(
+      "[BotManager] Bot not configured. Use DISCORD_SAVE_CONFIG to save configuration or add token in Authorization header.",
+    );
     return false;
+  }
+
+  if (hasSavedConfig) {
+    console.log("[BotManager] Found saved configuration in Supabase");
   }
 
   // Start initialization
@@ -83,24 +113,16 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
     setDatabaseEnv(env);
 
     // Ensure database tables exist
-    await ensureCollections(env);
-    await ensureIndexes(env);
+    // Database tables are managed via Supabase - no need to ensure here
+    console.log(
+      "[BotManager] Skipping database initialization (using Supabase)",
+    );
     console.log("[BotManager] Database ready");
 
     // Initialize Discord client
     await initializeDiscordClient(env);
     _botInitialized = true;
     console.log("[BotManager] Discord bot started ✓");
-
-    // Start session heartbeat to keep Mesh connection alive
-    startHeartbeat(env, () => {
-      console.log(
-        "[BotManager] ⚠️ Mesh session expired! Bot will continue but LLM/DB calls may fail.",
-      );
-      console.log(
-        "[BotManager] 💡 Click 'Save' in Mesh Dashboard to refresh the session.",
-      );
-    });
 
     return true;
   } catch (error) {
@@ -123,13 +145,11 @@ export function isBotRunning(): boolean {
  */
 export function getBotStatus() {
   const client = getDiscordClient();
-  const sessionStatus = getSessionStatus();
 
   if (!client || !client.isReady()) {
     return {
       running: false,
       initializing: botInitializing,
-      meshSession: sessionStatus,
     };
   }
 
@@ -139,7 +159,6 @@ export function getBotStatus() {
     user: client.user?.tag,
     guilds: client.guilds.cache.size,
     uptime: client.uptime,
-    meshSession: sessionStatus,
   };
 }
 
@@ -147,22 +166,7 @@ export function getBotStatus() {
  * Shutdown the bot.
  */
 export async function shutdownBot(): Promise<void> {
-  stopHeartbeat();
   await shutdownDiscordClient();
   _botInitialized = false;
   botInitializing = false;
-}
-
-/**
- * Check if the Mesh session is active
- */
-export function isMeshSessionActive(): boolean {
-  return isSessionActive();
-}
-
-/**
- * Get detailed session status
- */
-export function getMeshSessionStatus() {
-  return getSessionStatus();
 }

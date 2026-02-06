@@ -8,9 +8,11 @@
 import { updateEnv } from "../bot-manager.ts";
 import type { Env } from "../types/env.ts";
 import type { ToolFactory, ToolCollection } from "../types/tools.ts";
-import { messageTools } from "./messages.ts";
-import { setupTools } from "./setup.ts";
 import { allDiscordTools } from "./discord/index.ts";
+import { configTools } from "./config.ts";
+import { botTools } from "./bot.ts";
+import { databaseTools } from "./database.ts";
+import { slashCommandTools } from "./slash-commands.ts";
 
 // Wrap each tool factory to update env on every call
 function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
@@ -22,12 +24,16 @@ function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
 }
 
 // Wrap all tools
-const wrappedSetupTools = setupTools.map(wrapWithEnvUpdate);
-const wrappedMessageTools = messageTools.map(wrapWithEnvUpdate);
+const wrappedConfigTools = configTools.map(wrapWithEnvUpdate);
+const wrappedBotTools = botTools.map(wrapWithEnvUpdate);
+const wrappedDatabaseTools = databaseTools.map(wrapWithEnvUpdate);
 const wrappedDiscordTools = allDiscordTools.map(wrapWithEnvUpdate);
+const wrappedSlashCommandTools = slashCommandTools.map(wrapWithEnvUpdate);
 
 export const tools: ToolCollection<Env> = [
-  ...wrappedSetupTools,
-  ...wrappedMessageTools,
+  ...wrappedConfigTools,
+  ...wrappedBotTools,
+  ...wrappedDatabaseTools,
   ...wrappedDiscordTools,
+  ...wrappedSlashCommandTools,
 ];

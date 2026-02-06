@@ -125,3 +125,267 @@ export const referringDomainsOutputSchema = z.object({
     .any()
     .describe("List of referring domains with ranks and backlink counts"),
 });
+
+// Google Trends Input Schemas
+export const googleTrendsInputSchema = z.object({
+  keywords: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .describe("Array of 1-5 keywords to compare trends"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  timeRange: z
+    .enum([
+      "now 1-d",
+      "now 7-d",
+      "today 1-m",
+      "today 3-m",
+      "today 12-m",
+      "today 5-y",
+      "2004-present",
+    ])
+    .optional()
+    .describe("Time range for trends data. Defaults to 'today 12-m'"),
+  category: z.number().optional().describe("Category ID (0 = All categories)"),
+});
+
+// Google Trends Output Schemas
+export const googleTrendsOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Google Trends data including interest over time, regional interest, and related queries",
+    ),
+});
+
+// Keyword Difficulty Input Schemas
+export const keywordDifficultyInputSchema = z.object({
+  keywords: z
+    .array(z.string())
+    .min(1)
+    .max(100)
+    .describe("Array of 1-100 keywords to analyze difficulty"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+});
+
+// Keyword Difficulty Output Schemas
+export const keywordDifficultyOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Keyword difficulty score (0-100) with competitive metrics and ranking data",
+    ),
+});
+
+// Domain Analysis Input Schemas
+export const rankedKeywordsInputSchema = z.object({
+  target: z.string().describe("Target domain to analyze (e.g., 'example.com')"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  limit: z.number().optional().describe("Maximum number of results (max 1000)"),
+  offset: z.number().optional().describe("Offset for pagination"),
+});
+
+export const domainRankInputSchema = z.object({
+  target: z.string().describe("Target domain to analyze (e.g., 'example.com')"),
+});
+
+export const competitorsDomainInputSchema = z.object({
+  target: z.string().describe("Target domain to analyze (e.g., 'example.com')"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  limit: z
+    .number()
+    .optional()
+    .describe("Maximum number of competitors (max 100)"),
+});
+
+// Domain Analysis Output Schemas
+export const rankedKeywordsOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "All keywords domain ranks for, with positions, search volume, and traffic estimates",
+    ),
+});
+
+export const domainRankOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Domain authority metrics including rank, organic keywords count, and traffic estimates",
+    ),
+});
+
+export const competitorsDomainOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "List of competitor domains with common keywords count and metrics",
+    ),
+});
+
+// Keyword Suggestions Input Schemas
+export const keywordSuggestionsInputSchema = z.object({
+  keyword: z.string().describe("Seed keyword for suggestions"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  limit: z
+    .number()
+    .optional()
+    .describe("Maximum number of suggestions (max 1000)"),
+});
+
+export const keywordIdeasInputSchema = z.object({
+  keywords: z
+    .array(z.string())
+    .min(1)
+    .max(5)
+    .describe("1-5 seed keywords for ideas"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  limit: z.number().optional().describe("Maximum number of ideas (max 1000)"),
+});
+
+// Keyword Suggestions Output Schemas
+export const keywordSuggestionsOutputSchema = z.object({
+  data: z
+    .any()
+    .describe("Google Autocomplete suggestions with search volume data"),
+});
+
+export const keywordIdeasOutputSchema = z.object({
+  data: z
+    .any()
+    .describe("Keyword ideas with search volume, competition, and metrics"),
+});
+
+// Historical SERP Input Schemas
+export const historicalSerpInputSchema = z.object({
+  keyword: z.string().describe("Keyword to analyze historical rankings"),
+  languageName: z
+    .string()
+    .optional()
+    .describe("Language name (e.g., 'English'). Defaults to 'English'"),
+  locationName: z
+    .string()
+    .optional()
+    .describe(
+      "Location name (e.g., 'United States'). Defaults to 'United States'",
+    ),
+  languageCode: z
+    .string()
+    .optional()
+    .describe("Language code (e.g., 'en'). Alternative to languageName"),
+  locationCode: z
+    .number()
+    .optional()
+    .describe("Location code (e.g., 2840 for US). Alternative to locationName"),
+  dateFrom: z
+    .string()
+    .optional()
+    .describe("Start date in YYYY-MM-DD format (default: 30 days ago)"),
+  dateTo: z
+    .string()
+    .optional()
+    .describe("End date in YYYY-MM-DD format (default: today)"),
+});
+
+// Historical SERP Output Schemas
+export const historicalSerpOutputSchema = z.object({
+  data: z
+    .any()
+    .describe(
+      "Historical SERP data showing ranking changes over time for the keyword",
+    ),
+});

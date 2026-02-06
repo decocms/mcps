@@ -28,7 +28,7 @@ export const vtexDocsSearch = (_env: Env) =>
         .max(1)
         .optional()
         .describe(
-          "Weight for semantic search vs full-text (0-1, default: 0.3)",
+          "Weight for semantic search vs full-text (0-1, default: 0.4)",
         ),
     }),
     outputSchema: z.object({
@@ -45,7 +45,7 @@ export const vtexDocsSearch = (_env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      const { query, language, limit = 8, semanticWeight = 0.3 } = context;
+      const { query, language, limit = 8, semanticWeight = 0.4 } = context;
 
       const { embedding } = await embed({
         model: embeddingModel(),

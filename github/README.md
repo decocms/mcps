@@ -20,7 +20,7 @@ GitHub Repository → GitHub Webhook → Streamable Tool Endpoint → Event Bus 
 
 After OAuth authentication, webhooks point to:
 ```
-${meshUrl}/mcp/${connectionId}/call-tool/GITHUB_WEBHOOK
+${meshUrl}/mcp/${connectionId}/call-tool/MESH_PUBLIC_GITHUB_WEBHOOK
 ```
 
 ### Published Events
@@ -131,7 +131,7 @@ bun run build
 
 ## Available Tools
 
-### GITHUB_WEBHOOK (Streamable)
+### MESH_PUBLIC_GITHUB_WEBHOOK (Streamable)
 Receives GitHub webhook events. Called directly by GitHub.
 
 ### list_repositories

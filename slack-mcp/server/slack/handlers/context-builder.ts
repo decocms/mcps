@@ -25,7 +25,12 @@ export interface ContextConfig {
 export interface MessageWithImages {
   role: "user" | "assistant";
   content: string;
-  images?: Array<{ type: "image"; data: string; mimeType: string }>;
+  images?: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name?: string;
+  }>;
 }
 
 export interface ContextMessage {
@@ -160,7 +165,12 @@ export async function buildContextMessages(
 export function formatMessagesForLLM(
   contextMessages: ContextMessage[],
   currentContent: string,
-  images?: Array<{ type: "image"; data: string; mimeType: string }>,
+  media?: Array<{
+    type: "image" | "audio";
+    data: string;
+    mimeType: string;
+    name: string;
+  }>,
 ): MessageWithImages[] {
   const allMessages: MessageWithImages[] = [];
 
@@ -185,7 +195,7 @@ export function formatMessagesForLLM(
   allMessages.push({
     role: "user",
     content: `<current_request>\n${currentContent}\n</current_request>`,
-    images: images && images.length > 0 ? images : undefined,
+    images: media && media.length > 0 ? media : undefined,
   });
 
   return allMessages;
@@ -203,11 +213,11 @@ export function cleanBotMention(text: string): string {
  */
 export function buildCurrentContent(
   text: string,
-  imageCount: number,
+  mediaCount: number,
   cleanMention: boolean = false,
 ): string {
   const cleanedText = cleanMention ? cleanBotMention(text) : text;
   return (
-    cleanedText + (imageCount > 0 ? ` [${imageCount} image(s) attached]` : "")
+    cleanedText + (mediaCount > 0 ? ` [${mediaCount} file(s) attached]` : "")
   );
 }

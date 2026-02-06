@@ -11,12 +11,11 @@ import { ensureCollections, ensureIndexes } from "./db/index.ts";
 import { ensurePromptsTable } from "./db/schemas/agents.ts";
 import { handleWorkflowEvents, WORKFLOW_EVENTS } from "./events/handler.ts";
 import { tools } from "./tools/index.ts";
-import { type Env, type Registry, StateSchema } from "./types/env.ts";
-import { generateResponseForEvent, ThreadMessage } from "./llm.ts";
+import { type Env, StateSchema } from "./types/env.ts";
 
 export { StateSchema };
 
-const runtime = withRuntime<Env, typeof StateSchema, Registry>({
+const runtime = withRuntime<Env, typeof StateSchema>({
   events: {
     handlers: {
       SELF: {
@@ -31,30 +30,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           }
         },
       },
-      EVENT_BUS: {
-        handler: async ({ events }, env) => {
-          try {
-            for (const event of events) {
-              if (event.type === "public:operator.generate") {
-                const { messages } = event.data as {
-                  messages: ThreadMessage[];
-                };
-                if (!messages) {
-                  console.error("[Mesh Operator] No messages found in event");
-                  continue;
-                }
-                const subject = event.subject ?? crypto.randomUUID();
-                generateResponseForEvent(env, messages, subject);
-              }
-            }
-          } catch (error) {
-            console.error("[WhatsApp] Error handling events:", error);
-            return { success: false };
-          }
-          return { success: true };
-        },
-        events: ["public:operator.generate"],
-      },
     },
   },
   configuration: {
@@ -68,16 +43,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         console.error("Error ensuring tables and indexes:", error);
       }
     },
-    scopes: [
-      "DATABASE::DATABASES_RUN_SQL",
-      "EVENT_BUS::*",
-      "CONNECTION::*",
-      "*",
-    ],
     state: StateSchema,
   },
   tools,
-  prompts: [], // removed because this was making a call to the database for every request to the MCP server
+  prompts: [], // removed because this was making a call to the database for every request to the MCP server.
 });
 
 serve(runtime.fetch);

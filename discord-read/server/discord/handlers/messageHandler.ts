@@ -11,6 +11,7 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import type { Env } from "../../types/env.ts";
+import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
 // Super Admins - always have full permissions everywhere
 const SUPER_ADMINS = [
@@ -131,6 +132,8 @@ export async function indexMessage(
   message: Message,
   isDM: boolean = false,
 ): Promise<void> {
+  const traceId = HyperDXLogger.generateTraceId();
+
   try {
     const db = await import("../../../shared/db.ts");
 
@@ -220,10 +223,29 @@ export async function indexMessage(
       edited_at: message.editedAt,
     });
 
-    // Indexed successfully (removed log for performance)
+    logger.debug("Message indexed", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      guildName: message.guild?.name,
+      channelId: message.channel.id,
+      channelName: "name" in message.channel ? message.channel.name : undefined,
+      userId: message.author.id,
+      userName: message.author.username,
+      isBot: message.author.bot,
+      isDM,
+      hasAttachments: message.attachments.size > 0,
+      hasEmbeds: message.embeds.length > 0,
+      messageType: message.type,
+    });
   } catch (error) {
-    // Don't crash if indexing fails - just log
-    console.error(`[Message] Failed to index:`, error);
+    logger.error("Failed to index message", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -274,7 +296,8 @@ export async function processCommand(
 
 /**
  * Handle default agent - sends message directly to Mesh AI Agent
- * This is called for any message that isn't a built-in command
+ * This is called for any message that isn't a built-in command.
+ * Uses streaming with message editing for real-time response display.
  */
 async function handleDefaultAgent(
   message: Message,
@@ -283,6 +306,20 @@ async function handleDefaultAgent(
   replyToMessage?: string,
 ): Promise<void> {
   const isDM = !message.guild;
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Processing AI agent request", {
+    trace_id: traceId,
+    messageId: message.id,
+    guildId: message.guild?.id,
+    guildName: message.guild?.name,
+    channelId: message.channel.id,
+    channelName: "name" in message.channel ? message.channel.name : undefined,
+    userId: message.author.id,
+    userName: message.author.username,
+    isDM,
+    hasReply: !!replyToMessage,
+  });
 
   // Empty input
   if (!userInput.trim()) {
@@ -290,33 +327,46 @@ async function handleDefaultAgent(
     return;
   }
 
-  // Note: We don't block here based on session status anymore.
-  // The LLM call will fail with a clear error if the session is expired,
-  // and that error is already handled in the catch block below.
+  // Import modules
+  const [
+    {
+      generateResponse,
+      generateResponseWithStreaming,
+      isLLMConfigured,
+      isStreamingEnabled,
+    },
+    { getSystemPrompt },
+    { sendThinkingMessage, updateThinkingMessage, splitMessage },
+  ] = await Promise.all([
+    import("../../llm.ts"),
+    import("../../prompts/system.ts"),
+    import("../client.ts"),
+  ]);
 
-  // Removed verbose logging for better performance
+  // Check if streaming is enabled
+  const useStreaming = isStreamingEnabled() && isLLMConfigured();
 
-  // Show typing indicator with continuous loop (Discord typing expires after ~10s)
+  // Send thinking message for streaming mode
+  let thinkingMsg: Message | null = null;
+  if (useStreaming) {
+    thinkingMsg = await sendThinkingMessage(message);
+  }
+
+  // If no thinking message (streaming disabled or failed), use typing indicator
   let typingInterval: ReturnType<typeof setInterval> | null = null;
-  const startTyping = async () => {
-    try {
-      if ("sendTyping" in message.channel) {
-        await message.channel.sendTyping();
-      }
-    } catch {}
-  };
-
-  // Start typing immediately and keep it active every 8 seconds
-  await startTyping();
-  typingInterval = setInterval(startTyping, 8000);
+  if (!thinkingMsg) {
+    const startTyping = async () => {
+      try {
+        if ("sendTyping" in message.channel) {
+          await message.channel.sendTyping();
+        }
+      } catch {}
+    };
+    await startTyping();
+    typingInterval = setInterval(startTyping, 8000);
+  }
 
   try {
-    // Import modules in parallel
-    const [{ generateResponse }, { getSystemPrompt }] = await Promise.all([
-      import("../../llm.ts"),
-      import("../../prompts/system.ts"),
-    ]);
-
     const startTime = Date.now();
     const channelName =
       "name" in message.channel
@@ -388,22 +438,71 @@ async function handleDefaultAgent(
       });
     }
 
-    // Add user message
-    llmMessages.push({ role: "user", content: userInput });
+    // Process attachments if any
+    const { processDiscordAttachments, formatTextFilesForPrompt } =
+      await import("../../lib/file-processor.ts");
+    const attachments = Array.from(message.attachments.values());
+    const { media, textFiles } = await processDiscordAttachments(attachments);
 
-    // Call the model using Mesh API with Discord context
+    // Add text files to the user input
+    let fullUserInput = userInput;
+    if (textFiles.length > 0) {
+      const textFileContent = formatTextFilesForPrompt(textFiles);
+      fullUserInput += `\n\n${textFileContent}`;
+    }
 
-    const response = await generateResponse(env, llmMessages, {
-      discordContext: {
-        guildId: message.guild?.id || "DM",
-        channelId: message.channel.id,
-        userId: message.author.id,
-        userName: message.author.username,
-      },
-    });
+    // Add user message with images if present
+    const userMessage: {
+      role: "user";
+      content: string;
+      images?: Array<{
+        type: "image" | "audio";
+        data: string;
+        mimeType: string;
+        name?: string;
+      }>;
+    } = { role: "user", content: fullUserInput };
 
-    let responseContent =
-      response.content || "Desculpe, não consegui gerar uma resposta.";
+    // Add media files (images) to the message
+    if (media.length > 0) {
+      // Only add images (audio needs Whisper transcription first)
+      const imageFiles = media.filter((m) => m.type === "image");
+      if (imageFiles.length > 0) {
+        userMessage.images = imageFiles;
+        console.log(`[Agent] Adding ${imageFiles.length} image(s) to prompt`);
+      }
+    }
+
+    llmMessages.push(userMessage);
+
+    let responseContent: string;
+    const authorMention = `<@${message.author.id}>`;
+
+    // Use streaming if we have a thinking message, otherwise use regular generation
+    if (thinkingMsg && useStreaming) {
+      // Streaming mode: update message in real-time
+      responseContent = await generateResponseWithStreaming(
+        llmMessages,
+        async (text, isComplete) => {
+          // Add cursor indicator while streaming
+          const displayText = isComplete ? text : text + " ▌";
+          await updateThinkingMessage(thinkingMsg!, displayText, authorMention);
+        },
+      );
+    } else {
+      // Non-streaming mode: wait for full response
+      const response = await generateResponse(env, llmMessages, {
+        discordContext: {
+          guildId: message.guild?.id || "DM",
+          channelId: message.channel.id,
+          userId: message.author.id,
+          userName: message.author.username,
+        },
+      });
+      responseContent =
+        response.content || "Desculpe, não consegui gerar uma resposta.";
+    }
+
     const durationMs = Date.now() - startTime;
 
     // Process channel prompt markers if present
@@ -418,74 +517,106 @@ async function handleDefaultAgent(
       );
     }
 
-    // Send response (split if needed for Discord's 2000 char limit)
-    const maxLength = 2000;
-    if (responseContent.length <= maxLength) {
-      await safeReply(message, responseContent);
-    } else {
-      // Split into chunks at natural break points
-      const chunks: string[] = [];
-      let remaining = responseContent;
-
-      while (remaining.length > 0) {
-        if (remaining.length <= maxLength) {
-          chunks.push(remaining);
-          break;
+    // If we used streaming, the message is already updated
+    // If not, send the response now
+    if (!thinkingMsg) {
+      // Send response (split if needed for Discord's 2000 char limit)
+      const chunks = splitMessage(responseContent);
+      for (let i = 0; i < chunks.length; i++) {
+        if (i === 0) {
+          await safeReply(message, chunks[i]);
+        } else {
+          // For additional chunks, just send without mention
+          const channel = message.channel;
+          if ("send" in channel) {
+            await channel.send(chunks[i]);
+          }
         }
-
-        let splitIndex = remaining.lastIndexOf("\n", maxLength);
-        if (splitIndex === -1 || splitIndex < maxLength / 2) {
-          splitIndex = remaining.lastIndexOf(" ", maxLength);
-        }
-        if (splitIndex === -1 || splitIndex < maxLength / 2) {
-          splitIndex = maxLength;
-        }
-
-        chunks.push(remaining.slice(0, splitIndex));
-        remaining = remaining.slice(splitIndex).trim();
       }
+    } else if (responseContent.length > 1900) {
+      // If streaming but response is too long, send additional messages
+      const fullContent = `${authorMention} ${responseContent}`;
+      const chunks = splitMessage(fullContent);
 
-      for (const chunk of chunks) {
-        await safeReply(message, chunk);
+      // First chunk is already in the thinking message, update it
+      await updateThinkingMessage(
+        thinkingMsg,
+        chunks[0].replace(authorMention, "").trim(),
+        authorMention,
+      );
+
+      // Send additional chunks as new messages
+      const channel = message.channel;
+      if ("send" in channel) {
+        for (let i = 1; i < chunks.length; i++) {
+          await channel.send(chunks[i]);
+        }
       }
     }
 
-    console.log(
-      `[Agent] Response sent (${durationMs}ms, ${response.tokens || 0} tokens)`,
-    );
+    logger.info("AI agent response completed", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      userId: message.author.id,
+      duration: durationMs,
+      streaming: !!thinkingMsg,
+      responseLength: responseContent.length,
+    });
   } catch (error) {
-    console.error(`[Agent] Error:`, error);
+    logger.error("AI agent error", {
+      trace_id: traceId,
+      messageId: message.id,
+      guildId: message.guild?.id,
+      channelId: message.channel.id,
+      userId: message.author.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     const errorMsg = error instanceof Error ? error.message : String(error);
 
-    // Check for common errors and provide helpful messages
-    if (errorMsg.includes("Organization context is required")) {
-      await safeReply(
-        message,
-        `⚠️ **Sessão expirada!**\n\n` +
-          `O token de autenticação com o Mesh expirou.\n\n` +
-          `**Solução:** Vá no Mesh Dashboard e clique em "Save" na configuração deste MCP para renovar a sessão.`,
-      );
-    } else if (
-      errorMsg.includes("Database") &&
-      errorMsg.includes("not initialized")
+    // Silently handle session/auth errors - don't spam the chat
+    if (
+      errorMsg.includes("Organization context is required") ||
+      errorMsg.includes("session expired") ||
+      errorMsg.includes("401") ||
+      errorMsg.includes("403")
     ) {
-      await safeReply(
-        message,
-        `⚠️ **Banco de dados não inicializado!**\n\n` +
-          `Use o comando no Mesh: \`DISCORD_START_BOT\` ou clique em "Save" na config.`,
+      console.log(
+        "[Agent] ⚠️ Session/auth error - not sending to chat:",
+        errorMsg,
       );
-    } else if (errorMsg.includes("timed out")) {
-      await safeReply(
-        message,
-        `⏱️ **Timeout!** A requisição demorou muito.\n\n` +
-          `Isso pode acontecer se o modelo estiver sobrecarregado. Tente novamente.`,
+      // Just delete the thinking message if it exists
+      if (thinkingMsg) {
+        try {
+          await thinkingMsg.delete();
+        } catch {
+          // Ignore delete errors
+        }
+      }
+      return;
+    }
+
+    // For other errors, show a user-friendly message
+    let errorResponse: string;
+    if (errorMsg.includes("Database") && errorMsg.includes("not initialized")) {
+      errorResponse = `⚠️ Bot não está totalmente inicializado. Tente novamente em alguns segundos.`;
+    } else if (errorMsg.includes("timed out") || errorMsg.includes("aborted")) {
+      errorResponse = `⏱️ A requisição demorou muito. Tente novamente.`;
+    } else {
+      errorResponse = `❌ Erro ao processar sua mensagem.`;
+    }
+
+    // Update thinking message with error, or send new message
+    if (thinkingMsg) {
+      await updateThinkingMessage(
+        thinkingMsg,
+        errorResponse,
+        `<@${message.author.id}>`,
       );
     } else {
-      await safeReply(
-        message,
-        `❌ Erro ao processar sua mensagem.\n\n\`\`\`${errorMsg}\`\`\``,
-      );
+      await safeReply(message, errorResponse);
     }
   } finally {
     // Always stop the typing indicator

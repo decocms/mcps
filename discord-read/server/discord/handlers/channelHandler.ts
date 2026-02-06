@@ -10,6 +10,7 @@ import type {
   CategoryChannel,
   AnyThreadChannel,
 } from "discord.js";
+import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
 // ============================================================================
 // Thread Handlers
@@ -23,7 +24,17 @@ export async function handleThreadCreate(
 ): Promise<void> {
   if (!thread.guild) return;
 
-  console.log(`[Thread] Created: ${thread.name} (${thread.id})`);
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Thread created", {
+    trace_id: traceId,
+    channelId: thread.id,
+    channelName: thread.name,
+    guildId: thread.guild.id,
+    guildName: thread.guild.name,
+    parentId: thread.parentId,
+    isThread: true,
+  });
 
   try {
     const db = await import("../../../shared/db.ts");
@@ -138,7 +149,16 @@ export async function handleChannelCreate(
 ): Promise<void> {
   if (!channel.guild) return;
 
-  console.log(`[Channel] Created: ${channel.name} (${channel.id})`);
+  const traceId = HyperDXLogger.generateTraceId();
+
+  logger.info("Channel created", {
+    trace_id: traceId,
+    channelId: channel.id,
+    channelName: channel.name,
+    guildId: channel.guild.id,
+    guildName: channel.guild.name,
+    channelType: channel.type,
+  });
 
   try {
     const db = await import("../../../shared/db.ts");

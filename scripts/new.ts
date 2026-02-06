@@ -1,37 +1,27 @@
 #!/usr/bin/env bun
 
 /**
- * Script to create a new MCP app from templates
+ * Script to create a new MCP app from the template
  *
  * Usage:
  *   bun scripts/new.ts <name> [options]
  *
  * Options:
- *   --template <type>     Template type: minimal, with-view (default: with-view)
- *   --no-view            Remove view/frontend code (API only)
  *   --description <desc>  Description for package.json
  */
 
 import { parseArgs } from "util";
 import { join } from "path";
-import { mkdir, readdir, readFile, writeFile, rm } from "fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "fs/promises";
 import { existsSync } from "fs";
-import * as readline from "readline";
-
-type TemplateType = "minimal" | "with-view";
 
 interface CreateOptions {
   name: string;
-  template: TemplateType;
-  noView: boolean;
   description?: string;
 }
 
 const TEMPLATES_DIR = join(import.meta.dir, "..");
-const TEMPLATE_MAP: Record<TemplateType, string> = {
-  "with-view": "template-with-view",
-  minimal: "template-minimal", // Will create this template
-};
+const TEMPLATE_DIR = "template-minimal";
 
 async function copyDirectory(src: string, dest: string, ignore: string[] = []) {
   await mkdir(dest, { recursive: true });
@@ -56,131 +46,13 @@ async function copyDirectory(src: string, dest: string, ignore: string[] = []) {
   }
 }
 
-async function replaceInFile(
-  filePath: string,
-  replacements: Record<string, string>,
-) {
-  let content = await readFile(filePath, "utf-8");
-
-  for (const [search, replace] of Object.entries(replacements)) {
-    content = content.replaceAll(search, replace);
-  }
-
-  await writeFile(filePath, content, "utf-8");
-}
-
-async function removeDirectory(path: string) {
-  if (existsSync(path)) {
-    await rm(path, { recursive: true, force: true });
-  }
-}
-
-async function askQuestion(question: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    rl.question(question, (answer: string) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
-  });
-}
-
-async function createMinimalTemplate() {
-  const minimalPath = join(TEMPLATES_DIR, "template-minimal");
-
-  if (existsSync(minimalPath)) {
-    return; // Already exists
-  }
-
-  console.log("Creating minimal template...");
-
-  // Copy from with-view template
-  const withViewPath = join(TEMPLATES_DIR, "template-with-view");
-  await copyDirectory(withViewPath, minimalPath, ["node_modules", "dist"]);
-
-  // Remove view-related files
-  await removeDirectory(join(minimalPath, "view"));
-  await removeDirectory(join(minimalPath, "public"));
-  await rm(join(minimalPath, "index.html"), { force: true });
-  await rm(join(minimalPath, "vite.config.ts"), { force: true });
-
-  // Update package.json
-  const pkgPath = join(minimalPath, "package.json");
-  const pkg = JSON.parse(await readFile(pkgPath, "utf-8"));
-
-  // Remove view-related dependencies
-  const viewDeps = [
-    "@radix-ui/react-collapsible",
-    "@radix-ui/react-popover",
-    "@radix-ui/react-slot",
-    "@tailwindcss/vite",
-    "@tanstack/react-query",
-    "@tanstack/react-router",
-    "@tanstack/react-router-devtools",
-    "class-variance-authority",
-    "clsx",
-    "lucide-react",
-    "next-themes",
-    "react",
-    "react-dom",
-    "sonner",
-    "tailwind-merge",
-    "tailwindcss",
-    "tailwindcss-animate",
-  ];
-
-  const viewDevDeps = [
-    "@cloudflare/vite-plugin",
-    "@types/react",
-    "@types/react-dom",
-    "@vitejs/plugin-react",
-    "vite",
-    "concurrently",
-  ];
-
-  viewDeps.forEach((dep) => delete pkg.dependencies?.[dep]);
-  viewDevDeps.forEach((dep) => delete pkg.devDependencies?.[dep]);
-
-  // Update scripts
-  pkg.scripts = {
-    dev: "deco dev",
-    configure: "deco configure",
-    gen: "deco gen --output=shared/deco.gen.ts",
-    deploy: "deco deploy ./server",
-  };
-
-  await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
-
-  // Update wrangler.toml
-  const wranglerPath = join(minimalPath, "wrangler.toml");
-  let wranglerContent = await readFile(wranglerPath, "utf-8");
-
-  // Remove assets section
-  wranglerContent = wranglerContent.replace(/\[assets\][^[]*/, "");
-
-  await writeFile(wranglerPath, wranglerContent, "utf-8");
-
-  console.log("✓ Minimal template created");
-}
-
 async function createMCP(options: CreateOptions) {
-  const { name, template, noView, description } = options;
+  const { name, description } = options;
 
-  // Ensure templates exist
-  if (template === "minimal" || noView) {
-    await createMinimalTemplate();
-  }
-
-  // Determine source template
-  const sourceTemplate = noView ? "template-minimal" : TEMPLATE_MAP[template];
-  const sourcePath = join(TEMPLATES_DIR, sourceTemplate);
+  const sourcePath = join(TEMPLATES_DIR, TEMPLATE_DIR);
 
   if (!existsSync(sourcePath)) {
-    throw new Error(`Template '${sourceTemplate}' not found at ${sourcePath}`);
+    throw new Error(`Template '${TEMPLATE_DIR}' not found at ${sourcePath}`);
   }
 
   const destPath = join(TEMPLATES_DIR, name);
@@ -190,27 +62,18 @@ async function createMCP(options: CreateOptions) {
   }
 
   console.log(`Creating new MCP: ${name}`);
-  console.log(`Template: ${template}${noView ? " (no view)" : ""}`);
   console.log("");
 
   // Copy template
   console.log("Copying template files...");
-  await copyDirectory(sourcePath, destPath, ["node_modules", "dist"]);
-
-  // Get the original template name from source
-  const sourcePkg = JSON.parse(
-    await readFile(join(sourcePath, "package.json"), "utf-8"),
-  );
-  const originalName = sourcePkg.name;
+  await copyDirectory(sourcePath, destPath, [
+    "node_modules",
+    "dist",
+    "app.json",
+  ]);
 
   // Customize files
   console.log("Customizing files...");
-
-  const replacements: Record<string, string> = {
-    [originalName]: name,
-    "Object Storage MCP": description || `${name} MCP`,
-    "object-storage": name,
-  };
 
   // Update package.json
   const pkgPath = join(destPath, "package.json");
@@ -218,23 +81,44 @@ async function createMCP(options: CreateOptions) {
   pkg.name = name;
   if (description) {
     pkg.description = description;
+  } else {
+    pkg.description = `${name} MCP server`;
   }
   await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
 
-  // Update wrangler.toml
-  const wranglerPath = join(destPath, "wrangler.toml");
-  if (existsSync(wranglerPath)) {
-    await replaceInFile(wranglerPath, replacements);
-  }
-
-  // Update README.md
+  // Update README.md if it exists
   const readmePath = join(destPath, "README.md");
   if (existsSync(readmePath)) {
     await writeFile(
       readmePath,
-      `# ${description || name}\n\nYour MCP server description goes here.\n`,
+      `# ${name}\n\n${description || "Your MCP server description goes here."}\n\n## Getting Started\n\n1. Configure your MCP in \`server/types/env.ts\`\n2. Implement tools in \`server/tools/\`\n3. Rename \`app.json.example\` to \`app.json\` and customize\n4. Add to \`deploy.json\` for deployment\n5. Test with \`bun run dev\`\n\nSee [template-minimal/README.md](../template-minimal/README.md) for detailed instructions.\n`,
       "utf-8",
     );
+  }
+
+  // Rename app.json.example to app.json if it exists
+  const appJsonExamplePath = join(destPath, "app.json.example");
+  const appJsonPath = join(destPath, "app.json");
+  if (existsSync(appJsonExamplePath)) {
+    const appJsonContent = await readFile(appJsonExamplePath, "utf-8");
+    const appJson = JSON.parse(appJsonContent);
+
+    // Update basic fields
+    appJson.name = name;
+    appJson.friendlyName = name
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+    appJson.connection.url = `https://sites-${name}.decocache.com/mcp`;
+    appJson.description = description || `${appJson.friendlyName} MCP server`;
+    appJson.metadata.short_description = appJson.description;
+
+    await writeFile(
+      appJsonPath,
+      JSON.stringify(appJson, null, 2) + "\n",
+      "utf-8",
+    );
+    console.log("✓ Created app.json from template");
   }
 
   // Update root package.json workspaces
@@ -258,7 +142,20 @@ async function createMCP(options: CreateOptions) {
   console.log("Next steps:");
   console.log(`  cd ${name}`);
   console.log("  bun install");
-  console.log("  bun run dev");
+  console.log("");
+  console.log("Configuration:");
+  console.log("  1. Edit server/types/env.ts (StateSchema)");
+  console.log("  2. Edit app.json (metadata for store)");
+  console.log("  3. Implement tools in server/tools/");
+  console.log("");
+  console.log("Development:");
+  console.log("  bun run dev          # Start local server");
+  console.log("  bun run fmt          # Format code");
+  console.log("  bun run lint         # Lint code");
+  console.log("");
+  console.log("Deployment:");
+  console.log("  - Add to deploy.json for auto-deployment");
+  console.log("  - Create PR (never commit directly to main)");
   console.log("");
 }
 
@@ -266,15 +163,6 @@ async function main() {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2),
     options: {
-      template: {
-        type: "string",
-        short: "t",
-        default: "with-view",
-      },
-      "no-view": {
-        type: "boolean",
-        default: false,
-      },
       description: {
         type: "string",
         short: "d",
@@ -291,35 +179,23 @@ async function main() {
     console.log(`
 Usage: bun scripts/new.ts <name> [options]
 
-Creates a new MCP app from a template
+Creates a new MCP app from the template
 
 Arguments:
   name                   Name of the new MCP (required)
 
 Options:
-  -t, --template <type>  Template type: minimal, with-view (default: with-view)
-  --no-view              Remove view/frontend code (API only)
   -d, --description      Description for package.json
   -h, --help             Show this help message
 
 Examples:
   bun scripts/new.ts my-mcp
-  bun scripts/new.ts my-api --no-view
-  bun scripts/new.ts my-mcp --template minimal
-  bun scripts/new.ts weather-api --no-view --description "Weather API MCP"
+  bun scripts/new.ts weather-api --description "Weather forecast API"
     `);
     process.exit(0);
   }
 
   const name = positionals[0];
-  const template = values.template as TemplateType;
-
-  if (!["minimal", "with-view"].includes(template)) {
-    console.error(
-      `Error: Invalid template '${template}'. Use 'minimal' or 'with-view'`,
-    );
-    process.exit(1);
-  }
 
   // Validate name
   if (!/^[a-z0-9-]+$/.test(name)) {
@@ -329,22 +205,9 @@ Examples:
     process.exit(1);
   }
 
-  let noView = values["no-view"] as boolean;
-  const templateWasProvided =
-    process.argv.includes("--template") || process.argv.includes("-t");
-  const noViewWasProvided = process.argv.includes("--no-view");
-
-  if (!templateWasProvided && !noViewWasProvided) {
-    const answer = await askQuestion("Do you want a view in this MCP? (y/n): ");
-    const wantsView = ["s", "sim", "y", "yes"].includes(answer);
-    noView = !wantsView;
-  }
-
   try {
     await createMCP({
       name,
-      template,
-      noView,
       description: values.description as string | undefined,
     });
   } catch (error) {

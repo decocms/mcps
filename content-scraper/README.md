@@ -1,159 +1,166 @@
 # Content Scraper MCP
 
-MCP para extração, deduplicação e sumarização de conteúdo web usando Firecrawl e Supabase.
+MCP for listing and querying scraped content from multiple sources stored in a database.
 
+## Features
 
-## Funcionalidades
+- **Multiple Sources**: Query content from different origins (web, Reddit, LinkedIn, Twitter)
+- **Pagination**: Support for pagination by index range
+- **Week Filter**: Option to filter only this week's content
+- **Flexible Query**: Search in a specific table or all at once
+- **Skills**: Documentation for LLMs to learn how to interact with the system
 
-- **Extração de Conteúdo**: Usa Firecrawl para extrair title, body, author e date de URLs
-- **Deduplicação por Fingerprint**: Gera hash SHA-256 de title + body para identificar conteúdo único
-- **Persistência de Estado**: Armazena registros no Supabase para evitar reprocessamento
-- **Watermarks por Domínio**: Rastreia última vez que cada domínio foi processado
-- **Resumos Focados em Insights**: Gera resumos curtos extraindo frases-chave
+## Configuration
 
-## Configuração
+### 1. Database
 
-### 1. Supabase - Criar Tabelas
+The MCP expects a database with the following tables:
 
-Execute no SQL Editor do seu projeto Supabase:
+- `contents` - General web content
+- `reddit_content_scrape` - Reddit scraped content
+- `linkedin_content_scrape` - LinkedIn scraped content
+- `twitter_content_scrape` - Twitter scraped content
+- `deco_weekly_report` - Weekly digest reports
 
-```sql
--- Tabela de conteúdo processado
-CREATE TABLE scraped_content (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  url TEXT UNIQUE NOT NULL,
-  fingerprint TEXT NOT NULL,
-  domain TEXT NOT NULL,
-  title TEXT NOT NULL,
-  first_seen_at TIMESTAMPTZ NOT NULL,
-  last_seen_at TIMESTAMPTZ NOT NULL,
-  updated_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+### 2. Install the MCP
 
--- Índices para performance
-CREATE INDEX idx_scraped_content_domain ON scraped_content(domain);
-CREATE INDEX idx_scraped_content_fingerprint ON scraped_content(fingerprint);
-CREATE INDEX idx_scraped_content_url ON scraped_content(url);
+When installing, configure:
+- `database.apiUrl`: Database API URL
+- `database.token`: Authentication token
 
--- Tabela de watermarks por domínio
-CREATE TABLE scraper_watermarks (
-  domain TEXT PRIMARY KEY,
-  last_processed_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+## Available Tools
 
-### 2. Firecrawl API Key
+### `LIST_SCRAPED_CONTENT`
 
-Obtenha sua API key em https://firecrawl.dev
-
-### 3. Instalar o MCP
-
-Ao instalar, preencha:
-- `firecrawlApiKey`: Sua chave de API do Firecrawl
-- `supabaseUrl`: URL do seu projeto Supabase (ex: https://xxx.supabase.co)
-- `supabaseKey`: Service role key ou anon key com RLS configurado
-
-## Tools Disponíveis
-
-### `process_urls`
-
-Processa uma lista de URLs:
-- Extrai conteúdo limpo usando Firecrawl
-- Gera fingerprint único (SHA-256 de title + body normalizado)
-- Verifica se já existe no Supabase
-- Salva novo conteúdo ou atualiza se fingerprint mudou
-- Retorna resumo focado em insights
+Lists content already scraped and saved in the database.
 
 **Input:**
 ```json
 {
-  "urls": ["https://example.com/article-1", "https://example.com/article-2"],
-  "generateSummaries": true
+  "table": "all",
+  "startIndex": 1,
+  "endIndex": 100,
+  "onlyThisWeek": false
 }
+```
+
+**Parameters:**
+- `table`: Which source to query - `"all"`, `"contents"`, `"reddit"`, `"linkedin"`, or `"twitter"`
+- `startIndex`: Start index (default: 1)
+- `endIndex`: End index (default: 100)
+- `onlyThisWeek`: If `true`, returns only this week's content
+
+**Output:**
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "table": "contents",
+      "data": [...],
+      "count": 50
+    },
+    {
+      "table": "reddit",
+      "data": [...],
+      "count": 30
+    }
+  ],
+  "totalCount": 80,
+  "range": {
+    "startIndex": 1,
+    "endIndex": 100
+  }
+}
+```
+
+### `GET_WEEKLY_REPORT_PUBLISHING_SKILL`
+
+Returns the Weekly Report Publishing skill documentation. This skill teaches how to publish weekly digest reports to the `deco_weekly_report` database table.
+
+**Input:**
+```json
+{}
 ```
 
 **Output:**
 ```json
 {
-  "processed": [
+  "success": true,
+  "skill": "# Weekly Report Publishing Skill...",
+  "skill_name": "Weekly Report Publishing",
+  "summary": "This skill teaches how to publish Weekly Digest reports..."
+}
+```
+
+### `LIST_AVAILABLE_SKILLS`
+
+Lists all available skills/documentation that can be retrieved.
+
+**Input:**
+```json
+{}
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "skills": [
     {
-      "url": "https://example.com/article-1",
-      "status": "new",
-      "title": "Article Title",
-      "summary": "Key insights from the content...",
-      "fingerprint": "abc123...",
-      "domain": "example.com"
+      "id": "weekly-report-publishing",
+      "name": "Weekly Report Publishing",
+      "description": "Teaches how to publish weekly digest reports...",
+      "tool_to_access": "GET_WEEKLY_REPORT_PUBLISHING_SKILL"
     }
-  ],
-  "stats": {
-    "total": 2,
-    "new": 1,
-    "updated": 0,
-    "unchanged": 1,
-    "errors": 0
-  }
+  ]
 }
 ```
 
-### `check_updates`
+## Skills
 
-Verifica status de URLs processadas anteriormente sem re-extrair:
+The MCP includes skills (documentation for LLMs) that teach how to interact with the system:
 
-**Input:**
-```json
-{
-  "domain": "example.com"
-}
-```
+### Weekly Report Publishing
 
-### `get_watermarks`
+**Path:** `skills/weekly-report-publishing/SKILL.md`
 
-Obtém watermarks (última vez processada) por domínio:
+**Tool:** `GET_WEEKLY_REPORT_PUBLISHING_SKILL`
 
-**Input:**
-```json
-{
-  "domain": "example.com"
-}
-```
+Skill that teaches an LLM how to publish Weekly Reports to the `deco_weekly_report` table. Includes:
 
-## Lógica de Deduplicação
+- Complete table schema
+- INSERT, UPDATE, and SELECT examples
+- URL and slug patterns
+- Special character handling
+- Publishing checklist
 
-1. **Normalização**: title e body são normalizados (lowercase, whitespace colapsado, Unicode normalizado)
-2. **Fingerprint**: SHA-256 do texto normalizado `title|body`
-3. **Verificação**:
-   - Se URL não existe → conteúdo **novo**
-   - Se URL existe mas fingerprint diferente → **update**
-   - Se URL existe e fingerprint igual → **ignorar**
-
-## Desenvolvimento
+## Development
 
 ```bash
 cd content-scraper
 bun install
-bun run dev     # Desenvolvimento local
-bun run deploy  # Deploy para produção
+bun run dev     # Local development
+bun run deploy  # Deploy to production
 ```
 
-## Arquitetura
+## Architecture
 
 ```
 content-scraper/
 ├── server/
-│   ├── main.ts              # Entry point e StateSchema
+│   ├── main.ts              # Entry point and StateSchema
 │   ├── lib/
-│   │   ├── firecrawl.ts     # Cliente Firecrawl API
-│   │   ├── supabase.ts      # Cliente Supabase para persistência
-│   │   ├── content.ts       # Normalização, fingerprint, resumo
-│   │   └── types.ts         # Tipos compartilhados
-│   └── tools/
-│       ├── index.ts         # Exporta todas as tools
-│       └── scraper.ts       # Tools de processamento
-├── shared/
-│   └── deco.gen.ts          # Tipos gerados
+│   │   └── db-client.ts     # Database client
+│   ├── tools/
+│   │   ├── index.ts         # Exports all tools
+│   │   ├── content-scrape.ts # Content listing tool
+│   │   └── skills.ts        # Skills tools
+│   └── types/
+│       └── env.ts           # Environment types
+├── skills/
+│   └── weekly-report-publishing/
+│       └── SKILL.md         # Weekly Report publishing skill
 ├── package.json
-├── wrangler.toml
 └── tsconfig.json
 ```

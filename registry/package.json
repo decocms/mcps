@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.4",
-    "@decocms/runtime": "^1.1.3",
+    "@decocms/runtime": "1.1.3",
     "@supabase/supabase-js": "^2.89.0",
     "zod": "^4.0.0"
   },

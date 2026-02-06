@@ -6,6 +6,7 @@
 
 import type { Env } from "../../types/env.ts";
 import { getCurrentEnv } from "../../bot-manager.ts";
+import { getDiscordBotToken } from "../../lib/env.ts";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 
@@ -76,19 +77,27 @@ export async function discordAPI<T>(
   endpoint: string,
   options: DiscordAPIOptions = {},
 ): Promise<T> {
-  // Try to get token from passed env first, then fall back to global env
-  let botToken: string | undefined = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-
-  if (!botToken) {
+  // Get bot token - REST API doesn't need the bot to be "connected" via WebSocket
+  // We only need a valid bot token to make HTTP requests to Discord API
+  let botToken: string;
+  try {
+    botToken = await getDiscordBotToken(env);
+  } catch (error) {
     // Fallback: try to get from global env (set when Discord bot started)
     const globalEnv = getCurrentEnv();
-    botToken = globalEnv?.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-  }
-
-  if (!botToken) {
-    throw new Error(
-      "BOT_TOKEN not configured. Make sure the Discord bot is initialized.",
-    );
+    if (globalEnv) {
+      try {
+        botToken = await getDiscordBotToken(globalEnv);
+      } catch {
+        throw new Error(
+          `Discord Bot Token not found: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    } else {
+      throw new Error(
+        `Discord Bot Token not found: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   const headers: Record<string, string> = {

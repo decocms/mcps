@@ -110,7 +110,7 @@ export const createListEventsTool = (env: Env) =>
         .string()
         .optional()
         .describe(
-          "Start of time range (RFC3339 format). Required if singleEvents is true.",
+          "Start of time range (RFC3339 format). If not provided, defaults to 7 days ago. Required if singleEvents is true.",
         ),
       timeMax: z
         .string()
@@ -146,9 +146,17 @@ export const createListEventsTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      // Se timeMin não for fornecido, usa 7 dias atrás como padrão
+      let timeMin = context.timeMin;
+      if (!timeMin) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        timeMin = sevenDaysAgo.toISOString();
+      }
+
       const response = await client.listEvents({
         calendarId: context.calendarId || PRIMARY_CALENDAR,
-        timeMin: context.timeMin,
+        timeMin: timeMin,
         timeMax: context.timeMax,
         maxResults: context.maxResults,
         pageToken: context.pageToken,
@@ -172,7 +180,12 @@ export const createListEventsTool = (env: Env) =>
           updated: event.updated,
           creator: event.creator,
           organizer: event.organizer,
-          attendees: event.attendees,
+          attendees: event.attendees?.map((attendee) => ({
+            email: attendee.email,
+            displayName: attendee.displayName,
+            optional: attendee.optional,
+            responseStatus: attendee.responseStatus,
+          })),
           hangoutLink: event.hangoutLink,
           colorId: event.colorId,
           visibility: event.visibility,
@@ -226,7 +239,12 @@ export const createGetEventTool = (env: Env) =>
           updated: event.updated,
           creator: event.creator,
           organizer: event.organizer,
-          attendees: event.attendees,
+          attendees: event.attendees?.map((attendee) => ({
+            email: attendee.email,
+            displayName: attendee.displayName,
+            optional: attendee.optional,
+            responseStatus: attendee.responseStatus,
+          })),
           hangoutLink: event.hangoutLink,
           colorId: event.colorId,
           visibility: event.visibility,
@@ -283,6 +301,11 @@ export const createCreateEventTool = (env: Env) =>
         .enum(["default", "public", "private", "confidential"])
         .optional()
         .describe("Event visibility"),
+      guestsCanSeeOtherGuests: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Whether guests can see other attendees (default: true)"),
       sendUpdates: z
         .enum(["all", "externalOnly", "none"])
         .optional()
@@ -307,6 +330,7 @@ export const createCreateEventTool = (env: Env) =>
         reminders: context.reminders,
         colorId: context.colorId,
         visibility: context.visibility,
+        guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests ?? true,
         sendUpdates: context.sendUpdates,
       });
 
@@ -324,7 +348,12 @@ export const createCreateEventTool = (env: Env) =>
           updated: event.updated,
           creator: event.creator,
           organizer: event.organizer,
-          attendees: event.attendees,
+          attendees: event.attendees?.map((attendee) => ({
+            email: attendee.email,
+            displayName: attendee.displayName,
+            optional: attendee.optional,
+            responseStatus: attendee.responseStatus,
+          })),
           hangoutLink: event.hangoutLink,
           colorId: event.colorId,
           visibility: event.visibility,
@@ -368,6 +397,10 @@ export const createUpdateEventTool = (env: Env) =>
         .enum(["default", "public", "private", "confidential"])
         .optional()
         .describe("New visibility setting"),
+      guestsCanSeeOtherGuests: z
+        .boolean()
+        .optional()
+        .describe("Whether guests can see other attendees"),
       sendUpdates: z
         .enum(["all", "externalOnly", "none"])
         .optional()
@@ -392,6 +425,7 @@ export const createUpdateEventTool = (env: Env) =>
         attendees: context.attendees,
         colorId: context.colorId,
         visibility: context.visibility,
+        guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests,
         sendUpdates: context.sendUpdates,
       });
 
@@ -409,7 +443,12 @@ export const createUpdateEventTool = (env: Env) =>
           updated: event.updated,
           creator: event.creator,
           organizer: event.organizer,
-          attendees: event.attendees,
+          attendees: event.attendees?.map((attendee) => ({
+            email: attendee.email,
+            displayName: attendee.displayName,
+            optional: attendee.optional,
+            responseStatus: attendee.responseStatus,
+          })),
           hangoutLink: event.hangoutLink,
           colorId: event.colorId,
           visibility: event.visibility,
@@ -511,7 +550,12 @@ export const createQuickAddEventTool = (env: Env) =>
           updated: event.updated,
           creator: event.creator,
           organizer: event.organizer,
-          attendees: event.attendees,
+          attendees: event.attendees?.map((attendee) => ({
+            email: attendee.email,
+            displayName: attendee.displayName,
+            optional: attendee.optional,
+            responseStatus: attendee.responseStatus,
+          })),
           hangoutLink: event.hangoutLink,
           colorId: event.colorId,
           visibility: event.visibility,

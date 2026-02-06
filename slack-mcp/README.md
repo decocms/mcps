@@ -1,5 +1,5 @@
-# Slack MCP 
-
+# Slack MCP      
+  
 MCP para integração com Slack, incluindo bot inteligente com gerenciamento de threads, comandos de AI agent e suporte a webhooks.
 
 ## Features
@@ -179,3 +179,4 @@ O deploy é automático via GitHub Actions quando há push para `main`.
 ```bash
 bun run scripts/deploy.ts slack-mcp
 ```
+

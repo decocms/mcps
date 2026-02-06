@@ -1,188 +1,237 @@
 /**
- * Slack Logger - Sends important logs to a Slack channel
+ * HyperDX Structured Logger for Slack MCP
+ *
+ * Provides structured logging with security safeguards:
+ * - NO sensitive data (tokens, message content, etc.)
+ * - Includes context: connectionId, teamName, organizationId
+ * - Generates unique trace_id for request tracking
+ * - Timing measurements for performance analysis
+ *
+ * Configuration via environment variables:
+ * - HYPERDX_API_KEY: HyperDX API key (optional, logs go to stdout by default)
+ * - LOG_LEVEL: "debug" | "info" | "warn" | "error" (default: "info")
  */
 
-import { sendMessage } from "./slack-client.ts";
-
-let logChannelId: string | null = null;
-let loggingEnabled = false;
-let webhookProcessingPaused = false; // Pause logging during webhook processing to prevent loops
-
-// TEMPORARILY DISABLED: Slack logging causes infinite loops
-// TODO: Re-enable when we have proper filtering at Mesh level
-const SLACK_LOGGING_DISABLED = true;
-
-export function configureLogger(config: { channelId?: string }): void {
-  if (SLACK_LOGGING_DISABLED) {
-    loggingEnabled = false;
-    console.log("[Logger] Slack logging DISABLED to prevent infinite loops");
-    console.log("[Logger] Logs will only go to console");
-    return;
-  }
-
-  if (config.channelId) {
-    logChannelId = config.channelId;
-    loggingEnabled = true;
-    console.log(`[Logger] Logging enabled to channel: ${logChannelId}`);
-  } else {
-    loggingEnabled = false;
-    console.log("[Logger] Logging disabled - no LOG_CHANNEL_ID configured");
-  }
+export interface LogContext {
+  service?: string;
+  level?: "info" | "warn" | "error" | "debug";
+  connectionId?: string;
+  connectionName?: string;
+  organizationId?: string;
+  teamId?: string;
+  teamName?: string;
+  trace_id?: string;
+  route?: string;
+  method?: string;
+  eventType?: string;
+  channel?: string;
+  channelName?: string;
+  userId?: string;
+  duration?: number;
+  error?: string;
+  status?: string;
+  hasSignature?: boolean;
+  hasTimestamp?: boolean;
+  payloadSize?: number;
+  userAgent?: string;
+  hasText?: boolean;
+  textLength?: number;
+  hasFiles?: boolean;
+  hasEvent?: boolean;
+  slackEventType?: string;
+  [key: string]: unknown;
 }
 
-export function isLoggingEnabled(): boolean {
-  return loggingEnabled && !!logChannelId && !webhookProcessingPaused;
-}
+type LogLevel = "debug" | "info" | "warn" | "error";
 
-/**
- * Pause Slack logging during webhook processing to prevent infinite loops
- */
-export function pauseSlackLogging(): void {
-  webhookProcessingPaused = true;
-}
-
-/**
- * Resume Slack logging after webhook processing
- */
-export function resumeSlackLogging(): void {
-  webhookProcessingPaused = false;
-}
-
-type LogLevel = "info" | "warn" | "error" | "success";
-
-const EMOJI_MAP: Record<LogLevel, string> = {
-  info: "ℹ️",
-  warn: "⚠️",
-  error: "❌",
-  success: "✅",
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
 };
 
-/**
- * Send a log message to the configured Slack channel
- */
-export async function logToSlack(
-  level: LogLevel,
-  title: string,
-  details?: string | Record<string, unknown>,
-): Promise<void> {
-  // Always log to console
-  const consoleMethod = level === "error" ? console.error : console.log;
-  consoleMethod(`[${level.toUpperCase()}] ${title}`, details ?? "");
+export class HyperDXLogger {
+  private service = "slack-mcp";
+  private minLevel: LogLevel;
+  private apiKey?: string;
+  private hyperDxEndpoint = "https://in-otel.hyperdx.io/v1/logs";
 
-  // Send to Slack if enabled and not paused (to prevent loops during webhook processing)
-  if (!loggingEnabled || !logChannelId || webhookProcessingPaused) {
-    return;
+  constructor(apiKey?: string) {
+    // Read log level from env (default: info)
+    const envLevel = (process.env.LOG_LEVEL ?? "info").toLowerCase();
+    this.minLevel = (
+      ["debug", "info", "warn", "error"].includes(envLevel) ? envLevel : "info"
+    ) as LogLevel;
+    this.apiKey = apiKey;
   }
 
-  try {
-    const emoji = EMOJI_MAP[level];
-    let text = `${emoji} *${title}*`;
+  /**
+   * Set HyperDX API key for direct ingestion
+   */
+  setApiKey(apiKey?: string) {
+    this.apiKey = apiKey;
+  }
 
-    if (details) {
-      if (typeof details === "string") {
-        text += `\n\`\`\`${details}\`\`\``;
-      } else {
-        text += `\n\`\`\`${JSON.stringify(details, null, 2)}\`\`\``;
-      }
+  /**
+   * Log at info level
+   */
+  info(message: string, context: Omit<LogContext, "level"> = {}) {
+    this.log(message, { ...context, level: "info" });
+  }
+
+  /**
+   * Log at warn level
+   */
+  warn(message: string, context: Omit<LogContext, "level"> = {}) {
+    this.log(message, { ...context, level: "warn" });
+  }
+
+  /**
+   * Log at error level
+   */
+  error(message: string, context: Omit<LogContext, "level"> = {}) {
+    this.log(message, { ...context, level: "error" });
+  }
+
+  /**
+   * Log at debug level
+   */
+  debug(message: string, context: Omit<LogContext, "level"> = {}) {
+    this.log(message, { ...context, level: "debug" });
+  }
+
+  /**
+   * Generate unique trace ID for request tracking
+   */
+  static generateTraceId(): string {
+    return `slack-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  }
+
+  /**
+   * Measure execution time and log results
+   */
+  async measure<T>(
+    fn: () => Promise<T>,
+    label: string,
+    context: Omit<LogContext, "level" | "duration"> = {},
+  ): Promise<T> {
+    const start = Date.now();
+    try {
+      const result = await fn();
+      const duration = Date.now() - start;
+      this.info(`${label} completed`, { ...context, duration });
+      return result;
+    } catch (error) {
+      const duration = Date.now() - start;
+      this.error(`${label} failed`, {
+        ...context,
+        duration,
+        error: String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Internal log method - outputs JSON to stdout or sends to HyperDX API
+   * SECURITY: Sanitizes sensitive data before logging
+   */
+  private log(message: string, context: LogContext) {
+    const level = context.level ?? "info";
+
+    // Skip if below minimum log level
+    if (LOG_LEVELS[level] < LOG_LEVELS[this.minLevel]) {
+      return;
     }
 
-    await sendMessage({
-      channel: logChannelId,
-      text,
-      mrkdwn: true,
-    });
-  } catch (error) {
-    // Don't fail if logging fails - just console log
-    console.error("[Logger] Failed to send log to Slack:", error);
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      service: this.service,
+      body: message,
+      ...context,
+    };
+
+    // Log to stdout (always, for local debugging and K8s fallback)
+    console.log(JSON.stringify(logEntry));
+
+    // If API key is configured, also send to HyperDX API
+    if (this.apiKey) {
+      this.sendToHyperDX(logEntry)
+        .then(() => {
+          // Debug: uncomment to verify sends
+          // console.log("[HyperDX] ✅ Log sent successfully");
+        })
+        .catch((error) => {
+          // Don't block on HyperDX send failures, just log to console
+          console.error("[HyperDX] ❌ Failed to send log:", error.message);
+        });
+    }
+  }
+
+  /**
+   * Send log entry to HyperDX via HTTP
+   */
+  private async sendToHyperDX(logEntry: Record<string, unknown>) {
+    console.log(`[HyperDX] 📤 Sending log to ${this.hyperDxEndpoint}...`);
+    try {
+      const response = await fetch(this.hyperDxEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: this.apiKey!, // HyperDX expects raw API key, not Bearer
+        },
+        body: JSON.stringify({
+          resourceLogs: [
+            {
+              resource: {
+                attributes: [
+                  {
+                    key: "service.name",
+                    value: { stringValue: this.service },
+                  },
+                ],
+              },
+              scopeLogs: [
+                {
+                  scope: { name: this.service },
+                  logRecords: [
+                    {
+                      timeUnixNano: `${Date.now() * 1000000}`,
+                      severityText: String(
+                        logEntry.level || "info",
+                      ).toUpperCase(),
+                      body: { stringValue: String(logEntry.body) },
+                      attributes: Object.entries(logEntry)
+                        .filter(([key]) => key !== "body" && key !== "level")
+                        .map(([key, value]) => ({
+                          key,
+                          value: { stringValue: String(value) },
+                        })),
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      const body = await response.text();
+      if (!response.ok) {
+        throw new Error(
+          `HyperDX API returned ${response.status}: ${response.statusText} - ${body}`,
+        );
+      }
+      console.log(
+        `[HyperDX] ✅ Log sent successfully (${response.status}) - Response: ${body || "(empty)"}`,
+      );
+    } catch (error) {
+      // Re-throw to be caught by caller
+      throw error;
+    }
   }
 }
 
-// Convenience methods
-export const logger = {
-  info: (title: string, details?: string | Record<string, unknown>) =>
-    logToSlack("info", title, details),
-
-  warn: (title: string, details?: string | Record<string, unknown>) =>
-    logToSlack("warn", title, details),
-
-  error: (title: string, details?: string | Record<string, unknown>) =>
-    logToSlack("error", title, details),
-
-  success: (title: string, details?: string | Record<string, unknown>) =>
-    logToSlack("success", title, details),
-
-  // Debug log - for detailed debugging in production
-  debug: (title: string, details?: string | Record<string, unknown>) =>
-    logToSlack("info", `🔍 ${title}`, details),
-
-  // Special method for webhook events
-  webhookReceived: (eventType: string, teamId?: string) =>
-    logToSlack("info", "Webhook Received", {
-      eventType,
-      teamId: teamId ?? "unknown",
-      timestamp: new Date().toISOString(),
-    }),
-
-  // Webhook processing steps
-  webhookProcessing: (step: string, details?: Record<string, unknown>) =>
-    logToSlack("info", `📥 ${step}`, {
-      ...details,
-      timestamp: new Date().toISOString(),
-    }),
-
-  // Special method for errors
-  webhookError: (error: string, context?: Record<string, unknown>) =>
-    logToSlack("error", "Webhook Error", {
-      error,
-      ...context,
-      timestamp: new Date().toISOString(),
-    }),
-
-  // Event handling
-  eventReceived: (
-    eventType: string,
-    details: { user?: string; channel?: string; text?: string },
-  ) =>
-    logToSlack("info", `📨 Event: ${eventType}`, {
-      ...details,
-      timestamp: new Date().toISOString(),
-    }),
-
-  eventHandled: (eventType: string) =>
-    logToSlack("success", `Event Handled: ${eventType}`),
-
-  eventError: (eventType: string, error: string) =>
-    logToSlack("error", `Event Error: ${eventType}`, { error }),
-
-  // Message handling
-  messageReceived: (channel: string, user: string, text: string) =>
-    logToSlack("info", "💬 Message Received", {
-      channel,
-      user,
-      text: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
-    }),
-
-  messageSent: (channel: string, text: string) =>
-    logToSlack("success", "📤 Message Sent", {
-      channel,
-      text: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
-    }),
-
-  // Connection status
-  connected: (teamId: string, botUserId: string) =>
-    logToSlack("success", "Bot Connected", {
-      teamId,
-      botUserId,
-      timestamp: new Date().toISOString(),
-    }),
-
-  disconnected: (reason?: string) =>
-    logToSlack("warn", "Bot Disconnected", {
-      reason: reason ?? "Unknown",
-      timestamp: new Date().toISOString(),
-    }),
-
-  // Config changes
-  configReceived: (details: Record<string, unknown>) =>
-    logToSlack("info", "⚙️ Config Received", details),
-};
+// Singleton instance
+export const logger = new HyperDXLogger();

@@ -74,6 +74,7 @@ export interface Event {
   sequence?: number;
   attendees?: Attendee[];
   attendeesOmitted?: boolean;
+  guestsCanSeeOtherGuests?: boolean;
   hangoutLink?: string;
   conferenceData?: ConferenceData;
   reminders?: {
@@ -196,6 +197,7 @@ export interface CreateEventInput {
   };
   colorId?: string;
   visibility?: "default" | "public" | "private" | "confidential";
+  guestsCanSeeOtherGuests?: boolean;
   sendUpdates?: "all" | "externalOnly" | "none";
   conferenceDataVersion?: 0 | 1;
 }

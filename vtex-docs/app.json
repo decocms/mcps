@@ -4,7 +4,7 @@
   "friendlyName": "VTEX Documentation",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-vtex-docs.decocdn.com/mcp"
+    "url": "https://sites-vtex-docs.decocache.com/mcp"
   },
   "description": "RAG-based MCP for searching and retrieving VTEX documentation.",
   "icon": "https://assets.decocache.com/decocms/8e2c5615-bfab-4426-adfd-9bfaed43b03b/vtex-docs-icon-mcp.jpg",

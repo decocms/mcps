@@ -11,12 +11,24 @@ import {
   type Message,
   type MessageReaction,
   type User,
+  type GuildMember,
   type PartialMessageReaction,
   type PartialUser,
 } from "discord.js";
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
 import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
+import {
+  publishMessageCreated,
+  publishMessageDeleted,
+  publishMessageUpdated,
+  publishMemberJoined,
+  publishMemberLeft,
+  publishMemberRoleAdded,
+  publishMemberRoleRemoved,
+  publishReactionAdded,
+  publishReactionRemoved,
+} from "../lib/event-publisher.ts";
 import {
   indexMessage,
   processCommand,
@@ -47,6 +59,58 @@ let client: Client | null = null;
 let eventsRegistered = false;
 let initializingPromise: Promise<Client> | null = null;
 
+// Cache for auto_respond channels to avoid DB queries on every message
+interface AutoRespondCacheEntry {
+  autoRespond: boolean;
+  timestamp: number;
+}
+const autoRespondCache = new Map<string, AutoRespondCacheEntry>();
+const AUTO_RESPOND_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Check if a channel has auto_respond enabled (with caching)
+ */
+async function isAutoRespondChannel(
+  guildId: string,
+  channelId: string,
+): Promise<boolean> {
+  const cacheKey = `${guildId}:${channelId}`;
+  const cached = autoRespondCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < AUTO_RESPOND_CACHE_TTL) {
+    return cached.autoRespond;
+  }
+
+  try {
+    const db = await import("../../shared/db.ts");
+    const channelContext = await db.getChannelContext(guildId, channelId);
+    const autoRespond = channelContext?.auto_respond ?? false;
+
+    autoRespondCache.set(cacheKey, {
+      autoRespond,
+      timestamp: Date.now(),
+    });
+
+    return autoRespond;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Invalidate auto_respond cache for a channel (call when setting changes)
+ */
+export function invalidateAutoRespondCache(
+  guildId: string,
+  channelId: string,
+): void {
+  const cacheKey = `${guildId}:${channelId}`;
+  autoRespondCache.delete(cacheKey);
+}
+
+// Instance ID for debugging multiple instances
+const CLIENT_INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 // Debounce for message processing
 const processedMessageIds = new Set<string>();
 const MESSAGE_CACHE_TTL = 10000; // 10 seconds
@@ -55,22 +119,33 @@ const MESSAGE_CACHE_TTL = 10000; // 10 seconds
  * Initialize the Discord client with the given environment.
  */
 export async function initializeDiscordClient(env: Env): Promise<Client> {
+  console.log(
+    `[Discord] 🆔 initializeDiscordClient called (Instance: ${CLIENT_INSTANCE_ID})`,
+  );
+
   // If already initializing, wait for it
   if (initializingPromise) {
-    console.log("[Discord] Already initializing, waiting...");
+    console.log("[Discord] ⏳ Already initializing, waiting...");
     return initializingPromise;
   }
 
   // Check if already initialized and ready
   if (client?.isReady()) {
-    console.log("[Discord] Client already initialized and ready");
+    console.log(
+      `[Discord] ✅ Client already initialized and ready (guilds: ${client.guilds.cache.size})`,
+    );
     return client;
   }
 
   // If there's an existing client that's not ready, destroy it
   if (client) {
     console.log("[Discord] Destroying previous unready client...");
-    client.destroy();
+    try {
+      client.removeAllListeners();
+      client.destroy();
+    } catch (error) {
+      console.error("[Discord] Error destroying client:", error);
+    }
     client = null;
     eventsRegistered = false;
   }
@@ -93,15 +168,51 @@ async function doInitialize(env: Env): Promise<Client> {
   // Set database environment for shared module
   setDatabaseEnv(env);
 
-  // Get bot token from state
-  const token = env.MESH_REQUEST_CONTEXT?.state?.BOT_TOKEN;
-  console.log("[Discord] BOT_TOKEN present:", !!token);
+  // Try to load config from Supabase first
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  console.log(
+    `[Discord] Looking for saved config for connection: ${connectionId}`,
+  );
 
-  if (!token) {
-    const stateKeys = Object.keys(env.MESH_REQUEST_CONTEXT?.state || {});
+  const { getDiscordConfig, getEffectiveMeshToken } = await import(
+    "../lib/config-cache.ts"
+  );
+  const { storeEssentialConfig } = await import("../bot-manager.ts");
+  const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
+
+  if (!savedConfig?.botToken) {
     throw new Error(
-      "[Discord] BOT_TOKEN not configured. Available keys: " +
-        stateKeys.join(", "),
+      `Discord Bot Token not configured for connection '${connectionId}'. ` +
+        "Please use DISCORD_SAVE_CONFIG to save your bot token first.",
+    );
+  }
+
+  // Use token from Supabase config
+  const token = savedConfig.botToken;
+  console.log("[Discord] ✅ Bot token loaded from Supabase config");
+  console.log(
+    `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+  );
+
+  // Store essential config for LLM fallback (uses API key if available)
+  const effectiveToken = getEffectiveMeshToken(savedConfig);
+  const isUsingApiKey = !!savedConfig.meshApiKey;
+  console.log(
+    `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
+  );
+  if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
+    storeEssentialConfig({
+      meshUrl: savedConfig.meshUrl,
+      organizationId: savedConfig.organizationId,
+      persistentToken: effectiveToken,
+      isApiKey: isUsingApiKey,
+      modelProviderId: savedConfig.modelProviderId,
+      modelId: savedConfig.modelId,
+      agentId: savedConfig.agentId,
+    });
+    console.log(
+      `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
     );
   }
 
@@ -127,7 +238,8 @@ async function doInitialize(env: Env): Promise<Client> {
 
   // Login and wait for ready
   await client.login(token);
-  console.log(`[Discord] Logged in as ${client.user?.tag}`);
+  console.log(`[Discord] 🤖 Logged in as ${client.user?.tag}`);
+  console.log(`[Discord] 🆔 Client Instance: ${CLIENT_INSTANCE_ID}`);
 
   // Wait for the client to be fully ready
   if (client && !client.isReady()) {
@@ -160,13 +272,21 @@ export function getDiscordClient(): Client | null {
  * Register all event handlers for the Discord client.
  */
 function registerEventHandlers(client: Client, env: Env): void {
-  // Prevent double registration
-  if (eventsRegistered) {
-    console.log("[Discord] Events already registered, skipping...");
-    return;
-  }
+  // Check how many listeners exist before cleanup
+  const existingListeners = client.eventNames().length;
+  console.log(
+    `[Discord] 🔍 Existing event listeners before cleanup: ${existingListeners}`,
+  );
+
+  // CRITICAL: Remove ALL existing listeners to prevent duplicates on hot reload
+  console.log("[Discord] Clearing existing event listeners...");
+  client.removeAllListeners();
+  eventsRegistered = false;
+
+  console.log(
+    `[Discord] 📝 Registering event handlers (Instance: ${CLIENT_INSTANCE_ID})...`,
+  );
   eventsRegistered = true;
-  console.log("[Discord] Registering event handlers...");
   // Ready event (use 'clientReady' for Discord.js v15+)
   client.once("clientReady", () => {
     const prefix = env.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
@@ -223,19 +343,23 @@ function registerEventHandlers(client: Client, env: Env): void {
     // Removed verbose logging for better performance
 
     // Re-set database env (ensures it's available for this message)
-    // Only set if we have a valid MESH_REQUEST_CONTEXT
-    if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-      setDatabaseEnv(currentEnv);
-    }
+    setDatabaseEnv(currentEnv);
 
     try {
-      // Index the message (non-blocking, errors are logged but don't stop processing)
-      // Only index if database is configured
-      if (currentEnv.MESH_REQUEST_CONTEXT?.state?.DATABASE) {
-        indexMessage(message, isDM).catch((e) =>
-          console.log("[Message] Failed to index:", e.message),
+      // Index all messages to Supabase (async, don't await)
+      console.log(
+        `[Message] 📝 Indexing message ${message.id} from ${message.author.username}`,
+      );
+      indexMessage(message, isDM)
+        .then(() => console.log(`[Message] ✅ Indexed message ${message.id}`))
+        .catch((e) =>
+          console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
         );
-      }
+
+      // Publish message.created event to EVENT_BUS (async, don't await)
+      publishMessageCreated(currentEnv, message).catch(() => {
+        /* ignore */
+      });
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
@@ -299,7 +423,25 @@ function registerEventHandlers(client: Client, env: Env): void {
         }
       }
 
+      // Check for auto_respond channel (no mention/prefix needed)
+      if (!prefix && !isDM && message.guild?.id) {
+        const autoRespond = await isAutoRespondChannel(
+          message.guild.id,
+          message.channel.id,
+        );
+        if (autoRespond) {
+          prefix = "AUTO_RESPOND";
+          content = message.content;
+          console.log(
+            `[Discord] 🤖 Auto-respond channel detected: ${message.channel.id}`,
+          );
+        }
+      }
+
       if (prefix) {
+        console.log(
+          `[Discord] 📨 Processing command from ${message.author.username} (Instance: ${CLIENT_INSTANCE_ID})`,
+        );
         await processCommand(
           message,
           prefix,
@@ -322,8 +464,24 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionAdd(reaction, user);
+
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionAdded(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction add:", error);
       }
@@ -338,8 +496,24 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
+      const currentEnv = getCurrentEnv() || env;
       try {
+        // Fetch partial data if needed
+        if (reaction.partial) await reaction.fetch();
+        if (user.partial) await user.fetch();
+
         await handleReactionRemove(reaction, user);
+
+        // Publish event (only if not partial after fetch)
+        if (!reaction.partial && !user.partial) {
+          publishReactionRemoved(
+            currentEnv,
+            reaction as MessageReaction,
+            user as User,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
       } catch (error) {
         console.error("[Discord] Error handling reaction remove:", error);
       }
@@ -372,8 +546,15 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message delete event
   client.on("messageDelete", async (message) => {
     if (!message.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageDelete(message);
+      // Publish event (only if not partial)
+      if (!message.partial) {
+        publishMessageDeleted(currentEnv, message as Message).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message delete:", error);
     }
@@ -393,8 +574,21 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message update/edit event
   client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMessageUpdate(oldMessage, newMessage);
+      // Publish event (only if both messages are available and not partial)
+      if (oldMessage.partial) await oldMessage.fetch();
+      if (newMessage.partial) await newMessage.fetch();
+      if (!oldMessage.partial && !newMessage.partial) {
+        publishMessageUpdated(
+          currentEnv,
+          oldMessage as Message,
+          newMessage as Message,
+        ).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
     }
@@ -432,8 +626,13 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member join event
   client.on("guildMemberAdd", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberJoin(member);
+      // Publish event
+      publishMemberJoined(currentEnv, member).catch(() => {
+        /* ignore */
+      });
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
     }
@@ -441,8 +640,15 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member leave event
   client.on("guildMemberRemove", async (member) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberLeave(member);
+      // Publish event (only if not partial)
+      if (!member.partial) {
+        publishMemberLeft(currentEnv, member as GuildMember).catch(() => {
+          /* ignore */
+        });
+      }
     } catch (error) {
       console.error("[Discord] Error handling member leave:", error);
     }
@@ -450,8 +656,41 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member update event
   client.on("guildMemberUpdate", async (oldMember, newMember) => {
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleMemberUpdate(newMember);
+
+      // Detect role changes and publish events
+      const oldRoles = oldMember.roles.cache;
+      const newRoles = newMember.roles.cache;
+
+      // Roles added
+      newRoles.forEach((role) => {
+        if (!oldRoles.has(role.id)) {
+          publishMemberRoleAdded(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
+
+      // Roles removed
+      oldRoles.forEach((role) => {
+        if (!newRoles.has(role.id)) {
+          publishMemberRoleRemoved(
+            currentEnv,
+            newMember,
+            role.id,
+            role.name,
+          ).catch(() => {
+            /* ignore */
+          });
+        }
+      });
     } catch (error) {
       console.error("[Discord] Error handling member update:", error);
     }
@@ -497,4 +736,111 @@ export async function shutdownDiscordClient(): Promise<void> {
     eventsRegistered = false; // Reset flag so events can be re-registered
     console.log("[Discord] Client shutdown");
   }
+}
+
+// ============================================================================
+// Message Helpers for Streaming
+// ============================================================================
+
+/**
+ * Send a "thinking" message that will be updated with the actual response.
+ * Returns the message for later editing.
+ */
+export async function sendThinkingMessage(
+  message: Message,
+): Promise<Message | null> {
+  try {
+    const channel = message.channel;
+    if (!("send" in channel)) {
+      console.error("[Discord] Channel does not support sending messages");
+      return null;
+    }
+
+    const thinkingMsg = await channel.send({
+      content: `<@${message.author.id}> 🤔 Pensando...`,
+    });
+
+    return thinkingMsg;
+  } catch (error) {
+    console.error("[Discord] Failed to send thinking message:", error);
+    return null;
+  }
+}
+
+/**
+ * Edit an existing message with new content.
+ * Used for streaming responses.
+ */
+export async function editMessage(
+  message: Message,
+  content: string,
+): Promise<boolean> {
+  try {
+    await message.edit({ content });
+    return true;
+  } catch (error) {
+    console.error("[Discord] Failed to edit message:", error);
+    return false;
+  }
+}
+
+/**
+ * Update a thinking message with the actual response (or partial response during streaming).
+ * Handles Discord's 2000 character limit by truncating if necessary.
+ */
+export async function updateThinkingMessage(
+  thinkingMsg: Message,
+  content: string,
+  authorMention?: string,
+): Promise<boolean> {
+  try {
+    // Add author mention if provided
+    const fullContent = authorMention ? `${authorMention} ${content}` : content;
+
+    // Discord has a 2000 character limit
+    const maxLength = 2000;
+    const truncatedContent =
+      fullContent.length > maxLength
+        ? fullContent.slice(0, maxLength - 3) + "..."
+        : fullContent;
+
+    await thinkingMsg.edit({ content: truncatedContent });
+    return true;
+  } catch (error) {
+    console.error("[Discord] Failed to update thinking message:", error);
+    return false;
+  }
+}
+
+/**
+ * Split long text into chunks that fit Discord's message limit.
+ */
+export function splitMessage(text: string, maxLength: number = 2000): string[] {
+  if (text.length <= maxLength) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Try to split at natural break points
+    let splitIndex = remaining.lastIndexOf("\n", maxLength);
+    if (splitIndex === -1 || splitIndex < maxLength / 2) {
+      splitIndex = remaining.lastIndexOf(" ", maxLength);
+    }
+    if (splitIndex === -1 || splitIndex < maxLength / 2) {
+      splitIndex = maxLength;
+    }
+
+    chunks.push(remaining.slice(0, splitIndex));
+    remaining = remaining.slice(splitIndex).trim();
+  }
+
+  return chunks;
 }

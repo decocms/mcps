@@ -43,3 +43,9 @@ export const SHAPE_TYPE = {
   SPEECH: "SPEECH",
   TEXT_BOX: "TEXT_BOX",
 } as const;
+
+// Google OAuth scopes
+export const GOOGLE_SCOPES = {
+  PRESENTATIONS: "https://www.googleapis.com/auth/presentations",
+  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
+} as const;
