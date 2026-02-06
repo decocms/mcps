@@ -10,12 +10,12 @@ export const addSkuToCollection = (env: Env) =>
       "Add a single SKU to a collection. Use this to manually add products one by one.",
     inputSchema: z.object({
       collectionId: z.number().describe("The collection ID"),
-      SkuId: z.number().describe("The SKU ID to add to the collection"),
+      skuId: z.number().describe("The SKU ID to add to the collection"),
     }),
     execute: async ({ context }) => {
-      const { collectionId, SkuId } = context;
+      const { collectionId, skuId } = context;
       const client = new VTEXClient(getCredentials(env));
-      return client.addSkuToCollection(collectionId, { SkuId });
+      return client.addSkuToCollection(collectionId, { SkuId: skuId });
     },
   });
 

@@ -45,4 +45,7 @@ async function downloadSchemas() {
   console.log("\nAll schemas downloaded successfully!");
 }
 
-downloadSchemas().catch(console.error);
+downloadSchemas().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
