@@ -11,6 +11,7 @@ import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
 export type { Env };
+export { StateSchema };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
@@ -19,4 +20,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-serve(runtime.fetch);
+// Start the server
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}

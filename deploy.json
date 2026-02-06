@@ -99,7 +99,7 @@
     "site": "strapi",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watchFolders": ["strapi/"]
+    "watchFolders": ["strapi/", "shared/"]
   },
   "tiktok-ads": {
     "site": "tiktok-ads",
