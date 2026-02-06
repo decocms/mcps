@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-auditlogs-mcp",
+  "friendlyName": "Cloudflare Audit Logs",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://auditlogs.mcp.cloudflare.com/mcp"
+  },
+  "description": "Access Cloudflare account audit logs for security and compliance. Track user actions, configuration changes, and API activity across your organization.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Security", "Compliance"],
+    "official": true,
+    "tags": ["cloudflare", "audit", "logs", "security", "compliance", "governance", "activity-tracking"],
+    "short_description": "Access account audit logs for tracking user actions, changes, and API activity",
+    "mesh_description": "Cloudflare Audit Logs MCP provides comprehensive access to account-level audit trails for security monitoring and compliance requirements. This official MCP enables you to track all user actions and configuration changes across your Cloudflare account, monitor API access and usage patterns, view authentication events (logins, failures, MFA changes), audit permission and role changes for team members, track zone and domain configuration modifications, monitor security policy updates (firewall, rate limiting, bot management), generate compliance reports for SOC 2, ISO 27001, and other frameworks, configure alerts for suspicious or unauthorized activities, and export audit logs for long-term retention and SIEM integration. The platform provides detailed timestamps, user identification, IP addresses, and action descriptions for every event. Perfect for security teams monitoring for threats, compliance officers maintaining audit trails, administrators tracking configuration changes, and organizations requiring detailed activity logging. Use natural language to search audit logs, investigate security incidents, generate compliance reports, identify policy violations, and analyze user behavior patterns across your Cloudflare organization."
+  }
+}
+

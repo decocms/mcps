@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-dns-analytics-mcp",
+  "friendlyName": "Cloudflare DNS Analytics",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://dns-analytics.mcp.cloudflare.com/mcp"
+  },
+  "description": "Analyze DNS query patterns and performance metrics. Monitor query volumes, record types, response codes, and geographic distribution of DNS traffic.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Analytics", "Networking"],
+    "official": true,
+    "tags": ["cloudflare", "dns", "analytics", "queries", "performance", "monitoring", "nameserver"],
+    "short_description": "Analyze DNS query patterns, performance, and geographic distribution of DNS traffic",
+    "mesh_description": "Cloudflare DNS Analytics MCP provides comprehensive insights into DNS query patterns and performance across your domains. This official MCP enables you to monitor DNS query volumes and trends over time, analyze query types (A, AAAA, MX, TXT, CNAME, etc.), track response codes and error rates (NXDOMAIN, SERVFAIL, etc.), view geographic distribution of DNS queries worldwide, measure DNS response times and latency, identify top queried domains and subdomains, detect unusual query patterns and potential DDoS attacks, analyze DNSSEC validation rates and issues, and compare performance across different nameservers. The platform processes billions of DNS queries to provide real-time and historical analytics. Perfect for domain administrators monitoring DNS health, security teams detecting DNS-based attacks, network engineers optimizing DNS performance, and developers troubleshooting DNS issues. Use natural language to query DNS statistics, investigate response time issues, analyze traffic patterns, detect anomalies, and generate reports on DNS performance and security across your zones."
+  }
+}
+

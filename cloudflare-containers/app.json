@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-containers-mcp",
+  "friendlyName": "Cloudflare Containers",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://containers.mcp.cloudflare.com/mcp"
+  },
+  "description": "Manage and deploy containerized applications on Cloudflare's edge network. Run Docker containers globally with automatic scaling.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Infrastructure", "Containers"],
+    "official": true,
+    "tags": ["cloudflare", "containers", "docker", "edge-computing", "deployment", "kubernetes", "microservices"],
+    "short_description": "Manage and deploy containerized applications on Cloudflare's global edge network",
+    "mesh_description": "Cloudflare Containers MCP provides comprehensive container orchestration and management on Cloudflare's global edge network. This official MCP enables you to deploy Docker containers to edge locations worldwide, manage container images and registries, configure automatic scaling based on demand, set up load balancing across container instances, manage environment variables and secrets, monitor container health and performance metrics, configure networking and service mesh, and integrate with CI/CD pipelines for automated deployments. The platform brings containers to the edge, reducing latency and improving application performance by running closer to users. Perfect for deploying microservices, API backends, web applications, and data processing workloads that benefit from global distribution. Supports standard container formats and integrates with existing Docker workflows. Use natural language to deploy applications, scale services, monitor container health, troubleshoot issues, and optimize resource allocation across Cloudflare's network."
+  }
+}
+

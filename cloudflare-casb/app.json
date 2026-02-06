@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-casb-mcp",
+  "friendlyName": "Cloudflare CASB",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://casb.mcp.cloudflare.com/mcp"
+  },
+  "description": "Cloud Access Security Broker (CASB) for SaaS application security. Scan for misconfigurations, data exposure, and compliance violations across cloud apps.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Security", "Compliance"],
+    "official": true,
+    "tags": ["cloudflare", "casb", "security", "compliance", "saas", "data-protection", "cloud-security"],
+    "short_description": "Cloud Access Security Broker for SaaS app security and compliance monitoring",
+    "mesh_description": "Cloudflare CASB (Cloud Access Security Broker) MCP provides comprehensive security and compliance monitoring for SaaS applications used across your organization. This official MCP enables you to scan SaaS applications for security misconfigurations (overly permissive sharing, weak authentication), detect data exposure risks and shadow IT usage, monitor compliance with regulations (GDPR, HIPAA, SOC 2), track user access and permission changes across cloud apps, identify sensitive data in cloud storage (Google Drive, OneDrive, Dropbox), audit third-party integrations and OAuth grants, enforce data loss prevention (DLP) policies, generate security posture reports and compliance assessments, and receive alerts for high-risk activities or policy violations. The platform integrates with popular SaaS applications including Google Workspace, Microsoft 365, Salesforce, Slack, GitHub, and more. Perfect for security teams managing cloud application risks, compliance officers maintaining regulatory requirements, IT administrators controlling shadow IT, and organizations protecting sensitive data in the cloud. Use natural language to scan for vulnerabilities, investigate security findings, assess compliance status, review user permissions, and configure security policies across your SaaS ecosystem."
+  }
+}
+
