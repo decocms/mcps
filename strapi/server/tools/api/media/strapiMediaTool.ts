@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { makeRequest } from "../../../lib/strapi.api.ts";
+import { validateExternalUrl } from "../../../lib/url-validator.ts";
 import type { Env } from "../../../types/env.ts";
 
 export const createStrapiGetMediaTool = (env: Env) =>
@@ -148,6 +149,15 @@ export const createStrapiUploadMediaTool = (env: Env) =>
       context: { fileUrl, fileName, alternativeText, caption, folder },
     }) => {
       try {
+        // Validate URL to prevent SSRF
+        const urlValidation = validateExternalUrl(fileUrl);
+        if (!urlValidation.valid) {
+          return {
+            success: false,
+            error: `URL rejeitada: ${urlValidation.reason}`,
+          };
+        }
+
         // Download the file from URL
         const fileResponse = await fetch(fileUrl);
         if (!fileResponse.ok) {
@@ -157,11 +167,8 @@ export const createStrapiUploadMediaTool = (env: Env) =>
           };
         }
 
-        // Get file blob and content type
+        // Get file blob
         const fileBlob = await fileResponse.blob();
-        const contentType =
-          fileResponse.headers.get("content-type") ||
-          "application/octet-stream";
 
         // Extract filename from URL if not provided
         const finalFileName =
