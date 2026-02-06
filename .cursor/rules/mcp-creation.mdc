@@ -281,6 +281,17 @@ Full documentation: [shared/README.md](../shared/README.md)
 
 ## Tools Implementation
 
+### Public vs Private Tools
+
+**Use `createTool` (public) by default.** Only use `createPrivateTool` when the tool:
+- Accesses databases (PostgreSQL, MySQL, etc.)
+- Accesses sensitive services that require environment credentials
+- Performs destructive operations that need extra protection
+
+**Examples:**
+- ✅ `createTool` - API calls, webhooks, public data fetching
+- ❌ `createPrivateTool` - Database queries, services requiring API keys from env
+
 ```typescript
 // server/tools/index.ts
 import { myToolFactory } from "./my-tool.ts";
@@ -290,12 +301,12 @@ export const tools = [myToolFactory];
 
 ```typescript
 // server/tools/my-tool.ts
-import { createPrivateTool } from "@decocms/runtime";
+import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 
 export const myToolFactory = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "my_tool_name",
     description: "What this tool does",
     inputSchema: z.object({
@@ -304,10 +315,21 @@ export const myToolFactory = (env: Env) =>
     outputSchema: z.object({
       result: z.string(),
     }),
-    execute: async ({ input }) => {
+    execute: async ({ context }) => {
       // Implementation
       return { result: "success" };
     },
+  });
+```
+
+**For private tools (database access, sensitive services):**
+
+```typescript
+import { createPrivateTool } from "@decocms/runtime/tools";
+
+export const myPrivateToolFactory = (env: Env) =>
+  createPrivateTool({
+    // ... same structure
   });
 ```
 

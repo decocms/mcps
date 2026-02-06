@@ -89,11 +89,23 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["deco-news-weekly-digest/", "shared/"]
   },
-  "google-apps-script": {
-    "site": "google-apps-script",
+  "slack-mcp": {
+    "site": "slack-mcp",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watchFolders": ["google-apps-script/", "shared/"]
+    "watchFolders": ["slack-mcp/", "shared/"]
+  },
+  "strapi": {
+    "site": "strapi",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["strapi/"]
+  },
+  "tiktok-ads": {
+    "site": "tiktok-ads",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["tiktok-ads/", "shared/"]
   },
   "google-sheets": {
     "site": "google-sheets",
@@ -136,18 +148,6 @@
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
     "watchFolders": ["blog-post-generator/", "shared/"]
-  },
-  "slack-mcp": {
-    "site": "slack-mcp",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watchFolders": ["slack-mcp/", "shared/"]
-  },
-  "tiktok-ads": {
-    "site": "tiktok-ads",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watchFolders": ["tiktok-ads/", "shared/"]
   },
   "vtex-docs": {
     "site": "vtex-docs",
