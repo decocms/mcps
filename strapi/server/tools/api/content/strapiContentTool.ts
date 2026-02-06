@@ -117,7 +117,14 @@ export const createStrapiGetContentByIdTool = (env: Env) =>
     execute: async ({ context: { contentType, id, populate } }) => {
       try {
         const params: Record<string, any> = {};
-        if (populate) params.populate = populate;
+        if (populate) {
+          // Try to parse as JSON for deep populate, fallback to string
+          try {
+            params.populate = JSON.parse(populate);
+          } catch {
+            params.populate = populate;
+          }
+        }
 
         const response = await makeRequest(
           env,

@@ -362,8 +362,9 @@ export const createStrapiGetMediaFoldersTool = (env: Env) =>
 export const strapiMediaTools = [
   createStrapiGetMediaTool,
   createStrapiGetMediaByIdTool,
-  createStrapiUploadMediaTool,
-  createStrapiUpdateMediaTool,
+  // TODO: Upload and update require FormData implementation
+  // createStrapiUploadMediaTool,
+  // createStrapiUpdateMediaTool,
   createStrapiDeleteMediaTool,
   createStrapiGetMediaFoldersTool,
 ];

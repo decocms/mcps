@@ -149,12 +149,6 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["blog-post-generator/", "shared/"]
   },
-  "tiktok-ads": {
-    "site": "tiktok-ads",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watchFolders": ["tiktok-ads/", "shared/"]
-  },
   "vtex-docs": {
     "site": "vtex-docs",
     "entrypoint": "./dist/server/main.js",

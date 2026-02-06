@@ -90,7 +90,7 @@ export const makeRequest = async (
     }
 
     return {
-      success: true,
+      success: response.ok, // Use response.ok to check for 2xx status codes
       data,
       requestId,
       duration,

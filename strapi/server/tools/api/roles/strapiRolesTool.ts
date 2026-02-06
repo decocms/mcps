@@ -207,7 +207,16 @@ export const createStrapiUpdateRoleTool = (env: Env) =>
         if (name !== undefined) roleData.name = name;
         if (description !== undefined) roleData.description = description;
         if (type !== undefined) roleData.type = type;
-        if (permissions !== undefined) roleData.permissions = permissions;
+        if (permissions !== undefined) {
+          try {
+            roleData.permissions = JSON.parse(permissions);
+          } catch {
+            return {
+              success: false,
+              error: "Permissões inválidas: formato JSON esperado",
+            };
+          }
+        }
 
         const response = await makeRequest(
           env,

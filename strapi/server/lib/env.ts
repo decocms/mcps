@@ -14,11 +14,15 @@ export const getStrapiApiEndpoint = (env: Env): string => {
 
   // Remove trailing /api if present (we add it in the endpoint paths)
   let endpoint = apiEndpoint.trim();
+
+  // First remove trailing slashes
+  while (endpoint.endsWith("/")) {
+    endpoint = endpoint.slice(0, -1);
+  }
+
+  // Then remove /api suffix if present
   if (endpoint.endsWith("/api")) {
     endpoint = endpoint.slice(0, -4);
-  }
-  if (endpoint.endsWith("/")) {
-    endpoint = endpoint.slice(0, -1);
   }
 
   return endpoint;
