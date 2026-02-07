@@ -65,7 +65,8 @@
     "vtex",
     "whatsapp",
     "whatsapp-management",
-    "whisper"
+    "whisper",
+    "virtual-try-on"
   ],
   "dependencies": {
     "@types/node": "^24.10.0"

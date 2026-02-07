@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-radar-mcp",
+  "friendlyName": "Cloudflare Radar",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://radar.mcp.cloudflare.com/mcp"
+  },
+  "description": "Access global internet trends and insights from Cloudflare Radar. Query traffic patterns, security threats, and network performance data worldwide.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Analytics", "Security"],
+    "official": true,
+    "tags": ["cloudflare", "radar", "internet-trends", "analytics", "security", "threats", "traffic", "insights"],
+    "short_description": "Access global internet trends and insights from Cloudflare Radar with traffic and security data",
+    "mesh_description": "Cloudflare Radar MCP provides access to comprehensive internet intelligence and trends based on data from Cloudflare's global network. This official MCP enables you to analyze global internet traffic patterns and trends, monitor DDoS attacks and security threats in real-time, track adoption of internet technologies (HTTP/3, IPv6, DNSSEC), view internet quality and connectivity metrics by country and network, analyze routing and BGP announcements, monitor outages and disruptions worldwide, track bot and automated traffic patterns, and access domain ranking and popularity data. The platform processes petabytes of data to provide insights into internet usage, security, performance, and reliability. Perfect for researchers studying internet trends, security teams monitoring threats, network operators tracking performance, and anyone interested in understanding global internet patterns. Use natural language to explore traffic trends, investigate security incidents, analyze technology adoption, and generate reports on internet health and performance across regions and networks."
+  }
+}
+

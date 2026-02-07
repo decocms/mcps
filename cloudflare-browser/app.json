@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-browser-mcp",
+  "friendlyName": "Cloudflare Browser",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://browser.mcp.cloudflare.com/mcp"
+  },
+  "description": "Control and automate browsers in the cloud with Cloudflare Browser Rendering. Run Puppeteer and Playwright scripts at the edge for web scraping and testing.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Automation", "Testing"],
+    "official": true,
+    "tags": ["cloudflare", "browser", "puppeteer", "playwright", "automation", "scraping", "testing", "rendering"],
+    "short_description": "Control and automate cloud browsers with Puppeteer and Playwright for scraping and testing",
+    "mesh_description": "Cloudflare Browser MCP provides cloud-based browser automation and rendering capabilities using Puppeteer and Playwright at the edge. This official MCP enables you to run browser automation scripts without managing infrastructure, scrape dynamic websites with JavaScript rendering, perform automated testing across different browsers and devices, capture screenshots and generate PDFs of web pages, monitor website availability and visual changes, bypass bot detection and anti-scraping measures, execute browser scripts at scale with automatic load balancing, and access websites from global edge locations for localized testing. The platform handles browser lifecycle management, resource cleanup, and provides reliable execution at scale. Perfect for web scraping projects, automated testing pipelines, monitoring services, PDF generation from HTML, and any workflow requiring programmatic browser control. Supports full Puppeteer and Playwright APIs with additional Cloudflare-specific optimizations. Use natural language to create scraping workflows, run automated tests, capture page snapshots, and build browser automation solutions."
+  }
+}
+
