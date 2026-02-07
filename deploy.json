@@ -107,6 +107,12 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["tiktok-ads/", "shared/"]
   },
+  "virtual-try-on": {
+    "site": "virtual-try-on",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["virtual-try-on/", "shared/"]
+  },
   "google-sheets": {
     "site": "google-sheets",
     "entrypoint": "./dist/server/main.js",

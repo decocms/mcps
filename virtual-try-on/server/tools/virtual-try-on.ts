@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTool } from "@decocms/runtime/tools";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 const GarmentTypeSchema = z.enum([
   "top",
@@ -67,15 +67,43 @@ const VirtualTryOnInputSchema = z.object({
 
 type VirtualTryOnInput = z.infer<typeof VirtualTryOnInputSchema>;
 
-type McpJsonRpcResponse = {
+interface McpJsonRpcError {
+  code: number;
+  message: string;
+  data?: unknown;
+}
+
+interface McpJsonRpcResult {
+  structuredContent?: GeneratorResult;
+  content?: Array<{ type: string; text?: string }>;
+}
+
+interface McpJsonRpcResponse {
   jsonrpc: string;
   id?: number | string;
-  error?: { code: number; message: string; data?: unknown };
-  result?: {
-    structuredContent?: unknown;
-    content?: Array<{ type: string; text?: string }>;
-  };
-};
+  error?: McpJsonRpcError;
+  result?: McpJsonRpcResult;
+}
+
+interface GeneratorResult {
+  image?: string;
+  error?: boolean;
+  finishReason?: string;
+}
+
+interface GeneratorConfig {
+  url: string;
+  authToken?: string;
+  headers?: Record<string, string>;
+  toolName: string;
+  defaultModel: string;
+}
+
+interface ConnectionResponse {
+  connection_url?: string;
+  connection_token?: string | null;
+  connection_headers?: Record<string, string> | null;
+}
 
 function buildTryOnPrompt(args: {
   garmentsCount: number;
@@ -83,7 +111,7 @@ function buildTryOnPrompt(args: {
   userInstruction?: string;
   preserveFace: boolean;
   preserveBackground: boolean;
-}) {
+}): string {
   const { garmentsCount, garmentTypes, userInstruction, preserveFace } = args;
 
   const garmentLine =
@@ -115,47 +143,44 @@ function buildTryOnPrompt(args: {
     .join("\n");
 }
 
-async function resolveGeneratorConfig(env: Env) {
+async function resolveGeneratorConfig(env: Env): Promise<GeneratorConfig> {
   const state = env.MESH_REQUEST_CONTEXT?.state;
-  const stateAny = state as any;
+
+  const defaultToolName = state?.generatorToolName ?? "GENERATE_IMAGE";
+  const defaultModel = state?.defaultModel ?? "gemini-2.5-flash-image-preview";
 
   // 1) Direct URL mode
-  if (stateAny?.generatorMcpUrl) {
+  if (state?.generatorMcpUrl) {
     return {
-      url: stateAny.generatorMcpUrl as string,
-      authToken:
-        (stateAny.generatorAuthToken as string | undefined) || undefined,
-      toolName: (stateAny.generatorToolName as string) || "GENERATE_IMAGE",
-      defaultModel:
-        (stateAny.defaultModel as string) || "gemini-2.5-flash-image-preview",
+      url: state.generatorMcpUrl,
+      authToken: state.generatorAuthToken ?? undefined,
+      toolName: defaultToolName,
+      defaultModel: defaultModel,
     };
   }
 
   // 2) Connection-binding mode
-  const connectionId = stateAny?.generatorConnectionId as string | undefined;
-  const connectionBinding = stateAny?.CONNECTION;
+  const connectionId = state?.generatorConnectionId;
+  const connectionBinding = state?.CONNECTION;
+
   if (connectionId && connectionBinding?.COLLECTION_CONNECTIONS_GET) {
-    const conn = await connectionBinding.COLLECTION_CONNECTIONS_GET({
+    const conn = (await connectionBinding.COLLECTION_CONNECTIONS_GET({
       id: connectionId,
-    });
-    const url = conn.connection_url as string | undefined;
+    })) as ConnectionResponse;
+
+    const url = conn.connection_url;
     if (!url) {
       throw new Error(
         `Connection ${connectionId} did not return connection_url`,
       );
     }
-    const token = conn.connection_token as string | null | undefined;
-    const hdrs = conn.connection_headers as
-      | Record<string, string>
-      | null
-      | undefined;
+
     return {
       url,
-      authToken: token || undefined,
-      headers: hdrs || undefined,
-      toolName: (stateAny.generatorToolName as string) || "GENERATE_IMAGE",
-      defaultModel:
-        (stateAny.defaultModel as string) || "gemini-2.5-flash-image-preview",
+      authToken: conn.connection_token ?? undefined,
+      headers: conn.connection_headers ?? undefined,
+      toolName: defaultToolName,
+      defaultModel: defaultModel,
     };
   }
 
@@ -170,7 +195,7 @@ async function callGeneratorTool(args: {
   headers?: Record<string, string>;
   toolName: string;
   toolArgs: Record<string, unknown>;
-}) {
+}): Promise<GeneratorResult> {
   const { url, authToken, headers, toolName, toolArgs } = args;
   const mcpRequest = {
     jsonrpc: "2.0",
@@ -188,7 +213,7 @@ async function callGeneratorTool(args: {
       "Content-Type": "application/json",
       Accept: "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(headers || {}),
+      ...(headers ?? {}),
     },
     body: JSON.stringify(mcpRequest),
   });
@@ -206,13 +231,17 @@ async function callGeneratorTool(args: {
   }
 
   // Prefer structured content, fallback to parsing the first content text.
-  const result =
-    payload.result?.structuredContent ??
-    (payload.result?.content?.[0]?.text
-      ? JSON.parse(payload.result.content[0].text)
-      : undefined);
+  let result: GeneratorResult | undefined = payload.result?.structuredContent;
 
-  return result as any;
+  if (!result && payload.result?.content?.[0]?.text) {
+    try {
+      result = JSON.parse(payload.result.content[0].text) as GeneratorResult;
+    } catch {
+      result = undefined;
+    }
+  }
+
+  return result ?? {};
 }
 
 export const virtualTryOnTools = [
@@ -232,7 +261,7 @@ export const virtualTryOnTools = [
 
         const garmentUrls = context.garments.map((g) => g.imageUrl);
         const garmentTypes = context.garments
-          .map((g) => g.type || "unknown")
+          .map((g) => g.type ?? "unknown")
           .filter(Boolean);
 
         const prompt = buildTryOnPrompt({
@@ -254,15 +283,15 @@ export const virtualTryOnTools = [
             prompt,
             baseImageUrls,
             aspectRatio: context.aspectRatio,
-            model: context.model || generator.defaultModel,
+            model: context.model ?? generator.defaultModel,
           },
         });
 
         // Expect shared image generator output format: { image, error?, finishReason? }
         return {
-          image: result?.image,
-          error: result?.error,
-          finishReason: result?.finishReason,
+          image: result.image,
+          error: result.error,
+          finishReason: result.finishReason,
         };
       },
     }),

@@ -39,6 +39,3 @@ Output:
 
 - `image`: generated image URL
 - `error?`, `finishReason?`
-
-
-
