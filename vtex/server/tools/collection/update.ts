@@ -1,0 +1,39 @@
+import { createTool } from "@decocms/runtime/tools";
+import { z } from "zod";
+import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import type { Env } from "../../types/env.ts";
+
+export const updateCollection = (env: Env) =>
+  createTool({
+    id: "VTEX_UPDATE_COLLECTION",
+    description: "Update an existing collection.",
+    inputSchema: z.object({
+      collectionId: z.number().describe("The collection ID to update"),
+      Name: z.string().optional().describe("Collection name"),
+      Description: z
+        .string()
+        .optional()
+        .describe("Collection description for internal use"),
+      Searchable: z
+        .boolean()
+        .optional()
+        .describe("Whether the collection is searchable in the store"),
+      Highlight: z
+        .boolean()
+        .optional()
+        .describe("Whether to highlight specific products using a tag"),
+      DateFrom: z
+        .string()
+        .optional()
+        .describe("Collection start date and time (ISO 8601 format)"),
+      DateTo: z
+        .string()
+        .optional()
+        .describe("Collection end date and time (ISO 8601 format)"),
+    }),
+    execute: async ({ context }) => {
+      const { collectionId, ...data } = context;
+      const client = new VTEXClient(getCredentials(env));
+      return client.updateCollection(collectionId, data);
+    },
+  });
