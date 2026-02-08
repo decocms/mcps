@@ -27,7 +27,10 @@
     "baseUrl": ".",
     "paths": {
       "server/*": ["./server/*"]
-    }
+    },
+
+    /* Types */
+    "types": ["@cloudflare/workers-types"]
   },
   "include": ["server"]
 }

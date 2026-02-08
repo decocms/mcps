@@ -405,27 +405,24 @@ const getUsageFromStream = (
 ] => {
   const usage = Promise.withResolvers<FinishType<LanguageModelV2StreamPart>>();
 
-  const transformer = new TransformStream<
-    LanguageModelV2StreamPart,
-    LanguageModelV2StreamPart
-  >({
-    transform(chunk, controller) {
-      if (chunk.type === "finish") {
-        usage.resolve(chunk);
-      }
-      controller.enqueue(chunk);
-    },
-    flush() {
-      // If stream finishes without a "finish" chunk, reject the promise
-      // so callers don't hang forever.
-      usage.promise.catch(() => {});
-    },
-  });
-
-  // Ensure we reject on cancellation
-  const stream = input.pipeThrough(transformer);
-
-  return [usage.promise, stream];
+  return [
+    usage.promise,
+    input.pipeThrough(
+      new TransformStream<LanguageModelV2StreamPart, LanguageModelV2StreamPart>(
+        {
+          transform(chunk, controller) {
+            if (chunk.type === "finish") {
+              usage.resolve(chunk);
+            }
+            controller.enqueue(chunk);
+          },
+          cancel(reason) {
+            usage.reject(reason);
+          },
+        },
+      ),
+    ),
+  ];
 };
 
 const isAPICallError = (error: unknown): error is APICallError =>
