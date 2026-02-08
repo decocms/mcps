@@ -13,6 +13,7 @@ export { StateSchema };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
+    scopes: ["NANOBANANA::GENERATE_IMAGE"],
     state: StateSchema,
   },
   tools,
