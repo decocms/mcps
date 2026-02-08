@@ -5,12 +5,10 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { userTools } from "@decocms/mcps-shared/tools/user";
-import { geminiTools } from "./gemini";
+import { geminiTools } from "./gemini.ts";
 
 // Export all tools from all domains
-export const tools = [...userTools, ...geminiTools];
+export const tools = [...geminiTools];
 
 // Re-export domain-specific tools for direct access if needed
-export { userTools } from "@decocms/mcps-shared/tools/user";
-export { geminiTools } from "./gemini";
+export { geminiTools } from "./gemini.ts";

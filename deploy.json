@@ -184,5 +184,11 @@
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
     "watchFolders": ["mcp-studio/", "shared/"]
+  },
+  "nanobanana": {
+    "site": "nanobanana",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["nanobanana/", "shared/"]
   }
 }
