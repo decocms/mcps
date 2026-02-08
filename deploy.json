@@ -65,6 +65,12 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["deco-llm/", "shared/"]
   },
+  "google-gemini": {
+    "site": "google-gemini",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["google-gemini/", "shared/"]
+  },
   "whatsappagent": {
     "site": "whatsappagent",
     "entrypoint": "./dist/server/main.js",
