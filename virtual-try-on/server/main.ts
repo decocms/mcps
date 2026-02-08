@@ -18,8 +18,4 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-if (runtime.fetch) {
-  const port = Number(process.env.PORT || 8001);
-  console.log(`Started development server: http://localhost:${port}`);
-  serve(runtime.fetch);
-}
+serve(runtime.fetch);
