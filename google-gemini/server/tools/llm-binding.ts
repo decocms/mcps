@@ -482,14 +482,21 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         const [usage, stream] = getUsageFromStream(
           callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
         );
-        usage.then((u) => {
-          state = "commit";
-          hook?.end?.(u).then(() => {
+        usage
+          .then((u) => {
+            state = "commit";
+            hook?.end?.(u).then(() => {
+              finished = true;
+              clearTimeout(slowRequestTimeout);
+              console.log(`[LLM_DO_STREAM] END ${requestId}`);
+            });
+          })
+          .catch(() => {
+            // Stream was cancelled -- clean up silently
             finished = true;
             clearTimeout(slowRequestTimeout);
-            console.log(`[LLM_DO_STREAM] END ${requestId}`);
+            console.log(`[LLM_DO_STREAM] CANCELLED ${requestId}`);
           });
-        });
         const response = streamToResponse(stream);
 
         // Return the data stream response
