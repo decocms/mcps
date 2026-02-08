@@ -144,13 +144,19 @@ function buildTryOnPrompt(args: {
 }
 
 async function resolveGeneratorConfig(env: Env): Promise<GeneratorConfig> {
+  console.log("[virtual-try-on] resolveGeneratorConfig called");
   const state = env.MESH_REQUEST_CONTEXT?.state;
+  console.log("[virtual-try-on] state:", JSON.stringify(state, null, 2));
 
   const defaultToolName = state?.generatorToolName ?? "GENERATE_IMAGE";
   const defaultModel = state?.defaultModel ?? "gemini-2.5-flash-image-preview";
 
   // 1) Direct URL mode
   if (state?.generatorMcpUrl) {
+    console.log(
+      "[virtual-try-on] Using direct URL mode:",
+      state.generatorMcpUrl,
+    );
     return {
       url: state.generatorMcpUrl,
       authToken: state.generatorAuthToken ?? undefined,
@@ -162,11 +168,21 @@ async function resolveGeneratorConfig(env: Env): Promise<GeneratorConfig> {
   // 2) Connection-binding mode
   const connectionId = state?.generatorConnectionId;
   const connectionBinding = state?.CONNECTION;
+  console.log("[virtual-try-on] connectionId:", connectionId);
+  console.log(
+    "[virtual-try-on] connectionBinding exists:",
+    !!connectionBinding,
+  );
 
   if (connectionId && connectionBinding?.COLLECTION_CONNECTIONS_GET) {
+    console.log("[virtual-try-on] Fetching connection...");
     const conn = (await connectionBinding.COLLECTION_CONNECTIONS_GET({
       id: connectionId,
     })) as ConnectionResponse;
+    console.log(
+      "[virtual-try-on] Connection response:",
+      JSON.stringify(conn, null, 2),
+    );
 
     const url = conn.connection_url;
     if (!url) {
@@ -257,42 +273,67 @@ export const virtualTryOnTools = [
         finishReason: z.string().optional(),
       }),
       execute: async ({ context }: { context: VirtualTryOnInput }) => {
-        const generator = await resolveGeneratorConfig(env);
+        console.log("[virtual-try-on] VIRTUAL_TRY_ON tool called");
+        console.log(
+          "[virtual-try-on] Input context:",
+          JSON.stringify(context, null, 2),
+        );
 
-        const garmentUrls = context.garments.map((g) => g.imageUrl);
-        const garmentTypes = context.garments
-          .map((g) => g.type ?? "unknown")
-          .filter(Boolean);
+        try {
+          const generator = await resolveGeneratorConfig(env);
+          console.log(
+            "[virtual-try-on] Generator config resolved:",
+            JSON.stringify(generator, null, 2),
+          );
 
-        const prompt = buildTryOnPrompt({
-          garmentsCount: garmentUrls.length,
-          garmentTypes,
-          userInstruction: context.instruction,
-          preserveFace: context.preserveFace,
-          preserveBackground: context.preserveBackground,
-        });
+          const garmentUrls = context.garments.map((g) => g.imageUrl);
+          const garmentTypes = context.garments
+            .map((g) => g.type ?? "unknown")
+            .filter(Boolean);
 
-        const baseImageUrls = [context.personImageUrl, ...garmentUrls];
+          const prompt = buildTryOnPrompt({
+            garmentsCount: garmentUrls.length,
+            garmentTypes,
+            userInstruction: context.instruction,
+            preserveFace: context.preserveFace,
+            preserveBackground: context.preserveBackground,
+          });
 
-        const result = await callGeneratorTool({
-          url: generator.url,
-          authToken: generator.authToken,
-          headers: generator.headers,
-          toolName: generator.toolName,
-          toolArgs: {
+          const baseImageUrls = [context.personImageUrl, ...garmentUrls];
+          console.log(
+            "[virtual-try-on] Calling generator with prompt:",
             prompt,
-            baseImageUrls,
-            aspectRatio: context.aspectRatio,
-            model: context.model ?? generator.defaultModel,
-          },
-        });
+          );
+          console.log("[virtual-try-on] baseImageUrls:", baseImageUrls);
 
-        // Expect shared image generator output format: { image, error?, finishReason? }
-        return {
-          image: result.image,
-          error: result.error,
-          finishReason: result.finishReason,
-        };
+          const result = await callGeneratorTool({
+            url: generator.url,
+            authToken: generator.authToken,
+            headers: generator.headers,
+            toolName: generator.toolName,
+            toolArgs: {
+              prompt,
+              baseImageUrls,
+              aspectRatio: context.aspectRatio,
+              model: context.model ?? generator.defaultModel,
+            },
+          });
+
+          console.log(
+            "[virtual-try-on] Generator result:",
+            JSON.stringify(result, null, 2),
+          );
+
+          // Expect shared image generator output format: { image, error?, finishReason? }
+          return {
+            image: result.image,
+            error: result.error,
+            finishReason: result.finishReason,
+          };
+        } catch (error) {
+          console.error("[virtual-try-on] Error in VIRTUAL_TRY_ON:", error);
+          throw error;
+        }
       },
     }),
 ];
