@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "google-gemini",
+  "friendlyName": "Google Gemini",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-gemini.decocache.com/mcp"
+  },
+  "description": "Google Gemini App Connection for LLM uses.",
+  "icon": "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["AI"],
+    "official": false,
+    "tags": ["google", "gemini", "llm", "ai", "language-models", "chat", "completion"],
+    "short_description": "Google Gemini App Connection for LLM uses.",
+    "mesh_description": "The Google Gemini MCP provides direct access to Google's Gemini family of large language models through the Google Generative AI API. This MCP enables AI agents to utilize Gemini models for chat completions, text generation, and multimodal tasks. It supports model discovery, comparison, and intelligent recommendations based on task requirements. The integration uses Google AI API keys for authentication and provides both streaming and non-streaming generation capabilities. Ideal for developers who want direct access to Google's AI models without intermediary routing, benefiting from low latency and native Google AI infrastructure."
+  }
+}
