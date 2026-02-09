@@ -124,8 +124,12 @@ function transformToLLMEntity(
   model: ListedModel,
 ): z.infer<typeof ModelCollectionEntitySchema> {
   const now = new Date().toISOString();
-  const inputCost = toNumberOrNull(model.pricing.prompt);
-  const outputCost = toNumberOrNull(model.pricing.completion);
+  // GEMINI_PRICING stores prices per 1M tokens (e.g. "0.15" = $0.15/1M tokens).
+  // The LLM binding expects prices per token, so divide by 1,000,000.
+  const rawInputCost = toNumberOrNull(model.pricing.prompt);
+  const rawOutputCost = toNumberOrNull(model.pricing.completion);
+  const inputCost = rawInputCost !== null ? rawInputCost / 1_000_000 : null;
+  const outputCost = rawOutputCost !== null ? rawOutputCost / 1_000_000 : null;
   const contextWindow = model.context_length || 0;
   const maxOutputTokens = extractOutputLimit(model) || 0;
 
