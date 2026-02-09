@@ -5,12 +5,6 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["github/**", "shared/**"]
   },
-  "vibemcp": {
-    "site": "vibemcp",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watchFolders": ["vibecoding-toolkit/**"]
-  },
   "openrouter": {
     "site": "openrouter",
     "entrypoint": "./dist/server/main.js",
