@@ -1,4 +1,4 @@
-# google-gemini
+# google-gemini 
 
 Google Gemini App Connection for LLM uses
 
