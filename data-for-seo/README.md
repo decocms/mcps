@@ -1,4 +1,4 @@
-# DataForSEO MCP 
+# DataForSEO MCP  
 
 ## Project Description
 
