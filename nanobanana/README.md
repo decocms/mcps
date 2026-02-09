@@ -1,4 +1,4 @@
-# Nano Banana MCP
+# Nano Banana MCP 
 
 ## Description
 
