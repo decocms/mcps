@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "nanobanana",
+  "friendlyName": "Nano Banana",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-nanobanana.decocache.com/mcp"
+  },
+  "description": "Generate images using AI with Gemini models via OpenRouter. Text-to-image and image-to-image generation with customizable aspect ratios.",
+  "icon": "https://assets.decocache.com/starting/62401ea6-55e6-433d-b614-e43196890e05/nanobanana.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["AI"],
+    "official": false,
+    "tags": ["image-generation", "gemini", "ai", "text-to-image", "image-to-image", "openrouter", "nanobanana"],
+    "short_description": "Generate images using AI with Gemini models via OpenRouter",
+    "mesh_description": "The Nano Banana MCP provides AI-powered image generation using Google Gemini models through OpenRouter. This MCP enables AI agents to generate images from text prompts, modify existing images with text instructions, and control output aspect ratios. **Key Features** - Text-to-image generation with detailed prompts. **Image Editing** - Modify existing images using natural language instructions. **Multiple Models** - Support for Gemini 2.0 Flash, 2.5 Flash, and 2.5 Pro image generation models. **Aspect Ratios** - Flexible output dimensions including 1:1, 16:9, 9:16, and more. **Contract Management** - Built-in authorization and billing through the NanoBanana contract system. **File Storage** - Automatic image storage via file system binding. Perfect for creative workflows, content generation, product mockups, and any task requiring AI-generated images."
+  }
+}
+

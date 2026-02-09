@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTool } from "@decocms/runtime/tools";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 
 const GarmentTypeSchema = z.enum([
   "top",
@@ -60,22 +60,16 @@ const VirtualTryOnInputSchema = z.object({
   model: z
     .string()
     .optional()
-    .describe(
-      "Optional model override to send to the generator (defaults to state.defaultModel).",
-    ),
+    .describe("Optional model override to send to the generator."),
 });
 
 type VirtualTryOnInput = z.infer<typeof VirtualTryOnInputSchema>;
 
-type McpJsonRpcResponse = {
-  jsonrpc: string;
-  id?: number | string;
-  error?: { code: number; message: string; data?: unknown };
-  result?: {
-    structuredContent?: unknown;
-    content?: Array<{ type: string; text?: string }>;
-  };
-};
+interface GeneratorResult {
+  image?: string;
+  error?: boolean;
+  finishReason?: string;
+}
 
 function buildTryOnPrompt(args: {
   garmentsCount: number;
@@ -83,7 +77,7 @@ function buildTryOnPrompt(args: {
   userInstruction?: string;
   preserveFace: boolean;
   preserveBackground: boolean;
-}) {
+}): string {
   const { garmentsCount, garmentTypes, userInstruction, preserveFace } = args;
 
   const garmentLine =
@@ -96,7 +90,6 @@ function buildTryOnPrompt(args: {
       ? `Garment types (best-effort): ${garmentTypes.join(", ")}.`
       : "";
 
-  // Keep it generic; the model receives the images themselves as references.
   return [
     "Virtual try-on (VTO).",
     "Use the first reference image as the person photo. Use the other reference images as garments to be worn by the person.",
@@ -115,106 +108,6 @@ function buildTryOnPrompt(args: {
     .join("\n");
 }
 
-async function resolveGeneratorConfig(env: Env) {
-  const state = env.MESH_REQUEST_CONTEXT?.state;
-  const stateAny = state as any;
-
-  // 1) Direct URL mode
-  if (stateAny?.generatorMcpUrl) {
-    return {
-      url: stateAny.generatorMcpUrl as string,
-      authToken:
-        (stateAny.generatorAuthToken as string | undefined) || undefined,
-      toolName: (stateAny.generatorToolName as string) || "GENERATE_IMAGE",
-      defaultModel:
-        (stateAny.defaultModel as string) || "gemini-2.5-flash-image-preview",
-    };
-  }
-
-  // 2) Connection-binding mode
-  const connectionId = stateAny?.generatorConnectionId as string | undefined;
-  const connectionBinding = stateAny?.CONNECTION;
-  if (connectionId && connectionBinding?.COLLECTION_CONNECTIONS_GET) {
-    const conn = await connectionBinding.COLLECTION_CONNECTIONS_GET({
-      id: connectionId,
-    });
-    const url = conn.connection_url as string | undefined;
-    if (!url) {
-      throw new Error(
-        `Connection ${connectionId} did not return connection_url`,
-      );
-    }
-    const token = conn.connection_token as string | null | undefined;
-    const hdrs = conn.connection_headers as
-      | Record<string, string>
-      | null
-      | undefined;
-    return {
-      url,
-      authToken: token || undefined,
-      headers: hdrs || undefined,
-      toolName: (stateAny.generatorToolName as string) || "GENERATE_IMAGE",
-      defaultModel:
-        (stateAny.defaultModel as string) || "gemini-2.5-flash-image-preview",
-    };
-  }
-
-  throw new Error(
-    "No generator configured. Set generatorMcpUrl OR set generatorConnectionId (and provide CONNECTION binding).",
-  );
-}
-
-async function callGeneratorTool(args: {
-  url: string;
-  authToken?: string;
-  headers?: Record<string, string>;
-  toolName: string;
-  toolArgs: Record<string, unknown>;
-}) {
-  const { url, authToken, headers, toolName, toolArgs } = args;
-  const mcpRequest = {
-    jsonrpc: "2.0",
-    method: "tools/call",
-    params: {
-      name: toolName,
-      arguments: toolArgs,
-    },
-    id: Date.now(),
-  };
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(headers || {}),
-    },
-    body: JSON.stringify(mcpRequest),
-  });
-
-  if (!response.ok) {
-    const txt = await response.text().catch(() => "");
-    throw new Error(`Generator MCP call failed: ${response.status} ${txt}`);
-  }
-
-  const payload = (await response.json()) as McpJsonRpcResponse;
-  if (payload.error) {
-    throw new Error(
-      `Generator MCP error: ${payload.error.code} ${payload.error.message}`,
-    );
-  }
-
-  // Prefer structured content, fallback to parsing the first content text.
-  const result =
-    payload.result?.structuredContent ??
-    (payload.result?.content?.[0]?.text
-      ? JSON.parse(payload.result.content[0].text)
-      : undefined);
-
-  return result as any;
-}
-
 export const virtualTryOnTools = [
   (env: Env) =>
     createTool({
@@ -228,11 +121,16 @@ export const virtualTryOnTools = [
         finishReason: z.string().optional(),
       }),
       execute: async ({ context }: { context: VirtualTryOnInput }) => {
-        const generator = await resolveGeneratorConfig(env);
+        const nanobanana = env.MESH_REQUEST_CONTEXT?.state?.NANOBANANA;
+        if (!nanobanana) {
+          throw new Error(
+            "NANOBANANA binding is not configured. Please connect a nanobanana MCP.",
+          );
+        }
 
         const garmentUrls = context.garments.map((g) => g.imageUrl);
         const garmentTypes = context.garments
-          .map((g) => g.type || "unknown")
+          .map((g) => g.type ?? "unknown")
           .filter(Boolean);
 
         const prompt = buildTryOnPrompt({
@@ -245,24 +143,17 @@ export const virtualTryOnTools = [
 
         const baseImageUrls = [context.personImageUrl, ...garmentUrls];
 
-        const result = await callGeneratorTool({
-          url: generator.url,
-          authToken: generator.authToken,
-          headers: generator.headers,
-          toolName: generator.toolName,
-          toolArgs: {
-            prompt,
-            baseImageUrls,
-            aspectRatio: context.aspectRatio,
-            model: context.model || generator.defaultModel,
-          },
-        });
+        const result = (await nanobanana.GENERATE_IMAGE({
+          prompt,
+          baseImageUrls,
+          aspectRatio: context.aspectRatio,
+          model: context.model ?? "gemini-2.5-flash-image-preview",
+        })) as GeneratorResult;
 
-        // Expect shared image generator output format: { image, error?, finishReason? }
         return {
-          image: result?.image,
-          error: result?.error,
-          finishReason: result?.finishReason,
+          image: result.image,
+          error: result.error,
+          finishReason: result.finishReason,
         };
       },
     }),
