@@ -161,6 +161,12 @@
     "platformName": "kubernetes-bun",
     "watchFolders": ["vtex-docs/**", "shared/**"]
   },
+  "vtex": {
+    "site": "vtex",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watchFolders": ["vtex/**", "shared/**"]
+  },
   "perplexity": {
     "site": "perplexity",
     "entrypoint": "./dist/server/main.js",
