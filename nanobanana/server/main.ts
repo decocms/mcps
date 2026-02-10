@@ -23,7 +23,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     ],
     state: StateSchema,
   },
-  tools,
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
 if (runtime.fetch) {
