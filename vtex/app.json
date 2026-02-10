@@ -1,10 +1,10 @@
 {
   "scopeName": "deco",
-  "name": "vtex",
+  "name": "vtex-mcp",
   "friendlyName": "VTEX Commerce APIs",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-vtex.decocdn.com/mcp",
+    "url": "https://sites-vtex.decocache.com/mcp",
     "configSchema": {
       "type": "object",
       "properties": {
