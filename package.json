@@ -30,6 +30,7 @@
     "discord-read",
     "gemini-pro-vision",
     "github",
+    "google-analytics",
     "google-apps-script",
     "google-big-query",
     "google-calendar",
@@ -62,12 +63,12 @@
     "template-minimal",
     "tiktok-ads",
     "veo",
-    "vtex-docs",
+    "virtual-try-on",
     "vtex",
+    "vtex-docs",
     "whatsapp",
     "whatsapp-management",
-    "whisper",
-    "virtual-try-on"
+    "whisper"
   ],
   "dependencies": {
     "@types/node": "^24.10.0",

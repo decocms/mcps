@@ -1,0 +1,36 @@
+{
+  "scopeName": "deco",
+  "name": "google-analytics",
+  "friendlyName": "Google Analytics",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-analytics.decocache.com/mcp"
+  },
+  "description": "Google Analytics 4 (GA4) integration - Analyze website traffic, user behavior, and performance metrics",
+  "icon": "https://www.gstatic.com/analytics-suite/header/suite/v2/ic_analytics.svg",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": [
+      "Analytics",
+      "Marketing",
+      "Data"
+    ],
+    "official": false,
+    "tags": [
+      "analytics",
+      "google",
+      "ga4",
+      "tracking",
+      "metrics",
+      "reporting",
+      "web-analytics"
+    ],
+    "short_description": "Google Analytics 4 (GA4) - Analyze website traffic, user behavior, and performance metrics",
+    "mesh_description": "**Google Analytics 4 MCP** provides comprehensive access to your GA4 data through powerful reporting tools. **Key Features** - Run custom reports with dimensions and metrics. - Get real-time analytics (last 30 minutes). - Pre-configured reports (overview, traffic sources, page performance, geo, devices, events). - Property and data stream management. - Support for date comparisons and advanced filtering. **Use Cases** - Track website traffic and user engagement. - Analyze traffic sources and campaigns. - Monitor page performance and user behavior. - Get real-time visitor insights. - Generate custom analytics reports. **Authentication** - Uses Google OAuth 2.0 with Analytics API scopes. Requires Viewer access to GA4 properties. Perfect for marketers, analysts, and developers who need programmatic access to Google Analytics data."
+  }
+}

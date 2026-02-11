@@ -196,5 +196,11 @@
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
     "watch": ["nanobanana/**", "shared/**"]
+  },
+  "google-analytics": {
+    "site": "google-analytics",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": ["google-analytics/**", "shared/**"]
   }
 }
