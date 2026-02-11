@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const addSkuToCollection = (env: Env) =>
@@ -14,7 +14,8 @@ export const addSkuToCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuId } = context;
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       return client.addSkuToCollection(collectionId, { SkuId: skuId });
     },
   });
@@ -32,7 +33,8 @@ export const addMultipleSkusToCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuIds } = context;
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
 
       const results = {
         success: [] as number[],

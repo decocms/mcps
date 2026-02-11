@@ -31,12 +31,6 @@ import type {
   PriceTable,
 } from "../types/pricing.ts";
 
-export function getCredentials(env: {
-  DECO_CHAT_REQUEST_CONTEXT: { state: VTEXCredentials };
-}): VTEXCredentials {
-  return env.DECO_CHAT_REQUEST_CONTEXT.state;
-}
-
 export class VTEXClient {
   private baseUrl: string;
   private headers: Record<string, string>;

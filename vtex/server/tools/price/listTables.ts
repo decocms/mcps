@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const listPriceTables = (env: Env) =>
@@ -10,7 +10,8 @@ export const listPriceTables = (env: Env) =>
       "List all price tables available in the store. Price tables are used to define different pricing contexts like trade policies, B2B pricing, or regional pricing.",
     inputSchema: z.object({}),
     execute: async () => {
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       return client.listPriceTables();
     },
   });

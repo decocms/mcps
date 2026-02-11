@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const updateFixedPrice = (env: Env) =>
@@ -39,7 +39,8 @@ export const updateFixedPrice = (env: Env) =>
         .describe("Array of fixed prices to set"),
     }),
     execute: async ({ context }) => {
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       await client.createOrUpdateFixedPrice(
         context.skuId,
         context.priceTableId,

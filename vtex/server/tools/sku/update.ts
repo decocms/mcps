@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const updateSku = (env: Env) =>
@@ -19,7 +19,8 @@ export const updateSku = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { skuId, ...data } = context;
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       return client.updateSku(skuId, data);
     },
   });

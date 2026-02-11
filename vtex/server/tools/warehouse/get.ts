@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const getWarehouse = (env: Env) =>
@@ -11,7 +11,8 @@ export const getWarehouse = (env: Env) =>
       warehouseId: z.string().describe("The warehouse ID"),
     }),
     execute: async ({ context }) => {
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       return client.getWarehouse(context.warehouseId);
     },
   });

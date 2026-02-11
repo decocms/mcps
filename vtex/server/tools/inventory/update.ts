@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const updateInventory = (env: Env) =>
@@ -17,7 +17,8 @@ export const updateInventory = (env: Env) =>
         .describe("Set to true for unlimited stock"),
     }),
     execute: async ({ context }) => {
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       await client.updateInventory(context.skuId, context.warehouseId, {
         quantity: context.quantity,
         unlimitedQuantity: context.unlimitedQuantity,

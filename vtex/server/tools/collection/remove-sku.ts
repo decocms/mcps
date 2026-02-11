@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient, getCredentials } from "../../lib/client.ts";
+import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 export const removeSkuFromCollection = (env: Env) =>
@@ -13,7 +13,8 @@ export const removeSkuFromCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuId } = context;
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
       await client.removeSkuFromCollection(collectionId, skuId);
       return {
         success: true,
@@ -35,7 +36,8 @@ export const removeMultipleSkusFromCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuIds } = context;
-      const client = new VTEXClient(getCredentials(env));
+      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const client = new VTEXClient(credentials);
 
       const results = {
         success: [] as number[],
