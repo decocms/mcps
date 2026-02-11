@@ -52,17 +52,7 @@ const GenerateImageOutputSchema = z.object({
 
 type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
-/** Response types for binding calls */
-interface ContractAuthorizeResponse {
-  transactionId: string;
-  totalAmount: string;
-  timestamp: number;
-}
-
-interface ContractSettleResponse {
-  transactionId: string;
-}
-
+/** Response types for file system binding calls */
 interface FileSystemReadResponse {
   url: string;
 }
@@ -71,38 +61,12 @@ interface FileSystemWriteResponse {
   url: string;
 }
 
-const MAX_RETRIES = 3;
-
-async function executeWithRetry<T>(
-  fn: () => Promise<T>,
-  retries: number = MAX_RETRIES,
-): Promise<T> {
-  let lastError: Error | undefined;
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.log(
-        `[Gemini] Attempt ${attempt + 1}/${retries} failed: ${lastError.message}`,
-      );
-      if (attempt < retries - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * (attempt + 1)),
-        );
-      }
-    }
-  }
-  throw lastError;
-}
-
 async function saveImageToStorage(
   env: Env,
   imageData: string,
   mimeType: string,
 ): Promise<string> {
-  const state = env.MESH_REQUEST_CONTEXT.state;
-  const fileSystem = state.FILE_SYSTEM;
+  const fileSystem = env.MESH_REQUEST_CONTEXT.state.FILE_SYSTEM;
 
   const extension = mimeType.split("/")[1] || "png";
   const name = new Date().toISOString().replace(/[:.]/g, "-");
@@ -140,83 +104,53 @@ const createGenerateImageTool = (env: Env) =>
     inputSchema: GenerateImageInputSchema,
     outputSchema: GenerateImageOutputSchema,
     execute: async ({ context }: { context: GenerateImageInput }) => {
-      const state = env.MESH_REQUEST_CONTEXT.state;
-      const contract = state.NANOBANANA_CONTRACT;
+      console.log("[Gemini] Starting image generation...");
 
-      return executeWithRetry(async () => {
-        console.log("[Gemini] Starting image generation...");
+      // Execute generation
+      const modelToUse = context.model ?? "gemini-2.5-flash-image-preview";
+      const parsedModel: Model = models.parse(modelToUse);
 
-        // Authorize the contract
-        const { transactionId } = (await contract.CONTRACT_AUTHORIZE({
-          clauses: [
-            {
-              clauseId: "gemini-2.5-flash-image-preview:generateContent",
-              amount: 1,
-            },
-          ],
-        })) as ContractAuthorizeResponse;
+      const client = createGeminiClient(env);
+      const response = await client.generateImage(
+        context.prompt,
+        context.baseImageUrl || undefined,
+        context.aspectRatio,
+        parsedModel,
+      );
 
-        // Execute generation
-        const modelToUse = context.model ?? "gemini-2.5-flash-image-preview";
-        const parsedModel: Model = models.parse(modelToUse);
-
-        const client = createGeminiClient(env);
-        const response = await client.generateImage(
-          context.prompt,
-          context.baseImageUrl || undefined,
-          context.aspectRatio,
-          parsedModel,
-        );
-
-        if (
-          !response ||
-          !response.candidates ||
-          response.candidates.length === 0
-        ) {
-          return {
-            error: true,
-            finishReason: "No response from Gemini API",
-          };
-        }
-
-        const candidate = response.candidates[0];
-        const inlineData = candidate?.content?.parts?.[0]?.inline_data;
-
-        if (!inlineData?.data) {
-          return {
-            error: true,
-            finishReason: candidate?.finishReason || undefined,
-          };
-        }
-
-        // Save image to storage
-        const imageUrl = await saveImageToStorage(
-          env,
-          inlineData.data,
-          inlineData.mime_type || "image/png",
-        );
-
-        // Settle the contract
-        (await contract.CONTRACT_SETTLE({
-          transactionId,
-          clauses: [
-            {
-              clauseId: "gemini-2.5-flash-image-preview:generateContent",
-              amount: 1,
-            },
-          ],
-          vendorId:
-            env.MESH_REQUEST_CONTEXT.organizationId ??
-            env.MESH_REQUEST_CONTEXT.connectionId ??
-            "nanobanana",
-        })) as ContractSettleResponse;
-
-        console.log("[Gemini] Image generation completed successfully");
-
+      if (
+        !response ||
+        !response.candidates ||
+        response.candidates.length === 0
+      ) {
         return {
-          image: imageUrl,
+          error: true,
+          finishReason: "No response from Gemini API",
         };
-      });
+      }
+
+      const candidate = response.candidates[0];
+      const inlineData = candidate?.content?.parts?.[0]?.inline_data;
+
+      if (!inlineData?.data) {
+        return {
+          error: true,
+          finishReason: candidate?.finishReason || undefined,
+        };
+      }
+
+      // Save image to storage
+      const imageUrl = await saveImageToStorage(
+        env,
+        inlineData.data,
+        inlineData.mime_type || "image/png",
+      );
+
+      console.log("[Gemini] Image generation completed successfully");
+
+      return {
+        image: imageUrl,
+      };
     },
   });
 
