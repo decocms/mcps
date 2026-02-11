@@ -9,7 +9,7 @@ export const listBrands = (env: Env) =>
     description: "List all brands in the catalog.",
     inputSchema: z.object({}),
     execute: async () => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.listBrands();
     },

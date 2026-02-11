@@ -13,7 +13,7 @@ export const removeSkuFromCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuId } = context;
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       await client.removeSkuFromCollection(collectionId, skuId);
       return {
@@ -36,7 +36,7 @@ export const removeMultipleSkusFromCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, skuIds } = context;
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
 
       const results = {

@@ -16,7 +16,7 @@ export const createBrand = (env: Env) =>
       MenuHome: z.boolean().optional().describe("Show in home menu"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.createBrand(context);
     },

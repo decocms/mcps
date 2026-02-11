@@ -12,7 +12,7 @@ export const deletePrice = (env: Env) =>
       skuId: z.number().describe("The SKU ID to delete prices for"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       await client.deletePrice(context.skuId);
       return { success: true, skuId: context.skuId };

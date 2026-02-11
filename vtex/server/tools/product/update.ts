@@ -18,7 +18,7 @@ export const updateProduct = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { productId, ...data } = context;
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.updateProduct(productId, data);
     },

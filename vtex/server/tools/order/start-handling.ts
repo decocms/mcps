@@ -12,7 +12,7 @@ export const startHandling = (env: Env) =>
       orderId: z.string().describe("The order ID to start handling"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.startHandling(context.orderId);
     },

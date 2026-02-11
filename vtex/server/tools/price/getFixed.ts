@@ -12,7 +12,7 @@ export const getFixedPrices = (env: Env) =>
       skuId: z.number().describe("The SKU ID to get fixed prices for"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.getFixedPrices(context.skuId);
     },

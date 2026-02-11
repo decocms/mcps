@@ -11,7 +11,7 @@ export const getInventoryBySku = (env: Env) =>
       skuId: z.number().describe("The SKU ID"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.getInventoryBySku(context.skuId);
     },

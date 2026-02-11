@@ -11,7 +11,7 @@ export const listSkusByProduct = (env: Env) =>
       productId: z.number().describe("The product ID"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.listSkusByProduct(context.productId);
     },

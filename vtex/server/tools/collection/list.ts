@@ -13,7 +13,7 @@ export const listCollections = (env: Env) =>
       pageSize: z.number().optional().describe("Number of items per page"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.listCollections(context);
     },
@@ -27,7 +27,7 @@ export const searchCollections = (env: Env) =>
       searchTerms: z.string().describe("Search terms to find collections"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.searchCollections(context.searchTerms);
     },

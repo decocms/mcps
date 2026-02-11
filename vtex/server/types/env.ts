@@ -10,13 +10,7 @@ export const StateSchema = z.object({
   appToken: z.string().describe("VTEX App Token"),
 });
 
-type State = z.infer<typeof StateSchema>;
-
-export type Env = DefaultEnv<typeof StateSchema> & {
-  DECO_CHAT_REQUEST_CONTEXT: {
-    state: State;
-  };
-};
+export type Env = DefaultEnv<typeof StateSchema>;
 
 export interface VTEXCredentials {
   accountName: string;

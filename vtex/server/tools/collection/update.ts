@@ -33,7 +33,7 @@ export const updateCollection = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { collectionId, ...data } = context;
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.updateCollection(collectionId, data);
     },

@@ -10,7 +10,7 @@ export const listPriceTables = (env: Env) =>
       "List all price tables available in the store. Price tables are used to define different pricing contexts like trade policies, B2B pricing, or regional pricing.",
     inputSchema: z.object({}),
     execute: async () => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.listPriceTables();
     },

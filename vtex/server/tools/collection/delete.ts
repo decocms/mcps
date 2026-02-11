@@ -11,7 +11,7 @@ export const deleteCollection = (env: Env) =>
       collectionId: z.number().describe("The collection ID to delete"),
     }),
     execute: async ({ context }) => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       await client.deleteCollection(context.collectionId);
       return { success: true, message: "Collection deleted successfully" };

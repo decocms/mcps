@@ -9,7 +9,7 @@ export const listWarehouses = (env: Env) =>
     description: "List all warehouses configured in the account.",
     inputSchema: z.object({}),
     execute: async () => {
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.listWarehouses();
     },

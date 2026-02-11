@@ -19,7 +19,7 @@ export const updateSku = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const { skuId, ...data } = context;
-      const credentials = env.DECO_CHAT_REQUEST_CONTEXT.state;
+      const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       return client.updateSku(skuId, data);
     },
