@@ -31,11 +31,14 @@ export const updateProduct = (env: Env) =>
     inputSchema: z.object({
       productId: z.coerce.number().describe("Product ID to update"),
       Name: z.string().optional().describe("Product name"),
-      CategoryId: z.number().optional().describe("Category ID"),
-      BrandId: z.number().optional().describe("Brand ID"),
+      CategoryId: z.coerce.number().optional().describe("Category ID"),
+      BrandId: z.coerce.number().optional().describe("Brand ID"),
       LinkId: z.string().optional().describe("URL slug"),
       Description: z.string().optional().describe("Product description"),
-      IsActive: z.boolean().optional().describe("Whether product is active"),
+      IsActive: z.coerce
+        .boolean()
+        .optional()
+        .describe("Whether product is active"),
     }),
     outputSchema,
     execute: async ({ context }) => {

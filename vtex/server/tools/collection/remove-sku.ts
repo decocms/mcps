@@ -8,8 +8,10 @@ export const removeSkuFromCollection = (env: Env) =>
     id: "VTEX_REMOVE_SKU_FROM_COLLECTION",
     description: "Remove a single SKU from a collection.",
     inputSchema: z.object({
-      collectionId: z.number().describe("The collection ID"),
-      skuId: z.number().describe("The SKU ID to remove from the collection"),
+      collectionId: z.coerce.number().describe("The collection ID"),
+      skuId: z.coerce
+        .number()
+        .describe("The SKU ID to remove from the collection"),
     }),
     execute: async ({ context }) => {
       const { collectionId, skuId } = context;
@@ -29,9 +31,9 @@ export const removeMultipleSkusFromCollection = (env: Env) =>
     description:
       "Remove multiple SKUs from a collection at once. This processes each SKU sequentially.",
     inputSchema: z.object({
-      collectionId: z.number().describe("The collection ID"),
+      collectionId: z.coerce.number().describe("The collection ID"),
       skuIds: z
-        .array(z.number())
+        .array(z.coerce.number())
         .describe("Array of SKU IDs to remove from the collection"),
     }),
     execute: async ({ context }) => {

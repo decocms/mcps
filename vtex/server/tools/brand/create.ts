@@ -21,8 +21,8 @@ export const createBrand = (env: Env) =>
       Text: z.string().optional().describe("Brand description"),
       Keywords: z.string().optional().describe("Keywords for search"),
       SiteTitle: z.string().optional().describe("Title for SEO"),
-      Active: z.boolean().optional().describe("Whether brand is active"),
-      MenuHome: z.boolean().optional().describe("Show in home menu"),
+      Active: z.coerce.boolean().optional().describe("Whether brand is active"),
+      MenuHome: z.coerce.boolean().optional().describe("Show in home menu"),
     }),
     outputSchema,
     execute: async ({ context }) => {

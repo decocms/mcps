@@ -27,7 +27,7 @@ export const listCategories = (env: Env) =>
     id: "VTEX_LIST_CATEGORIES",
     description: "List the category tree up to specified levels deep.",
     inputSchema: z.object({
-      levels: z
+      levels: z.coerce
         .number()
         .optional()
         .describe("Levels of categories to return (default: 3)"),

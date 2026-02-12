@@ -33,8 +33,11 @@ export const createCategory = (env: Env) =>
       Title: z.string().optional().describe("Category title for SEO"),
       Description: z.string().optional().describe("Category description"),
       Keywords: z.string().optional().describe("Keywords for search"),
-      IsActive: z.boolean().optional().describe("Whether category is active"),
-      ShowInStoreFront: z.boolean().optional().describe("Show in store"),
+      IsActive: z.coerce
+        .boolean()
+        .optional()
+        .describe("Whether category is active"),
+      ShowInStoreFront: z.coerce.boolean().optional().describe("Show in store"),
     }),
     outputSchema,
     execute: async ({ context }) => {

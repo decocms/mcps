@@ -87,7 +87,7 @@ export const getDailySales = (env: Env) =>
         .describe(
           "End date in ISO format (e.g., 2025-01-15T23:59:59.999Z). Defaults to end of today (UTC).",
         ),
-      maxOrders: z
+      maxOrders: z.coerce
         .number()
         .optional()
         .describe(

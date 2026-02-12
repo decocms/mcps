@@ -31,12 +31,12 @@ export const updateSku = (env: Env) =>
     inputSchema: z.object({
       skuId: z.coerce.number().describe("SKU ID to update"),
       Name: z.string().optional().describe("SKU name"),
-      IsActive: z.boolean().optional().describe("Whether SKU is active"),
+      IsActive: z.coerce.boolean().optional().describe("Whether SKU is active"),
       RefId: z.string().optional().describe("Reference ID"),
-      PackagedHeight: z.number().optional().describe("Package height"),
-      PackagedLength: z.number().optional().describe("Package length"),
-      PackagedWidth: z.number().optional().describe("Package width"),
-      PackagedWeightKg: z.number().optional().describe("Package weight"),
+      PackagedHeight: z.coerce.number().optional().describe("Package height"),
+      PackagedLength: z.coerce.number().optional().describe("Package length"),
+      PackagedWidth: z.coerce.number().optional().describe("Package width"),
+      PackagedWeightKg: z.coerce.number().optional().describe("Package weight"),
     }),
     outputSchema,
     execute: async ({ context }) => {

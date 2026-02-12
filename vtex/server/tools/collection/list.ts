@@ -32,8 +32,11 @@ export const listCollections = (env: Env) =>
     description:
       "List all collections in the catalog. Collections are groups of SKUs that can be displayed together on product pages.",
     inputSchema: z.object({
-      page: z.number().optional().describe("Page number (starts at 1)"),
-      pageSize: z.number().optional().describe("Number of items per page"),
+      page: z.coerce.number().optional().describe("Page number (starts at 1)"),
+      pageSize: z.coerce
+        .number()
+        .optional()
+        .describe("Number of items per page"),
     }),
     outputSchema: collectionListOutputSchema,
     execute: async ({ context }) => {

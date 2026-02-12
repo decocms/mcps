@@ -9,7 +9,7 @@ export const deletePrice = (env: Env) =>
     description:
       "Delete all prices (base and fixed) for a SKU. Use with caution as this removes all pricing data for the SKU.",
     inputSchema: z.object({
-      skuId: z.number().describe("The SKU ID to delete prices for"),
+      skuId: z.coerce.number().describe("The SKU ID to delete prices for"),
     }),
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;

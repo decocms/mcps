@@ -20,8 +20,11 @@ export const listProducts = (env: Env) =>
     description:
       "List product and SKU IDs with pagination. Use from and to for pagination (max 250 records per request).",
     inputSchema: z.object({
-      from: z.number().optional().describe("Start index (default: 1)"),
-      to: z.number().optional().describe("End index (default: 250, max: 250)"),
+      from: z.coerce.number().optional().describe("Start index (default: 1)"),
+      to: z.coerce
+        .number()
+        .optional()
+        .describe("End index (default: 250, max: 250)"),
     }),
     outputSchema,
     execute: async ({ context }) => {

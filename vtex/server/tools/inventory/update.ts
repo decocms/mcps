@@ -8,10 +8,10 @@ export const updateInventory = (env: Env) =>
     id: "VTEX_UPDATE_INVENTORY",
     description: "Update inventory quantity for a SKU in a specific warehouse.",
     inputSchema: z.object({
-      skuId: z.number().describe("The SKU ID"),
+      skuId: z.coerce.number().describe("The SKU ID"),
       warehouseId: z.string().describe("The warehouse ID"),
-      quantity: z.number().describe("New quantity to set"),
-      unlimitedQuantity: z
+      quantity: z.coerce.number().describe("New quantity to set"),
+      unlimitedQuantity: z.coerce
         .boolean()
         .optional()
         .describe("Set to true for unlimited stock"),

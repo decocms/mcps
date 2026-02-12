@@ -8,7 +8,7 @@ export const deleteCollection = (env: Env) =>
     id: "VTEX_DELETE_COLLECTION",
     description: "Delete a collection by ID.",
     inputSchema: z.object({
-      collectionId: z.number().describe("The collection ID to delete"),
+      collectionId: z.coerce.number().describe("The collection ID to delete"),
     }),
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;

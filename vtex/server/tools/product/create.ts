@@ -34,9 +34,15 @@ export const createProduct = (env: Env) =>
       BrandId: z.coerce.number().describe("Brand ID"),
       LinkId: z.string().describe("URL slug for the product"),
       RefId: z.string().optional().describe("Reference ID"),
-      IsVisible: z.boolean().optional().describe("Whether product is visible"),
+      IsVisible: z.coerce
+        .boolean()
+        .optional()
+        .describe("Whether product is visible"),
       Description: z.string().optional().describe("Product description"),
-      IsActive: z.boolean().optional().describe("Whether product is active"),
+      IsActive: z.coerce
+        .boolean()
+        .optional()
+        .describe("Whether product is active"),
       Title: z.string().optional().describe("Page title for SEO"),
       MetaTagDescription: z
         .string()

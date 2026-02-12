@@ -3,6 +3,11 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
+const outputSchema = z.object({
+  date: z.string(),
+  orderId: z.string(),
+});
+
 export const cancelOrder = (env: Env) =>
   createTool({
     id: "VTEX_CANCEL_ORDER",
@@ -11,9 +16,11 @@ export const cancelOrder = (env: Env) =>
     inputSchema: z.object({
       orderId: z.string().describe("The order ID to cancel"),
     }),
+    outputSchema,
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      return client.cancelOrder(context.orderId);
+      const result = await client.cancelOrder(context.orderId);
+      return outputSchema.parse(result);
     },
   });

@@ -9,23 +9,23 @@ export const updatePrice = (env: Env) =>
     description:
       "Create or update the base price of a SKU. You can set costPrice, markup, basePrice, and listPrice. The basePrice can be calculated automatically from costPrice + markup if not provided directly.",
     inputSchema: z.object({
-      skuId: z.number().describe("The SKU ID to update the price for"),
-      costPrice: z
+      skuId: z.coerce.number().describe("The SKU ID to update the price for"),
+      costPrice: z.coerce
         .number()
         .nullable()
         .optional()
         .describe("The cost price of the SKU (optional)"),
-      markup: z
+      markup: z.coerce
         .number()
         .optional()
         .describe("The markup percentage to apply over cost price (optional)"),
-      basePrice: z
+      basePrice: z.coerce
         .number()
         .optional()
         .describe(
           "The base selling price (optional, can be calculated from costPrice + markup)",
         ),
-      listPrice: z
+      listPrice: z.coerce
         .number()
         .nullable()
         .optional()

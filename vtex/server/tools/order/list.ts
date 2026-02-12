@@ -28,11 +28,11 @@ export const listOrders = (env: Env) =>
     description:
       "List VTEX orders with detailed information including status, payment, shipping, and customer details",
     inputSchema: z.object({
-      page: z
+      page: z.coerce
         .number()
         .optional()
         .describe("Page number (1-30). The limit of retrieval is 30 pages."),
-      perPage: z
+      perPage: z.coerce
         .number()
         .optional()
         .describe("Items per page (default: 15, max: 100)"),
@@ -72,7 +72,7 @@ export const listOrders = (env: Env) =>
         .describe(
           "Filter by invoiced date range. Example: invoicedDate:[2024-01-01T00:00:00.000Z TO 2024-01-31T23:59:59.999Z]",
         ),
-      hasInputInvoice: z
+      hasInputInvoice: z.coerce
         .boolean()
         .optional()
         .describe("Filter orders with non-null invoiceInput field"),
@@ -116,11 +116,11 @@ export const listOrders = (env: Env) =>
         .describe(
           "Filter by rates and benefits (promotions). Example: Free+Shipping",
         ),
-      isInstore: z
+      isInstore: z.coerce
         .boolean()
         .optional()
         .describe("Filter orders made via inStore (true) or not (false)"),
-      incompleteOrders: z
+      incompleteOrders: z.coerce
         .boolean()
         .optional()
         .describe(

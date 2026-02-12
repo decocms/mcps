@@ -9,7 +9,9 @@ export const updateFixedPrice = (env: Env) =>
     description:
       "Create or update fixed prices for a SKU in a specific price table/trade policy. Fixed prices override base prices for specific contexts like promotions, B2B pricing, or time-limited offers.",
     inputSchema: z.object({
-      skuId: z.number().describe("The SKU ID to update fixed prices for"),
+      skuId: z.coerce
+        .number()
+        .describe("The SKU ID to update fixed prices for"),
       priceTableId: z
         .string()
         .describe(
@@ -18,13 +20,13 @@ export const updateFixedPrice = (env: Env) =>
       fixedPrices: z
         .array(
           z.object({
-            value: z.number().describe("The fixed selling price"),
-            listPrice: z
+            value: z.coerce.number().describe("The fixed selling price"),
+            listPrice: z.coerce
               .number()
               .nullable()
               .optional()
               .describe("The list price / 'price from' (optional)"),
-            minQuantity: z
+            minQuantity: z.coerce
               .number()
               .describe("Minimum quantity for this price to apply (usually 1)"),
             dateRange: z

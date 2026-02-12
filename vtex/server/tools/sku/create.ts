@@ -31,17 +31,29 @@ export const createSku = (env: Env) =>
     inputSchema: z.object({
       ProductId: z.coerce.number().describe("Product ID this SKU belongs to"),
       Name: z.string().describe("SKU name"),
-      IsActive: z.boolean().describe("Whether SKU is active"),
+      IsActive: z.coerce.boolean().describe("Whether SKU is active"),
       RefId: z.string().optional().describe("Reference ID"),
-      PackagedHeight: z.number().optional().describe("Package height in cm"),
-      PackagedLength: z.number().optional().describe("Package length in cm"),
-      PackagedWidth: z.number().optional().describe("Package width in cm"),
-      PackagedWeightKg: z.number().optional().describe("Package weight in kg"),
+      PackagedHeight: z.coerce
+        .number()
+        .optional()
+        .describe("Package height in cm"),
+      PackagedLength: z.coerce
+        .number()
+        .optional()
+        .describe("Package length in cm"),
+      PackagedWidth: z.coerce
+        .number()
+        .optional()
+        .describe("Package width in cm"),
+      PackagedWeightKg: z.coerce
+        .number()
+        .optional()
+        .describe("Package weight in kg"),
       MeasurementUnit: z
         .string()
         .optional()
         .describe("Measurement unit (un, kg, etc)"),
-      UnitMultiplier: z.number().optional().describe("Unit multiplier"),
+      UnitMultiplier: z.coerce.number().optional().describe("Unit multiplier"),
     }),
     outputSchema,
     execute: async ({ context }) => {
