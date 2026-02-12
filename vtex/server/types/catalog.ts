@@ -216,3 +216,11 @@ export interface CollectionImportResponse {
 export interface AddSkuToCollectionInput {
   SkuId: number;
 }
+
+// ============ SPECIFICATION TYPES ============
+
+export interface ProductSpecification {
+  Id: number;
+  Name: string;
+  Value: string[];
+}

@@ -3,6 +3,8 @@
  */
 import {
   getProduct,
+  getProductSpecifications,
+  getProductGridStatus,
   listProducts,
   createProduct,
   updateProduct,
@@ -21,6 +23,7 @@ import {
 import { getBrand, listBrands, createBrand } from "./brand/index.ts";
 import {
   getOrder,
+  getDailySales,
   listOrders,
   cancelOrder,
   startHandling,
@@ -53,6 +56,8 @@ import {
 export const tools = [
   // Product
   getProduct,
+  getProductSpecifications,
+  getProductGridStatus,
   listProducts,
   createProduct,
   updateProduct,
@@ -71,6 +76,7 @@ export const tools = [
   createBrand,
   // Order
   getOrder,
+  getDailySales,
   listOrders,
   cancelOrder,
   startHandling,

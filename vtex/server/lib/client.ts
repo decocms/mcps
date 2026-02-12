@@ -6,6 +6,7 @@ import type {
   Product,
   ProductIds,
   CreateProductInput,
+  ProductSpecification,
   Sku,
   CreateSkuInput,
   Category,
@@ -31,6 +32,10 @@ import type {
   PriceTable,
 } from "../types/pricing.ts";
 
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 500;
+
 export class VTEXClient {
   private baseUrl: string;
   private headers: Record<string, string>;
@@ -45,12 +50,33 @@ export class VTEXClient {
     };
   }
 
+  private isRetryableError(error: unknown): boolean {
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes("socket") ||
+        msg.includes("timeout") ||
+        msg.includes("aborted") ||
+        msg.includes("econnreset") ||
+        msg.includes("econnrefused") ||
+        msg.includes("network") ||
+        msg.includes("fetch failed")
+      );
+    }
+    return false;
+  }
+
+  private isRetryableStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+  }
+
   private async request<T>(
     method: string,
     path: string,
     options?: {
       body?: unknown;
       params?: Record<string, string | number | boolean | undefined>;
+      timeoutMs?: number;
     },
   ): Promise<T> {
     let url = `${this.baseUrl}${path}`;
@@ -66,19 +92,51 @@ export class VTEXClient {
       if (qs) url += `?${qs}`;
     }
 
-    const response = await fetch(url, {
-      method,
-      headers: this.headers,
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-    });
+    const timeoutMs = options?.timeoutMs ?? REQUEST_TIMEOUT_MS;
+    let lastError: Error | undefined;
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`VTEX API Error: ${response.status} - ${text}`);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: this.headers,
+          body: options?.body ? JSON.stringify(options.body) : undefined,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          if (
+            this.isRetryableStatus(response.status) &&
+            attempt < MAX_RETRIES
+          ) {
+            const delay =
+              INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt) +
+              Math.random() * 200;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          }
+          throw new Error(`VTEX API Error: ${response.status} - ${text}`);
+        }
+
+        const text = await response.text();
+        return text ? JSON.parse(text) : ({} as T);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        if (this.isRetryableError(error) && attempt < MAX_RETRIES) {
+          const delay =
+            INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt) + Math.random() * 200;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        if (attempt === MAX_RETRIES) break;
+        throw lastError;
+      }
     }
 
-    const text = await response.text();
-    return text ? JSON.parse(text) : ({} as T);
+    throw lastError ?? new Error("Request failed after retries");
   }
 
   // ============ CATALOG - PRODUCTS ============
@@ -111,6 +169,15 @@ export class VTEXClient {
       "PUT",
       `/api/catalog/pvt/product/${productId}`,
       { body: data },
+    );
+  }
+
+  // ============ CATALOG - PRODUCT SPECIFICATIONS ============
+
+  async getProductSpecifications(productId: number) {
+    return this.request<ProductSpecification[]>(
+      "GET",
+      `/api/catalog_system/pvt/products/${productId}/specification`,
     );
   }
 
@@ -187,8 +254,10 @@ export class VTEXClient {
 
   // ============ ORDERS ============
 
-  async getOrder(orderId: string) {
-    return this.request<Order>("GET", `/api/oms/pvt/orders/${orderId}`);
+  async getOrder(orderId: string, options?: { timeoutMs?: number }) {
+    return this.request<Order>("GET", `/api/oms/pvt/orders/${orderId}`, {
+      timeoutMs: options?.timeoutMs,
+    });
   }
 
   async listOrders(params?: {
