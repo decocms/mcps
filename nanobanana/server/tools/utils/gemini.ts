@@ -12,60 +12,13 @@ export const models = z.enum([
 ]);
 export type Model = z.infer<typeof models>;
 
-export const GeminiResponseSchema = z.object({
-  candidates: z.array(
-    z.object({
-      content: z.object({
-        parts: z.array(
-          z.object({
-            text: z.string().optional(),
-            inline_data: z
-              .object({
-                mime_type: z.string(),
-                data: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-        role: z.string().optional(),
-      }),
-      finishReason: z.string().optional(),
-      index: z.number().optional(),
-      safetyRatings: z
-        .array(
-          z.object({
-            category: z.string(),
-            probability: z.string(),
-            blocked: z.boolean().optional(),
-          }),
-        )
-        .optional(),
-    }),
-  ),
-  promptFeedback: z
-    .object({
-      safetyRatings: z
-        .array(
-          z.object({
-            category: z.string(),
-            probability: z.string(),
-            blocked: z.boolean().optional(),
-          }),
-        )
-        .optional(),
-      blockReason: z.string().optional(),
-    })
-    .optional(),
-  usageMetadata: z
-    .object({
-      promptTokenCount: z.number().optional(),
-      candidatesTokenCount: z.number().optional(),
-      totalTokenCount: z.number().optional(),
-    })
-    .optional(),
-});
-
-export type GeminiResponse = z.infer<typeof GeminiResponseSchema>;
+/** Result of an image generation request */
+export interface ImageGenerationResult {
+  /** URL of the generated image (hosted by OpenRouter) */
+  imageUrl: string;
+  /** Native finish reason from the model */
+  finishReason?: string;
+}
 
 interface OpenRouterImageUrl {
   url: string;
@@ -122,7 +75,7 @@ async function makeOpenrouterRequest(
   env: Env,
   endpoint: string,
   body: OpenRouterRequestBody,
-): Promise<GeminiResponse> {
+): Promise<ImageGenerationResult> {
   const apiKey = getApiKey(env);
   const url = `${OPENROUTER_BASE_URL}${endpoint}`;
 
@@ -140,30 +93,14 @@ async function makeOpenrouterRequest(
   );
   const choices = data.choices[0];
 
-  const image = choices.message.images?.[0]?.image_url?.url;
-  const nativeFinishReason = choices.native_finish_reason;
+  const imageUrl = choices.message.images?.[0]?.image_url?.url;
+  const finishReason = choices.native_finish_reason;
 
-  if (!image) {
+  if (!imageUrl) {
     throw new Error("No image generated in the response");
   }
 
-  return {
-    candidates: [
-      {
-        content: {
-          parts: [
-            {
-              inline_data: {
-                data: image,
-                mime_type: "image/png",
-              },
-            },
-          ],
-        },
-        finishReason: nativeFinishReason,
-      },
-    ],
-  };
+  return { imageUrl, finishReason };
 }
 
 export async function generateImage(
@@ -172,7 +109,7 @@ export async function generateImage(
   imageUrl?: string,
   aspectRatio?: string,
   model?: Model,
-): Promise<GeminiResponse> {
+): Promise<ImageGenerationResult> {
   const content: OpenRouterRequestContent[] = [{ type: "text", text: prompt }];
   if (imageUrl) {
     content.push({ type: "image_url", image_url: { url: imageUrl } });

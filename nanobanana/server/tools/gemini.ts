@@ -52,51 +52,6 @@ const GenerateImageOutputSchema = z.object({
 
 type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
-/** Response types for file system binding calls */
-interface FileSystemReadResponse {
-  url: string;
-}
-
-interface FileSystemWriteResponse {
-  url: string;
-}
-
-async function saveImageToStorage(
-  env: Env,
-  imageData: string,
-  mimeType: string,
-): Promise<string> {
-  const fileSystem = env.MESH_REQUEST_CONTEXT.state.FILE_SYSTEM;
-
-  const extension = mimeType.split("/")[1] || "png";
-  const name = new Date().toISOString().replace(/[:.]/g, "-");
-  const path = `/images/${name}.${extension}`;
-
-  const [readResult, writeResult] = (await Promise.all([
-    fileSystem.FS_READ({ path, expiresIn: 3600 }),
-    fileSystem.FS_WRITE({ path, contentType: mimeType, expiresIn: 60 }),
-  ])) as [FileSystemReadResponse, FileSystemWriteResponse];
-
-  const base64Data = imageData.includes(",")
-    ? imageData.split(",")[1]
-    : imageData;
-  const imageBuffer = Buffer.from(base64Data, "base64");
-
-  const uploadResponse = await fetch(writeResult.url, {
-    method: "PUT",
-    headers: { "Content-Type": mimeType },
-    body: imageBuffer,
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error(
-      `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`,
-    );
-  }
-
-  return readResult.url;
-}
-
 const createGenerateImageTool = (env: Env) =>
   createPrivateTool({
     id: "GENERATE_IMAGE",
@@ -106,50 +61,22 @@ const createGenerateImageTool = (env: Env) =>
     execute: async ({ context }: { context: GenerateImageInput }) => {
       console.log("[Gemini] Starting image generation...");
 
-      // Execute generation
       const modelToUse = context.model ?? "gemini-2.5-flash-image-preview";
       const parsedModel: Model = models.parse(modelToUse);
 
       const client = createGeminiClient(env);
-      const response = await client.generateImage(
+      const result = await client.generateImage(
         context.prompt,
         context.baseImageUrl || undefined,
         context.aspectRatio,
         parsedModel,
       );
 
-      if (
-        !response ||
-        !response.candidates ||
-        response.candidates.length === 0
-      ) {
-        return {
-          error: true,
-          finishReason: "No response from Gemini API",
-        };
-      }
-
-      const candidate = response.candidates[0];
-      const inlineData = candidate?.content?.parts?.[0]?.inline_data;
-
-      if (!inlineData?.data) {
-        return {
-          error: true,
-          finishReason: candidate?.finishReason || undefined,
-        };
-      }
-
-      // Save image to storage
-      const imageUrl = await saveImageToStorage(
-        env,
-        inlineData.data,
-        inlineData.mime_type || "image/png",
-      );
-
       console.log("[Gemini] Image generation completed successfully");
 
       return {
-        image: imageUrl,
+        image: result.imageUrl,
+        finishReason: result.finishReason,
       };
     },
   });

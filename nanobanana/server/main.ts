@@ -4,7 +4,7 @@
  * Entry point for the MCP server that generates images
  * using Gemini models via OpenRouter.
  */
-import { DefaultEnv, BindingOf, withRuntime } from "@decocms/runtime";
+import { DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 import { z } from "zod";
 
@@ -19,9 +19,6 @@ export const StateSchema = z.object({
     .describe(
       "OpenRouter API key for accessing Gemini image generation models",
     ),
-  FILE_SYSTEM: BindingOf("@deco/file-system").describe(
-    "File system binding for storing generated images",
-  ),
 });
 
 /**
