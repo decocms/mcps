@@ -3,6 +3,23 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
+const outputSchema = z.object({
+  Id: z.number(),
+  Name: z.string(),
+  FatherCategoryId: z.number().nullable(),
+  Title: z.string(),
+  Description: z.string(),
+  Keywords: z.string(),
+  IsActive: z.boolean(),
+  ShowInStoreFront: z.boolean(),
+  ShowBrandFilter: z.boolean(),
+  ActiveStoreFrontLink: z.boolean(),
+  GlobalCategoryId: z.number(),
+  Score: z.number().nullable(),
+  LinkId: z.string(),
+  HasChildren: z.boolean(),
+});
+
 export const createCategory = (env: Env) =>
   createTool({
     id: "VTEX_CREATE_CATEGORY",
@@ -10,8 +27,7 @@ export const createCategory = (env: Env) =>
     inputSchema: z.object({
       Name: z.string().describe("Category name"),
       FatherCategoryId: z
-        .number()
-        .nullable()
+        .union([z.coerce.number(), z.null()])
         .optional()
         .describe("Parent category ID (null for root)"),
       Title: z.string().optional().describe("Category title for SEO"),
@@ -20,9 +36,11 @@ export const createCategory = (env: Env) =>
       IsActive: z.boolean().optional().describe("Whether category is active"),
       ShowInStoreFront: z.boolean().optional().describe("Show in store"),
     }),
+    outputSchema,
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      return client.createCategory(context);
+      const result = await client.createCategory(context);
+      return outputSchema.parse(result);
     },
   });

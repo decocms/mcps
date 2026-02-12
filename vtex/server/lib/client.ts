@@ -50,7 +50,7 @@ export class VTEXClient {
     path: string,
     options?: {
       body?: unknown;
-      params?: Record<string, string | number | undefined>;
+      params?: Record<string, string | number | boolean | undefined>;
     },
   ): Promise<T> {
     let url = `${this.baseUrl}${path}`;

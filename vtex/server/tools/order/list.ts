@@ -3,6 +3,25 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
+const outputSchema = z.object({
+  list: z.array(
+    z.object({
+      orderId: z.string(),
+      creationDate: z.string(),
+      clientName: z.string(),
+      totalValue: z.number(),
+      status: z.string(),
+      statusDescription: z.string(),
+    }),
+  ),
+  paging: z.object({
+    total: z.number(),
+    pages: z.number(),
+    currentPage: z.number(),
+    perPage: z.number(),
+  }),
+});
+
 export const listOrders = (env: Env) =>
   createTool({
     id: "VTEX_LIST_ORDERS",
@@ -114,10 +133,11 @@ export const listOrders = (env: Env) =>
           "Search by specific field: SKU ID, Gift List ID, Transaction ID (TID), PCI TID, Payment ID (PID), Connector's NSU",
         ),
     }),
+    outputSchema,
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      return client.listOrders({
+      const result = await client.listOrders({
         page: context.page,
         per_page: context.perPage,
         orderBy: context.orderBy,
@@ -140,5 +160,6 @@ export const listOrders = (env: Env) =>
         incompleteOrders: context.incompleteOrders,
         searchField: context.searchField,
       });
+      return outputSchema.parse(result);
     },
   });

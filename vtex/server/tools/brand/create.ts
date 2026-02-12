@@ -3,6 +3,15 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
+const outputSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  isActive: z.boolean(),
+  title: z.string().nullable(),
+  metaTagDescription: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+});
+
 export const createBrand = (env: Env) =>
   createTool({
     id: "VTEX_CREATE_BRAND",
@@ -15,9 +24,11 @@ export const createBrand = (env: Env) =>
       Active: z.boolean().optional().describe("Whether brand is active"),
       MenuHome: z.boolean().optional().describe("Show in home menu"),
     }),
+    outputSchema,
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      return client.createBrand(context);
+      const result = await client.createBrand(context);
+      return outputSchema.parse(result);
     },
   });
