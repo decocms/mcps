@@ -13,7 +13,6 @@ export const listSkusByProduct = (env: Env) =>
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const skus = await client.listSkusByProduct(context.productId);
-      return { skus };
+      return client.listSkusByProduct(context.productId);
     },
   });

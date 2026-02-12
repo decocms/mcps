@@ -12,7 +12,6 @@ export const listPriceTables = (env: Env) =>
     execute: async () => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const priceTables = await client.listPriceTables();
-      return { priceTables };
+      return client.listPriceTables();
     },
   });

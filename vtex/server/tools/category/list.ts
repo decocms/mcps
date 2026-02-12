@@ -16,7 +16,6 @@ export const listCategories = (env: Env) =>
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const categories = await client.listCategories(context.levels);
-      return { categories };
+      return client.listCategories(context.levels);
     },
   });

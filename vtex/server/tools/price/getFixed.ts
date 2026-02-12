@@ -14,7 +14,6 @@ export const getFixedPrices = (env: Env) =>
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const fixedPrices = await client.getFixedPrices(context.skuId);
-      return { fixedPrices };
+      return client.getFixedPrices(context.skuId);
     },
   });

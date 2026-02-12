@@ -11,7 +11,6 @@ export const listWarehouses = (env: Env) =>
     execute: async () => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const warehouses = await client.listWarehouses();
-      return { warehouses };
+      return client.listWarehouses();
     },
   });
