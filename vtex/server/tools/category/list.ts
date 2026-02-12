@@ -13,23 +13,6 @@ export const listCategories = (env: Env) =>
         .optional()
         .describe("Levels of categories to return (default: 3)"),
     }),
-    outputSchema: z
-      .object({
-        categories: z.array(
-          z
-            .object({
-              id: z.number().describe("Category ID"),
-              name: z.string().describe("Category name"),
-              hasChildren: z
-                .boolean()
-                .describe("Whether category has subcategories"),
-              url: z.string().describe("Category URL"),
-              children: z.array(z.any()).describe("Subcategories"),
-            })
-            .passthrough(),
-        ),
-      })
-      .passthrough(),
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
