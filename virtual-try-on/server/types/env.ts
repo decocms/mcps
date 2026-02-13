@@ -8,12 +8,12 @@ import { z } from "zod";
 /**
  * Configuration state for this MCP.
  *
- * Uses a nanobanana binding to delegate image generation
- * via its GENERATE_IMAGE tool.
+ * Uses any image generator binding that provides a GENERATE_IMAGE tool
+ * to delegate image generation.
  */
 export const StateSchema = z.object({
-  NANOBANANA: BindingOf("@deco/nanobanana").describe(
-    "Nanobanana image generator binding.",
+  IMAGE_GENERATOR: BindingOf("*").describe(
+    "Image generator binding (any MCP that provides GENERATE_IMAGE tool).",
   ),
 });
 

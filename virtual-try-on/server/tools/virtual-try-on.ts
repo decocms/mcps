@@ -126,6 +126,39 @@ async function withTimeout<T>(
   return Promise.race([promise, timeoutPromise]);
 }
 
+/**
+ * Helper function to add keepalive heartbeats during long-running operations
+ * This prevents SSE connections from timing out by periodically logging progress
+ */
+async function withHeartbeat<T>(
+  promise: Promise<T>,
+  label: string,
+  intervalMs = 5000,
+): Promise<T> {
+  let heartbeatTimer: Timer | null = null;
+  let elapsedSeconds = 0;
+
+  try {
+    // Start heartbeat timer
+    heartbeatTimer = setInterval(() => {
+      elapsedSeconds += intervalMs / 1000;
+      console.log(
+        `[${label}] ⏳ Still processing... (${elapsedSeconds}s elapsed)`,
+      );
+    }, intervalMs);
+
+    // Wait for the promise to complete
+    const result = await promise;
+
+    return result;
+  } finally {
+    // Clean up heartbeat timer
+    if (heartbeatTimer !== null) {
+      clearInterval(heartbeatTimer);
+    }
+  }
+}
+
 export const virtualTryOnTools = [
   (env: Env) =>
     createTool({
@@ -139,8 +172,11 @@ export const virtualTryOnTools = [
         finishReason: z.string().optional(),
       }),
       execute: async ({ context }: { context: VirtualTryOnInput }) => {
-        console.log("[VIRTUAL_TRY_ON] 🚀 Starting tool execution");
-        console.log("[VIRTUAL_TRY_ON] 📥 Input received:", {
+        const executionId = Math.random().toString(36).substring(2, 8);
+        console.log(
+          `[VIRTUAL_TRY_ON:${executionId}] 🚀 Starting tool execution`,
+        );
+        console.log(`[VIRTUAL_TRY_ON:${executionId}] 📥 Input received:`, {
           personImageUrl: context.personImageUrl,
           garmentsCount: context.garments.length,
           garments: context.garments,
@@ -151,7 +187,7 @@ export const virtualTryOnTools = [
           model: context.model,
         });
 
-        console.log("[VIRTUAL_TRY_ON] 🔍 Checking NANOBANANA binding...");
+        console.log("[VIRTUAL_TRY_ON] 🔍 Checking IMAGE_GENERATOR binding...");
         console.log(
           "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT exists?",
           !!env.MESH_REQUEST_CONTEXT,
@@ -161,22 +197,38 @@ export const virtualTryOnTools = [
           !!env.MESH_REQUEST_CONTEXT?.state,
         );
 
-        const nanobanana = env.MESH_REQUEST_CONTEXT?.state?.NANOBANANA;
+        const imageGenerator = env.MESH_REQUEST_CONTEXT?.state?.IMAGE_GENERATOR;
         console.log(
-          "[VIRTUAL_TRY_ON] NANOBANANA binding exists?",
-          !!nanobanana,
+          "[VIRTUAL_TRY_ON] IMAGE_GENERATOR binding exists?",
+          !!imageGenerator,
         );
 
-        if (!nanobanana) {
-          console.error("[VIRTUAL_TRY_ON] ❌ NANOBANANA binding not found!");
+        if (!imageGenerator) {
+          console.error(
+            "[VIRTUAL_TRY_ON] ❌ IMAGE_GENERATOR binding not found!",
+          );
           console.error(
             "[VIRTUAL_TRY_ON] Available state:",
             env.MESH_REQUEST_CONTEXT?.state,
           );
           throw new Error(
-            "NANOBANANA binding is not configured. Please connect a nanobanana MCP.",
+            "IMAGE_GENERATOR binding is not configured. Please connect an image generator MCP (e.g., nanobanana) to the IMAGE_GENERATOR binding.",
           );
         }
+
+        console.log("[VIRTUAL_TRY_ON] ✅ IMAGE_GENERATOR binding found");
+        console.log("[VIRTUAL_TRY_ON] Checking for GENERATE_IMAGE tool...");
+
+        if (!imageGenerator.GENERATE_IMAGE) {
+          console.error(
+            "[VIRTUAL_TRY_ON] ❌ Connected MCP does not provide GENERATE_IMAGE tool!",
+          );
+          throw new Error(
+            "The connected IMAGE_GENERATOR MCP does not provide a GENERATE_IMAGE tool. Please connect a compatible image generator.",
+          );
+        }
+
+        console.log("[VIRTUAL_TRY_ON] ✅ GENERATE_IMAGE tool available");
 
         const garmentUrls = context.garments.map((g) => g.imageUrl);
         const garmentTypes = context.garments
@@ -199,7 +251,9 @@ export const virtualTryOnTools = [
         const modelToUse = context.model ?? "gemini-3-pro-image-preview";
         console.log("[VIRTUAL_TRY_ON] 🤖 Selected model:", modelToUse);
 
-        console.log("[VIRTUAL_TRY_ON] 📡 Calling NANOBANANA.GENERATE_IMAGE...");
+        console.log(
+          "[VIRTUAL_TRY_ON] 📡 Calling IMAGE_GENERATOR.GENERATE_IMAGE...",
+        );
         console.log("[VIRTUAL_TRY_ON] Call parameters:", {
           prompt,
           baseImageUrls,
@@ -209,34 +263,44 @@ export const virtualTryOnTools = [
 
         const startTime = performance.now();
         try {
-          console.log("[VIRTUAL_TRY_ON] ⏰ Starting NANOBANANA call...");
+          console.log("[VIRTUAL_TRY_ON] ⏰ Starting IMAGE_GENERATOR call...");
 
           // VIRTUAL_TRY_ON timeout: 180 seconds (3 minutes)
-          // This gives enough time for NANOBANANA's internal timeout (120s) + retries
+          // This gives enough time for the generator's internal timeout + retries
           const VIRTUAL_TRY_ON_TIMEOUT_MS = 180_000;
           console.log(
             `[VIRTUAL_TRY_ON] ⏱️  Virtual try-on timeout: ${VIRTUAL_TRY_ON_TIMEOUT_MS / 1000}s`,
           );
           console.log(
-            "[VIRTUAL_TRY_ON] ℹ️  NANOBANANA has its own internal timeout (120s)",
+            "[VIRTUAL_TRY_ON] ℹ️  IMAGE_GENERATOR may have its own internal timeout",
+          );
+          console.log(
+            "[VIRTUAL_TRY_ON] 💓 Heartbeat enabled - will log every 5s to keep connection alive",
           );
 
+          // Call the image generator binding
+          const generatorPromise = imageGenerator.GENERATE_IMAGE({
+            prompt,
+            baseImageUrls,
+            aspectRatio: context.aspectRatio,
+            model: modelToUse,
+          });
+
+          // Wrap with both heartbeat and timeout
           const result = (await withTimeout(
-            nanobanana.GENERATE_IMAGE({
-              prompt,
-              baseImageUrls,
-              aspectRatio: context.aspectRatio,
-              model: modelToUse,
-            }),
+            withHeartbeat(generatorPromise, "VIRTUAL_TRY_ON", 5000),
             VIRTUAL_TRY_ON_TIMEOUT_MS,
-            `Virtual try-on timeout after ${VIRTUAL_TRY_ON_TIMEOUT_MS / 1000}s - NANOBANANA did not respond in time`,
+            `Virtual try-on timeout after ${VIRTUAL_TRY_ON_TIMEOUT_MS / 1000}s - IMAGE_GENERATOR did not respond in time`,
           )) as GeneratorResult;
 
           const duration = Math.round(performance.now() - startTime);
           console.log(
-            `[VIRTUAL_TRY_ON] ✅ Response received from NANOBANANA in ${duration}ms`,
+            `[VIRTUAL_TRY_ON] ✅ Response received from IMAGE_GENERATOR in ${duration}ms`,
           );
-          console.log("[VIRTUAL_TRY_ON] 📦 Full NANOBANANA response:", result);
+          console.log(
+            "[VIRTUAL_TRY_ON] 📦 Full IMAGE_GENERATOR response:",
+            result,
+          );
           console.log("[VIRTUAL_TRY_ON] 📊 Response summary:", {
             hasImage: !!result.image,
             imageLength: result.image?.length,
@@ -245,15 +309,28 @@ export const virtualTryOnTools = [
             finishReason: result.finishReason,
           });
 
-          return {
+          const response = {
             image: result.image,
             error: result.error,
             finishReason: result.finishReason,
           };
+
+          console.log(
+            `[VIRTUAL_TRY_ON:${executionId}] 📤 ABOUT TO RETURN response to client:`,
+          );
+          console.log(
+            `[VIRTUAL_TRY_ON:${executionId}] Response object:`,
+            JSON.stringify(response),
+          );
+          console.log(
+            `[VIRTUAL_TRY_ON:${executionId}] 🏁 Tool execution completed successfully - returning now...`,
+          );
+
+          return response;
         } catch (error) {
           const duration = Math.round(performance.now() - startTime);
           console.error(
-            `[VIRTUAL_TRY_ON] ❌ Error calling NANOBANANA.GENERATE_IMAGE after ${duration}ms:`,
+            `[VIRTUAL_TRY_ON] ❌ Error calling IMAGE_GENERATOR.GENERATE_IMAGE after ${duration}ms:`,
           );
           console.error("[VIRTUAL_TRY_ON] Full error:", error);
           console.error("[VIRTUAL_TRY_ON] Error type:", typeof error);

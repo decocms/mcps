@@ -19,12 +19,12 @@ console.log(
   tools.length,
 );
 console.log("[VIRTUAL_TRY_ON_SERVER] 🔐 Required scopes:", [
-  "NANOBANANA::GENERATE_IMAGE",
+  "IMAGE_GENERATOR::GENERATE_IMAGE",
 ]);
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
-    scopes: ["NANOBANANA::GENERATE_IMAGE"],
+    scopes: ["IMAGE_GENERATOR::GENERATE_IMAGE"],
     state: StateSchema,
   },
   tools,
