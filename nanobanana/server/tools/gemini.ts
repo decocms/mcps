@@ -120,58 +120,92 @@ const createGenerateImageTool = (env: Env) =>
           "gemini-2.5-flash-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
 
-        const objectStorage = getObjectStorage(env);
-        const storage = createStorageAdapter(objectStorage);
+        console.log(
+          `[GENERATE_IMAGE] model=${parsedModel}, prompt="${context.prompt.slice(0, 80)}"`,
+        );
 
-        // Pre-compute the file path so we can fetch presigned URLs
-        // in parallel with image generation (saves mesh round-trip time).
-        const defaultMime = "image/png";
-        const extension = "png";
-        const name = new Date().toISOString().replace(/[:.]/g, "-");
-        const path = `/images/${name}.${extension}`;
-
-        // Start image generation AND presigned URL fetching in parallel
+        const t0 = performance.now();
         const client = createGeminiClient(env);
-        const [result, readUrl, writeUrl] = await Promise.all([
-          client.generateImage(
-            context.prompt,
-            context.baseImageUrl || undefined,
-            context.aspectRatio,
-            parsedModel,
-          ),
-          storage.createPresignedReadUrl({ key: path, expiresIn: 3600 }),
-          storage.createPresignedPutUrl({
-            key: path,
-            contentType: defaultMime,
-            metadata: { prompt: context.prompt },
-            expiresIn: 300,
-          }),
-        ]);
+        const result = await client.generateImage(
+          context.prompt,
+          context.baseImageUrl || undefined,
+          context.aspectRatio,
+          parsedModel,
+        );
+        const genMs = Math.round(performance.now() - t0);
+        console.log(
+          `[GENERATE_IMAGE] OpenRouter responded in ${genMs}ms — finishReason=${result.finishReason}, hasImage=${!!result.imageData}, mimeType=${result.mimeType}`,
+        );
 
         if (!result.imageData) {
+          console.warn(
+            `[GENERATE_IMAGE] No image data returned. finishReason=${result.finishReason}`,
+          );
           return {
             error: true,
             finishReason: result.finishReason,
           };
         }
 
-        // Upload image using the pre-fetched presigned URL
+        const mimeType = result.mimeType ?? "image/png";
+        const extension = mimeType.split("/")[1] || "png";
+        const name = new Date().toISOString().replace(/[:.]/g, "-");
+        const path = `/images/${name}.${extension}`;
+
+        console.log(
+          `[GENERATE_IMAGE] Requesting presigned URLs — path=${path}, contentType=${mimeType}`,
+        );
+
+        const t1 = performance.now();
+        const objectStorage = getObjectStorage(env);
+        const storage = createStorageAdapter(objectStorage);
+
+        const [readUrl, writeUrl] = await Promise.all([
+          storage.createPresignedReadUrl({ key: path, expiresIn: 3600 }),
+          storage.createPresignedPutUrl({
+            key: path,
+            contentType: mimeType,
+            metadata: { prompt: context.prompt },
+            expiresIn: 300,
+          }),
+        ]);
+        const urlMs = Math.round(performance.now() - t1);
+        console.log(`[GENERATE_IMAGE] Presigned URLs obtained in ${urlMs}ms`);
+
         const base64Data = result.imageData.includes(",")
           ? result.imageData.split(",")[1]
           : result.imageData;
         const imageBuffer = Buffer.from(base64Data!, "base64");
+        console.log(
+          `[GENERATE_IMAGE] Uploading ${imageBuffer.byteLength} bytes to S3...`,
+        );
 
+        const t2 = performance.now();
         const uploadResponse = await fetch(writeUrl, {
           method: "PUT",
-          headers: { "Content-Type": result.mimeType ?? defaultMime },
+          headers: { "Content-Type": mimeType },
           body: imageBuffer,
         });
+        const uploadMs = Math.round(performance.now() - t2);
 
         if (!uploadResponse.ok) {
+          const body = await uploadResponse.text().catch(() => "(no body)");
+          console.error(
+            `[GENERATE_IMAGE] Upload FAILED in ${uploadMs}ms — status=${uploadResponse.status} ${uploadResponse.statusText}`,
+          );
+          console.error(`[GENERATE_IMAGE] Upload error body: ${body}`);
+          console.error(
+            `[GENERATE_IMAGE] writeUrl: ${writeUrl.slice(0, 120)}...`,
+          );
           throw new Error(
-            `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`,
+            `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText} — ${body}`,
           );
         }
+
+        const totalMs = Math.round(performance.now() - t0);
+        console.log(
+          `[GENERATE_IMAGE] Done in ${totalMs}ms (gen=${genMs}ms, urls=${urlMs}ms, upload=${uploadMs}ms)`,
+        );
 
         return {
           image: readUrl,
