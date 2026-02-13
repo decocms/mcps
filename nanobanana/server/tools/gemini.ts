@@ -28,7 +28,7 @@ const GenerateImageInputSchema = z.object({
       "URL of an existing image to use as base (image-to-image generation)",
     ),
   baseImageUrls: z
-    .array(z.string().url())
+    .array(z.string())
     .optional()
     .describe(
       "Array of image URLs to use as base (for multi-image generation like virtual try-on). If provided, takes precedence over baseImageUrl.",
@@ -123,7 +123,7 @@ const createGenerateImageTool = (env: Env) =>
     execute: async ({ context }: { context: GenerateImageInput }) => {
       const doExecute = async () => {
         const modelToUse = (context.model ??
-          "gemini-2.5-flash-image-preview") as Model;
+          "gemini-3-pro-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
 
         // Determine which images to use (baseImageUrls takes precedence)

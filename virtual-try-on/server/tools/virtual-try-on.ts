@@ -147,7 +147,7 @@ export const virtualTryOnTools = [
           prompt,
           baseImageUrls,
           aspectRatio: context.aspectRatio,
-          model: context.model ?? "gemini-2.5-flash-image-preview",
+          model: context.model ?? "gemini-3-pro-image-preview",
         })) as GeneratorResult;
 
         return {

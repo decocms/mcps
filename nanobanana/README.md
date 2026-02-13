@@ -156,7 +156,8 @@ nanobanana/
 | Model | Description |
 |-------|-------------|
 | `gemini-2.0-flash-exp` | Gemini 2.0 Flash experimental with image generation |
-| `gemini-2.5-flash-image-preview` | Gemini 2.5 Flash optimized for image generation (default) |
+| `gemini-2.5-flash-image-preview` | Gemini 2.5 Flash optimized for image generation |
+| `gemini-3-pro-image-preview` | **Gemini 3 Pro with advanced image generation (default)** ✅ |
 | `gemini-2.5-pro-exp-03-25` | Gemini 2.5 Pro experimental with enhanced image quality |
 
 ## Technologies
