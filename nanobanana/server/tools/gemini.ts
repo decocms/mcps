@@ -122,6 +122,15 @@ const createGenerateImageTool = (env: Env) =>
     outputSchema: GenerateImageOutputSchema,
     execute: async ({ context }: { context: GenerateImageInput }) => {
       const doExecute = async () => {
+        console.log("[GENERATE_IMAGE] 🚀 INÍCIO da execução");
+        console.log("[GENERATE_IMAGE] 📥 Context recebido:", {
+          promptLength: context.prompt.length,
+          baseImageUrl: context.baseImageUrl,
+          baseImageUrlsCount: context.baseImageUrls?.length,
+          aspectRatio: context.aspectRatio,
+          model: context.model,
+        });
+
         const modelToUse = (context.model ??
           "gemini-3-pro-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
@@ -134,9 +143,16 @@ const createGenerateImageTool = (env: Env) =>
             : undefined;
 
         console.log(
-          `[GENERATE_IMAGE] model=${parsedModel}, prompt="${context.prompt.slice(0, 80)}", images=${imageUrls?.length ?? 0}`,
+          `[GENERATE_IMAGE] 🎯 Configuração: model=${parsedModel}, prompt="${context.prompt.slice(0, 80)}", images=${imageUrls?.length ?? 0}`,
         );
 
+        if (imageUrls && imageUrls.length > 0) {
+          console.log("[GENERATE_IMAGE] 🖼️  Image URLs:", imageUrls);
+        }
+
+        console.log(
+          "[GENERATE_IMAGE] ⏱️  Iniciando chamada ao OpenRouter/Gemini...",
+        );
         const t0 = performance.now();
         const client = createGeminiClient(env);
         const result = await client.generateImage(
@@ -147,12 +163,12 @@ const createGenerateImageTool = (env: Env) =>
         );
         const genMs = Math.round(performance.now() - t0);
         console.log(
-          `[GENERATE_IMAGE] OpenRouter responded in ${genMs}ms — finishReason=${result.finishReason}, hasImage=${!!result.imageData}, mimeType=${result.mimeType}`,
+          `[GENERATE_IMAGE] ✅ OpenRouter respondeu em ${genMs}ms — finishReason=${result.finishReason}, hasImage=${!!result.imageData}, mimeType=${result.mimeType}`,
         );
 
         if (!result.imageData) {
           console.warn(
-            `[GENERATE_IMAGE] No image data returned. finishReason=${result.finishReason}`,
+            `[GENERATE_IMAGE] ⚠️  Nenhuma imagem retornada. finishReason=${result.finishReason}`,
           );
           return {
             error: true,
@@ -166,13 +182,21 @@ const createGenerateImageTool = (env: Env) =>
         const path = `images/${name}.${extension}`;
 
         console.log(
-          `[GENERATE_IMAGE] Requesting presigned URLs — path=${path}, contentType=${mimeType}`,
+          `[GENERATE_IMAGE] 📁 Preparando storage — path=${path}, contentType=${mimeType}`,
         );
 
+        console.log("[GENERATE_IMAGE] 🔐 Obtendo OBJECT_STORAGE binding...");
         const t1 = performance.now();
         const objectStorage = getObjectStorage(env);
         const storage = createStorageAdapter(objectStorage);
+        console.log(
+          `[GENERATE_IMAGE] ✅ Storage adapter criado em ${Math.round(performance.now() - t1)}ms`,
+        );
 
+        console.log(
+          "[GENERATE_IMAGE] 🔗 Solicitando URLs presignadas (read + write)...",
+        );
+        const t1b = performance.now();
         const [readUrl, writeUrl] = await Promise.all([
           storage.createPresignedReadUrl({ key: path, expiresIn: 3600 }),
           storage.createPresignedPutUrl({
@@ -182,15 +206,23 @@ const createGenerateImageTool = (env: Env) =>
             expiresIn: 300,
           }),
         ]);
-        const urlMs = Math.round(performance.now() - t1);
-        console.log(`[GENERATE_IMAGE] Presigned URLs obtained in ${urlMs}ms`);
+        const urlMs = Math.round(performance.now() - t1b);
+        console.log(
+          `[GENERATE_IMAGE] ✅ URLs presignadas obtidas em ${urlMs}ms`,
+        );
+        console.log(
+          `[GENERATE_IMAGE] 📤 writeUrl: ${writeUrl.substring(0, 100)}...`,
+        );
+        console.log(
+          `[GENERATE_IMAGE] 📥 readUrl: ${readUrl.substring(0, 100)}...`,
+        );
 
         const base64Data = result.imageData.includes(",")
           ? result.imageData.split(",")[1]
           : result.imageData;
         const imageBuffer = Buffer.from(base64Data!, "base64");
         console.log(
-          `[GENERATE_IMAGE] Uploading ${imageBuffer.byteLength} bytes to S3...`,
+          `[GENERATE_IMAGE] ⬆️  Fazendo upload de ${imageBuffer.byteLength} bytes (~${Math.round(imageBuffer.byteLength / 1024)}KB) para S3...`,
         );
 
         const t2 = performance.now();
@@ -204,20 +236,24 @@ const createGenerateImageTool = (env: Env) =>
         if (!uploadResponse.ok) {
           const body = await uploadResponse.text().catch(() => "(no body)");
           console.error(
-            `[GENERATE_IMAGE] Upload FAILED in ${uploadMs}ms — status=${uploadResponse.status} ${uploadResponse.statusText}`,
+            `[GENERATE_IMAGE] ❌ Upload FALHOU em ${uploadMs}ms — status=${uploadResponse.status} ${uploadResponse.statusText}`,
           );
-          console.error(`[GENERATE_IMAGE] Upload error body: ${body}`);
+          console.error(`[GENERATE_IMAGE] ❌ Corpo do erro: ${body}`);
           console.error(
-            `[GENERATE_IMAGE] writeUrl: ${writeUrl.slice(0, 120)}...`,
+            `[GENERATE_IMAGE] ❌ writeUrl: ${writeUrl.slice(0, 120)}...`,
           );
           throw new Error(
             `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText} — ${body}`,
           );
         }
 
+        console.log(
+          `[GENERATE_IMAGE] ✅ Upload completado em ${uploadMs}ms (status: ${uploadResponse.status})`,
+        );
+
         const totalMs = Math.round(performance.now() - t0);
         console.log(
-          `[GENERATE_IMAGE] Done in ${totalMs}ms (gen=${genMs}ms, urls=${urlMs}ms, upload=${uploadMs}ms)`,
+          `[GENERATE_IMAGE] 🎉 CONCLUÍDO em ${totalMs}ms total (geração=${genMs}ms, urls=${urlMs}ms, upload=${uploadMs}ms)`,
         );
 
         return {
@@ -225,6 +261,14 @@ const createGenerateImageTool = (env: Env) =>
           finishReason: result.finishReason,
         };
       };
+
+      console.log(
+        "[GENERATE_IMAGE] 🔧 Aplicando middlewares (logging, retry, timeout)...",
+      );
+      console.log(
+        `[GENERATE_IMAGE] ⏰ Timeout configurado: ${TIMEOUT_MS}ms (${TIMEOUT_MS / 1000}s)`,
+      );
+      console.log(`[GENERATE_IMAGE] 🔄 Max retries: ${MAX_RETRIES}`);
 
       const withMiddlewares = applyMiddlewares({
         fn: doExecute,

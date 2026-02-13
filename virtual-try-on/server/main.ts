@@ -11,6 +11,17 @@ import { type Env, StateSchema } from "./types/env.ts";
 export type { Env };
 export { StateSchema };
 
+console.log(
+  "[VIRTUAL_TRY_ON_SERVER] 🚀 Inicializando servidor Virtual Try-On MCP",
+);
+console.log(
+  "[VIRTUAL_TRY_ON_SERVER] 📦 Número de tools registrados:",
+  tools.length,
+);
+console.log("[VIRTUAL_TRY_ON_SERVER] 🔐 Scopes requeridos:", [
+  "NANOBANANA::GENERATE_IMAGE",
+]);
+
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     scopes: ["NANOBANANA::GENERATE_IMAGE"],
@@ -18,5 +29,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
   tools,
 });
+
+console.log("[VIRTUAL_TRY_ON_SERVER] ✅ Runtime configurado com sucesso");
 
 export default runtime;

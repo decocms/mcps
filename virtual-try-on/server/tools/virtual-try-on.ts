@@ -121,8 +121,42 @@ export const virtualTryOnTools = [
         finishReason: z.string().optional(),
       }),
       execute: async ({ context }: { context: VirtualTryOnInput }) => {
+        console.log("[VIRTUAL_TRY_ON] 🚀 Iniciando execução do tool");
+        console.log("[VIRTUAL_TRY_ON] 📥 Input recebido:", {
+          personImageUrl: context.personImageUrl,
+          garmentsCount: context.garments.length,
+          garments: context.garments,
+          instruction: context.instruction,
+          preserveFace: context.preserveFace,
+          preserveBackground: context.preserveBackground,
+          aspectRatio: context.aspectRatio,
+          model: context.model,
+        });
+
+        console.log("[VIRTUAL_TRY_ON] 🔍 Verificando binding do NANOBANANA...");
+        console.log(
+          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT existe?",
+          !!env.MESH_REQUEST_CONTEXT,
+        );
+        console.log(
+          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT.state existe?",
+          !!env.MESH_REQUEST_CONTEXT?.state,
+        );
+
         const nanobanana = env.MESH_REQUEST_CONTEXT?.state?.NANOBANANA;
+        console.log(
+          "[VIRTUAL_TRY_ON] NANOBANANA binding existe?",
+          !!nanobanana,
+        );
+
         if (!nanobanana) {
+          console.error(
+            "[VIRTUAL_TRY_ON] ❌ NANOBANANA binding não encontrado!",
+          );
+          console.error(
+            "[VIRTUAL_TRY_ON] State disponível:",
+            env.MESH_REQUEST_CONTEXT?.state,
+          );
           throw new Error(
             "NANOBANANA binding is not configured. Please connect a nanobanana MCP.",
           );
@@ -133,6 +167,7 @@ export const virtualTryOnTools = [
           .map((g) => g.type ?? "unknown")
           .filter(Boolean);
 
+        console.log("[VIRTUAL_TRY_ON] 📝 Construindo prompt...");
         const prompt = buildTryOnPrompt({
           garmentsCount: garmentUrls.length,
           garmentTypes,
@@ -140,21 +175,56 @@ export const virtualTryOnTools = [
           preserveFace: context.preserveFace,
           preserveBackground: context.preserveBackground,
         });
+        console.log("[VIRTUAL_TRY_ON] Prompt gerado:", prompt);
 
         const baseImageUrls = [context.personImageUrl, ...garmentUrls];
+        console.log("[VIRTUAL_TRY_ON] 🖼️  Base image URLs:", baseImageUrls);
 
-        const result = (await nanobanana.GENERATE_IMAGE({
+        const modelToUse = context.model ?? "gemini-3-pro-image-preview";
+        console.log("[VIRTUAL_TRY_ON] 🤖 Modelo selecionado:", modelToUse);
+
+        console.log(
+          "[VIRTUAL_TRY_ON] 📡 Chamando NANOBANANA.GENERATE_IMAGE...",
+        );
+        console.log("[VIRTUAL_TRY_ON] Parâmetros da chamada:", {
           prompt,
           baseImageUrls,
           aspectRatio: context.aspectRatio,
-          model: context.model ?? "gemini-3-pro-image-preview",
-        })) as GeneratorResult;
+          model: modelToUse,
+        });
 
-        return {
-          image: result.image,
-          error: result.error,
-          finishReason: result.finishReason,
-        };
+        try {
+          const result = (await nanobanana.GENERATE_IMAGE({
+            prompt,
+            baseImageUrls,
+            aspectRatio: context.aspectRatio,
+            model: modelToUse,
+          })) as GeneratorResult;
+
+          console.log("[VIRTUAL_TRY_ON] ✅ Resposta recebida do NANOBANANA:", {
+            hasImage: !!result.image,
+            imageLength: result.image?.length,
+            error: result.error,
+            finishReason: result.finishReason,
+          });
+
+          return {
+            image: result.image,
+            error: result.error,
+            finishReason: result.finishReason,
+          };
+        } catch (error) {
+          console.error(
+            "[VIRTUAL_TRY_ON] ❌ Erro ao chamar NANOBANANA.GENERATE_IMAGE:",
+            error,
+          );
+          console.error("[VIRTUAL_TRY_ON] Tipo do erro:", typeof error);
+          console.error(
+            "[VIRTUAL_TRY_ON] Stack trace:",
+            error instanceof Error ? error.stack : "N/A",
+          );
+          throw error;
+        }
       },
     }),
 ];
