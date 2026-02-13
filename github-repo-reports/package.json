@@ -1,0 +1,28 @@
+{
+  "name": "github-repo-reports",
+  "version": "1.0.0",
+  "description": "GitHub-backed reports MCP server implementing the Reports Binding. Stores and reads reports as Markdown files with YAML frontmatter from a configurable GitHub repository.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.5",
+    "@octokit/rest": "^22.0.1",
+    "yaml": "^2.8.2",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
