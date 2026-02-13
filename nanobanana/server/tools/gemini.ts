@@ -60,7 +60,25 @@ interface FileSystemBinding {
  * At runtime, BindingOf bindings are resolved into MCP client stubs.
  */
 function getFileSystem(env: Env): FileSystemBinding {
-  const fs = env.MESH_REQUEST_CONTEXT?.state?.FILE_SYSTEM;
+  const ctx = env.MESH_REQUEST_CONTEXT;
+  console.log("[NANOBANANA] MESH_REQUEST_CONTEXT debug:", {
+    hasContext: !!ctx,
+    hasToken: !!ctx?.token,
+    tokenPreview: ctx?.token ? `${ctx.token.substring(0, 50)}...` : "none",
+    meshUrl: ctx?.meshUrl,
+    connectionId: ctx?.connectionId,
+    organizationId: ctx?.organizationId,
+    stateKeys: ctx?.state ? Object.keys(ctx.state) : [],
+    hasFileSystem: !!ctx?.state?.FILE_SYSTEM,
+    fileSystemType: ctx?.state?.FILE_SYSTEM
+      ? typeof ctx.state.FILE_SYSTEM
+      : "undefined",
+    fileSystemKeys: ctx?.state?.FILE_SYSTEM
+      ? Object.keys(ctx.state.FILE_SYSTEM as Record<string, unknown>)
+      : [],
+  });
+
+  const fs = ctx?.state?.FILE_SYSTEM;
   if (!fs) {
     throw new Error(
       "FILE_SYSTEM binding is not configured. Please connect a file-system MCP.",
