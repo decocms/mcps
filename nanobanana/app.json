@@ -9,6 +9,9 @@
   "description": "Generate images using AI with Gemini models via OpenRouter. Text-to-image and image-to-image generation with customizable aspect ratios.",
   "icon": "https://assets.decocache.com/starting/62401ea6-55e6-433d-b614-e43196890e05/nanobanana.png",
   "unlisted": false,
+  "bindings": {
+    "FILE_SYSTEM": "@deco/file-system"
+  },
   "metadata": {
     "categories": ["AI"],
     "official": false,

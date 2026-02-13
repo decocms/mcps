@@ -1,20 +1,22 @@
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
-import type { Env } from "server/types/env.ts";
+import {
+  AspectRatioSchema,
+  GenerateImageOutputSchema,
+  saveImage,
+  type SaveImageOptions,
+} from "@decocms/mcps-shared/image-generators";
+import {
+  applyMiddlewares,
+  withLogging,
+  withRetry,
+  withTimeout,
+} from "@decocms/mcps-shared/tools/utils/middleware";
+import type { Env } from "server/main.ts";
 import { createGeminiClient, models, type Model } from "./utils/gemini.ts";
 
-const AspectRatioSchema = z.enum([
-  "1:1",
-  "2:3",
-  "3:2",
-  "3:4",
-  "4:3",
-  "4:5",
-  "5:4",
-  "9:16",
-  "16:9",
-  "21:9",
-]);
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 120_000;
 
 const GenerateImageInputSchema = z.object({
   prompt: z
@@ -31,53 +33,139 @@ const GenerateImageInputSchema = z.object({
     "Aspect ratio for the generated image (default: 1:1)",
   ),
   model: z
-    .enum([
-      "gemini-2.0-flash-exp",
-      "gemini-2.5-flash-image-preview",
-      "gemini-2.5-pro-image-preview",
-      "gemini-2.5-pro-exp-03-25",
-      "gemini-3-pro-image-preview",
-    ])
+    .enum(models.options)
     .optional()
     .describe(
       "Model to use for image generation (default: gemini-2.5-flash-image-preview)",
     ),
 });
 
-const GenerateImageOutputSchema = z.object({
-  image: z.string().optional().describe("URL of the generated image"),
-  error: z.boolean().optional().describe("Whether the request failed"),
-  finishReason: z.string().optional().describe("Native finish reason"),
-});
-
 type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
+
+/** Minimal interface for the resolved FILE_SYSTEM binding */
+interface FileSystemBinding {
+  FS_READ: (input: {
+    path: string;
+    expiresIn?: number;
+  }) => Promise<{ url: string }>;
+  FS_WRITE: (input: {
+    path: string;
+    contentType: string;
+    expiresIn?: number;
+  }) => Promise<{ url: string }>;
+}
+
+/**
+ * Gets the FILE_SYSTEM binding from the environment state.
+ * At runtime, BindingOf bindings are resolved into MCP client stubs.
+ */
+function getFileSystem(env: Env): FileSystemBinding {
+  const fs = env.MESH_REQUEST_CONTEXT?.state?.FILE_SYSTEM;
+  if (!fs) {
+    throw new Error(
+      "FILE_SYSTEM binding is not configured. Please connect a file-system MCP.",
+    );
+  }
+  // At runtime, BindingOf bindings are resolved into Proxy-based MCP
+  // client stubs with dynamic methods (FS_READ, FS_WRITE, etc.)
+  // TypeScript doesn't see these dynamic props, so we cast through unknown.
+  return fs as unknown as FileSystemBinding;
+}
+
+/**
+ * Creates a minimal storage adapter from the resolved FILE_SYSTEM binding.
+ */
+function createStorageFromFileSystem(fileSystem: FileSystemBinding) {
+  return {
+    createPresignedReadUrl: async ({
+      key,
+      expiresIn,
+    }: {
+      key: string;
+      expiresIn?: number;
+    }) => {
+      const { url } = await fileSystem.FS_READ({
+        path: key,
+        expiresIn: expiresIn ?? 3600,
+      });
+      return url;
+    },
+    createPresignedPutUrl: async ({
+      key,
+      contentType,
+      expiresIn,
+    }: {
+      key: string;
+      contentType?: string;
+      metadata?: Record<string, string>;
+      expiresIn: number;
+    }) => {
+      const { url } = await fileSystem.FS_WRITE({
+        path: key,
+        contentType: contentType ?? "application/octet-stream",
+        expiresIn,
+      });
+      return url;
+    },
+  };
+}
 
 const createGenerateImageTool = (env: Env) =>
   createPrivateTool({
     id: "GENERATE_IMAGE",
-    description: "Generate an image using Gemini models via OpenRouter",
+    description: "Generate images using Gemini models via OpenRouter",
     inputSchema: GenerateImageInputSchema,
     outputSchema: GenerateImageOutputSchema,
     execute: async ({ context }: { context: GenerateImageInput }) => {
-      console.log("[Gemini] Starting image generation...");
+      const doExecute = async () => {
+        const modelToUse = (context.model ??
+          "gemini-2.5-flash-image-preview") as Model;
+        const parsedModel: Model = models.parse(modelToUse);
 
-      const modelToUse = context.model ?? "gemini-2.5-flash-image-preview";
-      const parsedModel: Model = models.parse(modelToUse);
+        const client = createGeminiClient(env);
+        const result = await client.generateImage(
+          context.prompt,
+          context.baseImageUrl || undefined,
+          context.aspectRatio,
+          parsedModel,
+        );
 
-      const client = createGeminiClient(env);
-      const result = await client.generateImage(
-        context.prompt,
-        context.baseImageUrl || undefined,
-        context.aspectRatio,
-        parsedModel,
-      );
+        if (!result.imageData) {
+          return {
+            error: true,
+            finishReason: result.finishReason,
+          };
+        }
 
-      console.log("[Gemini] Image generation completed successfully");
+        const fileSystem = getFileSystem(env);
+        const storage = createStorageFromFileSystem(fileSystem);
+        const saveOptions: SaveImageOptions = {
+          imageData: result.imageData,
+          mimeType: result.mimeType ?? "image/png",
+          metadata: { prompt: context.prompt },
+        };
 
-      return {
-        image: result.imageUrl,
-        finishReason: result.finishReason,
+        const saved = await saveImage(storage, saveOptions);
+
+        return {
+          image: saved.url,
+          finishReason: result.finishReason,
+        };
       };
+
+      const withMiddlewares = applyMiddlewares({
+        fn: doExecute,
+        middlewares: [
+          withLogging({
+            title: "Gemini via OpenRouter",
+            startMessage: "Starting image generation...",
+          }),
+          withRetry(MAX_RETRIES),
+          withTimeout(TIMEOUT_MS),
+        ],
+      });
+
+      return withMiddlewares();
     },
   });
 

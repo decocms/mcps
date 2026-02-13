@@ -1,5 +1,5 @@
 import { OPENROUTER_BASE_URL } from "server/constants.ts";
-import type { Env } from "server/types/env.ts";
+import type { Env } from "server/main.ts";
 import { z } from "zod";
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 
@@ -14,8 +14,10 @@ export type Model = z.infer<typeof models>;
 
 /** Result of an image generation request */
 export interface ImageGenerationResult {
-  /** URL of the generated image (hosted by OpenRouter) */
-  imageUrl: string;
+  /** Raw image data (base64 data URI) */
+  imageData?: string;
+  /** MIME type of the generated image */
+  mimeType?: string;
   /** Native finish reason from the model */
   finishReason?: string;
 }
@@ -71,6 +73,15 @@ function getApiKey(env: Env): string {
   return apiKey;
 }
 
+/**
+ * Extracts MIME type from a data URI string.
+ * Falls back to "image/png" if extraction fails.
+ */
+function extractMimeType(dataUri: string): string {
+  const mimeMatch = dataUri.match(/^data:([^;]+);/);
+  return mimeMatch?.[1] ?? "image/png";
+}
+
 async function makeOpenrouterRequest(
   env: Env,
   endpoint: string,
@@ -92,15 +103,17 @@ async function makeOpenrouterRequest(
     "Openrouter",
   );
   const choices = data.choices[0];
-
-  const imageUrl = choices.message.images?.[0]?.image_url?.url;
   const finishReason = choices.native_finish_reason;
 
-  if (!imageUrl) {
-    throw new Error("No image generated in the response");
+  const imageDataUri = choices.message.images?.[0]?.image_url?.url;
+
+  if (!imageDataUri) {
+    return { finishReason };
   }
 
-  return { imageUrl, finishReason };
+  const mimeType = extractMimeType(imageDataUri);
+
+  return { imageData: imageDataUri, mimeType, finishReason };
 }
 
 export async function generateImage(
