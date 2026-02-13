@@ -234,14 +234,16 @@ export const virtualTryOnTools = [
 
           const duration = Math.round(performance.now() - startTime);
           console.log(
-            `[VIRTUAL_TRY_ON] ✅ Response received from NANOBANANA in ${duration}ms:`,
-            {
-              hasImage: !!result.image,
-              imageLength: result.image?.length,
-              error: result.error,
-              finishReason: result.finishReason,
-            },
+            `[VIRTUAL_TRY_ON] ✅ Response received from NANOBANANA in ${duration}ms`,
           );
+          console.log("[VIRTUAL_TRY_ON] 📦 Full NANOBANANA response:", result);
+          console.log("[VIRTUAL_TRY_ON] 📊 Response summary:", {
+            hasImage: !!result.image,
+            imageLength: result.image?.length,
+            imagePreview: result.image?.substring(0, 100),
+            error: result.error,
+            finishReason: result.finishReason,
+          });
 
           return {
             image: result.image,
