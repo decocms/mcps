@@ -144,7 +144,7 @@ const createGenerateImageTool = (env: Env) =>
             key: path,
             contentType: defaultMime,
             metadata: { prompt: context.prompt },
-            expiresIn: 60,
+            expiresIn: 300,
           }),
         ]);
 
