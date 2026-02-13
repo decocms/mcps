@@ -150,7 +150,7 @@ const createGenerateImageTool = (env: Env) =>
         const mimeType = result.mimeType ?? "image/png";
         const extension = mimeType.split("/")[1] || "png";
         const name = new Date().toISOString().replace(/[:.]/g, "-");
-        const path = `/images/${name}.${extension}`;
+        const path = `images/${name}.${extension}`;
 
         console.log(
           `[GENERATE_IMAGE] Requesting presigned URLs — path=${path}, contentType=${mimeType}`,
