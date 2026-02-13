@@ -108,6 +108,24 @@ function buildTryOnPrompt(args: {
     .join("\n");
 }
 
+/**
+ * Helper function to add timeout to MCP binding calls
+ * MCP bindings don't support RequestInit signal, so we use Promise.race
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string,
+): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]);
+}
+
 export const virtualTryOnTools = [
   (env: Env) =>
     createTool({
@@ -193,23 +211,25 @@ export const virtualTryOnTools = [
         try {
           console.log("[VIRTUAL_TRY_ON] ⏰ Starting NANOBANANA call...");
 
-          // Custom timeout of 180 seconds (3 minutes) for image generation
-          // using AbortSignal.timeout() in RequestInit
-          const TIMEOUT_MS = 180_000; // 3 minutes
+          // VIRTUAL_TRY_ON timeout: 180 seconds (3 minutes)
+          // This gives enough time for NANOBANANA's internal timeout (120s) + retries
+          const VIRTUAL_TRY_ON_TIMEOUT_MS = 180_000;
           console.log(
-            `[VIRTUAL_TRY_ON] ⏱️  Timeout configured to ${TIMEOUT_MS / 1000}s`,
+            `[VIRTUAL_TRY_ON] ⏱️  Virtual try-on timeout: ${VIRTUAL_TRY_ON_TIMEOUT_MS / 1000}s`,
+          );
+          console.log(
+            "[VIRTUAL_TRY_ON] ℹ️  NANOBANANA has its own internal timeout (120s)",
           );
 
-          const result = (await nanobanana.GENERATE_IMAGE(
-            {
+          const result = (await withTimeout(
+            nanobanana.GENERATE_IMAGE({
               prompt,
               baseImageUrls,
               aspectRatio: context.aspectRatio,
               model: modelToUse,
-            },
-            {
-              signal: AbortSignal.timeout(TIMEOUT_MS),
-            },
+            }),
+            VIRTUAL_TRY_ON_TIMEOUT_MS,
+            `Virtual try-on timeout after ${VIRTUAL_TRY_ON_TIMEOUT_MS / 1000}s - NANOBANANA did not respond in time`,
           )) as GeneratorResult;
 
           const duration = Math.round(performance.now() - startTime);
