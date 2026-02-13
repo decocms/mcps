@@ -70,6 +70,48 @@ Generates a complete (non-streaming) response in a single call.
 
 Content parts are normalized from the AI SDK format into the binding schema format, supporting `text`, `file`, `reasoning`, `tool-call`, and `tool-result` types.
 
+#### Token Usage and Cost Reporting
+
+Both `LLM_DO_STREAM` and `LLM_DO_GENERATE` return token usage information via the `usage` field from the AI SDK's `LanguageModelV2Usage` interface:
+
+```typescript
+{
+  usage: {
+    promptTokens: number;      // Number of tokens in the input
+    completionTokens: number;  // Number of tokens in the output
+  }
+}
+```
+
+Providers may include additional cost information in `providerMetadata`. For example, OpenRouter includes the actual cost:
+
+```typescript
+{
+  providerMetadata: {
+    openrouter: {
+      usage: {
+        cost: number;  // Actual cost in USD (e.g., 0.00015)
+      }
+    }
+  }
+}
+```
+
+**Important**: The `costs` field in model entities (`COLLECTION_LLM_LIST` and `COLLECTION_LLM_GET`) stores pricing as **per-token costs in USD**:
+
+```typescript
+{
+  costs: {
+    input: number;   // Cost per input token (USD), e.g., 0.000003 = $0.000003/token
+    output: number;  // Cost per output token (USD)
+  }
+}
+```
+
+Different providers return pricing in different formats from their APIs:
+- **OpenRouter**: Returns per-token prices directly (e.g., "0.000003" = $0.000003/token)
+- **Google Gemini**: Returns prices per 1M tokens (e.g., "0.15" = $0.15/1M tokens), which the binding divides by 1,000,000 to normalize to per-token
+
 ---
 
 ## Model Entity Schema
