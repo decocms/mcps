@@ -3,8 +3,6 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import {
   AspectRatioSchema,
   GenerateImageOutputSchema,
-  saveImage,
-  type SaveImageOptions,
 } from "@decocms/mcps-shared/image-generators";
 import {
   applyMiddlewares,
@@ -42,58 +40,40 @@ const GenerateImageInputSchema = z.object({
 
 type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
-/** Minimal interface for the resolved FILE_SYSTEM binding */
-interface FileSystemBinding {
-  FS_READ: (input: {
-    path: string;
+/** Minimal interface for the resolved OBJECT_STORAGE binding */
+interface ObjectStorageBinding {
+  GET_PRESIGNED_URL: (input: {
+    key: string;
     expiresIn?: number;
-  }) => Promise<{ url: string }>;
-  FS_WRITE: (input: {
-    path: string;
-    contentType: string;
+  }) => Promise<{ url: string; expiresIn: number }>;
+  PUT_PRESIGNED_URL: (input: {
+    key: string;
     expiresIn?: number;
-  }) => Promise<{ url: string }>;
+    contentType?: string;
+  }) => Promise<{ url: string; expiresIn: number }>;
 }
 
 /**
- * Gets the FILE_SYSTEM binding from the environment state.
+ * Gets the OBJECT_STORAGE binding from the environment state.
  * At runtime, BindingOf bindings are resolved into MCP client stubs.
  */
-function getFileSystem(env: Env): FileSystemBinding {
-  const ctx = env.MESH_REQUEST_CONTEXT;
-  console.log("[NANOBANANA] MESH_REQUEST_CONTEXT debug:", {
-    hasContext: !!ctx,
-    hasToken: !!ctx?.token,
-    tokenPreview: ctx?.token ? `${ctx.token.substring(0, 50)}...` : "none",
-    meshUrl: ctx?.meshUrl,
-    connectionId: ctx?.connectionId,
-    organizationId: ctx?.organizationId,
-    stateKeys: ctx?.state ? Object.keys(ctx.state) : [],
-    hasFileSystem: !!ctx?.state?.FILE_SYSTEM,
-    fileSystemType: ctx?.state?.FILE_SYSTEM
-      ? typeof ctx.state.FILE_SYSTEM
-      : "undefined",
-    fileSystemKeys: ctx?.state?.FILE_SYSTEM
-      ? Object.keys(ctx.state.FILE_SYSTEM as Record<string, unknown>)
-      : [],
-  });
-
-  const fs = ctx?.state?.FILE_SYSTEM;
-  if (!fs) {
+function getObjectStorage(env: Env): ObjectStorageBinding {
+  const storage = env.MESH_REQUEST_CONTEXT?.state?.OBJECT_STORAGE;
+  if (!storage) {
     throw new Error(
-      "FILE_SYSTEM binding is not configured. Please connect a file-system MCP.",
+      "OBJECT_STORAGE binding is not configured. Please connect an object-storage MCP.",
     );
   }
   // At runtime, BindingOf bindings are resolved into Proxy-based MCP
-  // client stubs with dynamic methods (FS_READ, FS_WRITE, etc.)
+  // client stubs with dynamic methods (GET_PRESIGNED_URL, PUT_PRESIGNED_URL, etc.)
   // TypeScript doesn't see these dynamic props, so we cast through unknown.
-  return fs as unknown as FileSystemBinding;
+  return storage as unknown as ObjectStorageBinding;
 }
 
 /**
- * Creates a minimal storage adapter from the resolved FILE_SYSTEM binding.
+ * Creates a minimal storage adapter from the resolved OBJECT_STORAGE binding.
  */
-function createStorageFromFileSystem(fileSystem: FileSystemBinding) {
+function createStorageAdapter(objectStorage: ObjectStorageBinding) {
   return {
     createPresignedReadUrl: async ({
       key,
@@ -102,8 +82,8 @@ function createStorageFromFileSystem(fileSystem: FileSystemBinding) {
       key: string;
       expiresIn?: number;
     }) => {
-      const { url } = await fileSystem.FS_READ({
-        path: key,
+      const { url } = await objectStorage.GET_PRESIGNED_URL({
+        key,
         expiresIn: expiresIn ?? 3600,
       });
       return url;
@@ -118,8 +98,8 @@ function createStorageFromFileSystem(fileSystem: FileSystemBinding) {
       metadata?: Record<string, string>;
       expiresIn: number;
     }) => {
-      const { url } = await fileSystem.FS_WRITE({
-        path: key,
+      const { url } = await objectStorage.PUT_PRESIGNED_URL({
+        key,
         contentType: contentType ?? "application/octet-stream",
         expiresIn,
       });
@@ -140,13 +120,33 @@ const createGenerateImageTool = (env: Env) =>
           "gemini-2.5-flash-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
 
+        const objectStorage = getObjectStorage(env);
+        const storage = createStorageAdapter(objectStorage);
+
+        // Pre-compute the file path so we can fetch presigned URLs
+        // in parallel with image generation (saves mesh round-trip time).
+        const defaultMime = "image/png";
+        const extension = "png";
+        const name = new Date().toISOString().replace(/[:.]/g, "-");
+        const path = `/images/${name}.${extension}`;
+
+        // Start image generation AND presigned URL fetching in parallel
         const client = createGeminiClient(env);
-        const result = await client.generateImage(
-          context.prompt,
-          context.baseImageUrl || undefined,
-          context.aspectRatio,
-          parsedModel,
-        );
+        const [result, readUrl, writeUrl] = await Promise.all([
+          client.generateImage(
+            context.prompt,
+            context.baseImageUrl || undefined,
+            context.aspectRatio,
+            parsedModel,
+          ),
+          storage.createPresignedReadUrl({ key: path, expiresIn: 3600 }),
+          storage.createPresignedPutUrl({
+            key: path,
+            contentType: defaultMime,
+            metadata: { prompt: context.prompt },
+            expiresIn: 60,
+          }),
+        ]);
 
         if (!result.imageData) {
           return {
@@ -155,18 +155,26 @@ const createGenerateImageTool = (env: Env) =>
           };
         }
 
-        const fileSystem = getFileSystem(env);
-        const storage = createStorageFromFileSystem(fileSystem);
-        const saveOptions: SaveImageOptions = {
-          imageData: result.imageData,
-          mimeType: result.mimeType ?? "image/png",
-          metadata: { prompt: context.prompt },
-        };
+        // Upload image using the pre-fetched presigned URL
+        const base64Data = result.imageData.includes(",")
+          ? result.imageData.split(",")[1]
+          : result.imageData;
+        const imageBuffer = Buffer.from(base64Data!, "base64");
 
-        const saved = await saveImage(storage, saveOptions);
+        const uploadResponse = await fetch(writeUrl, {
+          method: "PUT",
+          headers: { "Content-Type": result.mimeType ?? defaultMime },
+          body: imageBuffer,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(
+            `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`,
+          );
+        }
 
         return {
-          image: saved.url,
+          image: readUrl,
           finishReason: result.finishReason,
         };
       };

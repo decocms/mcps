@@ -17,8 +17,8 @@ import { tools } from "./tools/index.ts";
  * NANOBANANA_API_KEY is the OpenRouter API key provided by the user.
  */
 export const StateSchema = z.object({
-  FILE_SYSTEM: BindingOf("@deco/file-system").describe(
-    "File system binding for storing generated images.",
+  OBJECT_STORAGE: BindingOf("@deco/object-storage").describe(
+    "Object storage binding (S3-compatible) for storing generated images.",
   ),
   NANOBANANA_API_KEY: z
     .string()
@@ -37,7 +37,10 @@ export type Env = DefaultEnv<typeof StateSchema>;
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     state: StateSchema,
-    scopes: ["FILE_SYSTEM::FS_READ", "FILE_SYSTEM::FS_WRITE"],
+    scopes: [
+      "OBJECT_STORAGE::GET_PRESIGNED_URL",
+      "OBJECT_STORAGE::PUT_PRESIGNED_URL",
+    ],
   },
   tools,
 });

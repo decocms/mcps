@@ -10,7 +10,7 @@
   "icon": "https://assets.decocache.com/starting/62401ea6-55e6-433d-b614-e43196890e05/nanobanana.png",
   "unlisted": false,
   "bindings": {
-    "FILE_SYSTEM": "@deco/file-system"
+    "OBJECT_STORAGE": "@deco/object-storage"
   },
   "metadata": {
     "categories": ["AI"],
