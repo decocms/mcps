@@ -121,8 +121,8 @@ export const virtualTryOnTools = [
         finishReason: z.string().optional(),
       }),
       execute: async ({ context }: { context: VirtualTryOnInput }) => {
-        console.log("[VIRTUAL_TRY_ON] 🚀 Iniciando execução do tool");
-        console.log("[VIRTUAL_TRY_ON] 📥 Input recebido:", {
+        console.log("[VIRTUAL_TRY_ON] 🚀 Starting tool execution");
+        console.log("[VIRTUAL_TRY_ON] 📥 Input received:", {
           personImageUrl: context.personImageUrl,
           garmentsCount: context.garments.length,
           garments: context.garments,
@@ -133,28 +133,26 @@ export const virtualTryOnTools = [
           model: context.model,
         });
 
-        console.log("[VIRTUAL_TRY_ON] 🔍 Verificando binding do NANOBANANA...");
+        console.log("[VIRTUAL_TRY_ON] 🔍 Checking NANOBANANA binding...");
         console.log(
-          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT existe?",
+          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT exists?",
           !!env.MESH_REQUEST_CONTEXT,
         );
         console.log(
-          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT.state existe?",
+          "[VIRTUAL_TRY_ON] env.MESH_REQUEST_CONTEXT.state exists?",
           !!env.MESH_REQUEST_CONTEXT?.state,
         );
 
         const nanobanana = env.MESH_REQUEST_CONTEXT?.state?.NANOBANANA;
         console.log(
-          "[VIRTUAL_TRY_ON] NANOBANANA binding existe?",
+          "[VIRTUAL_TRY_ON] NANOBANANA binding exists?",
           !!nanobanana,
         );
 
         if (!nanobanana) {
+          console.error("[VIRTUAL_TRY_ON] ❌ NANOBANANA binding not found!");
           console.error(
-            "[VIRTUAL_TRY_ON] ❌ NANOBANANA binding não encontrado!",
-          );
-          console.error(
-            "[VIRTUAL_TRY_ON] State disponível:",
+            "[VIRTUAL_TRY_ON] Available state:",
             env.MESH_REQUEST_CONTEXT?.state,
           );
           throw new Error(
@@ -167,7 +165,7 @@ export const virtualTryOnTools = [
           .map((g) => g.type ?? "unknown")
           .filter(Boolean);
 
-        console.log("[VIRTUAL_TRY_ON] 📝 Construindo prompt...");
+        console.log("[VIRTUAL_TRY_ON] 📝 Building prompt...");
         const prompt = buildTryOnPrompt({
           garmentsCount: garmentUrls.length,
           garmentTypes,
@@ -175,18 +173,16 @@ export const virtualTryOnTools = [
           preserveFace: context.preserveFace,
           preserveBackground: context.preserveBackground,
         });
-        console.log("[VIRTUAL_TRY_ON] Prompt gerado:", prompt);
+        console.log("[VIRTUAL_TRY_ON] Generated prompt:", prompt);
 
         const baseImageUrls = [context.personImageUrl, ...garmentUrls];
         console.log("[VIRTUAL_TRY_ON] 🖼️  Base image URLs:", baseImageUrls);
 
         const modelToUse = context.model ?? "gemini-3-pro-image-preview";
-        console.log("[VIRTUAL_TRY_ON] 🤖 Modelo selecionado:", modelToUse);
+        console.log("[VIRTUAL_TRY_ON] 🤖 Selected model:", modelToUse);
 
-        console.log(
-          "[VIRTUAL_TRY_ON] 📡 Chamando NANOBANANA.GENERATE_IMAGE...",
-        );
-        console.log("[VIRTUAL_TRY_ON] Parâmetros da chamada:", {
+        console.log("[VIRTUAL_TRY_ON] 📡 Calling NANOBANANA.GENERATE_IMAGE...");
+        console.log("[VIRTUAL_TRY_ON] Call parameters:", {
           prompt,
           baseImageUrls,
           aspectRatio: context.aspectRatio,
@@ -195,26 +191,30 @@ export const virtualTryOnTools = [
 
         const startTime = performance.now();
         try {
-          const TIMEOUT_MS = 180_000; // 3 minutos
+          console.log("[VIRTUAL_TRY_ON] ⏰ Starting NANOBANANA call...");
+
+          // Custom timeout of 180 seconds (3 minutes) for image generation
+          // using AbortSignal.timeout() in RequestInit
+          const TIMEOUT_MS = 180_000; // 3 minutes
           console.log(
-            `[VIRTUAL_TRY_ON] ⏰ Iniciando chamada ao NANOBANANA (timeout: ${TIMEOUT_MS / 1000}s)...`,
+            `[VIRTUAL_TRY_ON] ⏱️  Timeout configured to ${TIMEOUT_MS / 1000}s`,
           );
 
-          // Bindings MCP aceitam segundo parâmetro com opções (timeout, etc)
-          // TypeScript pode não ter a tipagem, mas funciona em runtime
-          const result = (await (nanobanana.GENERATE_IMAGE as any)(
+          const result = (await nanobanana.GENERATE_IMAGE(
             {
               prompt,
               baseImageUrls,
               aspectRatio: context.aspectRatio,
               model: modelToUse,
             },
-            { timeout: TIMEOUT_MS },
+            {
+              signal: AbortSignal.timeout(TIMEOUT_MS),
+            },
           )) as GeneratorResult;
 
           const duration = Math.round(performance.now() - startTime);
           console.log(
-            `[VIRTUAL_TRY_ON] ✅ Resposta recebida do NANOBANANA em ${duration}ms:`,
+            `[VIRTUAL_TRY_ON] ✅ Response received from NANOBANANA in ${duration}ms:`,
             {
               hasImage: !!result.image,
               imageLength: result.image?.length,
@@ -231,16 +231,16 @@ export const virtualTryOnTools = [
         } catch (error) {
           const duration = Math.round(performance.now() - startTime);
           console.error(
-            `[VIRTUAL_TRY_ON] ❌ Erro ao chamar NANOBANANA.GENERATE_IMAGE após ${duration}ms:`,
+            `[VIRTUAL_TRY_ON] ❌ Error calling NANOBANANA.GENERATE_IMAGE after ${duration}ms:`,
           );
-          console.error("[VIRTUAL_TRY_ON] Erro completo:", error);
-          console.error("[VIRTUAL_TRY_ON] Tipo do erro:", typeof error);
+          console.error("[VIRTUAL_TRY_ON] Full error:", error);
+          console.error("[VIRTUAL_TRY_ON] Error type:", typeof error);
           console.error(
-            "[VIRTUAL_TRY_ON] Nome do erro:",
+            "[VIRTUAL_TRY_ON] Error name:",
             error instanceof Error ? error.name : "N/A",
           );
           console.error(
-            "[VIRTUAL_TRY_ON] Mensagem do erro:",
+            "[VIRTUAL_TRY_ON] Error message:",
             error instanceof Error ? error.message : String(error),
           );
           console.error(
@@ -248,7 +248,7 @@ export const virtualTryOnTools = [
             error instanceof Error ? error.stack : "N/A",
           );
 
-          // Retornar erro estruturado em vez de lançar exceção
+          // Return structured error instead of throwing exception
           return {
             error: true,
             finishReason: `ERROR: ${error instanceof Error ? error.message : String(error)}`,

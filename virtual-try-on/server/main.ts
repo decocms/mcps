@@ -12,13 +12,13 @@ export type { Env };
 export { StateSchema };
 
 console.log(
-  "[VIRTUAL_TRY_ON_SERVER] 🚀 Inicializando servidor Virtual Try-On MCP",
+  "[VIRTUAL_TRY_ON_SERVER] 🚀 Initializing Virtual Try-On MCP server",
 );
 console.log(
-  "[VIRTUAL_TRY_ON_SERVER] 📦 Número de tools registrados:",
+  "[VIRTUAL_TRY_ON_SERVER] 📦 Number of registered tools:",
   tools.length,
 );
-console.log("[VIRTUAL_TRY_ON_SERVER] 🔐 Scopes requeridos:", [
+console.log("[VIRTUAL_TRY_ON_SERVER] 🔐 Required scopes:", [
   "NANOBANANA::GENERATE_IMAGE",
 ]);
 
@@ -30,6 +30,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-console.log("[VIRTUAL_TRY_ON_SERVER] ✅ Runtime configurado com sucesso");
+console.log("[VIRTUAL_TRY_ON_SERVER] ✅ Runtime configured successfully");
 
 export default runtime;
