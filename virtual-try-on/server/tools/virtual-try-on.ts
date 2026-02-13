@@ -193,20 +193,35 @@ export const virtualTryOnTools = [
           model: modelToUse,
         });
 
+        const startTime = performance.now();
         try {
-          const result = (await nanobanana.GENERATE_IMAGE({
-            prompt,
-            baseImageUrls,
-            aspectRatio: context.aspectRatio,
-            model: modelToUse,
-          })) as GeneratorResult;
+          const TIMEOUT_MS = 180_000; // 3 minutos
+          console.log(
+            `[VIRTUAL_TRY_ON] ⏰ Iniciando chamada ao NANOBANANA (timeout: ${TIMEOUT_MS / 1000}s)...`,
+          );
 
-          console.log("[VIRTUAL_TRY_ON] ✅ Resposta recebida do NANOBANANA:", {
-            hasImage: !!result.image,
-            imageLength: result.image?.length,
-            error: result.error,
-            finishReason: result.finishReason,
-          });
+          // Bindings MCP aceitam segundo parâmetro com opções (timeout, etc)
+          // TypeScript pode não ter a tipagem, mas funciona em runtime
+          const result = (await (nanobanana.GENERATE_IMAGE as any)(
+            {
+              prompt,
+              baseImageUrls,
+              aspectRatio: context.aspectRatio,
+              model: modelToUse,
+            },
+            { timeout: TIMEOUT_MS },
+          )) as GeneratorResult;
+
+          const duration = Math.round(performance.now() - startTime);
+          console.log(
+            `[VIRTUAL_TRY_ON] ✅ Resposta recebida do NANOBANANA em ${duration}ms:`,
+            {
+              hasImage: !!result.image,
+              imageLength: result.image?.length,
+              error: result.error,
+              finishReason: result.finishReason,
+            },
+          );
 
           return {
             image: result.image,
@@ -214,16 +229,30 @@ export const virtualTryOnTools = [
             finishReason: result.finishReason,
           };
         } catch (error) {
+          const duration = Math.round(performance.now() - startTime);
           console.error(
-            "[VIRTUAL_TRY_ON] ❌ Erro ao chamar NANOBANANA.GENERATE_IMAGE:",
-            error,
+            `[VIRTUAL_TRY_ON] ❌ Erro ao chamar NANOBANANA.GENERATE_IMAGE após ${duration}ms:`,
           );
+          console.error("[VIRTUAL_TRY_ON] Erro completo:", error);
           console.error("[VIRTUAL_TRY_ON] Tipo do erro:", typeof error);
+          console.error(
+            "[VIRTUAL_TRY_ON] Nome do erro:",
+            error instanceof Error ? error.name : "N/A",
+          );
+          console.error(
+            "[VIRTUAL_TRY_ON] Mensagem do erro:",
+            error instanceof Error ? error.message : String(error),
+          );
           console.error(
             "[VIRTUAL_TRY_ON] Stack trace:",
             error instanceof Error ? error.stack : "N/A",
           );
-          throw error;
+
+          // Retornar erro estruturado em vez de lançar exceção
+          return {
+            error: true,
+            finishReason: `ERROR: ${error instanceof Error ? error.message : String(error)}`,
+          };
         }
       },
     }),
