@@ -5,8 +5,5 @@
   "author": {
     "name": "viktormarinho"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/decocms/mcps"
-  }
+  "repository": "https://github.com/decocms/mcps"
 }
