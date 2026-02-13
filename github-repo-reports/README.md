@@ -11,3 +11,4 @@ GitHub-backed reports MCP server implementing the Reports Binding. Stores and re
 5. Test with `bun run dev`
 
 See [template-minimal/README.md](../template-minimal/README.md) for detailed instructions.
+
