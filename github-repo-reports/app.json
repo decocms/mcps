@@ -1,0 +1,32 @@
+{
+  "scopeName": "deco",
+  "name": "github-repo-reports",
+  "friendlyName": "GitHub Repo Reports",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-github-repo-reports.decocache.com/mcp"
+  },
+  "description": "GitHub-backed reports MCP server implementing the Reports Binding. Stores and reads reports as Markdown files with YAML frontmatter from a configurable GitHub repository.",
+  "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": [
+      "Productivity",
+      "Developer Tools"
+    ],
+    "official": false,
+    "tags": [
+      "github",
+      "reports",
+      "markdown",
+      "mcp"
+    ],
+    "short_description": "Read and manage reports stored as Markdown files in a GitHub repository.",
+    "mesh_description": "Implements the **Reports Binding** to display an inbox-style UI of reports sourced from a GitHub repository. Reports are stored as **Markdown files with YAML frontmatter** under a configurable directory. **Key Features** — Reads reports directly from GitHub (no server-side persistence). Supports **directory nesting as tags** (e.g., reports/security/audit.md gets tag \"security\"). Full lifecycle management (unread/read/dismissed) persisted in the repo. Supports structured sections: markdown, metrics with KPIs, and tables. **Authentication** — Uses GitHub App OAuth so users can grant access to specific repositories. **Configuration** — Set the target repository, reports directory path, and branch via the Mesh UI."
+  }
+}
