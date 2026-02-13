@@ -68,7 +68,8 @@ Generate an image using Gemini models via OpenRouter.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `prompt` | string | ✅ | Text description of the image to generate |
-| `baseImageUrl` | string | ❌ | URL of an existing image for image-to-image generation |
+| `baseImageUrl` | string | ❌ | URL of an existing image for image-to-image generation (single image) |
+| `baseImageUrls` | string[] | ❌ | Array of image URLs for multi-image generation (e.g., virtual try-on). Takes precedence over `baseImageUrl` |
 | `aspectRatio` | enum | ❌ | Output aspect ratio (1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9) |
 | `model` | enum | ❌ | Model to use (gemini-2.0-flash-exp, gemini-2.5-flash-image-preview, gemini-2.5-pro-exp-03-25) |
 
@@ -99,12 +100,25 @@ const result = await client.callTool("GENERATE_IMAGE", {
 });
 ```
 
-**Image-to-Image:**
+**Image-to-Image (Single):**
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "Add snow on the mountains",
   baseImageUrl: "https://example.com/landscape.jpg"
+});
+```
+
+**Multi-Image Generation (Virtual Try-On):**
+
+```typescript
+const result = await client.callTool("GENERATE_IMAGE", {
+  prompt: "Virtual try-on: person wearing the garment from the second image",
+  baseImageUrls: [
+    "https://example.com/person.jpg",      // First image: person photo
+    "https://example.com/t-shirt.jpg"      // Second image: garment
+  ],
+  aspectRatio: "3:4"
 });
 ```
 

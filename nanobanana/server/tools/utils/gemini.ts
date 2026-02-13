@@ -119,13 +119,17 @@ async function makeOpenrouterRequest(
 export async function generateImage(
   env: Env,
   prompt: string,
-  imageUrl?: string,
+  imageUrls?: string[],
   aspectRatio?: string,
   model?: Model,
 ): Promise<ImageGenerationResult> {
   const content: OpenRouterRequestContent[] = [{ type: "text", text: prompt }];
-  if (imageUrl) {
-    content.push({ type: "image_url", image_url: { url: imageUrl } });
+
+  // Add all image URLs to the content array
+  if (imageUrls && imageUrls.length > 0) {
+    for (const url of imageUrls) {
+      content.push({ type: "image_url", image_url: { url } });
+    }
   }
 
   const modelToUse = model || "gemini-2.5-flash-image-preview";
@@ -153,8 +157,8 @@ export async function generateImage(
 export const createGeminiClient = (env: Env) => ({
   generateImage: (
     prompt: string,
-    imageUrl?: string,
+    imageUrls?: string[],
     aspectRatio?: string,
     model?: Model,
-  ) => generateImage(env, prompt, imageUrl, aspectRatio, model),
+  ) => generateImage(env, prompt, imageUrls, aspectRatio, model),
 });

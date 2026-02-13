@@ -27,6 +27,12 @@ const GenerateImageInputSchema = z.object({
     .describe(
       "URL of an existing image to use as base (image-to-image generation)",
     ),
+  baseImageUrls: z
+    .array(z.string().url())
+    .optional()
+    .describe(
+      "Array of image URLs to use as base (for multi-image generation like virtual try-on). If provided, takes precedence over baseImageUrl.",
+    ),
   aspectRatio: AspectRatioSchema.optional().describe(
     "Aspect ratio for the generated image (default: 1:1)",
   ),
@@ -120,15 +126,22 @@ const createGenerateImageTool = (env: Env) =>
           "gemini-2.5-flash-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
 
+        // Determine which images to use (baseImageUrls takes precedence)
+        const imageUrls = context.baseImageUrls?.length
+          ? context.baseImageUrls
+          : context.baseImageUrl
+            ? [context.baseImageUrl]
+            : undefined;
+
         console.log(
-          `[GENERATE_IMAGE] model=${parsedModel}, prompt="${context.prompt.slice(0, 80)}"`,
+          `[GENERATE_IMAGE] model=${parsedModel}, prompt="${context.prompt.slice(0, 80)}", images=${imageUrls?.length ?? 0}`,
         );
 
         const t0 = performance.now();
         const client = createGeminiClient(env);
         const result = await client.generateImage(
           context.prompt,
-          context.baseImageUrl || undefined,
+          imageUrls,
           context.aspectRatio,
           parsedModel,
         );
