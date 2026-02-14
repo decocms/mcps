@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-logs-mcp",
+  "friendlyName": "Cloudflare Logs",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://logs.mcp.cloudflare.com/mcp"
+  },
+  "description": "Access and analyze Cloudflare logs through Logpush and Logpull. Query HTTP requests, firewall events, DNS queries, and Worker executions.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Observability", "Logging"],
+    "official": true,
+    "tags": ["cloudflare", "logs", "logpush", "logpull", "analytics", "debugging", "monitoring"],
+    "short_description": "Access and analyze Cloudflare logs for HTTP requests, firewall events, and Worker executions",
+    "mesh_description": "Cloudflare Logs MCP provides comprehensive access to all Cloudflare log data through Logpush and Logpull APIs. This official MCP enables you to query HTTP request logs with detailed metadata (IPs, user agents, cache status, response codes), access firewall event logs showing blocked requests and security actions, view DNS query logs for your zones, monitor Worker execution logs and errors, analyze CDN cache performance and hit rates, track bot detection and challenge events, configure Logpush jobs to export logs to external services (S3, R2, GCS, Azure, Splunk, Datadog), and set up custom log filters and sampling. The platform provides structured JSON logs with extensive fields for deep analysis. Perfect for security investigations, performance optimization, compliance requirements, debugging application issues, and building custom analytics dashboards. Logs include data from all Cloudflare services and can be queried in real-time or exported for long-term storage. Use natural language to search logs, investigate incidents, analyze traffic patterns, troubleshoot issues, and create log export configurations."
+  }
+}
+

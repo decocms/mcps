@@ -331,16 +331,112 @@ export const createListTablesTool = (env: Env) =>
 // Get Table Schema Tool
 // ============================================================================
 
+function parseTableRef(ref: string): {
+  projectId: string;
+  datasetId: string;
+  tableId: string;
+} {
+  const trimmed = ref.trim();
+
+  // Format: project:dataset.table
+  if (trimmed.includes(":")) {
+    const [projectId, rest] = trimmed.split(":", 2);
+    const [datasetId, ...tableParts] = rest.split(".");
+    const tableId = tableParts.join(".");
+
+    if (!projectId || !datasetId || !tableId) {
+      throw new Error(
+        `Invalid tableRef "${ref}". Expected "project:dataset.table".`,
+      );
+    }
+
+    return { projectId, datasetId, tableId };
+  }
+
+  // Format: project.dataset.table
+  const parts = trimmed.split(".");
+  if (parts.length >= 3) {
+    const projectId = parts[0];
+    const datasetId = parts[1];
+    const tableId = parts.slice(2).join(".");
+
+    if (!projectId || !datasetId || !tableId) {
+      throw new Error(
+        `Invalid tableRef "${ref}". Expected "project.dataset.table".`,
+      );
+    }
+
+    return { projectId, datasetId, tableId };
+  }
+
+  throw new Error(
+    `Invalid tableRef "${ref}". Expected "project:dataset.table" or "project.dataset.table".`,
+  );
+}
+
 export const createGetTableSchemaTool = (env: Env) =>
   createPrivateTool({
     id: "bigquery_get_table_schema",
     description:
       "Get the schema of a specific BigQuery table. Returns all fields with their types, modes, and descriptions.",
-    inputSchema: z.object({
-      projectId: z.string().describe("Google Cloud project ID"),
-      datasetId: z.string().describe("Dataset ID"),
-      tableId: z.string().describe("Table ID"),
-    }),
+    inputSchema: z
+      .object({
+        /**
+         * Fully qualified reference, useful for copy/paste from `bigquery_list_tables`
+         * Examples:
+         * - "my-project:my_dataset.my_table"
+         * - "my-project.my_dataset.my_table"
+         */
+        tableRef: z
+          .string()
+          .optional()
+          .describe(
+            'Fully qualified table reference ("project:dataset.table" or "project.dataset.table").',
+          ),
+        projectId: z
+          .string()
+          .optional()
+          .describe("Google Cloud project ID (required if tableRef not set)"),
+        datasetId: z
+          .string()
+          .optional()
+          .describe(
+            'Dataset ID (required if tableRef not set). Also accepts "project:dataset".',
+          ),
+        tableId: z
+          .string()
+          .optional()
+          .describe(
+            'Table ID (required if tableRef not set). Also accepts "dataset.table" or "project:dataset.table".',
+          ),
+      })
+      .superRefine((value, ctx) => {
+        if (value.tableRef) {
+          return;
+        }
+
+        if (!value.projectId) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["projectId"],
+            message: "projectId is required when tableRef is not provided.",
+          });
+        }
+        if (!value.datasetId) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["datasetId"],
+            message: "datasetId is required when tableRef is not provided.",
+          });
+        }
+        if (!value.tableId) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["tableId"],
+            message: "tableId is required when tableRef is not provided.",
+          });
+        }
+      }),
     outputSchema: z.object({
       table: z.object({
         id: z.string().describe("Full table ID"),
@@ -364,11 +460,51 @@ export const createGetTableSchemaTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      const table = await client.getTable(
-        context.projectId,
-        context.datasetId,
-        context.tableId,
-      );
+      let projectId: string;
+      let datasetId: string;
+      let tableId: string;
+
+      if (context.tableRef) {
+        ({ projectId, datasetId, tableId } = parseTableRef(context.tableRef));
+      } else {
+        // Handle datasetId like "project:dataset"
+        if (!context.projectId || !context.datasetId || !context.tableId) {
+          throw new Error(
+            "Missing required parameters. Provide tableRef or (projectId, datasetId, tableId).",
+          );
+        }
+
+        projectId = context.projectId;
+        datasetId = context.datasetId;
+        tableId = context.tableId;
+
+        if (datasetId.includes(":")) {
+          const parsed = parseTableRef(`${datasetId}.${tableId}`);
+          projectId = parsed.projectId;
+          datasetId = parsed.datasetId;
+          tableId = parsed.tableId;
+        } else if (
+          tableId.includes(":") ||
+          (tableId.includes(".") && !context.tableRef)
+        ) {
+          // tableId may be "project:dataset.table" OR "dataset.table"
+          if (tableId.includes(":")) {
+            const parsed = parseTableRef(tableId);
+            projectId = parsed.projectId;
+            datasetId = parsed.datasetId;
+            tableId = parsed.tableId;
+          } else {
+            const [maybeDatasetId, ...tableParts] = tableId.split(".");
+            const maybeTableId = tableParts.join(".");
+            if (maybeDatasetId && maybeTableId) {
+              datasetId = maybeDatasetId;
+              tableId = maybeTableId;
+            }
+          }
+        }
+      }
+
+      const table = await client.getTable(projectId, datasetId, tableId);
 
       return {
         table: {

@@ -10,27 +10,27 @@ export const BIGQUERY_API_BASE = "https://bigquery.googleapis.com/bigquery/v2";
 export const ENDPOINTS = {
   // Datasets
   DATASETS: (projectId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/datasets`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/datasets`,
   DATASET: (projectId: string, datasetId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/datasets/${datasetId}`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/datasets/${encodeURIComponent(datasetId)}`,
 
   // Tables
   TABLES: (projectId: string, datasetId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/datasets/${datasetId}/tables`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/datasets/${encodeURIComponent(datasetId)}/tables`,
   TABLE: (projectId: string, datasetId: string, tableId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/datasets/${datasetId}/tables/${tableId}`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/datasets/${encodeURIComponent(datasetId)}/tables/${encodeURIComponent(tableId)}`,
 
   // Query
   QUERY: (projectId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/queries`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/queries`,
   QUERY_RESULTS: (projectId: string, jobId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/queries/${jobId}`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/queries/${encodeURIComponent(jobId)}`,
 
   // Jobs
   JOBS: (projectId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/jobs`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/jobs`,
   JOB: (projectId: string, jobId: string) =>
-    `${BIGQUERY_API_BASE}/projects/${projectId}/jobs/${jobId}`,
+    `${BIGQUERY_API_BASE}/projects/${encodeURIComponent(projectId)}/jobs/${encodeURIComponent(jobId)}`,
 
   // Projects
   PROJECTS: `${BIGQUERY_API_BASE}/projects`,

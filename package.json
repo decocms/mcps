@@ -26,17 +26,20 @@
     "data-for-seo",
     "datajud",
     "deco-llm",
+    "deco-news-weekly-digest",
     "discord-read",
     "gemini-pro-vision",
     "github",
+    "github-repo-reports",
+    "google-apps-script",
     "google-big-query",
     "google-calendar",
     "google-docs",
     "google-drive",
     "google-forms",
+    "google-gemini",
     "google-gmail",
     "google-meet",
-    "google-apps-script",
     "google-sheets",
     "google-slides",
     "google-tag-manager",
@@ -56,16 +59,19 @@
     "shared",
     "slack-mcp",
     "sora",
+    "strapi",
     "template-minimal",
-    "deco-news-weekly-digest",
     "tiktok-ads",
     "veo",
+    "virtual-try-on",
+    "vtex",
     "vtex-docs",
     "whatsapp",
     "whatsapp-management",
     "whisper"
   ],
   "dependencies": {
-    "@types/node": "^24.10.0"
+    "@types/node": "^24.10.0",
+    "zod": "^3.24.3"
   }
 }

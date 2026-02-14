@@ -1,0 +1,31 @@
+{
+  "name": "virtual-try-on",
+  "version": "1.0.0",
+  "description": "Virtual try-on MCP: compose person photo + garment images and delegate to an image generator (e.g., nanobanana).",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/dev-server.ts",
+    "configure": "deco configure",
+    "gen": "deco gen --output=shared/deco.gen.ts",
+    "deploy": "npm run build && deco deploy ./dist/server",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
+
+

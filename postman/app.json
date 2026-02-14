@@ -1,0 +1,21 @@
+{
+  "scopeName": "postman",
+  "name": "Postman MCP",
+  "friendlyName": "Postman",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.postman.com/mcp"
+  },
+  "description": "Official Postman MCP - Operate on the Postman API to manage collections, environments, requests, and API workflows programmatically.",
+  "icon": "https://www.postman.com/_ar-assets/images/favicon-1-48.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Development", "API Testing"],
+    "official": true,
+    "tags": ["postman", "api", "testing", "collections", "requests", "development", "automation", "workflows"],
+    "short_description": "Official Postman MCP - Manage Postman collections, environments, and API workflows programmatically",
+    "mesh_description": "The Postman MCP provides comprehensive integration with the Postman API platform, enabling AI agents to manage and automate API development workflows. This official MCP allows you to create, read, update, and organize Postman collections and requests, manage environments and variables for different testing contexts, execute API requests and tests programmatically, share and collaborate on API documentation, and integrate API testing into CI/CD pipelines. Key features include full CRUD operations on collections, automated test execution and reporting, environment variable management, workspace collaboration tools, and API monitoring capabilities. Perfect for developers who want to automate API testing, integrate Postman into development workflows, or build AI agents that can interact with and manage API collections. The MCP supports authentication via Postman API keys and provides access to all major Postman features through natural language commands."
+  }
+}
+

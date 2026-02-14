@@ -1,0 +1,21 @@
+{
+  "scopeName": "stripe",
+  "name": "Stripe MCP",
+  "friendlyName": "Stripe",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.stripe.com"
+  },
+  "description": "Official Stripe MCP - Manage customers, products, payments, subscriptions, invoices, and billing operations programmatically through Stripe's API.",
+  "icon": "https://stripe.com/img/v3/home/twitter.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["E-commerce", "Payments", "Finance"],
+    "official": true,
+    "tags": ["stripe", "payments", "ecommerce", "subscriptions", "billing", "invoices", "customers", "finance"],
+    "short_description": "Official Stripe MCP - Manage payments, subscriptions, and billing operations through Stripe's API",
+    "mesh_description": "The Stripe MCP provides comprehensive integration with Stripe's payment processing platform, enabling AI agents to manage complete payment and billing workflows. This official MCP allows you to create and manage customers with payment methods and billing details, process one-time and recurring payments securely, manage products, prices, and subscription plans, generate and send invoices automatically, handle refunds and disputes, track payment status and webhooks, and access detailed financial reporting and analytics. Key features include full customer lifecycle management, flexible subscription billing with usage-based pricing, automated invoice generation and payment collection, support for multiple payment methods (cards, bank transfers, wallets), handling of multi-currency transactions, fraud detection and prevention tools, and comprehensive webhook integration for real-time events. Perfect for building e-commerce platforms, SaaS billing systems, marketplace payment flows, or AI agents that can manage the complete payment lifecycle from customer onboarding to revenue reporting. The MCP supports secure API key authentication and provides access to all Stripe features through natural language commands."
+  }
+}
+

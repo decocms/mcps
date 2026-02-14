@@ -1,0 +1,24 @@
+{
+  "scopeName": "deco",
+  "name": "strapi",
+  "friendlyName": "Strapi CMS",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-strapi.decocache.com/mcp"
+  },
+  "description": "Manage content, media, users, and roles in Strapi CMS. Full API integration for headless content management.",
+  "icon": "https://assets.decocache.com/decocms/8a4d61b8-4d77-426b-84d8-510e07c92d50/strapi-logo.png",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["CMS", "Content Management"],
+    "official": false,
+    "tags": ["strapi", "cms", "headless", "content-management", "api", "media"],
+    "short_description": "Comprehensive Strapi CMS integration for content and media management.",
+    "mesh_description": "The Strapi MCP provides full integration with Strapi headless CMS, enabling AI agents to manage content, media files, users, and permissions. This MCP allows listing and creating content types, querying and modifying content entries, uploading and managing media files, managing users and roles, and handling permissions. Perfect for content automation, media management workflows, and building intelligent content operations. Authentication is done via Strapi API token passed in the Authorization header."
+  }
+}

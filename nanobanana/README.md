@@ -1,97 +1,97 @@
-# Gemini Nano Banana MCP
+# Nano Banana MCP 
 
-## Project Description
+## Description
 
-**Gemini Nano Banana MCP** is a Model Context Protocol (MCP) server that integrates the Gemini 2.5 Flash Image Preview and nanoBanana Pro API for text-to-image generation. This project is hosted as a Cloudflare Workers application.
+**Nano Banana MCP** is a Model Context Protocol (MCP) server for AI-powered image generation using Google Gemini models via OpenRouter.
 
-### Purpose
+### Features
 
-This MCP server allows client applications to:
-- Generate images from text prompts using the Gemini model
-- Use base images for modifications and variations
-- Customize image aspect ratios
-- Store and access generated images through a file system
-- Manage authorization and payments through the NanoBanana Contract system
+- 🎨 **AI Image Generation**: Text-to-image generation with detailed prompts
+- 🖼️ **Image Editing**: Modify existing images using natural language instructions
+- 🤖 **Multiple Models**: Support for Gemini 2.0 Flash, 2.5 Flash, and 2.5 Pro
+- 📐 **Aspect Ratios**: Flexible output dimensions (1:1, 16:9, 9:16, etc.)
+- 💰 **Contract Management**: Built-in authorization and billing
+- 💾 **File Storage**: Automatic image storage via file system binding
 
-### Key Features
-
-- 🎨 **AI Image Generation**: Full integration with Gemini 2.5 Flash Image Preview
-- 🔄 **Retry System**: Automatic retry on failure (up to 3 attempts)
-- 📝 **Detailed Logging**: Records all generation operations
-- 💰 **Contract Management**: Integrated authorization and payment system
-- 💾 **Persistent Storage**: File system for saving generated images
-- 🖼️ **Base Image Support**: Modification of existing images
-- 📐 **Customizable Aspect Ratios**: Control over image proportions
-- 👤 **User Tools**: User information management
-
-## Setup / Installation
+## Setup
 
 ### Prerequisites
 
 - Node.js >= 22.0.0
 - Bun (package manager)
-- Cloudflare account (for deployment)
-- Gemini API access
 
-### Local Installation
+### Installation
 
-1. Clone the repository:
 ```bash
-cd gemini-nano-banana
-```
-
-2. Install dependencies:
-```bash
+cd nanobanana
 bun install
 ```
 
-3. Configure required environment variables:
-```bash
-bun run configure
-```
+### Development
 
-4. Generate TypeScript types:
-```bash
-bun run gen
-```
-
-5. Start the development server:
 ```bash
 bun run dev
 ```
 
-The server will be available at `http://localhost:8787` (default Cloudflare Workers port).
-
-### Production Build
+### Build
 
 ```bash
 bun run build
 ```
 
-### Deployment
+### Type Check
 
 ```bash
-bun run deploy
+bun run check
 ```
 
-## Usage Examples
+## Configuration
 
-### Generating a Simple Image
+### State Schema
+
+The MCP requires the following configuration:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `NANOBANANA_CONTRACT` | Binding | Contract binding for authorization and billing |
+| `FILE_SYSTEM` | Binding | File system binding for storing generated images |
+| `NANOBANANA_API_KEY` | string | OpenRouter API key for accessing Gemini models |
+
+## Tools
+
+### GENERATE_IMAGE
+
+Generate an image using Gemini models via OpenRouter.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `prompt` | string | ✅ | Text description of the image to generate |
+| `baseImageUrl` | string | ❌ | URL of an existing image for image-to-image generation (single image) |
+| `baseImageUrls` | string[] | ❌ | Array of image URLs for multi-image generation (e.g., virtual try-on). Takes precedence over `baseImageUrl` |
+| `aspectRatio` | enum | ❌ | Output aspect ratio (1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9) |
+| `model` | enum | ❌ | Model to use (gemini-2.0-flash-exp, gemini-2.5-flash-image-preview, gemini-2.5-pro-exp-03-25) |
+
+**Output:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `image` | string | URL of the generated image |
+| `error` | boolean | Whether the request failed |
+| `finishReason` | string | Native finish reason from the model |
+
+### Examples
+
+**Text-to-Image:**
 
 ```typescript
-// MCP Client
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "An orange cat sitting on a blue chair, cartoon style"
 });
-
-// Result
-{
-  image: "https://...", // Generated image URL
-  finishReason: "STOP"
-}
 ```
 
-### Generating with Specific Aspect Ratio
+**With Aspect Ratio:**
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
@@ -100,7 +100,7 @@ const result = await client.callTool("GENERATE_IMAGE", {
 });
 ```
 
-### Modifying an Existing Image
+**Image-to-Image (Single):**
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
@@ -109,139 +109,61 @@ const result = await client.callTool("GENERATE_IMAGE", {
 });
 ```
 
-### Error Handling
+**Multi-Image Generation (Virtual Try-On):**
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "Generate an image..."
-});
-
-if (result.error) {
-  console.error("Generation failed:", result.finishReason);
-  // Possible reasons: SAFETY, MAX_TOKENS, RECITATION, etc.
-}
-```
-
-## Configuration Details
-
-### File Structure
-
-```
-gemini-nano-banana/
-├── server/              # MCP server code
-│   ├── main.ts         # Main entry point
-│   ├── tools/          # MCP tools
-│   │   ├── index.ts    # Tools aggregator
-│   │   ├── gemini.ts   # Image generation tool
-│   │   └── utils/      # Utilities
-│   │       └── gemini.ts # Gemini client
-│   └── views.ts        # Views configuration
-└── shared/             # Shared code
-    └── deco.gen.ts    # Generated types
-```
-
-### Environment Variables / Bindings
-
-The project uses the following Cloudflare Workers bindings:
-
-#### `NANOBANANA_CONTRACT`
-Authorization and payment system for API usage:
-- `CONTRACT_AUTHORIZE`: Authorizes a transaction before generation
-- `CONTRACT_SETTLE`: Finalizes the transaction after generation
-
-#### `FILE_SYSTEM`
-Image storage system:
-- `FS_READ`: Reads files from the file system
-- `FS_WRITE`: Writes files to the file system
-
-### OAuth Configuration
-
-The project supports OAuth for authentication. Configure required scopes in `server/main.ts`:
-
-```typescript
-oauth: {
-  scopes: [], // Add scopes as needed
-  state: StateSchema,
-}
-```
-
-### State Schema
-
-The State Schema defines the installed application state. You can extend it to add custom fields such as API keys:
-
-```typescript
-state: StateSchema.extend({
-  geminiApiKey: z.string().optional(),
-  // other fields...
-})
-```
-
-### Available Scripts
-
-- `bun run dev` - Starts development server with hot reload
-- `bun run configure` - Configures the Deco project
-- `bun run gen` - Generates TypeScript types
-- `bun run build` - Compiles for production
-- `bun run deploy` - Deploys to Cloudflare Workers
-- `bun run check` - Type checks TypeScript without compiling
-
-### Image Generation Middlewares
-
-The system uses `withContractManagement` which automatically includes:
-
-1. **Contract Management**: Manages authorization and payment (inner layer)
-2. **Logging Middleware**: Records start and end of operations
-3. **Retry Middleware**: Retries on failure (max 3x, outer layer)
-
-```typescript
-const executeWithMiddlewares = withContractManagement(executeGeneration, {
-  clauseId: "gemini-2.5-flash-image-preview:generateContent",
-  contract: "NANOBANANA_CONTRACT",
-  provider: "Gemini",
-  maxRetries: 3,
+  prompt: "Virtual try-on: person wearing the garment from the second image",
+  baseImageUrls: [
+    "https://example.com/person.jpg",      // First image: person photo
+    "https://example.com/t-shirt.jpg"      // Second image: garment
+  ],
+  aspectRatio: "3:4"
 });
 ```
 
-**Advantages**: No need to manually compose `withRetry` and `withLogging` - everything is included!
+**Specific Model:**
 
-### Input/Output Format
-
-#### Input (`GenerateImageInput`)
 ```typescript
-{
-  prompt: string;              // Description of the desired image
-  baseImageUrl?: string;       // Base image URL (optional)
-  aspectRatio?: string;        // Ratio (e.g., "16:9", "1:1")
-}
+const result = await client.callTool("GENERATE_IMAGE", {
+  prompt: "A futuristic city",
+  model: "gemini-2.5-pro-exp-03-25"
+});
 ```
 
-#### Output (`GenerateImageOutput`)
-```typescript
-// Success
-{
-  image: string;               // Generated image URL
-  finishReason?: string;       // Completion reason
-}
+## Project Structure
 
-// Error
-{
-  error: true;
-  finishReason?: string;       // Failure reason
-}
+```
+nanobanana/
+├── app.json                 # Store metadata for publishing
+├── server/
+│   ├── main.ts              # Entry point with runtime configuration
+│   ├── constants.ts         # API base URLs
+│   ├── types/
+│   │   └── env.ts           # StateSchema and Env type definition
+│   └── tools/
+│       ├── index.ts         # Export all tools
+│       ├── gemini.ts        # Image generation tool
+│       └── utils/
+│           └── gemini.ts    # OpenRouter/Gemini API client
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-### Endpoints
+## Supported Models
 
-- `/mcp` - MCP server endpoint
-- All other requests fallback to static assets
+| Model | Description |
+|-------|-------------|
+| `gemini-2.0-flash-exp` | Gemini 2.0 Flash experimental with image generation |
+| `gemini-2.5-flash-image-preview` | Gemini 2.5 Flash optimized for image generation |
+| `gemini-3-pro-image-preview` | **Gemini 3 Pro with advanced image generation (default)** ✅ |
+| `gemini-2.5-pro-exp-03-25` | Gemini 2.5 Pro experimental with enhanced image quality |
 
-## Technologies Used
+## Technologies
 
-- **Runtime**: Cloudflare Workers
+- **Runtime**: Bun
 - **MCP Framework**: Deco Workers Runtime
-- **Build Tool**: Vite
+- **API Provider**: OpenRouter
 - **Validation**: Zod
 - **Language**: TypeScript
-
-## License
-

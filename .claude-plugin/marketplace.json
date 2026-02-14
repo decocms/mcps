@@ -1,0 +1,26 @@
+{
+  "name": "decocms-mcps",
+  "owner": {
+    "name": "decocms"
+  },
+  "metadata": {
+    "description": "Claude Code plugins from the decocms MCPs monorepo"
+  },
+  "plugins": [
+    {
+      "name": "github-repo-reports",
+      "source": "./github-repo-reports-plugin",
+      "description": "Generate structured Markdown reports with YAML frontmatter for repository health monitoring. Includes metrics, tables, and status tracking.",
+      "version": "1.0.0",
+      "author": {
+        "name": "viktormarinho"
+      },
+      "homepage": "https://github.com/decocms/mcps/tree/main/github-repo-reports-plugin",
+      "repository": "https://github.com/decocms/mcps",
+      "license": "MIT",
+      "keywords": ["reports", "github", "health", "monitoring", "metrics"],
+      "category": "development-workflows",
+      "tags": ["reports", "github", "metrics", "security", "performance"]
+    }
+  ]
+}

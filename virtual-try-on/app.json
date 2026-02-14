@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "virtual-try-on",
+  "friendlyName": "Virtual Try-On",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-virtual-try-on.decocache.com/mcp"
+  },
+  "description": "Generate virtual try-on images: combine a person photo with garment images to see how clothes would look on them.",
+  "icon": "https://assets.decocache.com/mcp/virtual-try-on/icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["AI", "Productivity"],
+    "official": false,
+    "tags": ["virtual-try-on", "fashion", "clothing", "image-generation", "ai", "e-commerce", "garment"],
+    "short_description": "Generate virtual try-on images combining person photos with garment images.",
+    "mesh_description": "The Virtual Try-On MCP enables AI-powered virtual clothing try-on by combining a person's photo with garment images. This MCP delegates image generation to a configured image generator (like nanobanana) and returns realistic composites showing how the clothes would look on the person. **Key Features** - Combine person photos with one or more garment images. **Garment Types** - Support for tops, bottoms, dresses, outerwear, shoes, and accessories. **Face Preservation** - Maintains the person's identity and facial features. **Background Preservation** - Keeps the original background intact. **Flexible Aspect Ratios** - Support for various output dimensions. Perfect for e-commerce, fashion apps, and virtual fitting rooms. Requires connection to an image generator MCP."
+  }
+}
+

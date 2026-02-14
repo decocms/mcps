@@ -11,7 +11,9 @@
     "deploy": "npm run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
-    "build": "bun run build:server"
+    "build:prompts": "mkdir -p dist/server/prompts && cp server/prompts/*.md dist/server/prompts/",
+    "build": "bun run build:server && bun run build:prompts",
+    "cli": "bun cli.ts"
   },
   "dependencies": {
     "@decocms/runtime": "1.2.6",

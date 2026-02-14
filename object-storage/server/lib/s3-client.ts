@@ -21,6 +21,11 @@ export function createS3Client(env: Env): S3Client {
       accessKeyId: state.accessKeyId,
       secretAccessKey: state.secretAccessKey,
     },
+    // Disable automatic CRC32 checksums for presigned URLs.
+    // SDK v3 adds x-amz-checksum-crc32 computed for an empty body at presign
+    // time, which causes checksum validation failures on actual uploads.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   };
 
   // Add custom endpoint if provided (for S3-compatible storage like R2, MinIO, etc.)

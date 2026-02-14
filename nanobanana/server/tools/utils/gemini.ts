@@ -1,149 +1,140 @@
-import { OPENROUTER_BASE_URL } from "../../constants";
-import { Env } from "../../main";
-import z from "zod";
-import {
-  assertEnvKey,
-  makeApiRequest,
-} from "@decocms/mcps-shared/tools/utils/api-client";
+import { OPENROUTER_BASE_URL } from "server/constants.ts";
+import type { Env } from "server/main.ts";
+import { z } from "zod";
+import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 
 export const models = z.enum([
+  "gemini-2.0-flash-exp",
   "gemini-2.5-flash-image-preview",
+  "gemini-2.5-pro-image-preview",
+  "gemini-2.5-pro-exp-03-25",
   "gemini-3-pro-image-preview",
 ]);
 export type Model = z.infer<typeof models>;
 
-export const GeminiResponseSchema = z.object({
-  candidates: z.array(
-    z.object({
-      content: z.object({
-        parts: z.array(
-          z.object({
-            text: z.string().optional(),
-            inline_data: z
-              .object({
-                mime_type: z.string(),
-                data: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-        role: z.string().optional(),
-      }),
-      finishReason: z.string().optional(),
-      index: z.number().optional(),
-      safetyRatings: z
-        .array(
-          z.object({
-            category: z.string(),
-            probability: z.string(),
-            blocked: z.boolean().optional(),
-          }),
-        )
-        .optional(),
-    }),
-  ),
-  promptFeedback: z
-    .object({
-      safetyRatings: z
-        .array(
-          z.object({
-            category: z.string(),
-            probability: z.string(),
-            blocked: z.boolean().optional(),
-          }),
-        )
-        .optional(),
-      blockReason: z.string().optional(),
-    })
-    .optional(),
-  usageMetadata: z
-    .object({
-      promptTokenCount: z.number().optional(),
-      candidatesTokenCount: z.number().optional(),
-      totalTokenCount: z.number().optional(),
-    })
-    .optional(),
-});
+/** Result of an image generation request */
+export interface ImageGenerationResult {
+  /** Raw image data (base64 data URI) */
+  imageData?: string;
+  /** MIME type of the generated image */
+  mimeType?: string;
+  /** Native finish reason from the model */
+  finishReason?: string;
+}
 
-export type GeminiResponse = z.infer<typeof GeminiResponseSchema>;
+interface OpenRouterImageUrl {
+  url: string;
+}
+
+interface OpenRouterImage {
+  image_url?: OpenRouterImageUrl;
+}
+
+interface OpenRouterMessage {
+  images?: OpenRouterImage[];
+}
+
+interface OpenRouterChoice {
+  message: OpenRouterMessage;
+  native_finish_reason?: string;
+}
 
 interface OpenRouterResponse {
-  choices: Array<{
-    message: {
-      images?: Array<{
-        image_url?: {
-          url: string;
-        };
-      }>;
-    };
-    native_finish_reason?: string;
-  }>;
+  choices: OpenRouterChoice[];
+}
+
+interface OpenRouterRequestContent {
+  type: string;
+  text?: string;
+  image_url?: OpenRouterImageUrl;
+}
+
+interface OpenRouterRequestMessage {
+  role: string;
+  content: OpenRouterRequestContent[];
+}
+
+interface OpenRouterImageConfig {
+  aspect_ratio: string;
+}
+
+interface OpenRouterRequestBody {
+  model: string;
+  messages: OpenRouterRequestMessage[];
+  modalities: string[];
+  image_config?: OpenRouterImageConfig;
+}
+
+function getApiKey(env: Env): string {
+  const apiKey = env.MESH_REQUEST_CONTEXT.state.NANOBANANA_API_KEY;
+  if (!apiKey) {
+    throw new Error("NANOBANANA_API_KEY is not set in configuration");
+  }
+  return apiKey;
+}
+
+/**
+ * Extracts MIME type from a data URI string.
+ * Falls back to "image/png" if extraction fails.
+ */
+function extractMimeType(dataUri: string): string {
+  const mimeMatch = dataUri.match(/^data:([^;]+);/);
+  return mimeMatch?.[1] ?? "image/png";
 }
 
 async function makeOpenrouterRequest(
   env: Env,
   endpoint: string,
-  body: any,
-): Promise<GeminiResponse> {
-  assertEnvKey(env, "NANOBANANA_API_KEY");
-
+  body: OpenRouterRequestBody,
+): Promise<ImageGenerationResult> {
+  const apiKey = getApiKey(env);
   const url = `${OPENROUTER_BASE_URL}${endpoint}`;
 
-  const data = (await makeApiRequest(
+  const data = await makeApiRequest<OpenRouterResponse>(
     url,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${env.NANOBANANA_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
     },
     "Openrouter",
-  )) as OpenRouterResponse;
+  );
   const choices = data.choices[0];
+  const finishReason = choices.native_finish_reason;
 
-  const image = choices.message.images?.[0]?.image_url?.url;
-  const nativeFinishReason = choices.native_finish_reason;
+  const imageDataUri = choices.message.images?.[0]?.image_url?.url;
 
-  if (!image) {
-    throw new Error("No image generated in the response");
+  if (!imageDataUri) {
+    return { finishReason };
   }
 
-  return {
-    candidates: [
-      {
-        content: {
-          parts: [
-            {
-              inline_data: {
-                data: image,
-                mime_type: "image/png",
-              },
-            },
-          ],
-        },
-        finishReason: nativeFinishReason,
-      },
-    ],
-  };
+  const mimeType = extractMimeType(imageDataUri);
+
+  return { imageData: imageDataUri, mimeType, finishReason };
 }
 
 export async function generateImage(
   env: Env,
   prompt: string,
-  imageUrl?: string,
+  imageUrls?: string[],
   aspectRatio?: string,
   model?: Model,
-): Promise<GeminiResponse> {
-  const content: any[] = [{ type: "text", text: prompt }];
-  if (imageUrl) {
-    content.push({ type: "image_url", image_url: { url: imageUrl } });
+): Promise<ImageGenerationResult> {
+  const content: OpenRouterRequestContent[] = [{ type: "text", text: prompt }];
+
+  // Add all image URLs to the content array
+  if (imageUrls && imageUrls.length > 0) {
+    for (const url of imageUrls) {
+      content.push({ type: "image_url", image_url: { url } });
+    }
   }
 
   const modelToUse = model || "gemini-2.5-flash-image-preview";
 
-  const body: any = {
+  const body: OpenRouterRequestBody = {
     model: `google/${modelToUse}`,
     messages: [
       {
@@ -166,8 +157,8 @@ export async function generateImage(
 export const createGeminiClient = (env: Env) => ({
   generateImage: (
     prompt: string,
-    imageUrl?: string,
+    imageUrls?: string[],
     aspectRatio?: string,
     model?: Model,
-  ) => generateImage(env, prompt, imageUrl, aspectRatio, model),
+  ) => generateImage(env, prompt, imageUrls, aspectRatio, model),
 });

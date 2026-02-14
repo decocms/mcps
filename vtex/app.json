@@ -1,0 +1,41 @@
+{
+  "scopeName": "deco",
+  "name": "vtex-mcp",
+  "friendlyName": "VTEX Commerce APIs",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-vtex.decocache.com/mcp",
+    "configSchema": {
+      "type": "object",
+      "properties": {
+        "accountName": {
+          "type": "string",
+          "title": "Account Name",
+          "description": "Your VTEX account name"
+        },
+        "appKey": {
+          "type": "string",
+          "title": "App Key",
+          "description": "Your VTEX App Key for API authentication"
+        },
+        "appToken": {
+          "type": "string",
+          "title": "App Token",
+          "description": "Your VTEX App Token for API authentication",
+          "format": "password"
+        }
+      },
+      "required": ["accountName", "appKey", "appToken"]
+    }
+  },
+  "description": "MCP for interacting with VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory.",
+  "icon": "https://assets.decocache.com/decocms/d08dbe46-1ce2-4e3a-a99b-d2d0e7de7e61/vtex-logo.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["E-commerce", "Developer Tools"],
+    "official": false,
+    "tags": ["vtex", "ecommerce", "catalog", "orders", "inventory", "logistics", "api"],
+    "short_description": "Interact with VTEX Commerce APIs for catalog, orders, and inventory management.",
+    "mesh_description": "The VTEX Commerce MCP provides direct access to VTEX platform APIs for e-commerce operations. It enables AI agents to manage products, SKUs, categories (Catalog API), retrieve and manage orders (Orders API), and handle inventory and logistics (Logistics API). Perfect for building AI-powered e-commerce assistants, automating store operations, or integrating VTEX functionality into workflows."
+  }
+}

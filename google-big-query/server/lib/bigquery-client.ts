@@ -45,7 +45,9 @@ export class BigQueryClient {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`BigQuery API error: ${response.status} - ${error}`);
+      throw new Error(
+        `BigQuery API error: ${response.status} - ${url} - ${error}`,
+      );
     }
 
     // Handle 204 No Content

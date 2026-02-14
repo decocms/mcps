@@ -31,5 +31,5 @@
     /* Types */
     "types": ["@types/node"]
   },
-  "include": ["server"]
+  "include": ["server", "cli.ts"]
 }

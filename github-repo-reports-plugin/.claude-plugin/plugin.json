@@ -1,0 +1,9 @@
+{
+  "name": "github-repo-reports",
+  "description": "Generate structured Markdown reports with YAML frontmatter for GitHub repository health monitoring. Includes metrics, tables, and status tracking.",
+  "version": "1.0.0",
+  "author": {
+    "name": "viktormarinho"
+  },
+  "repository": "https://github.com/decocms/mcps"
+}

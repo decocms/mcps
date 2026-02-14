@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-autorag-mcp",
+  "friendlyName": "Cloudflare AutoRAG",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://autorag.mcp.cloudflare.com/mcp"
+  },
+  "description": "Build Retrieval-Augmented Generation (RAG) applications with Cloudflare's automatic vector database and embedding management.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["AI/ML", "Data"],
+    "official": true,
+    "tags": ["cloudflare", "rag", "vector-database", "embeddings", "ai", "semantic-search", "llm"],
+    "short_description": "Build RAG applications with automatic vector database and embedding management",
+    "mesh_description": "Cloudflare AutoRAG MCP provides automated Retrieval-Augmented Generation infrastructure for building AI applications with context-aware responses. This official MCP enables you to automatically generate and store embeddings for your documents, manage vector databases with semantic search capabilities, integrate with Large Language Models for contextual responses, configure chunking strategies for optimal retrieval, implement hybrid search combining vector and keyword matching, manage knowledge bases with automatic updates and versioning, optimize retrieval performance with caching and indexing, and monitor RAG pipeline performance and accuracy. The platform handles the complexity of vector embeddings, similarity search, and context injection, allowing you to focus on building AI features. Perfect for building chatbots with document knowledge, semantic search engines, question-answering systems, content recommendation engines, and any application requiring AI with access to external knowledge. Integrates seamlessly with Cloudflare AI and Workers. Use natural language to configure RAG pipelines, manage knowledge bases, optimize retrieval accuracy, and troubleshoot context quality issues."
+  }
+}
+
