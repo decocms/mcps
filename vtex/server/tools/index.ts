@@ -3,6 +3,7 @@
  */
 import {
   getProduct,
+  getProductWithImages,
   getProductSpecifications,
   getProductGridStatus,
   listProducts,
@@ -11,6 +12,8 @@ import {
 } from "./product/index.ts";
 import {
   getSku,
+  getSkuWithImages,
+  getSkuImagesPublic,
   listSkusByProduct,
   createSku,
   updateSku,
@@ -56,6 +59,7 @@ import {
 export const tools = [
   // Product
   getProduct,
+  getProductWithImages,
   getProductSpecifications,
   getProductGridStatus,
   listProducts,
@@ -63,6 +67,8 @@ export const tools = [
   updateProduct,
   // SKU
   getSku,
+  getSkuWithImages,
+  getSkuImagesPublic,
   listSkusByProduct,
   createSku,
   updateSku,

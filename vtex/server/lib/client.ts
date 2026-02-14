@@ -20,6 +20,7 @@ import type {
   CollectionProductsResponse,
   CollectionImportResponse,
   AddSkuToCollectionInput,
+  SkuFile,
 } from "../types/catalog.ts";
 import type { Order, OrderList } from "../types/order.ts";
 import type { InventoryBySku, Warehouse } from "../types/logistics.ts";
@@ -208,6 +209,13 @@ export class VTEXClient {
       "PUT",
       `/api/catalog/pvt/stockkeepingunit/${skuId}`,
       { body: data },
+    );
+  }
+
+  async getSkuFiles(skuId: number) {
+    return this.request<SkuFile[]>(
+      "GET",
+      `/api/catalog/pvt/stockkeepingunit/${skuId}/file`,
     );
   }
 

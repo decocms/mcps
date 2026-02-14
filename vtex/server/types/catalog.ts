@@ -224,3 +224,15 @@ export interface ProductSpecification {
   Name: string;
   Value: string[];
 }
+
+// ============ SKU FILE/IMAGE TYPES ============
+
+export interface SkuFile {
+  Id: number;
+  ArchiveId: number;
+  SkuId: number;
+  Name: string;
+  IsMain: boolean;
+  Label: string | null;
+  Url: string;
+}
