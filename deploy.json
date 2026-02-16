@@ -131,6 +131,12 @@
     "platformName": "kubernetes-bun",
     "watch": ["google-meet/**", "shared/**"]
   },
+  "google-search-console": {
+    "site": "google-search-console",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": ["google-search-console/**", "shared/**"]
+  },
   "google-slides": {
     "site": "google-slides",
     "entrypoint": "./dist/server/main.js",
