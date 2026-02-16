@@ -1,0 +1,16 @@
+{
+  "name": "Task Runner",
+  "description": "Orchestrate AI agents through task lists with Beads integration and Ralph-style loops",
+  "icon": "https://raw.githubusercontent.com/decocx/apps/main/static/icons/cli.svg",
+  "runtime": "bun",
+  "categories": ["Developer Tools", "Automation"],
+  "repository": "https://github.com/decocx/mcps",
+  "keywords": ["tasks", "beads", "ralph", "agent", "orchestration", "automation"],
+  "form": {
+    "defaultWorkspace": {
+      "type": "string",
+      "title": "Default Workspace",
+      "description": "Default directory for Beads operations (optional)"
+    }
+  }
+}
