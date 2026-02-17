@@ -13,5 +13,5 @@ export const getGoogleAccessToken = (env: Env): string => {
       "Not authenticated. Please authorize with Google Search Console first.",
     );
   }
-  return authorization;
+  return authorization.replace(/^Bearer\s+/i, "");
 };
