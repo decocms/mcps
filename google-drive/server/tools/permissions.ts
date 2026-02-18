@@ -7,21 +7,23 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
 
-const PermissionSchema = z.object({
-  id: z.string(),
-  type: z.enum(["user", "group", "domain", "anyone"]),
-  role: z.enum([
-    "owner",
-    "organizer",
-    "fileOrganizer",
-    "writer",
-    "commenter",
-    "reader",
-  ]),
-  emailAddress: z.string().optional(),
-  domain: z.string().optional(),
-  displayName: z.string().optional(),
-});
+const PermissionSchema = z
+  .object({
+    id: z.string(),
+    type: z.enum(["user", "group", "domain", "anyone"]),
+    role: z.enum([
+      "owner",
+      "organizer",
+      "fileOrganizer",
+      "writer",
+      "commenter",
+      "reader",
+    ]),
+    emailAddress: z.string().optional(),
+    domain: z.string().optional(),
+    displayName: z.string().optional(),
+  })
+  .passthrough();
 
 export const createListPermissionsTool = (env: Env) =>
   createPrivateTool({
