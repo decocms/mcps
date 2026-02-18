@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "google-search-console",
+  "friendlyName": "Google Search Console",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-search-console.decocache.com/mcp"
+  },
+  "description": "Integrate with Google Search Console to access search analytics, manage sitemaps, inspect URLs, and monitor site performance.",
+  "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["SEO", "Analytics"],
+    "official": false,
+    "tags": ["google", "search-console", "seo", "analytics", "sitemaps", "search", "webmaster", "indexing"],
+    "short_description": "Integrate with Google Search Console to access search analytics, manage sitemaps, inspect URLs, and monitor site performance.",
+    "mesh_description": "The Google Search Console MCP provides comprehensive integration with Google Search Console, enabling programmatic access to search performance data, sitemap management, and URL inspection capabilities. **Key Features** - Query search analytics data (clicks, impressions, CTR, position) with filters by date, query, page, country, device, and search type. Manage sitemaps by listing, submitting, and deleting sitemaps for your sites. Inspect URL index status including indexing state, mobile usability, AMP status, and rich results. Manage sites by adding, removing, and listing sites in your Search Console account. **Use Cases** - Perfect for SEO professionals who need to automate search performance reporting, monitor keyword rankings, track click-through rates, and analyze search traffic patterns. Ideal for developers building SEO dashboards, automated sitemap submission workflows, URL indexing monitoring systems, and search performance analytics tools. Great for content teams tracking article performance, identifying top-performing pages, and optimizing content based on search data. **Authentication** - Uses OAuth 2.0 with Google Search Console API scopes. Provides secure access to your Search Console data through Google's standard authentication flow."
+  }
+}
