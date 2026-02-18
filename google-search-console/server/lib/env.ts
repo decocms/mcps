@@ -1,4 +1,4 @@
-import type { Env } from "../main.ts";
+import type { Env } from "../../shared/deco.gen.ts";
 
 /**
  * Get Google OAuth access token from environment context

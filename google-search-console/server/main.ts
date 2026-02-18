@@ -10,9 +10,8 @@ import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
 import { tools } from "./tools/index.ts";
 import { GOOGLE_SCOPES } from "./constants.ts";
-import type { Env } from "./types/env.ts";
+import type { Env } from "../shared/deco.gen.ts";
 
-// Export Env type for use in other files
 export type { Env };
 
 /**
