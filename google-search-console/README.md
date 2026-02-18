@@ -1,4 +1,4 @@
-# Google Search Console MCP
+# Google Search Console MCP 
 
 MCP Server for Google Search Console integration. Access search analytics, manage sitemaps, inspect URLs, and monitor site performance using the Google Search Console API.
 
