@@ -5,3 +5,5 @@ export { getProductGridStatus } from "./get-grid-status.ts";
 export { listProducts } from "./list.ts";
 export { createProduct } from "./create.ts";
 export { updateProduct } from "./update.ts";
+export { searchProductsPublic } from "./search-public.ts";
+export { getProductSuggestionsPublic } from "./get-suggestions-public.ts";

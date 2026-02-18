@@ -21,6 +21,7 @@ import type {
   CollectionImportResponse,
   AddSkuToCollectionInput,
   SkuFile,
+  PublicProductSearchResult,
 } from "../types/catalog.ts";
 import type { Order, OrderList } from "../types/order.ts";
 import type { InventoryBySku, Warehouse } from "../types/logistics.ts";
@@ -46,8 +47,12 @@ export class VTEXClient {
     this.headers = {
       "Content-Type": "application/json",
       Accept: "application/json",
-      "X-VTEX-API-AppKey": credentials.appKey,
-      "X-VTEX-API-AppToken": credentials.appToken,
+      ...(credentials.appKey && {
+        "X-VTEX-API-AppKey": credentials.appKey,
+      }),
+      ...(credentials.appToken && {
+        "X-VTEX-API-AppToken": credentials.appToken,
+      }),
     };
   }
 
@@ -512,6 +517,60 @@ export class VTEXClient {
     }
 
     return response.json() as Promise<CollectionImportResponse>;
+  }
+
+  // ============ PUBLIC CATALOG (no auth required) ============
+
+  async searchProductsPublic(params: {
+    query?: string;
+    categoryId?: number;
+    brandId?: number;
+    collectionId?: number;
+    priceFrom?: number;
+    priceTo?: number;
+    from?: number;
+    to?: number;
+    orderBy?: string;
+    map?: string;
+    fq?: string;
+  }) {
+    const searchParams: Record<string, string | number | boolean | undefined> =
+      {};
+
+    if (params.query !== undefined) searchParams.ft = params.query;
+    if (params.categoryId !== undefined)
+      searchParams.fq = `C:/${params.categoryId}/`;
+    if (params.brandId !== undefined)
+      searchParams.fq = `${searchParams.fq ?? ""}B:${params.brandId}`;
+    if (params.collectionId !== undefined)
+      searchParams.fq = `${searchParams.fq ?? ""}productClusterIds:${params.collectionId}`;
+    if (params.priceFrom !== undefined)
+      searchParams.fq = `${searchParams.fq ?? ""}P:[${params.priceFrom} TO ${params.priceTo ?? "*"}]`;
+    if (params.from !== undefined) searchParams._from = params.from;
+    if (params.to !== undefined) searchParams._to = params.to;
+    if (params.orderBy !== undefined) searchParams.O = params.orderBy;
+    if (params.map !== undefined) searchParams.map = params.map;
+    if (params.fq !== undefined) searchParams.fq = params.fq;
+
+    return this.request<PublicProductSearchResult[]>(
+      "GET",
+      "/api/catalog_system/pub/products/search",
+      { params: searchParams },
+    );
+  }
+
+  async getCategoryTreePublic(levels = 3) {
+    return this.request<CategoryTree[]>(
+      "GET",
+      `/api/catalog_system/pub/category/tree/${levels}`,
+    );
+  }
+
+  async getCrossSellingSuggestionsPublic(productId: number) {
+    return this.request<PublicProductSearchResult[]>(
+      "GET",
+      `/api/catalog_system/pub/products/crossselling/suggestions/${productId}`,
+    );
   }
 
   async removeProductsFromCollectionByFile(

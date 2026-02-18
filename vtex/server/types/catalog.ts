@@ -236,3 +236,60 @@ export interface SkuFile {
   Label: string | null;
   Url: string;
 }
+
+// ============ PUBLIC SEARCH TYPES ============
+
+export interface PublicProductSearchSku {
+  itemId: string;
+  name: string;
+  nameComplete: string;
+  complementName: string;
+  ean: string;
+  referenceId: Array<{ Key: string; Value: string }>;
+  measurementUnit: string;
+  unitMultiplier: number;
+  images: Array<{
+    imageId: string;
+    imageLabel: string | null;
+    imageTag: string;
+    imageUrl: string;
+    imageText: string;
+  }>;
+  sellers: Array<{
+    sellerId: string;
+    sellerName: string;
+    addToCartLink: string;
+    sellerDefault: boolean;
+    commertialOffer: {
+      Price: number;
+      ListPrice: number;
+      PriceWithoutDiscount: number;
+      RewardValue: number;
+      PriceValidUntil: string | null;
+      AvailableQuantity: number;
+      IsAvailable: boolean;
+      Tax: number;
+    };
+  }>;
+}
+
+export interface PublicProductSearchResult {
+  productId: string;
+  productName: string;
+  brand: string;
+  brandId: number;
+  brandImageUrl: string | null;
+  linkText: string;
+  productReference: string;
+  categoryId: string;
+  productTitle: string;
+  metaTagDescription: string;
+  clusterHighlights: Record<string, string>;
+  productClusters: Record<string, string>;
+  searchableClusters: Record<string, string>;
+  categories: string[];
+  categoriesIds: string[];
+  link: string;
+  description: string;
+  items: PublicProductSearchSku[];
+}

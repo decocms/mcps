@@ -6,14 +6,24 @@ import { z } from "zod";
 
 export const StateSchema = z.object({
   accountName: z.string().describe("VTEX account name"),
-  appKey: z.string().describe("VTEX App Key"),
-  appToken: z.string().describe("VTEX App Token"),
+  appKey: z
+    .string()
+    .optional()
+    .describe(
+      "VTEX App Key (required for private endpoints; not needed for public catalog searches)",
+    ),
+  appToken: z
+    .string()
+    .optional()
+    .describe(
+      "VTEX App Token (required for private endpoints; not needed for public catalog searches)",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
 
 export interface VTEXCredentials {
   accountName: string;
-  appKey: string;
-  appToken: string;
+  appKey?: string;
+  appToken?: string;
 }

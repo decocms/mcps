@@ -44,8 +44,12 @@ export const getSkuImagesPublic = (env: Env) =>
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          "X-VTEX-API-AppKey": credentials.appKey,
-          "X-VTEX-API-AppToken": credentials.appToken,
+          ...(credentials.appKey && {
+            "X-VTEX-API-AppKey": credentials.appKey,
+          }),
+          ...(credentials.appToken && {
+            "X-VTEX-API-AppToken": credentials.appToken,
+          }),
         },
       });
 
@@ -55,23 +59,39 @@ export const getSkuImagesPublic = (env: Env) =>
         );
       }
 
-      const data = await response.json();
+      const data: unknown[] = await response.json();
 
       if (!data || data.length === 0) {
         throw new Error(`Product not found for SKU ID: ${context.skuId}`);
       }
 
-      const product = data[0];
+      const product = data[0] as {
+        productId: string;
+        productName: string;
+        brand: string;
+        link: string;
+        items: Array<{
+          itemId: string;
+          name: string;
+          images: Array<{
+            imageId: string;
+            imageLabel: string | null;
+            imageTag: string;
+            imageUrl: string;
+            imageText: string | null;
+          }>;
+        }>;
+      };
 
       return {
         productId: product.productId,
         productName: product.productName,
         brand: product.brand,
         link: product.link,
-        items: product.items.map((item: any) => ({
+        items: product.items.map((item) => ({
           itemId: item.itemId,
           name: item.name,
-          images: item.images.map((img: any) => ({
+          images: item.images.map((img) => ({
             imageId: img.imageId,
             imageLabel: img.imageLabel || null,
             imageTag: img.imageTag,

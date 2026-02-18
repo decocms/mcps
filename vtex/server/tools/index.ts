@@ -9,6 +9,8 @@ import {
   listProducts,
   createProduct,
   updateProduct,
+  searchProductsPublic,
+  getProductSuggestionsPublic,
 } from "./product/index.ts";
 import {
   getSku,
@@ -57,6 +59,9 @@ import {
 } from "./collection/index.ts";
 
 export const tools = [
+  // Public Catalog (no auth required)
+  searchProductsPublic,
+  getProductSuggestionsPublic,
   // Product
   getProduct,
   getProductWithImages,
