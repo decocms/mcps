@@ -62,7 +62,9 @@ const productSchema = z.object({
   items: z.array(skuSchema),
 });
 
-const outputSchema = z.array(productSchema);
+const outputSchema = z.object({
+  products: z.array(productSchema),
+});
 
 export const searchProductsPublic = (env: Env) =>
   createTool({
@@ -110,7 +112,7 @@ export const searchProductsPublic = (env: Env) =>
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const results = await client.searchProductsPublic(context);
-      return outputSchema.parse(results);
+      const products = await client.searchProductsPublic(context);
+      return { products };
     },
   });

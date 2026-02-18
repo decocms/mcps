@@ -81,21 +81,29 @@ export class VTEXClient {
     path: string,
     options?: {
       body?: unknown;
-      params?: Record<string, string | number | boolean | undefined>;
+      params?: Record<string, string | number | boolean | string[] | undefined>;
       timeoutMs?: number;
     },
   ): Promise<T> {
     let url = `${this.baseUrl}${path}`;
 
     if (options?.params) {
-      const searchParams = new URLSearchParams();
+      const parts: string[] = [];
       for (const [key, value] of Object.entries(options.params)) {
-        if (value !== undefined) {
-          searchParams.append(key, String(value));
+        if (value === undefined) continue;
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            parts.push(
+              `${encodeURIComponent(key)}=${encodeURIComponent(item)}`,
+            );
+          }
+        } else {
+          parts.push(
+            `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
+          );
         }
       }
-      const qs = searchParams.toString();
-      if (qs) url += `?${qs}`;
+      if (parts.length) url += `?${parts.join("&")}`;
     }
 
     const timeoutMs = options?.timeoutMs ?? REQUEST_TIMEOUT_MS;
@@ -534,23 +542,28 @@ export class VTEXClient {
     map?: string;
     fq?: string;
   }) {
-    const searchParams: Record<string, string | number | boolean | undefined> =
-      {};
+    const fqFilters: string[] = [];
+
+    if (params.categoryId !== undefined)
+      fqFilters.push(`C:/${params.categoryId}/`);
+    if (params.brandId !== undefined) fqFilters.push(`B:${params.brandId}`);
+    if (params.collectionId !== undefined)
+      fqFilters.push(`productClusterIds:${params.collectionId}`);
+    if (params.priceFrom !== undefined)
+      fqFilters.push(`P:[${params.priceFrom} TO ${params.priceTo ?? "*"}]`);
+    if (params.fq !== undefined) fqFilters.push(params.fq);
+
+    const searchParams: Record<
+      string,
+      string | number | boolean | string[] | undefined
+    > = {};
 
     if (params.query !== undefined) searchParams.ft = params.query;
-    if (params.categoryId !== undefined)
-      searchParams.fq = `C:/${params.categoryId}/`;
-    if (params.brandId !== undefined)
-      searchParams.fq = `${searchParams.fq ?? ""}B:${params.brandId}`;
-    if (params.collectionId !== undefined)
-      searchParams.fq = `${searchParams.fq ?? ""}productClusterIds:${params.collectionId}`;
-    if (params.priceFrom !== undefined)
-      searchParams.fq = `${searchParams.fq ?? ""}P:[${params.priceFrom} TO ${params.priceTo ?? "*"}]`;
+    if (fqFilters.length > 0) searchParams.fq = fqFilters;
     if (params.from !== undefined) searchParams._from = params.from;
     if (params.to !== undefined) searchParams._to = params.to;
     if (params.orderBy !== undefined) searchParams.O = params.orderBy;
     if (params.map !== undefined) searchParams.map = params.map;
-    if (params.fq !== undefined) searchParams.fq = params.fq;
 
     return this.request<PublicProductSearchResult[]>(
       "GET",

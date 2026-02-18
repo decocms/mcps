@@ -3,6 +3,44 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
+const skuSchema = z.object({
+  itemId: z.string(),
+  name: z.string(),
+  nameComplete: z.string(),
+  complementName: z.string(),
+  ean: z.string(),
+  referenceId: z.array(z.object({ Key: z.string(), Value: z.string() })),
+  measurementUnit: z.string(),
+  unitMultiplier: z.number(),
+  images: z.array(
+    z.object({
+      imageId: z.string(),
+      imageLabel: z.string().nullable(),
+      imageTag: z.string(),
+      imageUrl: z.string(),
+      imageText: z.string(),
+    }),
+  ),
+  sellers: z.array(
+    z.object({
+      sellerId: z.string(),
+      sellerName: z.string(),
+      addToCartLink: z.string(),
+      sellerDefault: z.boolean(),
+      commertialOffer: z.object({
+        Price: z.number(),
+        ListPrice: z.number(),
+        PriceWithoutDiscount: z.number(),
+        RewardValue: z.number(),
+        PriceValidUntil: z.string().nullable(),
+        AvailableQuantity: z.number(),
+        IsAvailable: z.boolean(),
+        Tax: z.number(),
+      }),
+    }),
+  ),
+});
+
 const productSchema = z.object({
   productId: z.string(),
   productName: z.string(),
@@ -21,10 +59,12 @@ const productSchema = z.object({
   categoriesIds: z.array(z.string()),
   link: z.string(),
   description: z.string(),
-  items: z.array(z.record(z.string(), z.unknown())),
+  items: z.array(skuSchema),
 });
 
-const outputSchema = z.array(productSchema);
+const outputSchema = z.object({
+  products: z.array(productSchema),
+});
 
 export const getProductSuggestionsPublic = (env: Env) =>
   createTool({
@@ -40,9 +80,9 @@ export const getProductSuggestionsPublic = (env: Env) =>
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
-      const results = await client.getCrossSellingSuggestionsPublic(
+      const products = await client.getCrossSellingSuggestionsPublic(
         context.productId,
       );
-      return outputSchema.parse(results);
+      return { products };
     },
   });
