@@ -1,120 +1,66 @@
 /**
- * Central export point for all VTEX tools organized by domain.
+ * Central export point for all VTEX tools.
+ *
+ * Registry tools are auto-generated from OpenAPI specs via hey-api.
+ * Custom tools handle complex multi-step operations.
  */
+import type { Env } from "../types/env.ts";
 import {
-  getProduct,
-  getProductWithImages,
-  getProductSpecifications,
-  getProductGridStatus,
-  listProducts,
-  createProduct,
-  updateProduct,
-  searchProductsPublic,
-  getProductSuggestionsPublic,
-} from "./product/index.ts";
-import {
-  getSku,
-  getSkuWithImages,
-  getSkuImagesPublic,
-  listSkusByProduct,
-  createSku,
-  updateSku,
-} from "./sku/index.ts";
-import {
-  getCategory,
-  listCategories,
-  createCategory,
-} from "./category/index.ts";
-import { getBrand, listBrands, createBrand } from "./brand/index.ts";
-import {
-  getOrder,
-  getDailySales,
-  listOrders,
-  cancelOrder,
-  startHandling,
-} from "./order/index.ts";
-import { getInventoryBySku, updateInventory } from "./inventory/index.ts";
-import { getWarehouse, listWarehouses } from "./warehouse/index.ts";
-import {
-  getPrice,
-  getComputedPrice,
-  getFixedPrices,
-  updatePrice,
-  updateFixedPrice,
-  deletePrice,
-  listPriceTables,
-} from "./price/index.ts";
-import {
-  listCollections,
-  searchCollections,
-  getCollection,
-  createCollection,
-  updateCollection,
-  deleteCollection,
-  getCollectionProducts,
-  addSkuToCollection,
-  addMultipleSkusToCollection,
-  removeSkuFromCollection,
-  removeMultipleSkusFromCollection,
-} from "./collection/index.ts";
+  brandTools,
+  categoryTools,
+  warehouseTools,
+  inventoryTools,
+  priceTools,
+  productTools,
+  skuTools,
+  orderTools,
+  collectionTools,
+} from "./registry.ts";
 
-export const tools = [
+// ── Custom tools ──────────────────────────────────────────────────────────────
+import { searchProductsPublic } from "./custom/search-products-public.ts";
+import { getProductSuggestionsPublic } from "./custom/get-product-suggestions-public.ts";
+import { getProductWithImages } from "./custom/get-product-with-images.ts";
+import { getProductGridStatus } from "./custom/get-product-grid-status.ts";
+import { getSkuWithImages } from "./custom/get-sku-with-images.ts";
+import { getSkuImagesPublic } from "./custom/get-sku-images-public.ts";
+import { getDailySales } from "./custom/get-daily-sales.ts";
+import { searchCollections } from "./custom/search-collections.ts";
+import {
+  addMultipleSkusToCollection,
+  removeMultipleSkusFromCollection,
+} from "./custom/collection-bulk.ts";
+
+// ── Tool registry factories (env: Env) => Tool ────────────────────────────────
+const registryFactories = [
+  ...brandTools,
+  ...categoryTools,
+  ...warehouseTools,
+  ...inventoryTools,
+  ...priceTools,
+  ...productTools,
+  ...skuTools,
+  ...orderTools,
+  ...collectionTools,
+];
+
+const customFactories = [
   // Public Catalog (no auth required)
   searchProductsPublic,
   getProductSuggestionsPublic,
-  // Product
-  getProduct,
+  // Product (complex)
   getProductWithImages,
-  getProductSpecifications,
   getProductGridStatus,
-  listProducts,
-  createProduct,
-  updateProduct,
-  // SKU
-  getSku,
+  // SKU (complex)
   getSkuWithImages,
   getSkuImagesPublic,
-  listSkusByProduct,
-  createSku,
-  updateSku,
-  // Category
-  getCategory,
-  listCategories,
-  createCategory,
-  // Brand
-  getBrand,
-  listBrands,
-  createBrand,
-  // Order
-  getOrder,
+  // Order (complex)
   getDailySales,
-  listOrders,
-  cancelOrder,
-  startHandling,
-  // Inventory
-  getInventoryBySku,
-  updateInventory,
-  // Warehouse
-  getWarehouse,
-  listWarehouses,
-  // Pricing
-  getPrice,
-  getComputedPrice,
-  getFixedPrices,
-  updatePrice,
-  updateFixedPrice,
-  deletePrice,
-  listPriceTables,
-  // Collection (Beta)
-  listCollections,
+  // Collection (complex)
   searchCollections,
-  getCollection,
-  createCollection,
-  updateCollection,
-  deleteCollection,
-  getCollectionProducts,
-  addSkuToCollection,
   addMultipleSkusToCollection,
-  removeSkuFromCollection,
   removeMultipleSkusFromCollection,
 ];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const tools = [...registryFactories, ...customFactories] as any[];
