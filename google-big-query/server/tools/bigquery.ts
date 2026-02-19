@@ -97,7 +97,7 @@ export const createQueryTool = (env: Env) =>
         .number()
         .int()
         .min(1)
-        .max(10000)
+        .max(200000)
         .optional()
         .describe("Maximum number of rows to return (default: 1000)"),
       timeoutMs: z.coerce

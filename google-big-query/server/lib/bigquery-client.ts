@@ -329,7 +329,12 @@ export class BigQueryClient {
           maxResults: options.maxResults ?? DEFAULTS.MAX_RESULTS,
         },
       );
-      response = { ...response, ...results, jobComplete: results.jobComplete };
+      response = {
+        ...response,
+        ...results,
+        jobComplete: results.jobComplete,
+        jobReference: response.jobReference,
+      };
     }
 
     if (response.errors?.length) {
