@@ -509,7 +509,7 @@ async function handleAppMention(
   console.log(`[EventHandler] App mention from ${user} in ${channel}`);
 
   // Log app mention received
-  logger.info("App mention received", {
+  logger.debug("App mention received", {
     connectionId: teamConfig.teamId,
     teamId: teamConfig.teamId,
     teamName: (teamConfig as any).teamName,
@@ -624,7 +624,7 @@ async function handleAppMention(
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    logger.info("App mention response sent", {
+    logger.debug("App mention response sent", {
       channel,
       userId: user,
     });
@@ -766,7 +766,7 @@ async function handleDirectMessage(
   console.log(`[EventHandler] DM from ${user}`);
 
   // Log direct message received
-  logger.info("Direct message received", {
+  logger.debug("Direct message received", {
     connectionId: teamConfig.teamId,
     teamId: teamConfig.teamId,
     teamName: (teamConfig as any).teamName,
@@ -824,7 +824,7 @@ async function handleDirectMessage(
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    logger.info("Direct message response sent", {
+    logger.debug("Direct message response sent", {
       channel,
       userId: user,
     });
@@ -861,7 +861,7 @@ async function handleThreadReply(
   console.log(`[EventHandler] Thread reply from ${user}`);
 
   // Log thread reply received
-  logger.info("Thread reply received", {
+  logger.debug("Thread reply received", {
     connectionId: teamConfig.teamId,
     teamId: teamConfig.teamId,
     teamName: (teamConfig as any).teamName,
@@ -923,7 +923,7 @@ async function handleThreadReply(
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    logger.info("Thread reply response sent", {
+    logger.debug("Thread reply response sent", {
       channel,
       userId: user,
       threadTs,
@@ -998,7 +998,7 @@ export async function handleLLMResponse(
 ): Promise<void> {
   const { channel, threadTs, messageTs } = context;
 
-  await logger.info("LLM Response Received", {
+  await logger.debug("LLM Response Received", {
     channel,
     threadTs,
     messageTs,
@@ -1093,7 +1093,7 @@ export async function handleSlackWebhookEvent(
 
     const slackPayload = payload as SlackWebhookPayload;
 
-    logger.info("Webhook payload parsed", {
+    logger.debug("Webhook payload parsed", {
       type: slackPayload.type,
       teamId: slackPayload.team_id,
       hasEvent: !!slackPayload.event,
@@ -1101,7 +1101,7 @@ export async function handleSlackWebhookEvent(
 
     // Handle URL verification
     if (slackPayload.type === "url_verification") {
-      logger.info("URL verification challenge handled");
+      logger.debug("URL verification challenge handled");
       return;
     }
 
@@ -1131,7 +1131,7 @@ async function handleEventCallback(
   slackPayload: SlackWebhookPayload,
   config: MeshConfig,
 ): Promise<void> {
-  logger.info("Event callback received", {
+  logger.debug("Event callback received", {
     hasEvent: !!slackPayload.event,
     eventType: slackPayload.event?.type,
   });
@@ -1155,7 +1155,7 @@ async function handleEventCallback(
     return;
   }
 
-  logger.info("Event received", {
+  logger.debug("Event received", {
     eventType,
     user: event.user,
     channel: event.channel,

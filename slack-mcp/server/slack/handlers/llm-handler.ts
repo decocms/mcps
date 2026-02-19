@@ -108,7 +108,7 @@ export async function callLLMWithStreaming(
     return callLLMWithoutStreaming(messages, options);
   }
 
-  logger.info("LLM request started (streaming)", {
+  logger.debug("LLM request started (streaming)", {
     channel: options.channel,
     messageCount: messages.length,
     hasConfig: !!globalLLMConfig,
@@ -139,7 +139,7 @@ export async function callLLMWithStreaming(
     },
   );
 
-  logger.info("LLM response sent successfully (streaming)", {
+  logger.debug("LLM response sent successfully (streaming)", {
     channel: options.channel,
     responseLength: response.length,
   });
@@ -159,7 +159,7 @@ export async function callLLMWithoutStreaming(
 
   const { channel, replyTo, useBlocks = true } = options;
 
-  logger.info("LLM request started (non-streaming)", {
+  logger.debug("LLM request started (non-streaming)", {
     channel: options.channel,
     messageCount: messages.length,
   });
@@ -177,7 +177,7 @@ export async function callLLMWithoutStreaming(
     await sendMessage({ channel, text: formattedResponse, blocks });
   }
 
-  logger.info("LLM response sent successfully (non-streaming)", {
+  logger.debug("LLM response sent successfully (non-streaming)", {
     channel: options.channel,
     responseLength: response.length,
   });

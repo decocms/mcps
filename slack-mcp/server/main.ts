@@ -327,7 +327,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
 
       // Log config received
-      logger.info("Configuration received and saved", {
+      logger.debug("Configuration received and saved", {
         connectionId,
         teamId: botInfo?.teamId ?? "unknown",
         teamName: (teamInfo?.name as string) ?? "unknown",

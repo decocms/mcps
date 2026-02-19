@@ -144,7 +144,7 @@ app.post("/slack/events/:connectionId", async (c) => {
   }
 
   // 2. Log event type identified
-  logger.info("Event type identified", {
+  logger.debug("Event type identified", {
     connectionId,
     trace_id: traceId,
     eventType: parsedPayload.type,
@@ -154,7 +154,7 @@ app.post("/slack/events/:connectionId", async (c) => {
 
   // Handle URL verification challenge (doesn't need connection config)
   if (parsedPayload.type === "url_verification") {
-    logger.info("URL verification challenge", {
+    logger.debug("URL verification challenge", {
       connectionId,
       trace_id: traceId,
     });
@@ -197,7 +197,7 @@ app.post("/slack/events/:connectionId", async (c) => {
   }
 
   // 5. Log cache hit with names
-  logger.info("Connection config found (cache hit)", {
+  logger.debug("Connection config found (cache hit)", {
     connectionId,
     connectionName: connectionConfig.connectionName,
     trace_id: traceId,
@@ -230,7 +230,7 @@ app.post("/slack/events/:connectionId", async (c) => {
   }
 
   // 5. Log signature verified
-  logger.info("Signature verified successfully", {
+  logger.debug("Signature verified successfully", {
     connectionId,
     trace_id: traceId,
     eventType: payload.event?.type,
@@ -254,7 +254,7 @@ app.post("/slack/events/:connectionId", async (c) => {
   }
 
   // 6. Log routing
-  logger.info("Routing to event handler", {
+  logger.debug("Routing to event handler", {
     connectionId,
     teamName: connectionConfig.teamName,
     trace_id: traceId,
@@ -277,7 +277,7 @@ app.post("/slack/events/:connectionId", async (c) => {
   const duration = Date.now() - startTime;
 
   // 7. Log acknowledge
-  logger.info("Webhook acknowledged", {
+  logger.debug("Webhook acknowledged", {
     connectionId,
     trace_id: traceId,
     duration,
@@ -403,7 +403,7 @@ async function processConnectionEventAsync(
   if (!payload.event) return;
 
   // Log processing start
-  logger.info("Event processing started", {
+  logger.debug("Event processing started", {
     connectionId: connectionConfig.connectionId,
     trace_id: traceId,
     eventType: payload.event.type,
@@ -415,7 +415,7 @@ async function processConnectionEventAsync(
   initializeSlackClient({ botToken: connectionConfig.botToken });
 
   // Configure LLM with this connection's settings
-  logger.info("LLM configuration", {
+  logger.debug("LLM configuration", {
     connectionId: connectionConfig.connectionId,
     trace_id: traceId,
     organizationId: connectionConfig.organizationId,
