@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import { BigQueryClient, getAccessToken } from "../lib/bigquery-client.ts";
 import { encodePageToken, decodePageToken } from "../lib/pagination-token.ts";
+import type { TableSchema, TableRow } from "../lib/types.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -140,8 +141,8 @@ export const createQueryTool = (env: Env) =>
       });
 
       let result: {
-        schema: import("../lib/types.ts").TableSchema;
-        rows: import("../lib/types.ts").TableRow[];
+        schema: TableSchema;
+        rows: TableRow[];
         totalRows: string;
         cacheHit: boolean;
         totalBytesProcessed: string;
