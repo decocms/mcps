@@ -184,7 +184,7 @@ export class HyperDXLogger {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey!}`,
+          Authorization: this.apiKey!,
         },
         body: JSON.stringify({
           resourceLogs: [
