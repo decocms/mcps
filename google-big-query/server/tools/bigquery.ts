@@ -8,6 +8,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { BigQueryClient, getAccessToken } from "../lib/bigquery-client.ts";
+import { encodePageToken, decodePageToken } from "../lib/pagination-token.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -72,7 +73,18 @@ export const createQueryTool = (env: Env) =>
       "Execute a SQL query against Google BigQuery. Returns the query results with schema information. Supports standard SQL by default.",
     inputSchema: z.object({
       projectId: z.string().describe("Google Cloud project ID"),
-      query: z.string().describe("SQL query to execute"),
+      query: z
+        .string()
+        .optional()
+        .describe(
+          "SQL query to execute. Required for the first page; omit when passing pageToken.",
+        ),
+      pageToken: z
+        .string()
+        .optional()
+        .describe(
+          "Opaque token returned by a previous call. Pass this to fetch the next page without re-executing the query.",
+        ),
       useLegacySql: z
         .boolean()
         .optional()
@@ -112,27 +124,68 @@ export const createQueryTool = (env: Env) =>
       totalBytesProcessed: z
         .string()
         .describe("Total bytes processed by the query"),
+      nextPageToken: z
+        .string()
+        .optional()
+        .describe(
+          "Pass this as pageToken in the next call to fetch the next page. Absent on the last page.",
+        ),
     }),
     execute: async ({ context }) => {
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
 
-      const result = await client.queryAndWait(context.projectId, {
-        query: context.query,
-        useLegacySql: context.useLegacySql,
-        maxResults: context.maxResults,
-        timeoutMs: context.timeoutMs,
-        useQueryCache: context.useQueryCache,
-        defaultDataset: context.defaultDatasetId
-          ? {
-              projectId: context.projectId,
-              datasetId: context.defaultDatasetId,
-            }
-          : undefined,
-      });
+      let result: {
+        schema: import("../lib/types.ts").TableSchema;
+        rows: import("../lib/types.ts").TableRow[];
+        totalRows: string;
+        cacheHit: boolean;
+        totalBytesProcessed: string;
+        jobId?: string;
+        pageToken?: string;
+      };
 
-      // Convert rows to objects using schema field names
+      if (context.pageToken) {
+        // Subsequent page: decode opaque token and call getQueryResults
+        const { jobId, apiToken } = decodePageToken(context.pageToken);
+        const page = await client.getQueryResults(context.projectId, jobId, {
+          maxResults: context.maxResults,
+          pageToken: apiToken,
+        });
+        if (!page.jobComplete) {
+          throw new Error("Unexpected: job not complete on page fetch");
+        }
+        result = {
+          schema: page.schema || { fields: [] },
+          rows: page.rows || [],
+          totalRows: page.totalRows || "0",
+          cacheHit: page.cacheHit || false,
+          totalBytesProcessed: "0",
+          jobId: page.pageToken ? jobId : undefined,
+          pageToken: page.pageToken,
+        };
+      } else {
+        // First page: execute query
+        if (!context.query) {
+          throw new Error("query is required when pageToken is not provided");
+        }
+        result = await client.queryOnePage(context.projectId, {
+          query: context.query,
+          useLegacySql: context.useLegacySql,
+          maxResults: context.maxResults,
+          timeoutMs: context.timeoutMs,
+          useQueryCache: context.useQueryCache,
+          defaultDataset: context.defaultDatasetId
+            ? {
+                projectId: context.projectId,
+                datasetId: context.defaultDatasetId,
+              }
+            : undefined,
+        });
+      }
+
+      // Convert BigQuery TableRow format → plain objects (using schema field names)
       const fieldNames = result.schema.fields?.map((f) => f.name) || [];
       const rows = result.rows.map((row) => {
         const obj: Record<string, unknown> = {};
@@ -144,12 +197,18 @@ export const createQueryTool = (env: Env) =>
         return obj;
       });
 
+      const nextPageToken =
+        result.jobId && result.pageToken
+          ? encodePageToken(result.jobId, result.pageToken)
+          : undefined;
+
       return {
         schema: result.schema,
         rows,
         totalRows: result.totalRows,
         cacheHit: result.cacheHit,
         totalBytesProcessed: result.totalBytesProcessed,
+        nextPageToken,
       };
     },
   });
