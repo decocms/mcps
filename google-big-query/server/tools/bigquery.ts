@@ -70,7 +70,10 @@ export const createQueryTool = (env: Env) =>
   createPrivateTool({
     id: "bigquery_query",
     description:
-      "Execute a SQL query against Google BigQuery. Returns the query results with schema information. Supports standard SQL by default.",
+      "Execute a SQL query against Google BigQuery and return results with schema information. " +
+      "Supports standard SQL by default. " +
+      "For large result sets, the response includes nextPageToken — pass it back as pageToken " +
+      "(with only projectId, no query) to fetch the next page without re-executing the query.",
     inputSchema: z.object({
       projectId: z.string().describe("Google Cloud project ID"),
       query: z
