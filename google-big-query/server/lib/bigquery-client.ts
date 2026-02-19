@@ -284,6 +284,71 @@ export class BigQueryClient {
     };
   }
 
+  /**
+   * Execute a query and return only the first page of results.
+   * Unlike queryAndWait(), does NOT loop over all pages — returns pageToken
+   * and jobId so the caller can fetch subsequent pages via getQueryResults().
+   */
+  async queryOnePage(
+    projectId: string,
+    options: {
+      query: string;
+      useLegacySql?: boolean;
+      maxResults?: number;
+      timeoutMs?: number;
+      useQueryCache?: boolean;
+      defaultDataset?: { projectId: string; datasetId: string };
+      maxWaitMs?: number;
+    },
+  ): Promise<{
+    schema: TableSchema;
+    rows: TableRow[];
+    totalRows: string;
+    cacheHit: boolean;
+    totalBytesProcessed: string;
+    jobId?: string;
+    pageToken?: string;
+  }> {
+    let response = await this.query(projectId, options);
+
+    const maxWaitMs = options.maxWaitMs ?? 300000;
+    const startTime = Date.now();
+
+    while (!response.jobComplete && response.jobReference) {
+      if (Date.now() - startTime > maxWaitMs) {
+        throw new Error(
+          `Query timeout: Job ${response.jobReference.jobId} did not complete within ${maxWaitMs / 1000} seconds`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const results = await this.getQueryResults(
+        projectId,
+        response.jobReference.jobId,
+        {
+          timeoutMs: options.timeoutMs ?? DEFAULTS.QUERY_TIMEOUT_MS,
+          maxResults: options.maxResults ?? DEFAULTS.MAX_RESULTS,
+        },
+      );
+      response = { ...response, ...results, jobComplete: results.jobComplete };
+    }
+
+    if (response.errors?.length) {
+      throw new Error(
+        `Query error: ${response.errors.map((e) => e.message).join(", ")}`,
+      );
+    }
+
+    return {
+      schema: response.schema || { fields: [] },
+      rows: response.rows || [],
+      totalRows: response.totalRows || "0",
+      cacheHit: response.cacheHit || false,
+      totalBytesProcessed: response.totalBytesProcessed || "0",
+      jobId: response.pageToken ? response.jobReference?.jobId : undefined,
+      pageToken: response.pageToken,
+    };
+  }
+
   // ==================== Job Methods ====================
 
   /**
