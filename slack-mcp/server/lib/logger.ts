@@ -185,7 +185,7 @@ export class HyperDXLogger {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: this.apiKey!, // HyperDX expects raw API key, not Bearer
+          Authorization: `Bearer ${this.apiKey!}`,
         },
         body: JSON.stringify({
           resourceLogs: [
