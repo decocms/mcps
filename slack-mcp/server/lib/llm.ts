@@ -72,11 +72,17 @@ async function callModelsAPI(
     stream,
   });
 
+  // Extract provider from modelId (e.g. "anthropic/claude-sonnet-4.5" → "anthropic")
+  const provider = modelId.includes("/") ? modelId.split("/")[0] : "anthropic";
+
   const body = {
     messages,
-    model: {
-      id: modelId,
+    models: {
       connectionId: modelProviderId,
+      thinking: {
+        id: modelId,
+        provider,
+      },
     },
     agent: {
       id: agentId || "",
@@ -159,6 +165,9 @@ function generateMessageId(): string {
 /**
  * Convert messages to Decopilot API format
  * Format: { id, role, parts: [...] }
+ *
+ * The Decopilot API expects exactly ONE non-system message,
+ * so we consolidate all user/assistant messages into a single user message.
  */
 function messagesToPrompt(
   messages: Message[],
@@ -171,13 +180,14 @@ function messagesToPrompt(
     | { type: "file"; url: string; filename: string; mediaType: string }
   >;
 }> {
+  type PartType =
+    | { type: "text"; text: string }
+    | { type: "file"; url: string; filename: string; mediaType: string };
+
   const prompt: Array<{
     id: string;
     role: "system" | "user" | "assistant";
-    parts: Array<
-      | { type: "text"; text: string }
-      | { type: "file"; url: string; filename: string; mediaType: string }
-    >;
+    parts: PartType[];
   }> = [];
 
   // Add system prompt if provided
@@ -189,7 +199,7 @@ function messagesToPrompt(
     });
   }
 
-  // Convert messages
+  // Collect system messages separately
   for (const msg of messages) {
     if (msg.role === "system") {
       prompt.push({
@@ -197,47 +207,55 @@ function messagesToPrompt(
         role: "system",
         parts: [{ type: "text", text: msg.content }],
       });
-    } else if (msg.role === "user") {
-      const parts: Array<
-        | { type: "text"; text: string }
-        | { type: "file"; url: string; filename: string; mediaType: string }
-      > = [{ type: "text", text: msg.content }];
-
-      // Add media files (images and audio) if present
-      if (msg.images && msg.images.length > 0) {
-        for (const media of msg.images) {
-          const dataUri = media.data.startsWith("data:")
-            ? media.data
-            : `data:${media.mimeType};base64,${media.data}`;
-
-          const filename =
-            media.name || (media.type === "audio" ? "audio" : "image");
-
-          parts.push({
-            type: "file",
-            url: dataUri,
-            filename,
-            mediaType: media.mimeType,
-          });
-
-          console.log(
-            `[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`,
-          );
-        }
-      }
-
-      prompt.push({
-        id: generateMessageId(),
-        role: "user",
-        parts,
-      });
-    } else if (msg.role === "assistant") {
-      prompt.push({
-        id: generateMessageId(),
-        role: "assistant",
-        parts: [{ type: "text", text: msg.content }],
-      });
     }
+  }
+
+  // Consolidate all non-system messages into a single user message
+  // The Decopilot API expects exactly one non-system message
+  const consolidatedParts: PartType[] = [];
+  const nonSystemMessages = messages.filter((m) => m.role !== "system");
+
+  for (const msg of nonSystemMessages) {
+    // Add role prefix for assistant messages to preserve conversation structure
+    if (msg.role === "assistant") {
+      consolidatedParts.push({
+        type: "text",
+        text: `[assistant]: ${msg.content}`,
+      });
+    } else {
+      consolidatedParts.push({ type: "text", text: msg.content });
+    }
+
+    // Add media files (images and audio) if present
+    if (msg.images && msg.images.length > 0) {
+      for (const media of msg.images) {
+        const dataUri = media.data.startsWith("data:")
+          ? media.data
+          : `data:${media.mimeType};base64,${media.data}`;
+
+        const filename =
+          media.name || (media.type === "audio" ? "audio" : "image");
+
+        consolidatedParts.push({
+          type: "file",
+          url: dataUri,
+          filename,
+          mediaType: media.mimeType,
+        });
+
+        console.log(
+          `[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`,
+        );
+      }
+    }
+  }
+
+  if (consolidatedParts.length > 0) {
+    prompt.push({
+      id: generateMessageId(),
+      role: "user",
+      parts: consolidatedParts,
+    });
   }
 
   return prompt;

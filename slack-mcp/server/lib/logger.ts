@@ -63,7 +63,13 @@ export class HyperDXLogger {
     this.minLevel = (
       ["debug", "info", "warn", "error"].includes(envLevel) ? envLevel : "info"
     ) as LogLevel;
-    this.apiKey = apiKey;
+    // Priority: explicit apiKey > env variable HYPERDX_API_KEY
+    this.apiKey = apiKey ?? process.env.HYPERDX_API_KEY;
+    if (this.apiKey) {
+      console.log(
+        `[HyperDX] Logger initialized with API key from ${apiKey ? "constructor" : "env variable"}`,
+      );
+    }
   }
 
   /**
