@@ -142,6 +142,83 @@ sections:
       - [axios, Low, 0.21.1, 0.21.2]
 ```
 
+### Criteria section
+
+A list of criteria/rules applied to the report.
+
+```yaml
+sections:
+  - type: criteria
+    title: "Critérios"
+    items:
+      - label: "Grade de Tamanhos"
+        description: "Priorizar produtos com grade completa e disponível nos tamanhos de maior giro."
+      - label: "Estampa Grouping"
+        description: "Agrupar produtos por estampa para melhorar a experiência de navegação."
+      - label: "Disponibilidade de Estoque"
+        description: "Remover produtos sem estoque nas grades principais."
+```
+
+Each criterion item:
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `label` | **Yes** | `string` | Short name of the criterion. |
+| `description` | Optional | `string` | Longer explanation of the criterion. |
+
+### Note section
+
+A short free-form annotation, typically used to explain decisions or observations.
+
+```yaml
+sections:
+  - type: note
+    content: "We changed the algorithm to consider grade more heavily this run. Also testing estampa grouping for the first time."
+```
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `content` | **Yes** | `string` | The note text. |
+
+### Ranked list section
+
+An ordered list of items with position, delta movement, image, and a set of attribute values matching the defined columns. Useful for product rankings, leaderboards, etc.
+
+```yaml
+sections:
+  - type: ranked-list
+    title: "Ordenação"
+    columns: [Produto, Sales, Grade]
+    rows:
+      - position: 1
+        delta: 2
+        label: "Blusa Tuie Estampada Paisagem Solar"
+        image: "https://cdn.example.com/blusa-tuie.jpg"
+        values: ["R$8.440", "100%"]
+        note: "We changed the algorithm to consider grade more heavily this run."
+      - position: 2
+        delta: -1
+        label: "Blusa Listex Peplum"
+        image: "https://cdn.example.com/blusa-listex.jpg"
+        values: ["R$6.010", "70%"]
+      - position: 3
+        delta: -2
+        label: "Vestido T-Shirt Big Estampado Paisagem Solar"
+        image: "https://cdn.example.com/vestido.jpg"
+        values: ["R$6.010", "80%"]
+```
+
+Each row:
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `position` | **Yes** | `number` | Current rank position. |
+| `delta` | **Yes** | `number` | Change in position (positive = moved up, negative = moved down, 0 = unchanged). |
+| `label` | **Yes** | `string` | Item name or title. |
+| `image` | **Yes** | `string` | URL of the item image. |
+| `values` | **Yes** | `(string \| number)[]` | Values for each column defined in `columns`, in the same order. |
+| `note` | Optional | `string` | Inline annotation for this specific item. |
+
 ---
 
 ## Status reference
