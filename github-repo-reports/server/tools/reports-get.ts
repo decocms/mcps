@@ -30,6 +30,20 @@ const MetricItemSchema = z.object({
   status: ReportStatusEnum.optional(),
 });
 
+const CriterionItemSchema = z.object({
+  label: z.string(),
+  description: z.string().optional(),
+});
+
+const RankedListRowSchema = z.object({
+  position: z.number(),
+  delta: z.number(),
+  label: z.string(),
+  image: z.string(),
+  values: z.array(z.union([z.string(), z.number()])),
+  note: z.string().optional(),
+});
+
 const ReportSectionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("markdown"),
@@ -45,6 +59,21 @@ const ReportSectionSchema = z.discriminatedUnion("type", [
     title: z.string().optional(),
     columns: z.array(z.string()),
     rows: z.array(z.array(z.union([z.string(), z.number(), z.null()]))),
+  }),
+  z.object({
+    type: z.literal("criteria"),
+    title: z.string().optional(),
+    items: z.array(CriterionItemSchema),
+  }),
+  z.object({
+    type: z.literal("note"),
+    content: z.string(),
+  }),
+  z.object({
+    type: z.literal("ranked-list"),
+    title: z.string().optional(),
+    columns: z.array(z.string()),
+    rows: z.array(RankedListRowSchema),
   }),
 ]);
 

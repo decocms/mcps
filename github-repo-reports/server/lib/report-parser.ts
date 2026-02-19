@@ -63,7 +63,45 @@ export interface TableSection {
   rows: (string | number | null)[][];
 }
 
-export type ReportSection = MarkdownSection | MetricsSection | TableSection;
+export interface CriterionItem {
+  label: string;
+  description?: string;
+}
+
+export interface CriteriaSection {
+  type: "criteria";
+  title?: string;
+  items: CriterionItem[];
+}
+
+export interface NoteSection {
+  type: "note";
+  content: string;
+}
+
+export interface RankedListRow {
+  position: number;
+  delta: number;
+  label: string;
+  image: string;
+  values: (string | number)[];
+  note?: string;
+}
+
+export interface RankedListSection {
+  type: "ranked-list";
+  title?: string;
+  columns: string[];
+  rows: RankedListRow[];
+}
+
+export type ReportSection =
+  | MarkdownSection
+  | MetricsSection
+  | TableSection
+  | CriteriaSection
+  | NoteSection
+  | RankedListSection;
 
 export interface ReportSummary {
   id: string;
@@ -335,6 +373,12 @@ function isValidSection(section: unknown): section is ReportSection {
     case "metrics":
       return Array.isArray(s.items);
     case "table":
+      return Array.isArray(s.columns) && Array.isArray(s.rows);
+    case "criteria":
+      return Array.isArray(s.items);
+    case "note":
+      return typeof s.content === "string";
+    case "ranked-list":
       return Array.isArray(s.columns) && Array.isArray(s.rows);
     default:
       return false;
