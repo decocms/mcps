@@ -3,28 +3,20 @@ import { z } from "zod";
 import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
-const outputSchema = z.array(
-  z.object({
-    Id: z.number(),
-    ProductId: z.number(),
-    IsActive: z.boolean(),
-    Name: z.string(),
-    RefId: z.string(),
-    PackagedHeight: z.number().nullish(),
-    PackagedLength: z.number().nullish(),
-    PackagedWidth: z.number().nullish(),
-    PackagedWeightKg: z.number().nullish(),
-    Height: z.number(),
-    Length: z.number(),
-    Width: z.number(),
-    WeightKg: z.number(),
-    CubicWeight: z.number(),
-    IsKit: z.boolean(),
-    CreationDate: z.string().nullish(),
-    MeasurementUnit: z.string(),
-    UnitMultiplier: z.number(),
-  }),
-);
+const outputSchema = z.object({
+  items: z.array(
+    z.object({
+      Id: z.number(),
+      ProductId: z.number(),
+      IsActive: z.boolean(),
+      Name: z.string(),
+      RefId: z.string(),
+      IsKit: z.boolean().optional(),
+      MeasurementUnit: z.string().optional(),
+      UnitMultiplier: z.number().optional(),
+    }),
+  ),
+});
 
 export const listSkusByProduct = (env: Env) =>
   createTool({
@@ -38,6 +30,6 @@ export const listSkusByProduct = (env: Env) =>
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const client = new VTEXClient(credentials);
       const result = await client.listSkusByProduct(context.productId);
-      return outputSchema.parse(result);
+      return outputSchema.parse({ items: result });
     },
   });
