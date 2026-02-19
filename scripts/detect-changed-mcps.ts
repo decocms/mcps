@@ -24,6 +24,7 @@ interface DeployConfig {
   entrypoint: string;
   platformName: string;
   watchFolders?: string[];
+  watch?: string[];
 }
 
 type DeployJson = Record<string, DeployConfig>;
@@ -55,9 +56,15 @@ async function getChangedFiles(): Promise<string[]> {
   }
 }
 
+// Normalize a watch pattern by stripping glob suffixes (e.g. "foo/**" -> "foo")
+function normalizeWatchPattern(pattern: string): string {
+  return pattern.replace(/\/\*+$/, "").replace(/\*+$/, "");
+}
+
 // Check if a changed file matches any watchFolder pattern
 function fileMatchesWatchFolder(file: string, watchFolders: string[]): boolean {
-  for (const folder of watchFolders) {
+  for (const rawFolder of watchFolders) {
+    const folder = normalizeWatchPattern(rawFolder);
     // If folder ends with /, check if file starts with it
     if (folder.endsWith("/")) {
       if (file.startsWith(folder)) {
@@ -136,19 +143,20 @@ async function getChangedMcps(): Promise<string[]> {
   const changedMcps = new Set<string>();
   const mcpsWithoutWatchFolders: string[] = [];
 
-  // 1. Check MCPs in deploy.json that have watchFolders
+  // 1. Check MCPs in deploy.json that have watchFolders or watch
   for (const [mcpName, config] of Object.entries(deployConfig)) {
-    if (!config.watchFolders || config.watchFolders.length === 0) {
+    const watchPatterns = config.watchFolders ?? config.watch;
+    if (!watchPatterns || watchPatterns.length === 0) {
       mcpsWithoutWatchFolders.push(mcpName);
       continue;
     }
 
     // Check if any changed file matches this MCP's watchFolders
     for (const file of changedFiles) {
-      if (fileMatchesWatchFolder(file, config.watchFolders)) {
+      if (fileMatchesWatchFolder(file, watchPatterns)) {
         changedMcps.add(mcpName);
         console.error(`\n✅ ${mcpName} triggered by: ${file}`);
-        console.error(`   watchFolders: [${config.watchFolders.join(", ")}]`);
+        console.error(`   watchFolders: [${watchPatterns.join(", ")}]`);
         break; // No need to check more files for this MCP
       }
     }
