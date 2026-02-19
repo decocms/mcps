@@ -11,6 +11,7 @@ import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 import { tools } from "./tools/index.ts";
 import { GOOGLE_SCOPES } from "./constants.ts";
 import type { Env } from "../shared/deco.gen.ts";
+import pkg from "../package.json" with { type: "json" };
 
 export type { Env };
 
@@ -25,4 +26,5 @@ const runtime = withRuntime<Env>({
   }),
 });
 
+console.log(`google-big-query v${pkg.version}`);
 serve(runtime.fetch);
