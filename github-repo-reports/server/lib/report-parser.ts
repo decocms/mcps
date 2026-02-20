@@ -84,7 +84,7 @@ export interface RankedListRow {
   label: string;
   image: string;
   values: (string | number)[];
-  note?: Record<string, string | number>;
+  note?: Record<string, string | number | null>;
 }
 
 export interface RankedListSection {

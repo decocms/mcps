@@ -41,7 +41,9 @@ const RankedListRowSchema = z.object({
   label: z.string(),
   image: z.string(),
   values: z.array(z.union([z.string(), z.number()])),
-  note: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+  note: z
+    .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+    .optional(),
 });
 
 const ReportSectionSchema = z.discriminatedUnion("type", [
