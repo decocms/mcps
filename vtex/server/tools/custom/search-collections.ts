@@ -1,6 +1,5 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEXClient } from "../../lib/client.ts";
 import type { Env } from "../../types/env.ts";
 
 const collectionListOutputSchema = z.object({
@@ -26,39 +25,37 @@ const collectionListOutputSchema = z.object({
   ),
 });
 
-export const listCollections = (env: Env) =>
-  createTool({
-    id: "VTEX_LIST_COLLECTIONS",
-    description:
-      "List all collections in the catalog. Collections are groups of SKUs that can be displayed together on product pages.",
-    inputSchema: z.object({
-      page: z.coerce.number().optional().describe("Page number (starts at 1)"),
-      pageSize: z.coerce
-        .number()
-        .optional()
-        .describe("Number of items per page"),
-    }),
-    outputSchema: collectionListOutputSchema,
-    execute: async ({ context }) => {
-      const credentials = env.MESH_REQUEST_CONTEXT.state;
-      const client = new VTEXClient(credentials);
-      const result = await client.listCollections(context);
-      return collectionListOutputSchema.parse(result);
-    },
-  });
-
 export const searchCollections = (env: Env) =>
   createTool({
     id: "VTEX_SEARCH_COLLECTIONS",
     description: "Search collections by name or other terms.",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({
       searchTerms: z.string().describe("Search terms to find collections"),
     }),
     outputSchema: collectionListOutputSchema,
     execute: async ({ context }) => {
       const credentials = env.MESH_REQUEST_CONTEXT.state;
-      const client = new VTEXClient(credentials);
-      const result = await client.searchCollections(context.searchTerms);
+      const { accountName, appKey, appToken } = credentials;
+
+      const url = `https://${accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/collection/search/${encodeURIComponent(context.searchTerms)}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(appKey && { "X-VTEX-API-AppKey": appKey }),
+          ...(appToken && { "X-VTEX-API-AppToken": appToken }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `VTEX API Error: ${response.status} - ${await response.text()}`,
+        );
+      }
+
+      const result: unknown = await response.json();
       return collectionListOutputSchema.parse(result);
     },
   });
