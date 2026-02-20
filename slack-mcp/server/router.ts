@@ -113,7 +113,6 @@ app.get("/temp-files/:id", async (c) => {
 app.post("/slack/events/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
   const traceId = HyperDXLogger.generateTraceId();
-  const startTime = Date.now();
   const rawBody = await c.req.text();
 
   // 1. Log webhook arrival
@@ -143,21 +142,8 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
-  // 2. Log event type identified
-  logger.debug("Event type identified", {
-    connectionId,
-    trace_id: traceId,
-    eventType: parsedPayload.type,
-    hasEvent: !!parsedPayload.event,
-    slackEventType: parsedPayload.event?.type,
-  });
-
   // Handle URL verification challenge (doesn't need connection config)
   if (parsedPayload.type === "url_verification") {
-    logger.debug("URL verification challenge", {
-      connectionId,
-      trace_id: traceId,
-    });
     return new Response(parsedPayload.challenge, {
       status: 200,
       headers: { "Content-Type": "text/plain" },
@@ -196,16 +182,6 @@ app.post("/slack/events/:connectionId", async (c) => {
     logger.setApiKey(connectionConfig.hyperDxApiKey);
   }
 
-  // 5. Log cache hit with names
-  logger.debug("Connection config found (cache hit)", {
-    connectionId,
-    connectionName: connectionConfig.connectionName,
-    trace_id: traceId,
-    teamId: connectionConfig.teamId,
-    teamName: connectionConfig.teamName,
-    organizationId: connectionConfig.organizationId,
-  });
-
   // Verify the request with connection's signing secret
   const { verified, payload } = await logger.measure(
     () =>
@@ -229,39 +205,12 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ error: "Invalid signature" }, 401);
   }
 
-  // 5. Log signature verified
-  logger.debug("Signature verified successfully", {
-    connectionId,
-    trace_id: traceId,
-    eventType: payload.event?.type,
-    channel: payload.event?.channel,
-    userId: payload.event?.user,
-    hasText: !!payload.event?.text,
-    textLength: payload.event?.text?.length || 0,
-    hasFiles: !!(payload.event as any)?.files?.length,
-  });
-
   // Check if we should ignore this event
   const botUserId =
     connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
   if (shouldIgnoreEvent(payload, botUserId)) {
-    logger.debug("Event ignored (bot message or duplicate)", {
-      connectionId,
-      trace_id: traceId,
-      eventType: payload.event?.type,
-    });
     return c.json({ ok: true });
   }
-
-  // 6. Log routing
-  logger.debug("Routing to event handler", {
-    connectionId,
-    teamName: connectionConfig.teamName,
-    trace_id: traceId,
-    eventType: payload.event?.type,
-    channel: payload.event?.channel,
-    userId: payload.event?.user,
-  });
 
   // Process the event asynchronously
   processConnectionEventAsync(payload, connectionConfig, traceId).catch(
@@ -273,17 +222,6 @@ app.post("/slack/events/:connectionId", async (c) => {
       });
     },
   );
-
-  const duration = Date.now() - startTime;
-
-  // 7. Log acknowledge
-  logger.debug("Webhook acknowledged", {
-    connectionId,
-    trace_id: traceId,
-    duration,
-    status: "success",
-  });
-
   // Acknowledge immediately (Slack expects response within 3 seconds)
   return c.json({ ok: true });
 });
@@ -402,29 +340,11 @@ async function processConnectionEventAsync(
 ): Promise<void> {
   if (!payload.event) return;
 
-  // Log processing start
-  logger.debug("Event processing started", {
-    connectionId: connectionConfig.connectionId,
-    trace_id: traceId,
-    eventType: payload.event.type,
-    channel: payload.event.channel,
-  });
-
   // IMPORTANT: Initialize Slack client with this connection's token
   // Each connection has its own Slack workspace credentials
   initializeSlackClient({ botToken: connectionConfig.botToken });
 
   // Configure LLM with this connection's settings
-  logger.debug("LLM configuration", {
-    connectionId: connectionConfig.connectionId,
-    trace_id: traceId,
-    organizationId: connectionConfig.organizationId,
-    meshUrl: connectionConfig.meshUrl,
-    hasToken: !!connectionConfig.meshToken,
-    modelProviderId: connectionConfig.modelProviderId,
-    agentId: connectionConfig.agentId,
-  });
-
   if (connectionConfig.meshToken && connectionConfig.modelProviderId) {
     configureLLM({
       meshUrl: connectionConfig.meshUrl,

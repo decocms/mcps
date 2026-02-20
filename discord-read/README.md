@@ -1,4 +1,4 @@
-# Discord MCP - Bot com Configuração Persistente
+# Discord MCP - Bot com Configuração Persistente   
    
 > **Status**: Production-ready | **Last Deploy**: 2026-02-03
 

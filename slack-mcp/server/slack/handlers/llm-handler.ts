@@ -108,15 +108,6 @@ export async function callLLMWithStreaming(
     return callLLMWithoutStreaming(messages, options);
   }
 
-  logger.debug("LLM request started (streaming)", {
-    channel: options.channel,
-    messageCount: messages.length,
-    hasConfig: !!globalLLMConfig,
-    organizationId: globalLLMConfig?.organizationId,
-    modelProviderId: globalLLMConfig?.modelProviderId,
-    hasToken: !!globalLLMConfig?.token,
-  });
-
   const response = await generateLLMResponseWithStreaming(
     messages,
     globalLLMConfig,
@@ -139,10 +130,6 @@ export async function callLLMWithStreaming(
     },
   );
 
-  logger.debug("LLM response sent successfully (streaming)", {
-    channel: options.channel,
-    responseLength: response.length,
-  });
   return response;
 }
 
@@ -159,11 +146,6 @@ export async function callLLMWithoutStreaming(
 
   const { channel, replyTo, useBlocks = true } = options;
 
-  logger.debug("LLM request started (non-streaming)", {
-    channel: options.channel,
-    messageCount: messages.length,
-  });
-
   const response = await generateLLMResponse(messages, globalLLMConfig);
   const formattedResponse = formatForSlack(response);
   const blocks =
@@ -177,10 +159,6 @@ export async function callLLMWithoutStreaming(
     await sendMessage({ channel, text: formattedResponse, blocks });
   }
 
-  logger.debug("LLM response sent successfully (non-streaming)", {
-    channel: options.channel,
-    responseLength: response.length,
-  });
   return response;
 }
 

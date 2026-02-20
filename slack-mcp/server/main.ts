@@ -322,18 +322,6 @@ const onChangeHandler = async (env: Env, config: any) => {
         logger.setApiKey(hyperDxKey);
         console.log("[HyperDX] Logger configured with API key");
       }
-
-      // Build webhook URL
-      const webhookUrl = `https://slack-mcp.deco.cx/slack/events/${connectionId}`;
-
-      // Log config received
-      logger.debug("Configuration received and saved", {
-        connectionId,
-        teamId: botInfo?.teamId ?? "unknown",
-        teamName: (teamInfo?.name as string) ?? "unknown",
-        botUserId: botInfo?.userId,
-        webhookUrl,
-      });
     } catch (error) {
       // Config is already saved, just log the error
       await logger.error("Failed to get Slack info", {

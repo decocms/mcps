@@ -508,20 +508,6 @@ async function handleAppMention(
   const { channel, user, text, ts, thread_ts, files } = event;
   console.log(`[EventHandler] App mention from ${user} in ${channel}`);
 
-  // Log app mention received
-  logger.debug("App mention received", {
-    connectionId: teamConfig.teamId,
-    teamId: teamConfig.teamId,
-    teamName: (teamConfig as any).teamName,
-    organizationId: teamConfig.organizationId,
-    eventType: "app_mention",
-    channel,
-    userId: user,
-    hasText: !!text,
-    textLength: text?.length || 0,
-    hasFiles: !!files?.length,
-  });
-
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
@@ -623,10 +609,6 @@ async function handleAppMention(
       channel,
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
-    });
-    logger.debug("App mention response sent", {
-      channel,
-      userId: user,
     });
   } catch (error) {
     logger.error("App mention LLM error", {
@@ -765,20 +747,6 @@ async function handleDirectMessage(
 ): Promise<void> {
   console.log(`[EventHandler] DM from ${user}`);
 
-  // Log direct message received
-  logger.debug("Direct message received", {
-    connectionId: teamConfig.teamId,
-    teamId: teamConfig.teamId,
-    teamName: (teamConfig as any).teamName,
-    organizationId: teamConfig.organizationId,
-    eventType: "message",
-    channel,
-    userId: user,
-    hasText: !!text,
-    textLength: text?.length || 0,
-    hasMedia: !!media?.length,
-  });
-
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
@@ -824,10 +792,6 @@ async function handleDirectMessage(
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
     });
-    logger.debug("Direct message response sent", {
-      channel,
-      userId: user,
-    });
   } catch (error) {
     logger.error("Direct message LLM error", {
       channel,
@@ -859,21 +823,6 @@ async function handleThreadReply(
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
   console.log(`[EventHandler] Thread reply from ${user}`);
-
-  // Log thread reply received
-  logger.debug("Thread reply received", {
-    connectionId: teamConfig.teamId,
-    teamId: teamConfig.teamId,
-    teamName: (teamConfig as any).teamName,
-    organizationId: teamConfig.organizationId,
-    eventType: "message",
-    channel,
-    userId: user,
-    hasText: !!text,
-    textLength: text?.length || 0,
-    hasMedia: !!media?.length,
-    threadTs,
-  });
 
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
@@ -922,11 +871,6 @@ async function handleThreadReply(
       channel,
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
-    });
-    logger.debug("Thread reply response sent", {
-      channel,
-      userId: user,
-      threadTs,
     });
   } catch (error) {
     logger.error("Thread reply LLM error", {
@@ -997,13 +941,6 @@ export async function handleLLMResponse(
   context: { channel: string; threadTs?: string; messageTs?: string },
 ): Promise<void> {
   const { channel, threadTs, messageTs } = context;
-
-  await logger.debug("LLM Response Received", {
-    channel,
-    threadTs,
-    messageTs,
-    responseLength: text.length,
-  });
 
   let responseTs: string | undefined;
 
@@ -1093,15 +1030,8 @@ export async function handleSlackWebhookEvent(
 
     const slackPayload = payload as SlackWebhookPayload;
 
-    logger.debug("Webhook payload parsed", {
-      type: slackPayload.type,
-      teamId: slackPayload.team_id,
-      hasEvent: !!slackPayload.event,
-    });
-
     // Handle URL verification
     if (slackPayload.type === "url_verification") {
-      logger.debug("URL verification challenge handled");
       return;
     }
 
@@ -1131,11 +1061,6 @@ async function handleEventCallback(
   slackPayload: SlackWebhookPayload,
   config: MeshConfig,
 ): Promise<void> {
-  logger.debug("Event callback received", {
-    hasEvent: !!slackPayload.event,
-    eventType: slackPayload.event?.type,
-  });
-
   if (!slackPayload.event) {
     throw new Error("Invalid event_callback - missing event");
   }
@@ -1154,13 +1079,6 @@ async function handleEventCallback(
     console.log("[EventHandler] Ignoring bot/ignored event");
     return;
   }
-
-  logger.debug("Event received", {
-    eventType,
-    user: event.user,
-    channel: event.channel,
-    text: event.text?.substring(0, 100),
-  });
 
   // Create team config from current context
   const teamConfig: SlackTeamConfig = {
@@ -1196,27 +1114,22 @@ async function routeEventToHandler(
 
   switch (eventType) {
     case "app_mention":
-      logger.debug(`Handling app_mention`);
       await handleAppMention(event as SlackAppMentionEvent, teamConfig);
       break;
 
     case "message":
-      logger.debug(`Handling message`);
       await handleMessage(event as SlackMessageEvent, teamConfig);
       break;
 
     case "reaction_added":
-      logger.debug(`Handling reaction_added`);
       await handleReactionAdded(event, teamConfig);
       break;
 
     case "channel_created":
-      logger.debug(`Handling channel_created`);
       await handleChannelCreated(event, teamConfig);
       break;
 
     case "member_joined_channel":
-      logger.debug(`Handling member_joined_channel`);
       await handleMemberJoined(event, teamConfig);
       break;
 
