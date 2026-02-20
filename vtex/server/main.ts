@@ -6,6 +6,9 @@
 import { withRuntime } from "@decocms/runtime";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
+import packageJson from "../package.json" with { type: "json" };
+
+console.log(`VTEX Commerce MCP v${packageJson.version}`);
 
 export type { Env };
 export { StateSchema };
