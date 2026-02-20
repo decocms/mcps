@@ -4,6 +4,16 @@ import type { VTEXCredentials } from "../types/env.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
+export function resolveCredentials(
+  state: Partial<VTEXCredentials>,
+): VTEXCredentials {
+  return {
+    accountName: state.accountName || process.env.VTEX_ACCOUNT_NAME || "",
+    appKey: state.appKey || process.env.VTEX_APP_KEY || "",
+    appToken: state.appToken || process.env.VTEX_APP_TOKEN || "",
+  };
+}
+
 export function createVtexClient(credentials: VTEXCredentials): Client {
   const client = createClient(
     createConfig({

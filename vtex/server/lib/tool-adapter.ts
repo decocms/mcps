@@ -4,7 +4,7 @@ import type { Client } from "@hey-api/client-fetch";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import { createVtexClient } from "./client-factory.ts";
+import { createVtexClient, resolveCredentials } from "./client-factory.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Schema introspection helpers
@@ -259,7 +259,7 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
       annotations: config.annotations,
       inputSchema: flatInput,
       execute: async ({ context }) => {
-        const creds = env.MESH_REQUEST_CONTEXT.state;
+        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
         const client = createVtexClient(creds);
         const structured = unflattenToStructured(
           context as Record<string, unknown>,
@@ -275,7 +275,9 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
               : JSON.stringify(result.error),
           );
         }
-        return result.data;
+        return Array.isArray(result.data)
+          ? { items: result.data }
+          : result.data;
       },
     });
 }
