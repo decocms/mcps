@@ -32,6 +32,8 @@ OPENAI_API_KEY=your_openai_api_key
 Clone or download the VTEX documentation, then run:
 
 ```bash
+
+
 bun run index ./path/to/vtex-docs
 ```
 
