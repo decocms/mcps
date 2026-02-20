@@ -98,7 +98,7 @@ describe("VTEX_LIST_BRANDS", () => {
       context: {},
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
   });
 
@@ -192,7 +192,7 @@ describe("VTEX_LIST_CATEGORIES", () => {
       context: { categoryLevels: "3" },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ path: { categoryLevels: "3" } }),
@@ -292,7 +292,7 @@ describe("VTEX_LIST_WAREHOUSES", () => {
       context: {},
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
   });
 
@@ -502,7 +502,7 @@ describe("VTEX_GET_FIXED_PRICES", () => {
       context: { itemId: 42 },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ path: { itemId: 42 } }),
@@ -549,7 +549,7 @@ describe("VTEX_LIST_PRICE_TABLES", () => {
       context: {},
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
   });
 
@@ -689,7 +689,7 @@ describe("VTEX_GET_PRODUCT_SPECIFICATIONS", () => {
       context: { productId: 100 },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ path: { productId: 100 } }),
@@ -881,7 +881,7 @@ describe("VTEX_LIST_SKUS_BY_PRODUCT", () => {
       context: { productId: 100 },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ path: { productId: 100 } }),
@@ -936,7 +936,7 @@ describe("VTEX_GET_SKU_FILES", () => {
       context: { skuId: 1001 },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ path: { skuId: 1001 } }),
@@ -984,7 +984,7 @@ describe("VTEX_LIST_ALL_SKUS", () => {
       context: { page: 1, pagesize: 100 },
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
     expect(sdkFn).toHaveBeenCalledWith(
       expect.objectContaining({ query: { page: 1, pagesize: 100 } }),
@@ -1184,7 +1184,7 @@ describe("VTEX_LIST_COLLECTIONS", () => {
       context: {},
     });
 
-    expect(result).toEqual(fixture);
+    expect(result).toEqual({ items: fixture });
     expect(sdkFn).toHaveBeenCalledTimes(1);
   });
 
