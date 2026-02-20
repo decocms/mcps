@@ -92,6 +92,13 @@ export class ReportsGitHubClient {
       recursive: "1",
     });
 
+    // Empty prefix means repo root — include all .md blobs
+    if (!prefix) {
+      return (treeResponse.data.tree as TreeEntry[]).filter(
+        (entry) => entry.type === "blob" && entry.path.endsWith(".md"),
+      );
+    }
+
     const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
 
     return (treeResponse.data.tree as TreeEntry[]).filter(

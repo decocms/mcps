@@ -59,7 +59,6 @@ export interface MetricsSection {
 export interface TableSection {
   type: "table";
   title?: string;
-  columns: string[];
   rows: (string | number | null)[][];
 }
 
@@ -85,13 +84,12 @@ export interface RankedListRow {
   label: string;
   image: string;
   values: (string | number)[];
-  note?: string;
+  note?: Record<string, string | number>;
 }
 
 export interface RankedListSection {
   type: "ranked-list";
   title?: string;
-  columns: string[];
   rows: RankedListRow[];
 }
 
@@ -373,13 +371,13 @@ function isValidSection(section: unknown): section is ReportSection {
     case "metrics":
       return Array.isArray(s.items);
     case "table":
-      return Array.isArray(s.columns) && Array.isArray(s.rows);
+      return Array.isArray(s.rows);
     case "criteria":
       return Array.isArray(s.items);
     case "note":
       return typeof s.content === "string";
     case "ranked-list":
-      return Array.isArray(s.columns) && Array.isArray(s.rows);
+      return Array.isArray(s.rows);
     default:
       return false;
   }

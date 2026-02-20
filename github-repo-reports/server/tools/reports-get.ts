@@ -41,7 +41,7 @@ const RankedListRowSchema = z.object({
   label: z.string(),
   image: z.string(),
   values: z.array(z.union([z.string(), z.number()])),
-  note: z.string().optional(),
+  note: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 });
 
 const ReportSectionSchema = z.discriminatedUnion("type", [
@@ -57,7 +57,6 @@ const ReportSectionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("table"),
     title: z.string().optional(),
-    columns: z.array(z.string()),
     rows: z.array(z.array(z.union([z.string(), z.number(), z.null()]))),
   }),
   z.object({
@@ -72,7 +71,6 @@ const ReportSectionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("ranked-list"),
     title: z.string().optional(),
-    columns: z.array(z.string()),
     rows: z.array(RankedListRowSchema),
   }),
 ]);
@@ -110,7 +108,9 @@ export const createReportsGetTool = (env: Env) =>
       };
 
       // Build the full file path from the report ID
-      const filePath = `${config.path}/${context.id}.md`;
+      const filePath = config.path
+        ? `${config.path}/${context.id}.md`
+        : `${context.id}.md`;
 
       // Fetch the file content and lifecycle statuses in parallel
       const [fileResult, lifecycleStatuses] = await Promise.all([

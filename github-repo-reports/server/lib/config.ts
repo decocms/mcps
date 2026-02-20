@@ -35,11 +35,17 @@ export function getRepoConfig(env: Env): RepoConfig {
     );
   }
 
+  // Strip leading/trailing slashes so "/" and "" both mean repo root
+  const rawPath = ((state?.PATH as string) || "reports").replace(
+    /^\/+|\/+$/g,
+    "",
+  );
+
   return {
     owner: parts[0],
     repo: parts[1],
     branch: (state?.BRANCH as string) || "reports",
-    path: (state?.PATH as string) || "reports",
+    path: rawPath,
   };
 }
 
@@ -50,7 +56,7 @@ export const STATUS_FILE_NAME = ".reports-status.json";
  * Build the full path to the lifecycle status file.
  */
 export function getStatusFilePath(reportsPath: string): string {
-  return `${reportsPath}/${STATUS_FILE_NAME}`;
+  return reportsPath ? `${reportsPath}/${STATUS_FILE_NAME}` : STATUS_FILE_NAME;
 }
 
 /**

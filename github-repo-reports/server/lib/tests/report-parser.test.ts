@@ -486,7 +486,6 @@ summary: Resource breakdown
 sections:
   - type: table
     title: Resources
-    columns: [Resource, Size, Time]
     rows:
       - [main.js, 150KB, 1.2s]
       - [styles.css, 30KB, 0.3s]
@@ -506,7 +505,6 @@ sections:
     expect(section.type).toBe("table");
     if (section.type === "table") {
       expect(section.title).toBe("Resources");
-      expect(section.columns).toEqual(["Resource", "Size", "Time"]);
       expect(section.rows).toHaveLength(2);
       expect(section.rows[0]).toEqual(["main.js", "150KB", "1.2s"]);
     }
@@ -527,7 +525,6 @@ sections:
         status: passing
   - type: table
     title: Issues
-    columns: [Issue, Severity]
     rows:
       - [Slow API, High]
 ---
@@ -565,7 +562,6 @@ sections:
     content: "Valid markdown"
   - type: metrics
   - type: table
-    columns: [A]
     rows: [[1]]
 ---
 `;
@@ -573,7 +569,7 @@ sections:
     const report = parseReport(raw, "reports/bad.md", "reports", emptyStatuses);
 
     // "unknown" type → invalid, "metrics" without items → invalid
-    // "markdown" with content → valid, "table" with columns+rows → valid
+    // "markdown" with content → valid, "table" with rows → valid
     expect(report.sections).toHaveLength(2);
     expect(report.sections[0].type).toBe("markdown");
     expect(report.sections[1].type).toBe("table");

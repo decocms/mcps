@@ -129,13 +129,12 @@ Each metric item:
 
 ### Table section
 
-Tabular data with column headers.
+Tabular data.
 
 ```yaml
 sections:
   - type: table
     title: "Dependency Vulnerabilities"
-    columns: [Package, Severity, Version, Fixed In]
     rows:
       - [lodash, High, 4.17.20, 4.17.21]
       - [express, Medium, 4.17.1, 4.18.0]
@@ -182,20 +181,23 @@ sections:
 
 ### Ranked list section
 
-An ordered list of items with position, delta movement, image, and a set of attribute values matching the defined columns. Useful for product rankings, leaderboards, etc.
+An ordered list of items with position, delta movement, image, and a set of attribute values. Useful for product rankings, leaderboards, etc.
 
 ```yaml
 sections:
   - type: ranked-list
     title: "Ordenação"
-    columns: [Produto, Sales, Grade]
     rows:
       - position: 1
         delta: 2
         label: "Blusa Tuie Estampada Paisagem Solar"
         image: "https://cdn.example.com/blusa-tuie.jpg"
         values: ["R$8.440", "100%"]
-        note: "We changed the algorithm to consider grade more heavily this run."
+        note:
+          sessions: 1689
+          add_to_cart_rate: "0.12%"
+          purchase_rate: "0.00%"
+          avg_event_distance: 5.5
       - position: 2
         delta: -1
         label: "Blusa Listex Peplum"
@@ -216,8 +218,8 @@ Each row:
 | `delta` | **Yes** | `number` | Change in position (positive = moved up, negative = moved down, 0 = unchanged). |
 | `label` | **Yes** | `string` | Item name or title. |
 | `image` | **Yes** | `string` | URL of the item image. |
-| `values` | **Yes** | `(string \| number)[]` | Values for each column defined in `columns`, in the same order. |
-| `note` | Optional | `string` | Inline annotation for this specific item. |
+| `values` | **Yes** | `(string \| number)[]` | Attribute values for the item. |
+| `note` | Optional | `Record<string, string \| number>` | Key-value metrics for this item (e.g. sessions, rates). |
 
 ---
 
@@ -305,7 +307,6 @@ sections:
         status: warning
   - type: table
     title: "Largest Resources"
-    columns: [Resource, Type, Size, Load Time]
     rows:
       - [hero-image.webp, Image, 450KB, 1.8s]
       - [main.js, Script, 320KB, 1.2s]
@@ -349,7 +350,6 @@ sections:
         status: info
   - type: table
     title: "High Severity Issues"
-    columns: [Package, CVE, Severity, Installed, Patched]
     rows:
       - [lodash, CVE-2024-1234, High, 4.17.20, 4.17.21]
       - [express, CVE-2024-5678, High, 4.17.1, 4.18.2]
