@@ -1,4 +1,4 @@
-# VTEX Docs MCP  
+# VTEX Docs MCP   
 
 RAG-based MCP for searching VTEX documentation using hybrid search (semantic + full-text).
 
