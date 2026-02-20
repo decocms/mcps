@@ -29,6 +29,7 @@ export const searchCollections = (env: Env) =>
   createTool({
     id: "VTEX_SEARCH_COLLECTIONS",
     description: "Search collections by name or other terms.",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({
       searchTerms: z.string().describe("Search terms to find collections"),
     }),

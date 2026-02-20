@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createTool } from "@decocms/runtime/tools";
 import type { Client } from "@hey-api/client-fetch";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { createVtexClient } from "./client-factory.ts";
@@ -236,6 +237,7 @@ async function withRetry(fn: () => Promise<SdkResult>): Promise<SdkResult> {
 export interface ToolFromOperationConfig {
   id: string;
   description: string;
+  annotations?: ToolAnnotations;
   requestSchema: z.ZodObject<any>;
   /** Generated SDK function. Accepts options including `client` override. */
   sdkFn: (
@@ -254,6 +256,7 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
     createTool({
       id: config.id,
       description: config.description,
+      annotations: config.annotations,
       inputSchema: flatInput,
       execute: async ({ context }) => {
         const creds = env.MESH_REQUEST_CONTEXT.state;

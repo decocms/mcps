@@ -1,14 +1,9 @@
 import { defineConfig } from "@hey-api/openapi-ts";
+import { readdirSync } from "fs";
 
-const APIS = [
-  "catalog",
-  "orders",
-  "logistics",
-  "pricing",
-  "search",
-  "checkout",
-  "promotions",
-] as const;
+const schemas = readdirSync("./schemas")
+  .filter((f) => f.endsWith(".json"))
+  .map((f) => f.replace(/\.json$/, ""));
 
 const sharedPlugins = [
   "@hey-api/typescript",
@@ -30,11 +25,9 @@ const sharedPlugins = [
 ] as const;
 
 export default defineConfig(
-  APIS.map((api) => ({
-    input: `./schemas/${api}.json`,
-    output: {
-      path: `./server/generated/${api}`,
-    },
+  schemas.map((name) => ({
+    input: `./schemas/${name}.json`,
+    output: { path: `./server/generated/${name}` },
     plugins: sharedPlugins,
   })),
 );
