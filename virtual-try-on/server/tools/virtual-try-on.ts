@@ -117,26 +117,11 @@ interface GeneratorResult {
   finishReason?: string;
 }
 
-interface VtexSkuImage {
-  imageId: string;
-  imageLabel: string | null;
-  imageTag: string;
-  imageUrl: string;
-  imageText: string | null;
-}
-
-interface VtexSkuItem {
-  itemId: string;
-  name: string;
-  images: VtexSkuImage[];
-}
-
-interface VtexSkuResponse {
-  productId: string;
-  productName: string;
-  brand: string;
-  link: string;
-  items: VtexSkuItem[];
+interface VtexSkuContextResponse {
+  Id: number;
+  ProductId: number;
+  NameComplete: string;
+  ImageUrl: string;
 }
 
 function buildTryOnPrompt(args: {
@@ -323,49 +308,39 @@ export const virtualTryOnTools = [
 
           console.log("[VIRTUAL_TRY_ON] ✅ VTEX binding found");
 
-          if (!vtexBinding.VTEX_GET_SKU_IMAGES_PUBLIC) {
-            console.error(
-              "[VIRTUAL_TRY_ON] ❌ VTEX_GET_SKU_IMAGES_PUBLIC tool not found!",
-            );
+          if (!vtexBinding.VTEX_GET_SKU) {
+            console.error("[VIRTUAL_TRY_ON] ❌ VTEX_GET_SKU tool not found!");
             throw new Error(
-              "The VTEX binding does not provide VTEX_GET_SKU_IMAGES_PUBLIC tool.",
+              "The VTEX binding does not provide VTEX_GET_SKU tool.",
             );
           }
 
-          console.log(
-            "[VIRTUAL_TRY_ON] ✅ VTEX_GET_SKU_IMAGES_PUBLIC tool available",
-          );
+          console.log("[VIRTUAL_TRY_ON] ✅ VTEX_GET_SKU tool available");
 
           // Fetch images for each SKU
           for (const skuId of context.skuIds) {
             console.log(`[VIRTUAL_TRY_ON] 📡 Fetching images for SKU ${skuId}`);
             try {
-              const skuData = (await vtexBinding.VTEX_GET_SKU_IMAGES_PUBLIC({
+              const skuData = (await vtexBinding.VTEX_GET_SKU({
                 skuId,
-              })) as VtexSkuResponse;
+              })) as VtexSkuContextResponse;
 
               console.log(
                 `[VIRTUAL_TRY_ON] ✅ SKU ${skuId} data received:`,
                 skuData,
               );
 
-              // Get the first item's first image URL
-              if (
-                skuData.items &&
-                skuData.items.length > 0 &&
-                skuData.items[0].images &&
-                skuData.items[0].images.length > 0
-              ) {
-                const imageUrl = skuData.items[0].images[0].imageUrl;
+              // skuContext returns ImageUrl directly — public CDN URL
+              if (skuData.ImageUrl) {
                 console.log(
                   `[VIRTUAL_TRY_ON] 🖼️  Extracted image URL for SKU ${skuId}:`,
-                  imageUrl,
+                  skuData.ImageUrl,
                 );
-                garmentUrls.push(imageUrl);
-                garmentTypes.push("unknown"); // VTEX doesn't provide garment type info
+                garmentUrls.push(skuData.ImageUrl);
+                garmentTypes.push("unknown");
               } else {
                 console.warn(
-                  `[VIRTUAL_TRY_ON] ⚠️  No images found for SKU ${skuId}`,
+                  `[VIRTUAL_TRY_ON] ⚠️  No ImageUrl found for SKU ${skuId}`,
                 );
               }
             } catch (error) {
