@@ -2,28 +2,34 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../types/env.ts";
 
-const collectionListOutputSchema = z.object({
-  paging: z.object({
-    page: z.number(),
-    perPage: z.number(),
-    total: z.number(),
-    pages: z.number(),
-  }),
-  items: z.array(
-    z.object({
-      id: z.number(),
-      name: z.string(),
-      searchable: z.boolean(),
-      highlight: z.boolean(),
-      dateFrom: z.string(),
-      dateTo: z.string(),
-      totalSku: z.number(),
-      totalProducts: z.number(),
-      type: z.enum(["Manual", "Automatic", "Hybrid"]),
-      lastModifiedBy: z.string().nullable(),
-    }),
-  ),
-});
+const collectionListOutputSchema = z
+  .object({
+    paging: z
+      .object({
+        page: z.number(),
+        perPage: z.number(),
+        total: z.number(),
+        pages: z.number(),
+      })
+      .passthrough(),
+    items: z.array(
+      z
+        .object({
+          id: z.number(),
+          name: z.string(),
+          searchable: z.boolean(),
+          highlight: z.boolean(),
+          dateFrom: z.string(),
+          dateTo: z.string(),
+          totalSku: z.number(),
+          totalProducts: z.number(),
+          type: z.enum(["Manual", "Automatic", "Hybrid"]),
+          lastModifiedBy: z.string().nullable(),
+        })
+        .passthrough(),
+    ),
+  })
+  .passthrough();
 
 export const searchCollections = (env: Env) =>
   createTool({
