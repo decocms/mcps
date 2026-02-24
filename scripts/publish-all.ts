@@ -268,7 +268,7 @@ function buildPayload(
       id,
       title,
       description: app.description ?? null,
-      is_public: !(app.unlisted ?? false),
+      is_public: !(app.unlisted ?? app.metadata?.mesh_unlisted ?? false),
       _meta: { "mcp.mesh": meshMeta },
       server: {
         name: app.name,
@@ -302,11 +302,24 @@ async function publishWithRetry(
   retries: number,
 ): Promise<{ folder: string; status: number; body: string }> {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(PUBLISH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let res: Response;
+    try {
+      res = await fetch(PUBLISH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (attempt === retries) {
+        return { folder, status: 0, body: `Network error: ${msg}` };
+      }
+      console.log(
+        `  ⚠️  ${folder}: network error (${msg}), retrying in 10s (${attempt + 1}/${retries})...`,
+      );
+      await sleep(10_000);
+      continue;
+    }
 
     const body = await res.text();
 

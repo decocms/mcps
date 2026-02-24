@@ -208,7 +208,7 @@ function buildPayload(
       id,
       title,
       description: app.description ?? null,
-      is_public: !(app.unlisted ?? false),
+      is_public: !(app.unlisted ?? app.metadata?.mesh_unlisted ?? false),
       _meta: { "mcp.mesh": meshMeta },
       server: {
         name: app.name,
