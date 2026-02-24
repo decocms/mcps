@@ -92,7 +92,7 @@ jobs:
       - name: Install Deco CLI
         run: bun install -g deco-cli
 
-      - name: Deploy ${{ matrix.mcp }}
+      - name: Deploy ${{ matrix.mcp }} (Deco CLI)
         run: bun run scripts/deploy.ts ${{ matrix.mcp }}
         env:
           DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}
@@ -107,6 +107,9 @@ jobs:
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+
+      - name: Publish ${{ matrix.mcp }} (Mesh Registry)
+        run: bun run scripts/publish-one.ts ${{ matrix.mcp }}
 
       - name: Notify success
         if: success()
