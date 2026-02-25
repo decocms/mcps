@@ -72,8 +72,13 @@ async function callModelsAPI(
     stream,
   });
 
-  // Extract provider from modelId (e.g. "anthropic/claude-sonnet-4.5" → "anthropic")
-  const provider = modelId.includes("/") ? modelId.split("/")[0] : "anthropic";
+  const PROVIDER_ALIASES: Record<string, string> = {
+    "x-ai": "xai",
+  };
+  const rawProvider = modelId.includes("/")
+    ? modelId.split("/")[0]
+    : "anthropic";
+  const provider = PROVIDER_ALIASES[rawProvider] ?? rawProvider;
 
   const body = {
     messages,

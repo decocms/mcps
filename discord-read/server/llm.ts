@@ -239,7 +239,13 @@ async function callDecopilotAPI(
     messageCount: messages.length,
   });
 
-  const provider = modelId.includes("/") ? modelId.split("/")[0] : "anthropic";
+  const PROVIDER_ALIASES: Record<string, string> = {
+    "x-ai": "xai",
+  };
+  const rawProvider = modelId.includes("/")
+    ? modelId.split("/")[0]
+    : "anthropic";
+  const provider = PROVIDER_ALIASES[rawProvider] ?? rawProvider;
 
   const body = {
     messages,
