@@ -94,6 +94,7 @@ async function callModelsAPI(
       mode: agentMode,
     },
     stream,
+    toolApprovalLevel: "yolo" as const,
   };
 
   // Log detalhado do body da requisição (para debug)

@@ -261,6 +261,7 @@ async function callDecopilotAPI(
       mode: agentMode,
     },
     stream: true,
+    toolApprovalLevel: "yolo" as const,
   };
 
   const controller = new AbortController();
