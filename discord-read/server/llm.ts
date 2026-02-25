@@ -239,11 +239,16 @@ async function callDecopilotAPI(
     messageCount: messages.length,
   });
 
+  const provider = modelId.includes("/") ? modelId.split("/")[0] : "anthropic";
+
   const body = {
     messages,
-    model: {
-      id: modelId,
+    models: {
       connectionId: modelProviderId,
+      thinking: {
+        id: modelId,
+        provider,
+      },
     },
     agent: {
       id: agentId || "",
