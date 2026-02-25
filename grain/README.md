@@ -1,4 +1,4 @@
-# Grain MCP
+# Grain MCP 
 
 Grain MCP is maintained by Deco and built on top of Grain public APIs. It gives AI agents structured access to meeting recordings, transcripts, and AI summaries, and keeps a searchable Supabase index updated by webhooks.
 
