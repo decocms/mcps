@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -25,6 +27,24 @@ jobs:
       - name: Run lint
         run: bun run lint
 
-      - name: Run type check
-        run: bun run check
+      - name: Detect changed MCPs
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
 
+          CHANGED=$(git diff --name-only "$BASE" HEAD | cut -d'/' -f1 | sort -u | tr '\n' ' ')
+          echo "mcps=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "Changed folders: $CHANGED"
+
+      - name: Run type check
+        run: |
+          MCPS="${{ steps.changed.outputs.mcps }}"
+          if [ -z "$MCPS" ]; then
+            echo "No changed MCPs detected, skipping type check"
+            exit 0
+          fi
+          bun run ./scripts/check.ts $MCPS
