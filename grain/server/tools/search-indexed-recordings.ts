@@ -66,14 +66,15 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
       void env;
       const { query, start_date, end_date, tag, owner, limit = 10 } = context;
 
-      if (!query && !start_date && !end_date && !tag && !owner) {
+      const trimmedQuery = query?.trim() || undefined;
+      if (!trimmedQuery && !start_date && !end_date && !tag && !owner) {
         throw new Error(
           "Provide at least one filter: query, start_date, end_date, tag, or owner.",
         );
       }
 
       const recordings = await searchIndexedRecordings({
-        query,
+        query: trimmedQuery,
         startDate: start_date,
         endDate: end_date,
         tag,

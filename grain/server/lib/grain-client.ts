@@ -131,6 +131,7 @@ export class GrainClient {
     if (params?.attendance) queryParams.attendance = params.attendance;
     if (params?.include_highlights) queryParams.include_highlights = "true";
     if (params?.include_participants) queryParams.include_participants = "true";
+    if (params?.include_calendar_id) queryParams.include_calendar_id = "true";
 
     return this.request<ListRecordingsResponse>(
       "GET",

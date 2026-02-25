@@ -38,8 +38,14 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         }
 
         const isDev = process.env.DEVELOPMENT_MODE === "true";
-        const baseUrl = isDev ? DEVELOPMENT_WEBHOOK_BASE_URL : meshUrl;
-        const webhookUrl = buildWebhookUrl(baseUrl, connectionId);
+        const devOverride = process.env.DEVELOPMENT_WEBHOOK_URL;
+        const webhookUrl =
+          isDev && devOverride
+            ? devOverride
+            : buildWebhookUrl(
+                isDev ? DEVELOPMENT_WEBHOOK_BASE_URL : meshUrl,
+                connectionId,
+              );
 
         console.log("[GRAIN_MCP] Setting up webhook", {
           webhookUrl,
