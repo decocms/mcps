@@ -255,6 +255,10 @@ async function main(): Promise<void> {
 
   if (res.status >= 200 && res.status < 300) {
     console.log(`✅ Published successfully (${res.status})`);
+  } else if (res.status === 409) {
+    console.log(
+      `✅ Already registered in mesh registry (${res.status}), skipping`,
+    );
   } else {
     console.error(`❌ Publish failed (${res.status}): ${body}`);
     process.exit(1);
