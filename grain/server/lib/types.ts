@@ -1,168 +1,164 @@
+import { z } from "zod";
+
+/**
+ * Grain Public API types
+ * @see https://grainhq.notion.site/Grain-Personal-API
+ */
+
+// -- Recordings (list) --
+
 export interface Recording {
   id: string;
   title: string;
-  owners: string[];
-  source: string;
   url: string;
-  tags: string[];
-  summary: string;
   start_datetime: string;
   end_datetime: string;
   public_thumbnail_url: string | null;
-  duration_ms: number;
-  hubspot_company_ids: string[];
-  hubspot_deal_ids: string[];
-  summary_points: SummaryPoint[];
-  public_url: string;
-  transcript_json_url: string;
-  transcript_srt_url: string;
-  transcript_txt_url: string;
-  transcript_vtt_url: string;
-  intelligence_notes_md: string;
-}
-
-export interface SummaryPoint {
-  timestamp: number;
-  text: string;
-}
-
-export interface Participant {
-  id: string;
-  name: string;
-  email?: string;
-  role?: string;
 }
 
 export interface ListRecordingsParams {
-  limit?: number;
-  offset?: number;
+  cursor?: string;
   start_date?: string;
   end_date?: string;
-  status?: string;
-  search?: string;
+  title?: string;
+  attendance?: "hosted" | "attended";
+  include_highlights?: boolean;
+  include_participants?: boolean;
+  include_calendar_id?: boolean;
 }
 
 export interface ListRecordingsResponse {
-  cursor?: string;
+  cursor: string | null;
   recordings: Recording[];
 }
 
-export interface RecordingDetails extends Recording {
-  transcript_segments?: TranscriptSegment[];
-  highlights?: Highlight[];
+// -- Recording details (single) --
+
+export interface RecordingParticipant {
+  email: string;
+  name: string;
+  scope: string;
 }
 
-export interface TranscriptSegment {
+export interface RecordingHighlight {
+  id: string;
+  recording_id: string;
+  text: string;
+  transcript: string;
+  timestamp: number;
+  duration: number;
+  created_datetime: string;
+  url: string;
+  thumbnail_url: string;
+}
+
+export interface RecordingDetails extends Recording {
+  participants?: RecordingParticipant[];
+  owners?: string[];
+  tags?: string[];
+  highlights?: RecordingHighlight[];
+  transcript_json?: TranscriptEntry[];
+  transcript_vtt?: string;
+  intelligence_notes_md?: string;
+  intelligence_notes_json?: IntelligenceNoteSection[];
+  intelligence_notes_text?: string;
+}
+
+export interface TranscriptEntry {
   speaker: string;
   text: string;
   start_time: number;
   end_time: number;
 }
 
-export interface Highlight {
+export interface IntelligenceNoteSection {
+  title: string;
+  body: string;
+}
+
+// -- Views --
+
+export interface GrainView {
   id: string;
-  text: string;
-  timestamp: number;
-  created_by?: string;
+  name: string;
 }
 
-/**
- * Webhook types
- * API v2: https://developers.grain.com/
- */
-export interface RecordingFilter {
-  before_datetime?: string;
-  after_datetime?: string;
-  attendance?: "hosted" | "attended";
-  participant_scope?: "internal" | "external";
-  title_search?: string;
-  team?: string;
-  meeting_type?: string;
+export interface ListViewsResponse {
+  views: GrainView[];
+  cursor?: string;
 }
 
-/**
- * Recording include options
- * Specifies what data to include in webhook payload
- */
-export interface RecordingInclude {
-  highlights?: boolean;
-  participants?: boolean;
-  ai_summary?: boolean;
-  private_notes?: boolean;
-  calendar_event?: boolean;
-  hubspot?: boolean;
-  ai_template_sections?: {
-    format?: "json" | "markdown" | "text";
-    allowed_sections?: string[];
-  };
-}
+// -- Hooks (REST Hooks) --
 
-export interface WebhookConfig {
+export type HookAction = "added" | "updated" | "removed";
+
+export interface CreateHookParams {
+  version: 2;
   hook_url: string;
-  filter?: RecordingFilter;
-  include?: RecordingInclude;
+  view_id: string;
+  actions?: HookAction[];
 }
 
-export interface Webhook {
+export interface Hook {
   id: string;
   hook_url: string;
-  enabled: boolean;
-  filter?: RecordingFilter;
-  include?: RecordingInclude;
+  view_id: string;
   inserted_at: string;
 }
 
-export interface CreateWebhookResponse {
+export interface CreateHookResponse extends Hook {}
+
+export interface ListHooksResponse {
+  hooks: Hook[];
+}
+
+// -- Webhook payloads (inbound from Grain) --
+
+export type WebhookEventType =
+  | "recording_added"
+  | "recording_updated"
+  | "recording_removed"
+  | "highlight_added"
+  | "highlight_updated"
+  | "highlight_removed"
+  | "story_added"
+  | "story_updated"
+  | "story_removed";
+
+export interface WebhookRecordingData {
   id: string;
-  hook_url: string;
-  enabled: boolean;
-  filter: RecordingFilter;
-  include: RecordingInclude;
-  inserted_at: string;
+  title?: string;
+  url?: string;
+  start_datetime?: string;
+  end_datetime?: string;
+  public_thumbnail_url?: string | null;
 }
 
-export interface ListWebhooksResponse {
-  hooks: Webhook[];
-}
-
-/**
- * Webhook payload sent by Grain when an event occurs
- * Based on the Hook Payload Example from Grain docs
- */
 export interface WebhookPayload {
-  type: "recording_added"; // Event type
-  user_id: string; // UUID of user
+  type: WebhookEventType;
+  user_id: string;
   data: WebhookRecordingData;
 }
 
-/**
- * Recording data included in webhook payload
- */
-export interface WebhookRecordingData {
-  id: string;
-  title: string;
-  source: string;
-  url: string;
-  media_type: string;
-  tags: string[];
-  start_datetime: string;
-  end_datetime: string;
-  duration_ms: number;
-  thumbnail_url?: string;
-  teams?: Array<{
-    id: string;
-    name: string;
-  }>;
-  meeting_type?: {
-    id: string;
-    name: string;
-    scope: string;
-  };
-  // Additional fields based on include options
-  highlights?: unknown[];
-  participants?: unknown[];
-  ai_summary?: string;
-  calendar_event?: unknown;
-  hubspot?: unknown;
-  ai_template_sections?: unknown;
-}
+export const WebhookPayloadSchema = z.object({
+  type: z.enum([
+    "recording_added",
+    "recording_updated",
+    "recording_removed",
+    "highlight_added",
+    "highlight_updated",
+    "highlight_removed",
+    "story_added",
+    "story_updated",
+    "story_removed",
+  ]),
+  user_id: z.string(),
+  data: z.object({
+    id: z.string(),
+    title: z.string().optional(),
+    url: z.string().optional(),
+    start_datetime: z.string().optional(),
+    end_datetime: z.string().optional(),
+    public_thumbnail_url: z.string().nullable().optional(),
+  }),
+});

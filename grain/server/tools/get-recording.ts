@@ -1,8 +1,3 @@
-/**
- * Tool: Get Recording
- * Get detailed information about a specific Grain recording
- */
-
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
@@ -13,112 +8,97 @@ export const createGetRecordingTool = (env: Env) =>
   createPrivateTool({
     id: "GET_RECORDING",
     description:
-      "Get detailed information about a specific Grain recording by its ID. " +
-      "Returns comprehensive details including title, date, duration, participants, " +
-      "full transcript with timestamps, AI-generated summary, highlights, and URLs. " +
-      "Perfect for deep diving into a specific meeting and extracting detailed information.",
+      "Get detailed information about a specific Grain recording. " +
+      "Choose what to include: participants, highlights, transcript (JSON), intelligence notes (markdown).",
     inputSchema: z.object({
-      recordingId: z
-        .string()
-        .describe(
-          "The unique identifier of the recording to retrieve (e.g., 'rec_abc123')",
-        ),
+      recordingId: z.string().describe("The recording UUID"),
+      include_highlights: z
+        .boolean()
+        .optional()
+        .describe("Include highlights (default false)"),
+      include_transcript: z
+        .boolean()
+        .optional()
+        .describe("Include transcript as JSON (default false)"),
+      include_notes: z
+        .boolean()
+        .optional()
+        .describe("Include AI intelligence notes as markdown (default false)"),
     }),
     outputSchema: z.object({
-      id: z.string().describe("Unique recording identifier"),
-      title: z.string().describe("Meeting title or subject"),
-      owners: z
-        .array(z.string())
-        .describe("Email addresses of recording owners"),
-      source: z.string().describe("Recording source (e.g., zoom, meet, teams)"),
-      url: z.string().describe("Public share URL"),
-      tags: z.array(z.string()).describe("Tags applied to the recording"),
-      summary: z.string().describe("AI-generated summary of the meeting"),
-      start_datetime: z
-        .string()
-        .describe("Recording start time (ISO 8601 format)"),
-      end_datetime: z.string().describe("Recording end time (ISO 8601 format)"),
-      duration_ms: z.number().describe("Duration in milliseconds"),
-      summary_points: z
+      id: z.string(),
+      title: z.string(),
+      url: z.string(),
+      start_datetime: z.string(),
+      end_datetime: z.string(),
+      public_thumbnail_url: z.string().nullable(),
+      owners: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      participants: z
         .array(
           z.object({
-            timestamp: z
-              .number()
-              .describe("Timestamp in milliseconds from start"),
-            text: z.string().describe("Summary point text"),
+            email: z.string(),
+            name: z.string(),
+            scope: z.string(),
           }),
         )
-        .describe("Key summary points with timestamps"),
-      public_url: z.string().describe("Public URL to view the recording"),
-      transcript_json_url: z
-        .string()
-        .describe("URL to download transcript in JSON format"),
-      transcript_srt_url: z
-        .string()
-        .describe("URL to download transcript in SRT format"),
-      transcript_txt_url: z
-        .string()
-        .describe("URL to download transcript in TXT format"),
-      transcript_vtt_url: z
-        .string()
-        .describe("URL to download transcript in VTT format"),
-      intelligence_notes_md: z
-        .string()
-        .describe("Markdown-formatted meeting notes with detailed analysis"),
-      transcript_segments: z
-        .array(
-          z.object({
-            speaker: z.string().describe("Speaker name or identifier"),
-            text: z.string().describe("Transcript text"),
-            start_time: z.number().describe("Start time in seconds"),
-            end_time: z.number().describe("End time in seconds"),
-          }),
-        )
-        .optional()
-        .describe("Timestamped transcript segments with speaker attribution"),
+        .optional(),
       highlights: z
         .array(
           z.object({
             id: z.string(),
             text: z.string(),
+            transcript: z.string(),
             timestamp: z.number(),
-            created_by: z.string().optional(),
+            duration: z.number(),
+            url: z.string(),
           }),
         )
-        .optional()
-        .describe("User-created highlights or bookmarks"),
+        .optional(),
+      transcript_json: z
+        .array(
+          z.object({
+            speaker: z.string(),
+            text: z.string(),
+            start_time: z.number(),
+            end_time: z.number(),
+          }),
+        )
+        .optional(),
+      intelligence_notes_md: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { recordingId } = context;
-
       try {
-        const client = new GrainClient({
-          apiKey: getGrainApiKey(env),
-        });
+        const client = new GrainClient({ apiKey: getGrainApiKey(env) });
 
-        // Fetch detailed recording information
-        const recording = await client.getRecording(recordingId);
+        const recording = await client.getRecording(context.recordingId, {
+          include_highlights: context.include_highlights,
+          include_participants: true,
+          include_owners: true,
+          transcript_format: context.include_transcript ? "json" : undefined,
+          intelligence_notes_format: context.include_notes ? "md" : undefined,
+        });
 
         return {
           id: recording.id,
           title: recording.title,
-          owners: recording.owners,
-          source: recording.source,
           url: recording.url,
-          tags: recording.tags,
-          summary: recording.summary,
           start_datetime: recording.start_datetime,
           end_datetime: recording.end_datetime,
-          duration_ms: recording.duration_ms,
-          summary_points: recording.summary_points,
-          public_url: recording.public_url,
-          transcript_json_url: recording.transcript_json_url,
-          transcript_srt_url: recording.transcript_srt_url,
-          transcript_txt_url: recording.transcript_txt_url,
-          transcript_vtt_url: recording.transcript_vtt_url,
+          public_thumbnail_url: recording.public_thumbnail_url,
+          owners: recording.owners,
+          tags: recording.tags,
+          participants: recording.participants,
+          highlights: recording.highlights?.map((h) => ({
+            id: h.id,
+            text: h.text,
+            transcript: h.transcript,
+            timestamp: h.timestamp,
+            duration: h.duration,
+            url: h.url,
+          })),
+          transcript_json: recording.transcript_json,
           intelligence_notes_md: recording.intelligence_notes_md,
-          transcript_segments: recording.transcript_segments,
-          highlights: recording.highlights,
         };
       } catch (error) {
         if (error instanceof GrainAPIError) {
