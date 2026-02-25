@@ -17,6 +17,7 @@ export const createSendMessageTool = (env: Env) =>
   createTool({
     id: "DISCORD_SEND_MESSAGE",
     description: "Send a message to a Discord channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z
@@ -105,6 +106,7 @@ export const createEditMessageTool = (env: Env) =>
   createTool({
     id: "DISCORD_EDIT_MESSAGE",
     description: "Edit a message in a Discord channel",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -161,6 +163,7 @@ export const createDeleteMessageTool = (env: Env) =>
     id: "DISCORD_DELETE_MESSAGE",
     description:
       "Delete one or more messages from a Discord channel. For multiple messages, they are deleted sequentially with automatic rate limit handling.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -278,6 +281,7 @@ export const createBulkDeleteMessagesTool = (env: Env) =>
       "Delete multiple messages at once using Discord's bulk delete endpoint. " +
       "IMPORTANT: Only works for messages less than 14 days old. " +
       "Can delete 2-100 messages per call. For older messages, use DISCORD_DELETE_MESSAGE with message_ids array.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -372,6 +376,7 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
     description:
       "Intelligently purge messages from a channel. Automatically uses bulk delete for recent messages (<14 days) " +
       "and individual delete for older messages. Can filter by user, bot messages, or content.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -667,6 +672,7 @@ export const createGetMessageTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_MESSAGE",
     description: "Get a specific message from a Discord channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -715,6 +721,7 @@ export const createGetChannelMessagesTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_CHANNEL_MESSAGES",
     description: "Get messages from a Discord channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -798,6 +805,7 @@ export const createPinMessageTool = (env: Env) =>
   createTool({
     id: "DISCORD_PIN_MESSAGE",
     description: "Pin a message in a Discord channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -830,6 +838,7 @@ export const createUnpinMessageTool = (env: Env) =>
   createTool({
     id: "DISCORD_UNPIN_MESSAGE",
     description: "Unpin a message in a Discord channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -862,6 +871,7 @@ export const createGetPinnedMessagesTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_PINNED_MESSAGES",
     description: "Get all pinned messages from a Discord channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -912,6 +922,7 @@ export const createAddReactionTool = (env: Env) =>
   createTool({
     id: "DISCORD_ADD_REACTION",
     description: "Add an emoji reaction to a Discord message",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -945,6 +956,7 @@ export const createRemoveReactionTool = (env: Env) =>
   createTool({
     id: "DISCORD_REMOVE_REACTION",
     description: "Remove bot's reaction from a message",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -974,6 +986,7 @@ export const createGetReactionsTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_REACTIONS",
     description: "Get users who reacted to a message with a specific emoji",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
