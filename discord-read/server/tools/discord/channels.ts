@@ -34,6 +34,7 @@ export const createListGuildChannelsTool = (env: Env) =>
   createTool({
     id: "DISCORD_LIST_CHANNELS",
     description: "List all channels from a Discord guild",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -99,6 +100,7 @@ export const createCreateChannelTool = (env: Env) =>
   createTool({
     id: "DISCORD_CREATE_CHANNEL",
     description: "Create a new channel in a Discord guild",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -182,6 +184,7 @@ export const createCreateThreadTool = (env: Env) =>
   createTool({
     id: "DISCORD_CREATE_THREAD",
     description: "Create a thread or forum post in a Discord channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z
@@ -273,6 +276,7 @@ export const createGetActiveThreadsTool = (env: Env) =>
     id: "DISCORD_GET_ACTIVE_THREADS",
     description:
       "Get all active threads in a Discord server (includes forum posts)",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -329,6 +333,7 @@ export const createGetArchivedThreadsTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_ARCHIVED_THREADS",
     description: "Get archived threads from a Discord channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -399,6 +404,7 @@ export const createJoinThreadTool = (env: Env) =>
   createTool({
     id: "DISCORD_JOIN_THREAD",
     description: "Join a thread with the bot",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         thread_id: z.string().describe("The thread ID to join"),
@@ -420,6 +426,7 @@ export const createLeaveThreadTool = (env: Env) =>
   createTool({
     id: "DISCORD_LEAVE_THREAD",
     description: "Leave a thread with the bot",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         thread_id: z.string().describe("The thread ID to leave"),

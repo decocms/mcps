@@ -17,6 +17,7 @@ export const createCreateWebhookTool = (env: Env) =>
   createTool({
     id: "DISCORD_CREATE_WEBHOOK",
     description: "Create a webhook in a Discord channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel_id: z.string().describe("The channel ID"),
@@ -79,6 +80,7 @@ export const createListWebhooksTool = (env: Env) =>
   createTool({
     id: "DISCORD_LIST_WEBHOOKS",
     description: "List webhooks from a Discord channel or guild",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel_id: z
@@ -156,6 +158,7 @@ export const createDeleteWebhookTool = (env: Env) =>
   createTool({
     id: "DISCORD_DELETE_WEBHOOK",
     description: "Delete a Discord webhook",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         webhook_id: z.string().describe("The webhook ID"),
@@ -195,6 +198,7 @@ export const createExecuteWebhookTool = () =>
   createTool({
     id: "DISCORD_EXECUTE_WEBHOOK",
     description: "Send a message through a Discord webhook",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         webhook_id: z.string().describe("The webhook ID"),

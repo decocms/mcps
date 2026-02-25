@@ -29,6 +29,7 @@ export const createSendMessageTool = (_env: Env) =>
     id: "SLACK_SEND_MESSAGE",
     description:
       "Send a message to a Slack channel. Can optionally reply in a thread.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z
@@ -97,6 +98,7 @@ export const createReplyInThreadTool = (_env: Env) =>
   createTool({
     id: "SLACK_REPLY_IN_THREAD",
     description: "Reply to a message in a thread",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the thread exists"),
@@ -154,6 +156,7 @@ export const createEditMessageTool = (_env: Env) =>
   createTool({
     id: "SLACK_EDIT_MESSAGE",
     description: "Edit an existing message",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
@@ -201,6 +204,7 @@ export const createDeleteMessageTool = (_env: Env) =>
   createTool({
     id: "SLACK_DELETE_MESSAGE",
     description: "Delete a message from a channel",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
@@ -242,6 +246,7 @@ export const createGetChannelHistoryTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_CHANNEL_HISTORY",
     description: "Get message history from a channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to get history from"),
@@ -317,6 +322,7 @@ export const createGetThreadRepliesTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_THREAD_REPLIES",
     description: "Get all replies in a thread",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the thread exists"),
@@ -381,6 +387,7 @@ export const createSearchMessagesTool = (_env: Env) =>
     id: "SLACK_SEARCH_MESSAGES",
     description:
       "Search for messages across the workspace. Requires search:read scope.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         query: z.string().describe("Search query"),
@@ -448,6 +455,7 @@ export const createScheduleMessageTool = (_env: Env) =>
     id: "SLACK_SCHEDULE_MESSAGE",
     description:
       "Schedule a message to be sent at a specific time in the future",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to send the message to"),
@@ -516,6 +524,7 @@ export const createDeleteScheduledMessageTool = (_env: Env) =>
   createTool({
     id: "SLACK_DELETE_SCHEDULED_MESSAGE",
     description: "Delete a scheduled message before it is sent",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z
@@ -564,6 +573,7 @@ export const createPinMessageTool = (_env: Env) =>
   createTool({
     id: "SLACK_PIN_MESSAGE",
     description: "Pin a message to a channel for easy reference",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
@@ -605,6 +615,7 @@ export const createUnpinMessageTool = (_env: Env) =>
   createTool({
     id: "SLACK_UNPIN_MESSAGE",
     description: "Unpin a message from a channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),

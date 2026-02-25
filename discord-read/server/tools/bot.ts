@@ -23,6 +23,7 @@ export const createStartBotTool = (env: Env) =>
     id: "DISCORD_BOT_START",
     description:
       "Start the Discord bot. The bot will connect to Discord Gateway using the saved configuration from Supabase.",
+    annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -103,6 +104,7 @@ export const createStopBotTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_BOT_STOP",
     description: "Stop the Discord bot and disconnect from Discord Gateway.",
+    annotations: { destructiveHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -137,6 +139,7 @@ export const createBotStatusTool = (env: Env) =>
     id: "DISCORD_BOT_STATUS",
     description:
       "Get the current status of the Discord bot (running, stopped, guilds, etc.)",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({

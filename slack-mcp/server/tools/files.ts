@@ -17,6 +17,7 @@ export const createUploadFileTool = (_env: Env) =>
     id: "SLACK_UPLOAD_FILE",
     description:
       "Upload a file or text content to a Slack channel. Can be used to share code snippets, documents, or any text content.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z

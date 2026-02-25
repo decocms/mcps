@@ -22,6 +22,7 @@ export const createGetUserInfoTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_USER_INFO",
     description: "Get detailed information about a Slack user",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         user_id: z.string().describe("User ID to get info for"),
@@ -93,6 +94,7 @@ export const createListUsersTool = (_env: Env) =>
   createTool({
     id: "SLACK_LIST_USERS",
     description: "List all users in the workspace",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         limit: z
@@ -152,6 +154,7 @@ export const createGetBotInfoTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_BOT_INFO",
     description: "Get information about the current bot",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -201,6 +204,7 @@ export const createAddReactionTool = (_env: Env) =>
   createTool({
     id: "SLACK_ADD_REACTION",
     description: "Add an emoji reaction to a message",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
@@ -252,6 +256,7 @@ export const createRemoveReactionTool = (_env: Env) =>
   createTool({
     id: "SLACK_REMOVE_REACTION",
     description: "Remove an emoji reaction from a message",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
