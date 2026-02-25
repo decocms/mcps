@@ -9,14 +9,11 @@
   "description": "Integrate with Grain to access and manage your meeting recordings, transcripts and AI summaries.",
   "icon": "https://assets.decocache.com/mcp/1bfc7176-e7be-487c-83e6-4b9e970a8e10/Grain.svg",
   "unlisted": false,
-  "bindings": {
-    "DATABASE": "@deco/postgres"
-  },
   "metadata": {
     "categories": ["Productivity", "Communication"],
     "official": false,
     "tags": ["grain", "meetings", "recordings", "transcripts", "ai-summaries", "video", "productivity", "collaboration"],
     "short_description": "Integrate with Grain to access and manage your meeting recordings, transcripts and AI summaries.",
-    "mesh_description": "The Grain MCP provides comprehensive integration with Grain's meeting intelligence platform, enabling full programmatic access to your recorded meetings. This MCP allows AI agents to list and search through meeting recordings with powerful filtering by date, status, and keywords, retrieve detailed recording information including full transcripts, AI-generated summaries, and timestamped highlights, access participant information and meeting metadata, and receive real-time webhook notifications when new recordings are created or processed. The integration supports automatic indexing of recordings in a PostgreSQL database for enhanced search capabilities. Perfect for building intelligent meeting assistants, automated meeting follow-up workflows, knowledge base search across all your meetings, and analytics dashboards. Ideal for teams who want to leverage their meeting data for better productivity and insights. Provides secure API key authentication for Grain access."
+    "mesh_description": "The Grain MCP is maintained by Deco and built on top of Grain public APIs. It lets AI agents list recordings, retrieve full meeting details, fetch only transcripts or summaries to reduce token usage, and search indexed recordings stored in Supabase. The MCP creates and manages Grain webhooks so new recording events are indexed automatically, enabling fast local search while still supporting direct API access for complete data."
   }
 }

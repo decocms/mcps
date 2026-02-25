@@ -22,7 +22,7 @@
       "@decocms/mcps-shared/*": ["../shared/*"]
     }
   },
-  "include": ["server/**/*", "shared/**/*"],
+  "include": ["server/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 
