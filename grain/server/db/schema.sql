@@ -47,3 +47,22 @@ CREATE INDEX idx_grain_rec_tags
 -- Filter by owner
 CREATE INDEX idx_grain_rec_owners
   ON grain_recordings USING gin (owners);
+
+-- Row Level Security
+ALTER TABLE grain_recordings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "grain_anon_select"
+  ON grain_recordings FOR SELECT
+  TO anon
+  USING (true);
+
+CREATE POLICY "grain_anon_insert"
+  ON grain_recordings FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "grain_anon_update"
+  ON grain_recordings FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);
