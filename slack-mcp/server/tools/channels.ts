@@ -23,6 +23,7 @@ export const createListChannelsTool = (_env: Env) =>
   createTool({
     id: "SLACK_LIST_CHANNELS",
     description: "List all channels the bot has access to in the workspace",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         exclude_archived: z
@@ -104,6 +105,7 @@ export const createGetChannelInfoTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_CHANNEL_INFO",
     description: "Get detailed information about a specific channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to get info for"),
@@ -175,6 +177,7 @@ export const createJoinChannelTool = (_env: Env) =>
   createTool({
     id: "SLACK_JOIN_CHANNEL",
     description: "Join a public channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to join"),
@@ -214,6 +217,7 @@ export const createGetChannelMembersTool = (_env: Env) =>
   createTool({
     id: "SLACK_GET_CHANNEL_MEMBERS",
     description: "Get the list of member user IDs in a channel",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to get members from"),
@@ -262,6 +266,7 @@ export const createOpenDMTool = (_env: Env) =>
     id: "SLACK_OPEN_DM",
     description:
       "Open a direct message conversation with a user. Returns the channel ID for the DM.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         user_id: z
@@ -311,6 +316,7 @@ export const createInviteToChannelTool = (_env: Env) =>
   createTool({
     id: "SLACK_INVITE_TO_CHANNEL",
     description: "Invite a user to a public channel",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         channel: z.string().describe("Channel ID to invite the user to"),
