@@ -27,7 +27,7 @@ console.log(
   `[Gateway] 🗄️  SUPABASE_URL:             ${process.env.SUPABASE_URL ? "✅ set" : "❌ NOT SET"}`,
 );
 console.log(
-  `[Gateway] 🗄️  SUPABASE_ANON_KEY:        ${process.env.SUPABASE_ANON_KEY ? "✅ set" : "❌ NOT SET"}`,
+  `[Gateway] 🗄️  SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ set" : "❌ NOT SET"}`,
 );
 console.log(
   `[Gateway] 🔒 ENCRYPTION_KEY:            ${process.env.ENCRYPTION_KEY ? "✅ set" : "❌ NOT SET"}`,

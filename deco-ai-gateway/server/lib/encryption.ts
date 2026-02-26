@@ -22,6 +22,11 @@ function getEncryptionKey(): Buffer {
       `ENCRYPTION_KEY must be 64 hex characters (got ${keyHex.length})`,
     );
   }
+  if (!/^[0-9a-fA-F]{64}$/.test(keyHex)) {
+    throw new Error(
+      "ENCRYPTION_KEY contains invalid characters — must be 64 hexadecimal digits (0-9, a-f). Generate with: openssl rand -hex 32",
+    );
+  }
   return Buffer.from(keyHex, "hex");
 }
 

@@ -23,11 +23,11 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     console.warn(
-      "[Supabase] Not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+      "[Supabase] Not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
     );
     return null;
   }
@@ -45,7 +45,7 @@ export function getSupabaseClient(): SupabaseClient | null {
 }
 
 export function isSupabaseConfigured(): boolean {
-  return !!process.env.SUPABASE_URL && !!process.env.SUPABASE_ANON_KEY;
+  return !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 }
 
 export async function saveConnectionConfig(

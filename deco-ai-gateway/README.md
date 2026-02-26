@@ -34,8 +34,9 @@ All standard OpenRouter LLM tools are exposed (chat, streaming, model listing, e
 OPENROUTER_MANAGEMENT_KEY=
 
 # Supabase (table: llm_gateway_connections)
+# Use the SERVICE ROLE key — the anon key has no access to this table (RLS)
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
 # AES-256 key to encrypt API keys in Supabase (32 bytes hex = 64 chars)
 # Generate with: openssl rand -hex 32
@@ -88,7 +89,7 @@ A provisioning lock prevents race conditions — only one key is ever created pe
 
 ```bash
 cp .env.example .env
-# Fill in OPENROUTER_MANAGEMENT_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, ENCRYPTION_KEY
+# Fill in OPENROUTER_MANAGEMENT_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ENCRYPTION_KEY
 
 bun install
 bun run dev

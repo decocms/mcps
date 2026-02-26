@@ -68,11 +68,6 @@ async function createOpenRouterKey(
   }
 
   const raw = await response.json();
-  console.log(
-    `[Gateway] 📦 OpenRouter raw response:`,
-    JSON.stringify(raw, null, 2),
-  );
-
   const result = raw as OpenRouterKeyResponse;
 
   // The key may be at top-level (result.key) or nested (result.data.key)

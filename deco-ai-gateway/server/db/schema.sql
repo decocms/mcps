@@ -41,7 +41,7 @@ END $$;
 -- 1. llm_gateway_connections (config and encrypted API keys)
 CREATE TABLE IF NOT EXISTS llm_gateway_connections (
   connection_id        TEXT PRIMARY KEY,
-  organization_id      TEXT NOT NULL,
+  organization_id      TEXT NOT NULL UNIQUE,
   mesh_url             TEXT NOT NULL,
   openrouter_key_name  TEXT,                          -- Key name in OpenRouter (e.g. decocms-mesh-org-acme-abc123)
   openrouter_key_hash  TEXT,                          -- Hash returned by OpenRouter (used to revoke without exposing the key)
@@ -82,12 +82,13 @@ COMMENT ON COLUMN llm_gateway_connections.openrouter_key_hash IS
 -- Contains encrypted API keys. Access via internal code only.
 -- Protection: enforced by discipline of not creating tools for this table.
 
--- RLS enabled with full access for internal code (ANON key)
--- No tools access this table (protected by convention)
+-- RLS enabled; only service_role (used by server) can access this table.
+-- The anon key (public) has zero access — the table is invisible via REST API.
 ALTER TABLE llm_gateway_connections ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow internal code full access to llm_gateway_connections"
+CREATE POLICY "Allow service_role full access to llm_gateway_connections"
   ON llm_gateway_connections FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
