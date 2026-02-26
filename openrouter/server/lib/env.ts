@@ -1,4 +1,4 @@
-import type { Env } from "server/main";
+import type { Env } from "../main.ts";
 
 export const getOpenRouterApiKey = (env: Env) => {
   const authorization =

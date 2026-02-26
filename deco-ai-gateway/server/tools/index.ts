@@ -1,7 +1,10 @@
 import { tools as openrouterTools } from "@decocms/openrouter/tools";
 import { ensureApiKey } from "../lib/provisioning.ts";
+import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
+
+type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
 
 /**
  * Returns the OpenRouter tools with the org-scoped API key injected.
@@ -24,10 +27,14 @@ export async function tools(env: Env) {
   const gatewayTools = usageTools.map((factory) => factory(env));
 
   if (!connectionId || !organizationId) {
-    console.warn(
-      "[Gateway] ⚠️  tools() called without connectionId or organizationId — falling back to default env",
-    );
-    return [...openrouterTools(env), ...gatewayTools];
+    logger.warn("tools() called without connectionId or organizationId", {
+      connectionId,
+      organizationId,
+    });
+    return [
+      ...openrouterTools(env as unknown as OpenRouterEnv),
+      ...gatewayTools,
+    ];
   }
 
   const orgKey = await ensureApiKey(
@@ -38,20 +45,23 @@ export async function tools(env: Env) {
   );
 
   if (!orgKey) {
-    console.error(
-      `[Gateway] ❌ No API key for org "${organizationId}" — LLM call will likely fail`,
-    );
-    return [...openrouterTools(env), ...gatewayTools];
+    logger.error("No API key available for org — LLM call will likely fail", {
+      connectionId,
+      organizationId,
+    });
+    return [
+      ...openrouterTools(env as unknown as OpenRouterEnv),
+      ...gatewayTools,
+    ];
   }
 
-  return [
-    ...openrouterTools({
-      ...env,
-      MESH_REQUEST_CONTEXT: {
-        ...env.MESH_REQUEST_CONTEXT,
-        authorization: orgKey,
-      },
-    }),
-    ...gatewayTools,
-  ];
+  const envWithKey = {
+    ...env,
+    MESH_REQUEST_CONTEXT: {
+      ...env.MESH_REQUEST_CONTEXT,
+      authorization: orgKey,
+    },
+  } as unknown as OpenRouterEnv;
+
+  return [...openrouterTools(envWithKey), ...gatewayTools];
 }

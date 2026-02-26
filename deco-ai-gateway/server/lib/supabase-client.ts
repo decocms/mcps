@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "./logger.ts";
 
 export interface LlmGatewayConnectionRow {
   connection_id: string;
@@ -26,9 +27,10 @@ export function getSupabaseClient(): SupabaseClient | null {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    console.warn(
-      "[Supabase] Not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
-    );
+    logger.warn("Supabase not configured", {
+      SUPABASE_URL: supabaseUrl ? "set" : "missing",
+      SUPABASE_SERVICE_ROLE_KEY: supabaseKey ? "set" : "missing",
+    });
     return null;
   }
 
@@ -36,10 +38,12 @@ export function getSupabaseClient(): SupabaseClient | null {
     supabaseClient = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    console.log("[Supabase] Client initialized");
+    logger.info("Supabase client initialized");
     return supabaseClient;
   } catch (error) {
-    console.error("[Supabase] Failed to initialize:", error);
+    logger.error("Failed to initialize Supabase client", {
+      error: String(error),
+    });
     return null;
   }
 }
@@ -64,7 +68,7 @@ export async function saveConnectionConfig(
     throw new Error(`Failed to save config: ${error.message}`);
   }
 
-  console.log(`[Supabase] Saved config: ${row.connection_id}`);
+  logger.info("Connection config saved", { connectionId: row.connection_id });
 }
 
 export async function loadConnectionConfig(
@@ -108,5 +112,5 @@ export async function deleteConnectionConfig(
     throw new Error(`Failed to delete config: ${error.message}`);
   }
 
-  console.log(`[Supabase] Deleted config: ${connectionId}`);
+  logger.info("Connection config deleted", { connectionId });
 }

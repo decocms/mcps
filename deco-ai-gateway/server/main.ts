@@ -13,26 +13,22 @@
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { ensureApiKey } from "./lib/provisioning.ts";
+import { logger } from "./lib/logger.ts";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env, type Registry } from "./types/env.ts";
 
 export { StateSchema };
 
-// ── Startup diagnostics ──────────────────────────────────────────────────────
-console.log("[Gateway] 🚀 Starting Deco AI Gateway...");
-console.log(
-  `[Gateway] 🔑 OPENROUTER_MANAGEMENT_KEY: ${process.env.OPENROUTER_MANAGEMENT_KEY ? "✅ set" : "❌ NOT SET"}`,
-);
-console.log(
-  `[Gateway] 🗄️  SUPABASE_URL:             ${process.env.SUPABASE_URL ? "✅ set" : "❌ NOT SET"}`,
-);
-console.log(
-  `[Gateway] 🗄️  SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ set" : "❌ NOT SET"}`,
-);
-console.log(
-  `[Gateway] 🔒 ENCRYPTION_KEY:            ${process.env.ENCRYPTION_KEY ? "✅ set" : "❌ NOT SET"}`,
-);
-// ────────────────────────────────────────────────────────────────────────────
+logger.info("Starting Deco AI Gateway", {
+  OPENROUTER_MANAGEMENT_KEY: process.env.OPENROUTER_MANAGEMENT_KEY
+    ? "set"
+    : "missing",
+  SUPABASE_URL: process.env.SUPABASE_URL ? "set" : "missing",
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? "set"
+    : "missing",
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY ? "set" : "missing",
+});
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   tools,
@@ -46,19 +42,19 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const organizationName =
         env.MESH_REQUEST_CONTEXT?.state?.ORGANIZATION_NAME;
 
-      console.log(
-        `[Gateway] 🔔 onChange triggered — connectionId=${connectionId ?? "MISSING"}, orgId=${organizationId ?? "MISSING"}, orgName=${organizationName ?? "not set"}`,
-      );
+      logger.info("onChange triggered", {
+        connectionId,
+        organizationId,
+        organizationName,
+      });
 
       if (!connectionId || !organizationId) {
-        console.warn(
-          "[Gateway] ⚠️  Cannot warm-up cache: connectionId or organizationId missing",
+        logger.warn(
+          "Cannot warm-up cache: connectionId or organizationId missing",
         );
         return;
       }
 
-      // Warm-up: pre-load the key into memory cache so the first tool call
-      // doesn't need to hit Supabase or OpenRouter.
       await ensureApiKey(
         connectionId,
         organizationId,

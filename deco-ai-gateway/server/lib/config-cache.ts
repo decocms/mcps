@@ -5,6 +5,7 @@ import {
   isSupabaseConfigured,
   type LlmGatewayConnectionRow,
 } from "./supabase-client.ts";
+import { logger } from "./logger.ts";
 
 export interface GatewayConfig {
   connectionId: string;
@@ -57,10 +58,10 @@ export async function loadApiKey(connectionId: string): Promise<string | null> {
     apiKeyCache.set(connectionId, apiKey);
     return apiKey;
   } catch (error) {
-    console.error(
-      `[ConfigCache] Failed to load API key for ${connectionId}:`,
-      error,
-    );
+    logger.error("Failed to load API key from Supabase", {
+      connectionId,
+      error: String(error),
+    });
     return null;
   }
 }
@@ -96,7 +97,8 @@ export async function saveApiKey(params: {
   await saveConnectionConfig(row);
   apiKeyCache.set(params.connectionId, params.apiKey);
 
-  console.log(
-    `[ConfigCache] API key saved and cached for ${params.connectionId}`,
-  );
+  logger.info("API key saved and cached", {
+    connectionId: params.connectionId,
+    organizationId: params.organizationId,
+  });
 }

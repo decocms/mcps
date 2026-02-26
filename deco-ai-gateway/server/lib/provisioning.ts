@@ -1,5 +1,6 @@
 import { getCachedApiKey, loadApiKey, saveApiKey } from "./config-cache.ts";
 import { isSupabaseConfigured } from "./supabase-client.ts";
+import { logger } from "./logger.ts";
 
 /**
  * In-flight provisioning promises per connectionId.
@@ -44,9 +45,7 @@ async function createOpenRouterKey(
 
   const keyName = `decocms-mesh-org-${slug}`;
 
-  console.log(
-    `[Gateway] 📡 POST ${OPENROUTER_KEYS_URL} — creating key "${keyName}"`,
-  );
+  logger.info("Creating OpenRouter key", { keyName, organizationId });
 
   const response = await fetch(OPENROUTER_KEYS_URL, {
     method: "POST",
@@ -59,9 +58,11 @@ async function createOpenRouterKey(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(
-      `[Gateway] ❌ OpenRouter responded ${response.status}: ${errorText}`,
-    );
+    logger.error("OpenRouter key creation failed", {
+      status: response.status,
+      error: errorText,
+      organizationId,
+    });
     throw new Error(
       `OpenRouter key creation failed (${response.status}): ${errorText}`,
     );
@@ -70,9 +71,7 @@ async function createOpenRouterKey(
   const raw = await response.json();
   const result = raw as OpenRouterKeyResponse;
 
-  // The key may be at top-level (result.key) or nested (result.data.key)
   const key = (raw as Record<string, string>).key ?? result.data?.key;
-
   const hash = result.data?.hash ?? (raw as Record<string, string>).hash;
   const name = result.data?.name ?? (raw as Record<string, string>).name;
 
@@ -82,9 +81,7 @@ async function createOpenRouterKey(
     );
   }
 
-  console.log(
-    `[Gateway] ✅ OpenRouter key created — name="${name}", hash="${hash}"`,
-  );
+  logger.info("OpenRouter key created", { keyName: name, keyHash: hash });
 
   return { key, hash, name };
 }
@@ -103,53 +100,59 @@ export async function ensureApiKey(
   meshUrl: string,
   organizationName?: string,
 ): Promise<string | null> {
-  console.log(
-    `[Gateway] 🔍 ensureApiKey — connectionId=${connectionId}, orgId=${organizationId}`,
-  );
+  logger.debug("ensureApiKey called", { connectionId, organizationId });
 
   const cached = getCachedApiKey(connectionId);
   if (cached) {
-    console.log(`[Gateway] ⚡ API key found in memory cache`);
+    logger.debug("API key resolved from memory cache", {
+      connectionId,
+      source: "cache",
+    });
     return cached;
   }
 
-  console.log(`[Gateway] 🗄️  Cache miss — checking Supabase...`);
+  logger.debug("Cache miss, checking Supabase", {
+    connectionId,
+    source: "supabase",
+  });
+
   const fromDb = await loadApiKey(connectionId);
   if (fromDb) {
-    console.log(`[Gateway] ✅ API key loaded and decrypted from Supabase`);
+    logger.info("API key loaded from Supabase", {
+      connectionId,
+      source: "supabase",
+    });
     return fromDb;
   }
 
-  console.log(`[Gateway] 🗄️  Supabase miss — key not provisioned yet`);
-
   if (!isSupabaseConfigured()) {
-    console.error(
-      "[Gateway] ❌ Supabase not configured (SUPABASE_URL / SUPABASE_ANON_KEY missing)",
-    );
+    logger.error("Supabase not configured — cannot provision key", {
+      connectionId,
+    });
     return null;
   }
 
-  // Lock: if a provisioning is already in-flight for this connection,
-  // wait for it instead of creating a duplicate OpenRouter key.
   const existingLock = provisioningLocks.get(connectionId);
   if (existingLock) {
-    console.log(
-      `[Gateway] ⏳ Provisioning already in-flight for ${connectionId} — waiting...`,
-    );
+    logger.debug("Provisioning already in-flight, waiting", { connectionId });
     return existingLock;
   }
 
   const provisioningPromise = (async (): Promise<string | null> => {
     try {
-      console.log(
-        `[Gateway] 🔑 Provisioning new OpenRouter API key for org "${organizationId}"...`,
-      );
+      logger.info("Provisioning new OpenRouter API key", {
+        connectionId,
+        organizationId,
+        organizationName,
+        source: "openrouter",
+      });
+
       const { key, hash, name } = await createOpenRouterKey(
         organizationId,
         organizationName,
       );
 
-      console.log(`[Gateway] 💾 Saving encrypted key to Supabase...`);
+      logger.debug("Saving encrypted key to Supabase", { connectionId });
       await saveApiKey({
         connectionId,
         organizationId,
@@ -159,15 +162,20 @@ export async function ensureApiKey(
         openrouterKeyHash: hash,
       });
 
-      console.log(
-        `[Gateway] 🎉 Key provisioned and persisted — name="${name}", hash="${hash}"`,
-      );
+      logger.info("Key provisioned and persisted", {
+        connectionId,
+        organizationId,
+        keyName: name,
+        keyHash: hash,
+      });
+
       return key;
     } catch (error) {
-      console.error(
-        "[Gateway] ❌ Failed to provision OpenRouter API key:",
-        error,
-      );
+      logger.error("Failed to provision OpenRouter API key", {
+        connectionId,
+        organizationId,
+        error: String(error),
+      });
       return null;
     } finally {
       provisioningLocks.delete(connectionId);
