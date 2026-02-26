@@ -3,6 +3,7 @@ import { ensureApiKey } from "../lib/provisioning.ts";
 import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
+import { setLimitTools } from "./set-limit.ts";
 
 type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
 
@@ -24,7 +25,10 @@ export async function tools(env: Env) {
   const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
   const organizationName = env.MESH_REQUEST_CONTEXT?.state?.ORGANIZATION_NAME;
 
-  const gatewayTools = usageTools.map((factory) => factory(env));
+  const gatewayTools = [
+    ...usageTools.map((factory) => factory(env)),
+    ...setLimitTools.map((factory) => factory(env)),
+  ];
 
   if (!connectionId || !organizationId) {
     logger.warn("tools() called without connectionId or organizationId", {
