@@ -1,0 +1,28 @@
+{
+  "scopeName": "deco",
+  "name": "customer-insights",
+  "friendlyName": "Customer Insights",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-customer-insights.decocache.com/mcp"
+  },
+  "description": "MCP server for customer financial analysis: billing history, usage metrics, churn risk scoring, and executive summaries powered by DuckDB over CSV data.",
+  "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": [
+      "Productivity",
+      "Analytics"
+    ],
+    "official": false,
+    "tags": [
+      "customer-insights",
+      "billing",
+      "analytics",
+      "duckdb",
+      "mcp"
+    ],
+    "short_description": "Customer financial analysis: billing, usage, and risk scoring via MCP.",
+    "mesh_description": "**Customer Insights MCP** provides 10 tools for customer financial analysis. **Core Tools**: Upload billing/usage CSVs, query invoice history with DSO and overage metrics, analyze usage trends with anomaly detection. **Advanced Tools**: Churn risk scoring (0-10 weighted score), executive summary generation with optional LLM enrichment, unified customer timeline merging billing + usage + Gmail events. **Data Layer**: DuckDB in-memory SQL over CSV files with automatic view reloading. **Integrations**: Gmail API via Google OAuth for email history, multi-provider LLM support (OpenAI, Gemini, Anthropic, DeepSeek, Groq). **Authentication**: Google OAuth for Gmail features, API key for LLM enrichment. Ideal for customer success teams needing financial health monitoring and proactive churn prevention."
+  }
+}
