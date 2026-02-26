@@ -8,5 +8,13 @@
   },
   "description": "Deco LLM App Connection for LLM uses.",
   "icon": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
-  "unlisted": false
+  "unlisted": true,
+  "metadata": {
+    "mesh_unlisted": true,
+    "categories": ["AI"],
+    "official": false,
+    "tags": ["llm", "ai", "language-models", "chat", "completion"],
+    "short_description": "Deco LLM App Connection for LLM uses.",
+    "mesh_description": "The Deco LLM MCP provides a unified gateway to access multiple large language models (LLMs) through a single integration point. Deco LLM aggregates various AI model providers including OpenAI, Anthropic, Google, Meta, and many others, offering a standardized API interface for chat completions and text generation. This MCP enables AI agents to dynamically select and utilize different LLMs based on specific requirements such as cost, speed, capability, or context window size. It supports model routing, fallback strategies, cost tracking, and usage analytics. The integration is perfect for applications that need flexibility in model selection, want to optimize costs by using the most appropriate model for each task, or require high availability through automatic failover between providers. Ideal for developers building AI-powered applications, chatbots, content generation systems, or multi-model comparison tools."
+  }
 }
