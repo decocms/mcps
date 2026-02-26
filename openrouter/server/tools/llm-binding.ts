@@ -579,7 +579,6 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const requestId = crypto.randomUUID();
       let state = "init";
@@ -595,12 +594,17 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
 
       console.log(`[LLM_DO_STREAM] START ${requestId} model=${modelId}`);
 
-      const apiKey = getOpenRouterApiKey(env);
-      // Create OpenRouter provider
-      const openrouter = createOpenRouter({ apiKey });
-      const model = openrouter.languageModel(modelId);
-
       try {
+        state = "auth";
+        env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
+
+        state = "getKey";
+        const apiKey = getOpenRouterApiKey(env);
+
+        // Create OpenRouter provider
+        const openrouter = createOpenRouter({ apiKey });
+        const model = openrouter.languageModel(modelId);
+
         state = "preauth";
         const hook = await usageHooks?.start?.(
           await OpenRouterClient.for(apiKey).getModel(modelId),
@@ -769,27 +773,38 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const apiKey = getOpenRouterApiKey(env);
+      const requestId = crypto.randomUUID();
+      console.log(`[LLM_DO_GENERATE] START ${requestId} model=${modelId}`);
 
-      // Create OpenRouter provider
-      const openrouter = createOpenRouter({ apiKey });
-      const model = openrouter.languageModel(modelId);
+      try {
+        env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const hook = await usageHooks?.start?.(
-        await OpenRouterClient.for(apiKey).getModel(modelId),
-        context,
-      );
-      // Use doGenerate directly (consistent with doStream pattern)
-      const result = await model.doGenerate(
-        callOptions as Parameters<(typeof model)["doGenerate"]>[0],
-      );
-      await hook?.end?.(result);
+        const apiKey = getOpenRouterApiKey(env);
 
-      // Transform the result to match the binding schema
-      return transformGenerateResult(result) as z.infer<
-        typeof GENERATE_BINDING.outputSchema
-      >;
+        // Create OpenRouter provider
+        const openrouter = createOpenRouter({ apiKey });
+        const model = openrouter.languageModel(modelId);
+
+        const hook = await usageHooks?.start?.(
+          await OpenRouterClient.for(apiKey).getModel(modelId),
+          context,
+        );
+        // Use doGenerate directly (consistent with doStream pattern)
+        const result = await model.doGenerate(
+          callOptions as Parameters<(typeof model)["doGenerate"]>[0],
+        );
+        await hook?.end?.(result);
+
+        console.log(`[LLM_DO_GENERATE] END ${requestId}`);
+
+        // Transform the result to match the binding schema
+        return transformGenerateResult(result) as z.infer<
+          typeof GENERATE_BINDING.outputSchema
+        >;
+      } catch (error) {
+        console.error(`[LLM_DO_GENERATE] ERROR ${requestId}`, error);
+        throw error;
+      }
     },
   });
