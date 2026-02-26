@@ -18,12 +18,29 @@ type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
  * getOpenRouterApiKey() in the openrouter package reads from
  * env.MESH_REQUEST_CONTEXT.authorization, so we override that field
  * with the org-scoped key.
+ *
+ * IMPORTANT: We use a Proxy instead of object spread to preserve prototype
+ * methods on MESH_REQUEST_CONTEXT (e.g. ensureAuthenticated). Spreading a
+ * class instance into a plain object silently loses prototype methods, which
+ * causes ensureAuthenticated() to throw TypeError inside the LLM stream tool
+ * — manifesting as a timeout on the client side.
  */
 export async function tools(env: Env) {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
-  const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
-  const organizationName = env.MESH_REQUEST_CONTEXT?.state?.ORGANIZATION_NAME;
+  const meshCtx = env.MESH_REQUEST_CONTEXT;
+  const connectionId = meshCtx?.connectionId;
+  const organizationId = meshCtx?.organizationId;
+  const meshUrl = meshCtx?.meshUrl;
+  const organizationName = meshCtx?.state?.ORGANIZATION_NAME;
+
+  logger.debug("tools() called", {
+    connectionId,
+    organizationId,
+    meshUrl,
+    hasMeshContext: !!meshCtx,
+    hasEnsureAuthenticated:
+      typeof (meshCtx as unknown as Record<string, unknown>)
+        ?.ensureAuthenticated === "function",
+  });
 
   const gatewayTools = [
     ...usageTools.map((factory) => factory(env)),
@@ -49,7 +66,7 @@ export async function tools(env: Env) {
   );
 
   if (!orgKey) {
-    logger.error("No API key available for org — LLM call will likely fail", {
+    logger.error("No API key available for org — LLM call will fail", {
       connectionId,
       organizationId,
     });
@@ -59,12 +76,30 @@ export async function tools(env: Env) {
     ];
   }
 
+  logger.debug("Injecting org key into MESH_REQUEST_CONTEXT via Proxy", {
+    connectionId,
+    organizationId,
+    keyPrefix: orgKey.slice(0, 12) + "...",
+  });
+
+  // Use a Proxy to intercept `authorization` while preserving ALL other
+  // properties and prototype methods on the original MESH_REQUEST_CONTEXT
+  // object. This is critical: spreading a class instance into a plain object
+  // strips prototype methods (like ensureAuthenticated), which causes LLM
+  // stream/generate tools to throw TypeError inside their execute handlers.
+  const meshContextWithKey = new Proxy(meshCtx as object, {
+    get(target, prop) {
+      if (prop === "authorization") return orgKey;
+      const value = (target as Record<string | symbol, unknown>)[prop];
+      return typeof value === "function"
+        ? (value as (...args: unknown[]) => unknown).bind(target)
+        : value;
+    },
+  });
+
   const envWithKey = {
     ...env,
-    MESH_REQUEST_CONTEXT: {
-      ...env.MESH_REQUEST_CONTEXT,
-      authorization: orgKey,
-    },
+    MESH_REQUEST_CONTEXT: meshContextWithKey,
   } as unknown as OpenRouterEnv;
 
   return [...openrouterTools(envWithKey), ...gatewayTools];

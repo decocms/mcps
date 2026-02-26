@@ -25,6 +25,26 @@ const encryptionKeySource = process.env.DECO_CRYPTO_KEY
     ? "ENCRYPTION_KEY"
     : "missing";
 
+// Always write startup info to stderr so it's captured even if stdout is not
+process.stderr.write(
+  JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "info",
+    service: "deco-ai-gateway",
+    body: "Server starting",
+    OPENROUTER_MANAGEMENT_KEY: process.env.OPENROUTER_MANAGEMENT_KEY
+      ? "set"
+      : "missing",
+    SUPABASE_URL: process.env.SUPABASE_URL ? "set" : "missing",
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? "set"
+      : "missing",
+    encryptionKey: encryptionKeySource,
+    HYPERDX_API_KEY: process.env.HYPERDX_API_KEY ? "set" : "missing",
+    LOG_LEVEL: process.env.LOG_LEVEL ?? "info (default)",
+  }) + "\n",
+);
+
 logger.info("Starting Deco AI Gateway", {
   OPENROUTER_MANAGEMENT_KEY: process.env.OPENROUTER_MANAGEMENT_KEY
     ? "set"
@@ -34,6 +54,8 @@ logger.info("Starting Deco AI Gateway", {
     ? "set"
     : "missing",
   encryptionKey: encryptionKeySource,
+  HYPERDX_API_KEY: process.env.HYPERDX_API_KEY ? "set" : "missing",
+  LOG_LEVEL: process.env.LOG_LEVEL ?? "info (default)",
 });
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
