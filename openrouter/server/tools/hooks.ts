@@ -1,6 +1,6 @@
 import type { LanguageModelV2Usage } from "@ai-sdk/provider";
 import type { LanguageModelInputSchema } from "@decocms/bindings/llm";
-import type { ModelInfo } from "server/lib/types";
+import type { ModelInfo } from "../lib/types.ts";
 import type { z } from "zod";
 
 export interface UsageHooks {
