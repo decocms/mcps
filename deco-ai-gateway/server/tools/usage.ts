@@ -88,6 +88,17 @@ export const createGatewayUsageTool = (env: Env) =>
       const usage = await getKeyUsage(row.openrouter_key_hash);
 
       const result = {
+        summary: [
+          `Key: ${row.openrouter_key_name ?? connectionId}`,
+          `Total: $${usage.usage.toFixed(6)}`,
+          `Daily: $${usage.usage_daily.toFixed(6)}`,
+          `Weekly: $${usage.usage_weekly.toFixed(6)}`,
+          `Monthly: $${usage.usage_monthly.toFixed(6)}`,
+          usage.limit
+            ? `Limit: $${usage.limit.toFixed(4)} (remaining: $${(usage.limit_remaining ?? 0).toFixed(4)})`
+            : "Limit: none",
+          `Status: ${usage.disabled ? "disabled" : "active"}`,
+        ].join(" | "),
         usage: {
           total: usage.usage,
           daily: usage.usage_daily,
