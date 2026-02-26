@@ -79,7 +79,6 @@ export async function tools(env: Env) {
   logger.debug("Injecting org key into MESH_REQUEST_CONTEXT via Proxy", {
     connectionId,
     organizationId,
-    keyPrefix: orgKey.slice(0, 12) + "...",
   });
 
   // Use a Proxy to intercept `authorization` while preserving ALL other
