@@ -21,6 +21,7 @@ import {
 } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { getOpenRouterApiKey } from "../lib/env.ts";
+import { logger } from "../lib/logger.ts";
 import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
@@ -586,13 +587,15 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
 
       const slowRequestTimeout = setTimeout(() => {
         if (!finished) {
-          console.warn(
-            `[LLM_DO_STREAM] SLOW REQUEST ${requestId} state=${state} (>20s)`,
-          );
+          logger.warn("LLM_DO_STREAM slow request (>20s)", {
+            requestId,
+            modelId,
+            state,
+          });
         }
       }, 20_000);
 
-      console.log(`[LLM_DO_STREAM] START ${requestId} model=${modelId}`);
+      logger.debug("LLM_DO_STREAM start", { requestId, modelId });
 
       try {
         state = "auth";
@@ -612,6 +615,10 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         );
 
         state = "modelStream";
+        logger.debug("LLM_DO_STREAM calling model.doStream", {
+          requestId,
+          modelId,
+        });
         const callResponse = await model.doStream(
           callOptions as Parameters<(typeof model)["doStream"]>[0],
         );
@@ -624,7 +631,7 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
           hook?.end?.(u).then(() => {
             finished = true;
             clearTimeout(slowRequestTimeout);
-            console.log(`[LLM_DO_STREAM] END ${requestId}`);
+            logger.debug("LLM_DO_STREAM end", { requestId, modelId });
           });
         });
         const response = streamToResponse(stream);
@@ -634,10 +641,12 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
       } catch (error) {
         finished = true;
         clearTimeout(slowRequestTimeout);
-        console.error(
-          `[LLM_DO_STREAM] ERROR ${requestId} state=${state}`,
-          error,
-        );
+        logger.error("LLM_DO_STREAM error", {
+          requestId,
+          modelId,
+          state,
+          error: String(error),
+        });
         if (isAPICallError(error)) {
           return new Response(error.responseBody, {
             status: error.statusCode,
@@ -775,7 +784,7 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
       } = context;
 
       const requestId = crypto.randomUUID();
-      console.log(`[LLM_DO_GENERATE] START ${requestId} model=${modelId}`);
+      logger.debug("LLM_DO_GENERATE start", { requestId, modelId });
 
       try {
         env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
@@ -796,14 +805,18 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
         );
         await hook?.end?.(result);
 
-        console.log(`[LLM_DO_GENERATE] END ${requestId}`);
+        logger.debug("LLM_DO_GENERATE end", { requestId, modelId });
 
         // Transform the result to match the binding schema
         return transformGenerateResult(result) as z.infer<
           typeof GENERATE_BINDING.outputSchema
         >;
       } catch (error) {
-        console.error(`[LLM_DO_GENERATE] ERROR ${requestId}`, error);
+        logger.error("LLM_DO_GENERATE error", {
+          requestId,
+          modelId,
+          error: String(error),
+        });
         throw error;
       }
     },
