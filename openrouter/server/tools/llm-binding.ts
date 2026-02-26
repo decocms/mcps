@@ -628,7 +628,12 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         );
         usage.then((u) => {
           state = "commit";
-          hook?.end?.(u).then(() => {
+          // Use Promise.resolve() to safely handle both the case where hook is
+          // undefined (returns undefined) and where it returns a Promise.
+          // Calling .then() directly on undefined throws a TypeError that silently
+          // swallows the error and leaves `finished=false`, causing the SSE
+          // transport to stay open indefinitely (client-side timeout).
+          Promise.resolve(hook?.end?.(u)).then(() => {
             finished = true;
             clearTimeout(slowRequestTimeout);
             logger.debug("LLM_DO_STREAM end", { requestId, modelId });
