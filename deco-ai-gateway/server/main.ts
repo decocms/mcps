@@ -19,6 +19,12 @@ import { StateSchema, type Env, type Registry } from "./types/env.ts";
 
 export { StateSchema };
 
+const encryptionKeySource = process.env.DECO_CRYPTO_KEY
+  ? "DECO_CRYPTO_KEY"
+  : process.env.ENCRYPTION_KEY
+    ? "ENCRYPTION_KEY"
+    : "missing";
+
 logger.info("Starting Deco AI Gateway", {
   OPENROUTER_MANAGEMENT_KEY: process.env.OPENROUTER_MANAGEMENT_KEY
     ? "set"
@@ -27,7 +33,7 @@ logger.info("Starting Deco AI Gateway", {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
     ? "set"
     : "missing",
-  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY ? "set" : "missing",
+  encryptionKey: encryptionKeySource,
 });
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
