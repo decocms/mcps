@@ -7,7 +7,7 @@ export const StateSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Nome da organização (ex: minha-empresa). Usado para identificar a chave no OpenRouter como 'decocms-mesh-org-{nome}-{id}'.",
+      "Organization name (e.g. my-company). Used to identify the key in OpenRouter as 'decocms-mesh-org-{name}-{id}'.",
     ),
 });
 

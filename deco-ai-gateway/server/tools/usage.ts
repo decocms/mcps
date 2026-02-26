@@ -49,7 +49,7 @@ export const createGatewayUsageTool = (env: Env) =>
   createTool({
     id: "GATEWAY_USAGE",
     description:
-      "Retorna o gasto atual da chave OpenRouter desta organização: total acumulado, diário, semanal e mensal. Útil para monitorar custos de LLM por organização.",
+      "Returns the current spending for this organization's OpenRouter API key: total, daily, weekly, and monthly. Useful for monitoring LLM costs per organization.",
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -75,13 +75,13 @@ export const createGatewayUsageTool = (env: Env) =>
     execute: async () => {
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       if (!connectionId) {
-        throw new Error("connectionId não encontrado no contexto.");
+        throw new Error("connectionId not found in context.");
       }
 
       const row = await loadConnectionConfig(connectionId);
       if (!row?.openrouter_key_hash) {
         throw new Error(
-          "Nenhuma chave OpenRouter provisionada ainda. Faça uma chamada LLM primeiro para provisionar automaticamente.",
+          "No OpenRouter key provisioned yet. Make an LLM call first to trigger automatic provisioning.",
         );
       }
 
