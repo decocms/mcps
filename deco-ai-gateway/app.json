@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "ai-gateway",
+  "friendlyName": "Deco AI Gateway",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-deco-ai-gateway.decocache.com/mcp"
+  },
+  "description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility.",
+  "icon": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  "unlisted": false,
+  "auth": null,
+  "metadata": {
+    "categories": ["AI", "Automation"],
+    "official": true,
+    "tags": ["llm", "openrouter", "ai", "gateway", "cost-tracking", "multi-model", "gpt", "claude", "gemini", "provisioning"],
+    "short_description": "LLM gateway with automatic per-org OpenRouter API key provisioning and spending visibility.",
+    "mesh_description": "The Deco AI Gateway provides a unified LLM interface powered by OpenRouter, with automatic API key provisioning per organization. When an org installs this MCP, it receives its own isolated OpenRouter API key — created on the first LLM call, stored AES-256-GCM encrypted in Supabase, and reused on subsequent calls. This enables per-org cost tracking and spending visibility directly from OpenRouter's dashboard. Key features: **Auto Provisioning** — no manual key management; the gateway creates and stores the org key transparently on first use. **Multi-model support** — access GPT-4o, Claude 3.5 Sonnet, Gemini, Llama, Mistral, and 300+ models via a single MCP. **Cost Visibility** — use the GATEWAY_USAGE tool to query real-time spending (daily, weekly, monthly) for the org's key. **Isolation** — each org has an independent OpenRouter key named `decocms-mesh-org-{name}-{id}` for easy identification. **Encryption** — keys are encrypted at rest using AES-256-GCM before being stored in Supabase. Ideal for teams that want governed, observable, and cost-controlled LLM access without managing API keys manually."
+  }
+}
