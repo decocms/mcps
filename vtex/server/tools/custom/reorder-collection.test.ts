@@ -70,4 +70,9 @@ describe("normalizeSkuIdsInput", () => {
     const parsed = normalizeSkuIdsInput("   ");
     expect(parsed).toEqual([]);
   });
+
+  test("returns undefined for object payload from empty UI field", () => {
+    const parsed = normalizeSkuIdsInput({});
+    expect(parsed).toBeUndefined();
+  });
 });

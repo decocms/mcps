@@ -13,15 +13,36 @@ const collectionProductsResponseSchema = z.object({
   Data: z.array(collectionProductSchema).optional(),
 });
 
-const skuIdsByProductResponseSchema = z.array(
-  z.union([z.number().int().positive(), z.string().regex(/^\d+$/)]),
-);
+const skuIdByProductItemSchema = z.union([
+  z.number().int().positive(),
+  z.string().regex(/^\d+$/),
+  z.object({
+    Id: z.number().int().positive().optional(),
+    id: z.number().int().positive().optional(),
+    SkuId: z.number().int().positive().optional(),
+    skuId: z.number().int().positive().optional(),
+  }),
+]);
+
+const skuIdsByProductResponseSchema = z.array(skuIdByProductItemSchema);
 
 export function normalizeSkuIdsInput(
-  value: string | number[] | string[] | null | undefined,
-): string | number[] | string[] | null | undefined {
+  value: unknown,
+): string | number[] | string[] | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value as number[] | string[];
+  }
+
+  if (typeof value === "number") {
+    return [value];
+  }
+
   if (typeof value !== "string") {
-    return value;
+    return undefined;
   }
 
   const trimmed = value.trim();
@@ -44,6 +65,25 @@ export function normalizeSkuIdsInput(
     .split(",")
     .map((skuId) => skuId.trim())
     .filter((skuId) => skuId.length > 0);
+}
+
+function skuItemToSkuId(
+  item: z.infer<typeof skuIdByProductItemSchema>,
+): number {
+  if (typeof item === "number") {
+    return item;
+  }
+
+  if (typeof item === "string") {
+    return Number(item);
+  }
+
+  const skuId = item.Id ?? item.id ?? item.SkuId ?? item.skuId;
+  if (typeof skuId === "number") {
+    return skuId;
+  }
+
+  throw new Error("Invalid SKU item returned by VTEX for product lookup.");
 }
 
 const reorderCollectionInputSchema = z
@@ -193,7 +233,7 @@ async function getSkuIdsByProductIds(params: {
     const responseJson: unknown = await response.json();
     const parsed = skuIdsByProductResponseSchema.parse(responseJson);
     for (const skuId of parsed) {
-      skuIds.push(typeof skuId === "number" ? skuId : Number(skuId));
+      skuIds.push(skuItemToSkuId(skuId));
     }
   }
 
