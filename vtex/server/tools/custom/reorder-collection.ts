@@ -78,6 +78,18 @@ export function buildCollectionImportXml(skuIds: number[]): string {
   return `<?xml version="1.0" encoding="utf-8"?><ArrayOfCollectionItemDTO>${items}</ArrayOfCollectionItemDTO>`;
 }
 
+export function buildCollectionImportCsv(skuIds: number[]): string {
+  const header = "SKU,PRODUCT,SKUREFID,PRODUCTREFID";
+  const rows = skuIds.map((skuId) => `${skuId},,,`).join("\n");
+  return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
+}
+
+export function buildCollectionImportXlsLikeContent(skuIds: number[]): string {
+  const header = "SKU\tPRODUCT\tSKUREFID\tPRODUCTREFID";
+  const rows = skuIds.map((skuId) => `${skuId}\t\t\t`).join("\n");
+  return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
+}
+
 async function getAllCollectionSkuIds(params: {
   accountName: string;
   appKey?: string;
@@ -125,38 +137,64 @@ async function getAllCollectionSkuIds(params: {
   return uniqueSkuIds(skuIds);
 }
 
-async function uploadCollectionXml(params: {
+async function uploadCollectionFile(params: {
   accountName: string;
   appKey?: string;
   appToken?: string;
   collectionId: number;
-  xmlContent: string;
+  skuIds: number[];
   mode: "importexclude" | "importinsert";
 }): Promise<void> {
-  const formData = new FormData();
-  formData.append(
-    "file",
-    new Blob([params.xmlContent], { type: "application/xml" }),
-    `${params.mode}.xml`,
-  );
-
-  const response = await fetch(
-    `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/stockkeepingunit/${params.mode}`,
+  const uploadAttempts: Array<{
+    fileName: string;
+    mimeType: string;
+    content: string;
+  }> = [
     {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
-        ...(params.appToken ? { "X-VTEX-API-AppToken": params.appToken } : {}),
-      },
-      body: formData,
+      fileName: `${params.mode}.xls`,
+      mimeType: "application/vnd.ms-excel",
+      content: buildCollectionImportXlsLikeContent(params.skuIds),
     },
-  );
+    {
+      fileName: `${params.mode}.csv`,
+      mimeType: "text/csv",
+      content: buildCollectionImportCsv(params.skuIds),
+    },
+  ];
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to upload ${params.mode}: ${response.status} ${await response.text()}`,
+  let lastErrorMessage: string | null = null;
+  for (const attempt of uploadAttempts) {
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob([attempt.content], { type: attempt.mimeType }),
+      attempt.fileName,
     );
+
+    const response = await fetch(
+      `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/stockkeepingunit/${params.mode}`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
+          ...(params.appToken
+            ? { "X-VTEX-API-AppToken": params.appToken }
+            : {}),
+        },
+        body: formData,
+      },
+    );
+
+    if (response.ok) {
+      return;
+    }
+
+    lastErrorMessage = `Failed to upload ${params.mode} as ${attempt.fileName}: ${response.status} ${await response.text()}`;
+  }
+
+  if (lastErrorMessage) {
+    throw new Error(lastErrorMessage);
   }
 }
 
@@ -164,7 +202,7 @@ export const reorderCollection = (env: Env) =>
   createTool({
     id: "VTEX_REORDER_COLLECTION",
     description:
-      "Overwrite collection contents by removing current SKUs and importing a new ordered SKU list via XML.",
+      "Overwrite collection contents by removing current SKUs and importing a new ordered SKU list via spreadsheet file.",
     inputSchema: reorderCollectionInputSchema,
     outputSchema: reorderCollectionOutputSchema,
     execute: async ({ context }) => {
@@ -179,26 +217,24 @@ export const reorderCollection = (env: Env) =>
 
       let excludedSkuCount = 0;
       if (existingSkuIds.length > 0) {
-        const excludeXml = buildCollectionImportXml(existingSkuIds);
-        await uploadCollectionXml({
+        await uploadCollectionFile({
           accountName: credentials.accountName,
           appKey: credentials.appKey,
           appToken: credentials.appToken,
           collectionId: context.collectionId,
-          xmlContent: excludeXml,
+          skuIds: existingSkuIds,
           mode: "importexclude",
         });
         excludedSkuCount = existingSkuIds.length;
       }
 
       if (targetSkuIds.length > 0) {
-        const insertXml = buildCollectionImportXml(targetSkuIds);
-        await uploadCollectionXml({
+        await uploadCollectionFile({
           accountName: credentials.accountName,
           appKey: credentials.appKey,
           appToken: credentials.appToken,
           collectionId: context.collectionId,
-          xmlContent: insertXml,
+          skuIds: targetSkuIds,
           mode: "importinsert",
         });
       }
