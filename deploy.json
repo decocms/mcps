@@ -59,6 +59,12 @@
     "platformName": "kubernetes-bun",
     "watch": ["deco-llm/**", "shared/**"]
   },
+  "deco-ai-gateway": {
+    "site": "deco-ai-gateway",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": ["deco-ai-gateway/**", "openrouter/**", "shared/**"]
+  },
   "google-gemini": {
     "site": "google-gemini",
     "entrypoint": "./dist/server/main.js",

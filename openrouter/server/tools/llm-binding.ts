@@ -20,7 +20,8 @@ import {
   createStreamableTool,
 } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { getOpenRouterApiKey } from "server/lib/env.ts";
+import { getOpenRouterApiKey } from "../lib/env.ts";
+import { logger } from "../lib/logger.ts";
 import type { z } from "zod";
 import { OpenRouterClient } from "../lib/openrouter-client.ts";
 import type { Env } from "../main.ts";
@@ -579,7 +580,6 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
       const requestId = crypto.randomUUID();
       let state = "init";
@@ -587,20 +587,27 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
 
       const slowRequestTimeout = setTimeout(() => {
         if (!finished) {
-          console.warn(
-            `[LLM_DO_STREAM] SLOW REQUEST ${requestId} state=${state} (>20s)`,
-          );
+          logger.warn("LLM_DO_STREAM slow request (>20s)", {
+            requestId,
+            modelId,
+            state,
+          });
         }
       }, 20_000);
 
-      console.log(`[LLM_DO_STREAM] START ${requestId} model=${modelId}`);
-
-      const apiKey = getOpenRouterApiKey(env);
-      // Create OpenRouter provider
-      const openrouter = createOpenRouter({ apiKey });
-      const model = openrouter.languageModel(modelId);
+      logger.debug("LLM_DO_STREAM start", { requestId, modelId });
 
       try {
+        state = "auth";
+        env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
+
+        state = "getKey";
+        const apiKey = getOpenRouterApiKey(env);
+
+        // Create OpenRouter provider
+        const openrouter = createOpenRouter({ apiKey });
+        const model = openrouter.languageModel(modelId);
+
         state = "preauth";
         const hook = await usageHooks?.start?.(
           await OpenRouterClient.for(apiKey).getModel(modelId),
@@ -608,6 +615,10 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         );
 
         state = "modelStream";
+        logger.debug("LLM_DO_STREAM calling model.doStream", {
+          requestId,
+          modelId,
+        });
         const callResponse = await model.doStream(
           callOptions as Parameters<(typeof model)["doStream"]>[0],
         );
@@ -617,10 +628,15 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
         );
         usage.then((u) => {
           state = "commit";
-          hook?.end?.(u).then(() => {
+          // Use Promise.resolve() to safely handle both the case where hook is
+          // undefined (returns undefined) and where it returns a Promise.
+          // Calling .then() directly on undefined throws a TypeError that silently
+          // swallows the error and leaves `finished=false`, causing the SSE
+          // transport to stay open indefinitely (client-side timeout).
+          Promise.resolve(hook?.end?.(u)).then(() => {
             finished = true;
             clearTimeout(slowRequestTimeout);
-            console.log(`[LLM_DO_STREAM] END ${requestId}`);
+            logger.debug("LLM_DO_STREAM end", { requestId, modelId });
           });
         });
         const response = streamToResponse(stream);
@@ -630,10 +646,12 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
       } catch (error) {
         finished = true;
         clearTimeout(slowRequestTimeout);
-        console.error(
-          `[LLM_DO_STREAM] ERROR ${requestId} state=${state}`,
-          error,
-        );
+        logger.error("LLM_DO_STREAM error", {
+          requestId,
+          modelId,
+          state,
+          error: String(error),
+        });
         if (isAPICallError(error)) {
           return new Response(error.responseBody, {
             status: error.statusCode,
@@ -769,27 +787,42 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
       } = context;
-      env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const apiKey = getOpenRouterApiKey(env);
+      const requestId = crypto.randomUUID();
+      logger.debug("LLM_DO_GENERATE start", { requestId, modelId });
 
-      // Create OpenRouter provider
-      const openrouter = createOpenRouter({ apiKey });
-      const model = openrouter.languageModel(modelId);
+      try {
+        env.MESH_REQUEST_CONTEXT.ensureAuthenticated();
 
-      const hook = await usageHooks?.start?.(
-        await OpenRouterClient.for(apiKey).getModel(modelId),
-        context,
-      );
-      // Use doGenerate directly (consistent with doStream pattern)
-      const result = await model.doGenerate(
-        callOptions as Parameters<(typeof model)["doGenerate"]>[0],
-      );
-      await hook?.end?.(result);
+        const apiKey = getOpenRouterApiKey(env);
 
-      // Transform the result to match the binding schema
-      return transformGenerateResult(result) as z.infer<
-        typeof GENERATE_BINDING.outputSchema
-      >;
+        // Create OpenRouter provider
+        const openrouter = createOpenRouter({ apiKey });
+        const model = openrouter.languageModel(modelId);
+
+        const hook = await usageHooks?.start?.(
+          await OpenRouterClient.for(apiKey).getModel(modelId),
+          context,
+        );
+        // Use doGenerate directly (consistent with doStream pattern)
+        const result = await model.doGenerate(
+          callOptions as Parameters<(typeof model)["doGenerate"]>[0],
+        );
+        await hook?.end?.(result);
+
+        logger.debug("LLM_DO_GENERATE end", { requestId, modelId });
+
+        // Transform the result to match the binding schema
+        return transformGenerateResult(result) as z.infer<
+          typeof GENERATE_BINDING.outputSchema
+        >;
+      } catch (error) {
+        logger.error("LLM_DO_GENERATE error", {
+          requestId,
+          modelId,
+          error: String(error),
+        });
+        throw error;
+      }
     },
   });

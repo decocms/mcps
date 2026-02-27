@@ -239,17 +239,29 @@ async function callDecopilotAPI(
     messageCount: messages.length,
   });
 
+  const PROVIDER_ALIASES: Record<string, string> = {
+    "x-ai": "xai",
+  };
+  const rawProvider = modelId.includes("/")
+    ? modelId.split("/")[0]
+    : "anthropic";
+  const provider = PROVIDER_ALIASES[rawProvider] ?? rawProvider;
+
   const body = {
     messages,
-    model: {
-      id: modelId,
+    models: {
       connectionId: modelProviderId,
+      thinking: {
+        id: modelId,
+        provider,
+      },
     },
     agent: {
       id: agentId || "",
       mode: agentMode,
     },
     stream: true,
+    toolApprovalLevel: "yolo" as const,
   };
 
   const controller = new AbortController();
@@ -284,9 +296,19 @@ async function callDecopilotAPI(
 /**
  * Parse stream lines to extract text deltas
  */
-function parseStreamLine(
-  line: string,
-): { type: string; delta?: string } | null {
+interface StreamEvent {
+  type: string;
+  delta?: string;
+  text?: string;
+  toolCallId?: string;
+  toolName?: string;
+  args?: string;
+  result?: unknown;
+  output?: unknown;
+  error?: string;
+}
+
+function parseStreamLine(line: string): StreamEvent | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith("event:")) return null;
@@ -473,6 +495,7 @@ export async function generateResponseWithStreaming(
     let buffer = "";
     let eventCount = 0;
     let finished = false;
+    let toolCallCount = 0;
 
     while (!finished) {
       const { done, value } = await reader.read();
@@ -489,8 +512,13 @@ export async function generateResponseWithStreaming(
         eventCount++;
         const { type } = parsed;
 
-        // Log first few events and important ones
-        if (eventCount <= 3 || type === "finish" || type === "tool-call") {
+        if (
+          eventCount <= 3 ||
+          type === "finish" ||
+          type === "tool-call" ||
+          type === "tool-result" ||
+          type === "error"
+        ) {
           console.log(`[LLM Streaming] Event ${eventCount}: type=${type}`);
         }
 
@@ -502,12 +530,28 @@ export async function generateResponseWithStreaming(
             await onStream(textContent, false);
             lastStreamUpdate = now;
           }
+        } else if (type === "text" && parsed.text) {
+          textContent += parsed.text;
+          await onStream(textContent, false);
         } else if (type === "tool-call") {
-          // Log tool calls
-          console.log(`[LLM Streaming] Tool call:`, parsed);
+          toolCallCount++;
+          console.log(
+            `[LLM Streaming] Tool call #${toolCallCount}: ${parsed.toolName ?? "unknown"}`,
+            parsed,
+          );
+        } else if (type === "tool-result") {
+          console.log(
+            `[LLM Streaming] Tool result for ${parsed.toolCallId ?? "unknown"}:`,
+            JSON.stringify(parsed.result ?? parsed.output).slice(0, 200),
+          );
+        } else if (type === "error") {
+          console.error("[LLM Streaming] Server error event:", parsed);
+          throw new Error(
+            `LLM stream error: ${parsed.error ?? JSON.stringify(parsed)}`,
+          );
         } else if (type === "finish") {
           console.log(
-            `[LLM Streaming] Finish. Text length: ${textContent.length}`,
+            `[LLM Streaming] Finish. Text length: ${textContent.length}, tools used: ${toolCallCount}`,
           );
           finished = true;
           break;
@@ -515,13 +559,18 @@ export async function generateResponseWithStreaming(
       }
     }
 
-    // Final update
-    await onStream(
-      textContent || "Desculpe, não consegui gerar uma resposta.",
-      true,
-    );
+    const fallback = "Desculpe, não consegui gerar uma resposta.";
+    const finalText = textContent || fallback;
 
-    return textContent || "Desculpe, não consegui gerar uma resposta.";
+    await onStream(finalText, true);
+
+    if (!textContent && toolCallCount > 0) {
+      console.warn(
+        `[LLM Streaming] Warning: ${toolCallCount} tool(s) called but no text response received`,
+      );
+    }
+
+    return finalText;
   } catch (error) {
     console.error("[LLM Streaming] Error:", error);
     throw error;

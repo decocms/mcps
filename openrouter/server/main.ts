@@ -11,6 +11,7 @@ import type { Registry } from "@decocms/mcps-shared/registry";
 import { serve } from "@decocms/mcps-shared/serve";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { z } from "zod";
+import { logger } from "./lib/logger.ts";
 import { tools } from "./tools/index.ts";
 
 const StateSchema = z.object({});
@@ -63,6 +64,22 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
   tools,
   prompts: [],
+});
+
+process.stderr.write(
+  JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "info",
+    service: "openrouter",
+    body: "Server starting",
+    HYPERDX_API_KEY: process.env.HYPERDX_API_KEY ? "set" : "missing",
+    LOG_LEVEL: process.env.LOG_LEVEL ?? "info (default)",
+  }) + "\n",
+);
+
+logger.info("Starting OpenRouter MCP", {
+  HYPERDX_API_KEY: process.env.HYPERDX_API_KEY ? "set" : "missing",
+  LOG_LEVEL: process.env.LOG_LEVEL ?? "info (default)",
 });
 
 serve(runtime.fetch);

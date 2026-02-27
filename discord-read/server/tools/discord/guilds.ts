@@ -17,6 +17,7 @@ export const createGetGuildTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_GUILD",
     description: "Get information about a Discord guild",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -78,6 +79,7 @@ export const createListBotGuildsTool = (env: Env) =>
   createTool({
     id: "DISCORD_LIST_BOT_GUILDS",
     description: "List all guilds where the bot is present",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         limit: z.number().min(1).max(200).default(100).describe("Max guilds"),
@@ -140,6 +142,7 @@ export const createGetGuildMembersTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_MEMBERS",
     description: "List members of a Discord guild",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -205,6 +208,7 @@ export const createSearchMembersTool = (env: Env) =>
     id: "DISCORD_SEARCH_MEMBERS",
     description:
       "Search guild members by username or nickname. Returns members whose username or nickname starts with the query.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -290,6 +294,7 @@ export const createGetUserTool = (env: Env) =>
     id: "DISCORD_GET_USER",
     description:
       "Get GLOBAL information about a Discord user (no roles/server info). Use DISCORD_GET_MEMBER for server-specific info like roles.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         user_id: z.string().describe("The user ID"),
@@ -340,6 +345,7 @@ export const createGetMemberTool = (env: Env) =>
     id: "DISCORD_GET_MEMBER",
     description:
       "Get a member's info in a server INCLUDING their roles, nickname, join date. Use this to check user roles!",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild/server ID"),
@@ -414,6 +420,7 @@ export const createGetCurrentUserTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_BOT_USER",
     description: "Get information about the bot's own user account",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -449,6 +456,7 @@ export const createBanMemberTool = (env: Env) =>
     id: "DISCORD_BAN_MEMBER",
     description:
       "Ban one or more members from a Discord server. Supports batch operations with rate limit handling.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -561,6 +569,7 @@ export const createGetGuildRolesTool = (env: Env) =>
   createTool({
     id: "DISCORD_GET_ROLES",
     description: "Get all roles from a Discord server",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -620,6 +629,7 @@ export const createCreateRoleTool = (env: Env) =>
   createTool({
     id: "DISCORD_CREATE_ROLE",
     description: "Create a new role in a Discord server",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -679,6 +689,7 @@ export const createEditRoleTool = (env: Env) =>
   createTool({
     id: "DISCORD_EDIT_ROLE",
     description: "Edit an existing role in a Discord server",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -737,6 +748,7 @@ export const createDeleteRoleTool = (env: Env) =>
     id: "DISCORD_DELETE_ROLE",
     description:
       "Delete one or more roles from a Discord server. Supports batch operations.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -834,6 +846,7 @@ export const createAddRoleToMemberTool = (env: Env) =>
     id: "DISCORD_ADD_ROLE",
     description:
       "Add a role to one or more guild members. Supports batch operations with rate limit handling.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -942,6 +955,7 @@ export const createRemoveRoleFromMemberTool = (env: Env) =>
     id: "DISCORD_REMOVE_ROLE",
     description:
       "Remove a role from one or more guild members. Supports batch operations with rate limit handling.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -1050,6 +1064,7 @@ export const createEditMemberTool = (env: Env) =>
     id: "DISCORD_EDIT_MEMBER",
     description:
       "Edit a guild member's attributes (nickname, roles, mute, deaf, etc.)",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -1133,6 +1148,7 @@ export const createKickMemberTool = (env: Env) =>
     id: "DISCORD_KICK_MEMBER",
     description:
       "Kick one or more members from a Discord server (they can rejoin). Supports batch operations.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -1237,6 +1253,7 @@ export const createTimeoutMemberTool = (env: Env) =>
     id: "DISCORD_TIMEOUT_MEMBER",
     description:
       "Timeout one or more members (prevent them from interacting) for a specified duration. Supports batch operations.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),
@@ -1356,6 +1373,7 @@ export const createRemoveTimeoutTool = (env: Env) =>
     id: "DISCORD_REMOVE_TIMEOUT",
     description:
       "Remove timeout from one or more members (allow them to interact again). Supports batch operations.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         guild_id: z.string().describe("The guild ID"),

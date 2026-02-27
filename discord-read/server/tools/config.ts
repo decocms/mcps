@@ -25,6 +25,7 @@ export const createSaveConfigTool = (env: Env) =>
     id: "DISCORD_SAVE_CONFIG",
     description:
       "Save Discord bot configuration (token, authorized guilds, AI model settings). This persists configuration so you don't need to provide the token again.",
+    annotations: { destructiveHint: false },
     inputSchema: z
       .object({
         botToken: z
@@ -173,6 +174,7 @@ export const createUpdateConfigTool = (env: Env) =>
     id: "DISCORD_UPDATE_CONFIG",
     description:
       "Update specific fields in Discord bot configuration without needing to provide all fields. Use this to update system prompt, model settings, etc.",
+    annotations: { destructiveHint: false },
     inputSchema: z
       .object({
         systemPrompt: z
@@ -321,6 +323,7 @@ export const createLoadConfigTool = (env: Env) =>
     id: "DISCORD_LOAD_CONFIG",
     description:
       "Load saved Discord bot configuration from Supabase. Returns the stored bot token and settings.",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -409,6 +412,7 @@ export const createDeleteConfigTool = (env: Env) =>
     id: "DISCORD_DELETE_CONFIG",
     description:
       "Delete saved Discord bot configuration from Supabase. This will remove the stored token and settings.",
+    annotations: { destructiveHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -451,6 +455,7 @@ export const createCacheStatsTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_CONFIG_CACHE_STATS",
     description: "Get Discord configuration cache statistics",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -473,6 +478,7 @@ export const createClearCacheTool = (env: Env) =>
     id: "DISCORD_CONFIG_CLEAR_CACHE",
     description:
       "Clear Discord configuration cache. Forces reload from Supabase on next access.",
+    annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -501,6 +507,7 @@ export const createGenerateApiKeyTool = (_env: Env) =>
     id: "DISCORD_GENERATE_API_KEY",
     description:
       "Generate a persistent Mesh API Key for this Discord bot. This solves the 'session expired' problem by creating a key that never expires. The bot will automatically use this key for LLM and other API calls.",
+    annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({

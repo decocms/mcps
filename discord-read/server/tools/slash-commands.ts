@@ -244,6 +244,7 @@ export const createListSlashCommandsTool = (_env: Env) =>
     id: "DISCORD_LIST_SLASH_COMMANDS",
     description:
       "List slash commands from database, Discord API, or both. Use 'source' parameter to choose.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         source: z
@@ -512,6 +513,7 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
     id: "DISCORD_REGISTER_SLASH_COMMAND",
     description:
       "Register a new slash command with Discord. The command will be saved to database and registered with Discord API.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         commandName: z
@@ -653,6 +655,7 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
     id: "DISCORD_DELETE_SLASH_COMMAND",
     description:
       "Delete a slash command from Discord and database. Use the command ID from DISCORD_LIST_SLASH_COMMANDS.",
+    annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
         commandId: z
@@ -762,6 +765,7 @@ export const createToggleSlashCommandTool = (_env: Env) =>
     id: "DISCORD_TOGGLE_SLASH_COMMAND",
     description:
       "Enable or disable a slash command. Disabled commands are not deleted but won't be processed.",
+    annotations: { destructiveHint: false },
     inputSchema: z
       .object({
         commandId: z.string().describe("Command ID (from database)"),
@@ -834,6 +838,7 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
     id: "DISCORD_SYNC_SLASH_COMMANDS",
     description:
       "Sync slash commands between Discord API and database. Can import missing commands from Discord to DB, or clean orphaned commands from DB.",
+    annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         action: z

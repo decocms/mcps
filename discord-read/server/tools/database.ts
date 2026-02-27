@@ -20,6 +20,7 @@ export const createQueryMessagesTool = (env: Env) =>
     id: "DISCORD_QUERY_MESSAGES",
     description:
       "Query Discord messages from the database. Only returns messages from guilds this bot has access to. Useful for searching message history, deleted messages, edit history, etc.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guildId: z.string().optional().describe("Filter by guild ID"),
@@ -162,6 +163,7 @@ export const createQueryGuildsTool = (env: Env) =>
   createPrivateTool({
     id: "DISCORD_QUERY_GUILDS",
     description: "Query Discord guilds (servers) from the database.",
+    annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -231,6 +233,7 @@ export const createMessageStatsTool = (env: Env) =>
     id: "DISCORD_MESSAGE_STATS",
     description:
       "Get statistics about Discord messages (total, by channel, by author, etc.)",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guildId: z.string().optional().describe("Filter by guild ID"),
@@ -335,6 +338,7 @@ export const createQueryChannelContextsTool = (env: Env) =>
     id: "DISCORD_QUERY_CHANNEL_CONTEXTS",
     description:
       "Query channel contexts (custom system prompts and auto-respond settings) from the database.",
+    annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
         guildId: z.string().describe("Guild ID to query contexts for"),
@@ -426,6 +430,7 @@ export const createSetChannelAutoRespondTool = (env: Env) =>
     id: "DISCORD_SET_CHANNEL_AUTO_RESPOND",
     description:
       "Enable or disable auto-respond for a channel. When enabled, the bot will respond to ALL messages in the channel without needing to be mentioned.",
+    annotations: { destructiveHint: false },
     inputSchema: z
       .object({
         guildId: z.string().describe("Guild ID"),
