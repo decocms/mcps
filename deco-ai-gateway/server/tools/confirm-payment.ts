@@ -112,7 +112,7 @@ export const createConfirmPaymentTool = (env: Env) =>
         await updateKeyLimit(
           row.openrouter_key_hash,
           payment.new_limit_usd,
-          null,
+          "monthly",
           false,
         );
         await markPaymentCompleted(payment.id);

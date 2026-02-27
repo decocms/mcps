@@ -167,7 +167,7 @@ export async function ensureApiKey(
       );
 
       if (billingMode === "prepaid") {
-        await updateKeyLimit(hash, DEFAULT_LIMIT_USD, null, false);
+        await updateKeyLimit(hash, DEFAULT_LIMIT_USD, "monthly", false);
         logger.info("Default spending limit applied (prepaid)", {
           connectionId,
           limitUsd: DEFAULT_LIMIT_USD,

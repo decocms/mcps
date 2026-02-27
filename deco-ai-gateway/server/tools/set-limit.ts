@@ -136,7 +136,7 @@ async function handlePostpaid(
   connectionId: string,
   markupPct: number,
 ): Promise<z.infer<typeof outputSchema>> {
-  await updateKeyLimit(keyHash, newLimit, null, false);
+  await updateKeyLimit(keyHash, newLimit, "monthly", false);
 
   logger.info("Postpaid limit updated directly", {
     connectionId,

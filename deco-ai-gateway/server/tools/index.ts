@@ -5,6 +5,7 @@ import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
 import { setLimitTools } from "./set-limit.ts";
 import { confirmPaymentTools } from "./confirm-payment.ts";
+import { creditsTools } from "./credits.ts";
 
 type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
 
@@ -47,6 +48,7 @@ export async function tools(env: Env) {
     ...usageTools.map((factory) => factory(env)),
     ...setLimitTools.map((factory) => factory(env)),
     ...confirmPaymentTools.map((factory) => factory(env)),
+    ...creditsTools.map((factory) => factory(env)),
   ];
 
   if (!connectionId || !organizationId) {
