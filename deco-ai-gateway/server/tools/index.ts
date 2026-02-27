@@ -14,7 +14,9 @@ type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
 
 const verifiedConnections = new Set<string>();
 
-async function ensureKeyHasLimit(connectionId: string): Promise<void> {
+async function ensureKeyLimitMatchesBillingMode(
+  connectionId: string,
+): Promise<void> {
   if (verifiedConnections.has(connectionId)) return;
 
   try {
@@ -22,27 +24,27 @@ async function ensureKeyHasLimit(connectionId: string): Promise<void> {
     if (!row?.openrouter_key_hash) return;
 
     const billingMode = row.billing_mode ?? "prepaid";
-    if (billingMode !== "prepaid") {
-      verifiedConnections.add(connectionId);
-      return;
-    }
-
     const details = await getKeyDetails(row.openrouter_key_hash);
-    if (details.limit != null) {
-      verifiedConnections.add(connectionId);
-      return;
+
+    if (billingMode === "prepaid" && details.limit == null) {
+      logger.info("Prepaid key missing limit, applying default", {
+        connectionId,
+        defaultLimit: DEFAULT_LIMIT_USD,
+      });
+      await updateKeyLimit(
+        row.openrouter_key_hash,
+        DEFAULT_LIMIT_USD,
+        "monthly",
+        false,
+      );
+    } else if (billingMode === "postpaid" && details.limit != null) {
+      logger.info("Postpaid key has restrictive limit, removing it", {
+        connectionId,
+        currentLimit: details.limit,
+      });
+      await updateKeyLimit(row.openrouter_key_hash, null, null, false);
     }
 
-    logger.info("Prepaid key missing limit on tool call, applying default", {
-      connectionId,
-      defaultLimit: DEFAULT_LIMIT_USD,
-    });
-    await updateKeyLimit(
-      row.openrouter_key_hash,
-      DEFAULT_LIMIT_USD,
-      "monthly",
-      false,
-    );
     verifiedConnections.add(connectionId);
   } catch (err) {
     logger.error("Failed to verify/apply key limit", {
@@ -112,7 +114,7 @@ export async function tools(env: Env) {
     organizationName,
   );
 
-  await ensureKeyHasLimit(connectionId);
+  await ensureKeyLimitMatchesBillingMode(connectionId);
 
   if (!orgKey) {
     logger.error("No API key available for org — LLM call will fail", {
