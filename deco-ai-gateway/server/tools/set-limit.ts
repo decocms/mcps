@@ -59,7 +59,7 @@ export const createSetLimitTool = (env: Env) =>
     description:
       "Sets the spending limit for this organization's AI Gateway. " +
       "In prepaid mode (default), generates a Stripe payment link for the difference — " +
-      "call GATEWAY_CONFIRM_PAYMENT after paying to activate. " +
+      "the new limit is activated automatically after payment. " +
       "In postpaid mode (pay-per-use), the limit is updated immediately without payment.",
     inputSchema: z
       .object({
@@ -69,11 +69,18 @@ export const createSetLimitTool = (env: Env) =>
           .describe(
             "Desired new spending limit in USD. Must be greater than the current limit. Examples: 5, 10, 50",
           ),
+        return_url: z
+          .string()
+          .url()
+          .optional()
+          .describe(
+            "URL to redirect to after payment (current page URL). If not provided, falls back to the mesh URL.",
+          ),
       })
       .strict(),
     outputSchema,
     execute: async ({ context }) => {
-      const { limit_usd: newLimit } = context;
+      const { limit_usd: newLimit, return_url: returnUrl } = context;
 
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
@@ -124,6 +131,7 @@ export const createSetLimitTool = (env: Env) =>
         connectionId,
         organizationId,
         meshUrl,
+        returnUrl ?? meshUrl,
         markupPct,
       );
     },
@@ -171,7 +179,8 @@ async function handlePrepaid(
   newLimit: number,
   connectionId: string,
   organizationId: string,
-  meshUrl: string | undefined,
+  gatewayMeshUrl: string | undefined,
+  redirectUrl: string | undefined,
   markupPct: number,
 ): Promise<z.infer<typeof outputSchema>> {
   if (!isStripeConfigured()) {
@@ -200,15 +209,24 @@ async function handlePrepaid(
     );
   }
 
-  const baseUrl = getBaseUrl(meshUrl);
+  const gatewayBaseUrl = getBaseUrl(gatewayMeshUrl);
+
+  const successUrl = redirectUrl
+    ? `${gatewayBaseUrl}/payment/success?connection_id=${encodeURIComponent(connectionId)}&redirect=${encodeURIComponent(redirectUrl)}`
+    : `${gatewayBaseUrl}/payment/success?connection_id=${encodeURIComponent(connectionId)}`;
+
+  const cancelUrl = redirectUrl
+    ? `${gatewayBaseUrl}/payment/cancel?redirect=${encodeURIComponent(redirectUrl)}`
+    : `${gatewayBaseUrl}/payment/cancel`;
+
   const { sessionId, checkoutUrl } = await createCheckoutSession({
     amountCents,
     currentLimitUsd: currentLimit,
     newLimitUsd: newLimit,
     connectionId,
     organizationId,
-    successUrl: `${baseUrl}/payment/success`,
-    cancelUrl: `${baseUrl}/payment/cancel`,
+    successUrl,
+    cancelUrl,
   });
 
   await savePendingPayment({
@@ -245,7 +263,7 @@ async function handlePrepaid(
   }
   lines.push(
     `Total to pay: $${chargeUsd.toFixed(2)}`,
-    `After payment, call GATEWAY_CONFIRM_PAYMENT to activate the new limit.`,
+    `After payment, the new limit will be activated automatically.`,
   );
 
   return {

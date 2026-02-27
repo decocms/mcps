@@ -66,7 +66,11 @@ async function createOpenRouterKey(
       "Content-Type": "application/json",
       Authorization: `Bearer ${managementKey}`,
     },
-    body: JSON.stringify({ name: keyName }),
+    body: JSON.stringify({
+      name: keyName,
+      limit: DEFAULT_LIMIT_USD,
+      limit_reset: "monthly",
+    }),
   });
 
   if (!response.ok) {
@@ -94,7 +98,12 @@ async function createOpenRouterKey(
     );
   }
 
-  logger.info("OpenRouter key created", { keyName: name, keyHash: hash });
+  logger.info("OpenRouter key created", {
+    keyName: name,
+    keyHash: hash,
+    limit: result.data?.limit,
+    limitRemaining: result.data?.limit_remaining,
+  });
 
   return { key, hash, name };
 }
@@ -167,10 +176,22 @@ export async function ensureApiKey(
       );
 
       if (billingMode === "prepaid") {
-        await updateKeyLimit(hash, DEFAULT_LIMIT_USD, "monthly", false);
+        logger.info("Applying default spending limit to new key", {
+          connectionId,
+          keyHash: hash,
+          limitUsd: DEFAULT_LIMIT_USD,
+        });
+        const limitResult = await updateKeyLimit(
+          hash,
+          DEFAULT_LIMIT_USD,
+          "monthly",
+          false,
+        );
         logger.info("Default spending limit applied (prepaid)", {
           connectionId,
           limitUsd: DEFAULT_LIMIT_USD,
+          resultLimit: limitResult.limit,
+          resultRemaining: limitResult.limit_remaining,
         });
       } else {
         logger.info("Postpaid mode — no spending limit applied", {

@@ -14,6 +14,8 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { ensureApiKey } from "./lib/provisioning.ts";
 import { logger } from "./lib/logger.ts";
+import { confirmPaymentForConnection } from "./lib/confirm-payment-service.ts";
+import { ALLOWED_REDIRECT_DOMAINS } from "./lib/constants.ts";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env, type Registry } from "./types/env.ts";
 
@@ -142,10 +144,37 @@ function htmlPage(title: string, message: string): Response {
   });
 }
 
+function safeRedirect(redirectParam: string | null): Response | null {
+  if (!redirectParam) return null;
+  try {
+    const target = new URL(redirectParam);
+    const host = target.hostname;
+    const isAllowed =
+      host === "localhost" ||
+      ALLOWED_REDIRECT_DOMAINS.some(
+        (d: string) => host === d || host.endsWith(`.${d}`),
+      );
+    if (!isAllowed) return null;
+    return Response.redirect(target.toString(), 302);
+  } catch {
+    return null;
+  }
+}
+
 const handler: typeof runtime.fetch = async (req, ...args) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/payment/success") {
+    const connectionId = url.searchParams.get("connection_id");
+    if (connectionId) {
+      const result = await confirmPaymentForConnection(connectionId);
+      logger.info("Server-side payment confirmation result", {
+        connectionId,
+        status: result.status,
+      });
+    }
+    const redirect = safeRedirect(url.searchParams.get("redirect"));
+    if (redirect) return redirect;
     return htmlPage(
       "Payment Successful",
       "Your payment has been received. You can close this tab and return to your AI assistant.",
@@ -153,6 +182,8 @@ const handler: typeof runtime.fetch = async (req, ...args) => {
   }
 
   if (url.pathname === "/payment/cancel") {
+    const redirect = safeRedirect(url.searchParams.get("redirect"));
+    if (redirect) return redirect;
     return htmlPage(
       "Payment Cancelled",
       "The payment was cancelled. You can close this tab and try again later.",
