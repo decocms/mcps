@@ -13,6 +13,10 @@ const collectionProductsResponseSchema = z.object({
   Data: z.array(collectionProductSchema).optional(),
 });
 
+const skuIdsByProductResponseSchema = z.array(
+  z.union([z.number().int().positive(), z.string().regex(/^\d+$/)]),
+);
+
 export function normalizeSkuIdsInput(
   value: string | number[] | string[] | null | undefined,
 ): string | number[] | string[] | null | undefined {
@@ -42,19 +46,38 @@ export function normalizeSkuIdsInput(
     .filter((skuId) => skuId.length > 0);
 }
 
-const reorderCollectionInputSchema = z.object({
-  collectionId: z.coerce
-    .number()
-    .int()
-    .positive()
-    .describe("Collection ID to overwrite."),
-  skuIds: z.preprocess(
-    normalizeSkuIdsInput,
-    z
-      .array(z.coerce.number().int().positive())
-      .describe("Ordered SKU IDs that should remain in the collection."),
-  ),
-});
+const reorderCollectionInputSchema = z
+  .object({
+    collectionId: z.coerce
+      .number()
+      .int()
+      .positive()
+      .describe("Collection ID to overwrite."),
+    skuIds: z.preprocess(
+      normalizeSkuIdsInput,
+      z
+        .array(z.coerce.number().int().positive())
+        .optional()
+        .describe("Ordered SKU IDs that should remain in the collection."),
+    ),
+    productIds: z.preprocess(
+      normalizeSkuIdsInput,
+      z
+        .array(z.coerce.number().int().positive())
+        .optional()
+        .describe(
+          "Ordered product IDs. Their SKUs are resolved and included in order.",
+        ),
+    ),
+  })
+  .refine(
+    (data) =>
+      (data.skuIds?.length ?? 0) > 0 || (data.productIds?.length ?? 0) > 0,
+    {
+      message: "Provide at least one of skuIds or productIds.",
+      path: ["skuIds"],
+    },
+  );
 
 const reorderCollectionOutputSchema = z.object({
   collectionId: z.number().int().positive(),
@@ -137,6 +160,46 @@ async function getAllCollectionSkuIds(params: {
   return uniqueSkuIds(skuIds);
 }
 
+async function getSkuIdsByProductIds(params: {
+  accountName: string;
+  appKey?: string;
+  appToken?: string;
+  productIds: number[];
+}): Promise<number[]> {
+  const skuIds: number[] = [];
+
+  for (const productId of params.productIds) {
+    const response = await fetch(
+      `https://${params.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/sku/stockkeepingunitByProductId/${productId}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
+          ...(params.appToken
+            ? { "X-VTEX-API-AppToken": params.appToken }
+            : {}),
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to list SKUs for product ${productId}: ${response.status} ${await response.text()}`,
+      );
+    }
+
+    const responseJson: unknown = await response.json();
+    const parsed = skuIdsByProductResponseSchema.parse(responseJson);
+    for (const skuId of parsed) {
+      skuIds.push(typeof skuId === "number" ? skuId : Number(skuId));
+    }
+  }
+
+  return skuIds;
+}
+
 async function uploadCollectionFile(params: {
   accountName: string;
   appKey?: string;
@@ -207,7 +270,18 @@ export const reorderCollection = (env: Env) =>
     outputSchema: reorderCollectionOutputSchema,
     execute: async ({ context }) => {
       const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
-      const targetSkuIds = uniqueSkuIds(context.skuIds);
+      const directSkuIds = context.skuIds ?? [];
+      const productIds = context.productIds ?? [];
+      const resolvedSkuIdsFromProducts = await getSkuIdsByProductIds({
+        accountName: credentials.accountName,
+        appKey: credentials.appKey,
+        appToken: credentials.appToken,
+        productIds,
+      });
+      const targetSkuIds = uniqueSkuIds([
+        ...directSkuIds,
+        ...resolvedSkuIdsFromProducts,
+      ]);
       const existingSkuIds = await getAllCollectionSkuIds({
         accountName: credentials.accountName,
         appKey: credentials.appKey,
