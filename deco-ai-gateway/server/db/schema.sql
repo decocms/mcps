@@ -26,7 +26,8 @@ BEGIN
     FROM pg_policies
     WHERE schemaname = 'public'
     AND tablename IN (
-      'llm_gateway_connections'
+      'llm_gateway_connections',
+      'llm_gateway_payments'
     )
   ) LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I',
@@ -48,6 +49,9 @@ CREATE TABLE IF NOT EXISTS llm_gateway_connections (
   encrypted_api_key    TEXT,                          -- API key encrypted with AES-256-GCM (base64)
   encryption_iv        TEXT,                          -- 12-byte Initialization Vector (hex)
   encryption_tag       TEXT,                          -- 16-byte auth tag for integrity verification (hex)
+  billing_mode         TEXT NOT NULL DEFAULT 'prepaid', -- 'prepaid' (buy credits) or 'postpaid' (pay per use)
+  usage_markup_pct     NUMERIC(5,2) NOT NULL DEFAULT 5, -- Surcharge % on top of OpenRouter cost (e.g. 30 = 30%)
+  max_limit_usd        NUMERIC(10,4) DEFAULT NULL,      -- Maximum spending limit cap (NULL = no cap)
   configured_at        TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -111,6 +115,41 @@ IMPORTANT:
 */
 
 -- ============================================================================
+-- 2. LLM_GATEWAY_PAYMENTS (Stripe payment records for limit increases)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS llm_gateway_payments (
+  id                   TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  connection_id        TEXT NOT NULL,
+  organization_id      TEXT NOT NULL,
+  stripe_session_id    TEXT NOT NULL UNIQUE,
+  amount_cents         INTEGER NOT NULL,
+  current_limit_usd    NUMERIC(10,4),
+  new_limit_usd        NUMERIC(10,4) NOT NULL,
+  markup_pct           NUMERIC(5,2) NOT NULL DEFAULT 0,  -- Markup % applied at time of payment creation
+  status               TEXT NOT NULL DEFAULT 'pending',  -- pending | processing | completed | expired
+  created_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  completed_at         TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_conn
+  ON llm_gateway_payments(connection_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_stripe
+  ON llm_gateway_payments(stripe_session_id);
+
+CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_org
+  ON llm_gateway_payments(organization_id);
+
+ALTER TABLE llm_gateway_payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow service_role full access to llm_gateway_payments"
+  ON llm_gateway_payments FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- ============================================================================
 -- PART 3: MIGRATIONS (for existing tables)
 -- ============================================================================
 
@@ -156,6 +195,90 @@ BEGIN
     RAISE NOTICE 'Migration: Added column openrouter_key_name to llm_gateway_connections';
   END IF;
 END $$;
+
+-- Migration: Add billing_mode column (if table already exists without it)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'billing_mode'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN billing_mode TEXT NOT NULL DEFAULT 'prepaid';
+
+    RAISE NOTICE 'Migration: Added column billing_mode to llm_gateway_connections';
+  END IF;
+END $$;
+
+-- Migration: Add usage_markup_pct column (if table already exists without it)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'usage_markup_pct'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN usage_markup_pct NUMERIC(5,2) NOT NULL DEFAULT 5;
+
+    RAISE NOTICE 'Migration: Added column usage_markup_pct to llm_gateway_connections';
+  END IF;
+END $$;
+
+-- Migration: Add max_limit_usd column (if table already exists without it)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'max_limit_usd'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN max_limit_usd NUMERIC(10,4) DEFAULT NULL;
+
+    RAISE NOTICE 'Migration: Added column max_limit_usd to llm_gateway_connections';
+  END IF;
+END $$;
+
+-- Migration: Add markup_pct column to payments (if table already exists without it)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_payments'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_payments'
+    AND column_name = 'markup_pct'
+  ) THEN
+    ALTER TABLE llm_gateway_payments
+    ADD COLUMN markup_pct NUMERIC(5,2) NOT NULL DEFAULT 0;
+
+    RAISE NOTICE 'Migration: Added column markup_pct to llm_gateway_payments';
+  END IF;
+END $$;
+
+-- Migration: Add organization_id index to payments (if not exists)
+CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_org
+  ON llm_gateway_payments(organization_id);
 
 -- ============================================================================
 -- SETUP COMPLETE! ✅

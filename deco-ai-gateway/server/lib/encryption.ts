@@ -29,13 +29,22 @@ function getEncryptionKey(): { key: Buffer; algorithm: string } {
   const decoCryptoKey = process.env.DECO_CRYPTO_KEY;
 
   if (decoCryptoKey) {
-    const parsed = JSON.parse(
-      Buffer.from(decoCryptoKey, "base64").toString("utf8"),
-    ) as { key: Record<string, number> };
+    try {
+      const parsed = JSON.parse(
+        Buffer.from(decoCryptoKey, "base64").toString("utf8"),
+      ) as { key: Record<string, number> };
 
-    const keyBytes = Buffer.from(Object.values(parsed.key));
-    const algorithm = keyBytes.length === 16 ? "aes-128-gcm" : "aes-256-gcm";
-    return { key: keyBytes, algorithm };
+      const keyBytes = Buffer.from(Object.values(parsed.key));
+      if (keyBytes.length !== 16 && keyBytes.length !== 32) {
+        throw new Error("invalid key length");
+      }
+      const algorithm = keyBytes.length === 16 ? "aes-128-gcm" : "aes-256-gcm";
+      return { key: keyBytes, algorithm };
+    } catch {
+      throw new Error(
+        "DECO_CRYPTO_KEY is malformed. Expected valid Base64 JSON with 16 or 32 byte key.",
+      );
+    }
   }
 
   const keyHex = process.env.ENCRYPTION_KEY;

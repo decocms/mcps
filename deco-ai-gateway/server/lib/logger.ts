@@ -34,6 +34,19 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
+const SENSITIVE_KEYS = new Set([
+  "apikey",
+  "authorization",
+  "token",
+  "secret",
+  "password",
+  "key",
+  "encrypted_api_key",
+  "encryption_key",
+  "encryption_iv",
+  "encryption_tag",
+]);
+
 export class HyperDXLogger {
   private service = "deco-ai-gateway";
   private minLevel: LogLevel;
@@ -88,6 +101,16 @@ export class HyperDXLogger {
     }
   }
 
+  private redact(context: LogContext): LogContext {
+    const safe = { ...context };
+    for (const k of Object.keys(safe)) {
+      if (SENSITIVE_KEYS.has(k.toLowerCase())) {
+        safe[k] = "[REDACTED]";
+      }
+    }
+    return safe;
+  }
+
   private log(message: string, context: LogContext) {
     const level = context.level ?? "info";
 
@@ -99,7 +122,7 @@ export class HyperDXLogger {
       timestamp: new Date().toISOString(),
       service: this.service,
       body: message,
-      ...context,
+      ...this.redact(context),
     };
 
     console.log(JSON.stringify(logEntry));
