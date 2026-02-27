@@ -43,7 +43,8 @@ interface OpenRouterKeyResponse {
 
 async function createOpenRouterKey(
   organizationId: string,
-  organizationName?: string,
+  organizationName: string | undefined,
+  billingMode: BillingMode,
 ): Promise<{ key: string; hash: string; name: string }> {
   const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
   if (!managementKey) {
@@ -66,11 +67,11 @@ async function createOpenRouterKey(
       "Content-Type": "application/json",
       Authorization: `Bearer ${managementKey}`,
     },
-    body: JSON.stringify({
-      name: keyName,
-      limit: DEFAULT_LIMIT_USD,
-      limit_reset: "monthly",
-    }),
+    body: JSON.stringify(
+      billingMode === "prepaid"
+        ? { name: keyName, limit: DEFAULT_LIMIT_USD, limit_reset: "monthly" }
+        : { name: keyName },
+    ),
   });
 
   if (!response.ok) {
@@ -173,6 +174,7 @@ export async function ensureApiKey(
       const { key, hash, name } = await createOpenRouterKey(
         organizationId,
         organizationName,
+        billingMode,
       );
 
       if (billingMode === "prepaid") {
