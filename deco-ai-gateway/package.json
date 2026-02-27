@@ -20,6 +20,7 @@
     "@openrouter/sdk": "^0.3.11",
     "@supabase/supabase-js": "^2.49.0",
     "ai": "^6.0.3",
+    "stripe": "^20.4.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

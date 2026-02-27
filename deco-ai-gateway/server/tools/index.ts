@@ -1,11 +1,56 @@
 import { tools as openrouterTools } from "@decocms/openrouter/tools";
 import { ensureApiKey } from "../lib/provisioning.ts";
+import { loadConnectionConfig } from "../lib/supabase-client.ts";
+import { getKeyDetails, updateKeyLimit } from "../lib/openrouter-keys.ts";
+import { DEFAULT_LIMIT_USD } from "../lib/constants.ts";
 import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
 import { setLimitTools } from "./set-limit.ts";
+import { confirmPaymentTools } from "./confirm-payment.ts";
+import { creditsTools } from "./credits.ts";
 
 type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
+
+const verifiedConnections = new Set<string>();
+
+async function ensureKeyHasLimit(connectionId: string): Promise<void> {
+  if (verifiedConnections.has(connectionId)) return;
+
+  try {
+    const row = await loadConnectionConfig(connectionId);
+    if (!row?.openrouter_key_hash) return;
+
+    const billingMode = row.billing_mode ?? "prepaid";
+    if (billingMode !== "prepaid") {
+      verifiedConnections.add(connectionId);
+      return;
+    }
+
+    const details = await getKeyDetails(row.openrouter_key_hash);
+    if (details.limit != null) {
+      verifiedConnections.add(connectionId);
+      return;
+    }
+
+    logger.info("Prepaid key missing limit on tool call, applying default", {
+      connectionId,
+      defaultLimit: DEFAULT_LIMIT_USD,
+    });
+    await updateKeyLimit(
+      row.openrouter_key_hash,
+      DEFAULT_LIMIT_USD,
+      "monthly",
+      false,
+    );
+    verifiedConnections.add(connectionId);
+  } catch (err) {
+    logger.error("Failed to verify/apply key limit", {
+      connectionId,
+      error: String(err),
+    });
+  }
+}
 
 /**
  * Returns the OpenRouter tools with the org-scoped API key injected.
@@ -45,6 +90,8 @@ export async function tools(env: Env) {
   const gatewayTools = [
     ...usageTools.map((factory) => factory(env)),
     ...setLimitTools.map((factory) => factory(env)),
+    ...confirmPaymentTools.map((factory) => factory(env)),
+    ...creditsTools.map((factory) => factory(env)),
   ];
 
   if (!connectionId || !organizationId) {
@@ -64,6 +111,8 @@ export async function tools(env: Env) {
     meshUrl ?? "",
     organizationName,
   );
+
+  await ensureKeyHasLimit(connectionId);
 
   if (!orgKey) {
     logger.error("No API key available for org — LLM call will fail", {

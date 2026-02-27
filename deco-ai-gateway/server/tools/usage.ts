@@ -1,76 +1,35 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
+import { getKeyDetails } from "../lib/openrouter-keys.ts";
 import type { Env } from "../types/env.ts";
 
-const OPENROUTER_KEYS_URL = "https://openrouter.ai/api/v1/keys";
-
-/**
- * Full response schema from GET /api/v1/keys/:hash
- * @see https://openrouter.ai/docs/api/api-reference/api-keys/get-key
- */
-interface OpenRouterKeyDetails {
-  data: {
-    hash: string;
-    name: string;
-    label: string | null;
-    disabled: boolean;
-    limit: number | null;
-    limit_remaining: number | null;
-    limit_reset: string | null;
-    include_byok_in_limit: boolean;
-    usage: number;
-    usage_daily: number;
-    usage_weekly: number;
-    usage_monthly: number;
-    byok_usage: number;
-    byok_usage_daily: number;
-    byok_usage_weekly: number;
-    byok_usage_monthly: number;
-    created_at: string;
-    updated_at: string | null;
-    expires_at: string | null;
-  };
-}
-
-async function getKeyUsage(
-  hash: string,
-): Promise<OpenRouterKeyDetails["data"]> {
-  const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
-  if (!managementKey) {
-    throw new Error("OPENROUTER_MANAGEMENT_KEY env var is required");
-  }
-
-  const response = await fetch(`${OPENROUTER_KEYS_URL}/${hash}`, {
-    headers: { Authorization: `Bearer ${managementKey}` },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter responded ${response.status}: ${errorText}`);
-  }
-
-  const result = (await response.json()) as OpenRouterKeyDetails;
-  return result.data;
+function applyMarkup(value: number, markupPct: number): number {
+  return value * (1 + markupPct / 100);
 }
 
 export const createGatewayUsageTool = (env: Env) =>
   createTool({
     id: "GATEWAY_USAGE",
     description:
-      "Returns full spending and usage data for this organization's OpenRouter API key. Includes total, daily, weekly, and monthly usage for both OpenRouter credits and BYOK (Bring Your Own Key) external usage. Useful for monitoring LLM costs per organization.",
+      "Returns full spending and usage data for this organization's OpenRouter API key. " +
+      "Includes total, daily, weekly, and monthly usage. " +
+      "If a usage markup is configured, shows both raw LLM cost and effective cost with markup.",
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
         summary: z.string(),
         key: z.object({
-          hash: z.string(),
           name: z.string(),
           label: z.string().nullable(),
           disabled: z.boolean(),
           createdAt: z.string(),
           updatedAt: z.string().nullable(),
           expiresAt: z.string().nullable(),
+        }),
+        billing: z.object({
+          mode: z.enum(["prepaid", "postpaid"]),
+          markupPct: z.number(),
         }),
         limit: z.object({
           total: z.number().nullable(),
@@ -79,6 +38,12 @@ export const createGatewayUsageTool = (env: Env) =>
           includeByokInLimit: z.boolean(),
         }),
         usage: z.object({
+          total: z.number(),
+          daily: z.number(),
+          weekly: z.number(),
+          monthly: z.number(),
+        }),
+        effectiveCost: z.object({
           total: z.number(),
           daily: z.number(),
           weekly: z.number(),
@@ -106,30 +71,46 @@ export const createGatewayUsageTool = (env: Env) =>
         );
       }
 
-      const d = await getKeyUsage(row.openrouter_key_hash);
+      const d = await getKeyDetails(row.openrouter_key_hash);
+
+      const billingMode = row.billing_mode ?? "prepaid";
+      const markupPct = row.usage_markup_pct ?? 0;
 
       const limitLine = d.limit
         ? `Limit: $${d.limit.toFixed(4)} | Remaining: $${(d.limit_remaining ?? 0).toFixed(4)} | Reset: ${d.limit_reset ?? "none"}`
         : "Limit: none";
 
-      const summary = [
+      const lines = [
         `Key: ${d.name}`,
         `Status: ${d.disabled ? "disabled" : "active"}`,
-        `Usage — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
+        `Billing: ${billingMode}${markupPct > 0 ? ` (+${markupPct}% markup)` : ""}`,
+        `Usage (raw) — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
+      ];
+
+      if (markupPct > 0) {
+        lines.push(
+          `Usage (with ${markupPct}% markup) — Total: $${applyMarkup(d.usage, markupPct).toFixed(6)} | Monthly: $${applyMarkup(d.usage_monthly, markupPct).toFixed(6)}`,
+        );
+      }
+
+      lines.push(
         `BYOK — Total: $${d.byok_usage.toFixed(6)} | Daily: $${d.byok_usage_daily.toFixed(6)} | Weekly: $${d.byok_usage_weekly.toFixed(6)} | Monthly: $${d.byok_usage_monthly.toFixed(6)}`,
         limitLine,
-      ].join("\n");
+      );
 
       return {
-        summary,
+        summary: lines.join("\n"),
         key: {
-          hash: d.hash,
           name: d.name,
           label: d.label,
           disabled: d.disabled,
           createdAt: d.created_at,
           updatedAt: d.updated_at,
           expiresAt: d.expires_at,
+        },
+        billing: {
+          mode: billingMode,
+          markupPct,
         },
         limit: {
           total: d.limit,
@@ -142,6 +123,12 @@ export const createGatewayUsageTool = (env: Env) =>
           daily: d.usage_daily,
           weekly: d.usage_weekly,
           monthly: d.usage_monthly,
+        },
+        effectiveCost: {
+          total: applyMarkup(d.usage, markupPct),
+          daily: applyMarkup(d.usage_daily, markupPct),
+          weekly: applyMarkup(d.usage_weekly, markupPct),
+          monthly: applyMarkup(d.usage_monthly, markupPct),
         },
         byokUsage: {
           total: d.byok_usage,
