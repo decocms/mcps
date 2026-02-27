@@ -82,6 +82,7 @@ import {
 
 // ── Custom tools ──────────────────────────────────────────────────────────────
 import { searchCollections } from "./custom/search-collections.ts";
+import { reorderCollection } from "./custom/reorder-collection.ts";
 
 // ── Tool registry factories (env: Env) => Tool ────────────────────────────────
 const registryFactories = [
@@ -162,6 +163,8 @@ const registryFactories = [
 const customFactories = [
   // Collection search (endpoint absent from generated SDKs)
   searchCollections,
+  // Collection overwrite/reorder via XML import flow
+  reorderCollection,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

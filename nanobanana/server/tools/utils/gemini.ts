@@ -9,6 +9,7 @@ export const models = z.enum([
   "gemini-2.5-pro-image-preview",
   "gemini-2.5-pro-exp-03-25",
   "gemini-3-pro-image-preview",
+  "gemini-3.1-flash-image-preview",
 ]);
 export type Model = z.infer<typeof models>;
 
@@ -132,7 +133,7 @@ export async function generateImage(
     }
   }
 
-  const modelToUse = model || "gemini-2.5-flash-image-preview";
+  const modelToUse = model || "gemini-3.1-flash-image-preview";
 
   const body: OpenRouterRequestBody = {
     model: `google/${modelToUse}`,

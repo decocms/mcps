@@ -117,37 +117,56 @@ interface GeneratorResult {
   finishReason?: string;
 }
 
-interface VtexSkuContextResponse {
-  Id: number;
-  ProductId: number;
-  NameComplete: string;
-  ImageUrl: string;
+interface VtexSearchImage {
+  imageId: string;
+  imageLabel: string;
+  imageTag: string;
+  imageUrl: string;
+  imageText: string | null;
+}
+
+interface VtexSearchItem {
+  itemId: string;
+  images: VtexSearchImage[];
+}
+
+interface VtexSearchProduct {
+  productId: string;
+  productName: string;
+  items: VtexSearchItem[];
 }
 
 function buildTryOnPrompt(args: {
-  garmentsCount: number;
-  garmentTypes: string[];
+  garments: Array<{ type: string }>;
   userInstruction?: string;
   preserveFace: boolean;
   preserveBackground: boolean;
 }): string {
-  const { garmentsCount, garmentTypes, userInstruction, preserveFace } = args;
+  const { garments, userInstruction, preserveFace } = args;
+  const garmentsCount = garments.length;
 
   const garmentLine =
     garmentsCount === 1
       ? `There is 1 garment reference image.`
       : `There are ${garmentsCount} garment reference images.`;
 
-  const typeHint =
-    garmentTypes.length > 0
-      ? `Garment types (best-effort): ${garmentTypes.join(", ")}.`
-      : "";
+  const garmentLines = garments.map((garment, index) => {
+    const imageNumber = index + 2; // image 1 is always the person photo
+    const garmentNumber = index + 1;
+    const normalizedType = garment.type?.trim().toLowerCase();
+
+    if (normalizedType && normalizedType !== "unknown") {
+      return `Reference image ${imageNumber} (garment ${garmentNumber}): extract and apply ONLY the ${normalizedType.toUpperCase()} from this image. Ignore any other clothing items present in this image.`;
+    }
+
+    return `Reference image ${imageNumber} (garment ${garmentNumber}): apply this garment to the person.`;
+  });
 
   return [
     "Virtual try-on (VTO).",
     "Use the first reference image as the person photo. Use the other reference images as garments to be worn by the person.",
     garmentLine,
-    typeHint,
+    ...garmentLines,
     preserveFace
       ? "Preserve the person's identity and face. Do NOT change facial features."
       : "Keep the person's identity consistent.",
@@ -290,7 +309,7 @@ export const virtualTryOnTools = [
 
         // Fetch garment images from VTEX if skuIds provided
         let garmentUrls: string[] = [];
-        let garmentTypes: string[] = [];
+        let garmentPromptItems: Array<{ type: string }> = [];
 
         if (context.skuIds && context.skuIds.length > 0) {
           console.log(
@@ -308,39 +327,53 @@ export const virtualTryOnTools = [
 
           console.log("[VIRTUAL_TRY_ON] ✅ VTEX binding found");
 
-          if (!vtexBinding.VTEX_GET_SKU) {
-            console.error("[VIRTUAL_TRY_ON] ❌ VTEX_GET_SKU tool not found!");
+          if (!vtexBinding.VTEX_SEARCH_PRODUCTS_FILTERED_AND_ORDERED) {
+            console.error(
+              "[VIRTUAL_TRY_ON] ❌ VTEX_SEARCH_PRODUCTS_FILTERED_AND_ORDERED tool not found!",
+            );
             throw new Error(
-              "The VTEX binding does not provide VTEX_GET_SKU tool.",
+              "The VTEX binding does not provide VTEX_SEARCH_PRODUCTS_FILTERED_AND_ORDERED tool.",
             );
           }
 
-          console.log("[VIRTUAL_TRY_ON] ✅ VTEX_GET_SKU tool available");
+          console.log(
+            "[VIRTUAL_TRY_ON] ✅ VTEX_SEARCH_PRODUCTS_FILTERED_AND_ORDERED tool available",
+          );
 
-          // Fetch images for each SKU
+          // Fetch images for each SKU using the public search API
           for (const skuId of context.skuIds) {
             console.log(`[VIRTUAL_TRY_ON] 📡 Fetching images for SKU ${skuId}`);
             try {
-              const skuData = (await vtexBinding.VTEX_GET_SKU({
-                skuId,
-              })) as VtexSkuContextResponse;
+              const searchResults =
+                (await vtexBinding.VTEX_SEARCH_PRODUCTS_FILTERED_AND_ORDERED({
+                  fq: `skuId:${skuId}`,
+                  _from: "0",
+                  _to: "0",
+                })) as VtexSearchProduct[];
 
               console.log(
-                `[VIRTUAL_TRY_ON] ✅ SKU ${skuId} data received:`,
-                skuData,
+                `[VIRTUAL_TRY_ON] ✅ SKU ${skuId} search results received:`,
+                JSON.stringify(searchResults).substring(0, 200),
               );
 
-              // skuContext returns ImageUrl directly — public CDN URL
-              if (skuData.ImageUrl) {
+              const product = Array.isArray(searchResults)
+                ? searchResults[0]
+                : undefined;
+              const item = product?.items?.find(
+                (i) => i.itemId === String(skuId),
+              );
+              const imageUrl = item?.images?.[0]?.imageUrl;
+
+              if (imageUrl) {
                 console.log(
                   `[VIRTUAL_TRY_ON] 🖼️  Extracted image URL for SKU ${skuId}:`,
-                  skuData.ImageUrl,
+                  imageUrl,
                 );
-                garmentUrls.push(skuData.ImageUrl);
-                garmentTypes.push("unknown");
+                garmentUrls.push(imageUrl);
+                garmentPromptItems.push({ type: "unknown" });
               } else {
                 console.warn(
-                  `[VIRTUAL_TRY_ON] ⚠️  No ImageUrl found for SKU ${skuId}`,
+                  `[VIRTUAL_TRY_ON] ⚠️  No image found for SKU ${skuId}`,
                 );
               }
             } catch (error) {
@@ -365,15 +398,14 @@ export const virtualTryOnTools = [
             `[VIRTUAL_TRY_ON] 🖼️  Adding ${context.garments.length} URL-based garment(s)`,
           );
           garmentUrls.push(...context.garments.map((g) => g.imageUrl));
-          garmentTypes.push(
-            ...context.garments.map((g) => g.type ?? "unknown").filter(Boolean),
+          garmentPromptItems.push(
+            ...context.garments.map((g) => ({ type: g.type ?? "unknown" })),
           );
         }
 
         console.log("[VIRTUAL_TRY_ON] 📝 Building prompt...");
         const prompt = buildTryOnPrompt({
-          garmentsCount: garmentUrls.length,
-          garmentTypes,
+          garments: garmentPromptItems,
           userInstruction: context.instruction,
           preserveFace: context.preserveFace,
           preserveBackground: context.preserveBackground,
@@ -383,7 +415,7 @@ export const virtualTryOnTools = [
         const baseImageUrls = [context.personImageUrl, ...garmentUrls];
         console.log("[VIRTUAL_TRY_ON] 🖼️  Base image URLs:", baseImageUrls);
 
-        const modelToUse = context.model ?? "gemini-3-pro-image-preview";
+        const modelToUse = context.model ?? "gemini-3.1-flash-image-preview";
         console.log("[VIRTUAL_TRY_ON] 🤖 Selected model:", modelToUse);
 
         console.log(

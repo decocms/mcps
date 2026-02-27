@@ -40,7 +40,7 @@ const GenerateImageInputSchema = z.object({
     .enum(models.options)
     .optional()
     .describe(
-      "Model to use for image generation (default: gemini-2.5-flash-image-preview)",
+      "Model to use for image generation (default: gemini-3.1-flash-image-preview)",
     ),
 });
 
@@ -132,7 +132,7 @@ const createGenerateImageTool = (env: Env) =>
         });
 
         const modelToUse = (context.model ??
-          "gemini-3-pro-image-preview") as Model;
+          "gemini-3.1-flash-image-preview") as Model;
         const parsedModel: Model = models.parse(modelToUse);
 
         // Determine which images to use (baseImageUrls takes precedence)
