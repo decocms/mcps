@@ -1,6 +1,10 @@
 import { getCachedApiKey, loadApiKey, saveApiKey } from "./config-cache.ts";
-import { isSupabaseConfigured } from "./supabase-client.ts";
+import { isSupabaseConfigured, type BillingMode } from "./supabase-client.ts";
+import { updateKeyLimit } from "./openrouter-keys.ts";
 import { logger } from "./logger.ts";
+import { DEFAULT_LIMIT_USD, PROVISIONING_TIMEOUT_MS } from "./constants.ts";
+
+export { DEFAULT_LIMIT_USD };
 
 /**
  * In-flight provisioning promises per connectionId.
@@ -8,6 +12,15 @@ import { logger } from "./logger.ts";
  * when they all hit Supabase miss at the same time.
  */
 const provisioningLocks = new Map<string, Promise<string | null>>();
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Provisioning timed out")), ms),
+    ),
+  ]);
+}
 
 const OPENROUTER_KEYS_URL = "https://openrouter.ai/api/v1/keys";
 
@@ -77,7 +90,7 @@ async function createOpenRouterKey(
 
   if (!key) {
     throw new Error(
-      `OpenRouter response missing key field. Full response: ${JSON.stringify(raw)}`,
+      `OpenRouter response missing key field. Response keys: [${Object.keys(raw as Record<string, unknown>).join(", ")}]`,
     );
   }
 
@@ -99,6 +112,7 @@ export async function ensureApiKey(
   organizationId: string,
   meshUrl: string,
   organizationName?: string,
+  billingMode: BillingMode = "prepaid",
 ): Promise<string | null> {
   logger.debug("ensureApiKey called", { connectionId, organizationId });
 
@@ -152,6 +166,18 @@ export async function ensureApiKey(
         organizationName,
       );
 
+      if (billingMode === "prepaid") {
+        await updateKeyLimit(hash, DEFAULT_LIMIT_USD, null, false);
+        logger.info("Default spending limit applied (prepaid)", {
+          connectionId,
+          limitUsd: DEFAULT_LIMIT_USD,
+        });
+      } else {
+        logger.info("Postpaid mode — no spending limit applied", {
+          connectionId,
+        });
+      }
+
       logger.debug("Saving encrypted key to Supabase", { connectionId });
       await saveApiKey({
         connectionId,
@@ -160,6 +186,7 @@ export async function ensureApiKey(
         apiKey: key,
         openrouterKeyName: name,
         openrouterKeyHash: hash,
+        billingMode,
       });
 
       logger.info("Key provisioned and persisted", {
@@ -182,6 +209,7 @@ export async function ensureApiKey(
     }
   })();
 
-  provisioningLocks.set(connectionId, provisioningPromise);
-  return provisioningPromise;
+  const bounded = withTimeout(provisioningPromise, PROVISIONING_TIMEOUT_MS);
+  provisioningLocks.set(connectionId, bounded);
+  return bounded;
 }
