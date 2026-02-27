@@ -13,15 +13,47 @@ const collectionProductsResponseSchema = z.object({
   Data: z.array(collectionProductSchema).optional(),
 });
 
+export function normalizeSkuIdsInput(
+  value: string | number[] | string[] | null | undefined,
+): string | number[] | string[] | null | undefined {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    return [];
+  }
+
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed as string[] | number[];
+      }
+    } catch {
+      // Fall back to CSV parsing when JSON parsing fails.
+    }
+  }
+
+  return trimmed
+    .split(",")
+    .map((skuId) => skuId.trim())
+    .filter((skuId) => skuId.length > 0);
+}
+
 const reorderCollectionInputSchema = z.object({
-  collectionId: z
+  collectionId: z.coerce
     .number()
     .int()
     .positive()
     .describe("Collection ID to overwrite."),
-  skuIds: z
-    .array(z.number().int().positive())
-    .describe("Ordered SKU IDs that should remain in the collection."),
+  skuIds: z.preprocess(
+    normalizeSkuIdsInput,
+    z
+      .array(z.coerce.number().int().positive())
+      .describe("Ordered SKU IDs that should remain in the collection."),
+  ),
 });
 
 const reorderCollectionOutputSchema = z.object({
