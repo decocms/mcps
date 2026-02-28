@@ -38,7 +38,7 @@ export const reportListTool = (env: Env) =>
     execute: async ({ context }: { context: unknown }) => {
       try {
         const input = inputSchema.parse(context);
-        const db = getDb(getDatabaseUrl(env)).db;
+        const db = (await getDb(getDatabaseUrl(env))).db;
 
         let baseQuery = db.selectFrom("reports");
 

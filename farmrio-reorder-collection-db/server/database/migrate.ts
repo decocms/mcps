@@ -5,7 +5,7 @@ import { getDb } from "./index.ts";
 
 export async function runMigrations(): Promise<void> {
   const databaseUrl = process.env.INTERNAL_DATABASE_URL;
-  const db = getDb(databaseUrl);
+  const db = await getDb(databaseUrl);
 
   const migrator = new Migrator({
     db: db.db,

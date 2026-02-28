@@ -42,7 +42,7 @@ export const collectionUpdateTool = (env: Env) =>
     execute: async ({ context }: { context: unknown }) => {
       try {
         const input = inputSchema.parse(context);
-        const db = getDb(getDatabaseUrl(env)).db;
+        const db = (await getDb(getDatabaseUrl(env))).db;
 
         const patch: CollectionUpdate = {
           updated_at: new Date(),

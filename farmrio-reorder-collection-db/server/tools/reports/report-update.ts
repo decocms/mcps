@@ -55,7 +55,7 @@ export const reportUpdateTool = (env: Env) =>
     execute: async ({ context }: { context: unknown }) => {
       try {
         const input = inputSchema.parse(context);
-        const db = getDb(getDatabaseUrl(env)).db;
+        const db = (await getDb(getDatabaseUrl(env))).db;
 
         const patch: ReportUpdate = {
           updated_at: new Date(),
