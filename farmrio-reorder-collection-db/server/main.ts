@@ -34,6 +34,12 @@ function unauthorizedResponse(): Response {
   });
 }
 
+function isPublicRequest(req: Request): boolean {
+  return (
+    req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS"
+  );
+}
+
 let migrationPromise: Promise<void> | null = null;
 
 function ensureMigrations(): Promise<void> {
@@ -49,6 +55,10 @@ function ensureMigrations(): Promise<void> {
 
 if (runtime.fetch) {
   serve(async (req, env, ctx) => {
+    if (isPublicRequest(req)) {
+      return runtime.fetch(req, env, ctx);
+    }
+
     const requestToken = (env as Env).MESH_REQUEST_CONTEXT?.state
       ?.MCP_ACCESS_TOKEN;
     if (requestToken !== accessToken) {
