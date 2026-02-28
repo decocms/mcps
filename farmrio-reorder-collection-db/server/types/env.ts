@@ -6,7 +6,7 @@ export const StateSchema = z.object({
     .string()
     .min(1)
     .describe(
-      "Private token configured in this MCP connection. Must match server secret MCP_ACCESS_TOKEN.",
+      "Token de acesso configurado na conexão. As tools só ficam disponíveis quando este campo estiver preenchido.",
     ),
 });
 
