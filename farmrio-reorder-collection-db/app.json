@@ -21,11 +21,6 @@
   "description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",
   "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
   "unlisted": true,
-  "auth": {
-    "type": "token",
-    "header": "Authorization",
-    "prefix": "Bearer"
-  },
   "metadata": {
     "categories": [
       "Productivity"
