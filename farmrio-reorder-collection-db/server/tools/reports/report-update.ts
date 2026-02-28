@@ -5,6 +5,7 @@ import type { ReportUpdate } from "../../database/schema.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
+  parseCollectionIdInput,
   parseIsoDate,
   rankedListItemSchema,
   reportCriteriaSchema,
@@ -65,7 +66,7 @@ export const reportUpdateTool = (env: Env) =>
         }
 
         if (input.collectionId !== undefined) {
-          patch.collection_id = String(input.collectionId);
+          patch.collection_id = parseCollectionIdInput(input.collectionId);
         }
 
         if (input.summary !== undefined) {

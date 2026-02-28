@@ -29,7 +29,7 @@ export interface RankedListItem {
 export interface ReportsTable {
   id: Generated<string>;
   title: string;
-  collection_id: string;
+  collection_id: number;
   summary: string;
   date: ColumnType<Date, Date | string, Date | string>;
   criterios: ColumnType<ReportCriteria[], ReportCriteria[], ReportCriteria[]>;

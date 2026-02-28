@@ -4,6 +4,7 @@ import { getDb } from "../../database/index.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
+  parseCollectionIdInput,
   parseIsoDate,
   reportOutputSchema,
   serializeReport,
@@ -45,7 +46,7 @@ export const reportListTool = (env: Env) =>
           baseQuery = baseQuery.where(
             "collection_id",
             "=",
-            String(input.collectionId),
+            parseCollectionIdInput(input.collectionId),
           );
         }
 

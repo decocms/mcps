@@ -40,7 +40,7 @@ export const reportOutputSchema = z
   .object({
     id: z.string().uuid(),
     title: z.string(),
-    collectionId: z.union([z.string(), z.number()]),
+    collectionId: z.number().int(),
     summary: z.string(),
     date: z.string(),
     criterios: z.array(reportCriteriaSchema),
@@ -90,20 +90,24 @@ function dateToIso(value: Date | string): string {
     : new Date(value).toISOString();
 }
 
-function parseCollectionId(value: string): string | number {
-  const parsedNumber = Number(value);
-
-  if (Number.isInteger(parsedNumber) && String(parsedNumber) === value) {
-    return parsedNumber;
+export function parseCollectionIdInput(value: string | number): number {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
   }
 
-  return value;
+  const parsedNumber = Number(value);
+
+  if (!Number.isInteger(parsedNumber)) {
+    throw new Error("collectionId must be an integer.");
+  }
+
+  return parsedNumber;
 }
 
 export function serializeReport(row: ReportRow): {
   id: string;
   title: string;
-  collectionId: string | number;
+  collectionId: number;
   summary: string;
   date: string;
   criterios: ReportCriteria[];
@@ -115,7 +119,7 @@ export function serializeReport(row: ReportRow): {
   return {
     id: row.id,
     title: row.title,
-    collectionId: parseCollectionId(row.collection_id),
+    collectionId: row.collection_id,
     summary: row.summary,
     date: dateToIso(row.date),
     criterios: row.criterios,

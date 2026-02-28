@@ -5,6 +5,7 @@ import type { ReportInsert } from "../../database/schema.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
+  parseCollectionIdInput,
   parseIsoDate,
   rankedListItemSchema,
   reportCriteriaSchema,
@@ -46,7 +47,7 @@ export const reportCreateTool = (env: Env) =>
 
         const payload: ReportInsert = {
           title: input.title,
-          collection_id: String(input.collectionId),
+          collection_id: parseCollectionIdInput(input.collectionId),
           summary: input.summary,
           date: parseIsoDate(input.date),
           criterios: input.criterios,
