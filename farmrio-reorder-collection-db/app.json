@@ -4,7 +4,19 @@
   "friendlyName": "Farmrio Reorder Collection DB",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-farmrio-reorder-collection-db.decocache.com/mcp"
+    "url": "https://sites-farmrio-reorder-collection-db.decocache.com/mcp",
+    "configSchema": {
+      "type": "object",
+      "properties": {
+        "mcpAccessToken": {
+          "type": "string",
+          "title": "MCP Access Token",
+          "description": "Access token required to authenticate with the Farm Rio Reorder Collection DB MCP",
+          "format": "password"
+        }
+      },
+      "required": ["mcpAccessToken"]
+    }
   },
   "description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",
   "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
