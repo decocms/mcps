@@ -1,4 +1,4 @@
-# farmrio-reorder-collection-db
+# farmrio-reorder-collection-db 
 
 Private hosted PostgreSQL MCP for Farm Rio collection reorder reports.
 
