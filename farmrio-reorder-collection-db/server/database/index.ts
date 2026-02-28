@@ -1,6 +1,10 @@
 import { Kysely, PostgresDialect } from "kysely";
-import { Pool } from "pg";
+import { Pool, type PoolConfig } from "pg";
 import type { Database } from "./schema.ts";
+
+interface PoolConfigWithFamily extends PoolConfig {
+  family?: number;
+}
 
 export interface ReportsDatabase {
   db: Kysely<Database>;
@@ -16,7 +20,7 @@ function assertDatabaseUrl(databaseUrl: string | undefined): string {
 }
 
 export function createDatabase(databaseUrl: string): ReportsDatabase {
-  const pool = new Pool({
+  const poolConfig: PoolConfigWithFamily = {
     connectionString: databaseUrl,
     max: 10,
     keepAlive: true,
@@ -24,8 +28,11 @@ export function createDatabase(databaseUrl: string): ReportsDatabase {
     idleTimeoutMillis: 300_000,
     connectionTimeoutMillis: 30_000,
     allowExitOnIdle: true,
-    ssl: process.env.DATABASE_PG_SSL === "true" ? true : false,
-  });
+    ssl: process.env.DATABASE_PG_SSL === "true",
+    family: 4,
+  };
+
+  const pool = new Pool(poolConfig);
 
   const db = new Kysely<Database>({
     dialect: new PostgresDialect({ pool }),
