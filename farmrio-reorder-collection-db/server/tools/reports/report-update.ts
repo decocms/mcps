@@ -1,4 +1,4 @@
-import { createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { ReportUpdate } from "../../database/schema.ts";
@@ -47,7 +47,7 @@ const outputSchema = z
   .strict();
 
 export const reportUpdateTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "report_update",
     description: "Atualiza um report existente.",
     inputSchema,

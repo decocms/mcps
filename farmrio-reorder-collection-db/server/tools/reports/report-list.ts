@@ -1,4 +1,4 @@
-import { createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { Env } from "../../types/env.ts";
@@ -30,7 +30,7 @@ const outputSchema = z
   .strict();
 
 export const reportListTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "report_list",
     description: "Lista reports com filtros opcionais.",
     inputSchema,

@@ -8,14 +8,14 @@
     "configSchema": {
       "type": "object",
       "properties": {
-        "mcpAccessToken": {
+        "MCP_ACCESS_TOKEN": {
           "type": "string",
           "title": "MCP Access Token",
           "description": "Access token required to authenticate with the Farm Rio Reorder Collection DB MCP",
           "format": "password"
         }
       },
-      "required": ["mcpAccessToken"]
+      "required": ["MCP_ACCESS_TOKEN"]
     }
   },
   "description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",

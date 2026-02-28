@@ -1,4 +1,4 @@
-import { createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { CollectionUpdate } from "../../database/schema.ts";
@@ -34,7 +34,7 @@ const outputSchema = z
   .strict();
 
 export const collectionUpdateTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "collection_update",
     description: "Atualiza uma collection existente.",
     inputSchema,
