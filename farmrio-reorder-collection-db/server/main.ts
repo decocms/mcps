@@ -1,3 +1,6 @@
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
+
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 import { runMigrations } from "./database/migrate.ts";
