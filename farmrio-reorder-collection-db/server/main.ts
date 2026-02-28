@@ -5,6 +5,7 @@ import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
 export type { Env };
+export { StateSchema };
 
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
@@ -29,6 +30,20 @@ function unauthorizedResponse(): Response {
   return new Response("Unauthorized", {
     status: 401,
   });
+}
+
+function extractBearerToken(
+  authorization: string | null | undefined,
+): string | null {
+  if (!authorization) {
+    return null;
+  }
+
+  const token = authorization.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : authorization;
+  const trimmed = token.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function isPublicRequest(req: Request): boolean {
@@ -118,8 +133,10 @@ if (runtime.fetch) {
       return runtime.fetch(req, env, ctx);
     }
 
-    const requestToken = (env as Env).MESH_REQUEST_CONTEXT?.state
-      ?.MCP_ACCESS_TOKEN;
+    const requestContext = (env as Env).MESH_REQUEST_CONTEXT;
+    const requestToken =
+      requestContext?.state?.MCP_ACCESS_TOKEN ??
+      extractBearerToken(requestContext?.authorization);
     if (requestToken !== accessToken) {
       return unauthorizedResponse();
     }

@@ -1,10 +1,11 @@
-# farmrio-reorder-collection-db 
+# farmrio-reorder-collection-db
 
 Private hosted PostgreSQL MCP for Farm Rio collection reorder reports.
 
 ## Security model
 
-- Access is authenticated with `MCP_ACCESS_TOKEN` provided in the connection `StateSchema`.
+- Access is authenticated with `MCP_ACCESS_TOKEN` sent in the connection token (`Authorization: Bearer <token>`).
+- For backwards compatibility, `MCP_ACCESS_TOKEN` in the connection `StateSchema` is also accepted.
 - The expected value is set only in deploy secret `MCP_ACCESS_TOKEN`.
 - Database credentials are set only in deploy secret `INTERNAL_DATABASE_URL`.
 - No secret is stored in this repository.
@@ -26,5 +27,5 @@ bun run dev
 ## Connection configuration example
 
 ```bash
-MCP_ACCESS_TOKEN=<same value configured in deploy secret>
+Authorization: Bearer <same value configured in deploy secret MCP_ACCESS_TOKEN>
 ```
