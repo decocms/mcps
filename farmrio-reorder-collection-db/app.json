@@ -1,0 +1,30 @@
+{
+  "scopeName": "deco",
+  "name": "farmrio-reorder-collection-db",
+  "friendlyName": "Farmrio Reorder Collection DB",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-farmrio-reorder-collection-db.decocache.com/mcp"
+  },
+  "description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",
+  "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
+  "unlisted": true,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": [
+      "Productivity"
+    ],
+    "official": false,
+    "tags": [
+      "postgres",
+      "private",
+      "farmrio"
+    ],
+    "short_description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",
+    "mesh_description": "**Private Access** - Requires MCP_ACCESS_TOKEN configured in the connection state. **Hosted Database** - Uses internal managed PostgreSQL via deploy secret. **Collections & Reports** - Provides CRUD tools for collections and ranked report datasets."
+  }
+}

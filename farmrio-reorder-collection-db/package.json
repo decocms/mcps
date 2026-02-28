@@ -1,0 +1,29 @@
+{
+  "name": "farmrio-reorder-collection-db",
+  "version": "1.0.0",
+  "description": "PostgreSQL database for Farm Rio collection reorder reports",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.5",
+    "kysely": "^0.28.11",
+    "pg": "^8.19.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@types/pg": "^8.18.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
