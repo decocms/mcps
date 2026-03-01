@@ -34,24 +34,23 @@ async function resolveToIPv4(connectionString: string): Promise<string> {
 
   // Already an IPv4 address, nothing to do
   if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    console.log(`[db] host já é IPv4: ${hostname}`);
     return connectionString;
   }
 
-  try {
-    // Use lookup with family:4 instead of resolve4 — lookup goes through the
-    // full OS resolver chain (getaddrinfo), which is more reliable in K8s
-    // environments where resolve4 (direct DNS A-record queries) may fail.
-    const { address } = await lookup(hostname, { family: 4 });
-    return (
-      connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, address)
-    );
-  } catch (err) {
-    console.error(
-      `[db] Failed to resolve "${hostname}" to IPv4, using original hostname. Error:`,
-      err,
-    );
-    return connectionString;
-  }
+  console.log(`[db] resolvendo "${hostname}" para IPv4...`);
+
+  // Use lookup with family:4 — goes through the full OS resolver chain
+  // (getaddrinfo), more reliable in K8s than resolve4 (direct A-record queries).
+  // Throw on failure so the error is explicit instead of falling back to a
+  // hostname that Bun will resolve to IPv6 (setDefaultResultOrder is a no-op in Bun).
+  const { address } = await lookup(hostname, { family: 4 });
+
+  console.log(`[db] "${hostname}" resolvido para ${address}`);
+
+  return (
+    connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, address)
+  );
 }
 
 export async function createDatabase(
