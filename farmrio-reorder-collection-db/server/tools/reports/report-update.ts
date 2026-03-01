@@ -12,6 +12,7 @@ import {
   reportMetricSchema,
   reportOutputSchema,
   serializeReport,
+  validateToken,
 } from "../utils.ts";
 
 const inputSchema = z
@@ -54,6 +55,7 @@ export const reportUpdateTool = (env: Env) =>
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
       try {
+        validateToken(env);
         const input = inputSchema.parse(context);
         const db = (await getDb(getDatabaseUrl(env))).db;
 

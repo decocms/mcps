@@ -6,6 +6,7 @@ import {
   collectionOutputSchema,
   getDatabaseUrl,
   serializeCollection,
+  validateToken,
 } from "../utils.ts";
 
 const inputSchema = z
@@ -30,6 +31,7 @@ export const collectionGetTool = (env: Env) =>
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
       try {
+        validateToken(env);
         const input = inputSchema.parse(context);
         const db = (await getDb(getDatabaseUrl(env))).db;
 

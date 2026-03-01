@@ -62,9 +62,19 @@ export const collectionOutputSchema = z
   })
   .strict();
 
-export function getDatabaseUrl(env: Env): string {
-  const _env = env;
-  void _env;
+export function validateToken(env: Env): void {
+  const expectedToken = process.env.MCP_ACCESS_TOKEN;
+  if (!expectedToken) {
+    throw new Error("MCP_ACCESS_TOKEN not configured on server.");
+  }
+
+  const providedToken = env.MESH_REQUEST_CONTEXT.state.MCP_ACCESS_TOKEN;
+  if (providedToken !== expectedToken) {
+    throw new Error("Unauthorized: invalid MCP_ACCESS_TOKEN.");
+  }
+}
+
+export function getDatabaseUrl(_env: Env): string {
   const databaseUrl = process.env.INTERNAL_DATABASE_URL;
 
   if (!databaseUrl) {

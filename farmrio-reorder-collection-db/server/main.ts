@@ -25,6 +25,7 @@ function requireEnv(name: string): string {
 }
 
 void requireEnv("INTERNAL_DATABASE_URL");
+void requireEnv("MCP_ACCESS_TOKEN");
 
 if (runtime.fetch) {
   serve(runtime.fetch);
