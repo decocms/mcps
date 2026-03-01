@@ -17,20 +17,37 @@ function assertDatabaseUrl(databaseUrl: string | undefined): string {
 }
 
 async function resolveToIPv4(connectionString: string): Promise<string> {
-  try {
-    const url = new URL(connectionString);
-    const hostname = url.hostname;
+  // Find the last @ which separates credentials from host in postgres URLs.
+  // Using lastIndexOf handles passwords that contain @ characters.
+  const lastAt = connectionString.lastIndexOf("@");
+  if (lastAt === -1) return connectionString;
 
-    if (hostname && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      const [ipv4] = await resolve4(hostname);
-      url.hostname = ipv4;
-      return url.toString();
-    }
-  } catch {
-    // Fallback to original URL if resolution fails
+  const afterAt = connectionString.slice(lastAt + 1);
+
+  // Extract hostname (stops at : for port, / for dbname, or ? for params)
+  const hostMatch = afterAt.match(
+    /^([a-zA-Z0-9][a-zA-Z0-9._-]*)(?::\d+)?(?:\/|$|\?)/,
+  );
+  if (!hostMatch?.[1]) return connectionString;
+
+  const hostname = hostMatch[1];
+
+  // Already an IPv4 address, nothing to do
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return connectionString;
   }
 
-  return connectionString;
+  try {
+    const addresses = await resolve4(hostname);
+    if (addresses.length === 0) return connectionString;
+    // Replace only the hostname portion (after the last @)
+    return (
+      connectionString.slice(0, lastAt + 1) +
+      afterAt.replace(hostname, addresses[0])
+    );
+  } catch {
+    return connectionString;
+  }
 }
 
 export async function createDatabase(
