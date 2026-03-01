@@ -1,4 +1,4 @@
-import { resolve4 } from "node:dns/promises";
+import { lookup } from "node:dns/promises";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 import type { Database } from "./schema.ts";
@@ -38,14 +38,18 @@ async function resolveToIPv4(connectionString: string): Promise<string> {
   }
 
   try {
-    const addresses = await resolve4(hostname);
-    if (addresses.length === 0) return connectionString;
-    // Replace only the hostname portion (after the last @)
+    // Use lookup with family:4 instead of resolve4 — lookup goes through the
+    // full OS resolver chain (getaddrinfo), which is more reliable in K8s
+    // environments where resolve4 (direct DNS A-record queries) may fail.
+    const { address } = await lookup(hostname, { family: 4 });
     return (
-      connectionString.slice(0, lastAt + 1) +
-      afterAt.replace(hostname, addresses[0])
+      connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, address)
     );
-  } catch {
+  } catch (err) {
+    console.error(
+      `[db] Failed to resolve "${hostname}" to IPv4, using original hostname. Error:`,
+      err,
+    );
     return connectionString;
   }
 }
