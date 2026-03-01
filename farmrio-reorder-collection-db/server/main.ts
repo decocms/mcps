@@ -3,7 +3,6 @@ setDefaultResultOrder("ipv4first");
 
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import { runMigrations } from "./database/migrate.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
@@ -27,22 +26,6 @@ function requireEnv(name: string): string {
 
 void requireEnv("INTERNAL_DATABASE_URL");
 
-let migrationPromise: Promise<void> | null = null;
-
-function ensureMigrations(): Promise<void> {
-  if (!migrationPromise) {
-    migrationPromise = runMigrations().catch((error) => {
-      migrationPromise = null;
-      throw error;
-    });
-  }
-
-  return migrationPromise;
-}
-
 if (runtime.fetch) {
-  serve(async (req, env, ctx) => {
-    await ensureMigrations();
-    return runtime.fetch(req, env, ctx);
-  });
+  serve(runtime.fetch);
 }
