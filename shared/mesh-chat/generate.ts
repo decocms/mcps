@@ -81,13 +81,17 @@ export function messagesToPrompt(
     }
   }
 
-  if (consolidatedParts.length > 0) {
-    prompt.push({
-      id: generateMessageId(),
-      role: "user",
-      parts: consolidatedParts,
-    });
-  }
+  // The Decopilot API requires exactly one non-system message.
+  // Always include a user message — use an empty placeholder if no non-system
+  // messages were provided (e.g. system-only input).
+  prompt.push({
+    id: generateMessageId(),
+    role: "user",
+    parts:
+      consolidatedParts.length > 0
+        ? consolidatedParts
+        : [{ type: "text", text: "" }],
+  });
 
   return prompt;
 }
