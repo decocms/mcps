@@ -83,7 +83,7 @@ export const createSetAlertTool = (env: Env) =>
         summary,
         enabled,
         threshold_usd: resolvedThreshold,
-        email: enabled ? resolvedEmail : row.alert_email,
+        email: resolvedEmail ?? null,
         connectionId,
       };
     },

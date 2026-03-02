@@ -113,6 +113,17 @@ export const createGatewayUsageTool = (env: Env) =>
         ? `Limit: $${d.limit.toFixed(4)} | Remaining: $${(d.limit_remaining ?? 0).toFixed(4)} | Reset: ${d.limit_reset ?? "none"}`
         : "Limit: none";
 
+      let forecastLabel: string;
+      if (estimation) {
+        forecastLabel = estimationSummary(estimation);
+      } else if (d.limit == null) {
+        forecastLabel = "No spending limit set — usage is unlimited.";
+      } else if ((d.limit_remaining ?? 0) <= 0) {
+        forecastLabel = "Credit exhausted.";
+      } else {
+        forecastLabel = "No usage yet — estimation not available.";
+      }
+
       const lines = [
         `Key: ${d.name}`,
         `Status: ${d.disabled ? "disabled" : "active"}`,
@@ -120,7 +131,7 @@ export const createGatewayUsageTool = (env: Env) =>
         `Usage — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
         `BYOK — Total: $${d.byok_usage.toFixed(6)} | Daily: $${d.byok_usage_daily.toFixed(6)} | Weekly: $${d.byok_usage_weekly.toFixed(6)} | Monthly: $${d.byok_usage_monthly.toFixed(6)}`,
         limitLine,
-        `Forecast: ${estimationSummary(estimation)}`,
+        `Forecast: ${forecastLabel}`,
       ];
 
       return {

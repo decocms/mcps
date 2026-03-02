@@ -22,40 +22,40 @@ const verifiedConnections = new Set<string>();
 async function ensureKeyLimitMatchesBillingMode(
   connectionId: string,
 ): Promise<void> {
-  if (verifiedConnections.has(connectionId)) return;
-
   try {
     const row = await loadConnectionConfig(connectionId);
     if (!row?.openrouter_key_hash) return;
 
-    const billingMode = row.billing_mode ?? "prepaid";
-    const details = await getKeyDetails(row.openrouter_key_hash);
+    if (!verifiedConnections.has(connectionId)) {
+      const billingMode = row.billing_mode ?? "prepaid";
+      const isSubscription = row.is_subscription ?? false;
+      const details = await getKeyDetails(row.openrouter_key_hash);
 
-    const isSubscription = row.is_subscription ?? false;
+      const expectedDefault =
+        billingMode === "prepaid"
+          ? DEFAULT_LIMIT_USD
+          : DEFAULT_POSTPAID_LIMIT_USD;
 
-    const expectedDefault =
-      billingMode === "prepaid"
-        ? DEFAULT_LIMIT_USD
-        : DEFAULT_POSTPAID_LIMIT_USD;
+      if (details.limit == null) {
+        logger.info("Key missing limit, applying default", {
+          connectionId,
+          billingMode,
+          defaultLimit: expectedDefault,
+          isSubscription,
+        });
+        await updateKeyLimit(
+          row.openrouter_key_hash,
+          expectedDefault,
+          isSubscription ? "monthly" : null,
+          false,
+        );
+      }
 
-    if (details.limit == null) {
-      logger.info("Key missing limit, applying default", {
-        connectionId,
-        billingMode,
-        defaultLimit: expectedDefault,
-        isSubscription,
-      });
-      await updateKeyLimit(
-        row.openrouter_key_hash,
-        expectedDefault,
-        isSubscription ? "monthly" : null,
-        false,
-      );
+      verifiedConnections.add(connectionId);
     }
 
-    verifiedConnections.add(connectionId);
-
     if (row.alert_enabled) {
+      const details = await getKeyDetails(row.openrouter_key_hash);
       checkAndSendBalanceAlert(
         row,
         details.limit,

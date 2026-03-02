@@ -22,6 +22,13 @@ export { DEFAULT_LIMIT_USD, DEFAULT_POSTPAID_LIMIT_USD };
  */
 const provisioningLocks = new Map<string, Promise<string | null>>();
 
+/**
+ * Per-organization lock to prevent TOCTOU races when deduplicating keys.
+ * Two connections for the same org hitting `findExistingOrgConnection` = null
+ * simultaneously could both create keys without this.
+ */
+const orgProvisioningLocks = new Map<string, Promise<string | null>>();
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
@@ -123,6 +130,144 @@ async function createOpenRouterKey(
 }
 
 /**
+ * Org-scoped provisioning: either reuse an existing key or create a new one.
+ * Protected by a per-org lock so two connections for the same org cannot
+ * both see findExistingOrgConnection = null and create duplicate keys.
+ */
+async function provisionOrReuseKey(
+  connectionId: string,
+  organizationId: string,
+  meshUrl: string,
+  organizationName: string | undefined,
+  billingMode: BillingMode,
+  isSubscription: boolean,
+): Promise<string | null> {
+  const existingOrgLock = orgProvisioningLocks.get(organizationId);
+  if (existingOrgLock) {
+    logger.debug("Org provisioning in-flight, waiting", {
+      connectionId,
+      organizationId,
+    });
+    await existingOrgLock;
+    const recheckDb = await loadApiKey(connectionId);
+    if (recheckDb) return recheckDb;
+  }
+
+  let resolve: (v: string | null) => void;
+  const orgPromise = new Promise<string | null>((r) => {
+    resolve = r;
+  });
+  orgProvisioningLocks.set(organizationId, orgPromise);
+
+  try {
+    const existingOrgRow = await findExistingOrgConnection(organizationId);
+    if (
+      existingOrgRow?.encrypted_api_key &&
+      existingOrgRow.encryption_iv &&
+      existingOrgRow.encryption_tag
+    ) {
+      logger.info("Org already has a key from another connection — reusing", {
+        connectionId,
+        organizationId,
+        existingConnectionId: existingOrgRow.connection_id,
+        keyHash: existingOrgRow.openrouter_key_hash,
+      });
+
+      const existingKey = decrypt({
+        ciphertext: existingOrgRow.encrypted_api_key,
+        iv: existingOrgRow.encryption_iv,
+        tag: existingOrgRow.encryption_tag,
+      });
+
+      await saveApiKey({
+        connectionId,
+        organizationId,
+        meshUrl,
+        apiKey: existingKey,
+        openrouterKeyName: existingOrgRow.openrouter_key_name ?? "",
+        openrouterKeyHash: existingOrgRow.openrouter_key_hash ?? "",
+        billingMode: existingOrgRow.billing_mode,
+        isSubscription: existingOrgRow.is_subscription,
+        usageMarkupPct: existingOrgRow.usage_markup_pct,
+        maxLimitUsd: existingOrgRow.max_limit_usd,
+      });
+
+      resolve!(existingKey);
+      return existingKey;
+    }
+
+    logger.info("Provisioning new OpenRouter API key", {
+      connectionId,
+      organizationId,
+      organizationName,
+      source: "openrouter",
+    });
+
+    const { key, hash, name } = await createOpenRouterKey(
+      organizationId,
+      organizationName,
+      billingMode,
+      isSubscription,
+    );
+
+    const limitReset: LimitReset | null = isSubscription ? "monthly" : null;
+    const defaultLimit =
+      billingMode === "prepaid"
+        ? DEFAULT_LIMIT_USD
+        : DEFAULT_POSTPAID_LIMIT_USD;
+
+    logger.info("Applying default spending limit to new key", {
+      connectionId,
+      keyHash: hash,
+      billingMode,
+      limitUsd: defaultLimit,
+      isSubscription,
+    });
+    const limitResult = await updateKeyLimit(
+      hash,
+      defaultLimit,
+      limitReset,
+      false,
+    );
+    logger.info("Default spending limit applied", {
+      connectionId,
+      billingMode,
+      limitUsd: defaultLimit,
+      limitReset,
+      resultLimit: limitResult.limit,
+      resultRemaining: limitResult.limit_remaining,
+    });
+
+    logger.debug("Saving encrypted key to Supabase", { connectionId });
+    await saveApiKey({
+      connectionId,
+      organizationId,
+      meshUrl,
+      apiKey: key,
+      openrouterKeyName: name,
+      openrouterKeyHash: hash,
+      billingMode,
+      isSubscription,
+    });
+
+    logger.info("Key provisioned and persisted", {
+      connectionId,
+      organizationId,
+      keyName: name,
+      keyHash: hash,
+    });
+
+    resolve!(key);
+    return key;
+  } catch (error) {
+    resolve!(null);
+    throw error;
+  } finally {
+    orgProvisioningLocks.delete(organizationId);
+  }
+}
+
+/**
  * Ensure an OpenRouter API key exists for this connection.
  * 1. Check in-memory cache (sync, fast)
  * 2. Check Supabase (decrypt on load)
@@ -178,105 +323,14 @@ export async function ensureApiKey(
 
   const provisioningPromise = (async (): Promise<string | null> => {
     try {
-      // Check if this organization already has a provisioned key
-      // from a different connection — reuse it instead of creating a new one
-      const existingOrgRow = await findExistingOrgConnection(organizationId);
-      if (
-        existingOrgRow?.encrypted_api_key &&
-        existingOrgRow.encryption_iv &&
-        existingOrgRow.encryption_tag
-      ) {
-        logger.info("Org already has a key from another connection — reusing", {
-          connectionId,
-          organizationId,
-          existingConnectionId: existingOrgRow.connection_id,
-          keyHash: existingOrgRow.openrouter_key_hash,
-        });
-
-        const existingKey = decrypt({
-          ciphertext: existingOrgRow.encrypted_api_key,
-          iv: existingOrgRow.encryption_iv,
-          tag: existingOrgRow.encryption_tag,
-        });
-
-        await saveApiKey({
-          connectionId,
-          organizationId,
-          meshUrl,
-          apiKey: existingKey,
-          openrouterKeyName: existingOrgRow.openrouter_key_name ?? "",
-          openrouterKeyHash: existingOrgRow.openrouter_key_hash ?? "",
-          billingMode: existingOrgRow.billing_mode,
-          isSubscription: existingOrgRow.is_subscription,
-          usageMarkupPct: existingOrgRow.usage_markup_pct,
-          maxLimitUsd: existingOrgRow.max_limit_usd,
-        });
-
-        return existingKey;
-      }
-
-      logger.info("Provisioning new OpenRouter API key", {
-        connectionId,
-        organizationId,
-        organizationName,
-        source: "openrouter",
-      });
-
-      const { key, hash, name } = await createOpenRouterKey(
-        organizationId,
-        organizationName,
-        billingMode,
-        isSubscription,
-      );
-
-      const limitReset: LimitReset | null = isSubscription ? "monthly" : null;
-      const defaultLimit =
-        billingMode === "prepaid"
-          ? DEFAULT_LIMIT_USD
-          : DEFAULT_POSTPAID_LIMIT_USD;
-
-      logger.info("Applying default spending limit to new key", {
-        connectionId,
-        keyHash: hash,
-        billingMode,
-        limitUsd: defaultLimit,
-        isSubscription,
-      });
-      const limitResult = await updateKeyLimit(
-        hash,
-        defaultLimit,
-        limitReset,
-        false,
-      );
-      logger.info("Default spending limit applied", {
-        connectionId,
-        billingMode,
-        limitUsd: defaultLimit,
-        limitReset,
-        resultLimit: limitResult.limit,
-        resultRemaining: limitResult.limit_remaining,
-      });
-
-      logger.debug("Saving encrypted key to Supabase", { connectionId });
-      await saveApiKey({
+      return await provisionOrReuseKey(
         connectionId,
         organizationId,
         meshUrl,
-        apiKey: key,
-        openrouterKeyName: name,
-        openrouterKeyHash: hash,
+        organizationName,
         billingMode,
         isSubscription,
-      });
-
-      logger.info("Key provisioned and persisted", {
-        connectionId,
-        organizationId,
-        keyName: name,
-        keyHash: hash,
-      });
-
-      return key;
+      );
     } catch (error) {
       logger.error("Failed to provision OpenRouter API key", {
         connectionId,

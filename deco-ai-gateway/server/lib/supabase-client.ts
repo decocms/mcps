@@ -273,7 +273,7 @@ export async function claimAlertSlot(
     .from(TABLE_NAME)
     .update({ alert_sent_for_limit: currentLimit })
     .eq("connection_id", connectionId)
-    .neq("alert_sent_for_limit", currentLimit)
+    .or(`alert_sent_for_limit.is.null,alert_sent_for_limit.neq.${currentLimit}`)
     .select("connection_id");
 
   if (error) {
