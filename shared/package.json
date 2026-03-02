@@ -21,7 +21,8 @@
         "./registry": "./registry.ts",
         "./google-oauth": "./google-oauth.ts",
         "./whatsapp": "./whatsapp/index.ts",
-        "./api-key-manager": "./api-key-manager.ts"
+        "./api-key-manager": "./api-key-manager.ts",
+        "./mesh-chat": "./mesh-chat/index.ts"
     },
     "devDependencies": {
         "@decocms/bindings": "1.0.7",
