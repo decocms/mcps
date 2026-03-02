@@ -12,9 +12,9 @@ import {
 
 const inputSchema = z
   .object({
-    collectionId: z.number().int(),
-    nome: z.string().min(1),
-    isEnable: z.boolean().default(true),
+    collectionId: z.string().min(1),
+    title: z.string().min(1),
+    isEnabled: z.boolean().default(true),
   })
   .strict();
 
@@ -40,12 +40,12 @@ export const collectionCreateTool = (env: Env) =>
 
         const payload: CollectionInsert = {
           collection_id: input.collectionId,
-          nome: input.nome,
-          is_enable: input.isEnable,
+          title: input.title,
+          is_enabled: input.isEnabled,
         };
 
         const created = await db
-          .insertInto("collections")
+          .insertInto("collection")
           .values(payload)
           .returningAll()
           .executeTakeFirst();

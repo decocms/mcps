@@ -5,11 +5,6 @@ import type { ReportUpdate } from "../../database/schema.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
-  parseCollectionIdInput,
-  parseIsoDate,
-  rankedListItemSchema,
-  reportCriteriaSchema,
-  reportMetricSchema,
   reportOutputSchema,
   serializeReport,
   validateToken,
@@ -17,25 +12,23 @@ import {
 
 const inputSchema = z
   .object({
-    id: z.string().uuid(),
+    id: z.number().int().positive(),
     title: z.string().min(1).optional(),
-    collectionId: z.union([z.string().min(1), z.number()]).optional(),
-    summary: z.string().min(1).optional(),
-    date: z.string().optional(),
-    criterios: z.array(reportCriteriaSchema).optional(),
-    metricas: z.array(reportMetricSchema).optional(),
-    rankedList: z.array(rankedListItemSchema).optional(),
+    category: z.string().min(1).optional(),
+    status: z.enum(["passing", "failing", "warning"]).optional(),
+    summary: z.string().optional(),
+    source: z.string().optional(),
+    tags: z.array(z.string()).optional(),
   })
   .strict()
   .refine(
     (data) =>
       data.title !== undefined ||
-      data.collectionId !== undefined ||
+      data.category !== undefined ||
+      data.status !== undefined ||
       data.summary !== undefined ||
-      data.date !== undefined ||
-      data.criterios !== undefined ||
-      data.metricas !== undefined ||
-      data.rankedList !== undefined,
+      data.source !== undefined ||
+      data.tags !== undefined,
     { message: "At least one field to update is required." },
   );
 
@@ -50,7 +43,7 @@ const outputSchema = z
 export const reportUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "report_update",
-    description: "Atualiza um report existente.",
+    description: "Atualiza campos de um report existente.",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -67,32 +60,28 @@ export const reportUpdateTool = (env: Env) =>
           patch.title = input.title;
         }
 
-        if (input.collectionId !== undefined) {
-          patch.collection_id = parseCollectionIdInput(input.collectionId);
+        if (input.category !== undefined) {
+          patch.category = input.category;
+        }
+
+        if (input.status !== undefined) {
+          patch.status = input.status;
         }
 
         if (input.summary !== undefined) {
           patch.summary = input.summary;
         }
 
-        if (input.date !== undefined) {
-          patch.date = parseIsoDate(input.date);
+        if (input.source !== undefined) {
+          patch.source = input.source;
         }
 
-        if (input.criterios !== undefined) {
-          patch.criterios = input.criterios;
-        }
-
-        if (input.metricas !== undefined) {
-          patch.metricas = input.metricas;
-        }
-
-        if (input.rankedList !== undefined) {
-          patch.ranked_list = input.rankedList;
+        if (input.tags !== undefined) {
+          patch.tags = input.tags;
         }
 
         const updated = await db
-          .updateTable("reports")
+          .updateTable("report")
           .set(patch)
           .where("id", "=", input.id)
           .returningAll()

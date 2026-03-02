@@ -2,65 +2,162 @@ import z from "zod";
 import type { Env } from "../types/env.ts";
 import type {
   CollectionRow,
-  RankedListItem,
-  ReportCriteria,
-  ReportMetric,
   ReportRow,
+  ReportSectionRow,
+  SectionCriteriaItemRow,
+  SectionMetricItemRow,
+  SectionRankedItemRow,
 } from "../database/schema.ts";
 
-export const reportCriteriaSchema = z
+// ─── Schemas de input para seções ────────────────────────────────────────────
+
+export const sectionCriteriaItemInputSchema = z
   .object({
-    nome: z.string().min(1),
-    descricao: z.string().optional(),
-    peso: z.number().optional(),
+    label: z.string().min(1),
+    description: z.string().optional(),
   })
   .strict();
 
-export const reportMetricSchema = z
+export const sectionMetricItemInputSchema = z
   .object({
-    nome: z.string().min(1),
-    valor: z.number(),
-    unidade: z.string().optional(),
-    fonte: z.string().optional(),
+    label: z.string().min(1),
+    value: z.number(),
+    unit: z.string().optional(),
+    status: z.enum(["info", "warning", "error", "success"]),
   })
   .strict();
 
-export const rankedListItemSchema = z
+export const sectionRankedItemInputSchema = z
   .object({
-    posicao: z.number().int().positive(),
-    itemId: z.union([z.string().min(1), z.number()]),
-    score: z.number(),
-    detalhes: z
-      .record(z.string(), z.union([z.number(), z.string()]))
-      .optional(),
+    position: z.number().int().positive(),
+    delta: z.number().int(),
+    label: z.string().min(1),
+    image: z.string().optional(),
+    valueSelectRate: z.string().optional(),
+    valueAvailability: z.string().optional(),
+    sessions: z.number().int().optional(),
+    selectRate: z.number().optional(),
+    addToCartRate: z.number().optional(),
+    purchaseRate: z.number().optional(),
   })
   .strict();
+
+export const sectionInputSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("criteria"),
+      title: z.string().optional(),
+      content: z.string().optional(),
+      position: z.number().int().positive(),
+      items: z.array(sectionCriteriaItemInputSchema),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("metrics"),
+      title: z.string().optional(),
+      content: z.string().optional(),
+      position: z.number().int().positive(),
+      items: z.array(sectionMetricItemInputSchema),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("note"),
+      title: z.string().optional(),
+      content: z.string().min(1),
+      position: z.number().int().positive(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("ranked-list"),
+      title: z.string().optional(),
+      content: z.string().optional(),
+      position: z.number().int().positive(),
+      items: z.array(sectionRankedItemInputSchema),
+    })
+    .strict(),
+]);
+
+// ─── Schemas de output ────────────────────────────────────────────────────────
+
+export const sectionCriteriaItemOutputSchema = z
+  .object({
+    id: z.number().int(),
+    label: z.string(),
+    description: z.string().nullable(),
+  })
+  .strict();
+
+export const sectionMetricItemOutputSchema = z
+  .object({
+    id: z.number().int(),
+    label: z.string(),
+    value: z.number(),
+    unit: z.string().nullable(),
+    status: z.enum(["info", "warning", "error", "success"]),
+  })
+  .strict();
+
+export const sectionRankedItemOutputSchema = z
+  .object({
+    id: z.number().int(),
+    position: z.number().int(),
+    delta: z.number().int(),
+    label: z.string(),
+    image: z.string().nullable(),
+    valueSelectRate: z.string().nullable(),
+    valueAvailability: z.string().nullable(),
+    sessions: z.number().int().nullable(),
+    selectRate: z.number().nullable(),
+    addToCartRate: z.number().nullable(),
+    purchaseRate: z.number().nullable(),
+  })
+  .strict();
+
+export const reportSectionOutputSchema = z.object({
+  id: z.number().int(),
+  reportId: z.number().int(),
+  type: z.enum(["metrics", "criteria", "note", "ranked-list"]),
+  title: z.string().nullable(),
+  content: z.string().nullable(),
+  position: z.number().int(),
+  criteriaItems: z.array(sectionCriteriaItemOutputSchema).optional(),
+  metricItems: z.array(sectionMetricItemOutputSchema).optional(),
+  rankedItems: z.array(sectionRankedItemOutputSchema).optional(),
+});
 
 export const reportOutputSchema = z
   .object({
-    id: z.string().uuid(),
-    title: z.string(),
+    id: z.number().int(),
     collectionId: z.number().int(),
-    summary: z.string(),
-    date: z.string(),
-    criterios: z.array(reportCriteriaSchema),
-    metricas: z.array(reportMetricSchema),
-    rankedList: z.array(rankedListItemSchema),
-    createdAt: z.string(),
+    title: z.string(),
+    category: z.string(),
+    status: z.enum(["passing", "failing", "warning"]),
+    summary: z.string().nullable(),
+    source: z.string().nullable(),
+    tags: z.array(z.string()).nullable(),
     updatedAt: z.string(),
   })
   .strict();
 
+export const reportWithSectionsOutputSchema = reportOutputSchema
+  .omit({})
+  .extend({
+    sections: z.array(reportSectionOutputSchema),
+  });
+
 export const collectionOutputSchema = z
   .object({
-    id: z.string().uuid(),
-    collectionId: z.number().int(),
-    nome: z.string(),
-    isEnable: z.boolean(),
-    createdAt: z.string(),
-    updatedAt: z.string(),
+    id: z.number().int(),
+    collectionId: z.string(),
+    title: z.string(),
+    isEnabled: z.boolean(),
   })
   .strict();
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function validateToken(env: Env): void {
   const expectedToken = process.env.MCP_ACCESS_TOKEN;
@@ -84,76 +181,107 @@ export function getDatabaseUrl(_env: Env): string {
   return databaseUrl;
 }
 
-export function parseIsoDate(value: string): Date {
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    throw new Error("Invalid ISO date.");
-  }
-
-  return parsedDate;
-}
-
 function dateToIso(value: Date | string): string {
   return value instanceof Date
     ? value.toISOString()
     : new Date(value).toISOString();
 }
 
-export function parseCollectionIdInput(value: string | number): number {
-  if (typeof value === "number" && Number.isInteger(value)) {
-    return value;
-  }
+// ─── Serializers ─────────────────────────────────────────────────────────────
 
-  const parsedNumber = Number(value);
-
-  if (!Number.isInteger(parsedNumber)) {
-    throw new Error("collectionId must be an integer.");
-  }
-
-  return parsedNumber;
-}
-
-export function serializeReport(row: ReportRow): {
-  id: string;
-  title: string;
-  collectionId: number;
-  summary: string;
-  date: string;
-  criterios: ReportCriteria[];
-  metricas: ReportMetric[];
-  rankedList: RankedListItem[];
-  createdAt: string;
-  updatedAt: string;
-} {
+export function serializeCollection(row: CollectionRow) {
   return {
     id: row.id,
+    collectionId: row.collection_id,
     title: row.title,
+    isEnabled: row.is_enabled,
+  };
+}
+
+export function serializeReport(row: ReportRow) {
+  return {
+    id: row.id,
     collectionId: row.collection_id,
-    summary: row.summary,
-    date: dateToIso(row.date),
-    criterios: row.criterios,
-    metricas: row.metricas,
-    rankedList: row.ranked_list,
-    createdAt: dateToIso(row.created_at),
+    title: row.title,
+    category: row.category,
+    status: row.status,
+    summary: row.summary ?? null,
+    source: row.source ?? null,
+    tags: row.tags ?? null,
     updatedAt: dateToIso(row.updated_at),
   };
 }
 
-export function serializeCollection(row: CollectionRow): {
-  id: string;
-  collectionId: number;
-  nome: string;
-  isEnable: boolean;
-  createdAt: string;
-  updatedAt: string;
-} {
+export function serializeSectionCriteriaItem(row: SectionCriteriaItemRow) {
   return {
     id: row.id,
-    collectionId: row.collection_id,
-    nome: row.nome,
-    isEnable: row.is_enable,
-    createdAt: dateToIso(row.created_at),
-    updatedAt: dateToIso(row.updated_at),
+    label: row.label,
+    description: row.description ?? null,
   };
+}
+
+export function serializeSectionMetricItem(row: SectionMetricItemRow) {
+  return {
+    id: row.id,
+    label: row.label,
+    value: Number(row.value),
+    unit: row.unit ?? null,
+    status: row.status,
+  };
+}
+
+export function serializeSectionRankedItem(row: SectionRankedItemRow) {
+  return {
+    id: row.id,
+    position: row.position,
+    delta: row.delta,
+    label: row.label,
+    image: row.image ?? null,
+    valueSelectRate: row.value_select_rate ?? null,
+    valueAvailability: row.value_availability ?? null,
+    sessions: row.sessions ?? null,
+    selectRate: row.select_rate != null ? Number(row.select_rate) : null,
+    addToCartRate:
+      row.add_to_cart_rate != null ? Number(row.add_to_cart_rate) : null,
+    purchaseRate: row.purchase_rate != null ? Number(row.purchase_rate) : null,
+  };
+}
+
+export function serializeSection(
+  row: ReportSectionRow,
+  criteriaItems: SectionCriteriaItemRow[],
+  metricItems: SectionMetricItemRow[],
+  rankedItems: SectionRankedItemRow[],
+) {
+  const base = {
+    id: row.id,
+    reportId: row.report_id,
+    type: row.type,
+    title: row.title ?? null,
+    content: row.content ?? null,
+    position: row.position,
+  };
+
+  if (row.type === "criteria") {
+    return {
+      ...base,
+      criteriaItems: criteriaItems.map(serializeSectionCriteriaItem),
+    };
+  }
+
+  if (row.type === "metrics") {
+    return {
+      ...base,
+      metricItems: metricItems.map(serializeSectionMetricItem),
+    };
+  }
+
+  if (row.type === "ranked-list") {
+    return {
+      ...base,
+      rankedItems: rankedItems.map(serializeSectionRankedItem),
+    };
+  }
+
+  return base;
 }

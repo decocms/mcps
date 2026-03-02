@@ -11,7 +11,7 @@ import {
 
 const inputSchema = z
   .object({
-    isEnable: z.boolean().optional(),
+    isEnabled: z.boolean().optional(),
     limit: z.number().int().positive().max(200).default(50),
     offset: z.number().int().nonnegative().default(0),
   })
@@ -38,15 +38,15 @@ export const collectionListTool = (env: Env) =>
         const input = inputSchema.parse(context);
         const db = (await getDb(getDatabaseUrl(env))).db;
 
-        let baseQuery = db.selectFrom("collections");
-        if (input.isEnable !== undefined) {
-          baseQuery = baseQuery.where("is_enable", "=", input.isEnable);
+        let baseQuery = db.selectFrom("collection");
+        if (input.isEnabled !== undefined) {
+          baseQuery = baseQuery.where("is_enabled", "=", input.isEnabled);
         }
 
         const [rows, countRow] = await Promise.all([
           baseQuery
             .selectAll()
-            .orderBy("created_at", "desc")
+            .orderBy("id", "asc")
             .limit(input.limit)
             .offset(input.offset)
             .execute(),

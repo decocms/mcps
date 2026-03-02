@@ -6,57 +6,94 @@ import type {
   Updateable,
 } from "kysely";
 
-export interface ReportCriteria {
-  nome: string;
-  descricao?: string;
-  peso?: number;
-}
+export type ReportStatus = "passing" | "failing" | "warning";
+export type SectionType = "metrics" | "criteria" | "note" | "ranked-list";
+export type MetricItemStatus = "info" | "warning" | "error" | "success";
 
-export interface ReportMetric {
-  nome: string;
-  valor: number;
-  unidade?: string;
-  fonte?: string;
-}
-
-export interface RankedListItem {
-  posicao: number;
-  itemId: string | number;
-  score: number;
-  detalhes?: Record<string, number | string>;
-}
-
-export interface ReportsTable {
-  id: Generated<string>;
+export interface CollectionTable {
+  id: Generated<number>;
+  collection_id: string;
   title: string;
-  collection_id: number;
-  summary: string;
-  date: ColumnType<Date, Date | string, Date | string>;
-  criterios: ColumnType<ReportCriteria[], ReportCriteria[], ReportCriteria[]>;
-  metricas: ColumnType<ReportMetric[], ReportMetric[], ReportMetric[]>;
-  ranked_list: ColumnType<RankedListItem[], RankedListItem[], RankedListItem[]>;
-  created_at: ColumnType<Date, never, never>;
-  updated_at: ColumnType<Date, never, Date | string>;
+  is_enabled: boolean;
 }
 
-export interface CollectionsTable {
-  id: Generated<string>;
+export interface ReportTable {
+  id: Generated<number>;
   collection_id: number;
-  nome: string;
-  is_enable: boolean;
-  created_at: ColumnType<Date, never, never>;
-  updated_at: ColumnType<Date, never, Date | string>;
+  title: string;
+  category: string;
+  status: ReportStatus;
+  summary: string | null;
+  source: string | null;
+  tags: string[] | null;
+  updated_at: ColumnType<Date, Date | string, Date | string>;
+}
+
+export interface ReportSectionTable {
+  id: Generated<number>;
+  report_id: number;
+  type: SectionType;
+  title: string | null;
+  content: string | null;
+  position: number;
+}
+
+export interface SectionCriteriaItemTable {
+  id: Generated<number>;
+  section_id: number;
+  label: string;
+  description: string | null;
+}
+
+export interface SectionMetricItemTable {
+  id: Generated<number>;
+  section_id: number;
+  label: string;
+  value: ColumnType<string, number, number>;
+  unit: string | null;
+  status: MetricItemStatus;
+}
+
+export interface SectionRankedItemTable {
+  id: Generated<number>;
+  section_id: number;
+  position: number;
+  delta: number;
+  label: string;
+  image: string | null;
+  value_select_rate: string | null;
+  value_availability: string | null;
+  sessions: number | null;
+  select_rate: ColumnType<string | null, number | null, number | null>;
+  add_to_cart_rate: ColumnType<string | null, number | null, number | null>;
+  purchase_rate: ColumnType<string | null, number | null, number | null>;
 }
 
 export interface Database {
-  reports: ReportsTable;
-  collections: CollectionsTable;
+  collection: CollectionTable;
+  report: ReportTable;
+  report_section: ReportSectionTable;
+  section_criteria_item: SectionCriteriaItemTable;
+  section_metric_item: SectionMetricItemTable;
+  section_ranked_item: SectionRankedItemTable;
 }
 
-export type ReportRow = Selectable<ReportsTable>;
-export type ReportInsert = Insertable<ReportsTable>;
-export type ReportUpdate = Updateable<ReportsTable>;
+export type CollectionRow = Selectable<CollectionTable>;
+export type CollectionInsert = Insertable<CollectionTable>;
+export type CollectionUpdate = Updateable<CollectionTable>;
 
-export type CollectionRow = Selectable<CollectionsTable>;
-export type CollectionInsert = Insertable<CollectionsTable>;
-export type CollectionUpdate = Updateable<CollectionsTable>;
+export type ReportRow = Selectable<ReportTable>;
+export type ReportInsert = Insertable<ReportTable>;
+export type ReportUpdate = Updateable<ReportTable>;
+
+export type ReportSectionRow = Selectable<ReportSectionTable>;
+export type ReportSectionInsert = Insertable<ReportSectionTable>;
+
+export type SectionCriteriaItemRow = Selectable<SectionCriteriaItemTable>;
+export type SectionCriteriaItemInsert = Insertable<SectionCriteriaItemTable>;
+
+export type SectionMetricItemRow = Selectable<SectionMetricItemTable>;
+export type SectionMetricItemInsert = Insertable<SectionMetricItemTable>;
+
+export type SectionRankedItemRow = Selectable<SectionRankedItemTable>;
+export type SectionRankedItemInsert = Insertable<SectionRankedItemTable>;

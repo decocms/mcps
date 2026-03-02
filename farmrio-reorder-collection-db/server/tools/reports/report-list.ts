@@ -4,8 +4,6 @@ import { getDb } from "../../database/index.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
-  parseCollectionIdInput,
-  parseIsoDate,
   reportOutputSchema,
   serializeReport,
   validateToken,
@@ -13,9 +11,9 @@ import {
 
 const inputSchema = z
   .object({
-    collectionId: z.union([z.string().min(1), z.number()]).optional(),
-    dateFrom: z.string().optional(),
-    dateTo: z.string().optional(),
+    collectionId: z.number().int().positive().optional(),
+    category: z.string().optional(),
+    status: z.enum(["passing", "failing", "warning"]).optional(),
     limit: z.number().int().positive().max(200).default(20),
     offset: z.number().int().nonnegative().default(0),
   })
@@ -42,32 +40,24 @@ export const reportListTool = (env: Env) =>
         const input = inputSchema.parse(context);
         const db = (await getDb(getDatabaseUrl(env))).db;
 
-        let baseQuery = db.selectFrom("reports");
+        let baseQuery = db.selectFrom("report");
 
         if (input.collectionId !== undefined) {
-          baseQuery = baseQuery.where(
-            "collection_id",
-            "=",
-            parseCollectionIdInput(input.collectionId),
-          );
+          baseQuery = baseQuery.where("collection_id", "=", input.collectionId);
         }
 
-        if (input.dateFrom) {
-          baseQuery = baseQuery.where(
-            "date",
-            ">=",
-            parseIsoDate(input.dateFrom),
-          );
+        if (input.category !== undefined) {
+          baseQuery = baseQuery.where("category", "=", input.category);
         }
 
-        if (input.dateTo) {
-          baseQuery = baseQuery.where("date", "<=", parseIsoDate(input.dateTo));
+        if (input.status !== undefined) {
+          baseQuery = baseQuery.where("status", "=", input.status);
         }
 
         const [rows, countRow] = await Promise.all([
           baseQuery
             .selectAll()
-            .orderBy("date", "desc")
+            .orderBy("updated_at", "desc")
             .limit(input.limit)
             .offset(input.offset)
             .execute(),

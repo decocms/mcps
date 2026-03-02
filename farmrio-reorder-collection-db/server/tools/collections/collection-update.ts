@@ -12,19 +12,14 @@ import {
 
 const inputSchema = z
   .object({
-    id: z.string().uuid(),
-    collectionId: z.number().int().optional(),
-    nome: z.string().min(1).optional(),
-    isEnable: z.boolean().optional(),
+    collectionId: z.string().min(1),
+    title: z.string().min(1).optional(),
+    isEnabled: z.boolean().optional(),
   })
   .strict()
-  .refine(
-    (data) =>
-      data.collectionId !== undefined ||
-      data.nome !== undefined ||
-      data.isEnable !== undefined,
-    { message: "At least one field to update is required." },
-  );
+  .refine((data) => data.title !== undefined || data.isEnabled !== undefined, {
+    message: "At least one field to update is required.",
+  });
 
 const outputSchema = z
   .object({
@@ -37,7 +32,8 @@ const outputSchema = z
 export const collectionUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "collection_update",
-    description: "Atualiza uma collection existente.",
+    description:
+      "Atualiza uma collection existente pelo collection_id (identificador VTEX).",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -46,26 +42,20 @@ export const collectionUpdateTool = (env: Env) =>
         const input = inputSchema.parse(context);
         const db = (await getDb(getDatabaseUrl(env))).db;
 
-        const patch: CollectionUpdate = {
-          updated_at: new Date(),
-        };
+        const patch: CollectionUpdate = {};
 
-        if (input.collectionId !== undefined) {
-          patch.collection_id = input.collectionId;
+        if (input.title !== undefined) {
+          patch.title = input.title;
         }
 
-        if (input.nome !== undefined) {
-          patch.nome = input.nome;
-        }
-
-        if (input.isEnable !== undefined) {
-          patch.is_enable = input.isEnable;
+        if (input.isEnabled !== undefined) {
+          patch.is_enabled = input.isEnabled;
         }
 
         const updated = await db
-          .updateTable("collections")
+          .updateTable("collection")
           .set(patch)
-          .where("id", "=", input.id)
+          .where("collection_id", "=", input.collectionId)
           .returningAll()
           .executeTakeFirst();
 

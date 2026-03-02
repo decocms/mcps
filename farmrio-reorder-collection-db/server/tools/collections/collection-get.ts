@@ -11,7 +11,7 @@ import {
 
 const inputSchema = z
   .object({
-    id: z.string().uuid(),
+    collectionId: z.string().min(1),
   })
   .strict();
 
@@ -26,7 +26,8 @@ const outputSchema = z
 export const collectionGetTool = (env: Env) =>
   createPrivateTool({
     id: "collection_get",
-    description: "Busca uma collection por id.",
+    description:
+      "Busca uma collection pelo collection_id (identificador VTEX).",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -36,8 +37,8 @@ export const collectionGetTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const row = await db
-          .selectFrom("collections")
-          .where("id", "=", input.id)
+          .selectFrom("collection")
+          .where("collection_id", "=", input.collectionId)
           .selectAll()
           .executeTakeFirst();
 

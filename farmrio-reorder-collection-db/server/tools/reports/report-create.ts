@@ -5,11 +5,6 @@ import type { ReportInsert } from "../../database/schema.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getDatabaseUrl,
-  parseCollectionIdInput,
-  parseIsoDate,
-  rankedListItemSchema,
-  reportCriteriaSchema,
-  reportMetricSchema,
   reportOutputSchema,
   serializeReport,
   validateToken,
@@ -17,13 +12,13 @@ import {
 
 const inputSchema = z
   .object({
+    collectionId: z.number().int().positive(),
     title: z.string().min(1),
-    collectionId: z.union([z.string().min(1), z.number()]),
-    summary: z.string().min(1),
-    date: z.string(),
-    criterios: z.array(reportCriteriaSchema),
-    metricas: z.array(reportMetricSchema),
-    rankedList: z.array(rankedListItemSchema),
+    category: z.string().min(1),
+    status: z.enum(["passing", "failing", "warning"]),
+    summary: z.string().optional(),
+    source: z.string().optional(),
+    tags: z.array(z.string()).optional(),
   })
   .strict();
 
@@ -38,7 +33,8 @@ const outputSchema = z
 export const reportCreateTool = (env: Env) =>
   createPrivateTool({
     id: "report_create",
-    description: "Cria um novo report.",
+    description:
+      "Cria um novo report. Use report_section_save para adicionar seções após criar o report.",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -48,17 +44,18 @@ export const reportCreateTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const payload: ReportInsert = {
+          collection_id: input.collectionId,
           title: input.title,
-          collection_id: parseCollectionIdInput(input.collectionId),
-          summary: input.summary,
-          date: parseIsoDate(input.date),
-          criterios: input.criterios,
-          metricas: input.metricas,
-          ranked_list: input.rankedList,
+          category: input.category,
+          status: input.status,
+          summary: input.summary ?? null,
+          source: input.source ?? null,
+          tags: input.tags ?? null,
+          updated_at: new Date(),
         };
 
         const created = await db
-          .insertInto("reports")
+          .insertInto("report")
           .values(payload)
           .returningAll()
           .executeTakeFirst();
