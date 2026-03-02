@@ -3,6 +3,7 @@ import { z } from "zod";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails } from "../lib/openrouter-keys.ts";
 import { DEFAULT_LIMIT_USD } from "../lib/constants.ts";
+import { ensureApiKey } from "../lib/provisioning.ts";
 import type { Env } from "../types/env.ts";
 
 export const createGatewayCreditsTool = (env: Env) =>
@@ -31,8 +32,14 @@ export const createGatewayCreditsTool = (env: Env) =>
       .strict(),
     execute: async () => {
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       if (!connectionId) {
         throw new Error("connectionId not found in context.");
+      }
+
+      if (organizationId) {
+        await ensureApiKey(connectionId, organizationId, meshUrl ?? "");
       }
 
       const row = await loadConnectionConfig(connectionId);

@@ -17,6 +17,7 @@ import {
   MIN_STRIPE_AMOUNT_CENTS,
   ALLOWED_REDIRECT_DOMAINS,
 } from "../lib/constants.ts";
+import { ensureApiKey } from "../lib/provisioning.ts";
 import type { Env } from "../types/env.ts";
 
 function isAllowedOrigin(url: string): boolean {
@@ -95,10 +96,12 @@ export const createSetLimitTool = (env: Env) =>
         throw new Error("connectionId or organizationId not found in context.");
       }
 
+      await ensureApiKey(connectionId, organizationId, meshUrl ?? "");
+
       const row = await loadConnectionConfig(connectionId);
       if (!row?.openrouter_key_hash) {
         throw new Error(
-          "No OpenRouter key provisioned yet. Make an LLM call first to trigger automatic provisioning.",
+          "Failed to provision OpenRouter API key. Please try again.",
         );
       }
 

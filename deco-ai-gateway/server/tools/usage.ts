@@ -7,6 +7,7 @@ import {
   estimationSummary,
   type CreditEstimation,
 } from "../lib/credit-estimation.ts";
+import { ensureApiKey } from "../lib/provisioning.ts";
 import type { Env } from "../types/env.ts";
 
 export const createGatewayUsageTool = (env: Env) =>
@@ -85,14 +86,20 @@ export const createGatewayUsageTool = (env: Env) =>
       .strict(),
     execute: async () => {
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       if (!connectionId) {
         throw new Error("connectionId not found in context.");
+      }
+
+      if (organizationId) {
+        await ensureApiKey(connectionId, organizationId, meshUrl ?? "");
       }
 
       const row = await loadConnectionConfig(connectionId);
       if (!row?.openrouter_key_hash) {
         throw new Error(
-          "No OpenRouter key provisioned yet. Make an LLM call first to trigger automatic provisioning.",
+          "Failed to provision OpenRouter API key. Please try again.",
         );
       }
 
