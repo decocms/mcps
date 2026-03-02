@@ -50,8 +50,13 @@ CREATE TABLE IF NOT EXISTS llm_gateway_connections (
   encryption_iv        TEXT,                          -- 12-byte Initialization Vector (hex)
   encryption_tag       TEXT,                          -- 16-byte auth tag for integrity verification (hex)
   billing_mode         TEXT NOT NULL DEFAULT 'prepaid', -- 'prepaid' (buy credits) or 'postpaid' (pay per use)
-  usage_markup_pct     NUMERIC(5,2) NOT NULL DEFAULT 5, -- Surcharge % on top of OpenRouter cost (e.g. 30 = 30%)
+  is_subscription      BOOLEAN NOT NULL DEFAULT FALSE,  -- FALSE = wallet (credit never resets), TRUE = subscription (resets monthly)
+  usage_markup_pct     NUMERIC(5,2) NOT NULL DEFAULT 15, -- Surcharge % on top of OpenRouter cost (e.g. 30 = 30%)
   max_limit_usd        NUMERIC(10,4) DEFAULT NULL,      -- Maximum spending limit cap (NULL = no cap)
+  alert_enabled        BOOLEAN NOT NULL DEFAULT FALSE,  -- Whether low-balance email alerts are on
+  alert_threshold_usd  NUMERIC(10,4) DEFAULT 10,         -- Alert when remaining credit <= this USD value
+  alert_email          TEXT DEFAULT NULL,                -- Email address to notify
+  alert_sent_for_limit NUMERIC(10,4) DEFAULT NULL,      -- Limit value for which the alert was already sent (prevents re-send)
   configured_at        TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -230,7 +235,7 @@ BEGIN
     AND column_name = 'usage_markup_pct'
   ) THEN
     ALTER TABLE llm_gateway_connections
-    ADD COLUMN usage_markup_pct NUMERIC(5,2) NOT NULL DEFAULT 5;
+    ADD COLUMN usage_markup_pct NUMERIC(5,2) NOT NULL DEFAULT 15;
 
     RAISE NOTICE 'Migration: Added column usage_markup_pct to llm_gateway_connections';
   END IF;
@@ -273,6 +278,49 @@ BEGIN
     ADD COLUMN markup_pct NUMERIC(5,2) NOT NULL DEFAULT 0;
 
     RAISE NOTICE 'Migration: Added column markup_pct to llm_gateway_payments';
+  END IF;
+END $$;
+
+-- Migration: Add alert columns (if table already exists without them)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'alert_enabled'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN alert_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN alert_threshold_usd NUMERIC(10,4) DEFAULT 10,
+    ADD COLUMN alert_email TEXT DEFAULT NULL,
+    ADD COLUMN alert_sent_for_limit NUMERIC(10,4) DEFAULT NULL;
+
+    RAISE NOTICE 'Migration: Added alert columns to llm_gateway_connections';
+  END IF;
+END $$;
+
+-- Migration: Add is_subscription column (if table already exists without it)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'is_subscription'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN is_subscription BOOLEAN NOT NULL DEFAULT FALSE;
+
+    RAISE NOTICE 'Migration: Added column is_subscription to llm_gateway_connections';
   END IF;
 END $$;
 

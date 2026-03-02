@@ -80,6 +80,7 @@ export async function saveApiKey(params: {
   openrouterKeyName: string;
   openrouterKeyHash: string;
   billingMode?: BillingMode;
+  isSubscription?: boolean;
   usageMarkupPct?: number;
   maxLimitUsd?: number | null;
 }): Promise<void> {
@@ -96,8 +97,13 @@ export async function saveApiKey(params: {
     encryption_iv: iv,
     encryption_tag: tag,
     billing_mode: params.billingMode ?? "prepaid",
+    is_subscription: params.isSubscription ?? false,
     usage_markup_pct: params.usageMarkupPct ?? DEFAULT_MARKUP_PCT,
     max_limit_usd: params.maxLimitUsd ?? null,
+    alert_enabled: false,
+    alert_threshold_usd: 10,
+    alert_email: null,
+    alert_sent_for_limit: null,
     configured_at: now,
     updated_at: now,
   };

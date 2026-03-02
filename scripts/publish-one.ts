@@ -9,7 +9,7 @@
  *   bun scripts/publish-one.ts <mcp-name> --dry-run
  *
  * Environment:
- *   MESH_ADMIN_URL  - Override the publish URL (default: https://mesh-admin.decocms.com/org/deco/registry/publish-request)
+ *   MESH_ADMIN_URL  - Override the publish URL (default: https://studio.decocms.com/org/deco/registry/publish-request)
  */
 
 import { readFile, stat } from "fs/promises";
@@ -99,7 +99,7 @@ interface GitCommitter {
 
 const PUBLISH_URL =
   process.env.MESH_ADMIN_URL ??
-  "https://mesh-admin.decocms.com/org/deco/registry/publish-request";
+  "https://studio.decocms.com/org/deco/registry/publish-request";
 
 const ROOT = join(import.meta.dir, "..");
 const args = process.argv.slice(2);

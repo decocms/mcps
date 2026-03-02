@@ -13,8 +13,13 @@ export interface LlmGatewayConnectionRow {
   encryption_iv: string | null;
   encryption_tag: string | null;
   billing_mode: BillingMode;
+  is_subscription: boolean;
   usage_markup_pct: number;
   max_limit_usd: number | null;
+  alert_enabled: boolean;
+  alert_threshold_usd: number;
+  alert_email: string | null;
+  alert_sent_for_limit: number | null;
   configured_at: string;
   updated_at: string;
 }
@@ -115,6 +120,36 @@ export async function loadConnectionConfig(
   return data as LlmGatewayConnectionRow;
 }
 
+/**
+ * Find an existing connection for this organization that already has
+ * a provisioned OpenRouter key. Used to prevent duplicate key creation
+ * when the same org installs the gateway multiple times.
+ */
+export async function findExistingOrgConnection(
+  organizationId: string,
+): Promise<LlmGatewayConnectionRow | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  const { data, error } = await client
+    .from(TABLE_NAME)
+    .select("*")
+    .eq("organization_id", organizationId)
+    .not("openrouter_key_hash", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    logger.warn("Failed to check existing org connection", {
+      organizationId,
+      error: error.message,
+    });
+    return null;
+  }
+
+  return data as LlmGatewayConnectionRow | null;
+}
+
 export async function deleteConnectionConfig(
   connectionId: string,
 ): Promise<void> {
@@ -141,6 +176,7 @@ export async function deleteConnectionConfig(
 
 export interface BillingConfig {
   billingMode: BillingMode;
+  isSubscription: boolean;
   usageMarkupPct: number;
   maxLimitUsd: number | null;
 }
@@ -160,6 +196,9 @@ export async function updateBillingConfig(
   if (config.billingMode !== undefined) {
     updates.billing_mode = config.billingMode;
   }
+  if (config.isSubscription !== undefined) {
+    updates.is_subscription = config.isSubscription;
+  }
   if (config.usageMarkupPct !== undefined) {
     updates.usage_markup_pct = config.usageMarkupPct;
   }
@@ -177,6 +216,71 @@ export async function updateBillingConfig(
   }
 
   logger.info("Billing config updated", { connectionId, ...config });
+}
+
+// ---------------------------------------------------------------------------
+// Alert config
+// ---------------------------------------------------------------------------
+
+export interface AlertConfig {
+  alertEnabled: boolean;
+  alertThresholdUsd: number;
+  alertEmail: string | null;
+}
+
+export async function updateAlertConfig(
+  connectionId: string,
+  config: AlertConfig,
+): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { error } = await client
+    .from(TABLE_NAME)
+    .update({
+      alert_enabled: config.alertEnabled,
+      alert_threshold_usd: config.alertThresholdUsd,
+      alert_email: config.alertEmail,
+      alert_sent_for_limit: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("connection_id", connectionId);
+
+  if (error) {
+    throw new Error(`Failed to update alert config: ${error.message}`);
+  }
+
+  logger.info("Alert config updated", { connectionId, ...config });
+}
+
+/**
+ * Atomically claim the alert slot for this limit value.
+ * Returns true if THIS call won the race (row was updated),
+ * false if another process already claimed it.
+ */
+export async function claimAlertSlot(
+  connectionId: string,
+  currentLimit: number,
+): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { data, error } = await client
+    .from(TABLE_NAME)
+    .update({ alert_sent_for_limit: currentLimit })
+    .eq("connection_id", connectionId)
+    .or(`alert_sent_for_limit.is.null,alert_sent_for_limit.neq.${currentLimit}`)
+    .select("connection_id");
+
+  if (error) {
+    throw new Error(`Failed to claim alert slot: ${error.message}`);
+  }
+
+  return (data?.length ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------

@@ -72,10 +72,11 @@ export async function confirmPaymentForConnection(
       };
     }
 
+    const isSubscription = row.is_subscription ?? false;
     await updateKeyLimit(
       row.openrouter_key_hash,
       payment.new_limit_usd,
-      "monthly",
+      isSubscription ? "monthly" : null,
       false,
     );
     await markPaymentCompleted(payment.id);
