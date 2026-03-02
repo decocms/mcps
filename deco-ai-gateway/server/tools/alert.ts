@@ -4,6 +4,7 @@ import {
   loadConnectionConfig,
   updateAlertConfig,
 } from "../lib/supabase-client.ts";
+import { ensureApiKey } from "../lib/provisioning.ts";
 import type { Env } from "../types/env.ts";
 
 export const createSetAlertTool = (env: Env) =>
@@ -49,15 +50,19 @@ export const createSetAlertTool = (env: Env) =>
       const { enabled, threshold_usd, email } = context;
 
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+      const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       if (!connectionId) {
         throw new Error("connectionId not found in context.");
       }
 
+      if (organizationId) {
+        await ensureApiKey(connectionId, organizationId, meshUrl ?? "");
+      }
+
       const row = await loadConnectionConfig(connectionId);
       if (!row) {
-        throw new Error(
-          "No connection configured. Make an LLM call first to trigger setup.",
-        );
+        throw new Error("Failed to provision connection. Please try again.");
       }
 
       const resolvedEmail = email ?? row.alert_email;
