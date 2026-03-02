@@ -10,6 +10,10 @@
  * but TypeScript can't verify without the cast.
  */
 import { createToolFromOperation } from "../lib/tool-adapter.ts";
+import {
+  createVtexIsClient,
+  createVtexIsEventsClient,
+} from "../lib/client-factory.ts";
 
 // ── Catalog: Brand ────────────────────────────────────────────────────────────
 import * as catalogZod from "../generated/catalog/zod.gen.ts";
@@ -2178,6 +2182,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetTopSearchesData,
     sdkFn: intelligentSearchSdk.getTopSearches as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_AUTOCOMPLETE_SUGGESTIONS",
@@ -2186,6 +2191,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetAutocompleteSuggestionsData,
     sdkFn: intelligentSearchSdk.getAutocompleteSuggestions as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_CORRECTION_SEARCH",
@@ -2193,6 +2199,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetCorrectionSearchData,
     sdkFn: intelligentSearchSdk.getCorrectionSearch as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_BANNERS_BY_FACETS",
@@ -2200,6 +2207,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetBannersByFacetsData,
     sdkFn: intelligentSearchSdk.getBannersByFacets as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_SEARCH_SUGGESTIONS",
@@ -2207,6 +2215,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetSearchSuggestionsData,
     sdkFn: intelligentSearchSdk.getSearchSuggestions as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_PRODUCT_SEARCH",
@@ -2214,6 +2223,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetProductSearchByFacetsData,
     sdkFn: intelligentSearchSdk.getProductSearchByFacets as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_FACETS",
@@ -2221,6 +2231,7 @@ export const intelligentSearchTools = [
     annotations: { readOnlyHint: true },
     requestSchema: intelligentSearchZod.zGetFacetsByFacetsData,
     sdkFn: intelligentSearchSdk.getFacetsByFacets as any,
+    clientFactory: createVtexIsClient,
   }),
   createToolFromOperation({
     id: "VTEX_IS_GET_PICKUP_POINT_AVAILABILITY",
@@ -2231,6 +2242,7 @@ export const intelligentSearchTools = [
       intelligentSearchZod.zGetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyData,
     sdkFn:
       intelligentSearchSdk.getPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicy as any,
+    clientFactory: createVtexIsClient,
   }),
 ];
 
@@ -2245,6 +2257,7 @@ export const intelligentSearchEventsTools = [
       "Send a search event (view, click, purchase, etc.) to Intelligent Search.",
     requestSchema: intelligentSearchEventsZod.zPostEventData,
     sdkFn: intelligentSearchEventsSdk.postEvent as any,
+    clientFactory: createVtexIsEventsClient,
   }),
 ];
 

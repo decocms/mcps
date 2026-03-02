@@ -14,12 +14,8 @@ export function resolveCredentials(
   };
 }
 
-export function createVtexClient(credentials: VTEXCredentials): Client {
-  const client = createClient(
-    createConfig({
-      baseUrl: `https://${credentials.accountName}.vtexcommercestable.com.br`,
-    }),
-  );
+function buildClient(baseUrl: string, credentials: VTEXCredentials): Client {
+  const client = createClient(createConfig({ baseUrl }));
 
   client.interceptors.request.use((request) => {
     if (credentials.appKey) {
@@ -38,4 +34,25 @@ export function createVtexClient(credentials: VTEXCredentials): Client {
   });
 
   return client;
+}
+
+export function createVtexClient(credentials: VTEXCredentials): Client {
+  return buildClient(
+    `https://${credentials.accountName}.vtexcommercestable.com.br`,
+    credentials,
+  );
+}
+
+export function createVtexIsClient(credentials: VTEXCredentials): Client {
+  return buildClient(
+    `https://${credentials.accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search`,
+    credentials,
+  );
+}
+
+export function createVtexIsEventsClient(credentials: VTEXCredentials): Client {
+  return buildClient(
+    `https://${credentials.accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search-events`,
+    credentials,
+  );
 }

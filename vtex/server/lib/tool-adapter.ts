@@ -4,6 +4,7 @@ import type { Client } from "@hey-api/client-fetch";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
+import type { VTEXCredentials } from "../types/env.ts";
 import { createVtexClient, resolveCredentials } from "./client-factory.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -275,6 +276,8 @@ export interface ToolFromOperationConfig {
   sdkFn: (
     options: { client: Client } & Record<string, unknown>,
   ) => Promise<SdkResult>;
+  /** Optional factory to create the HTTP client. Defaults to createVtexClient. */
+  clientFactory?: (credentials: VTEXCredentials) => Client;
 }
 
 /**
@@ -292,7 +295,8 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
       inputSchema: flatInput,
       execute: async ({ context }) => {
         const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
-        const client = createVtexClient(creds);
+        const factory = config.clientFactory ?? createVtexClient;
+        const client = factory(creds);
         const structured = unflattenToStructured(
           context as Record<string, unknown>,
           config.requestSchema,
