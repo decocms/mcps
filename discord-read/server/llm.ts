@@ -1,31 +1,38 @@
 /**
  * LLM Module - AI Model Integration for Discord MCP
  *
- * Uses the new Decopilot API endpoint with UIMessage format.
- * Supports streaming with real-time callbacks for message editing.
- * Based on slack-mcp/server/lib/llm.ts
+ * Thin wrapper around @decocms/mcps-shared/mesh-chat that maintains the
+ * existing public API while delegating all API calls to the shared module.
  */
 
 import type { Env } from "./types/env.ts";
+import {
+  generateResponse as sharedGenerateResponse,
+  generateResponseWithStreaming as sharedGenerateResponseWithStreaming,
+  transcribeAudio as sharedTranscribeAudio,
+  type ChatMessage,
+  type MeshChatConfig,
+  type StreamCallback,
+  type WhisperConfig,
+} from "@decocms/mcps-shared/mesh-chat";
 
 const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-sonnet-4-20250514";
-const REQUEST_TIMEOUT_MS = 120000; // 120 seconds
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-  images?: MessageImage[];
-}
 
 export interface MessageImage {
   type: "image" | "audio";
   data: string; // base64
   mimeType: string;
   name?: string;
+}
+
+export interface DiscordChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+  images?: MessageImage[];
 }
 
 export interface GenerateResponse {
@@ -42,33 +49,17 @@ export interface DiscordContext {
   userName: string;
 }
 
-export interface LLMConfig {
-  meshUrl: string;
-  organizationId: string;
-  token: string;
-  modelProviderId: string;
-  modelId?: string;
-  agentId?: string;
-  agentMode?: "passthrough" | "smart_tool_selection" | "code_execution";
-  systemPrompt?: string;
-}
-
-/**
- * Stream callback type for real-time updates
- */
-export type StreamCallback = (
-  text: string,
-  isComplete: boolean,
-) => Promise<void>;
+export type { MeshChatConfig as LLMConfig, StreamCallback };
 
 // ============================================================================
-// Global LLM Config (set by main.ts)
+// Global State
 // ============================================================================
 
-let globalLLMConfig: LLMConfig | null = null;
+let globalLLMConfig: MeshChatConfig | null = null;
 let streamingEnabled = true;
+let globalWhisperConfig: WhisperConfig | null = null;
 
-export function configureLLM(config: LLMConfig): void {
+export function configureLLM(config: MeshChatConfig): void {
   globalLLMConfig = config;
   console.log("[LLM] Configured", {
     meshUrl: config.meshUrl,
@@ -99,233 +90,25 @@ export function isLLMConfigured(): boolean {
   return globalLLMConfig !== null;
 }
 
-export function getLLMConfig(): LLMConfig | null {
+export function getLLMConfig(): MeshChatConfig | null {
   return globalLLMConfig;
 }
 
 // ============================================================================
-// Message Formatting (UIMessage format)
+// Helpers
 // ============================================================================
 
-/**
- * Generate unique message ID
- */
-function generateMessageId(): string {
-  return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Convert messages to Decopilot API format (UIMessage)
- * Format: { id, role, parts: [...] }
- */
-function messagesToPrompt(
-  messages: ChatMessage[],
-  systemPrompt?: string,
-): Array<{
-  id: string;
-  role: "system" | "user" | "assistant";
-  parts: Array<
-    | { type: "text"; text: string }
-    | { type: "file"; url: string; filename: string; mediaType: string }
-  >;
-}> {
-  const prompt: Array<{
-    id: string;
-    role: "system" | "user" | "assistant";
-    parts: Array<
-      | { type: "text"; text: string }
-      | { type: "file"; url: string; filename: string; mediaType: string }
-    >;
-  }> = [];
-
-  // Add system prompt if provided
-  if (systemPrompt) {
-    prompt.push({
-      id: generateMessageId(),
-      role: "system",
-      parts: [{ type: "text", text: systemPrompt }],
-    });
-  }
-
-  // Convert messages
-  for (const msg of messages) {
-    if (msg.role === "system") {
-      prompt.push({
-        id: generateMessageId(),
-        role: "system",
-        parts: [{ type: "text", text: msg.content }],
-      });
-    } else if (msg.role === "user") {
-      const parts: Array<
-        | { type: "text"; text: string }
-        | { type: "file"; url: string; filename: string; mediaType: string }
-      > = [{ type: "text", text: msg.content }];
-
-      // Add media files (images and audio) if present
-      if (msg.images && msg.images.length > 0) {
-        for (const media of msg.images) {
-          const dataUri = media.data.startsWith("data:")
-            ? media.data
-            : `data:${media.mimeType};base64,${media.data}`;
-
-          const filename =
-            media.name || (media.type === "audio" ? "audio" : "image");
-
-          parts.push({
-            type: "file",
-            url: dataUri,
-            filename,
-            mediaType: media.mimeType,
-          });
-
-          console.log(
-            `[LLM] Adding ${media.type} to prompt: ${filename} (${media.mimeType})`,
-          );
-        }
-      }
-
-      prompt.push({
-        id: generateMessageId(),
-        role: "user",
-        parts,
-      });
-    } else if (msg.role === "assistant") {
-      prompt.push({
-        id: generateMessageId(),
-        role: "assistant",
-        parts: [{ type: "text", text: msg.content }],
-      });
-    }
-  }
-
-  return prompt;
-}
-
-// ============================================================================
-// API Calls
-// ============================================================================
-
-/**
- * Call Decopilot API (new Mesh endpoint)
- */
-async function callDecopilotAPI(
-  config: LLMConfig,
-  messages: Array<{ id: string; role: string; parts: unknown[] }>,
-): Promise<Response> {
-  const {
-    meshUrl,
-    organizationId,
-    token,
-    modelProviderId,
-    modelId = DEFAULT_LANGUAGE_MODEL,
-    agentId,
-    agentMode = "smart_tool_selection",
-  } = config;
-
-  // When running locally with a tunnel, use localhost for internal API calls
-  // Only use localhost if meshUrl contains "localhost" (not production tunnels)
-  const isLocalTunnel =
-    meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
-  const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
-
-  // Use the decopilot endpoint (new Mesh API)
-  const url = `${effectiveMeshUrl}/api/${organizationId}/decopilot/stream`;
-
-  console.log(`[LLM] Calling Decopilot API:`, {
-    url,
-    hasToken: !!token,
-    modelId,
-    hasAgent: !!agentId,
-    messageCount: messages.length,
-  });
-
-  const PROVIDER_ALIASES: Record<string, string> = {
-    "x-ai": "xai",
-  };
-  const rawProvider = modelId.includes("/")
-    ? modelId.split("/")[0]
-    : "anthropic";
-  const provider = PROVIDER_ALIASES[rawProvider] ?? rawProvider;
-
-  const body = {
-    messages,
-    models: {
-      connectionId: modelProviderId,
-      thinking: {
-        id: modelId,
-        provider,
-      },
-    },
-    agent: {
-      id: agentId || "",
-      mode: agentMode,
-    },
-    stream: true,
-    toolApprovalLevel: "yolo" as const,
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json, text/event-stream",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[LLM] API error:", errorText);
-      throw new Error(
-        `Decopilot API call failed (${response.status}): ${errorText}`,
-      );
-    }
-
-    return response;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-/**
- * Parse stream lines to extract text deltas
- */
-interface StreamEvent {
-  type: string;
-  delta?: string;
-  text?: string;
-  toolCallId?: string;
-  toolName?: string;
-  args?: string;
-  result?: unknown;
-  output?: unknown;
-  error?: string;
-}
-
-function parseStreamLine(line: string): StreamEvent | null {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith("event:")) return null;
-  if (trimmed.startsWith("id:")) return null;
-  if (trimmed.startsWith("retry:")) return null;
-
-  let payload = trimmed;
-  if (payload.startsWith("data:")) {
-    payload = payload.slice("data:".length).trim();
-    if (!payload || payload === "[DONE]") return null;
-  }
-
-  try {
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
+function toSharedMessages(messages: DiscordChatMessage[]): ChatMessage[] {
+  return messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+    media: m.images?.map((img) => ({
+      type: img.type,
+      data: img.data,
+      mimeType: img.mimeType,
+      name: img.name,
+    })),
+  }));
 }
 
 // ============================================================================
@@ -333,16 +116,14 @@ function parseStreamLine(line: string): StreamEvent | null {
 // ============================================================================
 
 /**
- * Generate a response using the Mesh API (without streaming callback)
+ * Generate a response using the Mesh API.
+ * Falls back to stored config or env-derived config if global config is not set.
  */
 export async function generateResponse(
   env: Env,
-  messages: ChatMessage[],
-  _options?: {
-    discordContext?: DiscordContext;
-  },
+  messages: DiscordChatMessage[],
+  _options?: { discordContext?: DiscordContext },
 ): Promise<GenerateResponse> {
-  // Try to get config from global first
   let config = globalLLMConfig;
 
   if (!config) {
@@ -359,7 +140,7 @@ export async function generateResponse(
         meshUrl: storedConfig.meshUrl,
         organizationId: storedConfig.organizationId,
         token: storedConfig.persistentToken,
-        modelProviderId: storedConfig.modelProviderId || "",
+        modelProviderId: storedConfig.modelProviderId ?? "",
         modelId: storedConfig.modelId,
         agentId: storedConfig.agentId,
       };
@@ -411,46 +192,23 @@ export async function generateResponse(
     }
   }
 
-  // Convert messages to UIMessage format
-  const apiMessages = messagesToPrompt(messages, config.systemPrompt);
+  const text = await sharedGenerateResponse(config, toSharedMessages(messages));
 
-  console.log("[LLM] Calling Decopilot API (generate):", {
-    messageCount: apiMessages.length,
-    hasImages: messages.some((m) => m.images && m.images.length > 0),
-  });
-
-  try {
-    const response = await callDecopilotAPI(config, apiMessages);
-
-    if (!response.body) {
-      throw new Error("No response body from Decopilot API");
-    }
-
-    // Parse the streaming response to get full text
-    const text = await parseFullStreamResponse(response.body);
-
-    console.log("[LLM] Response received:", {
-      textLength: text.length,
-    });
-
-    return {
-      content: text || "Desculpe, não consegui gerar uma resposta.",
-      model: config.modelId || DEFAULT_LANGUAGE_MODEL,
-      usedFallback: false,
-    };
-  } catch (error) {
-    console.error("[LLM] Error calling Decopilot API:", error);
-    throw error;
-  }
+  return {
+    content: text,
+    model: config.modelId ?? DEFAULT_LANGUAGE_MODEL,
+    usedFallback: false,
+  };
 }
 
 /**
- * Generate a response with streaming callback for real-time updates
+ * Generate a response with real-time streaming callback.
+ * Uses the global config if no config is explicitly provided.
  */
 export async function generateResponseWithStreaming(
-  messages: ChatMessage[],
+  messages: DiscordChatMessage[],
   onStream: StreamCallback,
-  config?: LLMConfig,
+  config?: MeshChatConfig,
 ): Promise<string> {
   const effectiveConfig = config ?? globalLLMConfig;
 
@@ -458,349 +216,39 @@ export async function generateResponseWithStreaming(
     throw new Error("LLM not configured");
   }
 
-  // Convert messages to UIMessage format
-  const apiMessages = messagesToPrompt(messages, effectiveConfig.systemPrompt);
-
-  console.log("[LLM Streaming] Calling Decopilot API (stream):", {
-    messageCount: apiMessages.length,
-    hasImages: messages.some((m) => m.images && m.images.length > 0),
-  });
-
-  try {
-    const response = await callDecopilotAPI(effectiveConfig, apiMessages);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[LLM Streaming] Error:", {
-        status: response.status,
-        error: errorText,
-      });
-      throw new Error(
-        `LLM streaming failed (${response.status}): ${errorText}`,
-      );
-    }
-
-    if (!response.body) {
-      throw new Error("No response body from LLM stream");
-    }
-
-    // Process the stream with callback
-    let textContent = "";
-    let lastStreamUpdate = 0;
-    const STREAM_UPDATE_INTERVAL = 500; // ms
-
-    const reader = response.body
-      .pipeThrough(new TextDecoderStream())
-      .getReader();
-    let buffer = "";
-    let eventCount = 0;
-    let finished = false;
-    let toolCallCount = 0;
-
-    while (!finished) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += value;
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const parsed = parseStreamLine(line);
-        if (!parsed) continue;
-
-        eventCount++;
-        const { type } = parsed;
-
-        if (
-          eventCount <= 3 ||
-          type === "finish" ||
-          type === "tool-call" ||
-          type === "tool-result" ||
-          type === "error"
-        ) {
-          console.log(`[LLM Streaming] Event ${eventCount}: type=${type}`);
-        }
-
-        if (type === "text-delta" && parsed.delta) {
-          textContent += parsed.delta;
-
-          const now = Date.now();
-          if (now - lastStreamUpdate > STREAM_UPDATE_INTERVAL) {
-            await onStream(textContent, false);
-            lastStreamUpdate = now;
-          }
-        } else if (type === "text" && parsed.text) {
-          textContent += parsed.text;
-          await onStream(textContent, false);
-        } else if (type === "tool-call") {
-          toolCallCount++;
-          console.log(
-            `[LLM Streaming] Tool call #${toolCallCount}: ${parsed.toolName ?? "unknown"}`,
-            parsed,
-          );
-        } else if (type === "tool-result") {
-          console.log(
-            `[LLM Streaming] Tool result for ${parsed.toolCallId ?? "unknown"}:`,
-            JSON.stringify(parsed.result ?? parsed.output).slice(0, 200),
-          );
-        } else if (type === "error") {
-          console.error("[LLM Streaming] Server error event:", parsed);
-          throw new Error(
-            `LLM stream error: ${parsed.error ?? JSON.stringify(parsed)}`,
-          );
-        } else if (type === "finish") {
-          console.log(
-            `[LLM Streaming] Finish. Text length: ${textContent.length}, tools used: ${toolCallCount}`,
-          );
-          finished = true;
-          break;
-        }
-      }
-    }
-
-    const fallback = "Desculpe, não consegui gerar uma resposta.";
-    const finalText = textContent || fallback;
-
-    await onStream(finalText, true);
-
-    if (!textContent && toolCallCount > 0) {
-      console.warn(
-        `[LLM Streaming] Warning: ${toolCallCount} tool(s) called but no text response received`,
-      );
-    }
-
-    return finalText;
-  } catch (error) {
-    console.error("[LLM Streaming] Error:", error);
-    throw error;
-  }
-}
-
-/**
- * Parse full stream response (collects all text)
- */
-async function parseFullStreamResponse(
-  body: ReadableStream<Uint8Array>,
-): Promise<string> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let textContent = "";
-  let buffer = "";
-
-  // Track tool calls for logging
-  const toolCalls: Array<{
-    id: string;
-    name: string;
-    args: string;
-    result?: unknown;
-  }> = [];
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
-
-          try {
-            const event = JSON.parse(data);
-            const { type } = event;
-
-            // Text content (streaming)
-            if (type === "text-delta" && event.delta) {
-              textContent += event.delta;
-            }
-            // Text content (complete)
-            else if (type === "text" && event.text) {
-              textContent += event.text;
-            }
-            // Tool call started
-            else if (
-              type === "tool-call" &&
-              event.toolCallId &&
-              event.toolName
-            ) {
-              console.log(`🔧 [Stream] Tool call: ${event.toolName}`);
-              toolCalls.push({
-                id: event.toolCallId,
-                name: event.toolName,
-                args: event.args ?? "{}",
-              });
-            }
-            // Tool result received
-            else if (type === "tool-result" && event.toolCallId) {
-              const toolCall = toolCalls.find((t) => t.id === event.toolCallId);
-              if (toolCall) {
-                toolCall.result = event.result ?? event.output;
-                console.log(
-                  `✅ [Stream] Tool result for ${toolCall.name}: ${JSON.stringify(toolCall.result).slice(0, 100)}...`,
-                );
-              }
-            }
-            // Finish
-            else if (type === "finish") {
-              console.log(
-                `🏁 [Stream] Generation finished. Tools used: ${toolCalls.length}`,
-              );
-              break;
-            }
-          } catch {
-            // Ignore parse errors
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  // Log summary if tools were used
-  if (toolCalls.length > 0) {
-    console.log(`\n📊 [Stream] Summary: ${toolCalls.length} tool(s) called:`);
-    for (const tc of toolCalls) {
-      console.log(
-        `   - ${tc.name}: ${tc.result !== undefined ? "✅ success" : "⏳ pending"}`,
-      );
-    }
-  }
-
-  return textContent;
+  return sharedGenerateResponseWithStreaming(
+    effectiveConfig,
+    toSharedMessages(messages),
+    onStream,
+  );
 }
 
 // ============================================================================
 // Whisper Integration
 // ============================================================================
 
-interface WhisperConfig {
-  meshUrl: string;
-  organizationId: string;
-  token: string;
-  whisperConnectionId: string;
-}
-
-let whisperConfig: WhisperConfig | null = null;
-
 export function configureWhisper(config: WhisperConfig): void {
-  whisperConfig = config;
+  globalWhisperConfig = config;
   console.log("[Whisper] Configured", {
     meshUrl: config.meshUrl,
-    organizationId: config.organizationId,
     whisperConnectionId: config.whisperConnectionId,
     hasToken: !!config.token,
   });
 }
 
 export function isWhisperConfigured(): boolean {
-  return whisperConfig !== null;
+  return globalWhisperConfig !== null;
 }
 
-/**
- * Transcribe audio using Whisper binding
- */
 export async function transcribeAudio(
   audioUrl: string,
   _mimeType: string,
   filename: string,
 ): Promise<string | null> {
-  if (!whisperConfig) {
+  if (!globalWhisperConfig) {
     console.log("[Whisper] Not configured, skipping transcription");
     return null;
   }
 
-  try {
-    console.log(`[Whisper] Transcribing audio: ${filename}`);
-
-    // Use localhost for tunnel URLs
-    const isTunnel = whisperConfig.meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isTunnel
-      ? "http://localhost:3000"
-      : whisperConfig.meshUrl;
-
-    // Call Whisper via MCP proxy endpoint
-    const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${whisperConfig.token}`,
-        Accept: "application/json, text/event-stream",
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: Date.now(),
-        method: "tools/call",
-        params: {
-          name: "TRANSCRIBE_AUDIO",
-          arguments: {
-            audioUrl: audioUrl,
-            language: undefined, // Auto-detect
-            responseFormat: "text",
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[Whisper] Transcription failed: ${response.status} ${response.statusText}`,
-      );
-      console.error(`[Whisper] Error details:`, errorText);
-      return null;
-    }
-
-    const result = (await response.json()) as {
-      result?: {
-        content?: Array<{ type: string; text?: string }>;
-        text?: string;
-      };
-    };
-
-    // Try to extract transcription from different response formats
-    let transcription: string | undefined;
-
-    // Format 1: MCP content array format
-    if (result?.result?.content) {
-      transcription = result.result.content.find(
-        (c) => c.type === "text",
-      )?.text;
-    }
-
-    // Format 2: Direct text field
-    if (!transcription && result?.result?.text) {
-      const textResult = result.result.text;
-      if (typeof textResult === "string" && textResult.trim().startsWith("{")) {
-        try {
-          const parsed = JSON.parse(textResult);
-          transcription = parsed.text || textResult;
-        } catch {
-          transcription = textResult;
-        }
-      } else {
-        transcription = textResult;
-      }
-    }
-
-    if (transcription) {
-      console.log(
-        `[Whisper] ✅ Transcription successful (${transcription.length} chars)`,
-      );
-      return transcription.trim();
-    }
-
-    console.warn("[Whisper] No transcription in response:", result);
-    return null;
-  } catch (error) {
-    console.error("[Whisper] Transcription error:", error);
-    return null;
-  }
+  return sharedTranscribeAudio(globalWhisperConfig, audioUrl, filename);
 }
