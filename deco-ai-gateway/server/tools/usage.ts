@@ -131,10 +131,14 @@ export const createGatewayUsageTool = (env: Env) =>
       if (billingMode === "postpaid") {
         if (d.limit != null) {
           const periodLabel = limitPeriod ?? "no reset";
+          const usageVsLimitLine =
+            percentUsed == null
+              ? `Usage: $${d.usage.toFixed(4)} of $${d.limit.toFixed(2)}`
+              : `Usage: $${d.usage.toFixed(4)} of $${d.limit.toFixed(2)} — ${percentUsed}% used`;
           summaryLines = [
             `Key: ${d.name} | Status: ${d.disabled ? "disabled" : "active"}`,
             `Billing: postpaid | Limit: $${d.limit.toFixed(2)} (${periodLabel})`,
-            `Usage: $${d.usage.toFixed(4)} of $${d.limit.toFixed(2)} — ${percentUsed}% used`,
+            usageVsLimitLine,
             `Period usage — Daily: $${d.usage_daily.toFixed(4)} | Weekly: $${d.usage_weekly.toFixed(4)} | Monthly: $${d.usage_monthly.toFixed(4)}`,
           ];
           if (d.limit_reset) {
