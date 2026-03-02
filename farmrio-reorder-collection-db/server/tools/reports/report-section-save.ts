@@ -131,6 +131,7 @@ export const reportSectionSaveTool = (env: Env) =>
                     position: item.position,
                     delta: item.delta,
                     label: item.label,
+                    product_id: item.productId ?? null,
                     image: item.image ?? null,
                     value_select_rate: item.valueSelectRate ?? null,
                     value_availability: item.valueAvailability ?? null,

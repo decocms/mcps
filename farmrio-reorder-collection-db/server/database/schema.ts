@@ -61,6 +61,7 @@ export interface SectionRankedItemTable {
   position: number;
   delta: number;
   label: string;
+  product_id: string | null;
   image: string | null;
   value_select_rate: string | null;
   value_availability: string | null;
