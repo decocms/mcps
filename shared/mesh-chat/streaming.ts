@@ -31,7 +31,7 @@ export function parseStreamLine(line: string): StreamEvent | null {
  *
  * Returns the full text accumulated during streaming.
  */
-function processLines(
+async function processLines(
   lines: string[],
   state: {
     textContent: string;
@@ -39,9 +39,7 @@ function processLines(
     finished: boolean;
   },
   onStream?: StreamCallback,
-): Promise<void> | void {
-  const promises: Promise<void>[] = [];
-
+): Promise<void> {
   for (const line of lines) {
     if (state.finished) break;
 
@@ -52,10 +50,10 @@ function processLines(
 
     if (type === "text-delta" && parsed.delta) {
       state.textContent += parsed.delta;
-      if (onStream) promises.push(onStream(state.textContent, false));
+      if (onStream) await onStream(state.textContent, false);
     } else if (type === "text" && parsed.text) {
       state.textContent += parsed.text;
-      if (onStream) promises.push(onStream(state.textContent, false));
+      if (onStream) await onStream(state.textContent, false);
     } else if (type === "tool-call") {
       state.toolCallCount++;
       console.log(
@@ -79,8 +77,6 @@ function processLines(
       break;
     }
   }
-
-  if (promises.length > 0) return Promise.all(promises).then(() => {});
 }
 
 export async function processStreamWithCallback(
