@@ -11,6 +11,25 @@ import { createVtexClient, resolveCredentials } from "./client-factory.ts";
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Converts numeric Zod fields (ZodNumber, ZodInt) to their coerced equivalents
+ * so string inputs like "2247" from UIs are accepted and cast to numbers.
+ */
+function coerceNumericField(field: any): any {
+  if (field instanceof z.ZodOptional) {
+    const inner = coerceNumericField(field.unwrap());
+    return z.optional(inner);
+  }
+  // ZodInt is a subclass/variant of ZodNumber in Zod v4
+  if (field instanceof (z as any).ZodInt) {
+    return z.coerce.number().int();
+  }
+  if (field instanceof z.ZodNumber) {
+    return z.coerce.number();
+  }
+  return field;
+}
+
+/**
  * Returns true if the schema is z.never() or z.optional(z.never()) —
  * the pattern hey-api emits when a request has no path/query/body.
  */
@@ -66,7 +85,7 @@ export function flattenRequestSchema(
       for (const [key, val] of Object.entries(
         inner.shape as Record<string, any>,
       )) {
-        flat[key] = val;
+        flat[key] = coerceNumericField(val);
       }
     }
   }
@@ -81,8 +100,9 @@ export function flattenRequestSchema(
       )) {
         const fieldIsOptional =
           val instanceof z.ZodOptional || val instanceof z.ZodDefault;
+        const coerced = coerceNumericField(val as any);
         flat[key] =
-          isOptionalWrapper && !fieldIsOptional ? z.optional(val as any) : val;
+          isOptionalWrapper && !fieldIsOptional ? z.optional(coerced) : coerced;
       }
     }
   }
@@ -97,8 +117,9 @@ export function flattenRequestSchema(
       )) {
         const fieldIsOptional =
           val instanceof z.ZodOptional || val instanceof z.ZodDefault;
+        const coerced = coerceNumericField(val as any);
         flat[key] =
-          isOptionalWrapper && !fieldIsOptional ? z.optional(val as any) : val;
+          isOptionalWrapper && !fieldIsOptional ? z.optional(coerced) : coerced;
       }
     } else {
       // Non-object body (array, primitive) — keep under `body` key
