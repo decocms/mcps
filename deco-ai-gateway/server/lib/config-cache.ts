@@ -5,6 +5,7 @@ import {
   isSupabaseConfigured,
   type LlmGatewayConnectionRow,
   type BillingMode,
+  type LimitPeriod,
 } from "./supabase-client.ts";
 import { logger } from "./logger.ts";
 import { DEFAULT_MARKUP_PCT } from "./constants.ts";
@@ -80,12 +81,13 @@ export async function saveApiKey(params: {
   openrouterKeyName: string;
   openrouterKeyHash: string;
   billingMode?: BillingMode;
-  isSubscription?: boolean;
+  limitPeriod?: LimitPeriod | null;
   usageMarkupPct?: number;
   maxLimitUsd?: number | null;
 }): Promise<void> {
   const { ciphertext, iv, tag } = encrypt(params.apiKey);
   const now = new Date().toISOString();
+  const limitPeriod = params.limitPeriod ?? null;
 
   const row: LlmGatewayConnectionRow = {
     connection_id: params.connectionId,
@@ -97,7 +99,8 @@ export async function saveApiKey(params: {
     encryption_iv: iv,
     encryption_tag: tag,
     billing_mode: params.billingMode ?? "prepaid",
-    is_subscription: params.isSubscription ?? false,
+    is_subscription: limitPeriod === "monthly",
+    limit_period: limitPeriod,
     usage_markup_pct: params.usageMarkupPct ?? DEFAULT_MARKUP_PCT,
     max_limit_usd: params.maxLimitUsd ?? null,
     alert_enabled: false,

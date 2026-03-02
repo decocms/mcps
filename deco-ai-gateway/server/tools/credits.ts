@@ -10,20 +10,33 @@ export const createGatewayCreditsTool = (env: Env) =>
   createTool({
     id: "GATEWAY_CREDITS",
     description:
-      "Returns the available credit balance for this organization's AI Gateway. " +
-      "Use this to check how much credit remains before making LLM calls.",
+      "Returns the current balance or usage for this organization's AI Gateway. " +
+      "For prepaid mode: shows available credit. " +
+      "For postpaid mode: shows usage vs limit (if set) or raw usage.",
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
         available: z
           .number()
           .nullable()
-          .describe("Remaining credit balance in USD (null = unlimited)"),
+          .describe(
+            "Remaining credit in USD (prepaid) or remaining limit headroom (postpaid with limit). Null = unlimited.",
+          ),
         total: z
           .number()
           .nullable()
-          .describe("Total credit limit in USD (null = unlimited)"),
+          .describe("Total credit/limit in USD (null = unlimited)"),
         used: z.number().describe("Total amount spent in USD"),
+        percentUsed: z
+          .number()
+          .nullable()
+          .describe(
+            "Percentage of limit used (0-100). Null when no limit is set.",
+          ),
+        limitPeriod: z
+          .enum(["daily", "weekly", "monthly"])
+          .nullable()
+          .describe("Reset period for the limit (null = no reset / wallet)"),
         billingMode: z
           .enum(["prepaid", "postpaid"])
           .describe("Billing mode for this organization"),
@@ -48,6 +61,8 @@ export const createGatewayCreditsTool = (env: Env) =>
           available: DEFAULT_LIMIT_USD,
           total: DEFAULT_LIMIT_USD,
           used: 0,
+          percentUsed: 0,
+          limitPeriod: null,
           billingMode: (row?.billing_mode ?? "prepaid") as
             | "prepaid"
             | "postpaid",
@@ -59,11 +74,23 @@ export const createGatewayCreditsTool = (env: Env) =>
       const billingMode = (row.billing_mode ?? "prepaid") as
         | "prepaid"
         | "postpaid";
+      const limitPeriod = (row.limit_period ?? null) as
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | null;
+
+      const percentUsed =
+        d.limit != null && d.limit > 0
+          ? Math.min(100, Math.round((d.usage / d.limit) * 100 * 10) / 10)
+          : null;
 
       return {
         available: d.limit_remaining,
         total: d.limit,
         used: d.usage,
+        percentUsed,
+        limitPeriod,
         billingMode,
         keyDisabled: d.disabled,
       };

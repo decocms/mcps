@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS llm_gateway_connections (
   encryption_iv        TEXT,                          -- 12-byte Initialization Vector (hex)
   encryption_tag       TEXT,                          -- 16-byte auth tag for integrity verification (hex)
   billing_mode         TEXT NOT NULL DEFAULT 'prepaid', -- 'prepaid' (buy credits) or 'postpaid' (pay per use)
-  is_subscription      BOOLEAN NOT NULL DEFAULT FALSE,  -- FALSE = wallet (credit never resets), TRUE = subscription (resets monthly)
+  is_subscription      BOOLEAN NOT NULL DEFAULT FALSE,  -- Kept for backwards compat; use limit_period instead
+  limit_period         TEXT CHECK (limit_period IN ('daily', 'weekly', 'monthly')), -- NULL = no reset, 'monthly' etc = OpenRouter auto-reset
   usage_markup_pct     NUMERIC(5,2) NOT NULL DEFAULT 15, -- Surcharge % on top of OpenRouter cost (e.g. 30 = 30%)
   max_limit_usd        NUMERIC(10,4) DEFAULT NULL,      -- Maximum spending limit cap (NULL = no cap)
   alert_enabled        BOOLEAN NOT NULL DEFAULT FALSE,  -- Whether low-balance email alerts are on
@@ -321,6 +322,31 @@ BEGIN
     ADD COLUMN is_subscription BOOLEAN NOT NULL DEFAULT FALSE;
 
     RAISE NOTICE 'Migration: Added column is_subscription to llm_gateway_connections';
+  END IF;
+END $$;
+
+-- Migration: Add limit_period column (replaces is_subscription logic)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_connections'
+    AND column_name = 'limit_period'
+  ) THEN
+    ALTER TABLE llm_gateway_connections
+    ADD COLUMN limit_period TEXT CHECK (limit_period IN ('daily', 'weekly', 'monthly'));
+
+    -- Migrate existing is_subscription=true rows to limit_period='monthly'
+    UPDATE llm_gateway_connections
+    SET limit_period = 'monthly'
+    WHERE is_subscription = TRUE AND limit_period IS NULL;
+
+    RAISE NOTICE 'Migration: Added column limit_period and migrated is_subscription data';
   END IF;
 END $$;
 

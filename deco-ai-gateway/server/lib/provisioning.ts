@@ -3,6 +3,7 @@ import {
   isSupabaseConfigured,
   findExistingOrgConnection,
   type BillingMode,
+  type LimitPeriod,
 } from "./supabase-client.ts";
 import { decrypt } from "./encryption.ts";
 import { updateKeyLimit, type LimitReset } from "./openrouter-keys.ts";
@@ -61,7 +62,7 @@ async function createOpenRouterKey(
   organizationId: string,
   organizationName: string | undefined,
   billingMode: BillingMode,
-  isSubscription: boolean,
+  limitPeriod: LimitPeriod | null,
 ): Promise<{ key: string; hash: string; name: string }> {
   const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
   if (!managementKey) {
@@ -90,7 +91,7 @@ async function createOpenRouterKey(
         billingMode === "prepaid"
           ? DEFAULT_LIMIT_USD
           : DEFAULT_POSTPAID_LIMIT_USD,
-      limit_reset: isSubscription ? "monthly" : undefined,
+      limit_reset: limitPeriod ?? undefined,
     }),
   });
 
@@ -140,7 +141,7 @@ async function provisionOrReuseKey(
   meshUrl: string,
   organizationName: string | undefined,
   billingMode: BillingMode,
-  isSubscription: boolean,
+  limitPeriod: LimitPeriod | null,
 ): Promise<string | null> {
   const existingOrgLock = orgProvisioningLocks.get(organizationId);
   if (existingOrgLock) {
@@ -157,7 +158,7 @@ async function provisionOrReuseKey(
       meshUrl,
       organizationName,
       billingMode,
-      isSubscription,
+      limitPeriod,
     );
   }
 
@@ -195,7 +196,7 @@ async function provisionOrReuseKey(
         openrouterKeyName: existingOrgRow.openrouter_key_name ?? "",
         openrouterKeyHash: existingOrgRow.openrouter_key_hash ?? "",
         billingMode: existingOrgRow.billing_mode,
-        isSubscription: existingOrgRow.is_subscription,
+        limitPeriod: existingOrgRow.limit_period ?? null,
         usageMarkupPct: existingOrgRow.usage_markup_pct,
         maxLimitUsd: existingOrgRow.max_limit_usd,
       });
@@ -215,10 +216,10 @@ async function provisionOrReuseKey(
       organizationId,
       organizationName,
       billingMode,
-      isSubscription,
+      limitPeriod,
     );
 
-    const limitReset: LimitReset | null = isSubscription ? "monthly" : null;
+    const limitReset: LimitReset | null = limitPeriod ?? null;
     const defaultLimit =
       billingMode === "prepaid"
         ? DEFAULT_LIMIT_USD
@@ -229,7 +230,7 @@ async function provisionOrReuseKey(
       keyHash: hash,
       billingMode,
       limitUsd: defaultLimit,
-      isSubscription,
+      limitPeriod,
     });
     const limitResult = await updateKeyLimit(
       hash,
@@ -255,7 +256,7 @@ async function provisionOrReuseKey(
       openrouterKeyName: name,
       openrouterKeyHash: hash,
       billingMode,
-      isSubscription,
+      limitPeriod,
     });
 
     logger.info("Key provisioned and persisted", {
@@ -289,7 +290,7 @@ export async function ensureApiKey(
   meshUrl: string,
   organizationName?: string,
   billingMode: BillingMode = "prepaid",
-  isSubscription = false,
+  limitPeriod: LimitPeriod | null = null,
 ): Promise<string | null> {
   logger.debug("ensureApiKey called", { connectionId, organizationId });
 
@@ -337,7 +338,7 @@ export async function ensureApiKey(
         meshUrl,
         organizationName,
         billingMode,
-        isSubscription,
+        limitPeriod,
       );
     } catch (error) {
       logger.error("Failed to provision OpenRouter API key", {

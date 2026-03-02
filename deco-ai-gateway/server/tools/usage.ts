@@ -30,6 +30,7 @@ export const createGatewayUsageTool = (env: Env) =>
         }),
         billing: z.object({
           mode: z.enum(["prepaid", "postpaid"]),
+          limitPeriod: z.enum(["daily", "weekly", "monthly"]).nullable(),
         }),
         limit: z.object({
           total: z.number().nullable(),
@@ -106,6 +107,11 @@ export const createGatewayUsageTool = (env: Env) =>
       const d = await getKeyDetails(row.openrouter_key_hash);
 
       const billingMode = row.billing_mode ?? "prepaid";
+      const limitPeriod = (row.limit_period ?? null) as
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | null;
 
       const estimation: CreditEstimation | null = estimateCreditDuration({
         limitRemaining: d.limit_remaining,
@@ -116,33 +122,61 @@ export const createGatewayUsageTool = (env: Env) =>
         keyCreatedAt: d.created_at,
       });
 
-      const limitLine = d.limit
-        ? `Limit: $${d.limit.toFixed(4)} | Remaining: $${(d.limit_remaining ?? 0).toFixed(4)} | Reset: ${d.limit_reset ?? "none"}`
-        : "Limit: none";
+      const percentUsed =
+        d.limit != null && d.limit > 0
+          ? Math.min(100, Math.round((d.usage / d.limit) * 100 * 10) / 10)
+          : null;
 
-      let forecastLabel: string;
-      if (estimation) {
-        forecastLabel = estimationSummary(estimation);
-      } else if (d.limit == null) {
-        forecastLabel = "No spending limit set — usage is unlimited.";
-      } else if ((d.limit_remaining ?? 0) <= 0) {
-        forecastLabel = "Credit exhausted.";
+      let summaryLines: string[];
+      if (billingMode === "postpaid") {
+        if (d.limit != null) {
+          const periodLabel = limitPeriod ?? "no reset";
+          const usageVsLimitLine =
+            percentUsed == null
+              ? `Usage: $${d.usage.toFixed(4)} of $${d.limit.toFixed(2)}`
+              : `Usage: $${d.usage.toFixed(4)} of $${d.limit.toFixed(2)} — ${percentUsed}% used`;
+          summaryLines = [
+            `Key: ${d.name} | Status: ${d.disabled ? "disabled" : "active"}`,
+            `Billing: postpaid | Limit: $${d.limit.toFixed(2)} (${periodLabel})`,
+            usageVsLimitLine,
+            `Period usage — Daily: $${d.usage_daily.toFixed(4)} | Weekly: $${d.usage_weekly.toFixed(4)} | Monthly: $${d.usage_monthly.toFixed(4)}`,
+          ];
+          if (d.limit_reset) {
+            summaryLines.push(`Next reset: ${d.limit_reset}`);
+          }
+        } else {
+          summaryLines = [
+            `Key: ${d.name} | Status: ${d.disabled ? "disabled" : "active"}`,
+            `Billing: postpaid | No spending limit configured`,
+            `Usage — Total: $${d.usage.toFixed(4)} | Daily: $${d.usage_daily.toFixed(4)} | Weekly: $${d.usage_weekly.toFixed(4)} | Monthly: $${d.usage_monthly.toFixed(4)}`,
+          ];
+        }
       } else {
-        forecastLabel = "No usage yet — estimation not available.";
+        const limitLine = d.limit
+          ? `Limit: $${d.limit.toFixed(4)} | Remaining: $${(d.limit_remaining ?? 0).toFixed(4)}`
+          : "Limit: none";
+
+        let forecastLabel: string;
+        if (estimation) {
+          forecastLabel = estimationSummary(estimation);
+        } else if (d.limit == null) {
+          forecastLabel = "No spending limit set — usage is unlimited.";
+        } else if ((d.limit_remaining ?? 0) <= 0) {
+          forecastLabel = "Credit exhausted.";
+        } else {
+          forecastLabel = "No usage yet — estimation not available.";
+        }
+
+        summaryLines = [
+          `Key: ${d.name} | Status: ${d.disabled ? "disabled" : "active"}`,
+          `Usage — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
+          limitLine,
+          `Forecast: ${forecastLabel}`,
+        ];
       }
 
-      const lines = [
-        `Key: ${d.name}`,
-        `Status: ${d.disabled ? "disabled" : "active"}`,
-        ...(billingMode === "postpaid" ? ["Billing: postpaid"] : []),
-        `Usage — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
-        `BYOK — Total: $${d.byok_usage.toFixed(6)} | Daily: $${d.byok_usage_daily.toFixed(6)} | Weekly: $${d.byok_usage_weekly.toFixed(6)} | Monthly: $${d.byok_usage_monthly.toFixed(6)}`,
-        limitLine,
-        `Forecast: ${forecastLabel}`,
-      ];
-
       return {
-        summary: lines.join("\n"),
+        summary: summaryLines.join("\n"),
         key: {
           name: d.name,
           label: d.label,
@@ -153,6 +187,7 @@ export const createGatewayUsageTool = (env: Env) =>
         },
         billing: {
           mode: billingMode,
+          limitPeriod,
         },
         limit: {
           total: d.limit,

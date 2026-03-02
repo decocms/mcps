@@ -5,6 +5,9 @@ import {
   loadPendingPayment,
   savePendingPayment,
   markPaymentExpired,
+  updateBillingConfig,
+  type BillingMode,
+  type LimitPeriod,
 } from "../lib/supabase-client.ts";
 import { getKeyDetails, updateKeyLimit } from "../lib/openrouter-keys.ts";
 import {
@@ -51,6 +54,7 @@ const outputSchema = z
   .object({
     summary: z.string(),
     billing_mode: z.enum(["prepaid", "postpaid"]),
+    limit_period: z.enum(["daily", "weekly", "monthly"]).nullable(),
     checkout_url: z.string().nullable(),
     amount_usd: z.number().nullable(),
     markup_pct: z.number(),
@@ -74,7 +78,19 @@ export const createSetLimitTool = (env: Env) =>
           .number()
           .positive()
           .describe(
-            "Desired new spending limit in USD. Must be greater than the current limit. Examples: 5, 10, 50",
+            "Desired new spending limit in USD. In prepaid mode must be greater than the current limit. In postpaid mode can be set to any positive value. Examples: 5, 10, 50",
+          ),
+        limit_period: z
+          .enum(["daily", "weekly", "monthly", "none"])
+          .optional()
+          .describe(
+            "Limit reset period. Only applies to postpaid mode. 'none' removes the reset. Omit to keep the current period.",
+          ),
+        billing_mode: z
+          .enum(["prepaid", "postpaid"])
+          .optional()
+          .describe(
+            "Optional explicit billing mode. Useful for migrating legacy connections where DB mode is stale.",
           ),
         return_url: z
           .string()
@@ -87,7 +103,12 @@ export const createSetLimitTool = (env: Env) =>
       .strict(),
     outputSchema,
     execute: async ({ context }) => {
-      const { limit_usd: newLimit, return_url: returnUrl } = context;
+      const {
+        limit_usd: newLimit,
+        limit_period: limitPeriodInput,
+        billing_mode: billingModeInput,
+        return_url: returnUrl,
+      } = context;
 
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
@@ -108,31 +129,42 @@ export const createSetLimitTool = (env: Env) =>
       const keyDetails = await getKeyDetails(row.openrouter_key_hash);
       const currentLimit = keyDetails.limit ?? 0;
 
-      if (newLimit <= currentLimit) {
-        throw new Error(
-          `New limit ($${newLimit.toFixed(2)}) must be greater than current limit ($${currentLimit.toFixed(2)}).`,
-        );
-      }
-
       const effectiveCap = row.max_limit_usd ?? HARD_CAP_USD;
       if (newLimit > effectiveCap) {
         throw new Error(
           `New limit ($${newLimit.toFixed(2)}) exceeds the maximum allowed ($${effectiveCap.toFixed(2)}).`,
         );
       }
-
-      const billingMode = row.billing_mode ?? "prepaid";
       const markupPct = row.usage_markup_pct ?? 0;
-      const isSubscription = row.is_subscription ?? false;
 
-      if (billingMode === "postpaid") {
+      // Resolve limit_period: explicit input overrides DB value; "none" clears it
+      const currentLimitPeriod = row.limit_period ?? null;
+      const resolvedLimitPeriod: LimitPeriod | null =
+        limitPeriodInput === undefined
+          ? currentLimitPeriod
+          : limitPeriodInput === "none"
+            ? null
+            : (limitPeriodInput as LimitPeriod);
+
+      const billingModeFromDb = row.billing_mode ?? "prepaid";
+      const effectiveBillingMode: BillingMode =
+        billingModeInput ??
+        (limitPeriodInput !== undefined ? "postpaid" : billingModeFromDb);
+
+      if (effectiveBillingMode === "prepaid" && newLimit <= currentLimit) {
+        throw new Error(
+          `New limit ($${newLimit.toFixed(2)}) must be greater than current limit ($${currentLimit.toFixed(2)}).`,
+        );
+      }
+
+      if (effectiveBillingMode === "postpaid") {
         return handlePostpaid(
           row.openrouter_key_hash,
           currentLimit,
           newLimit,
           connectionId,
           markupPct,
-          isSubscription,
+          resolvedLimitPeriod,
         );
       }
 
@@ -154,26 +186,32 @@ async function handlePostpaid(
   newLimit: number,
   connectionId: string,
   markupPct: number,
-  isSubscription: boolean,
+  limitPeriod: LimitPeriod | null,
 ): Promise<z.infer<typeof outputSchema>> {
-  await updateKeyLimit(
-    keyHash,
-    newLimit,
-    isSubscription ? "monthly" : null,
-    false,
-  );
+  await updateKeyLimit(keyHash, newLimit, limitPeriod, false);
+
+  await updateBillingConfig(connectionId, {
+    billingMode: "postpaid",
+    isSubscription: limitPeriod === "monthly",
+    limitPeriod,
+  });
 
   logger.info("Postpaid limit updated directly", {
     connectionId,
     currentLimit,
     newLimit,
     markupPct,
+    limitPeriod,
   });
+
+  const periodLabel = limitPeriod
+    ? { daily: "daily", weekly: "weekly", monthly: "monthly" }[limitPeriod]
+    : null;
 
   const lines = [
     `Spending limit updated (postpaid mode).`,
     `Previous limit: $${currentLimit.toFixed(2)}`,
-    `New limit: $${newLimit.toFixed(2)}`,
+    `New limit: $${newLimit.toFixed(2)}${periodLabel ? ` (resets ${periodLabel})` : ""}`,
   ];
   if (markupPct > 0) {
     lines.push(`Usage markup: ${markupPct}%`);
@@ -182,6 +220,7 @@ async function handlePostpaid(
   return {
     summary: lines.join("\n"),
     billing_mode: "postpaid",
+    limit_period: limitPeriod,
     checkout_url: null,
     amount_usd: null,
     markup_pct: markupPct,
@@ -286,6 +325,7 @@ async function handlePrepaid(
   return {
     summary: lines.join("\n"),
     billing_mode: "prepaid",
+    limit_period: null,
     checkout_url: checkoutUrl,
     amount_usd: chargeUsd,
     markup_pct: markupPct,
