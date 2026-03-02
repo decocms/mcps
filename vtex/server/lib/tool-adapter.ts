@@ -301,11 +301,14 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
           config.sdkFn({ client, ...structured } as any),
         );
         if (result.error) {
-          throw new Error(
-            typeof result.error === "string"
-              ? result.error
-              : JSON.stringify(result.error),
-          );
+          const err = result.error;
+          const message =
+            err instanceof Error
+              ? err.message
+              : typeof err === "string"
+                ? err
+                : JSON.stringify(err);
+          throw new Error(message);
         }
         const data = Array.isArray(result.data)
           ? { items: result.data }
