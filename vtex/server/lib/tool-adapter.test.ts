@@ -16,7 +16,9 @@ describe("flattenRequestSchema", () => {
     const flat = flattenRequestSchema(schema as any);
     expect(Object.keys(flat.shape)).toEqual(["productId", "slug"]);
     // path params should remain as-is (not wrapped in optional)
-    expect(flat.shape.productId).toBeInstanceOf(z.ZodNumber);
+    const parsed = flat.parse({ productId: "42", slug: "shirt" });
+    expect(parsed.productId).toBe(42);
+    expect(typeof parsed.productId).toBe("number");
     expect(flat.shape.slug).toBeInstanceOf(z.ZodString);
   });
 
@@ -104,6 +106,20 @@ describe("flattenRequestSchema", () => {
 
     const flat = flattenRequestSchema(schema as any);
     expect(Object.keys(flat.shape)).toEqual([]);
+  });
+
+  test("accepts numeric strings for int path params", () => {
+    const schema = z.object({
+      path: z.object({ collectionId: z.int() }),
+      query: z.optional(z.never()),
+      body: z.optional(z.never()),
+      headers: z.object({ Accept: z.string() }),
+    });
+
+    const flat = flattenRequestSchema(schema as any);
+    const parsed = flat.parse({ collectionId: "2247" });
+    expect(parsed.collectionId).toBe(2247);
+    expect(typeof parsed.collectionId).toBe("number");
   });
 });
 
