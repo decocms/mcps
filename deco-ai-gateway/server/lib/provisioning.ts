@@ -151,6 +151,14 @@ async function provisionOrReuseKey(
     await existingOrgLock;
     const recheckDb = await loadApiKey(connectionId);
     if (recheckDb) return recheckDb;
+    return provisionOrReuseKey(
+      connectionId,
+      organizationId,
+      meshUrl,
+      organizationName,
+      billingMode,
+      isSubscription,
+    );
   }
 
   let resolve: (v: string | null) => void;
