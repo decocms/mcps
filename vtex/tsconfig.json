@@ -23,7 +23,7 @@
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"]
     },
-    "types": ["@cloudflare/workers-types", "bun-types"]
+    "types": ["@cloudflare/workers-types", "bun"]
   },
   "include": ["server", "shared", "scripts"],
   "exclude": ["server/generated"]
