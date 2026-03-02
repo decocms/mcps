@@ -108,9 +108,6 @@ jobs:
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
 
-      - name: Publish ${{ matrix.mcp }} (Mesh Registry)
-        run: bun run scripts/publish-one.ts ${{ matrix.mcp }}
-
       - name: Notify success
         if: success()
         run: echo "✅ Successfully deployed ${{ matrix.mcp }} to production"
