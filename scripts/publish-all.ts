@@ -115,7 +115,7 @@ const delayMs = Number(getArg("--delay", "2000"));
 const maxRetries = Number(getArg("--max-retries", "3"));
 
 const PUBLISH_URL =
-  "https://mesh-admin.decocms.com/org/deco/registry/publish-request";
+  "https://studio.decocms.com/org/deco/registry/publish-request";
 
 const SKIP_FOLDERS = new Set([
   "node_modules",
