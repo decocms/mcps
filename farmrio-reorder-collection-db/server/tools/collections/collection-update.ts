@@ -12,14 +12,19 @@ import {
 
 const inputSchema = z
   .object({
-    collectionId: z.string().min(1),
+    farmCollectionId: z.string().min(1),
+    decoCollectionId: z.string().optional(),
     title: z.string().min(1).optional(),
     isEnabled: z.boolean().optional(),
   })
   .strict()
-  .refine((data) => data.title !== undefined || data.isEnabled !== undefined, {
-    message: "At least one field to update is required.",
-  });
+  .refine(
+    (data) =>
+      data.decoCollectionId !== undefined ||
+      data.title !== undefined ||
+      data.isEnabled !== undefined,
+    { message: "At least one field to update is required." },
+  );
 
 const outputSchema = z
   .object({
@@ -33,7 +38,7 @@ export const collectionUpdateTool = (env: Env) =>
   createPrivateTool({
     id: "collection_update",
     description:
-      "Atualiza uma collection existente pelo collection_id (identificador VTEX).",
+      "Atualiza uma collection existente pelo farm_collection_id (identificador VTEX/Farm).",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -43,6 +48,10 @@ export const collectionUpdateTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const patch: CollectionUpdate = {};
+
+        if (input.decoCollectionId !== undefined) {
+          patch.deco_collection_id = input.decoCollectionId;
+        }
 
         if (input.title !== undefined) {
           patch.title = input.title;
@@ -55,7 +64,7 @@ export const collectionUpdateTool = (env: Env) =>
         const updated = await db
           .updateTable("collection")
           .set(patch)
-          .where("collection_id", "=", input.collectionId)
+          .where("farm_collection_id", "=", input.farmCollectionId)
           .returningAll()
           .executeTakeFirst();
 

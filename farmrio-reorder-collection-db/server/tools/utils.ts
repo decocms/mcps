@@ -151,7 +151,8 @@ export const reportWithSectionsOutputSchema = reportOutputSchema
 export const collectionOutputSchema = z
   .object({
     id: z.number().int(),
-    collectionId: z.string(),
+    farmCollectionId: z.string(),
+    decoCollectionId: z.string().nullable(),
     title: z.string(),
     isEnabled: z.boolean(),
   })
@@ -192,7 +193,8 @@ function dateToIso(value: Date | string): string {
 export function serializeCollection(row: CollectionRow) {
   return {
     id: row.id,
-    collectionId: row.collection_id,
+    farmCollectionId: row.farm_collection_id,
+    decoCollectionId: row.deco_collection_id ?? null,
     title: row.title,
     isEnabled: row.is_enabled,
   };

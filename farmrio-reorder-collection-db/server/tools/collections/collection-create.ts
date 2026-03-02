@@ -12,7 +12,8 @@ import {
 
 const inputSchema = z
   .object({
-    collectionId: z.string().min(1),
+    farmCollectionId: z.string().min(1),
+    decoCollectionId: z.string().optional(),
     title: z.string().min(1),
     isEnabled: z.boolean().default(true),
   })
@@ -39,7 +40,8 @@ export const collectionCreateTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const payload: CollectionInsert = {
-          collection_id: input.collectionId,
+          farm_collection_id: input.farmCollectionId,
+          deco_collection_id: input.decoCollectionId ?? null,
           title: input.title,
           is_enabled: input.isEnabled,
         };

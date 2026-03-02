@@ -11,7 +11,7 @@ import {
 
 const inputSchema = z
   .object({
-    collectionId: z.string().min(1),
+    farmCollectionId: z.string().min(1),
   })
   .strict();
 
@@ -27,7 +27,7 @@ export const collectionGetTool = (env: Env) =>
   createPrivateTool({
     id: "collection_get",
     description:
-      "Busca uma collection pelo collection_id (identificador VTEX).",
+      "Busca uma collection pelo farm_collection_id (identificador VTEX/Farm).",
     inputSchema,
     outputSchema,
     execute: async ({ context }: { context: unknown }) => {
@@ -38,7 +38,7 @@ export const collectionGetTool = (env: Env) =>
 
         const row = await db
           .selectFrom("collection")
-          .where("collection_id", "=", input.collectionId)
+          .where("farm_collection_id", "=", input.farmCollectionId)
           .selectAll()
           .executeTakeFirst();
 

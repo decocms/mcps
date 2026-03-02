@@ -12,7 +12,8 @@ export type MetricItemStatus = "info" | "warning" | "error" | "success";
 
 export interface CollectionTable {
   id: Generated<number>;
-  collection_id: string;
+  farm_collection_id: string;
+  deco_collection_id: string | null;
   title: string;
   is_enabled: boolean;
 }
