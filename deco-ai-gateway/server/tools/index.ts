@@ -2,13 +2,18 @@ import { tools as openrouterTools } from "@decocms/openrouter/tools";
 import { ensureApiKey } from "../lib/provisioning.ts";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails, updateKeyLimit } from "../lib/openrouter-keys.ts";
-import { DEFAULT_LIMIT_USD } from "../lib/constants.ts";
+import {
+  DEFAULT_LIMIT_USD,
+  DEFAULT_POSTPAID_LIMIT_USD,
+} from "../lib/constants.ts";
 import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
 import { setLimitTools } from "./set-limit.ts";
 import { confirmPaymentTools } from "./confirm-payment.ts";
 import { creditsTools } from "./credits.ts";
+import { alertTools } from "./alert.ts";
+import { checkAndSendBalanceAlert } from "../lib/balance-alert.ts";
 
 type OpenRouterEnv = Parameters<typeof openrouterTools>[0];
 
@@ -26,26 +31,38 @@ async function ensureKeyLimitMatchesBillingMode(
     const billingMode = row.billing_mode ?? "prepaid";
     const details = await getKeyDetails(row.openrouter_key_hash);
 
-    if (billingMode === "prepaid" && details.limit == null) {
-      logger.info("Prepaid key missing limit, applying default", {
+    const isSubscription = row.is_subscription ?? false;
+
+    const expectedDefault =
+      billingMode === "prepaid"
+        ? DEFAULT_LIMIT_USD
+        : DEFAULT_POSTPAID_LIMIT_USD;
+
+    if (details.limit == null) {
+      logger.info("Key missing limit, applying default", {
         connectionId,
-        defaultLimit: DEFAULT_LIMIT_USD,
+        billingMode,
+        defaultLimit: expectedDefault,
+        isSubscription,
       });
       await updateKeyLimit(
         row.openrouter_key_hash,
-        DEFAULT_LIMIT_USD,
-        "monthly",
+        expectedDefault,
+        isSubscription ? "monthly" : null,
         false,
       );
-    } else if (billingMode === "postpaid" && details.limit != null) {
-      logger.info("Postpaid key has restrictive limit, removing it", {
-        connectionId,
-        currentLimit: details.limit,
-      });
-      await updateKeyLimit(row.openrouter_key_hash, null, null, false);
     }
 
     verifiedConnections.add(connectionId);
+
+    if (row.alert_enabled) {
+      checkAndSendBalanceAlert(
+        row,
+        details.limit,
+        details.limit_remaining,
+        undefined,
+      ).catch(() => {});
+    }
   } catch (err) {
     logger.error("Failed to verify/apply key limit", {
       connectionId,
@@ -94,6 +111,7 @@ export async function tools(env: Env) {
     ...setLimitTools.map((factory) => factory(env)),
     ...confirmPaymentTools.map((factory) => factory(env)),
     ...creditsTools.map((factory) => factory(env)),
+    ...alertTools.map((factory) => factory(env)),
   ];
 
   if (!connectionId || !organizationId) {

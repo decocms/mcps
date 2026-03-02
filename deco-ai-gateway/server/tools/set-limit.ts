@@ -19,25 +19,31 @@ import {
 } from "../lib/constants.ts";
 import type { Env } from "../types/env.ts";
 
+function isAllowedOrigin(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return ALLOWED_REDIRECT_DOMAINS.some(
+      (d) => host === d || host.endsWith(`.${d}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getBaseUrl(meshUrl: string | undefined): string {
   if (process.env.GATEWAY_PUBLIC_URL) {
     return process.env.GATEWAY_PUBLIC_URL;
   }
-  if (meshUrl) {
-    try {
-      const host = new URL(meshUrl).hostname;
-      if (
-        ALLOWED_REDIRECT_DOMAINS.some(
-          (d) => host === d || host.endsWith(`.${d}`),
-        )
-      ) {
-        return meshUrl;
-      }
-    } catch {
-      /* invalid URL, fall through */
-    }
+  if (meshUrl && isAllowedOrigin(meshUrl)) {
+    return meshUrl;
   }
   return "https://sites-deco-ai-gateway.decocache.com";
+}
+
+function sanitizeRedirectUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  if (isAllowedOrigin(url)) return url;
+  return undefined;
 }
 
 const outputSchema = z
@@ -114,6 +120,7 @@ export const createSetLimitTool = (env: Env) =>
 
       const billingMode = row.billing_mode ?? "prepaid";
       const markupPct = row.usage_markup_pct ?? 0;
+      const isSubscription = row.is_subscription ?? false;
 
       if (billingMode === "postpaid") {
         return handlePostpaid(
@@ -122,6 +129,7 @@ export const createSetLimitTool = (env: Env) =>
           newLimit,
           connectionId,
           markupPct,
+          isSubscription,
         );
       }
 
@@ -131,7 +139,7 @@ export const createSetLimitTool = (env: Env) =>
         connectionId,
         organizationId,
         meshUrl,
-        returnUrl ?? meshUrl,
+        sanitizeRedirectUrl(returnUrl) ?? sanitizeRedirectUrl(meshUrl),
         markupPct,
       );
     },
@@ -143,8 +151,14 @@ async function handlePostpaid(
   newLimit: number,
   connectionId: string,
   markupPct: number,
+  isSubscription: boolean,
 ): Promise<z.infer<typeof outputSchema>> {
-  await updateKeyLimit(keyHash, newLimit, "monthly", false);
+  await updateKeyLimit(
+    keyHash,
+    newLimit,
+    isSubscription ? "monthly" : null,
+    false,
+  );
 
   logger.info("Postpaid limit updated directly", {
     connectionId,
