@@ -307,9 +307,14 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
               : JSON.stringify(result.error),
           );
         }
-        return Array.isArray(result.data)
+        const data = Array.isArray(result.data)
           ? { items: result.data }
           : result.data;
+
+        if (data === null || data === undefined || typeof data !== "object") {
+          return { result: data };
+        }
+        return data;
       },
     });
 }
