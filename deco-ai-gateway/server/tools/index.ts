@@ -28,7 +28,7 @@ async function ensureKeyLimitMatchesBillingMode(
 
     if (!verifiedConnections.has(connectionId)) {
       const billingMode = row.billing_mode ?? "prepaid";
-      const isSubscription = row.is_subscription ?? false;
+      const limitPeriod = row.limit_period ?? null;
       const details = await getKeyDetails(row.openrouter_key_hash);
 
       const expectedDefault =
@@ -41,12 +41,12 @@ async function ensureKeyLimitMatchesBillingMode(
           connectionId,
           billingMode,
           defaultLimit: expectedDefault,
-          isSubscription,
+          limitPeriod,
         });
         await updateKeyLimit(
           row.openrouter_key_hash,
           expectedDefault,
-          isSubscription ? "monthly" : null,
+          limitPeriod,
           false,
         );
       }

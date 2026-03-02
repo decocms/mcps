@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "./logger.ts";
 
 export type BillingMode = "prepaid" | "postpaid";
+export type LimitPeriod = "daily" | "weekly" | "monthly";
 
 export interface LlmGatewayConnectionRow {
   connection_id: string;
@@ -14,6 +15,7 @@ export interface LlmGatewayConnectionRow {
   encryption_tag: string | null;
   billing_mode: BillingMode;
   is_subscription: boolean;
+  limit_period: LimitPeriod | null;
   usage_markup_pct: number;
   max_limit_usd: number | null;
   alert_enabled: boolean;
@@ -177,6 +179,7 @@ export async function deleteConnectionConfig(
 export interface BillingConfig {
   billingMode: BillingMode;
   isSubscription: boolean;
+  limitPeriod: LimitPeriod | null;
   usageMarkupPct: number;
   maxLimitUsd: number | null;
 }
@@ -198,6 +201,11 @@ export async function updateBillingConfig(
   }
   if (config.isSubscription !== undefined) {
     updates.is_subscription = config.isSubscription;
+  }
+  if ("limitPeriod" in config) {
+    updates.limit_period = config.limitPeriod ?? null;
+    // Keep is_subscription in sync for backwards compat
+    updates.is_subscription = config.limitPeriod === "monthly";
   }
   if (config.usageMarkupPct !== undefined) {
     updates.usage_markup_pct = config.usageMarkupPct;
