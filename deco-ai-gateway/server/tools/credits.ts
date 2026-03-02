@@ -52,13 +52,11 @@ export const createGatewayCreditsTool = (env: Env) =>
       const billingMode = (row.billing_mode ?? "prepaid") as
         | "prepaid"
         | "postpaid";
-      const markupPct = row.usage_markup_pct ?? 0;
-      const applyMarkup = (v: number) => v * (1 + markupPct / 100);
 
       return {
         available: d.limit_remaining,
         total: d.limit,
-        used: applyMarkup(d.usage),
+        used: d.usage,
         billingMode,
         keyDisabled: d.disabled,
       };

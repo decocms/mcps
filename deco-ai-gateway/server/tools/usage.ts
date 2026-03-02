@@ -2,19 +2,19 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails } from "../lib/openrouter-keys.ts";
+import {
+  estimateCreditDuration,
+  estimationSummary,
+  type CreditEstimation,
+} from "../lib/credit-estimation.ts";
 import type { Env } from "../types/env.ts";
-
-function applyMarkup(value: number, markupPct: number): number {
-  return value * (1 + markupPct / 100);
-}
 
 export const createGatewayUsageTool = (env: Env) =>
   createTool({
     id: "GATEWAY_USAGE",
     description:
       "Returns full spending and usage data for this organization's OpenRouter API key. " +
-      "Includes total, daily, weekly, and monthly usage. " +
-      "If a usage markup is configured, shows both raw LLM cost and effective cost with markup.",
+      "Includes total, daily, weekly, and monthly usage.",
     inputSchema: z.object({}).strict(),
     outputSchema: z
       .object({
@@ -29,7 +29,6 @@ export const createGatewayUsageTool = (env: Env) =>
         }),
         billing: z.object({
           mode: z.enum(["prepaid", "postpaid"]),
-          markupPct: z.number(),
         }),
         limit: z.object({
           total: z.number().nullable(),
@@ -43,17 +42,43 @@ export const createGatewayUsageTool = (env: Env) =>
           weekly: z.number(),
           monthly: z.number(),
         }),
-        effectiveCost: z.object({
-          total: z.number(),
-          daily: z.number(),
-          weekly: z.number(),
-          monthly: z.number(),
-        }),
         byokUsage: z.object({
           total: z.number(),
           daily: z.number(),
           weekly: z.number(),
           monthly: z.number(),
+        }),
+        estimation: z
+          .object({
+            avgDailySpend: z
+              .number()
+              .describe("Average raw $/day based on best usage window"),
+            estimatedDaysRemaining: z
+              .number()
+              .nullable()
+              .describe("Calendar days until credit runs out"),
+            estimatedDepletionDate: z
+              .string()
+              .nullable()
+              .describe("Projected depletion date (YYYY-MM-DD)"),
+            resetsBeforeDepletion: z
+              .boolean()
+              .describe("True if the limit resets before running out"),
+            confidence: z
+              .enum(["low", "medium", "high"])
+              .describe("Data quality behind the estimate"),
+            basedOn: z
+              .enum(["monthly", "weekly", "daily"])
+              .describe("Which usage window was used"),
+          })
+          .nullable()
+          .describe(
+            "Credit duration estimate (null when unlimited or no usage)",
+          ),
+        alert: z.object({
+          enabled: z.boolean(),
+          threshold_usd: z.number(),
+          email: z.string().nullable(),
         }),
         connectionId: z.string(),
       })
@@ -74,29 +99,40 @@ export const createGatewayUsageTool = (env: Env) =>
       const d = await getKeyDetails(row.openrouter_key_hash);
 
       const billingMode = row.billing_mode ?? "prepaid";
-      const markupPct = row.usage_markup_pct ?? 0;
+
+      const estimation: CreditEstimation | null = estimateCreditDuration({
+        limitRemaining: d.limit_remaining,
+        limitReset: d.limit_reset,
+        usageMonthly: d.usage_monthly,
+        usageWeekly: d.usage_weekly,
+        usageDaily: d.usage_daily,
+        keyCreatedAt: d.created_at,
+      });
 
       const limitLine = d.limit
         ? `Limit: $${d.limit.toFixed(4)} | Remaining: $${(d.limit_remaining ?? 0).toFixed(4)} | Reset: ${d.limit_reset ?? "none"}`
         : "Limit: none";
 
+      let forecastLabel: string;
+      if (estimation) {
+        forecastLabel = estimationSummary(estimation);
+      } else if (d.limit == null) {
+        forecastLabel = "No spending limit set — usage is unlimited.";
+      } else if ((d.limit_remaining ?? 0) <= 0) {
+        forecastLabel = "Credit exhausted.";
+      } else {
+        forecastLabel = "No usage yet — estimation not available.";
+      }
+
       const lines = [
         `Key: ${d.name}`,
         `Status: ${d.disabled ? "disabled" : "active"}`,
-        `Billing: ${billingMode}${markupPct > 0 ? ` (+${markupPct}% markup)` : ""}`,
-        `Usage (raw) — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
-      ];
-
-      if (markupPct > 0) {
-        lines.push(
-          `Usage (with ${markupPct}% markup) — Total: $${applyMarkup(d.usage, markupPct).toFixed(6)} | Monthly: $${applyMarkup(d.usage_monthly, markupPct).toFixed(6)}`,
-        );
-      }
-
-      lines.push(
+        ...(billingMode === "postpaid" ? ["Billing: postpaid"] : []),
+        `Usage — Total: $${d.usage.toFixed(6)} | Daily: $${d.usage_daily.toFixed(6)} | Weekly: $${d.usage_weekly.toFixed(6)} | Monthly: $${d.usage_monthly.toFixed(6)}`,
         `BYOK — Total: $${d.byok_usage.toFixed(6)} | Daily: $${d.byok_usage_daily.toFixed(6)} | Weekly: $${d.byok_usage_weekly.toFixed(6)} | Monthly: $${d.byok_usage_monthly.toFixed(6)}`,
         limitLine,
-      );
+        `Forecast: ${forecastLabel}`,
+      ];
 
       return {
         summary: lines.join("\n"),
@@ -110,7 +146,6 @@ export const createGatewayUsageTool = (env: Env) =>
         },
         billing: {
           mode: billingMode,
-          markupPct,
         },
         limit: {
           total: d.limit,
@@ -124,17 +159,17 @@ export const createGatewayUsageTool = (env: Env) =>
           weekly: d.usage_weekly,
           monthly: d.usage_monthly,
         },
-        effectiveCost: {
-          total: applyMarkup(d.usage, markupPct),
-          daily: applyMarkup(d.usage_daily, markupPct),
-          weekly: applyMarkup(d.usage_weekly, markupPct),
-          monthly: applyMarkup(d.usage_monthly, markupPct),
-        },
         byokUsage: {
           total: d.byok_usage,
           daily: d.byok_usage_daily,
           weekly: d.byok_usage_weekly,
           monthly: d.byok_usage_monthly,
+        },
+        estimation,
+        alert: {
+          enabled: row.alert_enabled ?? false,
+          threshold_usd: row.alert_threshold_usd ?? 10,
+          email: row.alert_email ?? null,
         },
         connectionId,
       };
