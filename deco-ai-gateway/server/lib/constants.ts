@@ -35,7 +35,7 @@ export async function isEligibleForCredit(
     try {
       const host = new URL(meshUrl).hostname.toLowerCase();
 
-      if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+      if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
         if (!defaults.allowLocalhostCredit) return false;
         // For localhost, also require the email domain to match
         if (userEmail) {
