@@ -18,10 +18,12 @@ export async function getGatewayDefaults(): Promise<GatewayDefaults> {
  * Determine if a new prepaid key should receive the free credit grant.
  *
  * Eligibility rules (evaluated in order):
- * 1. localhost / 127.0.0.1 → only eligible if allowLocalhostCredit = true in DB
- * 2. meshUrl hostname matches creditEligibleDomains → eligible
- * 3. userEmail domain matches creditEligibleEmailDomains → eligible
- * 4. Otherwise → not eligible ($0 initial credit)
+ * 1. localhost / 127.0.0.1:
+ *    - If allowLocalhostCredit = false → not eligible regardless of email
+ *    - If allowLocalhostCredit = true → eligible only if email domain matches
+ *      creditEligibleEmailDomains (restricts to known team members on localhost)
+ * 2. meshUrl hostname matches creditEligibleDomains → eligible (no email check)
+ * 3. Otherwise → not eligible ($0 initial credit)
  */
 export async function isEligibleForCredit(
   meshUrl: string | undefined,
@@ -32,25 +34,27 @@ export async function isEligibleForCredit(
   if (meshUrl) {
     try {
       const host = new URL(meshUrl).hostname;
+
       if (host === "localhost" || host === "127.0.0.1") {
-        return defaults.allowLocalhostCredit;
+        if (!defaults.allowLocalhostCredit) return false;
+        // For localhost, also require the email domain to match
+        if (userEmail) {
+          const emailDomain = userEmail.split("@")[1]?.toLowerCase();
+          if (emailDomain) {
+            return defaults.creditEligibleEmailDomains.some(
+              (d) => emailDomain === d || emailDomain.endsWith(`.${d}`),
+            );
+          }
+        }
+        return false;
       }
-      const meshMatch = defaults.creditEligibleDomains.some(
+
+      // For non-localhost: only check the meshUrl domain
+      return defaults.creditEligibleDomains.some(
         (d) => host === d || host.endsWith(`.${d}`),
       );
-      if (meshMatch) return true;
     } catch {
       // invalid URL — fall through
-    }
-  }
-
-  if (userEmail) {
-    const emailDomain = userEmail.split("@")[1]?.toLowerCase();
-    if (emailDomain) {
-      const emailMatch = defaults.creditEligibleEmailDomains.some(
-        (d) => emailDomain === d || emailDomain.endsWith(`.${d}`),
-      );
-      if (emailMatch) return true;
     }
   }
 
