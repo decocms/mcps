@@ -16,8 +16,7 @@ import {
 } from "../lib/stripe-client.ts";
 import { logger } from "../lib/logger.ts";
 import {
-  HARD_CAP_USD,
-  MIN_STRIPE_AMOUNT_CENTS,
+  getGatewayDefaults,
   ALLOWED_REDIRECT_DOMAINS,
 } from "../lib/constants.ts";
 import { ensureApiKey } from "../lib/provisioning.ts";
@@ -129,7 +128,8 @@ export const createSetLimitTool = (env: Env) =>
       const keyDetails = await getKeyDetails(row.openrouter_key_hash);
       const currentLimit = keyDetails.limit ?? 0;
 
-      const effectiveCap = row.max_limit_usd ?? HARD_CAP_USD;
+      const defaults = await getGatewayDefaults();
+      const effectiveCap = row.max_limit_usd ?? defaults.hardCapUsd;
       if (newLimit > effectiveCap) {
         throw new Error(
           `New limit ($${newLimit.toFixed(2)}) exceeds the maximum allowed ($${effectiveCap.toFixed(2)}).`,
@@ -259,9 +259,10 @@ async function handlePrepaid(
   const chargeUsd = incrementUsd * markupMultiplier;
   const amountCents = Math.round(chargeUsd * 100);
 
-  if (amountCents < MIN_STRIPE_AMOUNT_CENTS) {
+  const defaults = await getGatewayDefaults();
+  if (amountCents < defaults.minStripeAmountCents) {
     throw new Error(
-      `Minimum payment is $0.50. Increase the limit by at least $${(MIN_STRIPE_AMOUNT_CENTS / 100 / markupMultiplier).toFixed(2)}.`,
+      `Minimum payment is $${(defaults.minStripeAmountCents / 100).toFixed(2)}. Increase the limit by at least $${(defaults.minStripeAmountCents / 100 / markupMultiplier).toFixed(2)}.`,
     );
   }
 

@@ -2,10 +2,7 @@ import { tools as openrouterTools } from "@decocms/openrouter/tools";
 import { ensureApiKey } from "../lib/provisioning.ts";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails, updateKeyLimit } from "../lib/openrouter-keys.ts";
-import {
-  DEFAULT_LIMIT_USD,
-  DEFAULT_POSTPAID_LIMIT_USD,
-} from "../lib/constants.ts";
+import { getGatewayDefaults } from "../lib/constants.ts";
 import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
@@ -31,10 +28,11 @@ async function ensureKeyLimitMatchesBillingMode(
       const limitPeriod = row.limit_period ?? null;
       const details = await getKeyDetails(row.openrouter_key_hash);
 
+      const defaults = await getGatewayDefaults();
       const expectedDefault =
         billingMode === "prepaid"
-          ? DEFAULT_LIMIT_USD
-          : DEFAULT_POSTPAID_LIMIT_USD;
+          ? defaults.defaultPrepaidLimitUsd
+          : defaults.defaultPostpaidLimitUsd;
 
       if (details.limit == null) {
         logger.info("Key missing limit, applying default", {

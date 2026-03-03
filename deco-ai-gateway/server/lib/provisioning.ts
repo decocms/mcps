@@ -8,13 +8,7 @@ import {
 import { decrypt } from "./encryption.ts";
 import { updateKeyLimit, type LimitReset } from "./openrouter-keys.ts";
 import { logger } from "./logger.ts";
-import {
-  DEFAULT_LIMIT_USD,
-  DEFAULT_POSTPAID_LIMIT_USD,
-  PROVISIONING_TIMEOUT_MS,
-} from "./constants.ts";
-
-export { DEFAULT_LIMIT_USD, DEFAULT_POSTPAID_LIMIT_USD };
+import { getGatewayDefaults, PROVISIONING_TIMEOUT_MS } from "./constants.ts";
 
 /**
  * In-flight provisioning promises per connectionId.
@@ -79,6 +73,7 @@ async function createOpenRouterKey(
 
   logger.info("Creating OpenRouter key", { keyName, organizationId });
 
+  const defaults = await getGatewayDefaults();
   const response = await fetch(OPENROUTER_KEYS_URL, {
     method: "POST",
     headers: {
@@ -89,8 +84,8 @@ async function createOpenRouterKey(
       name: keyName,
       limit:
         billingMode === "prepaid"
-          ? DEFAULT_LIMIT_USD
-          : DEFAULT_POSTPAID_LIMIT_USD,
+          ? defaults.defaultPrepaidLimitUsd
+          : defaults.defaultPostpaidLimitUsd,
       limit_reset: limitPeriod ?? undefined,
     }),
   });
@@ -220,10 +215,11 @@ async function provisionOrReuseKey(
     );
 
     const limitReset: LimitReset | null = limitPeriod ?? null;
+    const defs = await getGatewayDefaults();
     const defaultLimit =
       billingMode === "prepaid"
-        ? DEFAULT_LIMIT_USD
-        : DEFAULT_POSTPAID_LIMIT_USD;
+        ? defs.defaultPrepaidLimitUsd
+        : defs.defaultPostpaidLimitUsd;
 
     logger.info("Applying default spending limit to new key", {
       connectionId,

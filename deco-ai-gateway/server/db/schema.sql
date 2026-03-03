@@ -26,6 +26,7 @@ BEGIN
     FROM pg_policies
     WHERE schemaname = 'public'
     AND tablename IN (
+      'llm_gateway_config',
       'llm_gateway_connections',
       'llm_gateway_payments'
     )
@@ -38,6 +39,19 @@ END $$;
 -- ============================================================================
 -- PART 1: CREATE TABLES
 -- ============================================================================
+
+-- 0. llm_gateway_config (singleton global defaults)
+CREATE TABLE IF NOT EXISTS llm_gateway_config (
+  id                         TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
+  default_prepaid_limit_usd  NUMERIC(10,4) NOT NULL DEFAULT 2,
+  default_postpaid_limit_usd NUMERIC(10,4) NOT NULL DEFAULT 500,
+  hard_cap_usd               NUMERIC(10,4) NOT NULL DEFAULT 10000,
+  default_markup_pct         NUMERIC(5,2)  NOT NULL DEFAULT 15,
+  min_stripe_amount_cents    INTEGER       NOT NULL DEFAULT 50,
+  updated_at                 TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+INSERT INTO llm_gateway_config (id) VALUES ('global') ON CONFLICT (id) DO NOTHING;
 
 -- 1. llm_gateway_connections (config and encrypted API keys)
 CREATE TABLE IF NOT EXISTS llm_gateway_connections (
@@ -83,6 +97,18 @@ COMMENT ON COLUMN llm_gateway_connections.openrouter_key_hash IS
 -- ============================================================================
 -- PART 2: ROW LEVEL SECURITY (RLS)
 -- ============================================================================
+
+-- ============================================================================
+-- 0. LLM_GATEWAY_CONFIG - INTERNAL ACCESS ONLY (global defaults)
+-- ============================================================================
+
+ALTER TABLE llm_gateway_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow service_role full access to llm_gateway_config"
+  ON llm_gateway_config FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 -- ============================================================================
 -- 1. LLM_GATEWAY_CONNECTIONS - INTERNAL ACCESS ONLY
