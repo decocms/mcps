@@ -380,36 +380,6 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_org
   ON llm_gateway_payments(organization_id);
 
--- Migration: Create llm_gateway_config table (global defaults singleton)
-CREATE TABLE IF NOT EXISTS llm_gateway_config (
-  id                         TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
-  default_prepaid_limit_usd  NUMERIC(10,4) NOT NULL DEFAULT 2,
-  default_postpaid_limit_usd NUMERIC(10,4) NOT NULL DEFAULT 500,
-  hard_cap_usd               NUMERIC(10,4) NOT NULL DEFAULT 10000,
-  default_markup_pct         NUMERIC(5,2)  NOT NULL DEFAULT 15,
-  min_stripe_amount_cents    INTEGER       NOT NULL DEFAULT 50,
-  updated_at                 TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
-INSERT INTO llm_gateway_config (id) VALUES ('global') ON CONFLICT (id) DO NOTHING;
-
-ALTER TABLE llm_gateway_config ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'llm_gateway_config'
-    AND policyname = 'Allow service_role full access to llm_gateway_config'
-  ) THEN
-    CREATE POLICY "Allow service_role full access to llm_gateway_config"
-      ON llm_gateway_config FOR ALL
-      TO service_role
-      USING (true)
-      WITH CHECK (true);
-  END IF;
-END $$;
-
 -- ============================================================================
 -- SETUP COMPLETE! ✅
 -- ============================================================================
