@@ -2,7 +2,7 @@ import { tools as openrouterTools } from "@decocms/openrouter/tools";
 import { ensureApiKey } from "../lib/provisioning.ts";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails, updateKeyLimit } from "../lib/openrouter-keys.ts";
-import { getGatewayDefaults } from "../lib/constants.ts";
+import { getGatewayDefaults, isEligibleForCredit } from "../lib/constants.ts";
 import { logger } from "../lib/logger.ts";
 import type { Env } from "../types/env.ts";
 import { usageTools } from "./usage.ts";
@@ -18,6 +18,8 @@ const verifiedConnections = new Set<string>();
 
 async function ensureKeyLimitMatchesBillingMode(
   connectionId: string,
+  meshUrl: string,
+  userEmail: string | undefined,
 ): Promise<void> {
   try {
     const row = await loadConnectionConfig(connectionId);
@@ -28,13 +30,16 @@ async function ensureKeyLimitMatchesBillingMode(
       const limitPeriod = row.limit_period ?? null;
       const details = await getKeyDetails(row.openrouter_key_hash);
 
-      const defaults = await getGatewayDefaults();
-      const expectedDefault =
-        billingMode === "prepaid"
-          ? defaults.defaultPrepaidLimitUsd
-          : defaults.defaultPostpaidLimitUsd;
-
       if (details.limit == null) {
+        const defaults = await getGatewayDefaults();
+        let expectedDefault: number;
+        if (billingMode === "prepaid") {
+          const eligible = await isEligibleForCredit(meshUrl, userEmail);
+          expectedDefault = eligible ? defaults.defaultPrepaidLimitUsd : 0;
+        } else {
+          expectedDefault = defaults.defaultPostpaidLimitUsd;
+        }
+
         logger.info("Key missing limit, applying default", {
           connectionId,
           billingMode,
@@ -123,14 +128,30 @@ export async function tools(env: Env) {
     ];
   }
 
+  let userEmail: string | undefined;
+  try {
+    const authUser = meshCtx?.ensureAuthenticated?.();
+    userEmail = (authUser as { email?: string } | undefined)?.email;
+  } catch {
+    // Not authenticated or ensureAuthenticated unavailable — credit check
+    // will rely solely on meshUrl domain matching
+  }
+
   const orgKey = await ensureApiKey(
     connectionId,
     organizationId,
     meshUrl ?? "",
     organizationName,
+    undefined,
+    null,
+    userEmail,
   );
 
-  await ensureKeyLimitMatchesBillingMode(connectionId);
+  await ensureKeyLimitMatchesBillingMode(
+    connectionId,
+    meshUrl ?? "",
+    userEmail,
+  );
 
   if (!orgKey) {
     logger.error("No API key available for org — LLM call will fail", {

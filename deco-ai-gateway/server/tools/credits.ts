@@ -2,7 +2,6 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { loadConnectionConfig } from "../lib/supabase-client.ts";
 import { getKeyDetails } from "../lib/openrouter-keys.ts";
-import { getGatewayDefaults } from "../lib/constants.ts";
 import { ensureApiKey } from "../lib/provisioning.ts";
 import type { Env } from "../types/env.ts";
 
@@ -57,10 +56,9 @@ export const createGatewayCreditsTool = (env: Env) =>
 
       const row = await loadConnectionConfig(connectionId);
       if (!row?.openrouter_key_hash) {
-        const defaults = await getGatewayDefaults();
         return {
-          available: defaults.defaultPrepaidLimitUsd,
-          total: defaults.defaultPrepaidLimitUsd,
+          available: 0,
+          total: 0,
           used: 0,
           percentUsed: 0,
           limitPeriod: null,
