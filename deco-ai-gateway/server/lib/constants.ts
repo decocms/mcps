@@ -33,16 +33,18 @@ export async function isEligibleForCredit(
 
   if (meshUrl) {
     try {
-      const host = new URL(meshUrl).hostname;
+      const host = new URL(meshUrl).hostname.toLowerCase();
 
-      if (host === "localhost" || host === "127.0.0.1") {
+      if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
         if (!defaults.allowLocalhostCredit) return false;
         // For localhost, also require the email domain to match
         if (userEmail) {
           const emailDomain = userEmail.split("@")[1]?.toLowerCase();
           if (emailDomain) {
             return defaults.creditEligibleEmailDomains.some(
-              (d) => emailDomain === d || emailDomain.endsWith(`.${d}`),
+              (d) =>
+                emailDomain === d.toLowerCase() ||
+                emailDomain.endsWith(`.${d.toLowerCase()}`),
             );
           }
         }
@@ -51,7 +53,7 @@ export async function isEligibleForCredit(
 
       // For non-localhost: only check the meshUrl domain
       return defaults.creditEligibleDomains.some(
-        (d) => host === d || host.endsWith(`.${d}`),
+        (d) => host === d.toLowerCase() || host.endsWith(`.${d.toLowerCase()}`),
       );
     } catch {
       // invalid URL — fall through

@@ -59,10 +59,8 @@ interface OpenRouterKeyResponse {
 async function createOpenRouterKey(
   organizationId: string,
   organizationName: string | undefined,
-  billingMode: BillingMode,
   limitPeriod: LimitPeriod | null,
-  meshUrl: string,
-  userEmail: string | undefined,
+  initialLimit: number,
 ): Promise<{ key: string; hash: string; name: string }> {
   const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
   if (!managementKey) {
@@ -77,24 +75,11 @@ async function createOpenRouterKey(
 
   const keyName = `decocms-mesh-org-${slug}`;
 
-  logger.info("Creating OpenRouter key", { keyName, organizationId });
-
-  const defaults = await getGatewayDefaults();
-
-  let initialLimit: number;
-  if (billingMode === "prepaid") {
-    const eligible = await isEligibleForCredit(meshUrl, userEmail);
-    initialLimit = eligible ? defaults.defaultPrepaidLimitUsd : 0;
-    logger.info("Prepaid credit eligibility check", {
-      organizationId,
-      meshUrl,
-      userEmail,
-      eligible,
-      initialLimit,
-    });
-  } else {
-    initialLimit = defaults.defaultPostpaidLimitUsd;
-  }
+  logger.info("Creating OpenRouter key", {
+    keyName,
+    organizationId,
+    initialLimit,
+  });
 
   const response = await fetch(OPENROUTER_KEYS_URL, {
     method: "POST",
@@ -228,24 +213,31 @@ async function provisionOrReuseKey(
       source: "openrouter",
     });
 
-    const { key, hash, name } = await createOpenRouterKey(
-      organizationId,
-      organizationName,
-      billingMode,
-      limitPeriod,
-      meshUrl,
-      userEmail,
-    );
-
-    const limitReset: LimitReset | null = limitPeriod ?? null;
+    // Compute eligibility once so both key creation and limit update use the same value.
     const defs = await getGatewayDefaults();
     let defaultLimit: number;
     if (billingMode === "prepaid") {
       const eligible = await isEligibleForCredit(meshUrl, userEmail);
       defaultLimit = eligible ? defs.defaultPrepaidLimitUsd : 0;
+      logger.info("Prepaid credit eligibility check", {
+        organizationId,
+        meshUrl,
+        hasEmail: userEmail != null,
+        eligible,
+        initialLimit: defaultLimit,
+      });
     } else {
       defaultLimit = defs.defaultPostpaidLimitUsd;
     }
+
+    const { key, hash, name } = await createOpenRouterKey(
+      organizationId,
+      organizationName,
+      limitPeriod,
+      defaultLimit,
+    );
+
+    const limitReset: LimitReset | null = limitPeriod ?? null;
 
     logger.info("Applying default spending limit to new key", {
       connectionId,
