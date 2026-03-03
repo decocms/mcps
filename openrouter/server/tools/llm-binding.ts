@@ -565,6 +565,15 @@ const isAPICallError = (error: unknown): error is APICallError =>
   Symbol.for("vercel.ai.error") in error &&
   Symbol.for("vercel.ai.error.AI_APICallError") in error;
 
+const findApiCallError = (error: unknown, depth = 0): APICallError | null => {
+  if (depth > 5) return null;
+  if (isAPICallError(error)) return error;
+  if (typeof error === "object" && error !== null && "cause" in error) {
+    return findApiCallError((error as { cause: unknown }).cause, depth + 1);
+  }
+  return null;
+};
+
 /**
  * LLM_DO_STREAM - Streams a language model response in real-time
  */
@@ -652,6 +661,14 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
           state,
           error: String(error),
         });
+        const apiErr = findApiCallError(error);
+        if (apiErr && apiErr.statusCode === 402) {
+          return new Response(
+            "Insufficient credit or spending limit to execute this model call. " +
+              "Please add credits or increase your spending limit in Settings → Billing.",
+            { status: 402 },
+          );
+        }
         if (isAPICallError(error)) {
           return new Response(error.responseBody, {
             status: error.statusCode,
@@ -822,6 +839,15 @@ export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
           modelId,
           error: String(error),
         });
+
+        const apiErr = findApiCallError(error);
+        if (apiErr && apiErr.statusCode === 402) {
+          throw new Error(
+            "Insufficient credit or spending limit to execute this model call. " +
+              "Please add credits or increase your spending limit in Settings → Billing.",
+          );
+        }
+
         throw error;
       }
     },
