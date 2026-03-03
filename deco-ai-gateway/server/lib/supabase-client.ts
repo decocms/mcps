@@ -28,6 +28,73 @@ export interface LlmGatewayConnectionRow {
 
 const TABLE_NAME = "llm_gateway_connections";
 const PAYMENTS_TABLE = "llm_gateway_payments";
+const CONFIG_TABLE = "llm_gateway_config";
+
+// ---------------------------------------------------------------------------
+// Global gateway defaults (singleton row)
+// ---------------------------------------------------------------------------
+
+export interface GatewayDefaults {
+  defaultPrepaidLimitUsd: number;
+  defaultPostpaidLimitUsd: number;
+  hardCapUsd: number;
+  defaultMarkupPct: number;
+  minStripeAmountCents: number;
+}
+
+const FALLBACK_DEFAULTS: GatewayDefaults = {
+  defaultPrepaidLimitUsd: 2,
+  defaultPostpaidLimitUsd: 500,
+  hardCapUsd: 10_000,
+  defaultMarkupPct: 15,
+  minStripeAmountCents: 50,
+};
+
+let cachedDefaults: GatewayDefaults | null = null;
+let cacheLoadedAt = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+export async function loadGatewayDefaults(): Promise<GatewayDefaults> {
+  if (cachedDefaults && Date.now() - cacheLoadedAt < CACHE_TTL_MS) {
+    return cachedDefaults;
+  }
+
+  const client = getSupabaseClient();
+  if (!client) {
+    return FALLBACK_DEFAULTS;
+  }
+
+  try {
+    const { data, error } = await client
+      .from(CONFIG_TABLE)
+      .select("*")
+      .eq("id", "global")
+      .single();
+
+    if (error || !data) {
+      logger.warn("Failed to load gateway config, using fallback defaults", {
+        error: error?.message,
+      });
+      return FALLBACK_DEFAULTS;
+    }
+
+    cachedDefaults = {
+      defaultPrepaidLimitUsd: Number(data.default_prepaid_limit_usd),
+      defaultPostpaidLimitUsd: Number(data.default_postpaid_limit_usd),
+      hardCapUsd: Number(data.hard_cap_usd),
+      defaultMarkupPct: Number(data.default_markup_pct),
+      minStripeAmountCents: Number(data.min_stripe_amount_cents),
+    };
+    cacheLoadedAt = Date.now();
+
+    return cachedDefaults;
+  } catch (err) {
+    logger.warn("Exception loading gateway config, using fallback defaults", {
+      error: String(err),
+    });
+    return FALLBACK_DEFAULTS;
+  }
+}
 
 export interface LlmGatewayPaymentRow {
   id?: string;
