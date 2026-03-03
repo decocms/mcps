@@ -6,7 +6,6 @@ import {
   type LimitPeriod,
 } from "./supabase-client.ts";
 import { decrypt } from "./encryption.ts";
-import { updateKeyLimit, type LimitReset } from "./openrouter-keys.ts";
 import { logger } from "./logger.ts";
 import {
   getGatewayDefaults,
@@ -236,30 +235,6 @@ async function provisionOrReuseKey(
       limitPeriod,
       defaultLimit,
     );
-
-    const limitReset: LimitReset | null = limitPeriod ?? null;
-
-    logger.info("Applying default spending limit to new key", {
-      connectionId,
-      keyHash: hash,
-      billingMode,
-      limitUsd: defaultLimit,
-      limitPeriod,
-    });
-    const limitResult = await updateKeyLimit(
-      hash,
-      defaultLimit,
-      limitReset,
-      false,
-    );
-    logger.info("Default spending limit applied", {
-      connectionId,
-      billingMode,
-      limitUsd: defaultLimit,
-      limitReset,
-      resultLimit: limitResult.limit,
-      resultRemaining: limitResult.limit_remaining,
-    });
 
     logger.debug("Saving encrypted key to Supabase", { connectionId });
     await saveApiKey({
