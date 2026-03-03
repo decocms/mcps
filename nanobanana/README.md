@@ -71,7 +71,7 @@ Generate an image using Gemini models via OpenRouter.
 | `baseImageUrl` | string | ❌ | URL of an existing image for image-to-image generation (single image) |
 | `baseImageUrls` | string[] | ❌ | Array of image URLs for multi-image generation (e.g., virtual try-on). Takes precedence over `baseImageUrl` |
 | `aspectRatio` | enum | ❌ | Output aspect ratio (1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9) |
-| `model` | enum | ❌ | Model to use (gemini-2.0-flash-exp, gemini-2.5-flash-image-preview, gemini-2.5-pro-exp-03-25) |
+| `model` | enum | ❌ | Model to use (gemini-2.0-flash-exp, gemini-2.5-pro-image-preview, gemini-2.5-pro-exp-03-25, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview) |
 
 **Output:**
 
@@ -156,8 +156,9 @@ nanobanana/
 | Model | Description |
 |-------|-------------|
 | `gemini-2.0-flash-exp` | Gemini 2.0 Flash experimental with image generation |
-| `gemini-2.5-flash-image-preview` | Gemini 2.5 Flash optimized for image generation |
-| `gemini-3-pro-image-preview` | **Gemini 3 Pro with advanced image generation (default)** ✅ |
+| `gemini-2.5-pro-image-preview` | Gemini 2.5 Pro optimized for image generation |
+| `gemini-3-pro-image-preview` | Gemini 3 Pro with advanced image generation |
+| `gemini-3.1-flash-image-preview` | **Gemini 3.1 Flash for image generation (default)** ✅ |
 | `gemini-2.5-pro-exp-03-25` | Gemini 2.5 Pro experimental with enhanced image quality |
 
 ## Technologies
