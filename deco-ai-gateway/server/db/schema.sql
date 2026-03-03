@@ -42,13 +42,17 @@ END $$;
 
 -- 0. llm_gateway_config (singleton global defaults)
 CREATE TABLE IF NOT EXISTS llm_gateway_config (
-  id                         TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
-  default_prepaid_limit_usd  NUMERIC(10,4) NOT NULL DEFAULT 2,
-  default_postpaid_limit_usd NUMERIC(10,4) NOT NULL DEFAULT 500,
-  hard_cap_usd               NUMERIC(10,4) NOT NULL DEFAULT 10000,
-  default_markup_pct         NUMERIC(5,2)  NOT NULL DEFAULT 15,
-  min_stripe_amount_cents    INTEGER       NOT NULL DEFAULT 50,
-  updated_at                 TIMESTAMPTZ DEFAULT NOW() NOT NULL
+  id                           TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
+  default_prepaid_limit_usd    NUMERIC(10,4) NOT NULL DEFAULT 2,
+  default_postpaid_limit_usd   NUMERIC(10,4) NOT NULL DEFAULT 500,
+  hard_cap_usd                 NUMERIC(10,4) NOT NULL DEFAULT 10000,
+  default_markup_pct           NUMERIC(5,2)  NOT NULL DEFAULT 15,
+  min_stripe_amount_cents      INTEGER       NOT NULL DEFAULT 50,
+  -- Credit eligibility: controls who receives free credit on first provisioning
+  credit_eligible_domains      TEXT[]  NOT NULL DEFAULT '{decocache.com,deco.cx}',
+  credit_eligible_email_domains TEXT[] NOT NULL DEFAULT '{deco.cx}',
+  allow_localhost_credit       BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at                   TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 INSERT INTO llm_gateway_config (id) VALUES ('global') ON CONFLICT (id) DO NOTHING;
@@ -379,6 +383,24 @@ END $$;
 -- Migration: Add organization_id index to payments (if not exists)
 CREATE INDEX IF NOT EXISTS idx_llm_gw_pay_org
   ON llm_gateway_payments(organization_id);
+
+-- Migration: Add credit eligibility columns to llm_gateway_config (if not exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'llm_gateway_config'
+    AND column_name = 'credit_eligible_domains'
+  ) THEN
+    ALTER TABLE llm_gateway_config
+      ADD COLUMN credit_eligible_domains      TEXT[]  NOT NULL DEFAULT '{decocache.com,deco.cx}',
+      ADD COLUMN credit_eligible_email_domains TEXT[] NOT NULL DEFAULT '{deco.cx}',
+      ADD COLUMN allow_localhost_credit        BOOLEAN NOT NULL DEFAULT FALSE;
+
+    RAISE NOTICE 'Migration: Added credit eligibility columns to llm_gateway_config';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- SETUP COMPLETE! ✅

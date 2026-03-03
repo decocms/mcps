@@ -123,11 +123,23 @@ export async function tools(env: Env) {
     ];
   }
 
+  let userEmail: string | undefined;
+  try {
+    const authUser = meshCtx?.ensureAuthenticated?.();
+    userEmail = (authUser as { email?: string } | undefined)?.email;
+  } catch {
+    // Not authenticated or ensureAuthenticated unavailable — credit check
+    // will rely solely on meshUrl domain matching
+  }
+
   const orgKey = await ensureApiKey(
     connectionId,
     organizationId,
     meshUrl ?? "",
     organizationName,
+    undefined,
+    null,
+    userEmail,
   );
 
   await ensureKeyLimitMatchesBillingMode(connectionId);

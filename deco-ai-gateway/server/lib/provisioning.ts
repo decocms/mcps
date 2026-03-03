@@ -8,7 +8,11 @@ import {
 import { decrypt } from "./encryption.ts";
 import { updateKeyLimit, type LimitReset } from "./openrouter-keys.ts";
 import { logger } from "./logger.ts";
-import { getGatewayDefaults, PROVISIONING_TIMEOUT_MS } from "./constants.ts";
+import {
+  getGatewayDefaults,
+  isEligibleForCredit,
+  PROVISIONING_TIMEOUT_MS,
+} from "./constants.ts";
 
 /**
  * In-flight provisioning promises per connectionId.
@@ -57,6 +61,8 @@ async function createOpenRouterKey(
   organizationName: string | undefined,
   billingMode: BillingMode,
   limitPeriod: LimitPeriod | null,
+  meshUrl: string,
+  userEmail: string | undefined,
 ): Promise<{ key: string; hash: string; name: string }> {
   const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
   if (!managementKey) {
@@ -74,6 +80,22 @@ async function createOpenRouterKey(
   logger.info("Creating OpenRouter key", { keyName, organizationId });
 
   const defaults = await getGatewayDefaults();
+
+  let initialLimit: number;
+  if (billingMode === "prepaid") {
+    const eligible = await isEligibleForCredit(meshUrl, userEmail);
+    initialLimit = eligible ? defaults.defaultPrepaidLimitUsd : 0;
+    logger.info("Prepaid credit eligibility check", {
+      organizationId,
+      meshUrl,
+      userEmail,
+      eligible,
+      initialLimit,
+    });
+  } else {
+    initialLimit = defaults.defaultPostpaidLimitUsd;
+  }
+
   const response = await fetch(OPENROUTER_KEYS_URL, {
     method: "POST",
     headers: {
@@ -82,10 +104,7 @@ async function createOpenRouterKey(
     },
     body: JSON.stringify({
       name: keyName,
-      limit:
-        billingMode === "prepaid"
-          ? defaults.defaultPrepaidLimitUsd
-          : defaults.defaultPostpaidLimitUsd,
+      limit: initialLimit,
       limit_reset: limitPeriod ?? undefined,
     }),
   });
@@ -137,6 +156,7 @@ async function provisionOrReuseKey(
   organizationName: string | undefined,
   billingMode: BillingMode,
   limitPeriod: LimitPeriod | null,
+  userEmail: string | undefined,
 ): Promise<string | null> {
   const existingOrgLock = orgProvisioningLocks.get(organizationId);
   if (existingOrgLock) {
@@ -154,6 +174,7 @@ async function provisionOrReuseKey(
       organizationName,
       billingMode,
       limitPeriod,
+      userEmail,
     );
   }
 
@@ -212,14 +233,19 @@ async function provisionOrReuseKey(
       organizationName,
       billingMode,
       limitPeriod,
+      meshUrl,
+      userEmail,
     );
 
     const limitReset: LimitReset | null = limitPeriod ?? null;
     const defs = await getGatewayDefaults();
-    const defaultLimit =
-      billingMode === "prepaid"
-        ? defs.defaultPrepaidLimitUsd
-        : defs.defaultPostpaidLimitUsd;
+    let defaultLimit: number;
+    if (billingMode === "prepaid") {
+      const eligible = await isEligibleForCredit(meshUrl, userEmail);
+      defaultLimit = eligible ? defs.defaultPrepaidLimitUsd : 0;
+    } else {
+      defaultLimit = defs.defaultPostpaidLimitUsd;
+    }
 
     logger.info("Applying default spending limit to new key", {
       connectionId,
@@ -287,6 +313,7 @@ export async function ensureApiKey(
   organizationName?: string,
   billingMode: BillingMode = "prepaid",
   limitPeriod: LimitPeriod | null = null,
+  userEmail?: string,
 ): Promise<string | null> {
   logger.debug("ensureApiKey called", { connectionId, organizationId });
 
@@ -335,6 +362,7 @@ export async function ensureApiKey(
         organizationName,
         billingMode,
         limitPeriod,
+        userEmail,
       );
     } catch (error) {
       logger.error("Failed to provision OpenRouter API key", {

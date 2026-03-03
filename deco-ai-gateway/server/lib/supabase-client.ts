@@ -40,6 +40,9 @@ export interface GatewayDefaults {
   hardCapUsd: number;
   defaultMarkupPct: number;
   minStripeAmountCents: number;
+  creditEligibleDomains: string[];
+  creditEligibleEmailDomains: string[];
+  allowLocalhostCredit: boolean;
 }
 
 const FALLBACK_DEFAULTS: GatewayDefaults = {
@@ -48,6 +51,9 @@ const FALLBACK_DEFAULTS: GatewayDefaults = {
   hardCapUsd: 10_000,
   defaultMarkupPct: 15,
   minStripeAmountCents: 50,
+  creditEligibleDomains: ["decocache.com", "deco.cx"],
+  creditEligibleEmailDomains: ["deco.cx"],
+  allowLocalhostCredit: false,
 };
 
 let cachedDefaults: GatewayDefaults | null = null;
@@ -84,6 +90,15 @@ export async function loadGatewayDefaults(): Promise<GatewayDefaults> {
       hardCapUsd: Number(data.hard_cap_usd),
       defaultMarkupPct: Number(data.default_markup_pct),
       minStripeAmountCents: Number(data.min_stripe_amount_cents),
+      creditEligibleDomains: Array.isArray(data.credit_eligible_domains)
+        ? (data.credit_eligible_domains as string[])
+        : FALLBACK_DEFAULTS.creditEligibleDomains,
+      creditEligibleEmailDomains: Array.isArray(
+        data.credit_eligible_email_domains,
+      )
+        ? (data.credit_eligible_email_domains as string[])
+        : FALLBACK_DEFAULTS.creditEligibleEmailDomains,
+      allowLocalhostCredit: Boolean(data.allow_localhost_credit),
     };
     cacheLoadedAt = Date.now();
 
