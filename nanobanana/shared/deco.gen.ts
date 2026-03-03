@@ -365,7 +365,7 @@ export type String_34 = string;
  */
 export type String_35 = string;
 /**
- * Model to use for image generation (default: gemini-2.5-flash-image-preview)
+ * Model to use for image generation (default: gemini-3.1-flash-image-preview)
  */
 export type String_36 = string;
 

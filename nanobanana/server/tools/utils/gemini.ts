@@ -5,7 +5,6 @@ import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 
 export const models = z.enum([
   "gemini-2.0-flash-exp",
-  "gemini-2.5-flash-image-preview",
   "gemini-2.5-pro-image-preview",
   "gemini-2.5-pro-exp-03-25",
   "gemini-3-pro-image-preview",
