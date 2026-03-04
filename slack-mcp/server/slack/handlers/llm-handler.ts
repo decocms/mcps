@@ -90,6 +90,37 @@ export interface LLMResponseOptions {
   useBlocks?: boolean;
 }
 
+const THINKING_FRAMES = [
+  "🤔 Pensando",
+  "🤔 Pensando.",
+  "🤔 Pensando..",
+  "🤔 Pensando...",
+];
+const THINKING_INTERVAL_MS = 800;
+
+function startThinkingAnimation(
+  channel: string,
+  messageTs: string,
+): { stop: () => void } {
+  let frame = 0;
+  let stopped = false;
+
+  const timer = setInterval(() => {
+    if (stopped) return;
+    frame = (frame + 1) % THINKING_FRAMES.length;
+    updateThinkingMessage(channel, messageTs, THINKING_FRAMES[frame]).catch(
+      () => {},
+    );
+  }, THINKING_INTERVAL_MS);
+
+  return {
+    stop() {
+      stopped = true;
+      clearInterval(timer);
+    },
+  };
+}
+
 /**
  * Call LLM with streaming and update Slack message in real-time
  */
@@ -104,33 +135,39 @@ export async function callLLMWithStreaming(
   const { channel, thinkingMessageTs, useBlocks = true } = options;
 
   if (!thinkingMessageTs) {
-    // Fallback to non-streaming if no thinking message
     return callLLMWithoutStreaming(messages, options);
   }
 
-  const response = await generateLLMResponseWithStreaming(
-    messages,
-    globalLLMConfig,
-    async (text, isComplete) => {
-      const formattedText = formatForSlack(text);
-      const displayText = isComplete ? formattedText : formattedText + " ▌"; // Cursor indicator while streaming
+  const animation = startThinkingAnimation(channel, thinkingMessageTs);
 
-      // Only use blocks for final message to avoid complexity
-      const blocks =
-        isComplete && useBlocks && text.length > 500
-          ? buildResponseBlocks(text, { addFeedbackButtons: false })
-          : undefined;
+  try {
+    const response = await generateLLMResponseWithStreaming(
+      messages,
+      globalLLMConfig,
+      async (text, isComplete) => {
+        animation.stop();
 
-      await updateThinkingMessage(
-        channel,
-        thinkingMessageTs,
-        displayText,
-        blocks,
-      );
-    },
-  );
+        const formattedText = formatForSlack(text);
+        const displayText = isComplete ? formattedText : formattedText + " ▌";
 
-  return response;
+        const blocks =
+          isComplete && useBlocks && text.length > 500
+            ? buildResponseBlocks(text, { addFeedbackButtons: false })
+            : undefined;
+
+        await updateThinkingMessage(
+          channel,
+          thinkingMessageTs,
+          displayText,
+          blocks,
+        );
+      },
+    );
+
+    return response;
+  } finally {
+    animation.stop();
+  }
 }
 
 /**
