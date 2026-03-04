@@ -32,6 +32,9 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Install dependencies
+        run: bun install
+
       - name: Detect MCPs to publish
         id: detect
         run: |
@@ -89,6 +92,9 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Install dependencies
+        run: bun install
+
       - name: Publish ${{ matrix.mcp }} to registry
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
@@ -96,6 +102,8 @@ jobs:
           else
             bun run scripts/publish-one.ts ${{ matrix.mcp }}
           fi
+        env:
+          PUBLISH_API_KEY: ${{ secrets.PUBLISH_API_KEY }}
 
       - name: Notify success
         if: success()
