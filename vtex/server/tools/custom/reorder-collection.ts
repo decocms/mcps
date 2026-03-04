@@ -3,6 +3,34 @@ import { z } from "zod";
 import { resolveCredentials } from "../../lib/client-factory.ts";
 import type { Env } from "../../types/env.ts";
 
+/**
+ * Keeps SSE connections alive during long-running operations by periodically
+ * logging progress, preventing transport-level timeouts.
+ */
+async function withHeartbeat<T>(
+  promise: Promise<T>,
+  label: string,
+  intervalMs = 12000,
+): Promise<T> {
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  let elapsedSeconds = 0;
+
+  try {
+    heartbeatTimer = setInterval(() => {
+      elapsedSeconds += intervalMs / 1000;
+      console.log(
+        `[${label}] Still processing... (${elapsedSeconds}s elapsed)`,
+      );
+    }, intervalMs);
+
+    return await promise;
+  } finally {
+    if (heartbeatTimer !== null) {
+      clearInterval(heartbeatTimer);
+    }
+  }
+}
+
 const collectionProductSchema = z.object({
   SkuId: z.number().int().nullable().optional(),
 });
@@ -309,56 +337,60 @@ export const reorderCollection = (env: Env) =>
     inputSchema: reorderCollectionInputSchema,
     outputSchema: reorderCollectionOutputSchema,
     execute: async ({ context }) => {
-      const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
-      const directSkuIds = context.skuIds ?? [];
-      const productIds = context.productIds ?? [];
-      const resolvedSkuIdsFromProducts = await getSkuIdsByProductIds({
-        accountName: credentials.accountName,
-        appKey: credentials.appKey,
-        appToken: credentials.appToken,
-        productIds,
-      });
-      const targetSkuIds = uniqueSkuIds([
-        ...directSkuIds,
-        ...resolvedSkuIdsFromProducts,
-      ]);
-      const existingSkuIds = await getAllCollectionSkuIds({
-        accountName: credentials.accountName,
-        appKey: credentials.appKey,
-        appToken: credentials.appToken,
-        collectionId: context.collectionId,
-      });
-
-      let excludedSkuCount = 0;
-      if (existingSkuIds.length > 0) {
-        await uploadCollectionFile({
+      const reorderPromise = (async () => {
+        const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
+        const directSkuIds = context.skuIds ?? [];
+        const productIds = context.productIds ?? [];
+        const resolvedSkuIdsFromProducts = await getSkuIdsByProductIds({
+          accountName: credentials.accountName,
+          appKey: credentials.appKey,
+          appToken: credentials.appToken,
+          productIds,
+        });
+        const targetSkuIds = uniqueSkuIds([
+          ...directSkuIds,
+          ...resolvedSkuIdsFromProducts,
+        ]);
+        const existingSkuIds = await getAllCollectionSkuIds({
           accountName: credentials.accountName,
           appKey: credentials.appKey,
           appToken: credentials.appToken,
           collectionId: context.collectionId,
-          skuIds: existingSkuIds,
-          mode: "importexclude",
         });
-        excludedSkuCount = existingSkuIds.length;
-      }
 
-      if (targetSkuIds.length > 0) {
-        await uploadCollectionFile({
-          accountName: credentials.accountName,
-          appKey: credentials.appKey,
-          appToken: credentials.appToken,
+        let excludedSkuCount = 0;
+        if (existingSkuIds.length > 0) {
+          await uploadCollectionFile({
+            accountName: credentials.accountName,
+            appKey: credentials.appKey,
+            appToken: credentials.appToken,
+            collectionId: context.collectionId,
+            skuIds: existingSkuIds,
+            mode: "importexclude",
+          });
+          excludedSkuCount = existingSkuIds.length;
+        }
+
+        if (targetSkuIds.length > 0) {
+          await uploadCollectionFile({
+            accountName: credentials.accountName,
+            appKey: credentials.appKey,
+            appToken: credentials.appToken,
+            collectionId: context.collectionId,
+            skuIds: targetSkuIds,
+            mode: "importinsert",
+          });
+        }
+
+        return {
           collectionId: context.collectionId,
-          skuIds: targetSkuIds,
-          mode: "importinsert",
-        });
-      }
+          existingSkuCount: existingSkuIds.length,
+          excludedSkuCount,
+          insertedSkuCount: targetSkuIds.length,
+          skippedExclude: existingSkuIds.length === 0,
+        };
+      })();
 
-      return {
-        collectionId: context.collectionId,
-        existingSkuCount: existingSkuIds.length,
-        excludedSkuCount,
-        insertedSkuCount: targetSkuIds.length,
-        skippedExclude: existingSkuIds.length === 0,
-      };
+      return withHeartbeat(reorderPromise, "VTEX_REORDER_COLLECTION");
     },
   });
