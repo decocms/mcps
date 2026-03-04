@@ -41,19 +41,6 @@ const collectionProductsResponseSchema = z.object({
   Data: z.array(collectionProductSchema).optional(),
 });
 
-const skuIdByProductItemSchema = z.union([
-  z.number().int().positive(),
-  z.string().regex(/^\d+$/),
-  z.object({
-    Id: z.number().int().positive().optional(),
-    id: z.number().int().positive().optional(),
-    SkuId: z.number().int().positive().optional(),
-    skuId: z.number().int().positive().optional(),
-  }),
-]);
-
-const skuIdsByProductResponseSchema = z.array(skuIdByProductItemSchema);
-
 export function normalizeSkuIdsInput(
   value: unknown,
 ): string | number[] | string[] | undefined {
@@ -93,25 +80,6 @@ export function normalizeSkuIdsInput(
     .split(",")
     .map((skuId) => skuId.trim())
     .filter((skuId) => skuId.length > 0);
-}
-
-function skuItemToSkuId(
-  item: z.infer<typeof skuIdByProductItemSchema>,
-): number {
-  if (typeof item === "number") {
-    return item;
-  }
-
-  if (typeof item === "string") {
-    return Number(item);
-  }
-
-  const skuId = item.Id ?? item.id ?? item.SkuId ?? item.skuId;
-  if (typeof skuId === "number") {
-    return skuId;
-  }
-
-  throw new Error("Invalid SKU item returned by VTEX for product lookup.");
 }
 
 const reorderCollectionInputSchema = z
@@ -169,15 +137,25 @@ export function buildCollectionImportXml(skuIds: number[]): string {
   return `<?xml version="1.0" encoding="utf-8"?><ArrayOfCollectionItemDTO>${items}</ArrayOfCollectionItemDTO>`;
 }
 
-export function buildCollectionImportCsv(skuIds: number[]): string {
+export function buildCollectionImportCsv(
+  ids: number[],
+  column: "sku" | "product" = "sku",
+): string {
   const header = "SKU,PRODUCT,SKUREFID,PRODUCTREFID";
-  const rows = skuIds.map((skuId) => `${skuId},,,`).join("\n");
+  const rows = ids
+    .map((id) => (column === "sku" ? `${id},,,` : `,${id},,`))
+    .join("\n");
   return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
 }
 
-export function buildCollectionImportXlsLikeContent(skuIds: number[]): string {
+export function buildCollectionImportXlsLikeContent(
+  ids: number[],
+  column: "sku" | "product" = "sku",
+): string {
   const header = "SKU\tPRODUCT\tSKUREFID\tPRODUCTREFID";
-  const rows = skuIds.map((skuId) => `${skuId}\t\t\t`).join("\n");
+  const rows = ids
+    .map((id) => (column === "sku" ? `${id}\t\t\t` : `\t${id}\t\t`))
+    .join("\n");
   return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
 }
 
@@ -228,52 +206,13 @@ async function getAllCollectionSkuIds(params: {
   return uniqueSkuIds(skuIds);
 }
 
-async function getSkuIdsByProductIds(params: {
-  accountName: string;
-  appKey?: string;
-  appToken?: string;
-  productIds: number[];
-}): Promise<number[]> {
-  const skuIds: number[] = [];
-
-  for (const productId of params.productIds) {
-    const response = await fetch(
-      `https://${params.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/sku/stockkeepingunitByProductId/${productId}`,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
-          ...(params.appToken
-            ? { "X-VTEX-API-AppToken": params.appToken }
-            : {}),
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to list SKUs for product ${productId}: ${response.status} ${await response.text()}`,
-      );
-    }
-
-    const responseJson: unknown = await response.json();
-    const parsed = skuIdsByProductResponseSchema.parse(responseJson);
-    for (const skuId of parsed) {
-      skuIds.push(skuItemToSkuId(skuId));
-    }
-  }
-
-  return skuIds;
-}
-
 async function uploadCollectionFile(params: {
   accountName: string;
   appKey?: string;
   appToken?: string;
   collectionId: number;
-  skuIds: number[];
+  ids: number[];
+  column: "sku" | "product";
   mode: "importexclude" | "importinsert";
 }): Promise<void> {
   const uploadAttempts: Array<{
@@ -284,12 +223,12 @@ async function uploadCollectionFile(params: {
     {
       fileName: `${params.mode}.xls`,
       mimeType: "application/vnd.ms-excel",
-      content: buildCollectionImportXlsLikeContent(params.skuIds),
+      content: buildCollectionImportXlsLikeContent(params.ids, params.column),
     },
     {
       fileName: `${params.mode}.csv`,
       mimeType: "text/csv",
-      content: buildCollectionImportCsv(params.skuIds),
+      content: buildCollectionImportCsv(params.ids, params.column),
     },
   ];
 
@@ -341,16 +280,7 @@ export const reorderCollection = (env: Env) =>
         const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
         const directSkuIds = context.skuIds ?? [];
         const productIds = context.productIds ?? [];
-        const resolvedSkuIdsFromProducts = await getSkuIdsByProductIds({
-          accountName: credentials.accountName,
-          appKey: credentials.appKey,
-          appToken: credentials.appToken,
-          productIds,
-        });
-        const targetSkuIds = uniqueSkuIds([
-          ...directSkuIds,
-          ...resolvedSkuIdsFromProducts,
-        ]);
+
         const existingSkuIds = await getAllCollectionSkuIds({
           accountName: credentials.accountName,
           appKey: credentials.appKey,
@@ -365,28 +295,44 @@ export const reorderCollection = (env: Env) =>
             appKey: credentials.appKey,
             appToken: credentials.appToken,
             collectionId: context.collectionId,
-            skuIds: existingSkuIds,
+            ids: existingSkuIds,
+            column: "sku",
             mode: "importexclude",
           });
           excludedSkuCount = existingSkuIds.length;
         }
 
-        if (targetSkuIds.length > 0) {
+        let insertedSkuCount = 0;
+        if (directSkuIds.length > 0) {
           await uploadCollectionFile({
             accountName: credentials.accountName,
             appKey: credentials.appKey,
             appToken: credentials.appToken,
             collectionId: context.collectionId,
-            skuIds: targetSkuIds,
+            ids: uniqueSkuIds(directSkuIds),
+            column: "sku",
             mode: "importinsert",
           });
+          insertedSkuCount += uniqueSkuIds(directSkuIds).length;
+        }
+        if (productIds.length > 0) {
+          await uploadCollectionFile({
+            accountName: credentials.accountName,
+            appKey: credentials.appKey,
+            appToken: credentials.appToken,
+            collectionId: context.collectionId,
+            ids: productIds,
+            column: "product",
+            mode: "importinsert",
+          });
+          insertedSkuCount += productIds.length;
         }
 
         return {
           collectionId: context.collectionId,
           existingSkuCount: existingSkuIds.length,
           excludedSkuCount,
-          insertedSkuCount: targetSkuIds.length,
+          insertedSkuCount,
           skippedExclude: existingSkuIds.length === 0,
         };
       })();
