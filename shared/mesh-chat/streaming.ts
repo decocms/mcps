@@ -29,6 +29,10 @@ export function parseStreamLine(line: string): StreamEvent | null {
  * Process an SSE stream, invoking the callback on each text delta.
  * The callback receives accumulated text and a boolean indicating completion.
  *
+ * When the model uses tools (multi-step agent), intermediate text between
+ * tool calls is discarded — only the final text (after the last tool cycle)
+ * is kept and streamed to the caller.
+ *
  * Returns the full text accumulated during streaming.
  */
 async function processLines(
@@ -37,6 +41,7 @@ async function processLines(
     textContent: string;
     toolCallCount: number;
     finished: boolean;
+    hasActiveToolCycle: boolean;
   },
   onStream?: StreamCallback,
 ): Promise<void> {
@@ -50,12 +55,18 @@ async function processLines(
 
     if (type === "text-delta" && parsed.delta) {
       state.textContent += parsed.delta;
-      if (onStream) await onStream(state.textContent, false);
+      if (!state.hasActiveToolCycle && onStream) {
+        await onStream(state.textContent, false);
+      }
     } else if (type === "text" && parsed.text) {
       state.textContent += parsed.text;
-      if (onStream) await onStream(state.textContent, false);
+      if (!state.hasActiveToolCycle && onStream) {
+        await onStream(state.textContent, false);
+      }
     } else if (type === "tool-call") {
       state.toolCallCount++;
+      state.hasActiveToolCycle = true;
+      state.textContent = "";
       console.log(
         `[MeshChat] Tool call #${state.toolCallCount}: ${parsed.toolName ?? "unknown"}`,
       );
@@ -86,7 +97,12 @@ export async function processStreamWithCallback(
   const reader = body.pipeThrough(new TextDecoderStream()).getReader();
 
   let buffer = "";
-  const state = { textContent: "", toolCallCount: 0, finished: false };
+  const state = {
+    textContent: "",
+    toolCallCount: 0,
+    finished: false,
+    hasActiveToolCycle: false,
+  };
 
   try {
     while (!state.finished) {
@@ -127,6 +143,9 @@ export async function processStreamWithCallback(
 /**
  * Collect the full text from an SSE stream without a callback.
  * Useful for non-streaming use cases where the API still returns SSE.
+ *
+ * Intermediate text generated between tool calls is discarded —
+ * only the final text (after the last tool cycle) is returned.
  */
 export async function collectFullStreamText(
   body: ReadableStream<Uint8Array>,
@@ -159,6 +178,7 @@ export async function collectFullStreamText(
       ) {
         console.log(`[MeshChat] Tool call: ${event.toolName}`);
         toolCalls.push({ id: event.toolCallId, name: event.toolName });
+        textContent = "";
       } else if (event.type === "tool-result" && event.toolCallId) {
         const tc = toolCalls.find((t) => t.id === event.toolCallId);
         if (tc) tc.result = event.result ?? event.output;
