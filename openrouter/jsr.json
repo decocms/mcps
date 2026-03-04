@@ -1,0 +1,9 @@
+{
+  "name": "@decocms/openrouter",
+  "version": "1.0.0",
+  "exports": {
+    "./tools": "./server/tools/index.ts",
+    "./types": "./server/lib/types.ts",
+    "./hooks": "./server/tools/hooks.ts"
+  }
+}
