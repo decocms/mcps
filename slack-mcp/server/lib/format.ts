@@ -110,33 +110,12 @@ export function ensureParagraphBreaks(text: string): string {
 }
 
 /**
- * Strip LLM preamble text that narrates its reasoning before the actual answer.
- * Detects patterns like "Vou responder diretamente:\n\n---\n\n<actual answer>"
- * and keeps only the content after the separator.
- */
-export function stripThinkingPreamble(text: string): string {
-  if (!text) return text;
-
-  const separatorMatch = text.match(
-    /^.{0,300}?\n\n(?:---|___|\*\*\*|───+)\n\n/s,
-  );
-
-  if (separatorMatch) {
-    const afterSeparator = text.slice(separatorMatch[0].length).trim();
-    if (afterSeparator.length > 0) {
-      return afterSeparator;
-    }
-  }
-
-  return text;
-}
-
-/**
  * Format text for Slack, applying markdown conversion, paragraph breaks, and truncation
  */
 export function formatForSlack(text: string, maxLength: number = 3000): string {
-  const cleaned = stripThinkingPreamble(text);
-  const withParagraphs = ensureParagraphBreaks(cleaned);
+  // First ensure proper paragraph breaks
+  const withParagraphs = ensureParagraphBreaks(text);
+  // Then convert markdown
   const converted = markdownToSlack(withParagraphs);
   return truncateText(converted, maxLength);
 }
