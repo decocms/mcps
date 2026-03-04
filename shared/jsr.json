@@ -1,0 +1,24 @@
+{
+  "name": "@decocms/mcps-shared",
+  "version": "1.0.0",
+  "exports": {
+    "./vite-plugin": "./deco-vite-plugin.ts",
+    "./tools/user": "./tools/user.ts",
+    "./tools/file-management": "./tools/file-management/index.ts",
+    "./tools": "./tools/index.ts",
+    "./tools/utils/api-client": "./tools/utils/api-client.ts",
+    "./tools/utils/middleware": "./tools/utils/middleware.ts",
+    "./image-generators": "./image-generators/index.ts",
+    "./image-analyzers": "./image-analyzers/index.ts",
+    "./video-generators": "./video-generators/index.ts",
+    "./audio-transcribers": "./audio-transcribers/index.ts",
+    "./storage": "./storage/index.ts",
+    "./search-ai": "./search-ai/index.ts",
+    "./serve": "./serve.ts",
+    "./registry": "./registry.ts",
+    "./google-oauth": "./google-oauth.ts",
+    "./whatsapp": "./whatsapp/index.ts",
+    "./api-key-manager": "./api-key-manager.ts",
+    "./mesh-chat": "./mesh-chat/index.ts"
+  }
+}

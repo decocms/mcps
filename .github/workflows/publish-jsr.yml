@@ -1,0 +1,107 @@
+name: Publish to JSR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "shared/**"
+      - "openrouter/**"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish (shared, openrouter, or "all")'
+        required: false
+        type: string
+        default: "all"
+
+permissions:
+  contents: read
+  id-token: write # Required for JSR OIDC authentication
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      publish_shared: ${{ steps.detect.outputs.publish_shared }}
+      publish_openrouter: ${{ steps.detect.outputs.publish_openrouter }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect which packages to publish
+        id: detect
+        run: |
+          MANUAL="${{ github.event.inputs.package }}"
+
+          if [ -n "$MANUAL" ]; then
+            if [ "$MANUAL" = "all" ] || [ "$MANUAL" = "shared" ]; then
+              echo "publish_shared=true" >> $GITHUB_OUTPUT
+            else
+              echo "publish_shared=false" >> $GITHUB_OUTPUT
+            fi
+            if [ "$MANUAL" = "all" ] || [ "$MANUAL" = "openrouter" ]; then
+              echo "publish_openrouter=true" >> $GITHUB_OUTPUT
+            else
+              echo "publish_openrouter=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            PREVIOUS="${{ github.event.before }}"
+            if [ "$PREVIOUS" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS" ]; then
+              PREVIOUS="HEAD~1"
+            fi
+
+            CHANGED=$(git diff --name-only "$PREVIOUS" HEAD)
+
+            if echo "$CHANGED" | grep -q "^shared/"; then
+              echo "publish_shared=true" >> $GITHUB_OUTPUT
+            else
+              echo "publish_shared=false" >> $GITHUB_OUTPUT
+            fi
+
+            if echo "$CHANGED" | grep -q "^openrouter/"; then
+              echo "publish_openrouter=true" >> $GITHUB_OUTPUT
+            else
+              echo "publish_openrouter=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  publish-shared:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.publish_shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: shared
+
+      - name: Publish @decocms/mcps-shared to JSR
+        run: bunx jsr publish --allow-dirty
+        working-directory: shared
+
+  publish-openrouter:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.publish_openrouter == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: openrouter
+
+      - name: Publish @decocms/openrouter to JSR
+        run: bunx jsr publish --allow-dirty
+        working-directory: openrouter
