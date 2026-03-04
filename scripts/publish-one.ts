@@ -101,6 +101,8 @@ const PUBLISH_URL =
   process.env.MESH_ADMIN_URL ??
   "https://studio.decocms.com/org/deco/registry/publish-request";
 
+const PUBLISH_API_KEY = process.env.PUBLISH_API_KEY ?? "";
+
 const ROOT = join(import.meta.dir, "..");
 const args = process.argv.slice(2);
 const mcpName = args.find((a) => !a.startsWith("--"));
@@ -245,9 +247,16 @@ async function main(): Promise<void> {
 
   console.log(`🚀 Publishing to mesh registry...`);
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (PUBLISH_API_KEY) {
+    headers["Authorization"] = `Bearer ${PUBLISH_API_KEY}`;
+  }
+
   const res = await fetch(PUBLISH_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   });
 
