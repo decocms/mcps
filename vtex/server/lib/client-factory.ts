@@ -24,6 +24,7 @@ function buildClient(baseUrl: string, credentials: VTEXCredentials): Client {
     if (credentials.appToken) {
       request.headers.set("X-VTEX-API-AppToken", credentials.appToken);
     }
+    console.log("[VTEX] Request:", request.method, request.url);
     // Ensure timeout for all requests
     if (!request.signal) {
       const controller = new AbortController();

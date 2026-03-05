@@ -15,6 +15,7 @@ export const searchCollections = (env: Env) =>
       const { accountName, appKey, appToken } = credentials;
 
       const url = `https://${accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/collection/search/${encodeURIComponent(context.searchTerms)}`;
+      console.log("[VTEX] GET", url);
 
       const response = await fetch(url, {
         headers: {

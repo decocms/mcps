@@ -31,16 +31,6 @@ async function withHeartbeat<T>(
   }
 }
 
-const collectionProductSchema = z.object({
-  SkuId: z.number().int().nullable().optional(),
-});
-
-const collectionProductsResponseSchema = z.object({
-  Page: z.number().int().optional(),
-  TotalPage: z.number().int().optional(),
-  Data: z.array(collectionProductSchema).optional(),
-});
-
 export function normalizeSkuIdsInput(
   value: unknown,
 ): string | number[] | string[] | undefined {
@@ -159,31 +149,38 @@ export function buildCollectionImportXlsLikeContent(
   return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
 }
 
-async function getAllCollectionSkuIds(params: {
+const collectionProductSchema = z.object({
+  ProductId: z.number().int().nullable().optional(),
+});
+
+const collectionProductsResponseSchema = z.object({
+  Page: z.number().int().optional(),
+  TotalPage: z.number().int().optional(),
+  Data: z.array(collectionProductSchema).optional(),
+});
+
+async function getCollectionProductIds(params: {
   accountName: string;
   appKey?: string;
   appToken?: string;
   collectionId: number;
 }): Promise<number[]> {
-  const skuIds: number[] = [];
+  const productIds: number[] = [];
   let page = 1;
   let totalPages = 1;
 
   while (page <= totalPages) {
-    const response = await fetch(
-      `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/products?page=${page}&pageSize=1000`,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
-          ...(params.appToken
-            ? { "X-VTEX-API-AppToken": params.appToken }
-            : {}),
-        },
+    const listUrl = `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/products?page=${page}&pageSize=1000`;
+    console.log("[VTEX] GET", listUrl);
+    const response = await fetch(listUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
+        ...(params.appToken ? { "X-VTEX-API-AppToken": params.appToken } : {}),
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -196,14 +193,14 @@ async function getAllCollectionSkuIds(params: {
     totalPages = parsed.TotalPage ?? page;
 
     for (const item of parsed.Data ?? []) {
-      if (typeof item.SkuId === "number") {
-        skuIds.push(item.SkuId);
+      if (typeof item.ProductId === "number") {
+        productIds.push(item.ProductId);
       }
     }
     page += 1;
   }
 
-  return uniqueSkuIds(skuIds);
+  return [...new Set(productIds)];
 }
 
 async function uploadCollectionFile(params: {
@@ -221,11 +218,6 @@ async function uploadCollectionFile(params: {
     content: string;
   }> = [
     {
-      fileName: `${params.mode}.xls`,
-      mimeType: "application/vnd.ms-excel",
-      content: buildCollectionImportXlsLikeContent(params.ids, params.column),
-    },
-    {
       fileName: `${params.mode}.csv`,
       mimeType: "text/csv",
       content: buildCollectionImportCsv(params.ids, params.column),
@@ -241,26 +233,30 @@ async function uploadCollectionFile(params: {
       attempt.fileName,
     );
 
-    const response = await fetch(
-      `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/stockkeepingunit/${params.mode}`,
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
-          ...(params.appToken
-            ? { "X-VTEX-API-AppToken": params.appToken }
-            : {}),
-        },
-        body: formData,
+    const uploadUrl = `https://${params.accountName}.vtexcommercestable.com.br/api/catalog/pvt/collection/${params.collectionId}/stockkeepingunit/${params.mode}`;
+    console.log(
+      `[VTEX] POST ${uploadUrl} — mode=${params.mode} file=${attempt.fileName} rows=${params.ids.length}`,
+    );
+    const response = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        ...(params.appKey ? { "X-VTEX-API-AppKey": params.appKey } : {}),
+        ...(params.appToken ? { "X-VTEX-API-AppToken": params.appToken } : {}),
       },
+      body: formData,
+    });
+
+    const responseText = await response.text();
+    console.log(
+      `[VTEX] Response for ${attempt.fileName}: status=${response.status} ok=${response.ok} body=${responseText}`,
     );
 
     if (response.ok) {
       return;
     }
 
-    lastErrorMessage = `Failed to upload ${params.mode} as ${attempt.fileName}: ${response.status} ${await response.text()}`;
+    lastErrorMessage = `Failed to upload ${params.mode} as ${attempt.fileName}: ${response.status} ${responseText}`;
   }
 
   if (lastErrorMessage) {
@@ -281,29 +277,44 @@ export const reorderCollection = (env: Env) =>
         const directSkuIds = context.skuIds ?? [];
         const productIds = context.productIds ?? [];
 
-        const existingSkuIds = await getAllCollectionSkuIds({
+        console.log(
+          `[VTEX] Fetching existing products for collection ${context.collectionId}...`,
+        );
+        const existingProductIds = await getCollectionProductIds({
           accountName: credentials.accountName,
           appKey: credentials.appKey,
           appToken: credentials.appToken,
           collectionId: context.collectionId,
         });
+        console.log(
+          `[VTEX] Found ${existingProductIds.length} existing products.`,
+        );
 
         let excludedSkuCount = 0;
-        if (existingSkuIds.length > 0) {
+        if (existingProductIds.length > 0) {
+          console.log(
+            `[VTEX] Deleting ${existingProductIds.length} products from collection ${context.collectionId}...`,
+          );
           await uploadCollectionFile({
             accountName: credentials.accountName,
             appKey: credentials.appKey,
             appToken: credentials.appToken,
             collectionId: context.collectionId,
-            ids: existingSkuIds,
-            column: "sku",
+            ids: existingProductIds,
+            column: "product",
             mode: "importexclude",
           });
-          excludedSkuCount = existingSkuIds.length;
+          console.log(`[VTEX] Deletion done.`);
+          excludedSkuCount = existingProductIds.length;
+        } else {
+          console.log(`[VTEX] Collection is empty, skipping deletion.`);
         }
 
         let insertedSkuCount = 0;
         if (directSkuIds.length > 0) {
+          console.log(
+            `[VTEX] Inserting ${uniqueSkuIds(directSkuIds).length} SKUs (by skuId) into collection ${context.collectionId}...`,
+          );
           await uploadCollectionFile({
             accountName: credentials.accountName,
             appKey: credentials.appKey,
@@ -314,8 +325,12 @@ export const reorderCollection = (env: Env) =>
             mode: "importinsert",
           });
           insertedSkuCount += uniqueSkuIds(directSkuIds).length;
+          console.log(`[VTEX] SKU insertion done.`);
         }
         if (productIds.length > 0) {
+          console.log(
+            `[VTEX] Inserting ${productIds.length} products (by productId) into collection ${context.collectionId}...`,
+          );
           await uploadCollectionFile({
             accountName: credentials.accountName,
             appKey: credentials.appKey,
@@ -326,14 +341,15 @@ export const reorderCollection = (env: Env) =>
             mode: "importinsert",
           });
           insertedSkuCount += productIds.length;
+          console.log(`[VTEX] Product insertion done.`);
         }
 
         return {
           collectionId: context.collectionId,
-          existingSkuCount: existingSkuIds.length,
+          existingSkuCount: existingProductIds.length,
           excludedSkuCount,
           insertedSkuCount,
-          skippedExclude: existingSkuIds.length === 0,
+          skippedExclude: existingProductIds.length === 0,
         };
       })();
 
