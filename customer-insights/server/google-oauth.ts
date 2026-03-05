@@ -27,8 +27,17 @@ export function createGoogleOAuth(opts: { scopes: string[] }) {
       const callback = new URL(callbackUrl);
       const state = callback.searchParams.get("state");
 
-      // Google rejects redirect_uri when it includes reserved params like state.
+      // The runtime passes PKCE params through the callbackUrl so this function
+      // can forward them to Google. They must be removed from redirect_uri (which
+      // must stay clean) and set as top-level authorization URL parameters instead.
+      const codeChallenge = callback.searchParams.get("code_challenge");
+      const codeChallengeMethod = callback.searchParams.get("code_challenge_method");
+
+      // Google rejects redirect_uri when it includes reserved params like state,
+      // code_challenge, or code_challenge_method.
       callback.searchParams.delete("state");
+      callback.searchParams.delete("code_challenge");
+      callback.searchParams.delete("code_challenge_method");
 
       const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       url.searchParams.set("client_id", clientId);
@@ -40,6 +49,11 @@ export function createGoogleOAuth(opts: { scopes: string[] }) {
 
       if (state) {
         url.searchParams.set("state", state);
+      }
+
+      if (codeChallenge) {
+        url.searchParams.set("code_challenge", codeChallenge);
+        url.searchParams.set("code_challenge_method", codeChallengeMethod ?? "S256");
       }
 
       return url.toString();

@@ -289,7 +289,10 @@ export const createUsageTool = (_env: Env) =>
 
       if (trend.bandwidth_change_pct !== null && trend.pageviews_change_pct !== null) {
         const bwGrew = trend.bandwidth_change_pct > 15;
-        const pvStable = trend.pageviews_change_pct < 5;
+        // Use absolute value: a -50% pageview drop is not "stable" and must not
+        // trigger the heavy_assets anomaly, which is only meaningful when
+        // bandwidth grows while pageviews remain genuinely flat.
+        const pvStable = Math.abs(trend.pageviews_change_pct) < 5;
         if (bwGrew && pvStable) {
           anomalies.push({
             type: "heavy_assets",

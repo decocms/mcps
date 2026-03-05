@@ -12,6 +12,43 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import { saveCsv, reloadView } from "../db.ts";
 
+// Rejects URLs that point to private or internal network addresses to prevent
+// server-side request forgery (SSRF). Only HTTPS is allowed, and hostnames
+// matching known private ranges are blocked regardless of other conditions.
+function validatePublicUrl(rawUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid URL: ${rawUrl}`);
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error("Only HTTPS URLs are allowed for CSV downloads.");
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // IPv4 private ranges, loopback, link-local (AWS metadata endpoint included),
+  // and IPv6 loopback — none of these should be reachable by this tool.
+  const privatePatterns = [
+    /^localhost$/,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^0\./,
+    /^\[?::1\]?$/,
+  ];
+
+  if (privatePatterns.some((p) => p.test(hostname))) {
+    throw new Error(
+      `URL "${rawUrl}" resolves to a private or internal address, which is not allowed.`,
+    );
+  }
+}
+
 export const createUploadCsvTool = (_env: Env) =>
   createPrivateTool({
     id: "upload_csv",
@@ -65,6 +102,11 @@ export const createUploadCsvTool = (_env: Env) =>
         if (gdriveMatch) {
           downloadUrl = `https://drive.google.com/uc?export=download&id=${gdriveMatch[1]}`;
         }
+
+        // SSRF guard: reject URLs that resolve to private/internal addresses.
+        // We parse the final downloadUrl (after any Google Drive rewrite) so the
+        // check is applied to whatever host will actually be contacted.
+        validatePublicUrl(downloadUrl);
 
         const response = await fetch(downloadUrl);
         if (!response.ok) {

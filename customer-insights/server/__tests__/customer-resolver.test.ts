@@ -6,19 +6,12 @@
  * match exato, parcial, e detecção de ambiguidade. Também suporta
  * busca por domínio de e-mail para clientes corporativos.
  *
- * NOTA IMPORTANTE sobre Bun mock.module:
- * Bun's mock.module é global — outros test files (billing, usage, etc.)
- * fazem mock.module("../tools/customer-resolver.ts"), o que substitui
- * o módulo REAL globalmente. Por isso, NÃO podemos importar resolveCustomer
- * diretamente e testá-lo — receberíamos o mock de outro arquivo.
- *
- * ESTRATÉGIA: Reproduzimos a lógica do customer-resolver localmente
- * neste teste, usando a mesma implementação do módulo original, e
- * testamos contra um mock de query controlado. Isso garante que a
- * lógica de resolução é validada sem depender do sistema de módulos.
- *
- * Também testamos resolveCustomersByDomain que não é mockada por
- * outros arquivos.
+ * ESTRATÉGIA DE MOCK:
+ * Mockamos "../db.ts" (a dependência de I/O do resolver) em vez de
+ * reprodruzir a lógica do módulo. Isso garante que a implementação real
+ * de customer-resolver.ts é exercida nos testes, capturando regressões.
+ * O import dinâmico do resolver após mock.module assegura que o módulo
+ * real recebe o mock de query antes de ser inicializado.
  *
  * Cenários cobertos:
  * - Erro quando nenhum parâmetro é fornecido
@@ -30,109 +23,29 @@
  */
 
 import { describe, it, expect, mock, beforeEach } from "bun:test";
-import { sanitizeRows } from "../tools/sanitize.ts";
 
 // ── Fixtures ──────────────────────────────────────────────────────────
 const CUSTOMER_ACME = { id: 1108, name: "Acme Corp", email: "contact@acme.com" };
 const CUSTOMER_BETA = { id: 2001, name: "Beta Inc", email: "admin@beta.io" };
 
-// ── Reprodução da lógica do customer-resolver ─────────────────────────
-// Como o mock.module global de outros test files substitui o módulo real,
-// reproduzimos a lógica aqui para testá-la isoladamente.
+// ── Mock de db.ts ──────────────────────────────────────────────────────
+// Mockamos a dependência de I/O real em vez de duplicar a lógica do resolver.
+// O mock é configurado ANTES do import para que o módulo real o receba.
+const mockQueryFn = mock(() => Promise.resolve([] as any[]));
+
+mock.module("../db.ts", () => ({
+  query: mockQueryFn,
+}));
+
+// Import dinâmico após mock.module: garante que customer-resolver.ts
+// carrega com o mock de query já registrado.
+const { resolveCustomer, resolveCustomersByDomain } = await import(
+  "../tools/customer-resolver.ts"
+);
 
 type CustomerRow = { id: number; name: string; email: string };
 type CustomerMatchType = "id" | "exact" | "partial";
 type ResolvedCustomer = { customer: CustomerRow; match_type: CustomerMatchType };
-
-/** Mock controlável para simular query do DuckDB */
-const mockQueryFn = mock(() => Promise.resolve([] as any[]));
-
-function escapeSqlLiteral(input: string): string {
-  return input.replace(/'/g, "''");
-}
-
-async function findById(customerId: string): Promise<CustomerRow | null> {
-  const id = Number(customerId);
-  if (!Number.isFinite(id)) return null;
-
-  const rows = await mockQueryFn(`SELECT ... WHERE c.id = ${id}`);
-  const sanitized = sanitizeRows(rows as Record<string, unknown>[]) as CustomerRow[];
-  return sanitized[0] ?? null;
-}
-
-async function findByName(customerName: string): Promise<ResolvedCustomer> {
-  const escaped = escapeSqlLiteral(customerName.trim());
-
-  if (!escaped) {
-    throw new Error("Please provide customer_id (recommended) or customer_name.");
-  }
-
-  // Exact match query
-  const exactRows = await mockQueryFn(`SELECT ... LOWER(c.name) = LOWER('${escaped}')`);
-  const exact = sanitizeRows(exactRows as Record<string, unknown>[]) as CustomerRow[];
-
-  if (exact.length === 1) {
-    return { customer: exact[0], match_type: "exact" };
-  }
-  if (exact.length > 1) {
-    throw new Error(
-      `Ambiguous name "${customerName}". Multiple customers found. ` +
-      `Please use customer_id instead. Candidates: ${exact.map((c) => `ID ${c.id}: ${c.name} <${c.email}>`).join("; ")}`,
-    );
-  }
-
-  // Partial match query
-  const partialRows = await mockQueryFn(`SELECT ... LIKE LOWER('%${escaped}%')`);
-  const partial = sanitizeRows(partialRows as Record<string, unknown>[]) as CustomerRow[];
-
-  if (partial.length === 1) {
-    return { customer: partial[0], match_type: "partial" };
-  }
-  if (partial.length > 1) {
-    throw new Error(
-      `Ambiguous name "${customerName}". Multiple customers found. ` +
-      `Please use customer_id instead. Candidates: ${partial
-        .slice(0, 10)
-        .map((c) => `ID ${c.id}: ${c.name} <${c.email}>`)
-        .join("; ")}`,
-    );
-  }
-
-  throw new Error("Customer not found in contacts/billing database. Try searching by customer_id.");
-}
-
-async function resolveCustomer(input: {
-  customer_id?: string;
-  customer_name?: string;
-}): Promise<ResolvedCustomer> {
-  const customerId = input.customer_id?.trim();
-  const customerName = input.customer_name?.trim();
-
-  if (customerId) {
-    const byId = await findById(customerId);
-    if (!byId) {
-      throw new Error("Customer not found for the given customer_id.");
-    }
-    return { customer: byId, match_type: "id" };
-  }
-
-  if (customerName) {
-    return await findByName(customerName);
-  }
-
-  throw new Error("Please provide customer_id (recommended, unique) or customer_name.");
-}
-
-async function resolveCustomersByDomain(domain: string): Promise<CustomerRow[]> {
-  const escaped = escapeSqlLiteral(domain.trim().toLowerCase().replace(/^@/, ""));
-
-  if (!escaped) {
-    throw new Error("Please provide a valid email domain (e.g.: empresa.com or @empresa.com).");
-  }
-
-  const rows = await mockQueryFn(`SELECT ... LIKE '%@${escaped}'`);
-  return sanitizeRows(rows as Record<string, unknown>[]) as CustomerRow[];
-}
 
 // ── Testes ─────────────────────────────────────────────────────────────
 
@@ -216,7 +129,7 @@ describe("resolveCustomer — busca por nome", () => {
 
   it("deve resolver por nome parcial quando exact vazio e partial tem 1", async () => {
     mockQueryFn
-      .mockResolvedValueOnce([])              // exact match vazio
+      .mockResolvedValueOnce([])               // exact match vazio
       .mockResolvedValueOnce([CUSTOMER_ACME]); // partial match
 
     const result = await resolveCustomer({ customer_name: "Acme" });
@@ -233,7 +146,7 @@ describe("resolveCustomer — busca por nome", () => {
 
   it("deve lançar erro de ambiguidade quando partial retorna múltiplos", async () => {
     mockQueryFn
-      .mockResolvedValueOnce([])                          // exact vazio
+      .mockResolvedValueOnce([])                           // exact vazio
       .mockResolvedValueOnce([CUSTOMER_ACME, CUSTOMER_BETA]); // partial múltiplos
 
     await expect(

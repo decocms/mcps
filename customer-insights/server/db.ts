@@ -127,7 +127,34 @@ async function createContactsView(csvPath: string): Promise<void> {
 // Empty fallback views keep tools from crashing when no CSV has been loaded yet.
 // They return zero rows but expose the right column schema so queries compile.
 async function createEmptyBillingView(): Promise<void> {
-  await run(`CREATE OR REPLACE VIEW v_billing AS SELECT NULL::INTEGER AS id WHERE false`);
+  // All columns must match createBillingView exactly so queries compile against
+  // this fallback without errors when no CSV has been loaded yet.
+  await run(`
+    CREATE OR REPLACE VIEW v_billing AS
+    SELECT
+      NULL::INTEGER   AS id,
+      NULL::DATE      AS due_date,
+      NULL::DOUBLE    AS amount,
+      NULL::DATE      AS reference_month,
+      NULL::VARCHAR   AS status,
+      NULL::DATE      AS paid_date,
+      NULL::BIGINT    AS pageviews,
+      NULL::BIGINT    AS requests,
+      NULL::DOUBLE    AS bandwidth,
+      NULL::VARCHAR   AS plan,
+      NULL::DOUBLE    AS request_pageview_ratio,
+      NULL::DOUBLE    AS bw_per_10k_pageview,
+      NULL::DOUBLE    AS extra_pageviews_price,
+      NULL::DOUBLE    AS extra_req_price,
+      NULL::DOUBLE    AS extra_bw_price,
+      NULL::INTEGER   AS seats_builders,
+      NULL::DOUBLE    AS seats_builder_cost,
+      NULL::DOUBLE    AS support_price,
+      NULL::DOUBLE    AS tier_40_cost,
+      NULL::DOUBLE    AS tier_50_cost,
+      NULL::DOUBLE    AS tier_80_cost
+    WHERE false
+  `);
 }
 
 async function createEmptyContactsView(): Promise<void> {
