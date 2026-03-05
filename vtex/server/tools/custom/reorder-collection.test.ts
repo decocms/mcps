@@ -28,10 +28,17 @@ describe("buildCollectionImportXml", () => {
 });
 
 describe("buildCollectionImportCsv", () => {
-  test("builds csv with VTEX collection spreadsheet headers", () => {
+  test("builds csv with VTEX collection spreadsheet headers (sku column)", () => {
     const csv = buildCollectionImportCsv([101, 202, 303]);
     expect(csv).toBe(
       "SKU,PRODUCT,SKUREFID,PRODUCTREFID\n101,,,\n202,,,\n303,,,",
+    );
+  });
+
+  test("builds csv using product column", () => {
+    const csv = buildCollectionImportCsv([101, 202, 303], "product");
+    expect(csv).toBe(
+      "SKU,PRODUCT,SKUREFID,PRODUCTREFID\n,101,,\n,202,,\n,303,,",
     );
   });
 
@@ -42,10 +49,20 @@ describe("buildCollectionImportCsv", () => {
 });
 
 describe("buildCollectionImportXlsLikeContent", () => {
-  test("builds tab-separated content with VTEX spreadsheet headers", () => {
+  test("builds tab-separated content with VTEX spreadsheet headers (sku column)", () => {
     const xlsLike = buildCollectionImportXlsLikeContent([101, 202, 303]);
     expect(xlsLike).toBe(
       "SKU\tPRODUCT\tSKUREFID\tPRODUCTREFID\n101\t\t\t\n202\t\t\t\n303\t\t\t",
+    );
+  });
+
+  test("builds tab-separated content using product column", () => {
+    const xlsLike = buildCollectionImportXlsLikeContent(
+      [101, 202, 303],
+      "product",
+    );
+    expect(xlsLike).toBe(
+      "SKU\tPRODUCT\tSKUREFID\tPRODUCTREFID\n\t101\t\t\n\t202\t\t\n\t303\t\t",
     );
   });
 
