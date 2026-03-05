@@ -155,6 +155,11 @@ export const createAirtableSyncTool = (env: Env) =>
       try {
         if (tables === "all" || tables === "billing") {
           const records = await fetchAllRecords(api_key, base_id, billing_table);
+          if (records.length === 0) {
+            throw new Error(
+              `Airtable table "${billing_table}" returned no records. Aborting to avoid overwriting existing data with an empty file.`,
+            );
+          }
           saveCsv("billing.csv", recordsToCSV(records));
           const rows = await reloadView("billing");
           synced.push({ table: "billing", rows_loaded: rows });
@@ -166,6 +171,11 @@ export const createAirtableSyncTool = (env: Env) =>
             base_id,
             contacts_table,
           );
+          if (records.length === 0) {
+            throw new Error(
+              `Airtable table "${contacts_table}" returned no records. Aborting to avoid overwriting existing data with an empty file.`,
+            );
+          }
           saveCsv("contacts.csv", recordsToCSV(records));
           const rows = await reloadView("contacts");
           synced.push({ table: "contacts", rows_loaded: rows });

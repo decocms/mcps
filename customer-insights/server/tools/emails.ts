@@ -391,7 +391,21 @@ export const createCustomerEmailsTool = (env: Env) =>
           };
         }
       } else {
-        const search = await findCustomersByName(customerName?.trim() ?? "");
+        if (!customerName?.trim()) {
+          return {
+            customer_found: false,
+            match_type: "none" as const,
+            customer: null,
+            candidates: [],
+            total_messages: 0,
+            messages: [],
+            _meta: {
+              search_mode: "standard",
+              reason: "Please provide customer_id or customer_name to search for a customer.",
+            },
+          };
+        }
+        const search = await findCustomersByName(customerName.trim());
         selected = search.selected;
         matchType = search.matchType;
         candidates = search.candidates;
