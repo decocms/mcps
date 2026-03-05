@@ -1,0 +1,21 @@
+{
+  "scopeName": "supabase",
+  "name": "Supabase Official MCP",
+  "friendlyName": "Supabase",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.supabase.com/mcp"
+  },
+  "description": "Official Supabase MCP - Manage Postgres databases, run SQL queries, execute migrations, deploy Edge Functions, and interact with the Supabase platform.",
+  "icon": "https://supabase.com/favicon/favicon-96x96.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Database", "Development", "Backend"],
+    "official": true,
+    "tags": ["supabase", "postgres", "database", "sql", "edge-functions", "backend", "api", "authentication"],
+    "short_description": "Official Supabase MCP - Manage Postgres databases, Edge Functions, and platform features",
+    "mesh_description": "The Supabase MCP provides comprehensive integration with the Supabase platform, enabling full database and backend management. This official MCP allows you to execute SQL queries and manage Postgres databases, apply migrations with version control, deploy and manage Edge Functions (Deno-based serverless), create and manage development branches for safe testing, generate TypeScript types from database schemas, monitor database performance with advisor recommendations, access and analyze application logs, manage database extensions and features, and configure authentication and storage services. Key features include full SQL execution capabilities, migration management with apply/list operations, Edge Function deployment and retrieval, branch creation for isolated development environments, advisor system for security and performance checks, log access across all Supabase services, and TypeScript type generation for type-safe development. Perfect for building full-stack applications, managing database schemas, deploying serverless functions, and automating Supabase workflows. The MCP supports OAuth authentication and provides natural language access to all major Supabase platform features."
+  }
+}
+

@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-builds-mcp",
+  "friendlyName": "Cloudflare Builds",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://builds.mcp.cloudflare.com/mcp"
+  },
+  "description": "Manage Cloudflare Pages builds and deployments. Monitor build status, trigger new deployments, and manage build configurations.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["CI/CD", "Deployment"],
+    "official": true,
+    "tags": ["cloudflare", "pages", "builds", "deployment", "ci-cd", "static-sites", "jamstack"],
+    "short_description": "Manage Cloudflare Pages builds and deployments with build monitoring and configuration",
+    "mesh_description": "Cloudflare Builds MCP provides comprehensive management of Cloudflare Pages build and deployment processes. This official MCP enables you to trigger new builds and deployments for your static sites, monitor build status and progress in real-time, access build logs and error messages, manage build configurations and environment variables, configure custom build commands and output directories, integrate with Git repositories for automatic deployments, manage preview deployments for pull requests, and control build caching for faster deployment times. The platform supports popular frameworks like React, Vue, Next.js, Gatsby, Hugo, and more. Perfect for automating deployment workflows, managing multiple projects, monitoring build health, and integrating CI/CD pipelines with Cloudflare Pages. Use natural language to check build status, troubleshoot failed builds, manage deployment settings, and optimize build performance across your projects."
+  }
+}
+

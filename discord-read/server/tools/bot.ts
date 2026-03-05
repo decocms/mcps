@@ -37,6 +37,35 @@ export const createStartBotTool = (env: Env) =>
 
       console.log("[Tool] DISCORD_BOT_START called");
 
+      if (!env) {
+        // Fallback: Try to get env from bot-manager
+        const { getCurrentEnv } = await import("../bot-manager.ts");
+        const currentEnv = getCurrentEnv();
+        if (currentEnv) {
+          const started = await ensureBotRunning(currentEnv);
+          if (!started) {
+            return {
+              success: false,
+              message:
+                "Failed to start bot. Make sure you have saved configuration using DISCORD_SAVE_CONFIG.",
+            };
+          }
+          const client = getDiscordClient();
+          return {
+            success: true,
+            message: `Discord bot started successfully! Connected as ${client?.user?.tag || "Unknown"}`,
+            botTag: client?.user?.tag || "Unknown",
+            guilds: client?.guilds.cache.size || 0,
+          };
+        }
+
+        return {
+          success: false,
+          message:
+            "Environment not available. Please save the configuration first using DISCORD_SAVE_CONFIG.",
+        };
+      }
+
       try {
         const started = await ensureBotRunning(env);
 

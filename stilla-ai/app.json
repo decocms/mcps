@@ -1,0 +1,20 @@
+{
+  "scopeName": "stilla",
+  "name": "stilla-ai-mcp",
+  "friendlyName": "Stilla AI",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://api.stilla.ai/mcp"
+  },
+  "description": "AI-powered assistant for productivity and automation tasks",
+  "icon": "https://assets.decocache.com/decocms/99fb9196-48bd-4c56-896f-af1997de0467/app-icon.webp",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["AI", "Productivity"],
+    "official": false,
+    "tags": ["ai", "assistant", "productivity", "automation"],
+    "short_description": "AI-powered assistant for productivity and automation",
+    "mesh_description": "Stilla AI MCP provides intelligent AI-powered assistance for various productivity and automation tasks. This MCP server offers access to advanced AI capabilities that help streamline workflows, automate repetitive tasks, and enhance productivity. Whether you need help with data processing, content generation, task management, or workflow automation, Stilla AI provides the tools and capabilities to get things done efficiently."
+  }
+}
+

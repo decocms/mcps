@@ -1,0 +1,21 @@
+{
+  "scopeName": "notion",
+  "name": "Notion MCP",
+  "friendlyName": "Notion",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.notion.com/mcp"
+  },
+  "description": "Official Notion MCP - Manage Notion workspaces, pages, databases, and blocks. Create, read, update content and collaborate programmatically.",
+  "icon": "https://www.notion.so/images/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Documentation", "Collaboration"],
+    "official": true,
+    "tags": ["notion", "productivity", "documentation", "database", "collaboration", "workspace", "pages", "blocks"],
+    "short_description": "Official Notion MCP - Manage Notion workspaces, pages, databases, and blocks programmatically",
+    "mesh_description": "The Notion MCP provides comprehensive integration with Notion's workspace platform, enabling AI agents to manage knowledge bases and collaborative documents. This official MCP allows you to create, read, and update Notion pages and blocks with rich content types including text, headings, lists, images, and embeds. Manage Notion databases with full CRUD operations on records, properties, and views. Query databases with filters and sorts, collaborate on shared workspaces, and integrate Notion into automated workflows. Key features include hierarchical page management, rich content block manipulation, database views and filtering, property type management, workspace-wide search capabilities, and real-time content synchronization. Perfect for building knowledge management systems, documentation generators, project management tools, or AI agents that can maintain and organize information in Notion. The MCP supports OAuth authentication and provides natural language access to all major Notion features including pages, databases, blocks, users, and comments."
+  }
+}
+

@@ -1,0 +1,1392 @@
+/**
+ * Discord Message Tools
+ *
+ * Tools for sending, editing, deleting, and managing messages.
+ */
+
+import { createPrivateTool } from "@decocms/runtime/tools";
+import z from "zod";
+import type { Env } from "../../types/env.ts";
+import { discordAPI, discordAPIBatch, encodeEmoji } from "./api.ts";
+
+// ============================================================================
+// Send Message
+// ============================================================================
+
+export const createSendMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_SEND_MESSAGE",
+    description: "Send a message to a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z
+          .string()
+          .describe("The channel ID to send the message to"),
+        content: z
+          .string()
+          .optional()
+          .describe("The message content (up to 2000 characters)"),
+        embeds: z
+          .array(
+            z.object({
+              title: z.string().optional(),
+              description: z.string().optional(),
+              url: z.string().optional(),
+              color: z.number().optional(),
+              footer: z.object({ text: z.string() }).optional(),
+              thumbnail: z.object({ url: z.string() }).optional(),
+              image: z.object({ url: z.string() }).optional(),
+              fields: z
+                .array(
+                  z.object({
+                    name: z.string(),
+                    value: z.string(),
+                    inline: z.boolean().optional(),
+                  }),
+                )
+                .optional(),
+            }),
+          )
+          .optional()
+          .describe("Array of embed objects"),
+        reply_to: z.string().optional().describe("Message ID to reply to"),
+        tts: z.boolean().optional().describe("Whether this is a TTS message"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        id: z.string(),
+        channel_id: z.string(),
+        content: z.string(),
+        timestamp: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        content?: string;
+        embeds?: unknown[];
+        reply_to?: string;
+        tts?: boolean;
+      };
+
+      const body: Record<string, unknown> = {};
+      if (input.content) body.content = input.content;
+      if (input.embeds) body.embeds = input.embeds;
+      if (input.tts) body.tts = input.tts;
+      if (input.reply_to) {
+        body.message_reference = { message_id: input.reply_to };
+      }
+
+      const result = await discordAPI<{
+        id: string;
+        channel_id: string;
+        content: string;
+        timestamp: string;
+      }>(env, `/channels/${input.channel_id}/messages`, {
+        method: "POST",
+        body,
+      });
+
+      return {
+        id: result.id,
+        channel_id: result.channel_id,
+        content: result.content,
+        timestamp: result.timestamp,
+      };
+    },
+  });
+
+// ============================================================================
+// Edit Message
+// ============================================================================
+
+export const createEditMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_EDIT_MESSAGE",
+    description: "Edit a message in a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID to edit"),
+        content: z.string().optional().describe("The new message content"),
+        embeds: z
+          .array(z.object({}).passthrough())
+          .optional()
+          .describe("New embeds"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        id: z.string(),
+        content: z.string(),
+        edited_timestamp: z.string().nullable(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        content?: string;
+        embeds?: unknown[];
+      };
+
+      const body: Record<string, unknown> = {};
+      if (input.content !== undefined) body.content = input.content;
+      if (input.embeds) body.embeds = input.embeds;
+
+      const result = await discordAPI<{
+        id: string;
+        content: string;
+        edited_timestamp: string | null;
+      }>(env, `/channels/${input.channel_id}/messages/${input.message_id}`, {
+        method: "PATCH",
+        body,
+      });
+
+      return {
+        id: result.id,
+        content: result.content,
+        edited_timestamp: result.edited_timestamp,
+      };
+    },
+  });
+
+// ============================================================================
+// Delete Message (supports single or multiple IDs)
+// ============================================================================
+
+export const createDeleteMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_DELETE_MESSAGE",
+    description:
+      "Delete one or more messages from a Discord channel. For multiple messages, they are deleted sequentially with automatic rate limit handling.",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z
+          .string()
+          .optional()
+          .describe("Single message ID to delete"),
+        message_ids: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Array of message IDs to delete (processed sequentially with rate limit handling)",
+          ),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for deletion (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        failed_count: z.number(),
+        errors: z
+          .array(z.object({ message_id: z.string(), error: z.string() }))
+          .optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id?: string;
+        message_ids?: string[];
+        reason?: string;
+      };
+
+      // Build list of IDs to delete
+      const idsToDelete: string[] = [];
+      if (input.message_id) {
+        idsToDelete.push(input.message_id);
+      }
+      if (input.message_ids) {
+        idsToDelete.push(...input.message_ids);
+      }
+
+      if (idsToDelete.length === 0) {
+        throw new Error("Either message_id or message_ids must be provided");
+      }
+
+      // Single message - simple delete
+      if (idsToDelete.length === 1) {
+        await discordAPI(
+          env,
+          `/channels/${input.channel_id}/messages/${idsToDelete[0]}`,
+          { method: "DELETE", reason: input.reason },
+        );
+        return { success: true, deleted_count: 1, failed_count: 0 };
+      }
+
+      // Multiple messages - batch delete with rate limit handling
+      console.log(
+        `🗑️ [Delete] Deleting ${idsToDelete.length} messages from channel ${input.channel_id}...`,
+      );
+
+      const { results, errors } = await discordAPIBatch(
+        env,
+        idsToDelete,
+        async (messageId) => {
+          await discordAPI(
+            env,
+            `/channels/${input.channel_id}/messages/${messageId}`,
+            { method: "DELETE", reason: input.reason },
+          );
+          return messageId;
+        },
+        {
+          delayMs: 200, // 200ms between deletes to stay under rate limit
+          onProgress: (completed, total) => {
+            if (completed % 10 === 0 || completed === total) {
+              console.log(`🗑️ [Delete] Progress: ${completed}/${total}`);
+            }
+          },
+          onError: () => "skip", // Continue on errors
+        },
+      );
+
+      console.log(
+        `✅ [Delete] Completed: ${results.length} deleted, ${errors.length} failed`,
+      );
+
+      return {
+        success: errors.length === 0,
+        deleted_count: results.length,
+        failed_count: errors.length,
+        errors:
+          errors.length > 0
+            ? errors.map((e) => ({
+                message_id: e.item,
+                error: e.error,
+              }))
+            : undefined,
+      };
+    },
+  });
+
+// ============================================================================
+// Bulk Delete Messages (Discord's native bulk endpoint)
+// ============================================================================
+
+export const createBulkDeleteMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_BULK_DELETE_MESSAGES",
+    description:
+      "Delete multiple messages at once using Discord's bulk delete endpoint. " +
+      "IMPORTANT: Only works for messages less than 14 days old. " +
+      "Can delete 2-100 messages per call. For older messages, use DISCORD_DELETE_MESSAGE with message_ids array.",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_ids: z
+          .array(z.string())
+          .min(2)
+          .max(100)
+          .describe(
+            "Array of message IDs to delete (2-100, must be < 14 days old)",
+          ),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for deletion (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_ids: string[];
+        reason?: string;
+      };
+
+      if (input.message_ids.length < 2) {
+        throw new Error(
+          "Bulk delete requires at least 2 message IDs. Use DISCORD_DELETE_MESSAGE for single messages.",
+        );
+      }
+
+      if (input.message_ids.length > 100) {
+        throw new Error(
+          "Bulk delete supports maximum 100 messages per call. Split into multiple calls.",
+        );
+      }
+
+      console.log(
+        `🗑️ [Bulk Delete] Deleting ${input.message_ids.length} messages from channel ${input.channel_id}...`,
+      );
+
+      try {
+        await discordAPI(
+          env,
+          `/channels/${input.channel_id}/messages/bulk-delete`,
+          {
+            method: "POST",
+            body: { messages: input.message_ids },
+            reason: input.reason,
+          },
+        );
+
+        console.log(
+          `✅ [Bulk Delete] Successfully deleted ${input.message_ids.length} messages`,
+        );
+
+        return {
+          success: true,
+          deleted_count: input.message_ids.length,
+          message: `Successfully deleted ${input.message_ids.length} messages`,
+        };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+
+        // Check if it's the "too old" error
+        if (
+          errorMsg.includes("10008") ||
+          errorMsg.includes("older than 2 weeks")
+        ) {
+          throw new Error(
+            "Some messages are older than 14 days. Use DISCORD_DELETE_MESSAGE with message_ids array for older messages.",
+          );
+        }
+
+        throw error;
+      }
+    },
+  });
+
+// ============================================================================
+// Purge Channel Messages (intelligent purge)
+// ============================================================================
+
+export const createPurgeChannelMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_PURGE_MESSAGES",
+    description:
+      "Intelligently purge messages from a channel. Automatically uses bulk delete for recent messages (<14 days) " +
+      "and individual delete for older messages. Can filter by user, bot messages, or content.",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        limit: z
+          .number()
+          .min(1)
+          .max(1000)
+          .default(100)
+          .describe("Maximum number of messages to delete (1-1000)"),
+        user_id: z
+          .string()
+          .optional()
+          .describe("Only delete messages from this user"),
+        bots_only: z
+          .boolean()
+          .optional()
+          .describe("Only delete messages from bots"),
+        humans_only: z
+          .boolean()
+          .optional()
+          .describe("Only delete messages from humans (non-bots)"),
+        contains: z
+          .string()
+          .optional()
+          .describe("Only delete messages containing this text"),
+        before_id: z
+          .string()
+          .optional()
+          .describe("Only delete messages before this message ID"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for deletion (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        deleted_count: z.number(),
+        scanned_count: z.number(),
+        bulk_deleted: z.number(),
+        individual_deleted: z.number(),
+        failed_count: z.number(),
+        message: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        limit: number;
+        user_id?: string;
+        bots_only?: boolean;
+        humans_only?: boolean;
+        contains?: string;
+        before_id?: string;
+        reason?: string;
+      };
+
+      console.log(
+        `🧹 [Purge] Starting purge in channel ${input.channel_id}, limit: ${input.limit}`,
+      );
+
+      // 14 days ago timestamp (Discord's bulk delete limit)
+      const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+      // Fetch messages
+      const params = new URLSearchParams();
+      params.set("limit", String(Math.min(input.limit, 100)));
+      if (input.before_id) params.set("before", input.before_id);
+
+      let allMessages: Array<{
+        id: string;
+        content: string;
+        author: { id: string; bot?: boolean };
+        timestamp: string;
+      }> = [];
+
+      let lastId = input.before_id;
+      let fetched = 0;
+
+      // Fetch messages in batches
+      while (fetched < input.limit) {
+        const batchSize = Math.min(100, input.limit - fetched);
+        const fetchParams = new URLSearchParams();
+        fetchParams.set("limit", String(batchSize));
+        if (lastId) fetchParams.set("before", lastId);
+
+        const messages = await discordAPI<
+          Array<{
+            id: string;
+            content: string;
+            author: { id: string; bot?: boolean };
+            timestamp: string;
+          }>
+        >(
+          env,
+          `/channels/${input.channel_id}/messages?${fetchParams.toString()}`,
+        );
+
+        if (messages.length === 0) break;
+
+        allMessages.push(...messages);
+        lastId = messages[messages.length - 1].id;
+        fetched += messages.length;
+
+        console.log(`🧹 [Purge] Fetched ${fetched} messages...`);
+
+        // Small delay between fetches
+        if (messages.length === batchSize && fetched < input.limit) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+
+      // Filter messages
+      let filteredMessages = allMessages;
+
+      if (input.user_id) {
+        filteredMessages = filteredMessages.filter(
+          (m) => m.author.id === input.user_id,
+        );
+      }
+      if (input.bots_only) {
+        filteredMessages = filteredMessages.filter(
+          (m) => m.author.bot === true,
+        );
+      }
+      if (input.humans_only) {
+        filteredMessages = filteredMessages.filter((m) => !m.author.bot);
+      }
+      if (input.contains) {
+        const searchText = input.contains.toLowerCase();
+        filteredMessages = filteredMessages.filter((m) =>
+          m.content.toLowerCase().includes(searchText),
+        );
+      }
+
+      console.log(
+        `🧹 [Purge] Found ${filteredMessages.length} messages matching criteria`,
+      );
+
+      if (filteredMessages.length === 0) {
+        return {
+          success: true,
+          deleted_count: 0,
+          scanned_count: allMessages.length,
+          bulk_deleted: 0,
+          individual_deleted: 0,
+          failed_count: 0,
+          message: "No messages matched the filter criteria",
+        };
+      }
+
+      // Separate into recent (can bulk delete) and old (need individual delete)
+      const recentMessages = filteredMessages.filter((m) => {
+        const timestamp = new Date(m.timestamp).getTime();
+        return timestamp > fourteenDaysAgo;
+      });
+      const oldMessages = filteredMessages.filter((m) => {
+        const timestamp = new Date(m.timestamp).getTime();
+        return timestamp <= fourteenDaysAgo;
+      });
+
+      let bulkDeleted = 0;
+      let individualDeleted = 0;
+      let failedCount = 0;
+
+      // Bulk delete recent messages (in chunks of 100)
+      if (recentMessages.length >= 2) {
+        const recentIds = recentMessages.map((m) => m.id);
+
+        for (let i = 0; i < recentIds.length; i += 100) {
+          const chunk = recentIds.slice(i, Math.min(i + 100, recentIds.length));
+
+          if (chunk.length >= 2) {
+            try {
+              await discordAPI(
+                env,
+                `/channels/${input.channel_id}/messages/bulk-delete`,
+                {
+                  method: "POST",
+                  body: { messages: chunk },
+                  reason: input.reason,
+                },
+              );
+              bulkDeleted += chunk.length;
+              console.log(
+                `🧹 [Purge] Bulk deleted ${chunk.length} recent messages`,
+              );
+            } catch (error) {
+              console.log(
+                `⚠️ [Purge] Bulk delete failed, falling back to individual delete`,
+              );
+              // Fall back to individual delete
+              for (const id of chunk) {
+                try {
+                  await discordAPI(
+                    env,
+                    `/channels/${input.channel_id}/messages/${id}`,
+                    { method: "DELETE", reason: input.reason },
+                  );
+                  individualDeleted++;
+                  await new Promise((r) => setTimeout(r, 200));
+                } catch {
+                  failedCount++;
+                }
+              }
+            }
+
+            // Small delay between bulk operations
+            await new Promise((r) => setTimeout(r, 500));
+          } else if (chunk.length === 1) {
+            // Single message - individual delete
+            try {
+              await discordAPI(
+                env,
+                `/channels/${input.channel_id}/messages/${chunk[0]}`,
+                { method: "DELETE", reason: input.reason },
+              );
+              individualDeleted++;
+            } catch {
+              failedCount++;
+            }
+          }
+        }
+      } else if (recentMessages.length === 1) {
+        // Single recent message
+        try {
+          await discordAPI(
+            env,
+            `/channels/${input.channel_id}/messages/${recentMessages[0].id}`,
+            { method: "DELETE", reason: input.reason },
+          );
+          individualDeleted++;
+        } catch {
+          failedCount++;
+        }
+      }
+
+      // Individual delete for old messages
+      if (oldMessages.length > 0) {
+        console.log(
+          `🧹 [Purge] Deleting ${oldMessages.length} old messages individually...`,
+        );
+
+        const { results, errors } = await discordAPIBatch(
+          env,
+          oldMessages,
+          async (msg) => {
+            await discordAPI(
+              env,
+              `/channels/${input.channel_id}/messages/${msg.id}`,
+              { method: "DELETE", reason: input.reason },
+            );
+            return msg.id;
+          },
+          {
+            delayMs: 200,
+            onProgress: (completed, total) => {
+              if (completed % 20 === 0 || completed === total) {
+                console.log(`🧹 [Purge] Old messages: ${completed}/${total}`);
+              }
+            },
+            onError: () => "skip",
+          },
+        );
+
+        individualDeleted += results.length;
+        failedCount += errors.length;
+      }
+
+      const totalDeleted = bulkDeleted + individualDeleted;
+      console.log(
+        `✅ [Purge] Complete! Deleted ${totalDeleted} messages (${bulkDeleted} bulk, ${individualDeleted} individual)`,
+      );
+
+      return {
+        success: failedCount === 0,
+        deleted_count: totalDeleted,
+        scanned_count: allMessages.length,
+        bulk_deleted: bulkDeleted,
+        individual_deleted: individualDeleted,
+        failed_count: failedCount,
+        message: `Deleted ${totalDeleted} of ${filteredMessages.length} messages matching criteria`,
+      };
+    },
+  });
+
+// ============================================================================
+// Get Message
+// ============================================================================
+
+export const createGetMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GET_MESSAGE",
+    description: "Get a specific message from a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        id: z.string(),
+        channel_id: z.string(),
+        content: z.string(),
+        author: z.object({
+          id: z.string(),
+          username: z.string(),
+          bot: z.boolean().optional(),
+        }),
+        timestamp: z.string(),
+        edited_timestamp: z.string().nullable(),
+        attachments: z.array(z.object({}).passthrough()),
+        embeds: z.array(z.object({}).passthrough()),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { channel_id: string; message_id: string };
+
+      const result = await discordAPI<{
+        id: string;
+        channel_id: string;
+        content: string;
+        author: { id: string; username: string; bot?: boolean };
+        timestamp: string;
+        edited_timestamp: string | null;
+        attachments: Record<string, unknown>[];
+        embeds: Record<string, unknown>[];
+      }>(env, `/channels/${input.channel_id}/messages/${input.message_id}`);
+
+      return result;
+    },
+  });
+
+// ============================================================================
+// Get Channel Messages
+// ============================================================================
+
+export const createGetChannelMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GET_CHANNEL_MESSAGES",
+    description: "Get messages from a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        limit: z
+          .number()
+          .min(1)
+          .max(100)
+          .default(50)
+          .describe("Number of messages (1-100)"),
+        before: z
+          .string()
+          .optional()
+          .describe("Get messages before this message ID"),
+        after: z
+          .string()
+          .optional()
+          .describe("Get messages after this message ID"),
+        around: z
+          .string()
+          .optional()
+          .describe("Get messages around this message ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        messages: z.array(
+          z.object({
+            id: z.string(),
+            content: z.string(),
+            author: z.object({
+              id: z.string(),
+              username: z.string(),
+            }),
+            timestamp: z.string(),
+          }),
+        ),
+        count: z.number(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        limit: number;
+        before?: string;
+        after?: string;
+        around?: string;
+      };
+
+      const params = new URLSearchParams();
+      params.set("limit", String(input.limit));
+      if (input.before) params.set("before", input.before);
+      if (input.after) params.set("after", input.after);
+      if (input.around) params.set("around", input.around);
+
+      const messages = await discordAPI<
+        Array<{
+          id: string;
+          content: string;
+          author: { id: string; username: string };
+          timestamp: string;
+        }>
+      >(env, `/channels/${input.channel_id}/messages?${params.toString()}`);
+
+      return {
+        messages: messages.map((m) => ({
+          id: m.id,
+          content: m.content,
+          author: { id: m.author.id, username: m.author.username },
+          timestamp: m.timestamp,
+        })),
+        count: messages.length,
+      };
+    },
+  });
+
+// ============================================================================
+// Pin/Unpin Message
+// ============================================================================
+
+export const createPinMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_PIN_MESSAGE",
+    description: "Pin a message in a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID to pin"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for pinning (audit log)"),
+      })
+      .strict(),
+    outputSchema: z.object({ success: z.boolean() }).strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/channels/${input.channel_id}/pins/${input.message_id}`,
+        { method: "PUT", reason: input.reason },
+      );
+
+      return { success: true };
+    },
+  });
+
+export const createUnpinMessageTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_UNPIN_MESSAGE",
+    description: "Unpin a message in a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID to unpin"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for unpinning (audit log)"),
+      })
+      .strict(),
+    outputSchema: z.object({ success: z.boolean() }).strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        reason?: string;
+      };
+
+      await discordAPI(
+        env,
+        `/channels/${input.channel_id}/pins/${input.message_id}`,
+        { method: "DELETE", reason: input.reason },
+      );
+
+      return { success: true };
+    },
+  });
+
+export const createGetPinnedMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GET_PINNED_MESSAGES",
+    description: "Get all pinned messages from a Discord channel",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        messages: z.array(
+          z.object({
+            id: z.string(),
+            content: z.string(),
+            author: z.object({ id: z.string(), username: z.string() }),
+            timestamp: z.string(),
+          }),
+        ),
+        count: z.number(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { channel_id: string };
+
+      const messages = await discordAPI<
+        Array<{
+          id: string;
+          content: string;
+          author: { id: string; username: string };
+          timestamp: string;
+        }>
+      >(env, `/channels/${input.channel_id}/pins`);
+
+      return {
+        messages: messages.map((m) => ({
+          id: m.id,
+          content: m.content,
+          author: { id: m.author.id, username: m.author.username },
+          timestamp: m.timestamp,
+        })),
+        count: messages.length,
+      };
+    },
+  });
+
+// ============================================================================
+// Reactions
+// ============================================================================
+
+export const createAddReactionTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_ADD_REACTION",
+    description: "Add an emoji reaction to a Discord message",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID"),
+        emoji: z
+          .string()
+          .describe(
+            "The emoji (Unicode emoji or custom emoji in format name:id)",
+          ),
+      })
+      .strict(),
+    outputSchema: z.object({ success: z.boolean() }).strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        emoji: string;
+      };
+
+      await discordAPI(
+        env,
+        `/channels/${input.channel_id}/messages/${input.message_id}/reactions/${encodeEmoji(input.emoji)}/@me`,
+        { method: "PUT" },
+      );
+
+      return { success: true };
+    },
+  });
+
+export const createRemoveReactionTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_REMOVE_REACTION",
+    description: "Remove bot's reaction from a message",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID"),
+        emoji: z.string().describe("The emoji to remove"),
+      })
+      .strict(),
+    outputSchema: z.object({ success: z.boolean() }).strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        emoji: string;
+      };
+
+      await discordAPI(
+        env,
+        `/channels/${input.channel_id}/messages/${input.message_id}/reactions/${encodeEmoji(input.emoji)}/@me`,
+        { method: "DELETE" },
+      );
+
+      return { success: true };
+    },
+  });
+
+export const createGetReactionsTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_GET_REACTIONS",
+    description: "Get users who reacted to a message with a specific emoji",
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The channel ID"),
+        message_id: z.string().describe("The message ID"),
+        emoji: z.string().describe("The emoji"),
+        limit: z
+          .number()
+          .min(1)
+          .max(100)
+          .default(25)
+          .describe("Max users to return"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        users: z.array(
+          z.object({
+            id: z.string(),
+            username: z.string(),
+            bot: z.boolean().optional(),
+          }),
+        ),
+        count: z.number(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        channel_id: string;
+        message_id: string;
+        emoji: string;
+        limit: number;
+      };
+
+      const users = await discordAPI<
+        Array<{ id: string; username: string; bot?: boolean }>
+      >(
+        env,
+        `/channels/${input.channel_id}/messages/${input.message_id}/reactions/${encodeEmoji(input.emoji)}?limit=${input.limit}`,
+      );
+
+      return {
+        users,
+        count: users.length,
+      };
+    },
+  });
+
+// ============================================================================
+// Search User Mentions
+// ============================================================================
+
+// @ts-nocheck - TODO: Fix TypeScript errors in this function
+export const createSearchUserMentionsTool = (env: Env) =>
+  createPrivateTool({
+    id: "DISCORD_SEARCH_USER_MENTIONS",
+    description:
+      "Search for mentions of a specific user in a Discord server. Returns all messages that mention the user with full context including thread information.",
+    inputSchema: z
+      .object({
+        guild_id: z.string().describe("The guild ID to search in"),
+        user_id: z.string().describe("The user ID to search for mentions of"),
+        channels: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Optional list of channel IDs to restrict search. If empty, searches all text channels.",
+          ),
+        days: z
+          .number()
+          .min(1)
+          .max(90)
+          .default(7)
+          .describe(
+            "Number of days in the past to search (default: 7, max: 90)",
+          ),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        mentions: z.array(
+          z.object({
+            channel_name: z.string(),
+            channel_id: z.string(),
+            author: z.string(),
+            author_id: z.string(),
+            timestamp: z.string(),
+            message_content: z.string(),
+            message_link: z.string(),
+            days_ago: z.number(),
+            is_thread: z.boolean(),
+            thread: z
+              .object({
+                thread_id: z.string(),
+                thread_name: z.string(),
+                parent_channel_id: z.string(),
+                thread_start_message_id: z.string(),
+                thread_link: z.string(),
+              })
+              .optional(),
+          }),
+        ),
+        total_mentions: z.number(),
+        channels_searched: z.number(),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: any }) => {
+      const {
+        guild_id,
+        user_id,
+        channels,
+        days = 7,
+      } = context as {
+        guild_id: string;
+        user_id: string;
+        channels?: string[];
+        days?: number;
+      };
+
+      try {
+        // Calculate timestamp for X days ago
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        const cutoffTimestamp = cutoffDate.getTime();
+
+        // Get all text channels in the guild
+        const channelsResponse = await discordAPI<
+          Array<{
+            id: string;
+            name: string;
+            type: number;
+            parent_id?: string;
+          }>
+        >({
+          method: "GET",
+          path: `/guilds/${guild_id}/channels`,
+        });
+
+        if (!channelsResponse.success) {
+          return {
+            success: false,
+            mentions: [],
+            total_mentions: 0,
+            channels_searched: 0,
+            error: `Failed to fetch channels: ${channelsResponse.error}`,
+          };
+        }
+
+        // Filter to text channels (type 0) and forum channels (type 15)
+        // and optionally filter by provided channel IDs
+        let targetChannels = channelsResponse.data.filter(
+          (ch) => ch.type === 0 || ch.type === 5 || ch.type === 15,
+        );
+
+        if (channels && channels.length > 0) {
+          targetChannels = targetChannels.filter((ch) =>
+            channels.includes(ch.id),
+          );
+        }
+
+        const mentions: Array<{
+          channel_name: string;
+          channel_id: string;
+          author: string;
+          author_id: string;
+          timestamp: string;
+          message_content: string;
+          message_link: string;
+          days_ago: number;
+          is_thread: boolean;
+          thread?: {
+            thread_id: string;
+            thread_name: string;
+            parent_channel_id: string;
+            thread_start_message_id: string;
+            thread_link: string;
+          };
+        }> = [];
+
+        const mentionPattern = `<@${user_id}>`;
+
+        // Search each channel
+        for (const channel of targetChannels) {
+          try {
+            // Get recent messages from this channel (max 100 per request)
+            const messagesResponse = await discordAPI<
+              Array<{
+                id: string;
+                content: string;
+                author: {
+                  id: string;
+                  username: string;
+                  discriminator?: string;
+                };
+                timestamp: string;
+                channel_id: string;
+                guild_id?: string;
+                thread?: {
+                  id: string;
+                  name: string;
+                  parent_id: string;
+                };
+              }>
+            >({
+              method: "GET",
+              path: `/channels/${channel.id}/messages?limit=100`,
+            });
+
+            if (!messagesResponse.success) {
+              console.log(
+                `[SearchMentions] Failed to fetch messages from ${channel.name}: ${messagesResponse.error}`,
+              );
+              continue;
+            }
+
+            // Filter messages that:
+            // 1. Contain the mention pattern
+            // 2. Are within the date range
+            for (const message of messagesResponse.data) {
+              if (!message.content.includes(mentionPattern)) {
+                continue;
+              }
+
+              const messageTimestamp = new Date(message.timestamp).getTime();
+              if (messageTimestamp < cutoffTimestamp) {
+                continue;
+              }
+
+              const daysAgo = Math.floor(
+                (Date.now() - messageTimestamp) / (1000 * 60 * 60 * 24),
+              );
+
+              const authorName =
+                message.author.discriminator &&
+                message.author.discriminator !== "0"
+                  ? `${message.author.username}#${message.author.discriminator}`
+                  : message.author.username;
+
+              // Check if this is a thread
+              const isThread = channel.type === 11 || channel.type === 12;
+              let threadInfo: any = undefined;
+
+              if (isThread) {
+                // Get thread metadata
+                const threadResponse = await discordAPI<{
+                  id: string;
+                  name: string;
+                  parent_id: string;
+                  owner_id?: string;
+                }>({
+                  method: "GET",
+                  path: `/channels/${channel.id}`,
+                });
+
+                if (threadResponse.success) {
+                  threadInfo = {
+                    thread_id: threadResponse.data.id,
+                    thread_name: threadResponse.data.name,
+                    parent_channel_id: threadResponse.data.parent_id,
+                    thread_start_message_id: threadResponse.data.id,
+                    thread_link: `https://discord.com/channels/${guild_id}/${threadResponse.data.parent_id}/${threadResponse.data.id}`,
+                  };
+                }
+              }
+
+              mentions.push({
+                channel_name: channel.name,
+                channel_id: channel.id,
+                author: authorName,
+                author_id: message.author.id,
+                timestamp: message.timestamp,
+                message_content: message.content,
+                message_link: `https://discord.com/channels/${guild_id}/${channel.id}/${message.id}`,
+                days_ago: daysAgo,
+                is_thread: isThread,
+                thread: threadInfo,
+              });
+            }
+
+            // Also search active threads in this channel
+            if (channel.type === 0 || channel.type === 5) {
+              const threadsResponse = await discordAPI<{
+                threads: Array<{
+                  id: string;
+                  name: string;
+                  parent_id: string;
+                  type: number;
+                }>;
+              }>({
+                method: "GET",
+                path: `/channels/${channel.id}/threads/active`,
+              });
+
+              if (threadsResponse.success && threadsResponse.data.threads) {
+                for (const thread of threadsResponse.data.threads) {
+                  const threadMessagesResponse = await discordAPI<
+                    Array<{
+                      id: string;
+                      content: string;
+                      author: {
+                        id: string;
+                        username: string;
+                        discriminator?: string;
+                      };
+                      timestamp: string;
+                    }>
+                  >({
+                    method: "GET",
+                    path: `/channels/${thread.id}/messages?limit=100`,
+                  });
+
+                  if (
+                    !threadMessagesResponse.success ||
+                    !threadMessagesResponse.data
+                  ) {
+                    continue;
+                  }
+
+                  for (const message of threadMessagesResponse.data) {
+                    if (!message.content.includes(mentionPattern)) {
+                      continue;
+                    }
+
+                    const messageTimestamp = new Date(
+                      message.timestamp,
+                    ).getTime();
+                    if (messageTimestamp < cutoffTimestamp) {
+                      continue;
+                    }
+
+                    const daysAgo = Math.floor(
+                      (Date.now() - messageTimestamp) / (1000 * 60 * 60 * 24),
+                    );
+
+                    const authorName =
+                      message.author.discriminator &&
+                      message.author.discriminator !== "0"
+                        ? `${message.author.username}#${message.author.discriminator}`
+                        : message.author.username;
+
+                    mentions.push({
+                      channel_name: channel.name,
+                      channel_id: channel.id,
+                      author: authorName,
+                      author_id: message.author.id,
+                      timestamp: message.timestamp,
+                      message_content: message.content,
+                      message_link: `https://discord.com/channels/${guild_id}/${thread.id}/${message.id}`,
+                      days_ago: daysAgo,
+                      is_thread: true,
+                      thread: {
+                        thread_id: thread.id,
+                        thread_name: thread.name,
+                        parent_channel_id: thread.parent_id,
+                        thread_start_message_id: thread.id,
+                        thread_link: `https://discord.com/channels/${guild_id}/${thread.parent_id}/${thread.id}`,
+                      },
+                    });
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(
+              `[SearchMentions] Error searching channel ${channel.name}:`,
+              error,
+            );
+          }
+        }
+
+        // Sort mentions by timestamp (newest first)
+        mentions.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+
+        return {
+          success: true,
+          mentions,
+          total_mentions: mentions.length,
+          channels_searched: targetChannels.length,
+        };
+      } catch (error) {
+        console.error("[SearchMentions] Error:", error);
+        return {
+          success: false,
+          mentions: [],
+          total_mentions: 0,
+          channels_searched: 0,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+// ============================================================================
+// Export
+// ============================================================================
+
+export const discordMessageTools = [
+  createSendMessageTool,
+  createEditMessageTool,
+  createDeleteMessageTool,
+  createBulkDeleteMessagesTool,
+  createPurgeChannelMessagesTool,
+  createGetMessageTool,
+  createGetChannelMessagesTool,
+  createPinMessageTool,
+  createUnpinMessageTool,
+  createGetPinnedMessagesTool,
+  createAddReactionTool,
+  createRemoveReactionTool,
+  createGetReactionsTool,
+  // createSearchUserMentionsTool, // TODO: Fix TypeScript errors
+];

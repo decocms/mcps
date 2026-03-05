@@ -4,7 +4,7 @@
  * Tools for managing and executing webhooks.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../../types/env.ts";
 import { discordAPI } from "./api.ts";
@@ -14,7 +14,7 @@ import { discordAPI } from "./api.ts";
 // ============================================================================
 
 export const createCreateWebhookTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_CREATE_WEBHOOK",
     description: "Create a webhook in a Discord channel",
     inputSchema: z
@@ -76,7 +76,7 @@ export const createCreateWebhookTool = (env: Env) =>
 // ============================================================================
 
 export const createListWebhooksTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_LIST_WEBHOOKS",
     description: "List webhooks from a Discord channel or guild",
     inputSchema: z
@@ -153,7 +153,7 @@ export const createListWebhooksTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteWebhookTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_DELETE_WEBHOOK",
     description: "Delete a Discord webhook",
     inputSchema: z
@@ -192,7 +192,7 @@ export const createDeleteWebhookTool = (env: Env) =>
 // ============================================================================
 
 export const createExecuteWebhookTool = () =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_EXECUTE_WEBHOOK",
     description: "Send a message through a Discord webhook",
     inputSchema: z

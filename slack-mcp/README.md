@@ -179,3 +179,4 @@ O deploy é automático via GitHub Actions quando há push para `main`.
 ```bash
 bun run scripts/deploy.ts slack-mcp
 ```
+

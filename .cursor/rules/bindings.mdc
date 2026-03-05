@@ -1,0 +1,412 @@
+---
+description: Complete guide to all available bindings - declaration, configuration, and usage examples
+globs: ["**/env.ts", "**/types/env.ts", "**/main.ts"]
+---
+
+# MCP Bindings Guide
+
+Bindings allow your MCP to interact with other services and capabilities in the Mesh ecosystem.
+
+## Available Bindings
+
+| Binding | Purpose | Key Methods |
+|---------|---------|-------------|
+| `@deco/event-bus` | Publish/subscribe to CloudEvents | EVENT_PUBLISH, EVENT_SUBSCRIBE, EVENT_UNSUBSCRIBE |
+| `@deco/postgres` | Run SQL queries on PostgreSQL | DATABASES_RUN_SQL |
+| `@deco/connection` | Manage MCP connections | COLLECTION_CONNECTIONS_GET, COLLECTION_CONNECTIONS_UPDATE |
+| `@deco/llm` | Connect to language model providers | Model provider connection |
+| `@deco/agent` | Use AI agents with tools/prompts | Agent with tools, resources, prompts |
+| `@deco/whisper` | Audio transcription (Whisper) | Speech-to-text capabilities |
+| `@deco/wallet` | Billing and contracts | Payment management |
+
+## Declaring Bindings
+
+### In types/env.ts
+
+```typescript
+import { BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { z } from "zod";
+
+export const StateSchema = z.object({
+  // Required binding
+  DATABASE: BindingOf("@deco/postgres"),
+  EVENT_BUS: BindingOf("@deco/event-bus"),
+  
+  // Optional binding
+  MODEL_PROVIDER: BindingOf("@deco/llm")
+    .optional()
+    .describe("AI Model Provider connection"),
+  
+  // Optional with description
+  WHISPER: BindingOf("@deco/whisper")
+    .optional()
+    .describe("OpenAI Whisper for audio transcription"),
+});
+
+export type Env = DefaultEnv<typeof StateSchema>;
+```
+
+### Configuration Scopes
+
+Bindings require **scopes** to work. Add them in `main.ts`:
+
+```typescript
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    scopes: [
+      "DATABASE::DATABASES_RUN_SQL",  // For postgres binding
+      "EVENT_BUS::*",                  // For event-bus (all methods)
+      "CONNECTION::*",                 // For connection binding
+      "*",                             // All tools (use sparingly)
+    ],
+    state: StateSchema,
+  },
+  tools,
+});
+```
+
+**Scope patterns:**
+- `BINDING::METHOD` - Specific method (e.g., `DATABASE::DATABASES_RUN_SQL`)
+- `BINDING::*` - All methods of a binding (e.g., `EVENT_BUS::*`)
+- `*` - All tools and bindings (broad access)
+
+## Usage Examples
+
+### 1. Database Binding (@deco/postgres)
+
+**Declaration:**
+```typescript
+DATABASE: BindingOf("@deco/postgres")
+```
+
+**Usage:**
+```typescript
+import type { Env } from "./types/env.ts";
+
+async function getUser(env: Env, userId: string) {
+  const response = await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+    sql: "SELECT * FROM users WHERE id = ?",
+    params: [userId],
+  });
+  
+  const rows = response?.result[0]?.results ?? [];
+  return rows[0];
+}
+
+async function createUser(env: Env, name: string, email: string) {
+  await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+    sql: "INSERT INTO users (name, email) VALUES (?, ?)",
+    params: [name, email],
+  });
+}
+```
+
+**Helper function pattern:**
+```typescript
+// server/db/postgres.ts
+export async function runSQL<T = unknown>(
+  env: Env,
+  sql: string,
+  params: unknown[] = [],
+): Promise<T[]> {
+  const response = await env.MESH_REQUEST_CONTEXT?.state?.DATABASE.DATABASES_RUN_SQL({
+    sql,
+    params,
+  });
+  return (response?.result[0]?.results ?? []) as T[];
+}
+
+// Usage:
+const users = await runSQL<User>(env, "SELECT * FROM users WHERE active = ?", [true]);
+```
+
+**Example**: See [mcp-studio/server/db/postgres.ts](../mcp-studio/server/db/postgres.ts)
+
+---
+
+### 2. Event Bus Binding (@deco/event-bus)
+
+**Declaration:**
+```typescript
+EVENT_BUS: BindingOf("@deco/event-bus")
+```
+
+#### Publishing Events
+
+```typescript
+import type { Env } from "./types/env.ts";
+
+// Simple event
+await env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS.EVENT_PUBLISH({
+  type: "user.created",
+  subject: userId,
+  data: {
+    name: "John Doe",
+    email: "john@example.com",
+  },
+});
+
+// Scheduled event (deliverAt)
+await env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS.EVENT_PUBLISH({
+  type: "reminder.send",
+  subject: reminderId,
+  data: { message: "Don't forget!" },
+  deliverAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
+});
+
+// Recurring event (cron)
+await env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS.EVENT_PUBLISH({
+  type: "report.generate",
+  subject: reportId,
+  data: { format: "pdf" },
+  cron: "0 9 * * 1", // Every Monday at 9am
+});
+```
+
+**CloudEvents format** (v1.0):
+- `type` (required): Event type (e.g., `"order.created"`)
+- `subject` (optional): Subject/entity ID
+- `data` (optional): Event payload
+- `deliverAt` (optional): ISO 8601 timestamp for scheduled delivery
+- `cron` (optional): Cron expression for recurring events
+
+#### Subscribing to Events
+
+In `main.ts`:
+
+```typescript
+const runtime = withRuntime<Env, typeof StateSchema>({
+  events: {
+    handlers: {
+      // Handle events from OTHER connections
+      EVENT_BUS: {
+        events: ["order.created", "user.updated"],
+        handler: async ({ events }, env) => {
+          for (const event of events) {
+            console.log(`Received: ${event.type}`, event.data);
+            // Process event
+          }
+          return { success: true };
+        },
+      },
+      
+      // Handle events from THIS connection (self)
+      SELF: {
+        events: ["workflow.step.execute", "workflow.step.completed"],
+        handler: async ({ events }, env) => {
+          for (const event of events) {
+            // Process own events
+            if (event.type === "workflow.step.execute") {
+              await executeStep(env, event);
+            }
+          }
+          return { success: true };
+        },
+      },
+    },
+  },
+  configuration: {
+    scopes: ["EVENT_BUS::*"],
+    state: StateSchema,
+  },
+});
+```
+
+**Per-event results** (advanced):
+```typescript
+handler: async ({ events }, env) => {
+  return {
+    results: {
+      "event-id-1": { success: true },
+      "event-id-2": { success: false, error: "Validation failed" },
+      "event-id-3": { retryAfter: 60000 }, // Retry in 1 minute
+    },
+  };
+}
+```
+
+**Examples:**
+- [mcp-studio/server/main.ts](../mcp-studio/server/main.ts) (SELF handler)
+- [discord-read/server/lib/event-publisher.ts](../discord-read/server/lib/event-publisher.ts) (publishing)
+- [mcp-studio/server/events/handler.ts](../mcp-studio/server/events/handler.ts) (processing)
+
+---
+
+### 3. Connection Binding (@deco/connection)
+
+**Declaration:**
+```typescript
+CONNECTION: BindingOf("@deco/connection")
+```
+
+**Usage:**
+```typescript
+// Get connection details
+const connection = await env.MESH_REQUEST_CONTEXT?.state?.CONNECTION.COLLECTION_CONNECTIONS_GET({
+  id: connectionId,
+});
+
+// Update connection configuration
+await env.MESH_REQUEST_CONTEXT?.state?.CONNECTION.COLLECTION_CONNECTIONS_UPDATE({
+  id: connectionId,
+  data: {
+    configuration_state: {
+      webhookRegistered: true,
+      lastSync: new Date().toISOString(),
+    },
+  },
+});
+```
+
+**Use cases:**
+- Store webhook registration status
+- Save OAuth tokens
+- Track sync timestamps
+- Store connection-specific metadata
+
+**Example**: See [mcp-studio/server/main.ts](../mcp-studio/server/main.ts)
+
+---
+
+### 4. Language Model Binding (@deco/llm)
+
+**Declaration:**
+```typescript
+MODEL_PROVIDER: BindingOf("@deco/llm")
+  .optional()
+  .describe("AI Model Provider connection"),
+
+LANGUAGE_MODEL: z
+  .object({
+    __type: z.literal("@deco/language-model"),
+    value: z.object({ id: z.string() }).loose(),
+  })
+  .optional()
+  .describe("The language model to use for responses"),
+```
+
+**Usage:**
+```typescript
+// Access model via bindings
+const modelId = env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL?.value?.id;
+```
+
+**Examples:**
+- [slack-mcp/server/types/env.ts](../slack-mcp/server/types/env.ts)
+- [discord-read/server/types/env.ts](../discord-read/server/types/env.ts)
+
+---
+
+### 5. Agent Binding (@deco/agent)
+
+**Declaration:**
+```typescript
+AGENT: BindingOf("@deco/agent")
+  .optional()
+  .describe("Agent with tools, resources and prompts"),
+```
+
+**Use case**: Connect to pre-configured AI agents with specific tools and prompts.
+
+---
+
+### 6. Whisper Binding (@deco/whisper)
+
+**Declaration:**
+```typescript
+WHISPER: BindingOf("@deco/whisper")
+  .optional()
+  .describe("OpenAI Whisper for audio transcription"),
+```
+
+**Use case**: Transcribe audio files to text (Speech-to-Text).
+
+**Example**: [slack-mcp/server/types/env.ts](../slack-mcp/server/types/env.ts)
+
+---
+
+### 7. Wallet Binding (@deco/wallet)
+
+**Declaration:**
+```typescript
+WALLET: BindingOf("@deco/wallet")
+```
+
+**Use case**: Handle billing, contracts, and payments.
+
+**Example**: [deco-llm/server/main.ts](../deco-llm/server/main.ts)
+
+---
+
+## Complete Example
+
+```typescript
+// types/env.ts
+import { BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { z } from "zod";
+
+export const StateSchema = z.object({
+  // Bindings
+  DATABASE: BindingOf("@deco/postgres"),
+  EVENT_BUS: BindingOf("@deco/event-bus"),
+  CONNECTION: BindingOf("@deco/connection"),
+  MODEL_PROVIDER: BindingOf("@deco/llm").optional(),
+  
+  // Configuration
+  API_KEY: z.string().describe("Your API key"),
+});
+
+export type Env = DefaultEnv<typeof StateSchema>;
+```
+
+```typescript
+// main.ts
+import { withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
+import { type Env, StateSchema } from "./types/env.ts";
+import { tools } from "./tools/index.ts";
+
+const runtime = withRuntime<Env, typeof StateSchema>({
+  events: {
+    handlers: {
+      SELF: {
+        events: ["my.event.type"],
+        handler: async ({ events }, env) => {
+          // Process events
+          return { success: true };
+        },
+      },
+    },
+  },
+  configuration: {
+    scopes: [
+      "DATABASE::DATABASES_RUN_SQL",
+      "EVENT_BUS::*",
+      "CONNECTION::*",
+    ],
+    state: StateSchema,
+  },
+  tools: (env) => tools.map((t) => t(env)),
+});
+
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}
+```
+
+## Best Practices
+
+✅ **Use `.optional()`** for non-essential bindings
+✅ **Add `.describe()`** to explain what each binding is for
+✅ **Request minimal scopes** - only what you need
+✅ **Group related bindings** at the top of StateSchema
+✅ **Document usage** in your README.md
+✅ **Handle missing bindings** gracefully with optional chaining
+
+## Reference
+
+- [Event Bus binding app.json](../event-bus/app.json)
+- [Database binding app.json](../db-binding/app.json)
+- [Connection binding app.json](../connection-binding/app.json)
+- [MCP Studio example](../mcp-studio/server/types/env.ts) - Uses multiple bindings
+- [Slack MCP example](../slack-mcp/server/types/env.ts) - Complete configuration

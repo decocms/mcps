@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-dex-mcp",
+  "friendlyName": "Cloudflare DEX",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://dex.mcp.cloudflare.com/mcp"
+  },
+  "description": "Monitor Digital Employee Experience (DEX) with Cloudflare. Track endpoint connectivity, performance, and user experience metrics across your organization.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Monitoring", "IT Management"],
+    "official": true,
+    "tags": ["cloudflare", "dex", "monitoring", "endpoints", "performance", "connectivity", "zero-trust"],
+    "short_description": "Monitor Digital Employee Experience with endpoint connectivity and performance metrics",
+    "mesh_description": "Cloudflare DEX (Digital Employee Experience) MCP provides comprehensive monitoring of employee endpoint connectivity and application performance. This official MCP enables you to monitor network connectivity and latency from employee devices, track application performance and load times, measure Zero Trust network access metrics, monitor VPN and tunnel connection quality, analyze WiFi and network performance issues, track device and OS compatibility problems, monitor authentication and security policy compliance, generate alerts for connectivity or performance issues, and create reports on overall employee digital experience. The platform provides visibility into how employees access corporate resources through Cloudflare's Zero Trust platform. Perfect for IT teams managing remote workforces, monitoring application performance, troubleshooting connectivity issues, ensuring security policy compliance, and optimizing employee productivity. Helps identify network bottlenecks, problematic applications, and infrastructure issues affecting user experience. Use natural language to query DEX metrics, investigate connectivity problems, analyze performance trends, identify problem devices or locations, and optimize Zero Trust policies for better employee experience."
+  }
+}
+

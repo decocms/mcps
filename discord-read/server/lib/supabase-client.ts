@@ -14,12 +14,15 @@ export interface DiscordConnectionRow {
   connection_id: string;
   organization_id: string;
   mesh_url: string;
-  mesh_token: string | null;
+  mesh_token: string | null; // Session token (expires)
+  mesh_api_key: string | null; // Persistent API key (never expires) - PREFERRED
   model_provider_id: string | null;
   model_id: string | null;
   agent_id: string | null;
   system_prompt: string | null;
   bot_token: string;
+  discord_public_key: string | null; // Discord application public key (for webhook verification)
+  discord_application_id: string | null; // Discord application ID (for slash commands)
   authorized_guilds: string[] | null; // Array of guild IDs
   owner_id: string | null; // Discord user ID of bot owner
   command_prefix: string;
@@ -85,11 +88,14 @@ export async function saveConnectionConfig(config: {
   organizationId: string;
   meshUrl: string;
   meshToken?: string;
+  meshApiKey?: string; // Persistent API key (preferred over meshToken)
   modelProviderId?: string;
   modelId?: string;
   agentId?: string;
   systemPrompt?: string;
   botToken: string;
+  discordPublicKey?: string; // Discord application public key (for webhook verification)
+  discordApplicationId?: string; // Discord application ID (for slash commands)
   authorizedGuilds?: string[];
   ownerId?: string;
   commandPrefix?: string;
@@ -106,11 +112,14 @@ export async function saveConnectionConfig(config: {
     organization_id: config.organizationId,
     mesh_url: config.meshUrl,
     mesh_token: config.meshToken || null,
+    mesh_api_key: config.meshApiKey || null,
     model_provider_id: config.modelProviderId || null,
     model_id: config.modelId || null,
     agent_id: config.agentId || null,
     system_prompt: config.systemPrompt || null,
     bot_token: config.botToken,
+    discord_public_key: config.discordPublicKey || null,
+    discord_application_id: config.discordApplicationId || null,
     authorized_guilds: config.authorizedGuilds || null,
     owner_id: config.ownerId || null,
     command_prefix: config.commandPrefix || "!",

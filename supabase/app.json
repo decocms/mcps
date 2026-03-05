@@ -5,7 +5,7 @@
     "type": "BINDING"
   },
   "description": "Supabase Official MCP - Access and manage your Supabase database, run SQL queries, manage tables and more. This is the official Supabase MCP.",
-  "icon": "https://supabase.com/dashboard/_next/image?url=%2Fimages%2Fsupabase-logo-wordmark--dark.png&w=128&q=75",
+  "icon": "https://supabase.com/favicon/favicon-96x96.png",
   "unlisted": false,
   "official": true,
   "tools": [

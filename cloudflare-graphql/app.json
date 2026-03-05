@@ -1,0 +1,21 @@
+{
+  "scopeName": "cloudflare",
+  "name": "cloudflare-graphql-mcp",
+  "friendlyName": "Cloudflare GraphQL",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://graphql.mcp.cloudflare.com/mcp"
+  },
+  "description": "Query Cloudflare Analytics and data using GraphQL. Build custom analytics queries with flexible data retrieval and aggregation.",
+  "icon": "https://www.cloudflare.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Analytics", "API"],
+    "official": true,
+    "tags": ["cloudflare", "graphql", "analytics", "api", "data", "queries", "aggregation"],
+    "short_description": "Query Cloudflare Analytics using GraphQL with flexible data retrieval and aggregation",
+    "mesh_description": "Cloudflare GraphQL MCP provides powerful access to Cloudflare Analytics and operational data through a flexible GraphQL API. This official MCP enables you to build custom analytics queries with precise field selection, aggregate metrics across multiple dimensions (time, geography, device, etc.), query HTTP traffic, firewall events, DNS, Workers, and other datasets, create complex filters and time-range specifications, combine data from multiple sources in single queries, access historical data for trend analysis and reporting, optimize query performance with field-level data selection, generate custom dashboards and visualizations, and integrate analytics into business intelligence tools. The GraphQL API provides a more flexible and efficient alternative to REST endpoints, allowing you to request exactly the data you need in a single query. Perfect for building custom analytics dashboards, generating executive reports, conducting performance analysis, integrating Cloudflare data with other systems, and creating automated monitoring workflows. Use natural language to construct GraphQL queries, analyze traffic patterns, generate reports, troubleshoot performance issues, and extract insights from Cloudflare's comprehensive analytics datasets."
+  }
+}
+

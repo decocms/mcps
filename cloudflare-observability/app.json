@@ -3,8 +3,8 @@
   "name": "cloudflare-observability-mcp",
   "friendlyName": "Cloudflare Observability",
   "connection": {
-    "type": "SSE",
-    "url": "https://observability.mcp.cloudflare.com/sse"
+    "type": "HTTP",
+    "url": "https://observability.mcp.cloudflare.com/mcp"
   },
   "description": "Monitor and analyze your Cloudflare services with comprehensive observability tools. Access logs, metrics, analytics, and traces through natural language.",
   "icon": "https://www.cloudflare.com/favicon.ico",

@@ -329,7 +329,10 @@ export async function generateResponse(
     const storedConfig = getStoredConfig();
 
     if (storedConfig) {
-      console.log("[LLM] Using stored config fallback");
+      console.log("[LLM] Using stored config fallback", {
+        isApiKey: storedConfig.isApiKey,
+        hasToken: !!storedConfig.persistentToken,
+      });
       config = {
         meshUrl: storedConfig.meshUrl,
         organizationId: storedConfig.organizationId,

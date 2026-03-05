@@ -89,18 +89,30 @@ async function upsertArticle(
 }
 
 /**
- * Process a single article
+ * Process a single article with known publication date
  */
-async function processArticle(
+async function processArticleWithDate(
   ctx: ScrapeBlogContext,
   blog: Blog,
-  articleInfo: { title: string; url: string; published_at: string | null },
+  articleInfo: { title: string; url: string; published_at: string },
 ): Promise<boolean> {
   // Check if already exists
   const exists = await articleExistsByUrl(ctx.dbClient, articleInfo.url);
   if (exists) {
     console.log(
       `    → Skipping (already exists): ${articleInfo.title.slice(0, 40)}...`,
+    );
+    return false;
+  }
+
+  // Parse and validate date
+  const parsed = parseDate(articleInfo.published_at);
+  const publishedDate = parsed || new Date();
+
+  // Filter by date (last week)
+  if (!isWithinLastWeek(publishedDate)) {
+    console.log(
+      `    → Skipping (older than 1 week): ${articleInfo.title.slice(0, 40)}...`,
     );
     return false;
   }
@@ -138,23 +150,6 @@ async function processArticle(
     return false;
   }
 
-  // Determine publication date
-  let publishedDate: Date;
-  if (articleInfo.published_at) {
-    const parsed = parseDate(articleInfo.published_at);
-    publishedDate = parsed || new Date();
-  } else {
-    publishedDate = new Date();
-  }
-
-  // Filter by date (last week)
-  if (!isWithinLastWeek(publishedDate)) {
-    console.log(
-      `    → Skipping (older than 1 week): ${articleInfo.title.slice(0, 40)}...`,
-    );
-    return false;
-  }
-
   // Calculate post_score
   const postScore = calculatePostScore(analysis.quality_score, blog.authority);
 
@@ -172,6 +167,86 @@ async function processArticle(
 
   return true;
 }
+
+/**
+ * Process an article without publication date
+ * Only saves if it doesn't already exist in the database (treats as "this week")
+ */
+async function processArticleWithoutDate(
+  ctx: ScrapeBlogContext,
+  blog: Blog,
+  articleInfo: { title: string; url: string },
+): Promise<boolean> {
+  // Check if already exists - this is the key check for articles without dates
+  const exists = await articleExistsByUrl(ctx.dbClient, articleInfo.url);
+  if (exists) {
+    console.log(
+      `    → Skipping (already in database): ${articleInfo.title.slice(0, 40)}...`,
+    );
+    return false;
+  }
+
+  // Article is new - fetch and process it
+  console.log(
+    `    → New article (no date, not in DB): ${articleInfo.title.slice(0, 40)}...`,
+  );
+
+  // Fetch article content
+  const response = await fetchWithRetry(articleInfo.url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch article: ${response.status}`);
+  }
+
+  const html = await response.text();
+  const content = extractPlainText(html);
+
+  // Validate minimum content
+  if (!hasMinimumContent(content)) {
+    console.log(
+      `    → Skipping (content too short): ${articleInfo.title.slice(0, 40)}...`,
+    );
+    return false;
+  }
+
+  // Analyze with LLM
+  const analysis = await analyzeArticle(
+    articleInfo.title,
+    content,
+    blog.authority,
+    ctx.openrouterApiKey,
+  );
+
+  // Filter MCP-related only
+  if (!analysis.is_mcp_related) {
+    console.log(
+      `    → Skipping (not MCP-related): ${articleInfo.title.slice(0, 40)}...`,
+    );
+    return false;
+  }
+
+  // Use current date as publication date (treat as "this week")
+  const publishedDate = new Date();
+
+  // Calculate post_score
+  const postScore = calculatePostScore(analysis.quality_score, blog.authority);
+
+  // Save to database with current week
+  await upsertArticle(ctx.dbClient, {
+    blog_id: blog.id,
+    title: articleInfo.title,
+    url: articleInfo.url,
+    published_at: formatDate(publishedDate),
+    publication_week: getPublicationWeek(publishedDate),
+    summary: analysis.summary,
+    key_points: analysis.key_points,
+    post_score: postScore,
+  });
+
+  return true;
+}
+
+// Maximum number of articles to process when blog has no publication dates
+const MAX_ARTICLES_WITHOUT_DATE = 3;
 
 /**
  * Scrape a single blog
@@ -205,23 +280,69 @@ async function scrapeBlog(ctx: ScrapeBlogContext, blog: Blog): Promise<number> {
 
   console.log(`    Found ${articleList.length} article links`);
 
-  // Process each article
+  // Separate articles with and without publication dates
+  const articlesWithDate = articleList.filter((a) => a.published_at !== null);
+  const articlesWithoutDate = articleList.filter(
+    (a) => a.published_at === null,
+  );
+
+  console.log(
+    `    → ${articlesWithDate.length} with date, ${articlesWithoutDate.length} without date`,
+  );
+
   let savedCount = 0;
 
-  for (const articleInfo of articleList) {
+  // Process articles WITH publication dates normally
+  for (const articleInfo of articlesWithDate) {
     try {
-      const saved = await processArticle(ctx, blog, articleInfo);
+      const saved = await processArticleWithDate(ctx, blog, {
+        title: articleInfo.title,
+        url: articleInfo.url,
+        published_at: articleInfo.published_at as string,
+      });
       if (saved) {
         savedCount++;
-        console.log(
-          `    ✓ Saved/Updated: ${articleInfo.title.slice(0, 40)}...`,
-        );
+        console.log(`    ✓ Saved: ${articleInfo.title.slice(0, 40)}...`);
       }
     } catch (error) {
       console.error(`    ✗ Error processing "${articleInfo.title}": ${error}`);
     }
 
     await sleep(DELAY_BETWEEN_ARTICLES);
+  }
+
+  // Process articles WITHOUT publication dates (limit to last 3)
+  // Only save if not already in database (treat as "this week" if new)
+  if (articlesWithoutDate.length > 0) {
+    console.log(
+      `    → Processing up to ${MAX_ARTICLES_WITHOUT_DATE} articles without dates (checking if new)...`,
+    );
+
+    const articlesToCheck = articlesWithoutDate.slice(
+      0,
+      MAX_ARTICLES_WITHOUT_DATE,
+    );
+
+    for (const articleInfo of articlesToCheck) {
+      try {
+        const saved = await processArticleWithoutDate(ctx, blog, {
+          title: articleInfo.title,
+          url: articleInfo.url,
+        });
+        if (saved) {
+          savedCount++;
+          console.log(
+            `    ✓ Saved (new, no date): ${articleInfo.title.slice(0, 40)}...`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `    ✗ Error processing "${articleInfo.title}": ${error}`,
+        );
+      }
+
+      await sleep(DELAY_BETWEEN_ARTICLES);
+    }
   }
 
   return savedCount;

@@ -6,15 +6,25 @@
  *
  * Tools:
  * - bigquery_query: Execute SQL queries
+ * - bigquery_get_dataset: Get dataset details
  * - bigquery_list_datasets: List datasets in a project
  * - bigquery_list_tables: List tables in a dataset
  * - bigquery_get_table_schema: Get table schema details
+ * - bigquery_list_jobs: List jobs in a project
+ * - bigquery_get_job: Get job details and status
+ * - bigquery_list_projects: List accessible projects
  */
 
 import { bigqueryTools } from "./bigquery.ts";
+import { jobsTools } from "./jobs.ts";
+import { projectsTools } from "./projects.ts";
 
 // Export all tools from all modules
 export const tools = [
   // BigQuery tools
   ...bigqueryTools,
+  // Jobs tools
+  ...jobsTools,
+  // Projects tools
+  ...projectsTools,
 ];

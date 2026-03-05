@@ -1,0 +1,202 @@
+/**
+ * Example Tool
+ *
+ * This is an example tool implementation.
+ * Copy this file and rename it to create your own tools.
+ */
+
+import { createPrivateTool } from "@decocms/runtime";
+import { z } from "zod";
+import type { Env } from "../types/env.ts";
+
+/**
+ * Example tool that echoes back the input
+ */
+export const exampleToolFactory = (env: Env) =>
+  createPrivateTool({
+    id: "example_echo",
+    description: "Echoes back the input message with a greeting",
+    inputSchema: z.object({
+      message: z.string().describe("The message to echo back"),
+      uppercase: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe("Convert message to uppercase"),
+    }),
+    outputSchema: z.object({
+      result: z.string().describe("The echoed message"),
+      timestamp: z.string().describe("When the message was processed"),
+    }),
+    execute: async ({ input }) => {
+      // Access environment/configuration
+      // const apiKey = env.MESH_REQUEST_CONTEXT?.state?.API_KEY;
+      
+      // Process the input
+      let result = `Hello! You said: ${input.message}`;
+      
+      if (input.uppercase) {
+        result = result.toUpperCase();
+      }
+      
+      return {
+        result,
+        timestamp: new Date().toISOString(),
+      };
+    },
+  });
+
+/**
+ * Example tool with API call
+ */
+export const exampleApiToolFactory = (env: Env) =>
+  createPrivateTool({
+    id: "example_api_call",
+    description: "Makes an API call to an external service",
+    inputSchema: z.object({
+      endpoint: z.string().describe("The API endpoint to call"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      data: z.unknown().optional(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ input }) => {
+      try {
+        // Example: Get API credentials from environment
+        // const apiKey = env.MESH_REQUEST_CONTEXT?.state?.API_CREDENTIALS?.API_KEY;
+        
+        // Make API call
+        const response = await fetch(input.endpoint, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // "Authorization": `Bearer ${apiKey}`,
+          },
+        });
+        
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `API error: ${response.status} ${response.statusText}`,
+          };
+        }
+        
+        const data: unknown = await response.json();
+        
+        return {
+          success: true,
+          data,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+  });
+
+/**
+ * Example tool using database binding
+ */
+export const exampleDatabaseToolFactory = (env: Env) =>
+  createPrivateTool({
+    id: "example_database_query",
+    description: "Queries the database (requires DATABASE binding)",
+    inputSchema: z.object({
+      userId: z.string().describe("User ID to query"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      user: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          email: z.string(),
+        })
+        .optional(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ input }) => {
+      try {
+        // Access database binding
+        const db = env.MESH_REQUEST_CONTEXT?.state?.DATABASE;
+        
+        if (!db) {
+          return {
+            success: false,
+            error: "Database binding not configured",
+          };
+        }
+        
+        // Run SQL query
+        const response = await db.DATABASES_RUN_SQL({
+          sql: "SELECT id, name, email FROM users WHERE id = ?",
+          params: [input.userId],
+        });
+        
+        const rows = response.result[0]?.results ?? [];
+        
+        if (rows.length === 0) {
+          return {
+            success: false,
+            error: "User not found",
+          };
+        }
+        
+        return {
+          success: true,
+          user: rows[0] as { id: string; name: string; email: string },
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Database error",
+        };
+      }
+    },
+  });
+
+/**
+ * Example tool publishing events
+ */
+export const exampleEventToolFactory = (env: Env) =>
+  createPrivateTool({
+    id: "example_publish_event",
+    description: "Publishes an event to the event bus (requires EVENT_BUS binding)",
+    inputSchema: z.object({
+      eventType: z.string().describe("Type of event to publish"),
+      data: z.record(z.unknown()).describe("Event data"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+    execute: async ({ input }) => {
+      try {
+        const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
+        
+        if (!eventBus) {
+          return {
+            success: false,
+            error: "Event bus binding not configured",
+          };
+        }
+        
+        await eventBus.EVENT_PUBLISH({
+          type: input.eventType,
+          subject: crypto.randomUUID(),
+          data: input.data,
+        });
+        
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Event publish error",
+        };
+      }
+    },
+  });
+

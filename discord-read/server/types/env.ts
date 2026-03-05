@@ -30,13 +30,6 @@ export const StateSchema = z.object({
     })
     .required(),
 
-  // Whisper for audio transcription (optional)
-  WHISPER: BindingOf("@deco/whisper")
-    .optional()
-    .describe(
-      "OpenAI Whisper for audio transcription. If not set, audio files will not be processed.",
-    ),
-
   // Agent Mode Configuration
   AGENT_MODE: z
     .enum(["passthrough", "smart_tool_selection", "code_execution"])
@@ -46,7 +39,40 @@ export const StateSchema = z.object({
       "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
     ),
 
+  // ============================================================================
+  // Discord Webhook Configuration (required for /interactions endpoint)
+  // ============================================================================
+  DISCORD_PUBLIC_KEY: z
+    .string()
+    .optional()
+    .describe(
+      "Discord Application Public Key (from Discord Developer Portal > General Information). Required for webhook signature verification.",
+    ),
+
+  DISCORD_APPLICATION_ID: z
+    .string()
+    .optional()
+    .describe(
+      "Discord Application ID (from Discord Developer Portal). Required for slash commands registration.",
+    ),
+
+  AUTHORIZED_GUILDS: z
+    .string()
+    .optional()
+    .describe(
+      "List of authorized Guild IDs separated by comma (e.g., '123456789,987654321'). Leave empty to allow all guilds.",
+    ),
+
+  BOT_OWNER_ID: z
+    .string()
+    .optional()
+    .describe(
+      "Discord User ID of the bot owner. Used for admin-only commands.",
+    ),
+
+  // ============================================================================
   // Config do Discord Bot
+  // ============================================================================
   // Note: BOT_TOKEN is now passed via Authorization header (auth.type: "token" in app.json)
   COMMAND_PREFIX: z
     .string()
@@ -119,47 +145,6 @@ export const StateSchema = z.object({
     })
     .optional()
     .describe("How the bot responds to messages"),
-
-  // Voice Configuration (Fase 2)
-  VOICE_CONFIG: z
-    .object({
-      ENABLED: z
-        .boolean()
-        .default(true)
-        .describe("Enable voice channel features"),
-      AUTO_JOIN_CHANNEL_ID: z
-        .string()
-        .optional()
-        .describe("Voice channel ID to auto-join on startup"),
-      RESPONSE_MODE: z
-        .enum(["voice", "dm", "both"])
-        .default("voice")
-        .describe("How to respond to voice commands: voice (TTS), dm, or both"),
-      TTS_ENABLED: z
-        .boolean()
-        .default(true)
-        .describe("Enable Text-to-Speech responses in voice channel"),
-      TTS_LANGUAGE: z
-        .string()
-        .default("pt-BR")
-        .describe("Language for TTS (e.g., pt-BR, en-US)"),
-      SILENCE_THRESHOLD_MS: z
-        .number()
-        .default(1000)
-        .describe("Milliseconds of silence before processing audio"),
-      ELEVENLABS_API_KEY: z
-        .string()
-        .optional()
-        .describe(
-          "ElevenLabs API Key for high-quality TTS (if not set, uses Discord native TTS)",
-        ),
-      ELEVENLABS_VOICE_ID: z
-        .string()
-        .default("JBFqnCBsd6RMkjVDRZzb")
-        .describe("ElevenLabs Voice ID to use (default: George)"),
-    })
-    .optional()
-    .describe("Voice channel configuration for voice commands and TTS"),
 
   // HyperDX Configuration
   HYPERDX_API_KEY: z
