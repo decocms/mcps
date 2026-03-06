@@ -101,22 +101,37 @@ const THINKING_INTERVAL_MS = 800;
 function startThinkingAnimation(
   channel: string,
   messageTs: string,
-): { stop: () => void } {
+): { stop: () => void; start: () => void } {
   let frame = 0;
   let stopped = false;
+  let timer: ReturnType<typeof setInterval> | null = null;
 
-  const timer = setInterval(() => {
+  function tick() {
     if (stopped) return;
     frame = (frame + 1) % THINKING_FRAMES.length;
     updateThinkingMessage(channel, messageTs, THINKING_FRAMES[frame]).catch(
       () => {},
     );
-  }, THINKING_INTERVAL_MS);
+  }
+
+  timer = setInterval(tick, THINKING_INTERVAL_MS);
 
   return {
     stop() {
       stopped = true;
-      clearInterval(timer);
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    },
+    start() {
+      if (!stopped || timer) return;
+      stopped = false;
+      frame = 0;
+      updateThinkingMessage(channel, messageTs, THINKING_FRAMES[0]).catch(
+        () => {},
+      );
+      timer = setInterval(tick, THINKING_INTERVAL_MS);
     },
   };
 }
@@ -139,12 +154,20 @@ export async function callLLMWithStreaming(
   }
 
   const animation = startThinkingAnimation(channel, thinkingMessageTs);
+  let lastTextLength = 0;
 
   try {
     const response = await generateLLMResponseWithStreaming(
       messages,
       globalLLMConfig,
       async (text, isComplete) => {
+        if (!isComplete && text.length < lastTextLength) {
+          animation.start();
+          lastTextLength = 0;
+          return;
+        }
+        lastTextLength = text.length;
+
         animation.stop();
 
         const formattedText = formatForSlack(text);
