@@ -181,7 +181,7 @@ export async function callLLMWithoutStreaming(
     throw new Error("LLM not configured");
   }
 
-  const { channel, replyTo, useBlocks = true } = options;
+  const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
 
   const response = await generateLLMResponse(messages, globalLLMConfig);
   const formattedResponse = formatForSlack(response);
@@ -190,7 +190,14 @@ export async function callLLMWithoutStreaming(
       ? buildResponseBlocks(response, { addFeedbackButtons: false })
       : undefined;
 
-  if (replyTo) {
+  if (thinkingMessageTs) {
+    await updateThinkingMessage(
+      channel,
+      thinkingMessageTs,
+      formattedResponse,
+      blocks,
+    );
+  } else if (replyTo) {
     await replyInThread(channel, replyTo, formattedResponse, blocks);
   } else {
     await sendMessage({ channel, text: formattedResponse, blocks });

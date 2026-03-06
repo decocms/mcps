@@ -18,6 +18,7 @@ import {
   handleSlackEvent,
   configureLLM,
   clearLLMConfig,
+  configureStreaming,
 } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import type { ConnectionConfig } from "./lib/config-cache.ts";
@@ -363,6 +364,14 @@ async function processConnectionEventAsync(
       trace_id: traceId,
     });
   }
+
+  // Configure streaming based on connection's responseConfig
+  const showOnlyFinal =
+    connectionConfig.responseConfig?.showOnlyFinalResponse ?? false;
+  const enableStreaming = showOnlyFinal
+    ? false
+    : (connectionConfig.responseConfig?.enableStreaming ?? true);
+  configureStreaming(enableStreaming);
 
   const event = payload.event;
   const eventType = event.type;
