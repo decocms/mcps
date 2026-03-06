@@ -63,14 +63,15 @@ async function processLines(
       if (!state.hasActiveToolCycle && onStream) {
         await onStream(state.textContent, false);
       }
-    } else if (type === "tool-call") {
+    } else if (type === "tool-call" || type === "tool-input-start") {
       state.toolCallCount++;
       state.hasActiveToolCycle = true;
       state.textContent = "";
       console.log(
         `[MeshChat] Tool call #${state.toolCallCount}: ${parsed.toolName ?? "unknown"}`,
       );
-    } else if (type === "tool-result") {
+    } else if (type === "tool-result" || type === "tool-output-available") {
+      state.hasActiveToolCycle = false;
       console.log(
         `[MeshChat] Tool result for ${parsed.toolCallId ?? "unknown"}: ${JSON.stringify(
           parsed.result ?? parsed.output,
@@ -172,14 +173,18 @@ export async function collectFullStreamText(
       } else if (event.type === "text" && event.text) {
         textContent += event.text;
       } else if (
-        event.type === "tool-call" &&
+        (event.type === "tool-call" || event.type === "tool-input-start") &&
         event.toolCallId &&
         event.toolName
       ) {
         console.log(`[MeshChat] Tool call: ${event.toolName}`);
         toolCalls.push({ id: event.toolCallId, name: event.toolName });
         textContent = "";
-      } else if (event.type === "tool-result" && event.toolCallId) {
+      } else if (
+        (event.type === "tool-result" ||
+          event.type === "tool-output-available") &&
+        event.toolCallId
+      ) {
         const tc = toolCalls.find((t) => t.id === event.toolCallId);
         if (tc) tc.result = event.result ?? event.output;
       } else if (event.type === "finish") {

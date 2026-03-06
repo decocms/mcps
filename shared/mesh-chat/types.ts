@@ -35,16 +35,30 @@ export type StreamCallback = (
   isComplete: boolean,
 ) => Promise<void>;
 
+/**
+ * Events emitted by the Decopilot UI Message Stream (AI SDK v6).
+ *
+ * Key types:
+ * - text-start / text-delta / text-end: text content
+ * - reasoning-start / reasoning-delta / reasoning-end: model reasoning (ignored)
+ * - tool-input-start / tool-input-delta / tool-input-available: tool calls
+ * - tool-output-available: tool results
+ * - tool-call / tool-result: legacy tool events (AI SDK v3/v4)
+ * - finish / error: stream lifecycle
+ */
 export interface StreamEvent {
   type: string;
+  id?: string;
   delta?: string;
   text?: string;
   toolCallId?: string;
   toolName?: string;
   args?: string;
+  input?: unknown;
   result?: unknown;
   output?: unknown;
   error?: string;
+  errorText?: string;
   finishReason?: string;
 }
 
