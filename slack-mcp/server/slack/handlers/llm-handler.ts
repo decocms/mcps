@@ -101,43 +101,29 @@ const THINKING_INTERVAL_MS = 800;
 function startThinkingAnimation(
   channel: string,
   messageTs: string,
-): { stop: () => void; start: () => void } {
+): { stop: () => void } {
   let frame = 0;
   let stopped = false;
-  let timer: ReturnType<typeof setInterval> | null = null;
 
-  function tick() {
+  const timer = setInterval(() => {
     if (stopped) return;
     frame = (frame + 1) % THINKING_FRAMES.length;
     updateThinkingMessage(channel, messageTs, THINKING_FRAMES[frame]).catch(
       () => {},
     );
-  }
-
-  timer = setInterval(tick, THINKING_INTERVAL_MS);
+  }, THINKING_INTERVAL_MS);
 
   return {
     stop() {
       stopped = true;
-      if (timer) {
-        clearInterval(timer);
-        timer = null;
-      }
-    },
-    start() {
-      if (!stopped || timer) return;
-      stopped = false;
-      frame = 0;
-      updateThinkingMessage(channel, messageTs, THINKING_FRAMES[0]).catch(
-        () => {},
-      );
-      timer = setInterval(tick, THINKING_INTERVAL_MS);
+      clearInterval(timer);
     },
   };
 }
 
 /**
- * Call LLM with streaming and update Slack message in real-time
+ * Call LLM with streaming — animation runs until the final response is ready,
+ * then the thinking message is replaced with the complete text.
  */
 export async function callLLMWithStreaming(
   messages: MessageWithImages[],
@@ -154,34 +140,26 @@ export async function callLLMWithStreaming(
   }
 
   const animation = startThinkingAnimation(channel, thinkingMessageTs);
-  let lastTextLength = 0;
 
   try {
     const response = await generateLLMResponseWithStreaming(
       messages,
       globalLLMConfig,
       async (text, isComplete) => {
-        if (!isComplete && text.length < lastTextLength) {
-          animation.start();
-          lastTextLength = 0;
-          return;
-        }
-        lastTextLength = text.length;
+        if (!isComplete) return;
 
         animation.stop();
 
         const formattedText = formatForSlack(text);
-        const displayText = isComplete ? formattedText : formattedText + " ▌";
-
         const blocks =
-          isComplete && useBlocks && text.length > 500
+          useBlocks && text.length > 500
             ? buildResponseBlocks(text, { addFeedbackButtons: false })
             : undefined;
 
         await updateThinkingMessage(
           channel,
           thinkingMessageTs,
-          displayText,
+          formattedText,
           blocks,
         );
       },
