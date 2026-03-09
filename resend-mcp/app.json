@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "resend-mcp",
+  "friendlyName": "Resend",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-resend-mcp.decocache.com/mcp"
+  },
+  "description": "Send transactional and marketing emails via Resend API. Simple, reliable email delivery for your applications.",
+  "icon": "https://avatars.githubusercontent.com/u/70993596?s=200&v=4",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Communication", "Email"],
+    "official": false,
+    "tags": ["resend", "email", "transactional", "marketing", "smtp", "communication"],
+    "short_description": "Send emails via Resend API",
+    "mesh_description": "The Resend MCP provides seamless integration with Resend's email API, enabling AI agents to send transactional and marketing emails programmatically. Supports HTML and plain text emails, multiple recipients (to/cc/bcc), custom headers, and reply-to addresses. Perfect for building automated notification systems, email marketing workflows, contact form handlers, and transactional email triggers."
+  }
+}
