@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { saveVideo } from "./storage";
 import { ObjectStorage } from "../storage";
 import {
@@ -109,7 +109,7 @@ export interface GenerateToolConfig<
     input: GenerateVideoInput & { model: TModel };
     client: TClient;
   }) => Promise<GenerateVideoCallbackOutput>;
-  getContract: (env: TEnv) => {
+  getContract?: (env: TEnv) => {
     binding: Contract;
     clause: ContractClause;
   };
@@ -169,6 +169,7 @@ export interface CreateVideoGeneratorOptions<
     provider: string;
     description?: string;
     models?: readonly TModel[];
+    defaultModel?: TModel;
   };
   getStorage: (env: TEnv) => VideoGeneratorStorage;
   getClient?: (env: TEnv) => TClient;
@@ -178,7 +179,7 @@ export interface CreateVideoGeneratorOptions<
 }
 
 const MAX_VIDEO_GEN_RETRIES = 3;
-const MAX_VIDEO_GEN_TIMEOUT_MS = 360_000; // 6 minutes for video generation
+const MAX_VIDEO_GEN_TIMEOUT_MS = 660_000; // 11 minutes for video generation (polling + upload)
 
 export function createVideoGeneratorTools<
   TEnv extends VideoGeneratorEnv,
@@ -187,11 +188,17 @@ export function createVideoGeneratorTools<
 >(options: CreateVideoGeneratorOptions<TEnv, TClient, TModel>) {
   // Create schemas once, outside of tool functions
   const generateVideoInputSchema = options.metadata.models
-    ? createGenerateVideoInputSchema(options.metadata.models)
+    ? createGenerateVideoInputSchema(
+        options.metadata.models,
+        options.metadata.defaultModel,
+      )
     : GenerateVideoInputSchema;
 
   const extendVideoInputSchema = options.metadata.models
-    ? createExtendVideoInputSchema(options.metadata.models)
+    ? createExtendVideoInputSchema(
+        options.metadata.models,
+        options.metadata.defaultModel,
+      )
     : ExtendVideoInputSchema;
 
   const generateVideo = (env: TEnv) =>
@@ -204,16 +211,23 @@ export function createVideoGeneratorTools<
       outputSchema: GenerateVideoOutputSchema,
       execute: async ({ context }) => {
         const doExecute = async () => {
-          const contract = options.generateTool.getContract(env);
+          const contractConfig = options.generateTool.getContract?.(env);
 
-          const { transactionId } = await contract.binding.CONTRACT_AUTHORIZE({
-            clauses: [
-              {
-                clauseId: contract.clause.clauseId,
-                amount: contract.clause.amount,
-              },
-            ],
-          });
+          let transactionId: string | undefined;
+
+          // Only authorize contract if getContract is provided
+          if (contractConfig) {
+            const authResponse =
+              await contractConfig.binding.CONTRACT_AUTHORIZE({
+                clauses: [
+                  {
+                    clauseId: contractConfig.clause.clauseId,
+                    amount: contractConfig.clause.amount,
+                  },
+                ],
+              });
+            transactionId = authResponse.transactionId;
+          }
 
           const client = options.getClient?.(env) as TClient;
           const result = await options.generateTool.execute({
@@ -241,16 +255,19 @@ export function createVideoGeneratorTools<
             },
           });
 
-          await contract.binding.CONTRACT_SETTLE({
-            transactionId,
-            clauses: [
-              {
-                clauseId: contract.clause.clauseId,
-                amount: contract.clause.amount,
-              },
-            ],
-            vendorId: env.DECO_CHAT_WORKSPACE,
-          });
+          // Only settle contract if we authorized one
+          if (contractConfig && transactionId) {
+            await contractConfig.binding.CONTRACT_SETTLE({
+              transactionId,
+              clauses: [
+                {
+                  clauseId: contractConfig.clause.clauseId,
+                  amount: contractConfig.clause.amount,
+                },
+              ],
+              vendorId: env.DECO_CHAT_WORKSPACE,
+            });
+          }
 
           return {
             video: saveVideoResult.url,

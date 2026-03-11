@@ -1,72 +1,58 @@
 /**
- * This is the main entry point for your application and
- * MCP server. This is a Cloudflare workers app, and serves
- * your MCP server at /mcp.
+ * Veo MCP - Video Generation Server
+ *
+ * Entry point for the MCP server that generates videos
+ * using Google Gemini Veo models.
  */
-import { DefaultEnv, withRuntime } from "@decocms/runtime";
-import {
-  type Env as DecoEnv,
-  Scopes,
-  StateSchema,
-} from "../shared/deco.gen.ts";
+import { BindingOf, type DefaultEnv, withRuntime } from "@decocms/runtime";
+import { serve } from "@decocms/mcps-shared/serve";
+import { z } from "zod";
 
 import { tools } from "./tools/index.ts";
 
 /**
- * This Env type is the main context object that is passed to
- * all of your Application.
+ * State Schema defines the configuration users provide during installation.
  *
- * It includes all of the generated types from your
- * Deco bindings, along with the default ones.
+ * OBJECT_STORAGE is a binding to @deco/object-storage for video storage.
+ * GOOGLE_GENAI_API_KEY is the Google Gemini API key provided by the user.
  */
-export type Env = DefaultEnv &
-  DecoEnv & {
-    ASSETS: {
-      fetch: (request: Request, init?: RequestInit) => Promise<Response>;
-    };
-  };
-
-const runtime = withRuntime<Env, typeof StateSchema>({
-  oauth: {
-    /**
-     * These scopes define the asking permissions of your
-     * app when a user is installing it. When a user
-     * authorizes your app for using AI_GENERATE, you will
-     * now be able to use `env.AI_GATEWAY.AI_GENERATE`
-     * and utilize the user's own AI Gateway, without having to
-     * deploy your own, setup any API keys, etc.
-     */
-    scopes: [
-      Scopes.VEO3_CONTRACT.CONTRACT_AUTHORIZE,
-      Scopes.VEO3_CONTRACT.CONTRACT_SETTLE,
-      Scopes.FILE_SYSTEM.FS_READ,
-      Scopes.FILE_SYSTEM.FS_WRITE,
-    ],
-    /**
-     * The state schema of your Application defines what
-     * your installed App state will look like. When a user
-     * is installing your App, they will have to fill in
-     * a form with the fields defined in the state schema.
-     *
-     * This is powerful for building multi-tenant apps,
-     * where you can have multiple users and projects
-     * sharing different configurations on the same app.
-     *
-     * When you define a binding dependency on another app,
-     * it will automatically be linked to your StateSchema on
-     * type generation. You can also `.extend` it to add more
-     * fields to the state schema, like asking for an API Key
-     * for connecting to a third-party service.
-     */
-    state: StateSchema,
-  },
-  tools,
-  /**
-   * Fallback directly to assets for all requests that do not match a tool or auth.
-   * If you wanted to add custom api routes that dont make sense to be a tool,
-   * you can add them on this handler.
-   */
-  fetch: (req, env) => env.ASSETS.fetch(req),
+export const StateSchema = z.object({
+  OBJECT_STORAGE: BindingOf("@deco/object-storage").describe(
+    "Object storage binding (S3-compatible) for storing generated videos.",
+  ),
+  GOOGLE_GENAI_API_KEY: z
+    .string()
+    .describe(
+      "Google Gemini API key for accessing Veo video generation models",
+    ),
 });
 
-export default runtime;
+/**
+ * Environment type derived from the state schema.
+ * DefaultEnv resolves bindings (like OBJECT_STORAGE) into
+ * their actual MCP client interfaces at runtime.
+ *
+ * Extended with DECO_REQUEST_CONTEXT and DECO_CHAT_WORKSPACE
+ * required by createVideoGeneratorTools.
+ */
+export type Env = DefaultEnv<typeof StateSchema> & {
+  DECO_REQUEST_CONTEXT: {
+    ensureAuthenticated: () => any;
+  };
+  DECO_CHAT_WORKSPACE: string;
+};
+
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    state: StateSchema,
+    scopes: [
+      "OBJECT_STORAGE::GET_PRESIGNED_URL",
+      "OBJECT_STORAGE::PUT_PRESIGNED_URL",
+    ],
+  },
+  tools,
+});
+
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}

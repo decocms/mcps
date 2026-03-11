@@ -14,12 +14,11 @@ export const VideoDurationSchema = z.union([
 ]);
 export type VideoDuration = z.infer<typeof VideoDurationSchema>;
 
-// Generate Video Schemas
-export const GenerateVideoInputSchema = z.object({
+// Shared fields for video generation (excluding model)
+const generateVideoBaseFields = {
   prompt: z
     .string()
     .describe("The text prompt describing the video to generate"),
-  model: z.string().describe("Model identifier to use for video generation"),
   baseImageUrl: z
     .string()
     .nullable()
@@ -50,13 +49,28 @@ export const GenerateVideoInputSchema = z.object({
     .optional()
     .describe("Control person generation in video"),
   negativePrompt: z.string().optional().describe("What to avoid in generation"),
+};
+
+// Generate Video Schemas
+export const GenerateVideoInputSchema = z.object({
+  ...generateVideoBaseFields,
+  model: z.string().describe("Model identifier to use for video generation"),
 });
 
 export const createGenerateVideoInputSchema = <T extends string>(
   models: readonly T[],
+  defaultModel?: T,
 ) => {
-  return GenerateVideoInputSchema.extend({
-    model: z.enum(models as [T, ...T[]]),
+  return z.object({
+    ...generateVideoBaseFields,
+    model: defaultModel
+      ? z
+          .enum(models as [T, ...T[]])
+          .optional()
+          .describe(
+            `Model to use for video generation (default: ${defaultModel})`,
+          )
+      : z.enum(models as [T, ...T[]]),
   });
 };
 
@@ -109,17 +123,30 @@ export type ListVideosInput = z.infer<typeof ListVideosInputSchema>;
 export type ListVideosOutput = z.infer<typeof ListVideosOutputSchema>;
 
 // Extend Video Schemas
-export const ExtendVideoInputSchema = z.object({
+const extendVideoBaseFields = {
   videoId: z.string().describe("ID of the video to extend/remix"),
   prompt: z.string().describe("New prompt to guide the video extension"),
+};
+
+export const ExtendVideoInputSchema = z.object({
+  ...extendVideoBaseFields,
   model: z.string().describe("Model identifier to use for video extension"),
 });
 
 export const createExtendVideoInputSchema = <T extends string>(
   models: readonly T[],
+  defaultModel?: T,
 ) => {
-  return ExtendVideoInputSchema.extend({
-    model: z.enum(models as [T, ...T[]]),
+  return z.object({
+    ...extendVideoBaseFields,
+    model: defaultModel
+      ? z
+          .enum(models as [T, ...T[]])
+          .optional()
+          .describe(
+            `Model to use for video extension (default: ${defaultModel})`,
+          )
+      : z.enum(models as [T, ...T[]]),
   });
 };
 

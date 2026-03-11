@@ -5,15 +5,13 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { userTools } from "@decocms/mcps-shared/tools/user";
 import { veoTools } from "./veo.ts";
 
 // Convert veoTools object to array of tool functions
 const veoToolsArray = Object.values(veoTools);
 
 // Export all tools from all domains
-export const tools = [...userTools, ...veoToolsArray];
+export const tools = [...veoToolsArray];
 
 // Re-export domain-specific tools for direct access if needed
-export { userTools } from "@decocms/mcps-shared/tools/user";
 export { veoTools } from "./veo.ts";
