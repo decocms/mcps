@@ -1,8 +1,7 @@
-import { GEMINI_API_BASE_URL } from "../../constants";
-import { Env } from "server/main";
-import z from "zod";
+import { GEMINI_API_BASE_URL } from "../../constants.ts";
+import type { Env } from "server/main.ts";
+import { z } from "zod";
 import {
-  assertEnvKey,
   makeApiRequest,
   parseApiError,
   pollUntilComplete,
@@ -194,13 +193,21 @@ export const VideoMetadataSchema = z.object({
 
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
 
+function getApiKey(env: Env): string {
+  const apiKey = env.MESH_REQUEST_CONTEXT?.state?.GOOGLE_GENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_GENAI_API_KEY is not set in configuration");
+  }
+  return apiKey;
+}
+
 async function makeGeminiRequest(
   env: Env,
   endpoint: string,
   method: "GET" | "POST" = "POST",
   body?: any,
 ): Promise<any> {
-  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
+  const apiKey = getApiKey(env);
 
   const url = `${GEMINI_API_BASE_URL}${endpoint}`;
 
@@ -208,7 +215,7 @@ async function makeGeminiRequest(
     method,
     headers: {
       "Content-Type": "application/json",
-      "x-goog-api-key": env.GOOGLE_GENAI_API_KEY as string,
+      "x-goog-api-key": apiKey,
     },
   };
 
@@ -444,7 +451,7 @@ export async function getOperationStatus(
   env: Env,
   operationName: string,
 ): Promise<OperationResponse> {
-  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
+  const apiKey = getApiKey(env);
 
   const url = `${GEMINI_API_BASE_URL}/${operationName}`;
 
@@ -453,7 +460,7 @@ export async function getOperationStatus(
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "x-goog-api-key": env.GOOGLE_GENAI_API_KEY as string,
+      "x-goog-api-key": apiKey,
     },
   });
 
@@ -480,14 +487,14 @@ export async function downloadVideo(
   env: Env,
   videoUri: string,
 ): Promise<ReadableStream> {
-  assertEnvKey(env, "GOOGLE_GENAI_API_KEY");
+  const apiKey = getApiKey(env);
 
   console.log(`[downloadVideo] Starting stream download from URI: ${videoUri}`);
 
   // The URI already includes ?alt=media, so we need to append with &
   // URI format: https://generativelanguage.googleapis.com/v1beta/files/{fileId}:download?alt=media
   const separator = videoUri.includes("?") ? "&" : "?";
-  const url = `${videoUri}${separator}key=${env.GOOGLE_GENAI_API_KEY as string}`;
+  const url = `${videoUri}${separator}key=${apiKey}`;
 
   console.log(
     `[downloadVideo] Fetching from URL (key hidden): ${videoUri}${separator}key=***`,
@@ -496,7 +503,7 @@ export async function downloadVideo(
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "x-goog-api-key": env.GOOGLE_GENAI_API_KEY as string,
+      "x-goog-api-key": apiKey,
     },
   });
 

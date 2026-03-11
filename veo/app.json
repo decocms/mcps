@@ -1,0 +1,22 @@
+{
+  "scopeName": "deco",
+  "name": "veo",
+  "friendlyName": "Google Veo 3.1",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-veo.decocache.com/mcp"
+  },
+  "description": "Generate high-quality videos with audio using Google Gemini Veo 3 and Veo 3.1 models. Supports text-to-video, image-to-video, and video extension.",
+  "icon": "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg",
+  "unlisted": false,
+  "bindings": {
+    "OBJECT_STORAGE": "@deco/object-storage"
+  },
+  "metadata": {
+    "categories": ["AI"],
+    "official": false,
+    "tags": ["video-generation", "veo", "gemini", "ai", "text-to-video", "image-to-video", "google"],
+    "short_description": "Generate videos using Google Veo 3 and 3.1 models",
+    "mesh_description": "The Veo MCP provides AI-powered video generation using Google Gemini Veo 3 and Veo 3.1 models. This MCP enables AI agents to generate videos from text prompts, use reference images to guide generation, and extend existing videos. **Key Features** - Text-to-video generation with detailed prompts. **Image-to-Video** - Use reference images to guide video generation. **Video Extension** - Extend existing videos with new prompts. **Multiple Models** - Support for Veo 2.0, 3.0, and 3.1 models with different capabilities. **Aspect Ratios** - Support for 16:9 and 9:16 output dimensions. **Object Storage** - Automatic video storage via object storage binding."
+  }
+}

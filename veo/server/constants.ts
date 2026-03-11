@@ -7,4 +7,4 @@ export const VEO_MODELS_ENDPOINT = "/models";
 
 // Operation polling configuration
 export const OPERATION_POLL_INTERVAL_MS = 10000; // 10 seconds
-export const OPERATION_MAX_WAIT_MS = 360000; // 6 minutes
+export const OPERATION_MAX_WAIT_MS = 600000; // 10 minutes
