@@ -1,6 +1,7 @@
 const BASE_URL = "https://api.bfl.ai/v1";
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_TIME_MS = 120_000;
+const FETCH_TIMEOUT_MS = 30_000;
 
 interface GenerateResponse {
   id: string;
@@ -58,6 +59,7 @@ async function pollResult(
   while (Date.now() - startTime < MAX_POLL_TIME_MS) {
     const response = await fetch(pollingUrl, {
       headers: { "x-key": config.apiKey },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {

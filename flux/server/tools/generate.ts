@@ -57,6 +57,7 @@ export const createGenerateImageTool = (env: Env) =>
         .number()
         .min(64)
         .max(1440)
+        .multipleOf(32)
         .optional()
         .describe(
           "Image width in pixels (must be multiple of 32). Default: 1024. Not used with Kontext/Ultra models — use aspect_ratio instead.",
@@ -65,6 +66,7 @@ export const createGenerateImageTool = (env: Env) =>
         .number()
         .min(64)
         .max(1440)
+        .multipleOf(32)
         .optional()
         .describe(
           "Image height in pixels (must be multiple of 32). Default: 768. Not used with Kontext/Ultra models — use aspect_ratio instead.",
