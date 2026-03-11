@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "flux",
+  "friendlyName": "FLUX Image Generation",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-flux.decocache.com/mcp"
+  },
+  "description": "Generate images using Black Forest Labs FLUX models. Supports text-to-image generation with multiple FLUX model variants.",
+  "icon": "https://assets.decocache.com/mcp/flux.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["AI", "Image Generation"],
+    "official": false,
+    "tags": ["flux", "image-generation", "ai", "text-to-image", "black-forest-labs"],
+    "short_description": "Generate images with FLUX models from Black Forest Labs.",
+    "mesh_description": "The FLUX Image Generation MCP provides integration with Black Forest Labs' FLUX API for AI-powered image generation. This MCP enables agents to generate high-quality images from text prompts using various FLUX models including FLUX.2 Pro, FLUX.2 Max, FLUX Kontext, and more. Features include customizable image dimensions, output formats, seed control for reproducibility, reference images for style guidance, and multiple model options for different quality/speed tradeoffs. API key is configured in the MCP settings."
+  }
+}
