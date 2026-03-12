@@ -58,34 +58,55 @@ export const createListJobsTool = (env: Env) =>
     inputSchema: z.object({
       projectId: z.string().describe("Google Cloud project ID"),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Maximum number of jobs to return (default: 100)"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
       allUsers: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether to list jobs from all users (default: false)"),
       stateFilter: z
+
         .array(z.enum(["pending", "running", "done"]))
+
         .optional()
+
         .describe("Filter jobs by state"),
       projection: z
+
         .enum(["full", "minimal"])
+
         .optional()
+
         .describe("Level of detail to return (default: full)"),
     }),
     outputSchema: z.object({
       jobs: z.array(JobSchema).describe("List of jobs"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -129,8 +150,11 @@ export const createGetJobTool = (env: Env) =>
       projectId: z.string().describe("Google Cloud project ID"),
       jobId: z.string().describe("Job ID to retrieve"),
       location: z
+
         .string()
+
         .optional()
+
         .describe("Job location (e.g., 'US', 'EU')"),
     }),
     outputSchema: z.object({
@@ -139,17 +163,23 @@ export const createGetJobTool = (env: Env) =>
       status: JobStatusSchema.optional().describe("Job status"),
       statistics: JobStatisticsSchema.optional().describe("Job statistics"),
       configuration: z
+
         .object({
           jobType: z.string().optional().describe("Job type"),
           query: z
+
             .object({
               query: z.string().describe("SQL query text"),
               useLegacySql: z.boolean().optional(),
             })
+
             .optional()
+
             .describe("Query configuration"),
         })
+
         .optional()
+
         .describe("Job configuration"),
     }),
     execute: async ({ context }) => {

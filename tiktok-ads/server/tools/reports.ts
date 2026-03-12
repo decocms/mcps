@@ -59,10 +59,14 @@ const MetricSchema = z.enum([
 
 const ReportRowSchema = z.object({
   dimensions: z
+
     .record(z.string(), z.string())
+
     .describe("Dimension values (campaign_id, stat_time_day, etc.)"),
   metrics: z
+
     .record(z.string(), z.number())
+
     .describe("Metric values (spend, impressions, clicks, etc.)"),
 });
 
@@ -84,49 +88,77 @@ export const createGetReportTool = (env: Env) =>
       "Get performance report data for campaigns, ad groups, or ads. Supports custom date ranges, dimensions, and metrics.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       data_level: DataLevelSchema.describe(
         "Data level: AUCTION_ADVERTISER, AUCTION_CAMPAIGN, AUCTION_ADGROUP, AUCTION_AD",
       ),
       start_date: z
+
         .string()
+
         .describe("Start date (format: YYYY-MM-DD, required)"),
       end_date: z.string().describe("End date (format: YYYY-MM-DD, required)"),
       dimensions: z
+
         .array(DimensionSchema)
+
         .optional()
+
         .describe(
           "Dimensions to include: advertiser_id, campaign_id, adgroup_id, ad_id, stat_time_day, stat_time_hour",
         ),
       metrics: z
+
         .array(MetricSchema)
+
         .optional()
+
         .describe(
           "Metrics to include: spend, impressions, clicks, ctr, cpc, cpm, reach, conversion, etc. Default: all common metrics",
         ),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by campaign IDs"),
       adgroup_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by ad group IDs"),
       ad_ids: z.array(z.string()).optional().describe("Filter by ad IDs"),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50, max: 1000)"),
     }),
     outputSchema: z.object({
@@ -211,29 +243,48 @@ export const createGetCampaignReportTool = (env: Env) =>
       "Get performance report for campaigns. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
+
         .string()
+
         .describe("Start date (format: YYYY-MM-DD, required)"),
       end_date: z.string().describe("End date (format: YYYY-MM-DD, required)"),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by specific campaign IDs"),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50)"),
     }),
     outputSchema: z.object({
@@ -294,33 +345,55 @@ export const createGetAdGroupReportTool = (env: Env) =>
       "Get performance report for ad groups. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
+
         .string()
+
         .describe("Start date (format: YYYY-MM-DD, required)"),
       end_date: z.string().describe("End date (format: YYYY-MM-DD, required)"),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by campaign IDs"),
       adgroup_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by specific ad group IDs"),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50)"),
     }),
     outputSchema: z.object({
@@ -382,37 +455,62 @@ export const createGetAdReportTool = (env: Env) =>
       "Get performance report for individual ads. Returns spend, impressions, clicks, conversions and other metrics by day.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       start_date: z
+
         .string()
+
         .describe("Start date (format: YYYY-MM-DD, required)"),
       end_date: z.string().describe("End date (format: YYYY-MM-DD, required)"),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by campaign IDs"),
       adgroup_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by ad group IDs"),
       ad_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by specific ad IDs"),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50)"),
     }),
     outputSchema: z.object({
@@ -481,14 +579,18 @@ export const createGetAdvertiserInfoTool = (env: Env) =>
       "Get information about one or more advertisers, including name, status, balance, and timezone.",
     inputSchema: z.object({
       advertiser_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "List of advertiser IDs to retrieve (optional if configured in MCP)",
         ),
     }),
     outputSchema: z.object({
       advertisers: z
+
         .array(
           z.object({
             advertiser_id: z.string().describe("Advertiser ID"),
@@ -501,6 +603,7 @@ export const createGetAdvertiserInfoTool = (env: Env) =>
             create_time: z.string().describe("Account creation time"),
           }),
         )
+
         .describe("List of advertiser information"),
     }),
     execute: async ({ context }) => {

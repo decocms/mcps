@@ -23,12 +23,18 @@ const LabelSchema = z.object({
   name: z.string().describe("Label name"),
   type: z.enum(["system", "user"]).describe("Label type (system or user)"),
   messageListVisibility: z
+
     .enum(["show", "hide"])
+
     .optional()
+
     .describe("Show in message list"),
   labelListVisibility: z
+
     .enum(["labelShow", "labelShowIfUnread", "labelHide"])
+
     .optional()
+
     .describe("Show in label list"),
   messagesTotal: z.number().optional().describe("Total messages with label"),
   messagesUnread: z.number().optional().describe("Unread messages with label"),
@@ -50,7 +56,9 @@ export const createListLabelsTool = (env: Env) =>
     outputSchema: z.object({
       labels: z.array(LabelSchema).describe("List of all labels"),
       systemLabels: z
+
         .array(LabelSchema)
+
         .describe("System labels (INBOX, SENT, etc.)"),
       userLabels: z.array(LabelSchema).describe("User-created labels"),
     }),
@@ -110,20 +118,32 @@ export const createCreateLabelTool = (env: Env) =>
     inputSchema: z.object({
       name: z.string().describe("Label name (required)"),
       messageListVisibility: z
+
         .enum(["show", "hide"])
+
         .optional()
+
         .describe("Show label in message list (default: show)"),
       labelListVisibility: z
+
         .enum(["labelShow", "labelShowIfUnread", "labelHide"])
+
         .optional()
+
         .describe("Show label in label list (default: labelShow)"),
       backgroundColor: z
+
         .string()
+
         .optional()
+
         .describe("Background color hex code (e.g., '#ff0000')"),
       textColor: z
+
         .string()
+
         .optional()
+
         .describe("Text color hex code (e.g., '#ffffff')"),
     }),
     outputSchema: z.object({
@@ -171,12 +191,18 @@ export const createUpdateLabelTool = (env: Env) =>
       id: z.string().describe("Label ID to update"),
       name: z.string().optional().describe("New label name"),
       messageListVisibility: z
+
         .enum(["show", "hide"])
+
         .optional()
+
         .describe("Show in message list"),
       labelListVisibility: z
+
         .enum(["labelShow", "labelShowIfUnread", "labelHide"])
+
         .optional()
+
         .describe("Show in label list"),
       backgroundColor: z.string().optional().describe("New background color"),
       textColor: z.string().optional().describe("New text color"),

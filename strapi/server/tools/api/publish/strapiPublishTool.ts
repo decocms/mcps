@@ -29,12 +29,16 @@ export const createStrapiPublishContentTool = (env: Env) =>
       "Publica uma entrada de conteúdo no Strapi CMS, tornando-a publicamente acessível.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       documentId: z
+
         .string()
+
         .describe(
           "ID do documento a ser publicado (documentId ou id numérico)",
         ),
@@ -122,12 +126,16 @@ export const createStrapiUnpublishContentTool = (env: Env) =>
       "Despublica uma entrada de conteúdo no Strapi CMS, revertendo para rascunho.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       documentId: z
+
         .string()
+
         .describe(
           "ID do documento a ser despublicado (documentId ou id numérico)",
         ),
@@ -212,25 +220,35 @@ export const createStrapiGetContentByStatusTool = (env: Env) =>
       "Lista conteúdo filtrado por estado de publicação (rascunho ou publicado) no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       status: z
+
         .enum(["draft", "published"])
+
         .describe(
           "Estado de publicação: 'draft' (rascunho) ou 'published' (publicado)",
         ),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados (ex: 'createdAt:desc')"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({

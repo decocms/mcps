@@ -444,9 +444,11 @@ export function formatTextFilesForPrompt(textFiles: TextFile[]): string {
   if (textFiles.length === 0) return "";
 
   return textFiles
+
     .map((file) => {
       const language = file.language || "";
       return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
     })
+
     .join("\n\n");
 }

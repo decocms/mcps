@@ -30,7 +30,9 @@ export type Category = z.infer<typeof CategoryEnum>;
 export const StateSchema = z.object({
   database: z.object({
     apiUrl: z
+
       .string()
+
       .describe(
         "URL da API do MCP para executar queries SQL (ex: https://api.decocms.com/org/project/mcp/tool/DATABASES_RUN_SQL)",
       ),

@@ -227,6 +227,7 @@ function typeToJsonSchema(
     }
     return {
       anyOf: unionTypes
+
         .filter((t) => !t.isUndefined()) // Remove undefined from unions
         .map((t) => typeToJsonSchema(t, new Set(visited))),
     };
@@ -236,7 +237,9 @@ function typeToJsonSchema(
   if (type.isIntersection()) {
     return {
       allOf: type
+
         .getIntersectionTypes()
+
         .map((t) => typeToJsonSchema(t, new Set(visited))),
     };
   }

@@ -19,17 +19,23 @@ export const createCreateWebhookTool = (env: Env) =>
     description: "Create a webhook in a Discord channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         name: z.string().describe("Webhook name (1-80 characters)"),
         avatar: z
+
           .string()
+
           .optional()
+
           .describe("Avatar image URL (will be converted to base64)"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         token: z.string(),
@@ -37,6 +43,7 @@ export const createCreateWebhookTool = (env: Env) =>
         channel_id: z.string(),
         url: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -82,18 +89,27 @@ export const createListWebhooksTool = (env: Env) =>
     description: "List webhooks from a Discord channel or guild",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z
+
           .string()
+
           .optional()
+
           .describe("Channel ID (list channel webhooks)"),
         guild_id: z
+
           .string()
+
           .optional()
+
           .describe("Guild ID (list all guild webhooks)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         webhooks: z.array(
           z.object({
@@ -102,15 +118,18 @@ export const createListWebhooksTool = (env: Env) =>
             channel_id: z.string(),
             type: z.number(),
             user: z
+
               .object({
                 id: z.string(),
                 username: z.string(),
               })
+
               .optional(),
           }),
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -160,14 +179,19 @@ export const createDeleteWebhookTool = (env: Env) =>
     description: "Delete a Discord webhook",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         webhook_id: z.string().describe("The webhook ID"),
         webhook_token: z
+
           .string()
+
           .optional()
+
           .describe("Webhook token (if deleting without bot auth)"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -200,6 +224,7 @@ export const createExecuteWebhookTool = () =>
     description: "Send a message through a Discord webhook",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         webhook_id: z.string().describe("The webhook ID"),
         webhook_token: z.string().describe("The webhook token"),
@@ -207,6 +232,7 @@ export const createExecuteWebhookTool = () =>
         username: z.string().optional().describe("Override webhook username"),
         avatar_url: z.string().optional().describe("Override webhook avatar"),
         embeds: z
+
           .array(
             z.object({
               title: z.string().optional(),
@@ -215,6 +241,7 @@ export const createExecuteWebhookTool = () =>
               color: z.number().optional(),
               footer: z.object({ text: z.string() }).optional(),
               fields: z
+
                 .array(
                   z.object({
                     name: z.string(),
@@ -222,23 +249,32 @@ export const createExecuteWebhookTool = () =>
                     inline: z.boolean().optional(),
                   }),
                 )
+
                 .optional(),
             }),
           )
+
           .optional()
+
           .describe("Embed objects"),
         thread_id: z.string().optional().describe("Send to a thread"),
         wait: z
+
           .boolean()
+
           .default(false)
+
           .describe("Wait for message and return it"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message_id: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

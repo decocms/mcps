@@ -30,8 +30,11 @@ const ThreadSchema = z.object({
   snippet: z.string().optional().describe("Thread snippet"),
   historyId: z.string().optional().describe("History ID"),
   messages: z
+
     .array(ParsedMessageSchema)
+
     .optional()
+
     .describe("Messages in the thread"),
 });
 
@@ -46,30 +49,46 @@ export const createListThreadsTool = (env: Env) =>
       "List email conversations (threads) from Gmail. A conversation groups all related emails together (replies, forwards, etc.).",
     inputSchema: z.object({
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(500)
+
         .optional()
+
         .describe("Maximum number of threads to return (default: 50)"),
       pageToken: z.string().optional().describe("Token for pagination"),
       q: z
+
         .string()
+
         .optional()
+
         .describe(
           "Gmail search query (e.g., 'is:unread', 'from:john@example.com')",
         ),
       labelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by label IDs (e.g., ['INBOX'])"),
       includeSpamTrash: z
+
         .boolean()
+
         .optional()
+
         .describe("Include threads from SPAM and TRASH"),
     }),
     outputSchema: z.object({
       threads: z
+
         .array(
           z.object({
             id: z.string().describe("Thread ID"),
@@ -77,6 +96,7 @@ export const createListThreadsTool = (env: Env) =>
             historyId: z.string().optional().describe("History ID"),
           }),
         )
+
         .describe("List of threads"),
       nextPageToken: z.string().optional().describe("Token for next page"),
     }),
@@ -112,8 +132,11 @@ export const createGetThreadTool = (env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("Thread ID"),
       format: z
+
         .enum(["minimal", "full", "metadata"])
+
         .optional()
+
         .describe("Response format (default: full)"),
     }),
     outputSchema: z.object({
@@ -228,12 +251,18 @@ export const createModifyThreadTool = (env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("Thread ID"),
       addLabelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Labels to add to all messages in thread"),
       removeLabelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "Labels to remove from all messages (e.g., ['UNREAD'] to mark thread as read)",
         ),

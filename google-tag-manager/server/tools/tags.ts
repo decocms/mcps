@@ -40,33 +40,52 @@ const TagSchema = z.object({
   tagId: z.string().describe("Tag ID"),
   name: z.string().describe("Tag name"),
   type: z
+
     .string()
+
     .describe("Tag type (e.g., 'gtagua' for GA4, 'html' for Custom HTML)"),
   parameter: z.array(ParameterSchema).optional().describe("Tag parameters"),
   fingerprint: z.string().describe("Fingerprint for optimistic locking"),
   firingTriggerId: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Triggers that fire this tag"),
   blockingTriggerId: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Triggers that block this tag"),
   tagFiringOption: z
+
     .enum(["oncePerEvent", "oncePerLoad", "unlimited"])
+
     .optional(),
   notes: z.string().optional().describe("Tag notes"),
   scheduleStartMs: z
+
     .string()
+
     .optional()
+
     .describe("Schedule start time in milliseconds"),
   scheduleEndMs: z
+
     .string()
+
     .optional()
+
     .describe("Schedule end time in milliseconds"),
   liveOnly: z
+
     .boolean()
+
     .optional()
+
     .describe("Whether tag only fires in live mode"),
   tagManagerUrl: z.string().describe("Tag Manager URL for this tag"),
   parentFolderId: z.string().optional().describe("Parent folder ID"),
@@ -87,15 +106,21 @@ export const createListTagsTool = (env: Env) =>
       containerId: z.string().describe("Container ID (e.g., '67890')"),
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       tags: z.array(TagSchema).describe("List of tags"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -207,24 +232,37 @@ export const createCreateTagTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       name: z.string().describe("Tag name"),
       type: z
+
         .string()
+
         .describe("Tag type (e.g., 'gtagua' for GA4, 'html' for Custom HTML)"),
       parameter: z.array(ParameterSchema).optional().describe("Tag parameters"),
       firingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Trigger IDs that fire this tag"),
       blockingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Trigger IDs that block this tag"),
       tagFiringOption: z
+
         .enum(["oncePerEvent", "oncePerLoad", "unlimited"])
+
         .optional(),
       notes: z.string().optional().describe("Tag notes"),
       liveOnly: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether tag only fires in live mode"),
       parentFolderId: z.string().optional().describe("Parent folder ID"),
       paused: z.boolean().optional().describe("Whether tag starts paused"),
@@ -296,26 +334,39 @@ export const createUpdateTagTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       tagId: z.string().describe("Tag ID to update"),
       fingerprint: z
+
         .string()
+
         .describe("Current fingerprint for optimistic locking"),
       name: z.string().describe("Tag name"),
       type: z.string().describe("Tag type (e.g., 'html', 'gtagua')"),
       parameter: z.array(ParameterSchema).optional().describe("Tag parameters"),
       firingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Firing trigger IDs"),
       blockingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Blocking trigger IDs"),
       tagFiringOption: z
+
         .enum(["oncePerEvent", "oncePerLoad", "unlimited"])
+
         .optional(),
       notes: z.string().optional().describe("Tag notes"),
       liveOnly: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether tag only fires in live mode"),
       paused: z.boolean().optional().describe("Whether tag is paused"),
     }),

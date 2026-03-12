@@ -26,8 +26,11 @@ export const createCreateFolderTool = (env: Env) =>
     inputSchema: z.object({
       name: z.string().describe("Folder name"),
       parentId: z
+
         .string()
+
         .optional()
+
         .describe("Parent folder ID (root if not specified)"),
     }),
     outputSchema: z.object({
@@ -47,12 +50,18 @@ export const createListFolderContentsTool = (env: Env) =>
     description: "List all files and folders inside a specific folder.",
     inputSchema: z.object({
       folderId: z
+
         .string()
+
         .regex(/^[a-zA-Z0-9_-]+$|^root$/, "Invalid folder ID format")
+
         .describe("Folder ID (use 'root' for root folder)"),
       fileType: z
+
         .enum(["all", "folders", "files"])
+
         .optional()
+
         .describe("Filter by type"),
     }),
     outputSchema: z.object({

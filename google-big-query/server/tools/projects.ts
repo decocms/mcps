@@ -31,22 +31,34 @@ export const createListProjectsTool = (env: Env) =>
       "List all Google Cloud projects accessible to the authenticated user. Returns project IDs and friendly names. Use this to discover which projects you can query.",
     inputSchema: z.object({
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Maximum number of projects to return"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       projects: z.array(ProjectSchema).describe("List of projects"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
       totalItems: z.number().optional().describe("Total number of projects"),
     }),

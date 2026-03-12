@@ -12,17 +12,24 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
       "Can also filter by date range, tag, or owner email.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .optional()
+
         .describe(
           "Free-text search across title, participants, and intelligence notes",
         ),
       start_date: z
+
         .string()
+
         .optional()
         .describe("Recordings on or after this date (ISO 8601)"),
       end_date: z
+
         .string()
+
         .optional()
         .describe("Recordings on or before this date (ISO 8601)"),
       tag: z.string().optional().describe("Filter by exact tag"),
@@ -31,11 +38,17 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
         .optional()
         .describe("Filter by owner email (exact match)"),
       limit: z
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(100)
+
         .default(10)
+
         .optional()
         .describe("Max results (1-100, default 10)"),
     }),

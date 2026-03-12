@@ -23,6 +23,7 @@ export const VerboseTranscriptionResponseSchema = z.object({
   duration: z.number().optional(),
   text: z.string(),
   words: z
+
     .array(
       z.object({
         word: z.string(),
@@ -30,8 +31,10 @@ export const VerboseTranscriptionResponseSchema = z.object({
         end: z.number(),
       }),
     )
+
     .optional(),
   segments: z
+
     .array(
       z.object({
         id: z.number(),
@@ -46,6 +49,7 @@ export const VerboseTranscriptionResponseSchema = z.object({
         no_speech_prob: z.number().optional(),
       }),
     )
+
     .optional(),
 });
 

@@ -19,15 +19,22 @@ export const createSendMessageTool = (env: Env) =>
     description: "Send a message to a Discord channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z
+
           .string()
+
           .describe("The channel ID to send the message to"),
         content: z
+
           .string()
+
           .optional()
+
           .describe("The message content (up to 2000 characters)"),
         embeds: z
+
           .array(
             z.object({
               title: z.string().optional(),
@@ -38,6 +45,7 @@ export const createSendMessageTool = (env: Env) =>
               thumbnail: z.object({ url: z.string() }).optional(),
               image: z.object({ url: z.string() }).optional(),
               fields: z
+
                 .array(
                   z.object({
                     name: z.string(),
@@ -45,22 +53,28 @@ export const createSendMessageTool = (env: Env) =>
                     inline: z.boolean().optional(),
                   }),
                 )
+
                 .optional(),
             }),
           )
+
           .optional()
+
           .describe("Array of embed objects"),
         reply_to: z.string().optional().describe("Message ID to reply to"),
         tts: z.boolean().optional().describe("Whether this is a TTS message"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         channel_id: z.string(),
         content: z.string(),
         timestamp: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -108,22 +122,29 @@ export const createEditMessageTool = (env: Env) =>
     description: "Edit a message in a Discord channel",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID to edit"),
         content: z.string().optional().describe("The new message content"),
         embeds: z
+
           .array(z.object({}).passthrough())
+
           .optional()
+
           .describe("New embeds"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         content: z.string(),
         edited_timestamp: z.string().nullable(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -165,33 +186,48 @@ export const createDeleteMessageTool = (env: Env) =>
       "Delete one or more messages from a Discord channel. For multiple messages, they are deleted sequentially with automatic rate limit handling.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z
+
           .string()
+
           .optional()
+
           .describe("Single message ID to delete"),
         message_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe(
             "Array of message IDs to delete (processed sequentially with rate limit handling)",
           ),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for deletion (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         deleted_count: z.number(),
         failed_count: z.number(),
         errors: z
+
           .array(z.object({ message_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -283,27 +319,38 @@ export const createBulkDeleteMessagesTool = (env: Env) =>
       "Can delete 2-100 messages per call. For older messages, use DISCORD_DELETE_MESSAGE with message_ids array.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_ids: z
+
           .array(z.string())
+
           .min(2)
+
           .max(100)
+
           .describe(
             "Array of message IDs to delete (2-100, must be < 14 days old)",
           ),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for deletion (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         deleted_count: z.number(),
         message: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -378,41 +425,67 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
       "and individual delete for older messages. Can filter by user, bot messages, or content.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         limit: z
+
           .number()
+
           .min(1)
+
           .max(1000)
+
           .default(100)
+
           .describe("Maximum number of messages to delete (1-1000)"),
         user_id: z
+
           .string()
+
           .optional()
+
           .describe("Only delete messages from this user"),
         bots_only: z
+
           .boolean()
+
           .optional()
+
           .describe("Only delete messages from bots"),
         humans_only: z
+
           .boolean()
+
           .optional()
+
           .describe("Only delete messages from humans (non-bots)"),
         contains: z
+
           .string()
+
           .optional()
+
           .describe("Only delete messages containing this text"),
         before_id: z
+
           .string()
+
           .optional()
+
           .describe("Only delete messages before this message ID"),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for deletion (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         deleted_count: z.number(),
@@ -422,6 +495,7 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
         failed_count: z.number(),
         message: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -674,12 +748,15 @@ export const createGetMessageTool = (env: Env) =>
     description: "Get a specific message from a Discord channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         channel_id: z.string(),
@@ -694,6 +771,7 @@ export const createGetMessageTool = (env: Env) =>
         attachments: z.array(z.object({}).passthrough()),
         embeds: z.array(z.object({}).passthrough()),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { channel_id: string; message_id: string };
@@ -723,29 +801,46 @@ export const createGetChannelMessagesTool = (env: Env) =>
     description: "Get messages from a Discord channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         limit: z
+
           .number()
+
           .min(1)
+
           .max(100)
+
           .default(50)
+
           .describe("Number of messages (1-100)"),
         before: z
+
           .string()
+
           .optional()
+
           .describe("Get messages before this message ID"),
         after: z
+
           .string()
+
           .optional()
+
           .describe("Get messages after this message ID"),
         around: z
+
           .string()
+
           .optional()
+
           .describe("Get messages around this message ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         messages: z.array(
           z.object({
@@ -760,6 +855,7 @@ export const createGetChannelMessagesTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -807,14 +903,19 @@ export const createPinMessageTool = (env: Env) =>
     description: "Pin a message in a Discord channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID to pin"),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for pinning (audit log)"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -840,14 +941,19 @@ export const createUnpinMessageTool = (env: Env) =>
     description: "Unpin a message in a Discord channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID to unpin"),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for unpinning (audit log)"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -873,11 +979,14 @@ export const createGetPinnedMessagesTool = (env: Env) =>
     description: "Get all pinned messages from a Discord channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         messages: z.array(
           z.object({
@@ -889,6 +998,7 @@ export const createGetPinnedMessagesTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { channel_id: string };
@@ -924,15 +1034,19 @@ export const createAddReactionTool = (env: Env) =>
     description: "Add an emoji reaction to a Discord message",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID"),
         emoji: z
+
           .string()
+
           .describe(
             "The emoji (Unicode emoji or custom emoji in format name:id)",
           ),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -958,11 +1072,13 @@ export const createRemoveReactionTool = (env: Env) =>
     description: "Remove bot's reaction from a message",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID"),
         emoji: z.string().describe("The emoji to remove"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -988,19 +1104,27 @@ export const createGetReactionsTool = (env: Env) =>
     description: "Get users who reacted to a message with a specific emoji",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         message_id: z.string().describe("The message ID"),
         emoji: z.string().describe("The emoji"),
         limit: z
+
           .number()
+
           .min(1)
+
           .max(100)
+
           .default(25)
+
           .describe("Max users to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         users: z.array(
           z.object({
@@ -1011,6 +1135,7 @@ export const createGetReactionsTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

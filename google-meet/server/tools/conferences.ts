@@ -28,12 +28,18 @@ export const createListConferenceRecordsTool = (env: Env) =>
     description: "List conference records (past meetings).",
     inputSchema: z.object({
       filter: z
+
         .string()
+
         .optional()
+
         .describe("Filter (e.g., 'space.name=spaces/abc123')"),
       maxResults: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Max results (default 100)"),
     }),
     outputSchema: z.object({
@@ -64,7 +70,9 @@ export const createGetConferenceRecordTool = (env: Env) =>
     description: "Get details about a specific conference record.",
     inputSchema: z.object({
       name: z
+
         .string()
+
         .describe("Conference record name (e.g., 'conferenceRecords/abc123')"),
     }),
     outputSchema: z.object({

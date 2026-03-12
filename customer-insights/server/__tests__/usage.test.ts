@@ -34,7 +34,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -73,20 +73,24 @@ describe("customer_usage_get", () => {
       makeUsageRow("2025-02-01", 90000, 360000, 45),
     ];
     mockQuery.mockResolvedValueOnce(usageRows); // history
-    mockQuery.mockResolvedValueOnce([{
-      total_pageviews: BigInt(190000),
-      total_requests: BigInt(760000),
-      total_bandwidth: 95,
-      total_months: BigInt(2),
-    }]); // summary
-    mockQuery.mockResolvedValueOnce([{
-      avg_pageviews_recent_3m: 100000,
-      avg_pageviews_previous_3m: 80000,
-      avg_requests_recent_3m: 400000,
-      avg_requests_previous_3m: 320000,
-      avg_bandwidth_recent_3m: 50,
-      avg_bandwidth_previous_3m: 40,
-    }]); // trend
+    mockQuery.mockResolvedValueOnce([
+      {
+        total_pageviews: BigInt(190000),
+        total_requests: BigInt(760000),
+        total_bandwidth: 95,
+        total_months: BigInt(2),
+      },
+    ]); // summary
+    mockQuery.mockResolvedValueOnce([
+      {
+        avg_pageviews_recent_3m: 100000,
+        avg_pageviews_previous_3m: 80000,
+        avg_requests_recent_3m: 400000,
+        avg_requests_previous_3m: 320000,
+        avg_bandwidth_recent_3m: 50,
+        avg_bandwidth_previous_3m: 40,
+      },
+    ]); // trend
 
     const result = await capturedExecute({
       context: { customer_id: "1108", months: 12 },
@@ -101,20 +105,24 @@ describe("customer_usage_get", () => {
 
   it("deve retornar vazio quando não há dados de uso", async () => {
     mockQuery.mockResolvedValueOnce([]); // history vazio
-    mockQuery.mockResolvedValueOnce([{
-      total_pageviews: BigInt(0),
-      total_requests: BigInt(0),
-      total_bandwidth: 0,
-      total_months: BigInt(0),
-    }]); // summary
-    mockQuery.mockResolvedValueOnce([{
-      avg_pageviews_recent_3m: 0,
-      avg_pageviews_previous_3m: 0,
-      avg_requests_recent_3m: 0,
-      avg_requests_previous_3m: 0,
-      avg_bandwidth_recent_3m: 0,
-      avg_bandwidth_previous_3m: 0,
-    }]); // trend
+    mockQuery.mockResolvedValueOnce([
+      {
+        total_pageviews: BigInt(0),
+        total_requests: BigInt(0),
+        total_bandwidth: 0,
+        total_months: BigInt(0),
+      },
+    ]); // summary
+    mockQuery.mockResolvedValueOnce([
+      {
+        avg_pageviews_recent_3m: 0,
+        avg_pageviews_previous_3m: 0,
+        avg_requests_recent_3m: 0,
+        avg_requests_previous_3m: 0,
+        avg_bandwidth_recent_3m: 0,
+        avg_bandwidth_previous_3m: 0,
+      },
+    ]); // trend
 
     const result = await capturedExecute({
       context: { customer_id: "1108", months: 12 },
@@ -127,27 +135,31 @@ describe("customer_usage_get", () => {
 
   it("deve detectar anomalia de usage_drop quando PV cai > 25%", async () => {
     mockQuery.mockResolvedValueOnce([]); // history
-    mockQuery.mockResolvedValueOnce([{
-      total_pageviews: BigInt(50000),
-      total_requests: BigInt(200000),
-      total_bandwidth: 25,
-      total_months: BigInt(6),
-    }]); // summary
-    mockQuery.mockResolvedValueOnce([{
-      avg_pageviews_recent_3m: 30000,   // queda de 40%
-      avg_pageviews_previous_3m: 50000,
-      avg_requests_recent_3m: 120000,
-      avg_requests_previous_3m: 200000,
-      avg_bandwidth_recent_3m: 15,
-      avg_bandwidth_previous_3m: 25,
-    }]); // trend com queda
+    mockQuery.mockResolvedValueOnce([
+      {
+        total_pageviews: BigInt(50000),
+        total_requests: BigInt(200000),
+        total_bandwidth: 25,
+        total_months: BigInt(6),
+      },
+    ]); // summary
+    mockQuery.mockResolvedValueOnce([
+      {
+        avg_pageviews_recent_3m: 30000, // queda de 40%
+        avg_pageviews_previous_3m: 50000,
+        avg_requests_recent_3m: 120000,
+        avg_requests_previous_3m: 200000,
+        avg_bandwidth_recent_3m: 15,
+        avg_bandwidth_previous_3m: 25,
+      },
+    ]); // trend com queda
 
     const result = await capturedExecute({
       context: { customer_id: "1108", months: 12 },
     });
 
     const usageDropAnomaly = result.anomalies.find(
-      (a: any) => a.type === "usage_drop"
+      (a: any) => a.type === "usage_drop",
     );
     expect(usageDropAnomaly).toBeDefined();
     expect(usageDropAnomaly.severity).toBe("warning");
@@ -155,57 +167,63 @@ describe("customer_usage_get", () => {
 
   it("deve detectar anomalia de usage_spike quando PV sobe > 50%", async () => {
     mockQuery.mockResolvedValueOnce([]); // history
-    mockQuery.mockResolvedValueOnce([{
-      total_pageviews: BigInt(150000),
-      total_requests: BigInt(600000),
-      total_bandwidth: 75,
-      total_months: BigInt(6),
-    }]); // summary
-    mockQuery.mockResolvedValueOnce([{
-      avg_pageviews_recent_3m: 100000,  // crescimento de 100%
-      avg_pageviews_previous_3m: 50000,
-      avg_requests_recent_3m: 400000,
-      avg_requests_previous_3m: 200000,
-      avg_bandwidth_recent_3m: 50,
-      avg_bandwidth_previous_3m: 25,
-    }]); // trend com spike
+    mockQuery.mockResolvedValueOnce([
+      {
+        total_pageviews: BigInt(150000),
+        total_requests: BigInt(600000),
+        total_bandwidth: 75,
+        total_months: BigInt(6),
+      },
+    ]); // summary
+    mockQuery.mockResolvedValueOnce([
+      {
+        avg_pageviews_recent_3m: 100000, // crescimento de 100%
+        avg_pageviews_previous_3m: 50000,
+        avg_requests_recent_3m: 400000,
+        avg_requests_previous_3m: 200000,
+        avg_bandwidth_recent_3m: 50,
+        avg_bandwidth_previous_3m: 25,
+      },
+    ]); // trend com spike
 
     const result = await capturedExecute({
       context: { customer_id: "1108", months: 12 },
     });
 
     const spikeAnomaly = result.anomalies.find(
-      (a: any) => a.type === "usage_spike"
+      (a: any) => a.type === "usage_spike",
     );
     expect(spikeAnomaly).toBeDefined();
   });
 
   it("deve propagar erro quando cliente não é encontrado", async () => {
-    mockResolveCustomer.mockRejectedValueOnce(
-      new Error("Customer not found")
-    );
+    mockResolveCustomer.mockRejectedValueOnce(new Error("Customer not found"));
 
     await expect(
-      capturedExecute({ context: { customer_id: "9999", months: 12 } })
+      capturedExecute({ context: { customer_id: "9999", months: 12 } }),
     ).rejects.toThrow("Customer not found");
   });
 
   it("deve calcular summary e trend no mesmo recorte de months retornado no histórico", async () => {
     mockQuery.mockResolvedValueOnce([]); // history
-    mockQuery.mockResolvedValueOnce([{
-      total_pageviews: BigInt(0),
-      total_requests: BigInt(0),
-      total_bandwidth: 0,
-      total_months: BigInt(0),
-    }]); // summary
-    mockQuery.mockResolvedValueOnce([{
-      avg_pageviews_recent_3m: 0,
-      avg_pageviews_previous_3m: 0,
-      avg_requests_recent_3m: 0,
-      avg_requests_previous_3m: 0,
-      avg_bandwidth_recent_3m: 0,
-      avg_bandwidth_previous_3m: 0,
-    }]); // trend
+    mockQuery.mockResolvedValueOnce([
+      {
+        total_pageviews: BigInt(0),
+        total_requests: BigInt(0),
+        total_bandwidth: 0,
+        total_months: BigInt(0),
+      },
+    ]); // summary
+    mockQuery.mockResolvedValueOnce([
+      {
+        avg_pageviews_recent_3m: 0,
+        avg_pageviews_previous_3m: 0,
+        avg_requests_recent_3m: 0,
+        avg_requests_previous_3m: 0,
+        avg_bandwidth_recent_3m: 0,
+        avg_bandwidth_previous_3m: 0,
+      },
+    ]); // trend
 
     await capturedExecute({
       context: { customer_id: "1108", months: 6 },

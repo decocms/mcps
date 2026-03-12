@@ -551,7 +551,9 @@ export const StateSchema = z.object({
   SORA2_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/sora-f40f60c0cf2a361cb88c41daf826b26f")
+
       .default("@deco/sora-f40f60c0cf2a361cb88c41daf826b26f"),
   }),
   FILE_SYSTEM: z.object({

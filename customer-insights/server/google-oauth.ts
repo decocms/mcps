@@ -31,7 +31,9 @@ export function createGoogleOAuth(opts: { scopes: string[] }) {
       // can forward them to Google. They must be removed from redirect_uri (which
       // must stay clean) and set as top-level authorization URL parameters instead.
       const codeChallenge = callback.searchParams.get("code_challenge");
-      const codeChallengeMethod = callback.searchParams.get("code_challenge_method");
+      const codeChallengeMethod = callback.searchParams.get(
+        "code_challenge_method",
+      );
 
       // Google rejects redirect_uri when it includes reserved params like state,
       // code_challenge, or code_challenge_method.
@@ -53,7 +55,10 @@ export function createGoogleOAuth(opts: { scopes: string[] }) {
 
       if (codeChallenge) {
         url.searchParams.set("code_challenge", codeChallenge);
-        url.searchParams.set("code_challenge_method", codeChallengeMethod ?? "S256");
+        url.searchParams.set(
+          "code_challenge_method",
+          codeChallengeMethod ?? "S256",
+        );
       }
 
       return url.toString();
@@ -62,7 +67,9 @@ export function createGoogleOAuth(opts: { scopes: string[] }) {
       const redirectUriRaw =
         oauthParams.redirect_uri ?? oauthParams.redirectUri;
       if (!redirectUriRaw) {
-        throw new Error("Google token exchange failed: redirect_uri is missing");
+        throw new Error(
+          "Google token exchange failed: redirect_uri is missing",
+        );
       }
 
       // Keep the exact callback used in auth, but never include state in redirect_uri.

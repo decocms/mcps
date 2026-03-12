@@ -36,7 +36,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 const mockResolveByDomain = mock(() => Promise.resolve([]));
 
@@ -108,9 +108,7 @@ describe("customer_emails_get", () => {
 
   it("deve retornar customer_found=false quando nenhum customer encontrado", async () => {
     // Standard search sem customer
-    mockResolveCustomer.mockRejectedValueOnce(
-      new Error("Customer not found")
-    );
+    mockResolveCustomer.mockRejectedValueOnce(new Error("Customer not found"));
 
     // Quando resolveCustomer falha com ID, retorna customer_found=false
     // (A implementação atual pode variar — mas o erro deve ser tratado)
@@ -142,7 +140,11 @@ describe("customer_emails_get", () => {
     mockResolveByDomain.mockResolvedValueOnce([]);
 
     const result = await capturedExecute({
-      context: { customer_id: "1108", email_domain: "acme.com", max_results: 10 },
+      context: {
+        customer_id: "1108",
+        email_domain: "acme.com",
+        max_results: 10,
+      },
     });
 
     // email_domain tem prioridade (if emailDomain { ... } vem primeiro)

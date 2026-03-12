@@ -147,12 +147,19 @@ app.post("/discord/interactions/:connectionId", async (c) => {
       const guildId = payload.guild_id || null;
 
       const { data: dbCommand } = await client
+
         .from("discord_slash_commands")
+
         .select("*")
+
         .eq("connection_id", connectionId)
+
         .eq("command_name", command.command)
+
         .eq("guild_id", guildId)
+
         .eq("enabled", true)
+
         .single();
 
       if (!dbCommand) {

@@ -34,18 +34,23 @@ export const VideoResponseSchema = z.object({
   size: z.string().optional().describe("Video dimensions (e.g., '720x1280')"),
   duration: z.number().optional(),
   dimensions: z
+
     .object({
       width: z.number(),
       height: z.number(),
     })
+
     .optional(),
   url: z.string().optional(),
   error: z
+
     .object({
       code: z.string(),
       message: z.string(),
     })
+
     .nullable()
+
     .optional(),
 });
 

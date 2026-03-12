@@ -28,7 +28,9 @@ export function num(v: unknown): number {
 export function toDateOnly(value?: unknown): string | null {
   if (!value) return null;
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+    return Number.isNaN(value.getTime())
+      ? null
+      : value.toISOString().slice(0, 10);
   }
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return null;

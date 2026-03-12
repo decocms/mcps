@@ -14,7 +14,7 @@ import { query } from "../db.ts";
 import { resolveCustomer } from "./customer-resolver.ts";
 import { sanitize } from "./sanitize.ts";
 
-import { round2, num, clean } from "./utils.ts";
+import { round2, num, clean, escapeSqlLiteral } from "./utils.ts";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -53,17 +53,23 @@ export const createRiskScoreTool = (_env: Env) =>
       "Calculates a weighted churn risk score (0-10) for a customer based on payment delays, usage trends, overdue frequency, overage %, and tiering gap.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("Numeric customer ID (recommended, unique). E.g.: 1108."),
-      customer_name: z.string().optional()
-        .describe("Customer name (exact or partial search). E.g.: Paula. Warning: names are not unique — prefer customer_id."),
+      customer_name: z
+        .string()
+
+        .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
     }),
 
     outputSchema: z.object({
       customer: z.any(),
-      match_type: z.enum(["id", "exact", "partial"]),
+      match_type: z.enum(["exact", "partial"]),
       risk_score: z.number(),
-      risk_profile: z.enum(["stable", "moderate", "elevated", "high", "critical"]),
+      risk_profile: z.enum([
+        "stable",
+        "moderate",
+        "elevated",
+        "high",
+        "critical",
+      ]),
       factors: z.array(z.any()),
       issues: z.array(z.string()),
       recommended_actions: z.array(z.string()),
@@ -71,7 +77,6 @@ export const createRiskScoreTool = (_env: Env) =>
 
     execute: async ({ context }) => {
       const resolved = await resolveCustomer({
-        customer_id: clean(context.customer_id),
         customer_name: clean(context.customer_name),
       });
 
@@ -84,7 +89,7 @@ export const createRiskScoreTool = (_env: Env) =>
           pageviews,
           tier_40_cost, tier_50_cost, tier_80_cost
         FROM v_billing
-        WHERE id = ${resolved.customer.id}
+        WHERE name = '${escapeSqlLiteral(resolved.customer.name)}'
         ORDER BY reference_month DESC`,
       );
 
@@ -114,12 +119,17 @@ export const createRiskScoreTool = (_env: Env) =>
           const due = new Date(String(row.due_date));
           const paid = new Date(String(row.paid_date));
           if (!Number.isNaN(due.getTime()) && !Number.isNaN(paid.getTime())) {
-            const diffDays = Math.round((paid.getTime() - due.getTime()) / 86_400_000);
+            const diffDays = Math.round(
+              (paid.getTime() - due.getTime()) / 86_400_000,
+            );
             delays.push(diffDays);
           }
         }
       }
-      const avgDelay = delays.length > 0 ? delays.reduce((a, b) => a + b, 0) / delays.length : 0;
+      const avgDelay =
+        delays.length > 0
+          ? delays.reduce((a, b) => a + b, 0) / delays.length
+          : 0;
       // Normalize to 0-10: paying on time = 0, paying 30+ days late = 10.
       // Dividing by 3 means 30 days late maps exactly to a score of 10.
       const delayNorm = clamp(avgDelay / 3, 0, 10);
@@ -136,18 +146,25 @@ export const createRiskScoreTool = (_env: Env) =>
       const prevPV: number[] = [];
       for (let i = 0; i < Math.min(rows.length, 6); i++) {
         const pv = num(rows[i].pageviews);
-        if (i < 3) recentPV.push(pv);  // rows are DESC, so index 0-2 = most recent
+        if (i < 3)
+          recentPV.push(pv); // rows are DESC, so index 0-2 = most recent
         else prevPV.push(pv);
       }
-      const avgRecentPV = recentPV.length > 0 ? recentPV.reduce((a, b) => a + b, 0) / recentPV.length : 0;
-      const avgPrevPV = prevPV.length > 0 ? prevPV.reduce((a, b) => a + b, 0) / prevPV.length : 0;
+      const avgRecentPV =
+        recentPV.length > 0
+          ? recentPV.reduce((a, b) => a + b, 0) / recentPV.length
+          : 0;
+      const avgPrevPV =
+        prevPV.length > 0
+          ? prevPV.reduce((a, b) => a + b, 0) / prevPV.length
+          : 0;
       let usageChangePct = 0;
       if (avgPrevPV > 0) {
         usageChangePct = ((avgRecentPV - avgPrevPV) / avgPrevPV) * 100;
       }
       // Negate the percentage: a decline of -50% becomes +10 risk.
       // Dividing by 5 means a -50% drop maps exactly to a score of 10.
-      const usageNorm = clamp((-usageChangePct) / 5, 0, 10);
+      const usageNorm = clamp(-usageChangePct / 5, 0, 10);
       if (usageChangePct < -25) {
         issues.push(`Usage declined ${round2(Math.abs(usageChangePct))}%`);
         actions.push("Proactive outreach to understand engagement drop");
@@ -166,7 +183,9 @@ export const createRiskScoreTool = (_env: Env) =>
       // Multiplying by 20 means 50% overdue rate maps exactly to a score of 10.
       const overdueNorm = clamp(overdueRate * 20, 0, 10);
       if (overdueCount > 0) {
-        issues.push(`${overdueCount}/${totalInvoices} invoices unpaid (${round2(overdueRate * 100)}%)`);
+        issues.push(
+          `${overdueCount}/${totalInvoices} invoices unpaid (${round2(overdueRate * 100)}%)`,
+        );
         actions.push(`Follow up on ${overdueCount} overdue invoice(s)`);
       }
 
@@ -178,9 +197,13 @@ export const createRiskScoreTool = (_env: Env) =>
       let totalOverage = 0;
       for (const row of rows) {
         totalBilled += num(row.amount);
-        totalOverage += num(row.extra_pageviews_price) + num(row.extra_req_price) + num(row.extra_bw_price);
+        totalOverage +=
+          num(row.extra_pageviews_price) +
+          num(row.extra_req_price) +
+          num(row.extra_bw_price);
       }
-      const overagePct = totalBilled > 0 ? (totalOverage / totalBilled) * 100 : 0;
+      const overagePct =
+        totalBilled > 0 ? (totalOverage / totalBilled) * 100 : 0;
       // Dividing by 6 means 60% overage rate maps exactly to a score of 10.
       const overageNorm = clamp(overagePct / 6, 0, 10);
       if (overagePct > 40) {
@@ -201,7 +224,11 @@ export const createRiskScoreTool = (_env: Env) =>
         for (const row of recentRows) {
           const amount = num(row.amount);
           totalCurrent += amount;
-          const tiers = [num(row.tier_40_cost), num(row.tier_50_cost), num(row.tier_80_cost)].filter((t) => t > 0);
+          const tiers = [
+            num(row.tier_40_cost),
+            num(row.tier_50_cost),
+            num(row.tier_80_cost),
+          ].filter((t) => t > 0);
           if (tiers.length > 0) {
             hasTieringData = true;
             // Pick the cheapest alternative tier for this billing period
@@ -218,7 +245,9 @@ export const createRiskScoreTool = (_env: Env) =>
       // Dividing by 3 means a 30% gap maps exactly to a score of 10.
       const tieringNorm = clamp(tieringGapPct / 3, 0, 10);
       if (tieringGapPct > 15) {
-        issues.push(`Paying ${round2(tieringGapPct)}% more than the cheapest available tier`);
+        issues.push(
+          `Paying ${round2(tieringGapPct)}% more than the cheapest available tier`,
+        );
         actions.push("Present tiering optimization options to customer");
       }
 
@@ -228,7 +257,9 @@ export const createRiskScoreTool = (_env: Env) =>
         if (tieringGapPct > 15) {
           actions.push("Suggest plan upgrade to reduce overage costs");
         } else {
-          actions.push("Review billing structure and usage optimization; no cheaper tier identified");
+          actions.push(
+            "Review billing structure and usage optimization; no cheaper tier identified",
+          );
         }
       }
 
@@ -274,9 +305,10 @@ export const createRiskScoreTool = (_env: Env) =>
           raw_value: round2(tieringGapPct),
           normalized: round2(tieringNorm),
           weighted_contribution: round2(tieringNorm * 0.15),
-          description: tieringGapPct > 0
-            ? `Paying ${round2(tieringGapPct)}% above cheapest tier`
-            : "Already on optimal or near-optimal tier",
+          description:
+            tieringGapPct > 0
+              ? `Paying ${round2(tieringGapPct)}% above cheapest tier`
+              : "Already on optimal or near-optimal tier",
         },
       ];
 

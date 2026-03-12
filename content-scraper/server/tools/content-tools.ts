@@ -52,22 +52,33 @@ export const getListArticlesTool = (env: Env) =>
     description: "Lists scraped blog articles, ordered by score.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(20)
+
         .describe("Limit of articles (default: 20)"),
       include_blog_info: z
+
         .boolean()
+
         .optional()
+
         .default(false)
+
         .describe("If true, includes blog information with each article"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       total: z.number().optional(),
       articles: z
+
         .array(
           z.object({
             id: z.string(),
@@ -77,14 +88,17 @@ export const getListArticlesTool = (env: Env) =>
             post_score: z.string(),
             summary: z.string(),
             blog: z
+
               .object({
                 name: z.string(),
                 type: z.string(),
                 authority: z.string(),
               })
+
               .optional(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -189,15 +203,24 @@ export const getListLinkedInPostsTool = (env: Env) =>
     description: "Lists scraped LinkedIn posts, ordered by relevance score.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(20)
+
         .describe("Limit of posts (default: 20)"),
       week: z
+
         .string()
+
         .optional()
+
         .describe(
           "Filter by week in format YYYY-wWW (e.g., 2026-w05). Optional.",
         ),
@@ -207,6 +230,7 @@ export const getListLinkedInPostsTool = (env: Env) =>
       total: z.number().optional(),
       filter: z.string().optional(),
       posts: z
+
         .array(
           z.object({
             id: z.number(),
@@ -224,6 +248,7 @@ export const getListLinkedInPostsTool = (env: Env) =>
             week: z.string().nullable(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -301,15 +326,24 @@ export const getListRedditPostsTool = (env: Env) =>
     description: "Lists scraped Reddit posts, ordered by relevance score.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(20)
+
         .describe("Limit of posts (default: 20)"),
       subreddit: z
+
         .string()
+
         .optional()
+
         .describe("Filter by specific subreddit (without 'r/'). Optional."),
     }),
     outputSchema: z.object({
@@ -317,6 +351,7 @@ export const getListRedditPostsTool = (env: Env) =>
       total: z.number().optional(),
       filter: z.string().optional(),
       posts: z
+
         .array(
           z.object({
             id: z.number(),
@@ -333,6 +368,7 @@ export const getListRedditPostsTool = (env: Env) =>
             week: z.string().nullable(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -408,6 +444,7 @@ export const getGetStatsTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean(),
       sources: z
+
         .object({
           blogs: z.number(),
           linkedin_profiles: z.number(),
@@ -415,13 +452,16 @@ export const getGetStatsTool = (env: Env) =>
           reddit_subreddits: z.number(),
           reddit_subreddits_active: z.number(),
         })
+
         .optional(),
       content: z
+
         .object({
           articles: z.number(),
           linkedin_posts: z.number(),
           reddit_posts: z.number(),
         })
+
         .optional(),
       averageAuthority: z.string().optional(),
       error: z.string().optional(),

@@ -22,6 +22,7 @@ export const getBlogPostSkillTool = (_env: Env) =>
       "Includes: schema reference, HTML format, structure patterns, tool examples, and common mistakes.",
     inputSchema: z.object({
       section: z
+
         .enum([
           "all",
           "schema",
@@ -32,14 +33,18 @@ export const getBlogPostSkillTool = (_env: Env) =>
           "images",
           "mistakes",
         ])
+
         .default("all")
+
         .describe(
           "Which section of the skill to return. 'all' returns the complete guide.",
         ),
     }),
     outputSchema: z.object({
       skill: z
+
         .string()
+
         .describe("The weekly digest writing skill/guide content"),
       section: z.string().describe("The section that was returned"),
     }),

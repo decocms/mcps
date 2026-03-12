@@ -23,8 +23,11 @@ export function columnNumberToLetter(num: number): string {
  */
 export function columnLetterToNumber(letters: string): number {
   return letters
+
     .toUpperCase()
+
     .split("")
+
     .reduce((r, c) => r * 26 + c.charCodeAt(0) - 64, 0);
 }
 

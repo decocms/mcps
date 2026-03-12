@@ -49,12 +49,16 @@ export const createCreatePermissionTool = (env: Env) =>
     description:
       "Share a file/folder with a user, group, domain, or make it public.",
     inputSchema: z
+
       .object({
         fileId: z.string().describe("File or folder ID"),
         type: z
+
           .enum(["user", "group", "domain", "anyone"])
+
           .describe("Who to share with"),
         role: z
+
           .enum([
             "owner",
             "organizer",
@@ -63,24 +67,38 @@ export const createCreatePermissionTool = (env: Env) =>
             "commenter",
             "reader",
           ])
+
           .describe("Permission level"),
         emailAddress: z
+
           .string()
+
           .optional()
+
           .describe("Email (required for user/group type)"),
         domain: z
+
           .string()
+
           .optional()
+
           .describe("Domain (required for domain type)"),
         sendNotification: z
+
           .boolean()
+
           .optional()
+
           .describe("Send email notification (default true)"),
         emailMessage: z
+
           .string()
+
           .optional()
+
           .describe("Custom message for notification email"),
       })
+
       .refine(
         (data) => {
           if (data.type === "user" || data.type === "group") {
@@ -144,11 +162,16 @@ export const createShareFileTool = (env: Env) =>
       fileId: z.string().describe("File ID"),
       email: z.string().describe("Email address to share with"),
       role: z
+
         .enum(["writer", "commenter", "reader"])
+
         .describe("Permission level"),
       sendNotification: z
+
         .boolean()
+
         .optional()
+
         .describe("Send email notification"),
       message: z.string().optional().describe("Custom message"),
     }),
@@ -179,8 +202,11 @@ export const createGetSharingLinkTool = (env: Env) =>
     inputSchema: z.object({
       fileId: z.string().describe("File ID"),
       makePublic: z
+
         .boolean()
+
         .optional()
+
         .describe("Make file publicly accessible via link"),
     }),
     outputSchema: z.object({

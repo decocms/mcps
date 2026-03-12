@@ -579,7 +579,9 @@ export const StateSchema = z.object({
   PINECONE_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/pinecone-01ec759d28a7f0a0519974dcbafcc5d6")
+
       .default("@deco/pinecone-01ec759d28a7f0a0519974dcbafcc5d6"),
   }),
 });

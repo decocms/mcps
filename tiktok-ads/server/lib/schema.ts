@@ -7,24 +7,34 @@ import { z } from "zod";
 export const StateSchema = z.object({
   // TikTok App Credentials
   TIKTOK_CREDENTIALS: z
+
     .object({
       accessToken: z
+
         .string()
+
         .describe(
           "TikTok Access Token - Obtenha em TikTok Developer Portal > Tools > Access Token",
         ),
     })
+
     .describe("TikTok App credentials from business-api.tiktok.com"),
 
   // General Configuration
   CONFIG: z
+
     .object({
       DEFAULT_ADVERTISER_ID: z
+
         .string()
+
         .optional()
+
         .describe("Default Advertiser ID to use in tools if not provided"),
     })
+
     .optional()
+
     .describe("General configuration settings"),
 });
 

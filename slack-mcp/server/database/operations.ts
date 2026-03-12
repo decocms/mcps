@@ -20,9 +20,13 @@ export async function saveConnectionConfig(
 
   // Check if connection already exists
   const existing = await db.db
+
     .selectFrom("slack_connections")
+
     .where("connection_id", "=", config.connectionId)
+
     .selectAll()
+
     .executeTakeFirst();
 
   const row: Partial<SlackConnectionRow> = {
@@ -44,9 +48,13 @@ export async function saveConnectionConfig(
   if (existing) {
     // Update existing connection
     await db.db
+
       .updateTable("slack_connections")
+
       .set(row)
+
       .where("connection_id", "=", config.connectionId)
+
       .execute();
 
     console.log(
@@ -55,11 +63,14 @@ export async function saveConnectionConfig(
   } else {
     // Insert new connection
     await db.db
+
       .insertInto("slack_connections")
+
       .values({
         ...row,
         configured_at: now,
       } as SlackConnectionRow)
+
       .execute();
 
     console.log(
@@ -77,9 +88,13 @@ export async function loadConnectionConfig(
   const db = getDb(process.env.DATABASE_URL);
 
   const row = await db.db
+
     .selectFrom("slack_connections")
+
     .where("connection_id", "=", connectionId)
+
     .selectAll()
+
     .executeTakeFirst();
 
   if (!row) {
@@ -116,8 +131,11 @@ export async function loadAllConnectionConfigs(): Promise<ConnectionConfig[]> {
   const db = getDb(process.env.DATABASE_URL);
 
   const rows = await db.db
+
     .selectFrom("slack_connections")
+
     .selectAll()
+
     .execute();
 
   return rows.map((row) => ({
@@ -147,8 +165,11 @@ export async function deleteConnectionConfig(
   const db = getDb(process.env.DATABASE_URL);
 
   await db.db
+
     .deleteFrom("slack_connections")
+
     .where("connection_id", "=", connectionId)
+
     .execute();
 
   console.log(`[Database] 🗑️ Deleted connection config: ${connectionId}`);
@@ -161,8 +182,11 @@ export async function countConnections(): Promise<number> {
   const db = getDb(process.env.DATABASE_URL);
 
   const result = await db.db
+
     .selectFrom("slack_connections")
+
     .select((eb) => eb.fn.count("connection_id").as("count"))
+
     .executeTakeFirst();
 
   return Number(result?.count || 0);
@@ -177,9 +201,13 @@ export async function loadConnectionByTeamId(
   const db = getDb(process.env.DATABASE_URL);
 
   const row = await db.db
+
     .selectFrom("slack_connections")
+
     .where("team_id", "=", teamId)
+
     .selectAll()
+
     .executeTakeFirst();
 
   if (!row) {

@@ -20,6 +20,7 @@ export const GeminiVisionResponseSchema = z.object({
       finishReason: z.string().optional(),
       index: z.number().optional(),
       safetyRatings: z
+
         .array(
           z.object({
             category: z.string(),
@@ -27,12 +28,15 @@ export const GeminiVisionResponseSchema = z.object({
             blocked: z.boolean().optional(),
           }),
         )
+
         .optional(),
     }),
   ),
   promptFeedback: z
+
     .object({
       safetyRatings: z
+
         .array(
           z.object({
             category: z.string(),
@@ -40,16 +44,20 @@ export const GeminiVisionResponseSchema = z.object({
             blocked: z.boolean().optional(),
           }),
         )
+
         .optional(),
       blockReason: z.string().optional(),
     })
+
     .optional(),
   usageMetadata: z
+
     .object({
       promptTokenCount: z.number().optional(),
       candidatesTokenCount: z.number().optional(),
       totalTokenCount: z.number().optional(),
     })
+
     .optional(),
 });
 

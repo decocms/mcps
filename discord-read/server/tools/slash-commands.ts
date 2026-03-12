@@ -35,13 +35,16 @@ const CommandOptionSchema = z.object({
   type: OptionTypeSchema.describe("Option type"),
   required: z.boolean().default(false).describe("Is this option required?"),
   choices: z
+
     .array(
       z.object({
         name: z.string().describe("Choice display name"),
         value: z.union([z.string(), z.number()]).describe("Choice value"),
       }),
     )
+
     .optional()
+
     .describe("Predefined choices for this option"),
 });
 
@@ -246,24 +249,36 @@ export const createListSlashCommandsTool = (_env: Env) =>
       "List slash commands from database, Discord API, or both. Use 'source' parameter to choose.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         source: z
+
           .enum(["database", "discord", "both"])
+
           .default("database")
+
           .describe(
             "Source to list from: 'database' (local DB), 'discord' (Discord API), or 'both' (shows sync status)",
           ),
         guildId: z
+
           .string()
+
           .optional()
+
           .describe("Filter by guild ID (omit for global commands)"),
         enabled: z
+
           .boolean()
+
           .optional()
+
           .describe("Filter by enabled status (database only)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         commands: z.array(
@@ -284,6 +299,7 @@ export const createListSlashCommandsTool = (_env: Env) =>
         ),
         message: z.string().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
@@ -314,9 +330,13 @@ export const createListSlashCommandsTool = (_env: Env) =>
           }
 
           let query = client
+
             .from("discord_slash_commands")
+
             .select("*")
+
             .eq("connection_id", connectionId)
+
             .order("created_at", { ascending: false });
 
           if (guildId !== undefined) {
@@ -515,43 +535,65 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
       "Register a new slash command with Discord. The command will be saved to database and registered with Discord API.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         commandName: z
+
           .string()
+
           .min(1)
+
           .max(32)
+
           .regex(/^[\w-]+$/)
+
           .describe(
             "Command name (lowercase, no spaces, 1-32 characters, alphanumeric + hyphens/underscores)",
           ),
         description: z
+
           .string()
+
           .min(1)
+
           .max(100)
+
           .describe("Command description (1-100 characters)"),
         options: z
+
           .array(CommandOptionSchema)
+
           .optional()
+
           .describe("Command options/parameters"),
         guildId: z
+
           .string()
+
           .optional()
+
           .describe(
             "Guild ID for guild-specific command (omit for global command)",
           ),
         enabled: z
+
           .boolean()
+
           .default(true)
+
           .describe("Enable command immediately after registration"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         commandId: z.string().optional(),
         discordCommandId: z.string().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
@@ -609,7 +651,9 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
 
         // Save to database
         const { data, error } = await client
+
           .from("discord_slash_commands")
+
           .insert({
             connection_id: connectionId,
             command_id: discordResult.commandId,
@@ -619,7 +663,9 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
             guild_id: guildId || null,
             enabled: enabled ?? true,
           })
+
           .select()
+
           .single();
 
         if (error) {
@@ -657,17 +703,23 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
       "Delete a slash command from Discord and database. Use the command ID from DISCORD_LIST_SLASH_COMMANDS.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         commandId: z
+
           .string()
+
           .describe("Command ID (from database, not Discord command ID)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
@@ -687,10 +739,15 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
       try {
         // Get command details first
         const { data: command, error: fetchError } = await client
+
           .from("discord_slash_commands")
+
           .select("*")
+
           .eq("id", commandId)
+
           .eq("connection_id", connectionId)
+
           .single();
 
         if (fetchError || !command) {
@@ -731,9 +788,13 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
 
         // Delete from database
         const { error: deleteError } = await client
+
           .from("discord_slash_commands")
+
           .delete()
+
           .eq("id", commandId)
+
           .eq("connection_id", connectionId);
 
         if (deleteError) {
@@ -767,16 +828,20 @@ export const createToggleSlashCommandTool = (_env: Env) =>
       "Enable or disable a slash command. Disabled commands are not deleted but won't be processed.",
     annotations: { destructiveHint: false },
     inputSchema: z
+
       .object({
         commandId: z.string().describe("Command ID (from database)"),
         enabled: z.boolean().describe("Enable (true) or disable (false)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
@@ -798,14 +863,20 @@ export const createToggleSlashCommandTool = (_env: Env) =>
 
       try {
         const { data, error } = await client
+
           .from("discord_slash_commands")
+
           .update({
             enabled: enabled,
             updated_at: new Date().toISOString(),
           })
+
           .eq("id", commandId)
+
           .eq("connection_id", connectionId)
+
           .select("command_name")
+
           .single();
 
         if (error || !data) {
@@ -840,29 +911,41 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
       "Sync slash commands between Discord API and database. Can import missing commands from Discord to DB, or clean orphaned commands from DB.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         action: z
+
           .enum(["import", "clean", "full-sync"])
+
           .describe(
             "'import' (add Discord commands to DB), 'clean' (remove DB commands not in Discord), 'full-sync' (both)",
           ),
         guildId: z
+
           .string()
+
           .optional()
+
           .describe("Guild ID to sync (omit for global commands)"),
         dryRun: z
+
           .boolean()
+
           .default(false)
+
           .describe("Preview changes without applying them"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         imported: z.number().optional(),
         cleaned: z.number().optional(),
         changes: z
+
           .array(
             z.object({
               action: z.string(),
@@ -870,8 +953,10 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
               commandId: z.string().optional(),
             }),
           )
+
           .optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env, context } = params;
@@ -928,8 +1013,11 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
 
         // Fetch from database
         let query = client
+
           .from("discord_slash_commands")
+
           .select("*")
+
           .eq("connection_id", connectionId);
 
         if (guildId !== undefined) {
@@ -1007,8 +1095,11 @@ export const createSyncSlashCommandsTool = (_env: Env) =>
 
               if (!dryRun) {
                 await client
+
                   .from("discord_slash_commands")
+
                   .delete()
+
                   .eq("id", dbCmd.id);
                 cleaned++;
               }

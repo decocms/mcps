@@ -44,11 +44,17 @@ export const createListDraftsTool = (env: Env) =>
       "List all draft emails saved in Gmail. Drafts are unsent emails that can be edited or sent later.",
     inputSchema: z.object({
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(500)
+
         .optional()
+
         .describe("Maximum number of drafts to return (default: 50)"),
       pageToken: z.string().optional().describe("Token for pagination"),
       q: z.string().optional().describe("Gmail search query to filter drafts"),
@@ -128,7 +134,9 @@ export const createCreateDraftTool = (env: Env) =>
       to: z.string().describe("Recipient email address (required)"),
       subject: z.string().describe("Email subject (required)"),
       body: z
+
         .string()
+
         .describe("Email body content (HTML supported, required)"),
       cc: z.string().optional().describe("CC recipients (comma-separated)"),
       bcc: z.string().optional().describe("BCC recipients (comma-separated)"),

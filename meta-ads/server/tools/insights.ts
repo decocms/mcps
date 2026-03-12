@@ -32,44 +32,65 @@ Can break down results by age, gender, country, device, etc.
 Use date_preset for common time ranges (last_7d, last_30d, etc) or time_range for custom dates.`,
     inputSchema: z.object({
       object_id: z
+
         .string()
+
         .describe(
           "ID of the account (act_XXX), campaign, ad set, or ad to get insights for",
         ),
       date_preset: z
+
         .enum(TIME_PRESETS)
+
         .optional()
+
         .describe(
           "Predefined time range: today, yesterday, last_7d, last_14d, last_28d, last_30d, last_90d, this_month, last_month, this_quarter, last_quarter, this_year, last_year, lifetime",
         ),
       time_range_since: z
+
         .string()
+
         .optional()
+
         .describe(
           "Start date for custom time range (format: YYYY-MM-DD). Requires time_range_until.",
         ),
       time_range_until: z
+
         .string()
+
         .optional()
+
         .describe(
           "End date for custom time range (format: YYYY-MM-DD). Requires time_range_since.",
         ),
       breakdowns: z
+
         .array(z.enum(VALID_BREAKDOWNS))
+
         .optional()
+
         .describe(
           "Break down results by: age, gender, country, region, dma, impression_device, device_platform, platform_position, publisher_platform, product_id",
         ),
       level: z
+
         .enum(["account", "campaign", "adset", "ad"])
+
         .optional()
+
         .describe(
           "Level of aggregation when querying an account. Default: aggregate all.",
         ),
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(100)
+
         .describe(
           "Maximum number of insight rows to return (default: 100, useful when using breakdowns)",
         ),

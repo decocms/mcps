@@ -64,37 +64,63 @@ export const createListAdsTool = (env: Env) =>
       "List all ads for an advertiser with optional filters for campaign, ad group, name, and status.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by campaign IDs"),
       adgroup_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by ad group IDs"),
       ad_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by specific ad IDs"),
       ad_name: z
+
         .string()
+
         .optional()
+
         .describe("Filter by ad name (partial match)"),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50, max: 1000)"),
     }),
     outputSchema: z.object({
@@ -142,8 +168,11 @@ export const createGetAdTool = (env: Env) =>
     description: "Get detailed information about a specific ad by its ID.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       ad_id: z.string().describe("Ad ID to retrieve"),
     }),
@@ -184,8 +213,11 @@ export const createCreateAdTool = (env: Env) =>
       "Create a new ad within an ad group. Requires advertiser ID, ad group ID, name, and ad format.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       adgroup_id: z.string().describe("Ad Group ID (required)"),
       ad_name: z.string().describe("Ad name (required)"),
@@ -193,39 +225,64 @@ export const createCreateAdTool = (env: Env) =>
         "Ad format (required). Options: SINGLE_VIDEO, SINGLE_IMAGE, VIDEO_CAROUSEL, IMAGE_CAROUSEL, SPARK_ADS",
       ),
       ad_text: z
+
         .string()
+
         .optional()
+
         .describe("Ad text/caption (max 100 characters)"),
       call_to_action: z
+
         .string()
+
         .optional()
+
         .describe(
           "Call to action (e.g., 'Learn More', 'Shop Now', 'Sign Up', 'Download')",
         ),
       landing_page_url: z
+
         .string()
+
         .url()
+
         .optional()
+
         .describe("Landing page URL"),
       display_name: z
+
         .string()
+
         .optional()
+
         .describe("Display name shown on the ad"),
       video_id: z
+
         .string()
+
         .optional()
+
         .describe("Video ID (required for video ads)"),
       image_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Image IDs (required for image ads)"),
       identity_id: z
+
         .string()
+
         .optional()
+
         .describe("TikTok account identity ID (for Spark Ads)"),
       identity_type: z
+
         .string()
+
         .optional()
+
         .describe("Identity type: AUTH_CODE, TT_USER"),
       operation_status: OperationStatusSchema.optional().describe(
         "Initial status: ENABLE or DISABLE",
@@ -282,24 +339,33 @@ export const createUpdateAdTool = (env: Env) =>
     description:
       "Update an existing ad. Only provided fields will be updated. At least one field to update must be provided.",
     inputSchema: z
+
       .object({
         advertiser_id: z
+
           .string()
+
           .optional()
+
           .describe("Advertiser ID (optional if configured in MCP)"),
         ad_id: z.string().describe("Ad ID to update (required)"),
         ad_name: z.string().optional().describe("New ad name"),
         ad_text: z.string().optional().describe("New ad text/caption"),
         call_to_action: z.string().optional().describe("New call to action"),
         landing_page_url: z
+
           .string()
+
           .url()
+
           .optional()
+
           .describe("New landing page URL"),
         operation_status: OperationStatusSchema.optional().describe(
           "New status: ENABLE, DISABLE, or DELETE",
         ),
       })
+
       .refine(
         (data) =>
           data.ad_name !== undefined ||

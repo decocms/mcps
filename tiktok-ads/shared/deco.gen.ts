@@ -8,7 +8,9 @@ import { z } from "zod";
  */
 export const StateSchema = z.object({
   accessToken: z
+
     .string()
+
     .describe(
       "TikTok Access Token - Obtenha em TikTok Developer Portal > Tools > Access Token",
     ),

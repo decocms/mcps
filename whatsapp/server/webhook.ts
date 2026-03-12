@@ -91,6 +91,7 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
       `${env.MESH_URL}store/deco-whatsapp-agent?serverName=deco/whatsapp-agent`,
     ).toString();
     whatsappClient
+
       .sendCallToActionMessage({
         phoneNumberId,
         to: from,
@@ -103,6 +104,7 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
         cta_header_image_url:
           "https://assets.decocache.com/decocms/8c4da0ff-9be6-4aa3-ad53-895f87756911/blog1.png",
       })
+
       .catch((e) => {
         console.error("Error sending call to action message", e);
       });
@@ -133,6 +135,7 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
     subject: from,
     organizationId: config.organizationId,
   })
+
     .then(() => {
       whatsappClient.markMessageAsRead({
         phoneNumberId,
@@ -140,6 +143,7 @@ export async function handleVerifiedWebhookPayload(payload: WebhookPayload) {
         showTypingIndicator: true,
       });
     })
+
     .catch((e) => {
       console.error("Error publishing event", e);
     });

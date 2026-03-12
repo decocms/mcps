@@ -19,8 +19,11 @@ export const StateSchema = z.object({
   // STRAPI API ENDPOINT
   // ========================================
   STRAPI_API_ENDPOINT: z
+
     .string()
+
     .url()
+
     .describe(
       "Strapi API base URL (e.g., https://your-strapi.com or https://your-strapi.com/api)",
     ),

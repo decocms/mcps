@@ -25,25 +25,40 @@ export const createListChannelsTool = (_env: Env) =>
     description: "List all channels the bot has access to in the workspace",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         exclude_archived: z
+
           .boolean()
+
           .optional()
+
           .default(true)
+
           .describe("Exclude archived channels"),
         types: z
+
           .string()
+
           .optional()
+
           .default("public_channel,private_channel")
+
           .describe("Channel types to include (comma-separated)"),
         limit: z
+
           .number()
+
           .optional()
+
           .default(100)
+
           .describe("Maximum number of channels to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         channels: z.array(
@@ -60,6 +75,7 @@ export const createListChannelsTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -107,14 +123,18 @@ export const createGetChannelInfoTool = (_env: Env) =>
     description: "Get detailed information about a specific channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to get info for"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         channel: z
+
           .object({
             id: z.string(),
             name: z.string(),
@@ -127,9 +147,11 @@ export const createGetChannelInfoTool = (_env: Env) =>
             topic: z.string().optional(),
             purpose: z.string().optional(),
           })
+
           .optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -179,15 +201,19 @@ export const createJoinChannelTool = (_env: Env) =>
     description: "Join a public channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to join"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -219,21 +245,29 @@ export const createGetChannelMembersTool = (_env: Env) =>
     description: "Get the list of member user IDs in a channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to get members from"),
         limit: z
+
           .number()
+
           .optional()
+
           .default(100)
+
           .describe("Maximum number of members to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         members: z.array(z.string()).describe("Array of user IDs"),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -268,18 +302,24 @@ export const createOpenDMTool = (_env: Env) =>
       "Open a direct message conversation with a user. Returns the channel ID for the DM.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         user_id: z
+
           .string()
+
           .describe("User ID to open a DM with (e.g., U1234567890)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         channel_id: z.string().optional().describe("Channel ID of the DM"),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -318,16 +358,20 @@ export const createInviteToChannelTool = (_env: Env) =>
     description: "Invite a user to a public channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to invite the user to"),
         user_id: z.string().describe("User ID to invite"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

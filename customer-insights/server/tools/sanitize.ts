@@ -9,7 +9,9 @@ export function sanitize<T>(value: T): T {
   if (typeof value === "bigint") return Number(value) as T;
   if (value === null || value === undefined) return value;
   if (value instanceof Date) {
-    return (Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)) as T;
+    return (
+      Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)
+    ) as T;
   }
   if (Array.isArray(value)) return value.map(sanitize) as T;
   if (typeof value === "object") {

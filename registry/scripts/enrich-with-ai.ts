@@ -269,11 +269,15 @@ async function getMcpsToEnrich(
   limit?: number,
 ): Promise<McpServer[]> {
   let query = supabase
+
     .from("mcp_servers")
+
     .select(
       "name, version, description, short_description, friendly_name, mesh_description, tags, categories, repository, remotes, verified",
     )
+
     .eq("is_latest", true) // Only latest versions
+
     .order("verified", { ascending: false }) // Verified first
     .order("name");
 
@@ -311,7 +315,9 @@ async function updateMcp(
     error,
     count,
   } = await supabase
+
     .from("mcp_servers")
+
     .update({
       friendly_name: data.friendly_name,
       mesh_description: data.mesh_description,
@@ -319,6 +325,7 @@ async function updateMcp(
       categories: data.categories,
       updated_at: new Date().toISOString(),
     })
+
     .eq("name", name) // name doesn't include version, so it gets all versions
     .select();
 

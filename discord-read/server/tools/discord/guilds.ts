@@ -19,15 +19,21 @@ export const createGetGuildTool = (env: Env) =>
     description: "Get information about a Discord guild",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         with_counts: z
+
           .boolean()
+
           .default(true)
+
           .describe("Include member/presence counts"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         name: z.string(),
@@ -39,6 +45,7 @@ export const createGetGuildTool = (env: Env) =>
         premium_tier: z.number(),
         features: z.array(z.string()),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { guild_id: string; with_counts: boolean };
@@ -81,13 +88,16 @@ export const createListBotGuildsTool = (env: Env) =>
     description: "List all guilds where the bot is present",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         limit: z.number().min(1).max(200).default(100).describe("Max guilds"),
         before: z.string().optional().describe("Get guilds before this ID"),
         after: z.string().optional().describe("Get guilds after this ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         guilds: z.array(
           z.object({
@@ -104,6 +114,7 @@ export const createListBotGuildsTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -144,13 +155,16 @@ export const createGetGuildMembersTool = (env: Env) =>
     description: "List members of a Discord guild",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         limit: z.number().min(1).max(1000).default(100).describe("Max members"),
         after: z.string().optional().describe("Get members after this user ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         members: z.array(
           z.object({
@@ -164,6 +178,7 @@ export const createGetGuildMembersTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -210,21 +225,32 @@ export const createSearchMembersTool = (env: Env) =>
       "Search guild members by username or nickname. Returns members whose username or nickname starts with the query.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         query: z
+
           .string()
+
           .min(1)
+
           .describe("Username or nickname to search (prefix match)"),
         limit: z
+
           .number()
+
           .min(1)
+
           .max(1000)
+
           .default(100)
+
           .describe("Max members to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         members: z.array(
           z.object({
@@ -241,6 +267,7 @@ export const createSearchMembersTool = (env: Env) =>
         count: z.number(),
         query: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -296,11 +323,14 @@ export const createGetUserTool = (env: Env) =>
       "Get GLOBAL information about a Discord user (no roles/server info). Use DISCORD_GET_MEMBER for server-specific info like roles.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         user_id: z.string().describe("The user ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         username: z.string(),
@@ -310,6 +340,7 @@ export const createGetUserTool = (env: Env) =>
         banner: z.string().nullable(),
         accent_color: z.number().nullable(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { user_id: string };
@@ -347,12 +378,15 @@ export const createGetMemberTool = (env: Env) =>
       "Get a member's info in a server INCLUDING their roles, nickname, join date. Use this to check user roles!",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild/server ID"),
         user_id: z.string().describe("The user ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         user: z.object({
           id: z.string(),
@@ -370,6 +404,7 @@ export const createGetMemberTool = (env: Env) =>
         pending: z.boolean().optional(),
         communication_disabled_until: z.string().nullable().optional(),
       })
+
       .passthrough(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { guild_id: string; user_id: string };
@@ -423,12 +458,14 @@ export const createGetCurrentUserTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         username: z.string(),
         avatar: z.string().nullable(),
         bot: z.boolean(),
       })
+
       .strict(),
     execute: async () => {
       const result = await discordAPI<{
@@ -458,33 +495,47 @@ export const createBanMemberTool = (env: Env) =>
       "Ban one or more members from a Discord server. Supports batch operations with rate limit handling.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().optional().describe("Single user ID to ban"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe(
             "Array of user IDs to ban (processed with rate limit handling)",
           ),
         delete_message_days: z
+
           .number()
+
           .min(0)
+
           .max(7)
+
           .optional()
+
           .describe("Days of messages to delete (0-7)"),
         reason: z.string().optional().describe("Reason for ban (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         banned_count: z.number(),
         failed_count: z.number(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -571,11 +622,14 @@ export const createGetGuildRolesTool = (env: Env) =>
     description: "Get all roles from a Discord server",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         roles: z.array(
           z.object({
@@ -590,6 +644,7 @@ export const createGetGuildRolesTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { guild_id: string };
@@ -631,25 +686,32 @@ export const createCreateRoleTool = (env: Env) =>
     description: "Create a new role in a Discord server",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         name: z.string().describe("Role name"),
         color: z.number().optional().describe("Role color (integer)"),
         hoist: z
+
           .boolean()
+
           .optional()
+
           .describe("Display role members separately"),
         mentionable: z.boolean().optional().describe("Allow anyone to mention"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         name: z.string(),
         color: z.number(),
         position: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -691,6 +753,7 @@ export const createEditRoleTool = (env: Env) =>
     description: "Edit an existing role in a Discord server",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         role_id: z.string().describe("The role ID to edit"),
@@ -700,13 +763,16 @@ export const createEditRoleTool = (env: Env) =>
         mentionable: z.boolean().optional().describe("Allow mentions"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         name: z.string(),
         color: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -750,25 +816,34 @@ export const createDeleteRoleTool = (env: Env) =>
       "Delete one or more roles from a Discord server. Supports batch operations.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         role_id: z.string().optional().describe("Single role ID to delete"),
         role_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of role IDs to delete"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         deleted_count: z.number(),
         failed_count: z.number(),
         errors: z
+
           .array(z.object({ role_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -848,27 +923,36 @@ export const createAddRoleToMemberTool = (env: Env) =>
       "Add a role to one or more guild members. Supports batch operations with rate limit handling.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().optional().describe("Single user ID"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of user IDs to add the role to"),
         role_id: z.string().describe("The role ID to add"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         added_count: z.number(),
         failed_count: z.number(),
         message: z.string(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -957,27 +1041,36 @@ export const createRemoveRoleFromMemberTool = (env: Env) =>
       "Remove a role from one or more guild members. Supports batch operations with rate limit handling.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().optional().describe("Single user ID"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of user IDs to remove the role from"),
         role_id: z.string().describe("The role ID to remove"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         removed_count: z.number(),
         failed_count: z.number(),
         message: z.string(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -1066,38 +1159,57 @@ export const createEditMemberTool = (env: Env) =>
       "Edit a guild member's attributes (nickname, roles, mute, deaf, etc.)",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().describe("The user ID of the member"),
         nick: z
+
           .string()
+
           .nullable()
+
           .optional()
+
           .describe("New nickname (null to reset)"),
         roles: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of role IDs to set (replaces all roles)"),
         mute: z.boolean().optional().describe("Mute in voice channels"),
         deaf: z.boolean().optional().describe("Deafen in voice channels"),
         channel_id: z
+
           .string()
+
           .nullable()
+
           .optional()
+
           .describe("Move to voice channel (null to disconnect)"),
         communication_disabled_until: z
+
           .string()
+
           .nullable()
+
           .optional()
+
           .describe("Timeout until ISO8601 timestamp (null to remove)"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -1150,26 +1262,35 @@ export const createKickMemberTool = (env: Env) =>
       "Kick one or more members from a Discord server (they can rejoin). Supports batch operations.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().optional().describe("Single user ID to kick"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of user IDs to kick"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         kicked_count: z.number(),
         failed_count: z.number(),
         message: z.string(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -1255,22 +1376,32 @@ export const createTimeoutMemberTool = (env: Env) =>
       "Timeout one or more members (prevent them from interacting) for a specified duration. Supports batch operations.",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z.string().optional().describe("Single user ID to timeout"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of user IDs to timeout"),
         duration_minutes: z
+
           .number()
+
           .min(1)
+
           .max(40320)
+
           .describe("Duration in minutes (max 28 days = 40320)"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         timed_out_count: z.number(),
@@ -1278,9 +1409,12 @@ export const createTimeoutMemberTool = (env: Env) =>
         message: z.string(),
         timeout_until: z.string(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -1375,29 +1509,41 @@ export const createRemoveTimeoutTool = (env: Env) =>
       "Remove timeout from one or more members (allow them to interact again). Supports batch operations.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         user_id: z
+
           .string()
+
           .optional()
+
           .describe("Single user ID to remove timeout from"),
         user_ids: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Array of user IDs to remove timeout from"),
         reason: z.string().optional().describe("Reason for audit log"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         removed_count: z.number(),
         failed_count: z.number(),
         message: z.string(),
         errors: z
+
           .array(z.object({ user_id: z.string(), error: z.string() }))
+
           .optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

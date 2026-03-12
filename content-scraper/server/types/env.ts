@@ -14,9 +14,13 @@ export const SourceTypeEnum = z.enum([
 export type SourceType = z.infer<typeof SourceTypeEnum>;
 
 const AuthoritySchema = z
+
   .number()
+
   .min(0)
+
   .max(1)
+
   .describe(
     "Source credibility score from 0 to 1. Higher values indicate more trustworthy/influential sources (e.g., 0.9 for official docs, 0.5 for blogs, 0.2 for forums)",
   );
@@ -49,7 +53,9 @@ export const StateSchema = z.object({
   n8nWebhookUrl: z.string().describe("URL do webhook N8N para scraping"),
   database: z.object({
     apiUrl: z
+
       .string()
+
       .describe(
         "URL da API do MCP para executar queries SQL (ex: https://api.decocms.com/org/project/mcp/tool/DATABASES_RUN_SQL)",
       ),
@@ -57,29 +63,41 @@ export const StateSchema = z.object({
   }),
   // API Keys for scraping
   openrouterApiKey: z
+
     .string()
+
     .optional()
+
     .describe("OpenRouter API key for LLM analysis (required for scraping)"),
   apifyApiToken: z
+
     .string()
+
     .optional()
+
     .describe("Apify API token for LinkedIn scraping (required for LinkedIn)"),
   urlFields: z.object({
     urls: z.array(UrlEntrySchema).describe("URLs to scrape content from"),
   }),
   redditFields: z.object({
     RedditTopicsToScrape: z
+
       .array(RedditEntrySchema)
+
       .describe("Subreddits topics to scrape content from"),
   }),
   linkedinFields: z.object({
     linkedinProfiles: z
+
       .array(LinkedinEntrySchema)
+
       .describe("LinkedIn profiles to scrape content from"),
   }),
   twitterFields: z.object({
     TwitterTopics: z
+
       .array(TwitterEntrySchema)
+
       .describe("Twitter topics to scrape content from"),
   }),
 });

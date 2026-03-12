@@ -24,14 +24,22 @@ export const createGetUserAdAccountsTool = (env: Env) =>
       "Get all ad accounts accessible by the current authenticated user (requires User Access Token). Returns account ID, name, status, currency, timezone, and amount spent.",
     inputSchema: z.object({
       user_id: z
+
         .string()
+
         .optional()
+
         .default("me")
+
         .describe("Meta user ID or 'me' for the current user"),
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Maximum number of accounts to return (default: 50)"),
     }),
     outputSchema: z.object({
@@ -87,9 +95,13 @@ export const createGetPageAdAccountsTool = (env: Env) =>
       "Get all ad accounts associated with the current page (requires Page Access Token). Returns account ID, name, status, currency, timezone, and amount spent.",
     inputSchema: z.object({
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Maximum number of accounts to return (default: 50)"),
     }),
     outputSchema: z.object({
@@ -142,7 +154,9 @@ export const createGetAccountInfoTool = (env: Env) =>
       "Get detailed information about a specific Meta Ads account including currency, timezone, spending limits, and balance.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
     }),
     outputSchema: z.object({
@@ -223,9 +237,13 @@ export const createGetUserAccountPagesTool = (env: Env) =>
       "Get Facebook/Instagram pages associated with the current authenticated user (requires User Access Token). Useful for understanding which pages can be used for advertising.",
     inputSchema: z.object({
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Maximum number of pages to return (default: 50)"),
     }),
     outputSchema: z.object({
@@ -313,7 +331,9 @@ export const createGetPageAccountPagesTool = (env: Env) =>
         }),
       ),
       count: z
+
         .number()
+
         .describe("Number of pages returned (always 1 for Page Token)"),
     }),
     execute: async () => {

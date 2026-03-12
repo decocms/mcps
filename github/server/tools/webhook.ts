@@ -61,7 +61,9 @@ async function verifyWebhookSignature(
     encoder.encode(rawBody),
   );
   const computedHash = Array.from(new Uint8Array(signatureBytes))
+
     .map((b) => b.toString(16).padStart(2, "0"))
+
     .join("");
 
   // Constant-time comparison to prevent timing attacks
@@ -84,40 +86,54 @@ async function verifyWebhookSignature(
  * to accept any valid JSON while extracting common fields.
  */
 const GitHubWebhookPayloadSchema = z
+
   .object({
     action: z.string().optional(),
     sender: z
+
       .object({
         login: z.string(),
         id: z.number(),
       })
+
       .loose()
+
       .optional(),
     repository: z
+
       .object({
         id: z.number(),
         name: z.string(),
         full_name: z.string(),
         owner: z.object({ login: z.string() }).passthrough(),
       })
+
       .loose()
+
       .optional(),
     organization: z
+
       .object({
         login: z.string(),
         id: z.number(),
       })
+
       .loose()
+
       .optional(),
     installation: z
+
       .object({
         id: z.number(),
       })
+
       .loose()
+
       .optional(),
     // GitHub event type header value (passed as body field by some proxies)
     _github_event: z.string().optional(),
   })
+
   .loose();
 
 type GitHubWebhookPayload = z.infer<typeof GitHubWebhookPayloadSchema>;

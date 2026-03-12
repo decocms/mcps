@@ -21,8 +21,11 @@ const CalendarSchema = z.object({
   timeZone: z.string().optional().describe("Calendar timezone"),
   accessRole: z.string().optional().describe("User's access role"),
   primary: z
+
     .boolean()
+
     .optional()
+
     .describe("Whether this is the primary calendar"),
   backgroundColor: z.string().optional().describe("Background color"),
   foregroundColor: z.string().optional().describe("Foreground color"),
@@ -39,22 +42,34 @@ export const createListCalendarsTool = (env: Env) =>
       "List all calendars accessible by the authenticated user. Returns calendar IDs, names, colors, and access roles.",
     inputSchema: z.object({
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(250)
+
         .optional()
+
         .describe("Maximum number of calendars to return (default: 50)"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       calendars: z.array(CalendarSchema).describe("List of calendars"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -95,7 +110,9 @@ export const createGetCalendarTool = (env: Env) =>
       "Get detailed information about a specific calendar by its ID.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .describe(
           "Calendar ID (use 'primary' for the user's primary calendar)",
         ),
@@ -138,16 +155,25 @@ export const createCreateCalendarTool = (env: Env) =>
     inputSchema: z.object({
       summary: z.string().describe("Name of the new calendar"),
       description: z
+
         .string()
+
         .optional()
+
         .describe("Description of the calendar"),
       location: z
+
         .string()
+
         .optional()
+
         .describe("Geographic location of the calendar"),
       timeZone: z
+
         .string()
+
         .optional()
+
         .describe("Timezone (e.g., 'America/Sao_Paulo', 'UTC')"),
     }),
     outputSchema: z.object({
@@ -194,7 +220,9 @@ export const createDeleteCalendarTool = (env: Env) =>
       "Delete a secondary calendar. Note: You cannot delete the primary calendar.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .describe("ID of the calendar to delete (cannot be 'primary')"),
     }),
     outputSchema: z.object({

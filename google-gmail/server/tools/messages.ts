@@ -27,6 +27,7 @@ const ParsedMessageSchema = z.object({
   bodyText: z.string().optional().describe("Plain text body"),
   bodyHtml: z.string().optional().describe("HTML body"),
   attachments: z
+
     .array(
       z.object({
         filename: z.string(),
@@ -35,7 +36,9 @@ const ParsedMessageSchema = z.object({
         attachmentId: z.string().optional(),
       }),
     )
+
     .optional()
+
     .describe("List of attachments"),
 });
 
@@ -50,30 +53,46 @@ export const createListMessagesTool = (env: Env) =>
       "List emails from Gmail inbox with subject, sender, and recipient information. Perfect for checking recent emails or filtering by labels.",
     inputSchema: z.object({
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(100)
+
         .optional()
+
         .describe("Maximum number of emails to return (default: 20, max: 100)"),
       pageToken: z.string().optional().describe("Token for pagination"),
       q: z
+
         .string()
+
         .optional()
+
         .describe(
           "Gmail search query (e.g., 'is:unread', 'from:john@example.com', 'subject:meeting')",
         ),
       labelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by label IDs (e.g., ['INBOX', 'UNREAD'])"),
       includeSpamTrash: z
+
         .boolean()
+
         .optional()
+
         .describe("Include emails from SPAM and TRASH"),
     }),
     outputSchema: z.object({
       emails: z
+
         .array(
           z.object({
             id: z.string().describe("Email ID (use this to get full details)"),
@@ -86,10 +105,14 @@ export const createListMessagesTool = (env: Env) =>
             isUnread: z.boolean().describe("Whether the email is unread"),
           }),
         )
+
         .describe("List of emails with basic information"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching the next page"),
       totalEmails: z.number().describe("Number of emails returned"),
     }),
@@ -148,8 +171,11 @@ export const createGetMessageTool = (env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("Email ID (from gmail_list_emails)"),
       format: z
+
         .enum(["minimal", "full", "raw", "metadata"])
+
         .optional()
+
         .describe(
           "Response format: minimal (IDs only), full (complete email with body), raw (RFC 2822), metadata (headers only)",
         ),
@@ -186,28 +212,44 @@ export const createSendMessageTool = (env: Env) =>
       "Send a new email from Gmail. Supports HTML content, CC, BCC, and replies to existing conversations.",
     inputSchema: z.object({
       to: z
+
         .string()
+
         .describe("Recipient email address (e.g., 'john@example.com')"),
       subject: z.string().describe("Email subject line"),
       body: z
+
         .string()
+
         .describe("Email body content (HTML is supported for rich formatting)"),
       cc: z
+
         .string()
+
         .optional()
+
         .describe("CC recipients (comma-separated emails)"),
       bcc: z
+
         .string()
+
         .optional()
+
         .describe("BCC recipients (comma-separated emails)"),
       replyTo: z.string().optional().describe("Reply-To email address"),
       threadId: z
+
         .string()
+
         .optional()
+
         .describe("Thread ID to reply to an existing conversation"),
       inReplyTo: z
+
         .string()
+
         .optional()
+
         .describe("Message-ID being replied to (for proper email threading)"),
     }),
     outputSchema: z.object({
@@ -264,22 +306,32 @@ Search Examples:
 - Combine queries: "from:john subject:meeting is:unread"`,
     inputSchema: z.object({
       query: z
+
         .string()
+
         .describe(
           "Gmail search query (e.g., 'is:unread from:boss@company.com')",
         ),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(100)
+
         .optional()
+
         .describe("Maximum results (default: 20, max: 100)"),
       pageToken: z.string().optional().describe("Token for pagination"),
     }),
     outputSchema: z.object({
       emails: z
+
         .array(ParsedMessageSchema)
+
         .describe("List of matching emails with full details"),
       nextPageToken: z.string().optional().describe("Token for next page"),
       totalResults: z.number().describe("Number of emails found"),
@@ -418,12 +470,18 @@ export const createModifyMessageTool = (env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("Email ID to modify"),
       addLabelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Labels to add (e.g., ['STARRED', 'IMPORTANT', 'UNREAD'])"),
       removeLabelIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "Labels to remove (e.g., ['UNREAD'] to mark as read, ['INBOX'] to archive)",
         ),
@@ -431,7 +489,9 @@ export const createModifyMessageTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the labels were updated"),
       currentLabels: z
+
         .array(z.string())
+
         .describe("Updated list of labels on the email"),
       message: z.string().describe("Confirmation message"),
     }),

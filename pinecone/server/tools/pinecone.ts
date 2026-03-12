@@ -92,20 +92,29 @@ export const pineconeAssistantTools = createFileManagementTools<
     inputSchema: z.object({
       query: z.string().describe("Query to search for"),
       filter: z
+
         .string()
+
         .optional()
+
         .describe(
           'Optionally filter which documents can be retrieved using metadata fields. Example: {"type": "faq_entry"}',
         ),
       topK: z
+
         .number()
+
         .optional()
+
         .describe(
           "The number of context snippets to retrieve. Defaults to 15.",
         ),
       includeMetadata: z
+
         .boolean()
+
         .optional()
+
         .describe(
           "Whether to include metadata in the response. Defaults to false.",
         ),

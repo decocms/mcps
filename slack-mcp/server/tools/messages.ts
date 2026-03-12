@@ -31,28 +31,40 @@ export const createSendMessageTool = (_env: Env) =>
       "Send a message to a Slack channel. Can optionally reply in a thread.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z
+
           .string()
+
           .describe("Channel ID to send the message to (e.g., C1234567890)"),
         text: z.string().describe("The message text to send"),
         thread_ts: z
+
           .string()
+
           .optional()
+
           .describe("Thread timestamp to reply in (makes it a threaded reply)"),
         unfurl_links: z
+
           .boolean()
+
           .optional()
+
           .describe("Whether to unfurl links in the message"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         ts: z.string().optional().describe("Timestamp of the sent message"),
         channel: z.string().optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -100,20 +112,26 @@ export const createReplyInThreadTool = (_env: Env) =>
     description: "Reply to a message in a thread",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the thread exists"),
         thread_ts: z
+
           .string()
+
           .describe("Timestamp of the parent message (thread_ts)"),
         text: z.string().describe("The reply text"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         ts: z.string().optional().describe("Timestamp of the reply"),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -158,17 +176,21 @@ export const createEditMessageTool = (_env: Env) =>
     description: "Edit an existing message",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         ts: z.string().describe("Timestamp of the message to edit"),
         text: z.string().describe("The new message text"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -206,16 +228,20 @@ export const createDeleteMessageTool = (_env: Env) =>
     description: "Delete a message from a channel",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         ts: z.string().describe("Timestamp of the message to delete"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -248,24 +274,37 @@ export const createGetChannelHistoryTool = (_env: Env) =>
     description: "Get message history from a channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to get history from"),
         limit: z
+
           .number()
+
           .optional()
+
           .default(50)
+
           .describe("Maximum number of messages to return (default: 50)"),
         oldest: z
+
           .string()
+
           .optional()
+
           .describe("Only messages after this timestamp"),
         latest: z
+
           .string()
+
           .optional()
+
           .describe("Only messages before this timestamp"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         messages: z.array(
@@ -279,6 +318,7 @@ export const createGetChannelHistoryTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -324,17 +364,24 @@ export const createGetThreadRepliesTool = (_env: Env) =>
     description: "Get all replies in a thread",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the thread exists"),
         thread_ts: z.string().describe("Timestamp of the parent message"),
         limit: z
+
           .number()
+
           .optional()
+
           .default(50)
+
           .describe("Maximum number of replies to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         messages: z.array(
@@ -346,6 +393,7 @@ export const createGetThreadRepliesTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -389,21 +437,32 @@ export const createSearchMessagesTool = (_env: Env) =>
       "Search for messages across the workspace. Requires search:read scope.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         query: z.string().describe("Search query"),
         count: z
+
           .number()
+
           .optional()
+
           .default(20)
+
           .describe("Number of results to return"),
         sort: z
+
           .enum(["score", "timestamp"])
+
           .optional()
+
           .default("score")
+
           .describe("Sort order"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         messages: z.array(
@@ -415,6 +474,7 @@ export const createSearchMessagesTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -457,29 +517,41 @@ export const createScheduleMessageTool = (_env: Env) =>
       "Schedule a message to be sent at a specific time in the future",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID to send the message to"),
         text: z.string().describe("The message text to send"),
         post_at: z
+
           .number()
+
           .describe(
             "Unix timestamp (seconds) for when to send the message. Must be at least 1 minute in the future.",
           ),
         thread_ts: z
+
           .string()
+
           .optional()
+
           .describe("Thread timestamp to schedule in a thread"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         scheduled_message_id: z
+
           .string()
+
           .optional()
+
           .describe("ID of the scheduled message"),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -526,20 +598,28 @@ export const createDeleteScheduledMessageTool = (_env: Env) =>
     description: "Delete a scheduled message before it is sent",
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z
+
           .string()
+
           .describe("Channel ID where the message was scheduled"),
         scheduled_message_id: z
+
           .string()
+
           .describe("ID of the scheduled message to delete"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -575,16 +655,20 @@ export const createPinMessageTool = (_env: Env) =>
     description: "Pin a message to a channel for easy reference",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         timestamp: z.string().describe("Timestamp of the message to pin"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -617,16 +701,20 @@ export const createUnpinMessageTool = (_env: Env) =>
     description: "Unpin a message from a channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         timestamp: z.string().describe("Timestamp of the message to unpin"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

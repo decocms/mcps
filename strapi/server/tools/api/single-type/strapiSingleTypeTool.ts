@@ -31,19 +31,27 @@ export const createStrapiGetSingleTypeTool = (env: Env) =>
       "Obtém o conteúdo de um Single Type no Strapi (ex: homepage, about-page, global-settings).",
     inputSchema: z.object({
       singularApiId: z
+
         .string()
+
         .describe(
           "ID singular da API do Single Type (ex: 'homepage', 'about-page', 'global')",
         ),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (ex: "hero,seo" ou JSON string para populate profundo como \'{"hero":{"populate":"*"}}\')',
         ),
       locale: z
+
         .string()
+
         .optional()
+
         .describe("Código do locale para conteúdo i18n (ex: 'pt-BR', 'en')"),
     }),
     outputSchema: z.object({
@@ -114,18 +122,25 @@ export const createStrapiUpdateSingleTypeTool = (env: Env) =>
       "Atualiza o conteúdo de um Single Type no Strapi (ex: homepage, global-settings).",
     inputSchema: z.object({
       singularApiId: z
+
         .string()
+
         .describe(
           "ID singular da API do Single Type (ex: 'homepage', 'about-page', 'global')",
         ),
       data: z
+
         .string()
+
         .describe(
           'Dados atualizados (formato JSON string, ex: \'{"title":"Novo Título","description":"Nova desc"}\')',
         ),
       locale: z
+
         .string()
+
         .optional()
+
         .describe("Código do locale para conteúdo i18n (ex: 'pt-BR', 'en')"),
     }),
     outputSchema: z.object({
@@ -198,7 +213,9 @@ export const createStrapiDeleteSingleTypeTool = (env: Env) =>
       "Remove o conteúdo de um Single Type no Strapi (reseta para vazio).",
     inputSchema: z.object({
       singularApiId: z
+
         .string()
+
         .describe(
           "ID singular da API do Single Type (ex: 'homepage', 'about-page', 'global')",
         ),

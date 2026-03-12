@@ -15,7 +15,6 @@ import { sanitize } from "./sanitize.ts";
 import { round2, num } from "./utils.ts";
 
 type RawRow = {
-  id: unknown;
   name: unknown;
   email: unknown;
   total_invoices: unknown;
@@ -32,11 +31,15 @@ type RawRow = {
 };
 
 type CustomerHealth = {
-  id: number;
   name: string;
   email: string;
   health_score: number;
-  health_label: "critical" | "at_risk" | "needs_attention" | "healthy" | "excellent";
+  health_label:
+    | "critical"
+    | "at_risk"
+    | "needs_attention"
+    | "healthy"
+    | "excellent";
   total_invoices: number;
   paid_count: number;
   overdue_count: number;
@@ -50,7 +53,9 @@ type CustomerHealth = {
 };
 
 function isAttentionLabel(label: CustomerHealth["health_label"]): boolean {
-  return label === "needs_attention" || label === "at_risk" || label === "critical";
+  return (
+    label === "needs_attention" || label === "at_risk" || label === "critical"
+  );
 }
 
 // Computes a health score (0-100) for a single customer by applying penalty
@@ -58,7 +63,6 @@ function isAttentionLabel(label: CustomerHealth["health_label"]): boolean {
 // so no single factor can tank the entire score by itself. Final score is
 // clamped to [0, 100] to handle edge cases where penalties overlap.
 function computeHealth(row: RawRow): CustomerHealth {
-  const id = num(row.id);
   const name = String(row.name ?? "");
   const email = String(row.email ?? "");
   const totalInvoices = num(row.total_invoices);
@@ -95,7 +99,9 @@ function computeHealth(row: RawRow): CustomerHealth {
   if (overdueCount > 0) {
     const penalty = Math.min(30, overdueCount * 10);
     score -= penalty;
-    issues.push(`${overdueCount} overdue invoice(s) totaling R$${round2(overdueAmount).toFixed(2)}`);
+    issues.push(
+      `${overdueCount} overdue invoice(s) totaling R$${round2(overdueAmount).toFixed(2)}`,
+    );
   }
 
   // ── Dimension 3: Usage trend (max -20 points) ─────────────────────────────
@@ -117,7 +123,8 @@ function computeHealth(row: RawRow): CustomerHealth {
   // ── Dimension 4: Overage percentage (max -10 points) ─────────────────────
   // High overage means the customer pays much more than their base plan, which
   // signals either wasteful usage or a need to upgrade. Both create friction.
-  const overagePct = totalBilled > 0 ? round2((overageTotal / totalBilled) * 100) : 0;
+  const overagePct =
+    totalBilled > 0 ? round2((overageTotal / totalBilled) * 100) : 0;
   if (overagePct > 40) {
     score -= 10;
     issues.push(`High overage: ${overagePct}% of billing`);
@@ -135,7 +142,6 @@ function computeHealth(row: RawRow): CustomerHealth {
   else healthLabel = "critical";
 
   return {
-    id,
     name,
     email,
     health_score: score,
@@ -160,20 +166,56 @@ export const createHealthListTool = (_env: Env) =>
       "Returns a ranked list of all customers with health scores (0-100) based on payment behavior, usage trends, and overage. Useful for daily triage.",
 
     inputSchema: z.object({
-      sort_by: z.enum(["health_score", "overdue_amount", "overage_pct"]).default("health_score")
+      sort_by: z
+        .enum(["health_score", "overdue_amount", "overage_pct"])
+        .default("health_score")
+
         .describe("Sort field. Default: health_score (worst first)."),
-      min_invoices: z.preprocess(
-        (v) => (v === null || v === undefined || (typeof v === "string" && v.trim() === "") ? undefined : v),
-        z.coerce.number().int().min(0).default(1),
-      ).describe("Minimum number of invoices to include a customer (default: 1)."),
-      health_filter: z.enum(["all", "critical", "at_risk", "needs_attention", "healthy", "excellent"]).default("all")
-        .describe("Filter by health label. Default: all. Note: needs_attention includes critical and at_risk by default (triage mode)."),
-      strict_health_filter: z.boolean().default(false)
-        .describe("When true, applies exact health_filter match. Default false enables triage mode for needs_attention."),
-      limit: z.preprocess(
-        (v) => (v === null || v === undefined || (typeof v === "string" && v.trim() === "") ? undefined : v),
-        z.coerce.number().int().min(1).max(500).default(50),
-      ).describe("Maximum number of customers returned (default: 50)."),
+      min_invoices: z
+        .preprocess(
+          (v) =>
+            v === null ||
+            v === undefined ||
+            (typeof v === "string" && v.trim() === "")
+              ? undefined
+              : v,
+          z.coerce.number().int().min(0).default(1),
+        )
+        .describe(
+          "Minimum number of invoices to include a customer (default: 1).",
+        ),
+      health_filter: z
+        .enum([
+          "all",
+          "critical",
+          "at_risk",
+          "needs_attention",
+          "healthy",
+          "excellent",
+        ])
+        .default("all")
+
+        .describe(
+          "Filter by health label. Default: all. Note: needs_attention includes critical and at_risk by default (triage mode).",
+        ),
+      strict_health_filter: z
+        .boolean()
+        .default(false)
+
+        .describe(
+          "When true, applies exact health_filter match. Default false enables triage mode for needs_attention.",
+        ),
+      limit: z
+        .preprocess(
+          (v) =>
+            v === null ||
+            v === undefined ||
+            (typeof v === "string" && v.trim() === "")
+              ? undefined
+              : v,
+          z.coerce.number().int().min(1).max(500).default(50),
+        )
+        .describe("Maximum number of customers returned (default: 50)."),
     }),
 
     outputSchema: z.object({
@@ -194,9 +236,8 @@ export const createHealthListTool = (_env: Env) =>
       const rows = await query<RawRow>(
         `WITH customer_billing AS (
           SELECT
-            b.id,
-            c.name,
-            c.email,
+            b.name,
+            b.email,
             COUNT(*) AS total_invoices,
             COUNT(CASE WHEN LOWER(b.status) = 'paid' THEN 1 END) AS paid_count,
             COUNT(CASE WHEN LOWER(b.status) != 'paid' THEN 1 END) AS overdue_count,
@@ -206,27 +247,29 @@ export const createHealthListTool = (_env: Env) =>
             MAX(CASE WHEN LOWER(b.status) = 'paid' THEN b.paid_date END) AS last_paid_date,
             COALESCE(SUM(COALESCE(b.extra_pageviews_price, 0) + COALESCE(b.extra_req_price, 0) + COALESCE(b.extra_bw_price, 0)), 0) AS overage_total
           FROM v_billing b
-          INNER JOIN v_customer_contacts c ON c.id = b.id
-          GROUP BY b.id, c.name, c.email
+          WHERE b.name IS NOT NULL
+          GROUP BY b.name, b.email
           HAVING COUNT(*) >= ${context.min_invoices}
         ),
         usage_trend AS (
           SELECT
-            id,
+            name,
             COALESCE(AVG(CASE WHEN rn <= 3 THEN pageviews END), 0) AS avg_pageviews_recent,
             COALESCE(AVG(CASE WHEN rn > 3 AND rn <= 6 THEN pageviews END), 0) AS avg_pageviews_previous
           FROM (
-            SELECT id, pageviews, ROW_NUMBER() OVER (PARTITION BY id ORDER BY reference_month DESC) AS rn
+            SELECT name, pageviews, ROW_NUMBER() OVER (PARTITION BY name ORDER BY reference_month DESC) AS rn
             FROM v_billing
+            WHERE name IS NOT NULL
           ) sub
           WHERE rn <= 6
-          GROUP BY id
+          GROUP BY name
         ),
         latest_plan AS (
-          SELECT id, plan AS latest_plan
+          SELECT name, plan AS latest_plan
           FROM (
-            SELECT id, plan, ROW_NUMBER() OVER (PARTITION BY id ORDER BY reference_month DESC) AS rn
+            SELECT name, plan, ROW_NUMBER() OVER (PARTITION BY name ORDER BY reference_month DESC) AS rn
             FROM v_billing
+            WHERE name IS NOT NULL
           ) sub
           WHERE rn = 1
         )
@@ -236,8 +279,8 @@ export const createHealthListTool = (_env: Env) =>
           COALESCE(ut.avg_pageviews_previous, 0) AS avg_pageviews_previous,
           COALESCE(lp.latest_plan, 'unknown') AS latest_plan
         FROM customer_billing cb
-        LEFT JOIN usage_trend ut ON ut.id = cb.id
-        LEFT JOIN latest_plan lp ON lp.id = cb.id`,
+        LEFT JOIN usage_trend ut ON ut.name = cb.name
+        LEFT JOIN latest_plan lp ON lp.name = cb.name`,
       );
 
       const allCustomers = rows.map(computeHealth);
@@ -245,18 +288,25 @@ export const createHealthListTool = (_env: Env) =>
       // "needs_attention" in triage mode (default) expands to include "at_risk"
       // and "critical" — so asking for customers that need attention returns ALL
       // problematic customers, not just the middle tier.
-      const triageNeedsAttention = context.health_filter === "needs_attention" && !context.strict_health_filter;
-      const filtered = context.health_filter === "all"
-        ? allCustomers
-        : triageNeedsAttention
-        ? allCustomers.filter((c) => isAttentionLabel(c.health_label))
-        : allCustomers.filter((c) => c.health_label === context.health_filter);
+      const triageNeedsAttention =
+        context.health_filter === "needs_attention" &&
+        !context.strict_health_filter;
+      const filtered =
+        context.health_filter === "all"
+          ? allCustomers
+          : triageNeedsAttention
+            ? allCustomers.filter((c) => isAttentionLabel(c.health_label))
+            : allCustomers.filter(
+                (c) => c.health_label === context.health_filter,
+              );
 
       // Sort worst-first for health_score (ascending), highest-first for the others.
       const sortField = context.sort_by;
       filtered.sort((a, b) => {
-        if (sortField === "health_score") return a.health_score - b.health_score; // worst first
-        if (sortField === "overdue_amount") return b.overdue_amount - a.overdue_amount;
+        if (sortField === "health_score")
+          return a.health_score - b.health_score; // worst first
+        if (sortField === "overdue_amount")
+          return b.overdue_amount - a.overdue_amount;
         if (sortField === "overage_pct") return b.overage_pct - a.overage_pct;
         return 0;
       });

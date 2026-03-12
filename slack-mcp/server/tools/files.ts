@@ -19,37 +19,54 @@ export const createUploadFileTool = (_env: Env) =>
       "Upload a file or text content to a Slack channel. Can be used to share code snippets, documents, or any text content.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z
+
           .string()
+
           .describe("Channel ID to upload the file to (e.g., C1234567890)"),
         content: z.string().describe("The text content of the file"),
         filename: z
+
           .string()
+
           .describe("Name of the file (e.g., 'report.txt', 'code.py')"),
         filetype: z
+
           .string()
+
           .optional()
+
           .describe(
             "File type/extension (e.g., 'python', 'javascript', 'text')",
           ),
         title: z.string().optional().describe("Title of the file"),
         initial_comment: z
+
           .string()
+
           .optional()
+
           .describe("Message to include with the file"),
         thread_ts: z
+
           .string()
+
           .optional()
+
           .describe("Thread timestamp to upload in a thread"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         file_id: z.string().optional().describe("ID of the uploaded file"),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

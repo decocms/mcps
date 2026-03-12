@@ -17,8 +17,11 @@ export const createCreateProjectTool = (env: Env) =>
     inputSchema: z.object({
       title: z.string().describe("The title for the project"),
       parentId: z
+
         .string()
+
         .optional()
+
         .describe(
           "The Drive ID of a parent file that the created script project is bound to (optional)",
         ),
@@ -141,19 +144,25 @@ export const createUpdateProjectContentTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       files: z
+
         .array(
           z.object({
             name: z
+
               .string()
+
               .describe("The file name (e.g., 'Code.gs', 'index.html')"),
             type: z
+
               .enum(["SERVER_JS", "HTML", "JSON"])
+
               .describe(
                 "The file type: SERVER_JS for .gs files, HTML for .html files, JSON for appsscript.json",
               ),
             source: z.string().describe("The file content/source code"),
           }),
         )
+
         .describe("The list of script project files to upload"),
     }),
     outputSchema: z.object({
@@ -189,12 +198,18 @@ export const createGetProjectMetricsTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       metricsGranularity: z
+
         .enum(["UNSPECIFIED_GRANULARITY", "WEEKLY", "DAILY"])
+
         .optional()
+
         .describe("The granularity of metrics to return (default: DAILY)"),
       deploymentId: z
+
         .string()
+
         .optional()
+
         .describe("Filter metrics by specific deployment ID (optional)"),
     }),
     outputSchema: z.object({

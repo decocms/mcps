@@ -45,7 +45,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -91,24 +91,28 @@ describe("clean()", () => {
 describe("determineStatus()", () => {
   it("deve retornar 'healthy' quando não há problemas", () => {
     const billing = [{ status: "paid" }, { status: "paid" }];
-    const emailHistory = { customer: null, total_messages: 0, messages: [], _meta: {} };
+    const emailHistory = {
+      customer: null,
+      total_messages: 0,
+      messages: [],
+      _meta: {},
+    };
 
-    const result = determineStatus(
-      billing as any,
-      emailHistory as any,
-    );
+    const result = determineStatus(billing as any, emailHistory as any);
     expect(result.severity).toBe("healthy");
     expect(result.emoji).toBe("✅");
   });
 
   it("deve retornar 'warning' quando há faturas overdue", () => {
     const billing = [{ status: "paid" }, { status: "overdue" }];
-    const emailHistory = { customer: null, total_messages: 0, messages: [], _meta: {} };
+    const emailHistory = {
+      customer: null,
+      total_messages: 0,
+      messages: [],
+      _meta: {},
+    };
 
-    const result = determineStatus(
-      billing as any,
-      emailHistory as any,
-    );
+    const result = determineStatus(billing as any, emailHistory as any);
     expect(result.severity).toBe("warning");
   });
 
@@ -126,10 +130,7 @@ describe("determineStatus()", () => {
       _meta: { enabled: true },
     };
 
-    const result = determineStatus(
-      billing as any,
-      emailHistory as any,
-    );
+    const result = determineStatus(billing as any, emailHistory as any);
     expect(result.severity).toBe("warning");
   });
 
@@ -146,10 +147,7 @@ describe("determineStatus()", () => {
       _meta: { enabled: true },
     };
 
-    const result = determineStatus(
-      billing as any,
-      emailHistory as any,
-    );
+    const result = determineStatus(billing as any, emailHistory as any);
     expect(result.severity).toBe("critical");
   });
 });
@@ -157,9 +155,24 @@ describe("determineStatus()", () => {
 describe("formatBillingSection()", () => {
   it("deve calcular métricas de billing corretamente", () => {
     const billing = [
-      { status: "paid", amount: 1500, due_date: "2025-01-15", paid_date: "2025-01-20" },
-      { status: "paid", amount: 1200, due_date: "2025-02-15", paid_date: "2025-02-18" },
-      { status: "overdue", amount: 2000, due_date: "2025-03-15", paid_date: null },
+      {
+        status: "paid",
+        amount: 1500,
+        due_date: "2025-01-15",
+        paid_date: "2025-01-20",
+      },
+      {
+        status: "paid",
+        amount: 1200,
+        due_date: "2025-02-15",
+        paid_date: "2025-02-18",
+      },
+      {
+        status: "overdue",
+        amount: 2000,
+        due_date: "2025-03-15",
+        paid_date: null,
+      },
     ];
 
     const result = formatBillingSection(billing as any);
@@ -224,7 +237,12 @@ describe("generateProgrammaticAnalysis()", () => {
       requestsChange: 20,
       bandwidthChange: 20,
     };
-    const emailHistory = { customer: null, total_messages: 0, messages: [], _meta: {} };
+    const emailHistory = {
+      customer: null,
+      total_messages: 0,
+      messages: [],
+      _meta: {},
+    };
 
     const analysis = generateProgrammaticAnalysis(
       billingMetrics as any,
@@ -252,7 +270,12 @@ describe("generateProgrammaticAnalysis()", () => {
       requestsChange: 5,
       bandwidthChange: 5,
     };
-    const emailHistory = { customer: null, total_messages: 0, messages: [], _meta: {} };
+    const emailHistory = {
+      customer: null,
+      total_messages: 0,
+      messages: [],
+      _meta: {},
+    };
 
     const analysis = generateProgrammaticAnalysis(
       billingMetrics as any,
@@ -266,20 +289,64 @@ describe("generateProgrammaticAnalysis()", () => {
 
 describe("generateProgrammaticAction()", () => {
   it("deve recomendar ação urgente para status critical", () => {
-    const status = { emoji: "🔴", text: "Critical", severity: "critical" as const };
-    const billingMetrics = { totalInvoices: 10, paid: 3, overdue: 7, overdueAmount: 10000, avgMonthly: 2000, lastPaymentDays: 30 };
-    const usageMetrics = { pageviews: 100000, requests: 400000, bandwidth: 50, pageviewsChange: -30, requestsChange: -30, bandwidthChange: -30 };
+    const status = {
+      emoji: "🔴",
+      text: "Critical",
+      severity: "critical" as const,
+    };
+    const billingMetrics = {
+      totalInvoices: 10,
+      paid: 3,
+      overdue: 7,
+      overdueAmount: 10000,
+      avgMonthly: 2000,
+      lastPaymentDays: 30,
+    };
+    const usageMetrics = {
+      pageviews: 100000,
+      requests: 400000,
+      bandwidth: 50,
+      pageviewsChange: -30,
+      requestsChange: -30,
+      bandwidthChange: -30,
+    };
 
-    const action = generateProgrammaticAction(status, billingMetrics as any, usageMetrics as any);
+    const action = generateProgrammaticAction(
+      status,
+      billingMetrics as any,
+      usageMetrics as any,
+    );
     expect(action).toContain("URGENT");
   });
 
   it("deve recomendar monitoramento para status healthy", () => {
-    const status = { emoji: "✅", text: "Healthy", severity: "healthy" as const };
-    const billingMetrics = { totalInvoices: 10, paid: 10, overdue: 0, overdueAmount: 0, avgMonthly: 1500, lastPaymentDays: 3 };
-    const usageMetrics = { pageviews: 500000, requests: 2000000, bandwidth: 250, pageviewsChange: 5, requestsChange: 5, bandwidthChange: 5 };
+    const status = {
+      emoji: "✅",
+      text: "Healthy",
+      severity: "healthy" as const,
+    };
+    const billingMetrics = {
+      totalInvoices: 10,
+      paid: 10,
+      overdue: 0,
+      overdueAmount: 0,
+      avgMonthly: 1500,
+      lastPaymentDays: 3,
+    };
+    const usageMetrics = {
+      pageviews: 500000,
+      requests: 2000000,
+      bandwidth: 250,
+      pageviewsChange: 5,
+      requestsChange: 5,
+      bandwidthChange: 5,
+    };
 
-    const action = generateProgrammaticAction(status, billingMetrics as any, usageMetrics as any);
+    const action = generateProgrammaticAction(
+      status,
+      billingMetrics as any,
+      usageMetrics as any,
+    );
     expect(action).toContain("monitoring");
   });
 });
@@ -287,7 +354,11 @@ describe("generateProgrammaticAction()", () => {
 describe("buildFormattedSummary()", () => {
   it("deve incluir nome do cliente e status no summary", () => {
     const customer = { id: 1108, name: "Acme Corp", email: "contact@acme.com" };
-    const status = { emoji: "✅", text: "Healthy", severity: "healthy" as const };
+    const status = {
+      emoji: "✅",
+      text: "Healthy",
+      severity: "healthy" as const,
+    };
 
     const summary = buildFormattedSummary(
       customer,
@@ -310,7 +381,11 @@ describe("buildFormattedSummary()", () => {
 
   it("deve incluir seção de tiering quando fornecida", () => {
     const customer = { id: 1108, name: "Acme Corp", email: "contact@acme.com" };
-    const status = { emoji: "✅", text: "Healthy", severity: "healthy" as const };
+    const status = {
+      emoji: "✅",
+      text: "Healthy",
+      severity: "healthy" as const,
+    };
 
     const summary = buildFormattedSummary(
       customer,

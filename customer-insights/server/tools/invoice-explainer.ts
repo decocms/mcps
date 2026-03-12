@@ -14,7 +14,13 @@ import { query } from "../db.ts";
 import { resolveCustomer } from "./customer-resolver.ts";
 import { sanitize } from "./sanitize.ts";
 
-import { toDateOnly as toIsoDate, clean, round2, num } from "./utils.ts";
+import {
+  toDateOnly as toIsoDate,
+  clean,
+  round2,
+  num,
+  escapeSqlLiteral,
+} from "./utils.ts";
 
 type InvoiceRow = {
   due_date: unknown;
@@ -93,9 +99,12 @@ function buildBreakdown(inv: InvoiceRow): InvoiceBreakdown {
   const supportPrice = num(inv.support_price);
   const totalExtras = extraPV + extraRQ + extraBW + seatsCost + supportPrice;
   const basePlan = round2(amount - totalExtras);
-  const seatsBuilders = inv.seats_builders != null ? num(inv.seats_builders) : null;
-  const reqPvRatio = inv.request_pageview_ratio != null ? num(inv.request_pageview_ratio) : null;
-  const bwPer10k = inv.bw_per_10k_pageview != null ? num(inv.bw_per_10k_pageview) : null;
+  const seatsBuilders =
+    inv.seats_builders != null ? num(inv.seats_builders) : null;
+  const reqPvRatio =
+    inv.request_pageview_ratio != null ? num(inv.request_pageview_ratio) : null;
+  const bwPer10k =
+    inv.bw_per_10k_pageview != null ? num(inv.bw_per_10k_pageview) : null;
   const tier40 = inv.tier_40_cost != null ? num(inv.tier_40_cost) : null;
   const tier50 = inv.tier_50_cost != null ? num(inv.tier_50_cost) : null;
   const tier80 = inv.tier_80_cost != null ? num(inv.tier_80_cost) : null;
@@ -155,27 +164,44 @@ function buildComparison(
 ): Comparison {
   const amountChangePct = pctChange(current.total, previous.total);
   const amountChangeAbs = round2(current.total - previous.total);
-  const direction = current.total > previous.total
-    ? "increased" as const
-    : current.total < previous.total
-      ? "decreased" as const
-      : "unchanged" as const;
+  const direction =
+    current.total > previous.total
+      ? ("increased" as const)
+      : current.total < previous.total
+        ? ("decreased" as const)
+        : ("unchanged" as const);
 
   const details = {
     base_plan_change: round2(current.base_plan - previous.base_plan),
-    extra_pageviews_change: round2(current.extras.extra_pageviews - previous.extras.extra_pageviews),
-    extra_requests_change: round2(current.extras.extra_requests - previous.extras.extra_requests),
-    extra_bandwidth_change: round2(current.extras.extra_bandwidth - previous.extras.extra_bandwidth),
-    seats_change: round2(current.extras.seats_builder_cost - previous.extras.seats_builder_cost),
-    support_change: round2(current.extras.support_price - previous.extras.support_price),
+    extra_pageviews_change: round2(
+      current.extras.extra_pageviews - previous.extras.extra_pageviews,
+    ),
+    extra_requests_change: round2(
+      current.extras.extra_requests - previous.extras.extra_requests,
+    ),
+    extra_bandwidth_change: round2(
+      current.extras.extra_bandwidth - previous.extras.extra_bandwidth,
+    ),
+    seats_change: round2(
+      current.extras.seats_builder_cost - previous.extras.seats_builder_cost,
+    ),
+    support_change: round2(
+      current.extras.support_price - previous.extras.support_price,
+    ),
   };
 
   // Find the biggest cost driver
   const drivers: Array<{ name: string; change: number }> = [
     { name: "base_plan", change: Math.abs(details.base_plan_change) },
-    { name: "extra_pageviews", change: Math.abs(details.extra_pageviews_change) },
+    {
+      name: "extra_pageviews",
+      change: Math.abs(details.extra_pageviews_change),
+    },
     { name: "extra_requests", change: Math.abs(details.extra_requests_change) },
-    { name: "extra_bandwidth", change: Math.abs(details.extra_bandwidth_change) },
+    {
+      name: "extra_bandwidth",
+      change: Math.abs(details.extra_bandwidth_change),
+    },
     { name: "seats_builder", change: Math.abs(details.seats_change) },
     { name: "support", change: Math.abs(details.support_change) },
   ];
@@ -201,15 +227,21 @@ function buildExplanation(
   const lines: string[] = [];
 
   // ── Header
-  lines.push(`Invoice Explanation: ${customerName} — ${breakdown.reference_month}`);
+  lines.push(
+    `Invoice Explanation: ${customerName} — ${breakdown.reference_month}`,
+  );
   lines.push("=".repeat(60));
   lines.push("");
 
   // ── Summary line
-  const statusEmoji = breakdown.status.toLowerCase().includes("paid") ? "✅"
-    : breakdown.status.toLowerCase().includes("overdue") ? "🔴"
-    : "⏳";
-  lines.push(`${statusEmoji} Total: ${formatBRL(breakdown.total)} | Status: ${breakdown.status} | Plan: ${breakdown.plan ?? "N/A"}`);
+  const statusEmoji = breakdown.status.toLowerCase().includes("paid")
+    ? "✅"
+    : breakdown.status.toLowerCase().includes("overdue")
+      ? "🔴"
+      : "⏳";
+  lines.push(
+    `${statusEmoji} Total: ${formatBRL(breakdown.total)} | Status: ${breakdown.status} | Plan: ${breakdown.plan ?? "N/A"}`,
+  );
   lines.push("");
 
   // ── Cost Breakdown
@@ -217,23 +249,35 @@ function buildExplanation(
   lines.push(`  Base plan ............... ${formatBRL(breakdown.base_plan)}`);
 
   if (breakdown.extras.extra_pageviews > 0) {
-    lines.push(`  Extra pageviews ........ ${formatBRL(breakdown.extras.extra_pageviews)}`);
+    lines.push(
+      `  Extra pageviews ........ ${formatBRL(breakdown.extras.extra_pageviews)}`,
+    );
   }
   if (breakdown.extras.extra_requests > 0) {
-    lines.push(`  Extra requests ......... ${formatBRL(breakdown.extras.extra_requests)}`);
+    lines.push(
+      `  Extra requests ......... ${formatBRL(breakdown.extras.extra_requests)}`,
+    );
   }
   if (breakdown.extras.extra_bandwidth > 0) {
-    lines.push(`  Extra bandwidth ........ ${formatBRL(breakdown.extras.extra_bandwidth)}`);
+    lines.push(
+      `  Extra bandwidth ........ ${formatBRL(breakdown.extras.extra_bandwidth)}`,
+    );
   }
   if (breakdown.extras.seats_builder_cost > 0) {
-    lines.push(`  Seats/builders (${breakdown.seats_builders ?? "?"}) ... ${formatBRL(breakdown.extras.seats_builder_cost)}`);
+    lines.push(
+      `  Seats/builders (${breakdown.seats_builders ?? "?"}) ... ${formatBRL(breakdown.extras.seats_builder_cost)}`,
+    );
   }
   if (breakdown.extras.support_price > 0) {
-    lines.push(`  Support ................ ${formatBRL(breakdown.extras.support_price)}`);
+    lines.push(
+      `  Support ................ ${formatBRL(breakdown.extras.support_price)}`,
+    );
   }
 
   lines.push(`  ${"─".repeat(40)}`);
-  lines.push(`  Total extras ........... ${formatBRL(breakdown.extras.total_extras)} (${breakdown.extras_percentage}% of total)`);
+  lines.push(
+    `  Total extras ........... ${formatBRL(breakdown.extras.total_extras)} (${breakdown.extras_percentage}% of total)`,
+  );
   lines.push(`  TOTAL .................. ${formatBRL(breakdown.total)}`);
   lines.push("");
 
@@ -243,10 +287,14 @@ function buildExplanation(
   lines.push(`  Requests: ${formatNumber(breakdown.usage.requests)}`);
   lines.push(`  Bandwidth: ${breakdown.usage.bandwidth} GB`);
   if (breakdown.usage.request_pageview_ratio != null) {
-    lines.push(`  Request/Pageview ratio: ${breakdown.usage.request_pageview_ratio}`);
+    lines.push(
+      `  Request/Pageview ratio: ${breakdown.usage.request_pageview_ratio}`,
+    );
   }
   if (breakdown.usage.bw_per_10k_pageview != null) {
-    lines.push(`  BW per 10k pageviews: ${breakdown.usage.bw_per_10k_pageview}`);
+    lines.push(
+      `  BW per 10k pageviews: ${breakdown.usage.bw_per_10k_pageview}`,
+    );
   }
   lines.push("");
 
@@ -261,37 +309,68 @@ function buildExplanation(
 
   // ── Comparison with previous month
   if (comparison && previousBreakdown) {
-    lines.push(`Comparison vs Previous Month (${previousBreakdown.reference_month}):`);
+    lines.push(
+      `Comparison vs Previous Month (${previousBreakdown.reference_month}):`,
+    );
 
-    const arrow = comparison.direction === "increased" ? "📈"
-      : comparison.direction === "decreased" ? "📉"
-      : "➡️";
-    const pctStr = comparison.amount_change_pct != null ? `${comparison.amount_change_pct > 0 ? "+" : ""}${comparison.amount_change_pct}%` : "N/A";
-    const absStr = comparison.amount_change_abs >= 0 ? `+${formatBRL(comparison.amount_change_abs)}` : `-${formatBRL(Math.abs(comparison.amount_change_abs))}`;
+    const arrow =
+      comparison.direction === "increased"
+        ? "📈"
+        : comparison.direction === "decreased"
+          ? "📉"
+          : "➡️";
+    const pctStr =
+      comparison.amount_change_pct != null
+        ? `${comparison.amount_change_pct > 0 ? "+" : ""}${comparison.amount_change_pct}%`
+        : "N/A";
+    const absStr =
+      comparison.amount_change_abs >= 0
+        ? `+${formatBRL(comparison.amount_change_abs)}`
+        : `-${formatBRL(Math.abs(comparison.amount_change_abs))}`;
 
-    lines.push(`  ${arrow} Total ${comparison.direction}: ${absStr} (${pctStr})`);
+    lines.push(
+      `  ${arrow} Total ${comparison.direction}: ${absStr} (${pctStr})`,
+    );
     lines.push(`  Previous total: ${formatBRL(previousBreakdown.total)}`);
     lines.push("");
 
     // Show what changed
     const changes: Array<{ label: string; value: number }> = [];
     if (comparison.details.base_plan_change !== 0) {
-      changes.push({ label: "Base plan", value: comparison.details.base_plan_change });
+      changes.push({
+        label: "Base plan",
+        value: comparison.details.base_plan_change,
+      });
     }
     if (comparison.details.extra_pageviews_change !== 0) {
-      changes.push({ label: "Extra pageviews", value: comparison.details.extra_pageviews_change });
+      changes.push({
+        label: "Extra pageviews",
+        value: comparison.details.extra_pageviews_change,
+      });
     }
     if (comparison.details.extra_requests_change !== 0) {
-      changes.push({ label: "Extra requests", value: comparison.details.extra_requests_change });
+      changes.push({
+        label: "Extra requests",
+        value: comparison.details.extra_requests_change,
+      });
     }
     if (comparison.details.extra_bandwidth_change !== 0) {
-      changes.push({ label: "Extra bandwidth", value: comparison.details.extra_bandwidth_change });
+      changes.push({
+        label: "Extra bandwidth",
+        value: comparison.details.extra_bandwidth_change,
+      });
     }
     if (comparison.details.seats_change !== 0) {
-      changes.push({ label: "Seats/builders", value: comparison.details.seats_change });
+      changes.push({
+        label: "Seats/builders",
+        value: comparison.details.seats_change,
+      });
     }
     if (comparison.details.support_change !== 0) {
-      changes.push({ label: "Support", value: comparison.details.support_change });
+      changes.push({
+        label: "Support",
+        value: comparison.details.support_change,
+      });
     }
 
     if (changes.length > 0) {
@@ -304,14 +383,29 @@ function buildExplanation(
     }
 
     // Usage comparison
-    const pvChange = pctChange(breakdown.usage.pageviews, previousBreakdown.usage.pageviews);
-    const reqChange = pctChange(breakdown.usage.requests, previousBreakdown.usage.requests);
-    const bwChange = pctChange(breakdown.usage.bandwidth, previousBreakdown.usage.bandwidth);
+    const pvChange = pctChange(
+      breakdown.usage.pageviews,
+      previousBreakdown.usage.pageviews,
+    );
+    const reqChange = pctChange(
+      breakdown.usage.requests,
+      previousBreakdown.usage.requests,
+    );
+    const bwChange = pctChange(
+      breakdown.usage.bandwidth,
+      previousBreakdown.usage.bandwidth,
+    );
 
     lines.push("  Usage changes:");
-    lines.push(`    Pageviews: ${formatNumber(previousBreakdown.usage.pageviews)} → ${formatNumber(breakdown.usage.pageviews)} (${pvChange != null ? (pvChange > 0 ? "+" : "") + pvChange + "%" : "N/A"})`);
-    lines.push(`    Requests: ${formatNumber(previousBreakdown.usage.requests)} → ${formatNumber(breakdown.usage.requests)} (${reqChange != null ? (reqChange > 0 ? "+" : "") + reqChange + "%" : "N/A"})`);
-    lines.push(`    Bandwidth: ${previousBreakdown.usage.bandwidth} → ${breakdown.usage.bandwidth} GB (${bwChange != null ? (bwChange > 0 ? "+" : "") + bwChange + "%" : "N/A"})`);
+    lines.push(
+      `    Pageviews: ${formatNumber(previousBreakdown.usage.pageviews)} → ${formatNumber(breakdown.usage.pageviews)} (${pvChange != null ? (pvChange > 0 ? "+" : "") + pvChange + "%" : "N/A"})`,
+    );
+    lines.push(
+      `    Requests: ${formatNumber(previousBreakdown.usage.requests)} → ${formatNumber(breakdown.usage.requests)} (${reqChange != null ? (reqChange > 0 ? "+" : "") + reqChange + "%" : "N/A"})`,
+    );
+    lines.push(
+      `    Bandwidth: ${previousBreakdown.usage.bandwidth} → ${breakdown.usage.bandwidth} GB (${bwChange != null ? (bwChange > 0 ? "+" : "") + bwChange + "%" : "N/A"})`,
+    );
     lines.push("");
 
     // Biggest driver alert
@@ -324,7 +418,9 @@ function buildExplanation(
         seats_builder: "Seats/builders cost",
         support: "Support cost",
       };
-      lines.push(`💡 Main cost driver: ${driverLabels[comparison.biggest_driver] ?? comparison.biggest_driver} (${formatBRL(comparison.biggest_driver_change)} change)`);
+      lines.push(
+        `💡 Main cost driver: ${driverLabels[comparison.biggest_driver] ?? comparison.biggest_driver} (${formatBRL(comparison.biggest_driver_change)} change)`,
+      );
       lines.push("");
     }
   }
@@ -332,20 +428,37 @@ function buildExplanation(
   // ── Tiering simulation
   const { tier_40, tier_50, tier_80 } = breakdown.tiering_simulation;
   if (tier_40 != null || tier_50 != null || tier_80 != null) {
-    lines.push("Tiering Simulation (what this invoice would cost on other plans):");
+    lines.push(
+      "Tiering Simulation (what this invoice would cost on other plans):",
+    );
     if (tier_40 != null) {
       const diff = round2(breakdown.total - tier_40);
-      const label = diff > 0 ? `saves ${formatBRL(diff)}` : diff < 0 ? `costs ${formatBRL(Math.abs(diff))} more` : "same";
+      const label =
+        diff > 0
+          ? `saves ${formatBRL(diff)}`
+          : diff < 0
+            ? `costs ${formatBRL(Math.abs(diff))} more`
+            : "same";
       lines.push(`  R$40/10k PV: ${formatBRL(tier_40)} (${label})`);
     }
     if (tier_50 != null) {
       const diff = round2(breakdown.total - tier_50);
-      const label = diff > 0 ? `saves ${formatBRL(diff)}` : diff < 0 ? `costs ${formatBRL(Math.abs(diff))} more` : "same";
+      const label =
+        diff > 0
+          ? `saves ${formatBRL(diff)}`
+          : diff < 0
+            ? `costs ${formatBRL(Math.abs(diff))} more`
+            : "same";
       lines.push(`  R$50/10k PV: ${formatBRL(tier_50)} (${label})`);
     }
     if (tier_80 != null) {
       const diff = round2(breakdown.total - tier_80);
-      const label = diff > 0 ? `saves ${formatBRL(diff)}` : diff < 0 ? `costs ${formatBRL(Math.abs(diff))} more` : "same";
+      const label =
+        diff > 0
+          ? `saves ${formatBRL(diff)}`
+          : diff < 0
+            ? `costs ${formatBRL(Math.abs(diff))} more`
+            : "same";
       lines.push(`  R$80/10k PV: ${formatBRL(tier_80)} (${label})`);
     }
     lines.push("");
@@ -354,13 +467,27 @@ function buildExplanation(
   // ── Alerts
   const alerts: string[] = [];
   if (breakdown.extras_percentage > 40) {
-    alerts.push(`⚠️ Extras represent ${breakdown.extras_percentage}% of total — consider plan upgrade.`);
+    alerts.push(
+      `⚠️ Extras represent ${breakdown.extras_percentage}% of total — consider plan upgrade.`,
+    );
   }
-  if (comparison && comparison.amount_change_pct != null && comparison.amount_change_pct > 20) {
-    alerts.push(`⚠️ Invoice increased ${comparison.amount_change_pct}% vs previous month.`);
+  if (
+    comparison &&
+    comparison.amount_change_pct != null &&
+    comparison.amount_change_pct > 20
+  ) {
+    alerts.push(
+      `⚠️ Invoice increased ${comparison.amount_change_pct}% vs previous month.`,
+    );
   }
-  if (comparison && comparison.amount_change_pct != null && comparison.amount_change_pct < -20) {
-    alerts.push(`📉 Invoice decreased ${Math.abs(comparison.amount_change_pct)}% vs previous month — check for usage drop.`);
+  if (
+    comparison &&
+    comparison.amount_change_pct != null &&
+    comparison.amount_change_pct < -20
+  ) {
+    alerts.push(
+      `📉 Invoice decreased ${Math.abs(comparison.amount_change_pct)}% vs previous month — check for usage drop.`,
+    );
   }
   if (breakdown.status.toLowerCase().includes("overdue")) {
     alerts.push(`🔴 Invoice is OVERDUE.`);
@@ -383,17 +510,21 @@ export const createInvoiceExplainerTool = (_env: Env) =>
       "Generates a detailed invoice breakdown for a specific month showing base plan vs extras (pageviews, requests, bandwidth, seats, support) with comparison to previous month.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("Numeric customer ID (recommended, unique). E.g.: 1108."),
-      customer_name: z.string().optional()
-        .describe("Customer name (exact or partial search). E.g.: Paula. Warning: names are not unique — prefer customer_id."),
-      reference_month: z.string()
-        .describe("Month to explain. Format: YYYY-MM-DD or YYYY-MM. E.g.: 2025-11 or 2025-11-01"),
+      customer_name: z
+        .string()
+
+        .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
+      reference_month: z
+        .string()
+
+        .describe(
+          "Month to explain. Format: YYYY-MM-DD or YYYY-MM. E.g.: 2025-11 or 2025-11-01",
+        ),
     }),
 
     outputSchema: z.object({
       customer: z.any(),
-      match_type: z.enum(["id", "exact", "partial"]),
+      match_type: z.enum(["exact", "partial"]),
       invoice_found: z.boolean(),
       explanation: z.string().nullable(),
       breakdown: z.any().nullable(),
@@ -403,7 +534,6 @@ export const createInvoiceExplainerTool = (_env: Env) =>
 
     execute: async ({ context }) => {
       const resolved = await resolveCustomer({
-        customer_id: clean(context.customer_id),
         customer_name: clean(context.customer_name),
       });
 
@@ -426,7 +556,7 @@ export const createInvoiceExplainerTool = (_env: Env) =>
           COALESCE(tier_50_cost, 0) AS tier_50_cost,
           COALESCE(tier_80_cost, 0) AS tier_80_cost
         FROM v_billing
-        WHERE id = ${resolved.customer.id}
+        WHERE name = '${escapeSqlLiteral(resolved.customer.name)}'
         ORDER BY reference_month DESC`,
       );
 
@@ -451,7 +581,11 @@ export const createInvoiceExplainerTool = (_env: Env) =>
 
       if (targetIdx === -1) {
         // List available months for the user
-        const availableMonths = [...new Set(rows.map((r) => toIsoDate(r.reference_month)?.slice(0, 7) ?? ""))];
+        const availableMonths = [
+          ...new Set(
+            rows.map((r) => toIsoDate(r.reference_month)?.slice(0, 7) ?? ""),
+          ),
+        ];
         return sanitize({
           customer: resolved.customer,
           match_type: resolved.match_type,
@@ -488,13 +622,15 @@ export const createInvoiceExplainerTool = (_env: Env) =>
         invoice_found: true,
         explanation,
         breakdown,
-        previous_month: previousBreakdown ? {
-          reference_month: previousBreakdown.reference_month,
-          total: previousBreakdown.total,
-          base_plan: previousBreakdown.base_plan,
-          total_extras: previousBreakdown.extras.total_extras,
-          usage: previousBreakdown.usage,
-        } : null,
+        previous_month: previousBreakdown
+          ? {
+              reference_month: previousBreakdown.reference_month,
+              total: previousBreakdown.total,
+              base_plan: previousBreakdown.base_plan,
+              total_extras: previousBreakdown.extras.total_extras,
+              usage: previousBreakdown.usage,
+            }
+          : null,
         comparison,
       });
     },

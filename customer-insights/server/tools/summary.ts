@@ -36,18 +36,17 @@ export type BillingOverview = {
 };
 
 export type SummaryFilters = {
-  customer_id?: string;
   customer_name?: string;
-  resolved_customer_id: number;
   resolved_customer_name: string;
-  match_type: "id" | "exact" | "partial";
-  billing_status?: "paid" | "pending" | "overdue" | "open";
+  match_type: "exact" | "partial";
+  billing_status?: string;
   include_email_history: boolean;
   email_max_results: number;
 };
 
-export async function getBillingData(customerId: number, status?: string) {
-  const where = [`id = ${customerId}`];
+export async function getBillingData(customerName: string, status?: string) {
+  const escapedName = customerName.replace(/'/g, "''");
+  const where = [`name = '${escapedName}'`];
   if (status?.trim()) {
     const escaped = status.replace(/'/g, "''");
     where.push(`LOWER(status) = LOWER('${escaped}')`);
@@ -62,8 +61,8 @@ export async function getBillingData(customerId: number, status?: string) {
   return sanitizeRows(rows as Record<string, unknown>[]);
 }
 
-export async function getUsageData(customerId: number) {
-  const id = customerId;
+export async function getUsageData(customerName: string) {
+  const escapedName = customerName.replace(/'/g, "''");
 
   const [summary] = await query(
     `SELECT
@@ -72,14 +71,14 @@ export async function getUsageData(customerId: number) {
       COALESCE(SUM(bandwidth), 0) AS total_bandwidth,
       COUNT(*) AS total_months
     FROM v_billing
-    WHERE id = ${id}`,
+    WHERE name = '${escapedName}'`,
   );
 
   const [trend] = await query(
     `WITH ranked AS (
       SELECT *, ROW_NUMBER() OVER (ORDER BY reference_month DESC) AS rn
       FROM v_billing
-      WHERE id = ${id}
+      WHERE name = '${escapedName}'
     )
     SELECT
       COALESCE(ROUND(AVG(CASE WHEN rn <= 3 THEN pageviews END)), 0) AS avg_recent_3m,
@@ -98,17 +97,20 @@ export async function getUsageData(customerId: number) {
   };
 }
 
-export async function getBillingOverview(customerId: number): Promise<BillingOverview> {
+export async function getBillingOverview(
+  customerName: string,
+): Promise<BillingOverview> {
+  const escapedName = customerName.replace(/'/g, "''");
   const [totals] = await query(
     `SELECT COUNT(*) AS total_invoices
      FROM v_billing
-     WHERE id = ${customerId}`,
+     WHERE name = '${escapedName}'`,
   );
 
   const statusRows = await query(
     `SELECT status, COUNT(*) AS total
      FROM v_billing
-     WHERE id = ${customerId}
+     WHERE name = '${escapedName}'
      GROUP BY status
      ORDER BY status`,
   );
@@ -130,11 +132,19 @@ export async function getBillingOverview(customerId: number): Promise<BillingOve
 }
 
 function getGoogleAccessToken(env: Env): string {
+  // Try OAuth flow first (authorization header)
   const authorization = (env as any)?.MESH_REQUEST_CONTEXT?.authorization;
-  if (!authorization || typeof authorization !== "string") {
-    throw new Error("Not authenticated. Please login with Google first.");
+  if (authorization && typeof authorization === "string") {
+    return authorization.replace(/^Bearer\s+/i, "");
   }
-  return authorization.replace(/^Bearer\s+/i, "");
+  // Fall back to GOOGLE_CONFIG state
+  const googleConfig = (env as any)?.MESH_REQUEST_CONTEXT?.state?.GOOGLE_CONFIG;
+  if (googleConfig?.access_token) {
+    return googleConfig.access_token;
+  }
+  throw new Error(
+    "Not authenticated. Please login with Google or set GOOGLE_CONFIG.access_token.",
+  );
 }
 
 function getHeader(
@@ -142,7 +152,9 @@ function getHeader(
   key: string,
 ): string | null {
   if (!headers?.length) return null;
-  const header = headers.find((item) => item.name.toLowerCase() === key.toLowerCase());
+  const header = headers.find(
+    (item) => item.name.toLowerCase() === key.toLowerCase(),
+  );
   return header?.value ?? null;
 }
 
@@ -151,7 +163,9 @@ async function listGmailMessages(
   fromEmail: string,
   maxResults: number,
 ): Promise<Array<Record<string, unknown>>> {
-  const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+  const listUrl = new URL(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+  );
   listUrl.searchParams.set("q", `from:${fromEmail}`);
   listUrl.searchParams.set("maxResults", String(maxResults));
 
@@ -185,7 +199,9 @@ async function listGmailMessages(
       });
       if (!detailResponse.ok) {
         const error = await detailResponse.text();
-        throw new Error(`Gmail message error (${detailResponse.status}): ${error}`);
+        throw new Error(
+          `Gmail message error (${detailResponse.status}): ${error}`,
+        );
       }
 
       const data = (await detailResponse.json()) as {
@@ -235,7 +251,8 @@ export async function getEmailHistoryData(
         messages: [],
         _meta: {
           enabled: false,
-          reason: "Email history disabled by include_email_history=false filter.",
+          reason:
+            "Email history disabled by include_email_history=false filter.",
         },
       };
     }
@@ -257,7 +274,11 @@ export async function getEmailHistoryData(
     }
 
     try {
-      const messages = await listGmailMessages(accessToken, customer.email, maxResults);
+      const messages = await listGmailMessages(
+        accessToken,
+        customer.email,
+        maxResults,
+      );
       return {
         customer,
         total_messages: messages.length,
@@ -336,197 +357,6 @@ ${JSON.stringify(emailHistory.messages, null, 2)}
   `.trim();
 }
 
-const SYSTEM_PROMPT = `You are a Financial Analyst. Provide TWO things in this exact format:
-
-ANALYSIS: [2-3 sentences analyzing billing vs usage patterns, payment behavior, and customer health]
-ACTION: [1-2 sentences with specific recommended action]
-
-Be concise, specific, and actionable.`;
-
-function isReasoningModel(model: string): boolean {
-  return /^(gpt-5|o[1-9]|o\d+-)/i.test(model);
-}
-
-async function callOpenAI(
-  apiKey: string,
-  model: string,
-  context: string,
-  maxTokens: number,
-): Promise<string> {
-  const body: Record<string, unknown> = {
-    model,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: `Customer data:\n\n${context}`,
-      },
-    ],
-  };
-
-  if (isReasoningModel(model)) {
-    body.max_completion_tokens = maxTokens;
-  } else {
-    body.temperature = 0.2;
-    body.max_tokens = maxTokens;
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error (${response.status}): ${error}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{
-      message?: {
-        content?: string;
-        reasoning_content?: string;
-      };
-    }>;
-  };
-  const choice = data?.choices?.[0];
-  const msg = choice?.message;
-
-  return msg?.content || msg?.reasoning_content || "";
-}
-
-async function callGemini(
-  apiKey: string,
-  model: string,
-  context: string,
-  maxTokens: number,
-): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [
-        {
-          parts: [
-            {
-              text: `Customer data:\n\n${context}`,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: maxTokens,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${error}`);
-  }
-
-  const data = (await response.json()) as {
-    candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
-  };
-  return data.candidates[0].content.parts[0].text;
-}
-
-async function callOpenAICompatible(
-  provider: string,
-  apiKey: string,
-  model: string,
-  context: string,
-  maxTokens: number,
-): Promise<string> {
-  const config: Record<string, { url: string; headers: Record<string, string> }> = {
-    anthropic: {
-      url: "https://api.anthropic.com/v1/messages",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-    },
-    deepseek: {
-      url: "https://api.deepseek.com/v1/chat/completions",
-      headers: { Authorization: `Bearer ${apiKey}` },
-    },
-    groq: {
-      url: "https://api.groq.com/openai/v1/chat/completions",
-      headers: { Authorization: `Bearer ${apiKey}` },
-    },
-  };
-
-  const providerConfig = config[provider];
-  if (!providerConfig) {
-    throw new Error(
-      `Provider "${provider}" not supported. Use: openai, gemini, anthropic, deepseek, groq.`,
-    );
-  }
-
-  if (provider === "anthropic") {
-    const response = await fetch(providerConfig.url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...providerConfig.headers },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Customer data:\n\n${context}`,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Anthropic API error (${response.status}): ${error}`);
-    }
-
-    const data = (await response.json()) as {
-      content: Array<{ text: string }>;
-    };
-    return data.content[0].text;
-  }
-
-  const response = await fetch(providerConfig.url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...providerConfig.headers },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Customer data:\n\n${context}`,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`${provider} API error (${response.status}): ${error}`);
-  }
-
-  const data = (await response.json()) as {
-    choices: Array<{ message: { content: string } }>;
-  };
-  return data.choices[0].message.content;
-}
-
 type TieringProjection = {
   tier: string;
   label: string;
@@ -548,7 +378,10 @@ export type TieringAnalysis = {
   };
 };
 
-export async function getTieringData(customerId: number): Promise<TieringAnalysis | null> {
+export async function getTieringData(
+  customerName: string,
+): Promise<TieringAnalysis | null> {
+  const escapedName = customerName.replace(/'/g, "''");
   const rows = await query(
     `SELECT
        plan,
@@ -558,7 +391,7 @@ export async function getTieringData(customerId: number): Promise<TieringAnalysi
        ROUND(AVG(tier_80_cost), 2) AS avg_tier_80,
        COUNT(*) AS months
      FROM v_billing
-     WHERE id = ${customerId}
+     WHERE name = '${escapedName}'
        AND amount IS NOT NULL
      GROUP BY plan`,
   );
@@ -584,7 +417,8 @@ export async function getTieringData(customerId: number): Promise<TieringAnalysi
       label: "Standard R$40/10k pageviews",
       avg_cost: avgTier40,
       saving_vs_current: Math.round(saving * 100) / 100,
-      saving_pct: avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
+      saving_pct:
+        avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
     });
   }
 
@@ -595,7 +429,8 @@ export async function getTieringData(customerId: number): Promise<TieringAnalysi
       label: "Standard R$50/10k pageviews",
       avg_cost: avgTier50,
       saving_vs_current: Math.round(saving * 100) / 100,
-      saving_pct: avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
+      saving_pct:
+        avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
     });
   }
 
@@ -606,7 +441,8 @@ export async function getTieringData(customerId: number): Promise<TieringAnalysi
       label: "Standard R$80/10k pageviews",
       avg_cost: avgTier80,
       saving_vs_current: Math.round(saving * 100) / 100,
-      saving_pct: avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
+      saving_pct:
+        avgCurrent > 0 ? Math.round((saving / avgCurrent) * 10000) / 100 : 0,
     });
   }
 
@@ -644,16 +480,22 @@ export async function getTieringData(customerId: number): Promise<TieringAnalysi
 
 export function formatTieringSection(tiering: TieringAnalysis): string {
   const lines: string[] = [];
-  lines.push(`- Current plan: ${tiering.current_plan} (avg R$${tiering.avg_current_cost.toFixed(2)}/month)`);
+  lines.push(
+    `- Current plan: ${tiering.current_plan} (avg R$${tiering.avg_current_cost.toFixed(2)}/month)`,
+  );
 
   for (const p of tiering.projections) {
     const savingSign = p.saving_vs_current > 0 ? "saves" : "costs more";
     const savingAbs = Math.abs(p.saving_vs_current).toFixed(2);
-    lines.push(`- ${p.label}: R$${p.avg_cost.toFixed(2)}/month (${savingSign} R$${savingAbs})`);
+    lines.push(
+      `- ${p.label}: R$${p.avg_cost.toFixed(2)}/month (${savingSign} R$${savingAbs})`,
+    );
   }
 
   if (tiering.recommendation.action === "upgrade") {
-    lines.push(`- 💡 Recommendation: Upgrade to ${tiering.recommendation.best_tier} — saves R$${tiering.recommendation.monthly_saving.toFixed(2)}/month (R$${tiering.recommendation.annual_saving.toFixed(2)}/year)`);
+    lines.push(
+      `- 💡 Recommendation: Upgrade to ${tiering.recommendation.best_tier} — saves R$${tiering.recommendation.monthly_saving.toFixed(2)}/month (R$${tiering.recommendation.annual_saving.toFixed(2)}/year)`,
+    );
   } else {
     lines.push(`- ✅ Current plan is optimal`);
   }
@@ -674,10 +516,18 @@ function formatLargeNumber(value: number): string {
 export function determineStatus(
   billing: Record<string, unknown>[],
   emailHistory: EmailHistoryData,
-): { emoji: string; text: string; severity: "critical" | "warning" | "healthy" } {
+): {
+  emoji: string;
+  text: string;
+  severity: "critical" | "warning" | "healthy";
+} {
   const hasOverdue = billing.some((inv) => {
     const status = String(inv.status ?? "").toLowerCase();
-    return status.includes("overdue") || status.includes("pending") || status.includes("registered");
+    return (
+      status.includes("overdue") ||
+      status.includes("pending") ||
+      status.includes("registered")
+    );
   });
 
   const hasCriticalComplaint = emailHistory.messages.some((msg) => {
@@ -711,7 +561,11 @@ export function determineStatus(
   });
 
   if (hasOverdue && hasCriticalComplaint) {
-    return { emoji: "🔴", text: "Critical - Immediate action required", severity: "critical" };
+    return {
+      emoji: "🔴",
+      text: "Critical - Immediate action required",
+      severity: "critical",
+    };
   }
 
   if (hasOverdue || hasComplaint) {
@@ -763,8 +617,21 @@ export function formatBillingSection(billing: Record<string, unknown>[]): {
     }
   }
 
-  const avgMonthly = totalInvoices > 0 ? totalAmount / totalInvoices : 0;
-  const lastPaymentDays = lastPaidDate ? daysBetween(lastPaidDate, new Date()) : null;
+  // Divide by distinct reference months, not invoice count — customers with
+  // multiple subscriptions have several invoices per month and dividing by
+  // invoice count would undercount the true monthly spend.
+  const distinctMonths = new Set(
+    billing
+
+      .map((inv) => String(inv.reference_month ?? "").slice(0, 7))
+
+      .filter(Boolean),
+  );
+  const avgMonthly =
+    distinctMonths.size > 0 ? totalAmount / distinctMonths.size : 0;
+  const lastPaymentDays = lastPaidDate
+    ? daysBetween(lastPaidDate, new Date())
+    : null;
 
   const lines: string[] = [];
 
@@ -821,28 +688,49 @@ export function formatUsageSection(usage: {
   const avgRecent = Number(trend.avg_recent_3m ?? 0);
   const avgPrevious = Number(trend.avg_previous_3m ?? 0);
 
-  const pageviewsChange = avgPrevious > 0 ? ((avgRecent - avgPrevious) / avgPrevious) * 100 : 0;
+  const pageviewsChange =
+    avgPrevious > 0 ? ((avgRecent - avgPrevious) / avgPrevious) * 100 : 0;
 
   const avgRecentReq = Number(trend.avg_requests_recent_3m ?? 0);
   const avgPreviousReq = Number(trend.avg_requests_previous_3m ?? 0);
   const requestsChange =
-    avgPreviousReq > 0 ? ((avgRecentReq - avgPreviousReq) / avgPreviousReq) * 100 : 0;
+    avgPreviousReq > 0
+      ? ((avgRecentReq - avgPreviousReq) / avgPreviousReq) * 100
+      : 0;
 
   const avgRecentBw = Number(trend.avg_bandwidth_recent_3m ?? 0);
   const avgPreviousBw = Number(trend.avg_bandwidth_previous_3m ?? 0);
   const bandwidthChange =
-    avgPreviousBw > 0 ? ((avgRecentBw - avgPreviousBw) / avgPreviousBw) * 100 : 0;
+    avgPreviousBw > 0
+      ? ((avgRecentBw - avgPreviousBw) / avgPreviousBw) * 100
+      : 0;
 
   const lines: string[] = [];
 
-  const pvChange = pageviewsChange >= 0 ? `+${pageviewsChange.toFixed(0)}%` : `${pageviewsChange.toFixed(0)}%`;
-  lines.push(`- Pageviews: ${formatLargeNumber(totalPageviews)} (${pvChange} vs previous period)`);
+  const pvChange =
+    pageviewsChange >= 0
+      ? `+${pageviewsChange.toFixed(0)}%`
+      : `${pageviewsChange.toFixed(0)}%`;
+  lines.push(
+    `- Pageviews: ${formatLargeNumber(totalPageviews)} (${pvChange} vs previous period)`,
+  );
 
-  const reqChange = requestsChange >= 0 ? `+${requestsChange.toFixed(0)}%` : `${requestsChange.toFixed(0)}%`;
-  lines.push(`- Requests: ${formatLargeNumber(totalRequests)} (${reqChange} vs previous period)`);
+  const reqChange =
+    requestsChange >= 0
+      ? `+${requestsChange.toFixed(0)}%`
+      : `${requestsChange.toFixed(0)}%`;
+  lines.push(
+    `- Requests: ${formatLargeNumber(totalRequests)} (${reqChange} vs previous period)`,
+  );
 
-  const bwChange = bandwidthChange >= 0 ? `+${bandwidthChange.toFixed(0)}%` : `${bandwidthChange.toFixed(0)}%`;
-  const bwFormatted = totalBandwidth >= 1000 ? `${(totalBandwidth / 1000).toFixed(1)}TB` : `${totalBandwidth.toFixed(0)}GB`;
+  const bwChange =
+    bandwidthChange >= 0
+      ? `+${bandwidthChange.toFixed(0)}%`
+      : `${bandwidthChange.toFixed(0)}%`;
+  const bwFormatted =
+    totalBandwidth >= 1000
+      ? `${(totalBandwidth / 1000).toFixed(1)}TB`
+      : `${totalBandwidth.toFixed(0)}GB`;
   lines.push(`- Bandwidth: ${bwFormatted} (${bwChange} vs previous period)`);
 
   return {
@@ -870,7 +758,9 @@ export function generateProgrammaticAnalysis(
     insights.push(
       `Usage increased ${usageMetrics.pageviewsChange.toFixed(0)}% but customer has overdue invoices.`,
     );
-    insights.push("Customer may be experiencing cash flow issues despite growth.");
+    insights.push(
+      "Customer may be experiencing cash flow issues despite growth.",
+    );
   } else if (usageMetrics.pageviewsChange > 20) {
     insights.push(
       `Strong usage growth of ${usageMetrics.pageviewsChange.toFixed(0)}% indicates healthy engagement.`,
@@ -881,11 +771,19 @@ export function generateProgrammaticAnalysis(
     );
   }
 
-  if (billingMetrics.overdue > 0 && billingMetrics.lastPaymentDays && billingMetrics.lastPaymentDays > 45) {
+  if (
+    billingMetrics.overdue > 0 &&
+    billingMetrics.lastPaymentDays &&
+    billingMetrics.lastPaymentDays > 45
+  ) {
     insights.push(
       `Last payment was ${billingMetrics.lastPaymentDays} days ago and has ${billingMetrics.overdue} overdue invoice(s) - payment behavior degrading.`,
     );
-  } else if (billingMetrics.lastPaymentDays && billingMetrics.lastPaymentDays > 60 && billingMetrics.overdue === 0) {
+  } else if (
+    billingMetrics.lastPaymentDays &&
+    billingMetrics.lastPaymentDays > 60 &&
+    billingMetrics.overdue === 0
+  ) {
     insights.push(
       `No new invoices in ${billingMetrics.lastPaymentDays} days - customer may be inactive or on hold.`,
     );
@@ -933,49 +831,6 @@ export function generateProgrammaticAction(
   return "Continue monitoring. No immediate action required.";
 }
 
-export async function enrichWithLLM(
-  llmConfig: any,
-  baseAnalysis: string,
-  baseAction: string,
-  llmContext: string,
-): Promise<{ analysis: string; action: string; error?: string }> {
-  const provider = llmConfig.provider ?? "openai";
-  const model = llmConfig.model ?? "gpt-4o-mini";
-  const maxTokens = llmConfig.max_tokens ?? 800;
-
-  try {
-    let response: string;
-
-    if (provider === "gemini") {
-      response = await callGemini(llmConfig.api_key, model, llmContext, maxTokens);
-    } else if (provider === "anthropic" || provider === "deepseek" || provider === "groq") {
-      response = await callOpenAICompatible(
-        provider,
-        llmConfig.api_key,
-        model,
-        llmContext,
-        maxTokens,
-      );
-    } else {
-      response = await callOpenAI(llmConfig.api_key, model, llmContext, maxTokens);
-    }
-
-    const analysisMatch = response.match(/ANALYSIS:\s*(.+?)(?=ACTION:|$)/s);
-    const actionMatch = response.match(/ACTION:\s*(.+)$/s);
-
-    if (analysisMatch && actionMatch) {
-      return {
-        analysis: analysisMatch[1].trim(),
-        action: actionMatch[1].trim(),
-      };
-    }
-
-    return { analysis: baseAnalysis, action: baseAction, error: "Failed to parse LLM response" };
-  } catch (err) {
-    return { analysis: baseAnalysis, action: baseAction, error: (err as Error).message };
-  }
-}
-
 export function buildFormattedSummary(
   customer: CustomerRow,
   status: ReturnType<typeof determineStatus>,
@@ -985,7 +840,7 @@ export function buildFormattedSummary(
   recommendedAction: string,
   tieringSection?: string,
 ): string {
-  let text = `Customer: ${customer.name} (customer_${customer.id})
+  let text = `Customer: ${customer.name} <${customer.email}>
 Status: ${status.emoji} ${status.text}
 
 Billing:
@@ -1016,24 +871,36 @@ export const createSummaryTool = (env: Env) =>
       "For best performance, call customer_summary_generate first.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional().describe(
-        "Numeric customer ID (recommended, unique). E.g.: 1108. Takes priority over customer_name if provided.",
-      ),
-      customer_name: z.string().optional().describe(
-        "Customer name (exact and partial search). E.g.: Acme Corp. Warning: names are not unique — prefer customer_id.",
-      ),
-      billing_status: z.string().optional().describe(
-        "Status filter for billing in the summary. Options: paid | pending | overdue | open | registered",
-      ),
-      include_email_history: z.boolean().default(true).describe(
-        "If false, does not attempt to fetch emails from Gmail. Default: true",
-      ),
-      email_max_results: z.number().int().min(1).max(50).default(5).describe(
-        "Maximum number of emails considered in the summary (default: 5, max: 50).",
-      ),
-      force_refresh: z.boolean().default(false).describe(
-        "If true, ignores any existing snapshot and regenerates the summary. Default: false",
-      ),
+      customer_name: z
+        .string()
+        .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
+      billing_status: z
+        .string()
+        .optional()
+        .describe(
+          "Status filter for billing in the summary. Options: paid | pending | overdue | open | registered",
+        ),
+      include_email_history: z
+        .boolean()
+        .default(true)
+        .describe(
+          "If false, does not attempt to fetch emails from Gmail. Default: true",
+        ),
+      email_max_results: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(5)
+        .describe(
+          "Maximum number of emails considered in the summary (default: 5, max: 50).",
+        ),
+      force_refresh: z
+        .boolean()
+        .default(false)
+        .describe(
+          "If true, ignores any existing snapshot and regenerates the summary. Default: false",
+        ),
     }),
 
     outputSchema: z.object({
@@ -1043,19 +910,17 @@ export const createSummaryTool = (env: Env) =>
     }),
 
     execute: async ({ context }) => {
-      const customerId = clean(context.customer_id);
       const customerName = clean(context.customer_name);
       const billingStatus = clean(context.billing_status);
       const forceRefresh = context.force_refresh ?? false;
 
       const resolved = await resolveCustomer({
-        customer_id: customerId,
         customer_name: customerName,
       });
 
       // ── Try to return snapshot instantly ──────────────────────────────
       if (!forceRefresh) {
-        const snapshot = await getSnapshot(resolved.customer.id);
+        const snapshot = await getSnapshot(resolved.customer.name);
         if (snapshot) {
           let dataSources: Record<string, unknown>;
           let meta: Record<string, unknown>;
@@ -1085,9 +950,7 @@ export const createSummaryTool = (env: Env) =>
 
       // ── No snapshot found (or force_refresh) — generate on the fly ───
       const filtersApplied: SummaryFilters = {
-        customer_id: customerId,
         customer_name: customerName,
-        resolved_customer_id: resolved.customer.id,
         resolved_customer_name: resolved.customer.name,
         match_type: resolved.match_type,
         billing_status: context.billing_status,
@@ -1095,62 +958,38 @@ export const createSummaryTool = (env: Env) =>
         email_max_results: context.email_max_results,
       };
 
-      const [billing, billing_overview, usage, email_history, tiering] = await Promise.all([
-        getBillingData(resolved.customer.id, billingStatus),
-        getBillingOverview(resolved.customer.id),
-        getUsageData(resolved.customer.id),
-        getEmailHistoryData(
-          env,
-          resolved.customer,
-          context.email_max_results,
-          context.include_email_history,
-        ),
-        getTieringData(resolved.customer.id),
-      ]);
+      const [billing, billing_overview, usage, email_history, tiering] =
+        await Promise.all([
+          getBillingData(resolved.customer.name, billingStatus),
+          getBillingOverview(resolved.customer.name),
+          getUsageData(resolved.customer.name),
+          getEmailHistoryData(
+            env,
+            resolved.customer,
+            context.email_max_results,
+            context.include_email_history,
+          ),
+          getTieringData(resolved.customer.name),
+        ]);
 
       const status = determineStatus(billing, email_history);
       const billingFormatted = formatBillingSection(billing);
       const usageFormatted = formatUsageSection(usage);
-      const tieringSection = tiering ? formatTieringSection(tiering) : undefined;
+      const tieringSection = tiering
+        ? formatTieringSection(tiering)
+        : undefined;
 
-      let analysis = generateProgrammaticAnalysis(
+      const analysis = generateProgrammaticAnalysis(
         billingFormatted.metrics,
         usageFormatted.metrics,
         email_history,
         tiering,
       );
-      let recommendedAction = generateProgrammaticAction(
+      const recommendedAction = generateProgrammaticAction(
         status,
         billingFormatted.metrics,
         usageFormatted.metrics,
       );
-
-      const state = (env as any)?.MESH_REQUEST_CONTEXT?.state ?? (env as any)?.state;
-      const llmConfig = state?.LLM_CONFIG;
-      let llmUsed = false;
-      let llmError: string | undefined;
-
-      if (llmConfig?.api_key) {
-        const llmContext = buildContext(
-          resolved.customer,
-          filtersApplied,
-          billing,
-          billing_overview,
-          usage,
-          email_history,
-          tiering,
-        );
-
-        const enriched = await enrichWithLLM(llmConfig, analysis, recommendedAction, llmContext);
-
-        if (!enriched.error) {
-          analysis = enriched.analysis;
-          recommendedAction = enriched.action;
-          llmUsed = true;
-        } else {
-          llmError = enriched.error;
-        }
-      }
 
       const summaryText = buildFormattedSummary(
         resolved.customer,
@@ -1174,16 +1013,16 @@ export const createSummaryTool = (env: Env) =>
       };
 
       const meta = {
-        llm_used: llmUsed,
-        llm_error: llmError,
         status_severity: status.severity,
-        ...(llmUsed && llmConfig
-          ? { provider: llmConfig.provider ?? "openai", model: llmConfig.model ?? "gpt-4o-mini" }
-          : {}),
       };
 
       // Save snapshot for future fast retrieval
-      await saveSnapshot(resolved.customer.id, summaryText, dataSources, meta);
+      await saveSnapshot(
+        resolved.customer.name,
+        summaryText,
+        dataSources,
+        meta,
+      );
 
       return sanitize({
         summary: summaryText,

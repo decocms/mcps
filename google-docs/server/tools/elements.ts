@@ -43,8 +43,11 @@ export const createInsertImageTool = (env: Env) =>
     inputSchema: z.object({
       documentId: z.string().describe("Document ID"),
       imageUrl: z
+
         .string()
+
         .url()
+
         .describe("Image URL (must be publicly accessible)"),
       index: z.coerce.number().min(1).describe("Position to insert (min 1)"),
       width: z.coerce.number().optional().describe("Width in points"),

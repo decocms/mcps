@@ -282,7 +282,9 @@ export async function processCommand(
   if (processedMessages.size > MAX_PROCESSED_CACHE) {
     const entries = Array.from(processedMessages);
     entries
+
       .slice(0, entries.length - MAX_PROCESSED_CACHE)
+
       .forEach((e) => processedMessages.delete(e));
   }
 
@@ -382,13 +384,17 @@ async function handleDefaultAgent(
             limit: 11,
           }); // 10 + current
           const recentMessages = Array.from(messages.values())
+
             .filter((m) => m.id !== message.id) // Exclude current message
             .slice(0, 10)
+
             .reverse(); // Oldest first
 
           if (recentMessages.length > 0) {
             return recentMessages
+
               .map((m) => `[${m.author.username}]: ${m.content.slice(0, 500)}`)
+
               .join("\n");
           }
           return "";

@@ -326,7 +326,9 @@ function registerEventHandlers(client: Client, env: Env): void {
         currentEnv.MESH_REQUEST_CONTEXT?.state?.DM_ALLOWED_USERS;
       if (dmAllowedUsers) {
         const allowedIds = dmAllowedUsers
+
           .split(",")
+
           .map((id: string) => id.trim());
         if (!allowedIds.includes(message.author.id)) {
           console.log(
@@ -351,7 +353,9 @@ function registerEventHandlers(client: Client, env: Env): void {
         `[Message] 📝 Indexing message ${message.id} from ${message.author.username}`,
       );
       indexMessage(message, isDM)
+
         .then(() => console.log(`[Message] ✅ Indexed message ${message.id}`))
+
         .catch((e) =>
           console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
         );
@@ -370,7 +374,9 @@ function registerEventHandlers(client: Client, env: Env): void {
           currentEnv.MESH_REQUEST_CONTEXT?.state?.ALLOWED_ROLES;
         if (allowedRoles) {
           const roleIds = allowedRoles
+
             .split(",")
+
             .map((id: string) => id.trim());
           const memberRoles = message.member.roles.cache.map((r) => r.id);
           const hasPermission = roleIds.some((roleId: string) =>

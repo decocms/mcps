@@ -26,22 +26,30 @@ export const createSetBasicFilterTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startRow: z.coerce
+
         .number()
+
         .describe("Start row index (0-based, usually 0 for header row)"),
       endRow: z.coerce.number().describe("End row index (exclusive)"),
       startColumn: z.coerce.number().describe("Start column index (0-based)"),
       endColumn: z.coerce.number().describe("End column index (exclusive)"),
       criteria: z
+
         .record(
           z.coerce.number(),
           z.object({
             hiddenValues: z
+
               .array(z.string())
+
               .optional()
+
               .describe("Values to hide from view"),
           }),
         )
+
         .optional()
+
         .describe(
           "Filter criteria by column index (0-based). Keys are column indices, values specify what to hide.",
         ),
@@ -102,16 +110,22 @@ export const createAddFilterViewTool = (env: Env) =>
       startColumn: z.coerce.number().describe("Start column index (0-based)"),
       endColumn: z.coerce.number().describe("End column index (exclusive)"),
       criteria: z
+
         .record(
           z.coerce.number(),
           z.object({
             hiddenValues: z
+
               .array(z.string())
+
               .optional()
+
               .describe("Values to hide from view"),
           }),
         )
+
         .optional()
+
         .describe("Filter criteria by column index"),
     }),
     outputSchema: z.object({
@@ -172,37 +186,58 @@ export const createAddSlicerTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       dataStartRow: z.coerce
+
         .number()
+
         .describe("Start row of data range to filter (0-based)"),
       dataEndRow: z.coerce
+
         .number()
+
         .describe("End row of data range (exclusive)"),
       dataStartColumn: z.coerce
+
         .number()
+
         .describe("Start column of data range (0-based)"),
       dataEndColumn: z.coerce
+
         .number()
+
         .describe("End column of data range (exclusive)"),
       positionRow: z.coerce
+
         .number()
+
         .describe("Row where slicer will be placed"),
       positionColumn: z.coerce
+
         .number()
+
         .describe("Column where slicer will be placed"),
       title: z.string().optional().describe("Slicer title"),
       columnIndex: z.coerce
+
         .number()
+
         .optional()
+
         .describe(
           "Column index within data range to filter by (0-based relative to data range)",
         ),
       width: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Slicer width in pixels (default: 200)"),
       height: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Slicer height in pixels (default: 200)"),
       backgroundColor: ColorSchema.optional().describe(
         "Background color for slicer",

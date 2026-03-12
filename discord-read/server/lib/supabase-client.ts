@@ -128,7 +128,9 @@ export async function saveConnectionConfig(config: {
   };
 
   const { error } = await client
+
     .from("discord_connections")
+
     .upsert(row as any, {
       onConflict: "connection_id",
     });
@@ -153,9 +155,13 @@ export async function loadConnectionConfig(
   }
 
   const { data, error } = await client
+
     .from("discord_connections")
+
     .select("*")
+
     .eq("connection_id", connectionId)
+
     .single();
 
   if (error) {
@@ -203,8 +209,11 @@ export async function deleteConnectionConfig(
   }
 
   const { error } = await client
+
     .from("discord_connections")
+
     .delete()
+
     .eq("connection_id", connectionId);
 
   if (error) {
@@ -225,7 +234,9 @@ export async function countConnections(): Promise<number> {
   }
 
   const { count, error } = await client
+
     .from("discord_connections")
+
     .select("*", { count: "exact", head: true });
 
   if (error) {

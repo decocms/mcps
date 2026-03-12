@@ -9,7 +9,9 @@ import { z } from "zod";
  * Format: 'owner/name' or 'owner/name:version'
  */
 export const ModelIdentifierSchema = z
+
   .string()
+
   .describe(
     "Model identifier in format 'owner/name' or 'owner/name:version'. " +
       "Examples: 'stability-ai/sdxl', 'meta/llama-2-70b-chat'",
@@ -20,7 +22,9 @@ export const ModelIdentifierSchema = z
  * Format: 'owner/name'
  */
 export const SimpleModelIdentifierSchema = z
+
   .string()
+
   .describe(
     "Model identifier in format 'owner/name'. " +
       "Examples: 'stability-ai/sdxl', 'meta/llama-2-70b-chat'",
@@ -30,14 +34,18 @@ export const SimpleModelIdentifierSchema = z
  * Prediction ID schema
  */
 export const PredictionIdSchema = z
+
   .string()
+
   .describe("The unique ID of the prediction");
 
 /**
  * Model input parameters schema
  */
 export const ModelInputSchema = z
+
   .record(z.unknown())
+
   .describe(
     "Input parameters for the model as key-value pairs. " +
       "Check model documentation for required/optional parameters.",
@@ -47,61 +55,79 @@ export const ModelInputSchema = z
  * Prediction status schema (all possible statuses from Replicate API)
  */
 export const PredictionStatusSchema = z
+
   .string()
+
   .describe("Current status of the prediction");
 
 /**
  * Legacy status enum (for tools that need stricter validation)
  */
 export const StrictPredictionStatusSchema = z
+
   .enum(["starting", "processing", "succeeded", "failed", "canceled"])
+
   .describe("Current status of the prediction");
 
 /**
  * Metrics schema for predictions
  */
 export const MetricsSchema = z
+
   .object({
     predict_time: z.number().optional().describe("Prediction execution time"),
   })
+
   .optional()
+
   .describe("Performance metrics");
 
 /**
  * URLs schema for prediction operations
  */
 export const PredictionUrlsSchema = z
+
   .object({
     get: z.string().describe("URL to get prediction status"),
     cancel: z.string().describe("URL to cancel the prediction"),
   })
+
   .optional()
+
   .describe("URLs to get status or cancel the prediction");
 
 /**
  * Model version schema
  */
 export const ModelVersionSchema = z
+
   .object({
     id: z.string().describe("Version ID"),
     created_at: z.string().describe("Version creation date"),
     cog_version: z.string().describe("Cog version used"),
     openapi_schema: z
+
       .record(z.unknown())
+
       .describe("OpenAPI schema for the model"),
   })
+
   .optional()
+
   .describe("Latest version information with full schema");
 
 /**
  * Model example schema
  */
 export const ModelExampleSchema = z
+
   .object({
     input: z.record(z.unknown()).describe("Example input parameters"),
     output: z.unknown().optional().describe("Example output"),
   })
+
   .optional()
+
   .describe("Default example input/output");
 
 /**
@@ -134,11 +160,14 @@ export const CompletePredictionOutputSchema = {
  * Simplified model version schema (for list operations)
  */
 export const SimpleModelVersionSchema = z
+
   .object({
     id: z.string().describe("Version ID"),
     created_at: z.string().describe("Version creation date"),
   })
+
   .optional()
+
   .describe("Latest version information");
 
 /**
@@ -180,8 +209,11 @@ export const CompleteModelDetailsSchema = z.object({
 export const ListModelsOutputSchema = z.object({
   models: z.array(ModelSummarySchema),
   next_cursor: z
+
     .string()
+
     .optional()
+
     .describe("Cursor for next page of results"),
 });
 
@@ -207,17 +239,25 @@ export const RunModelInputSchema = z.object({
   model: ModelIdentifierSchema,
   input: ModelInputSchema,
   wait: z
+
     .boolean()
+
     .optional()
+
     .default(true)
+
     .describe(
       "Whether to wait for the prediction to complete. " +
         "If false, returns immediately with prediction ID.",
     ),
   webhook: z
+
     .string()
+
     .url()
+
     .optional()
+
     .describe(
       "Optional webhook URL to receive prediction updates. " +
         "Replicate will POST to this URL when prediction completes.",
@@ -254,15 +294,21 @@ export const GetModelInputSchema = z.object({
  */
 export const ListModelsInputSchema = z.object({
   owner: z
+
     .string()
+
     .optional()
+
     .describe(
       "Filter models by owner username or organization. " +
         "Examples: 'stability-ai', 'meta', 'replicate'. " +
         "Leave empty to see featured models.",
     ),
   cursor: z
+
     .string()
+
     .optional()
+
     .describe("Pagination cursor from previous response"),
 });

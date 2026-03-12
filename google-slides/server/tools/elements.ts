@@ -64,8 +64,11 @@ export const createInsertImageTool = (env: Env) =>
       presentationId: z.string().describe("Presentation ID"),
       slideId: z.string().describe("Slide object ID"),
       imageUrl: z
+
         .string()
+
         .url()
+
         .describe("Image URL (must be publicly accessible)"),
       x: z.coerce.number().describe("X position in points"),
       y: z.coerce.number().describe("Y position in points"),

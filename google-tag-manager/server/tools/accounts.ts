@@ -20,8 +20,11 @@ export const createListAccountsTool = (env: Env) =>
       "List all GTM accounts accessible by the authenticated user. Returns account IDs, names, and metadata.",
     inputSchema: z.object({
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
@@ -34,10 +37,12 @@ export const createListAccountsTool = (env: Env) =>
           fingerprint: z.string().optional(),
           tagManagerUrl: z.string().optional(),
           features: z
+
             .object({
               supportUserPermissions: z.boolean().optional(),
               supportMultipleContainers: z.boolean().optional(),
             })
+
             .optional(),
         }),
       ),
@@ -90,10 +95,12 @@ export const createGetAccountTool = (env: Env) =>
         fingerprint: z.string().optional(),
         tagManagerUrl: z.string().optional(),
         features: z
+
           .object({
             supportUserPermissions: z.boolean().optional(),
             supportMultipleContainers: z.boolean().optional(),
           })
+
           .optional(),
       }),
     }),

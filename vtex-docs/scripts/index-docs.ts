@@ -115,8 +115,11 @@ async function processFile(filePath: string): Promise<DocChunk[]> {
   const title =
     frontmatter.title ||
     filePath
+
       .split("/")
+
       .pop()
+
       ?.replace(/\.(mdx?|md)$/, "") ||
     "Untitled";
 
@@ -139,8 +142,11 @@ async function deleteExistingChunks(source: string): Promise<void> {
   // Delete both with and without "./" prefix to clean up any duplicates
   const normalizedSource = source.replace(/^\.\//, "");
   await supabase
+
     .from("vtex_docs_chunks")
+
     .delete()
+
     .or(
       `metadata->>source.eq.${normalizedSource},metadata->>source.eq./${normalizedSource}`,
     );

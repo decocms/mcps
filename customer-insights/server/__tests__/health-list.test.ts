@@ -60,15 +60,15 @@ const AT_RISK_CUSTOMER = {
   name: "Risk LLC",
   email: "r@risk.com",
   total_invoices: BigInt(10),
-  paid_count: BigInt(4),       // 40% payment rate → -40 pontos
-  overdue_count: BigInt(3),    // 3 overdue → -30 pontos
+  paid_count: BigInt(4), // 40% payment rate → -40 pontos
+  overdue_count: BigInt(3), // 3 overdue → -30 pontos
   total_billed: 20000.0,
   overdue_amount: 6000.0,
   avg_amount: 2000.0,
   last_paid_date: "2024-12-01",
   avg_pageviews_recent: 20000.0,
   avg_pageviews_previous: 50000.0, // queda de 60% → -12 pontos
-  overage_total: 12000.0,         // 60% overage → -10 pontos
+  overage_total: 12000.0, // 60% overage → -10 pontos
   latest_plan: "Standard",
 };
 
@@ -81,7 +81,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     expect(result.total_customers).toBe(1);
@@ -96,7 +101,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     const customer = result.customers[0];
@@ -110,7 +120,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER, AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     // O primeiro da lista deve ter score menor (pior)
@@ -122,7 +137,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER, AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "excellent", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "excellent",
+        limit: 50,
+      },
     });
 
     // Apenas clientes com label "excellent" devem aparecer
@@ -135,12 +155,22 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER, AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "needs_attention", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "needs_attention",
+        limit: 50,
+      },
     });
 
     // No modo padrão, needs_attention inclui labels mais graves
     expect(result.returned).toBeGreaterThanOrEqual(1);
-    expect(result.customers.some((c: any) => c.health_label === "critical" || c.health_label === "at_risk")).toBe(true);
+    expect(
+      result.customers.some(
+        (c: any) =>
+          c.health_label === "critical" || c.health_label === "at_risk",
+      ),
+    ).toBe(true);
     expect(result._meta.triage_mode).toBe(true);
   });
 
@@ -166,12 +196,20 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER, AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     const dist = result.distribution;
     // Soma das distribuições deve ser igual ao total
-    const totalDist = Object.values(dist).reduce((a: number, b: any) => a + b, 0);
+    const totalDist = Object.values(dist).reduce(
+      (a: number, b: any) => a + b,
+      0,
+    );
     expect(totalDist).toBe(result.total_customers);
   });
 
@@ -180,7 +218,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([HEALTHY_CUSTOMER, AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 1 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 1,
+      },
     });
 
     expect(result.returned).toBe(1);
@@ -193,7 +236,12 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     expect(result.total_customers).toBe(0);
@@ -204,12 +252,19 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     const customer = result.customers[0];
     // Deve ter issue sobre overdue
-    const overdueIssue = customer.issues.find((i: string) => i.includes("overdue"));
+    const overdueIssue = customer.issues.find((i: string) =>
+      i.includes("overdue"),
+    );
     expect(overdueIssue).toBeDefined();
   });
 
@@ -217,12 +272,19 @@ describe("customer_health_list", () => {
     mockQuery.mockResolvedValueOnce([AT_RISK_CUSTOMER]);
 
     const result = await capturedExecute({
-      context: { sort_by: "health_score", min_invoices: 1, health_filter: "all", limit: 50 },
+      context: {
+        sort_by: "health_score",
+        min_invoices: 1,
+        health_filter: "all",
+        limit: 50,
+      },
     });
 
     const customer = result.customers[0];
     // Queda de 60% em pageviews deve gerar issue
-    const dropIssue = customer.issues.find((i: string) => i.includes("dropped"));
+    const dropIssue = customer.issues.find((i: string) =>
+      i.includes("dropped"),
+    );
     expect(dropIssue).toBeDefined();
   });
 });

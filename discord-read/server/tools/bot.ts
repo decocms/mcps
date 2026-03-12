@@ -26,12 +26,14 @@ export const createStartBotTool = (env: Env) =>
     annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         botTag: z.string().optional(),
         guilds: z.number().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env } = params;
@@ -107,10 +109,12 @@ export const createStopBotTool = (env: Env) =>
     annotations: { destructiveHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async () => {
       console.log("[Tool] DISCORD_BOT_STOP called");
@@ -142,6 +146,7 @@ export const createBotStatusTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         running: z.boolean(),
         botTag: z.string().optional(),
@@ -149,6 +154,7 @@ export const createBotStatusTool = (env: Env) =>
         uptime: z.number().optional(),
         message: z.string(),
       })
+
       .strict(),
     execute: async () => {
       console.log("[Tool] DISCORD_BOT_STATUS called");

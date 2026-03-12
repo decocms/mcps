@@ -10,27 +10,39 @@ export const createStrapiGetUsersTool = (env: Env) =>
     description: "Lista usuários do Strapi CMS com filtros e paginação.",
     inputSchema: z.object({
       filters: z
+
         .string()
+
         .optional()
+
         .describe("Filtros para a consulta de usuários (formato JSON string)"),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (formato: "role" ou JSON string para populate profundo)',
         ),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({
@@ -91,8 +103,11 @@ export const createStrapiGetUserByIdTool = (env: Env) =>
     inputSchema: z.object({
       id: z.union([z.string(), z.number()]).describe("ID do usuário"),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (formato: "role" ou JSON string para populate profundo)',
         ),
@@ -149,8 +164,11 @@ export const createStrapiGetCurrentUserTool = (env: Env) =>
       "Obtém informações do usuário atual autenticado no Strapi CMS.",
     inputSchema: z.object({
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (formato: "role" ou JSON string para populate profundo)',
         ),
@@ -203,13 +221,19 @@ export const createStrapiCreateUserTool = (env: Env) =>
       email: z.string().email().describe("Email do usuário"),
       password: z.string().describe("Senha do usuário"),
       confirmed: z
+
         .boolean()
+
         .optional()
+
         .describe("Se o usuário está confirmado"),
       blocked: z.boolean().optional().describe("Se o usuário está bloqueado"),
       role: z
+
         .union([z.string(), z.number()])
+
         .optional()
+
         .describe("ID ou nome do role"),
     }),
     outputSchema: z.object({
@@ -267,19 +291,27 @@ export const createStrapiUpdateUserTool = (env: Env) =>
     description: "Atualiza um usuário existente no Strapi CMS.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do usuário a ser atualizado"),
       username: z.string().optional().describe("Nome de usuário"),
       email: z.string().email().optional().describe("Email do usuário"),
       password: z.string().optional().describe("Nova senha do usuário"),
       confirmed: z
+
         .boolean()
+
         .optional()
+
         .describe("Se o usuário está confirmado"),
       blocked: z.boolean().optional().describe("Se o usuário está bloqueado"),
       role: z
+
         .union([z.string(), z.number()])
+
         .optional()
+
         .describe("ID ou nome do role"),
     }),
     outputSchema: z.object({
@@ -337,7 +369,9 @@ export const createStrapiDeleteUserTool = (env: Env) =>
     description: "Exclui um usuário no Strapi CMS.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do usuário a ser excluído"),
     }),
     outputSchema: z.object({

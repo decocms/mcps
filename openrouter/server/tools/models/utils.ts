@@ -213,12 +213,16 @@ export function recommendModelsForTask(
 
   // Score each candidate
   const scored = candidates
+
     .map((model) => ({
       model,
       score: scoreModelForTask(model, taskDescription, requirements),
     }))
+
     .filter((item) => item.score > 0)
+
     .sort((a, b) => b.score - a.score)
+
     .slice(0, 5); // Top 5 recommendations
 
   // Generate recommendations with reasoning

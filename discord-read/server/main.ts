@@ -202,8 +202,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Parse authorized guilds (comma-separated string to array)
       const authorizedGuilds = authorizedGuildsStr
         ? authorizedGuildsStr
+
             .split(",")
+
             .map((g) => g.trim())
+
             .filter(Boolean)
         : [];
 

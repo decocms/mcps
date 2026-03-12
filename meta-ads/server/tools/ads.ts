@@ -28,12 +28,18 @@ export const createGetAdsTool = (env: Env) =>
       "Get ads for a Meta Ads account. Can filter by campaign ID or ad set ID. Returns ad details including status and creative reference.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Maximum number of ads to return (default: 50)"),
       campaign_id: z.string().optional().describe("Filter ads by campaign ID"),
       adset_id: z.string().optional().describe("Filter ads by ad set ID"),
@@ -183,23 +189,34 @@ export const createCreateAdTool = (env: Env) =>
       "Create a new Meta Ads ad. This is STEP 4 (final step) to create ads. REQUIRES: adset_id from CREATE_ADSET AND creative_id from CREATE_AD_CREATIVE. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. If you don't have these IDs, go back and create them first.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
       adset_id: z.string().describe("Ad set ID to create the ad in"),
       name: z.string().describe("Ad name"),
       creative_id: z
+
         .string()
+
         .describe(
           "Creative ID to use for this ad (created via META_ADS_CREATE_AD_CREATIVE)",
         ),
       status: z
+
         .enum(["ACTIVE", "PAUSED"])
+
         .optional()
+
         .default("PAUSED")
+
         .describe("Ad status (default: PAUSED)"),
       conversion_domain: z
+
         .string()
+
         .optional()
+
         .describe("Domain for conversion tracking (e.g., 'example.com')"),
     }),
     outputSchema: z.object({
@@ -239,8 +256,11 @@ export const createUpdateAdTool = (env: Env) =>
       ad_id: z.string().describe("Ad ID to update"),
       name: z.string().optional().describe("New ad name"),
       status: z
+
         .enum(["ACTIVE", "PAUSED", "DELETED", "ARCHIVED"])
+
         .optional()
+
         .describe("New status. Use PAUSED to pause, ACTIVE to activate."),
       creative_id: z.string().optional().describe("New creative ID to use"),
     }),
@@ -334,60 +354,94 @@ export const createCreateAdCreativeTool = (env: Env) =>
       "Create an ad creative with text and CTA. This is STEP 3 in the ad creation flow. REQUIRES: page_id (Facebook Page) and link URL, OR use effective_object_story_id to promote an existing Facebook/Instagram post. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. Returns creative_id to use in CREATE_AD.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
       name: z
+
         .string()
+
         .optional()
+
         .describe("Creative name for internal reference"),
       // Option 1: Use object_story_spec for new creatives
       page_id: z
+
         .string()
+
         .optional()
+
         .describe(
           "Facebook Page ID associated with the ad (required for most ad types)",
         ),
       link: z
+
         .string()
+
         .optional()
+
         .describe("Destination URL when users click the ad"),
       message: z
+
         .string()
+
         .optional()
+
         .describe("Primary text that appears above the image/video"),
       headline: z
+
         .string()
+
         .optional()
+
         .describe("Headline text that appears below the image"),
       description: z
+
         .string()
+
         .optional()
+
         .describe("Description text (appears below headline)"),
       video_id: z
+
         .string()
+
         .optional()
+
         .describe("Video ID if using video creative"),
       call_to_action_type: callToActionTypeSchema
+
         .optional()
+
         .describe(
           "Call to action button type (e.g., LEARN_MORE, SHOP_NOW, SIGN_UP)",
         ),
       // Option 2: Use existing post
       effective_object_story_id: z
+
         .string()
+
         .optional()
+
         .describe(
           "Use an existing Facebook/Instagram post as the creative. Format: page_id_post_id",
         ),
       // Option 3: Instagram media
       source_instagram_media_id: z
+
         .string()
+
         .optional()
+
         .describe("Instagram post ID to use as creative"),
       // Additional options
       url_tags: z
+
         .string()
+
         .optional()
+
         .describe(
           "URL parameters to append to all links (e.g., 'utm_source=facebook&utm_medium=ad')",
         ),
@@ -395,7 +449,9 @@ export const createCreateAdCreativeTool = (env: Env) =>
     outputSchema: z.object({
       id: z.string().describe("ID of the created creative"),
       success: z
+
         .boolean()
+
         .describe("Whether the creative was created successfully"),
     }),
     execute: async ({ context }) => {

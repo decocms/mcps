@@ -22,28 +22,40 @@ export const createQueryMessagesTool = (env: Env) =>
       "Query Discord messages from the database. Only returns messages from guilds this bot has access to. Useful for searching message history, deleted messages, edit history, etc.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guildId: z.string().optional().describe("Filter by guild ID"),
         channelId: z.string().optional().describe("Filter by channel ID"),
         authorId: z.string().optional().describe("Filter by author user ID"),
         search: z
+
           .string()
+
           .optional()
+
           .describe("Search in message content (case-insensitive)"),
         deleted: z
+
           .boolean()
+
           .optional()
+
           .describe(
             "Filter deleted messages (true) or active messages (false)",
           ),
         limit: z
+
           .number()
+
           .default(50)
+
           .describe("Maximum number of messages to return (max 100)"),
         offset: z.number().default(0).describe("Offset for pagination"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         messages: z.array(
@@ -65,6 +77,7 @@ export const createQueryMessagesTool = (env: Env) =>
         total: z.number(),
         message: z.string().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context } = params;
@@ -103,7 +116,9 @@ export const createQueryMessagesTool = (env: Env) =>
 
         // Build query
         let query = client
+
           .from("discord_message")
+
           .select("*", { count: "exact" });
 
         // Apply filters
@@ -125,7 +140,9 @@ export const createQueryMessagesTool = (env: Env) =>
 
         // Order and pagination
         query = query
+
           .order("created_at", { ascending: false })
+
           .range(offset, offset + limit - 1);
 
         const { data, error, count } = await query;
@@ -166,6 +183,7 @@ export const createQueryGuildsTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         guilds: z.array(
@@ -182,6 +200,7 @@ export const createQueryGuildsTool = (env: Env) =>
         total: z.number(),
         message: z.string().optional(),
       })
+
       .strict(),
     execute: async () => {
       const client = getSupabaseClient();
@@ -196,8 +215,11 @@ export const createQueryGuildsTool = (env: Env) =>
 
       try {
         const { data, error, count } = await client
+
           .from("guilds")
+
           .select("*", { count: "exact" })
+
           .order("name");
 
         if (error) {
@@ -235,12 +257,15 @@ export const createMessageStatsTool = (env: Env) =>
       "Get statistics about Discord messages (total, by channel, by author, etc.)",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guildId: z.string().optional().describe("Filter by guild ID"),
         channelId: z.string().optional().describe("Filter by channel ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         stats: z.object({
@@ -251,6 +276,7 @@ export const createMessageStatsTool = (env: Env) =>
         }),
         message: z.string().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context } = params;
@@ -271,7 +297,9 @@ export const createMessageStatsTool = (env: Env) =>
       try {
         // Build base query
         let baseQuery = client
+
           .from("discord_message")
+
           .select("*", { count: "exact", head: true });
 
         if (guildId) {
@@ -286,8 +314,11 @@ export const createMessageStatsTool = (env: Env) =>
 
         // Get active (not deleted)
         let activeQuery = client
+
           .from("discord_message")
+
           .select("*", { count: "exact", head: true })
+
           .eq("deleted", false);
         if (guildId) activeQuery = activeQuery.eq("guild_id", guildId);
         if (channelId) activeQuery = activeQuery.eq("channel_id", channelId);
@@ -295,8 +326,11 @@ export const createMessageStatsTool = (env: Env) =>
 
         // Get deleted
         let deletedQuery = client
+
           .from("discord_message")
+
           .select("*", { count: "exact", head: true })
+
           .eq("deleted", true);
         if (guildId) deletedQuery = deletedQuery.eq("guild_id", guildId);
         if (channelId) deletedQuery = deletedQuery.eq("channel_id", channelId);
@@ -304,8 +338,11 @@ export const createMessageStatsTool = (env: Env) =>
 
         // Get edited
         let editedQuery = client
+
           .from("discord_message")
+
           .select("*", { count: "exact", head: true })
+
           .not("edited_at", "is", null);
         if (guildId) editedQuery = editedQuery.eq("guild_id", guildId);
         if (channelId) editedQuery = editedQuery.eq("channel_id", channelId);
@@ -340,15 +377,21 @@ export const createQueryChannelContextsTool = (env: Env) =>
       "Query channel contexts (custom system prompts and auto-respond settings) from the database.",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guildId: z.string().describe("Guild ID to query contexts for"),
         channelId: z
+
           .string()
+
           .optional()
+
           .describe("Filter by specific channel ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         contexts: z.array(
@@ -367,6 +410,7 @@ export const createQueryChannelContextsTool = (env: Env) =>
         total: z.number(),
         message: z.string().optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context } = params;
@@ -387,8 +431,11 @@ export const createQueryChannelContextsTool = (env: Env) =>
 
       try {
         let query = client
+
           .from("discord_channel_context")
+
           .select("*", { count: "exact" })
+
           .eq("guild_id", guildId);
 
         if (channelId) {
@@ -432,31 +479,43 @@ export const createSetChannelAutoRespondTool = (env: Env) =>
       "Enable or disable auto-respond for a channel. When enabled, the bot will respond to ALL messages in the channel without needing to be mentioned.",
     annotations: { destructiveHint: false },
     inputSchema: z
+
       .object({
         guildId: z.string().describe("Guild ID"),
         channelId: z.string().describe("Channel ID"),
         channelName: z
+
           .string()
+
           .optional()
+
           .describe("Channel name for reference"),
         autoRespond: z
+
           .boolean()
+
           .describe("Whether to auto-respond to all messages in this channel"),
         systemPrompt: z
+
           .string()
+
           .optional()
+
           .describe(
             "Custom system prompt for this channel. Required if auto_respond is being enabled for the first time.",
           ),
         createdById: z.string().describe("User ID who is setting this"),
         createdByUsername: z.string().describe("Username who is setting this"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context } = params;
@@ -489,10 +548,15 @@ export const createSetChannelAutoRespondTool = (env: Env) =>
       try {
         // Check if context already exists
         const { data: existing } = await client
+
           .from("discord_channel_context")
+
           .select("*")
+
           .eq("guild_id", guildId)
+
           .eq("channel_id", channelId)
+
           .single();
 
         if (!existing && autoRespond && !systemPrompt) {
@@ -519,7 +583,9 @@ export const createSetChannelAutoRespondTool = (env: Env) =>
         };
 
         const { error } = await client
+
           .from("discord_channel_context")
+
           .upsert(row, { onConflict: "guild_id, channel_id" });
 
         if (error) {

@@ -4,7 +4,9 @@ import { z } from "zod";
 // Message schema for chat-based interactions
 export const MessageSchema = z.object({
   role: z
+
     .enum(["system", "user", "assistant"])
+
     .describe("The role of the message sender"),
   content: z.string().describe("The content of the message"),
 });

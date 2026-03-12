@@ -30,8 +30,11 @@ export const createAddSlideTool = (env: Env) =>
       presentationId: z.string().describe("Presentation ID"),
       layout: LayoutEnum.optional().describe("Slide layout (default: BLANK)"),
       index: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Position to insert (0 = first)"),
     }),
     outputSchema: z.object({

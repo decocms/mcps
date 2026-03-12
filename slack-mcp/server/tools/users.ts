@@ -24,14 +24,18 @@ export const createGetUserInfoTool = (_env: Env) =>
     description: "Get detailed information about a Slack user",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         user_id: z.string().describe("User ID to get info for"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         user: z
+
           .object({
             id: z.string(),
             name: z.string(),
@@ -44,9 +48,11 @@ export const createGetUserInfoTool = (_env: Env) =>
             tz: z.string().optional(),
             avatar_url: z.string().optional(),
           })
+
           .optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -96,15 +102,22 @@ export const createListUsersTool = (_env: Env) =>
     description: "List all users in the workspace",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         limit: z
+
           .number()
+
           .optional()
+
           .default(100)
+
           .describe("Maximum number of users to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         users: z.array(
@@ -118,6 +131,7 @@ export const createListUsersTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -157,17 +171,21 @@ export const createGetBotInfoTool = (_env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         bot: z
+
           .object({
             user_id: z.string(),
             bot_id: z.string(),
             team_id: z.string(),
           })
+
           .optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async () => {
       try {
@@ -206,21 +224,27 @@ export const createAddReactionTool = (_env: Env) =>
     description: "Add an emoji reaction to a message",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         timestamp: z.string().describe("Timestamp of the message to react to"),
         emoji: z
+
           .string()
+
           .describe(
             "Emoji name without colons (e.g., 'thumbsup' not ':thumbsup:')",
           ),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -258,17 +282,21 @@ export const createRemoveReactionTool = (_env: Env) =>
     description: "Remove an emoji reaction from a message",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID where the message exists"),
         timestamp: z.string().describe("Timestamp of the message"),
         emoji: z.string().describe("Emoji name to remove"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

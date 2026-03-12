@@ -16,19 +16,26 @@ export const createListRecordingsTool = (env: Env) =>
         .optional()
         .describe("Pagination cursor from a previous response"),
       start_date: z
+
         .string()
+
         .optional()
+
         .describe(
           "Only recordings starting on or after this date (ISO 8601, e.g. '2025-01-01')",
         ),
       end_date: z
+
         .string()
+
         .optional()
+
         .describe(
           "Only recordings starting before this date (ISO 8601, e.g. '2025-02-01')",
         ),
       title: z
         .string()
+
         .optional()
         .describe("Case-insensitive title search (e.g. 'All Hands')"),
       attendance: z

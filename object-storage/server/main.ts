@@ -15,28 +15,40 @@ import { tools } from "./tools/index.ts";
  */
 export const StateSchema = z.object({
   endpoint: z
+
     .string()
+
     .optional()
+
     .describe(
       "S3 endpoint URL (optional, defaults to AWS). For R2: https://<account-id>.r2.cloudflarestorage.com",
     ),
   region: z
+
     .string()
+
     .describe(
       'AWS region (e.g., "us-east-1"). For R2 use "auto", for GCS use "auto" or specific region',
     ),
   accessKeyId: z
+
     .string()
+
     .describe(
       "AWS access key ID or equivalent for S3-compatible storage. For GCS, generate HMAC keys.",
     ),
   secretAccessKey: z
+
     .string()
+
     .describe("AWS secret access key or equivalent for S3-compatible storage"),
   bucketName: z.string().describe("Default bucket name for operations"),
   defaultPresignedUrlExpiration: z
+
     .number()
+
     .optional()
+
     .describe(
       "Default expiration time for presigned URLs in seconds (default: 3600)",
     ),

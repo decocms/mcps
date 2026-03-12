@@ -11,32 +11,46 @@ export const createStrapiGetContentTool = (env: Env) =>
       "Lista entradas de conteúdo de um tipo específico no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe("Nome do content type (ex: articles, products)"),
       filters: z
+
         .string()
+
         .optional()
+
         .describe(
           'Filtros para a consulta (formato JSON string, ex: {"title":{"$contains":"hello"}})',
         ),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (formato: "field1,field2" ou JSON string para populate profundo)',
         ),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({
@@ -107,12 +121,17 @@ export const createStrapiGetContentByIdTool = (env: Env) =>
       "Obtém uma entrada específica de conteúdo por ID no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe("Nome do content type (ex: articles, products)"),
       id: z.union([z.string(), z.number()]).describe("ID da entrada"),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (formato: "field1,field2" ou JSON string para populate profundo)',
         ),
@@ -179,7 +198,9 @@ export const createStrapiCreateContentTool = (env: Env) =>
     description: "Cria uma nova entrada de conteúdo no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe("Nome do content type (ex: articles, products)"),
       data: z.string().describe("Dados da nova entrada (formato JSON string)"),
     }),
@@ -246,13 +267,19 @@ export const createStrapiUpdateContentTool = (env: Env) =>
     description: "Atualiza uma entrada existente de conteúdo no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe("Nome do content type (ex: articles, products)"),
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID da entrada a ser atualizada"),
       data: z
+
         .string()
+
         .describe("Dados atualizados da entrada (formato JSON string)"),
     }),
     outputSchema: z.object({
@@ -319,10 +346,14 @@ export const createStrapiDeleteContentTool = (env: Env) =>
     description: "Exclui uma entrada de conteúdo no Strapi CMS.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe("Nome do content type (ex: articles, products)"),
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID da entrada a ser excluída"),
     }),
     outputSchema: z.object({

@@ -18,12 +18,16 @@ import { tools } from "./tools/index.ts";
  */
 export const StateSchema = BaseStateSchema.extend({
   databaseType: z
+
     .enum(["postgres", "mysql", "sqlite"])
+
     .describe(
       "Type of database to connect to. Currently only postgres is supported.",
     ),
   connectionString: z
+
     .string()
+
     .describe(
       "Database connection string (e.g., postgresql://user:password@host:port/database)",
     ),

@@ -1,7 +1,7 @@
 /**
  * Tool: CUSTOMER_EMAILS_GET (customer_emails_get)
  *
- * Searches for a customer by ID or name and returns emails sent by that customer
+ * Searches for a customer by name and returns emails sent by that customer
  * via Gmail (Google OAuth). Supports filtering by subject text, date range, and
  * maximum results. Uses the Gmail API with metadata format to retrieve subject,
  * from, to, date, and snippet for each message.
@@ -10,11 +10,14 @@
  * clients, where multiple contacts from the same company may send emails.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { query } from "../db.ts";
-import { resolveCustomer, resolveCustomersByDomain, type CustomerRow } from "./customer-resolver.ts";
+import {
+  resolveCustomersByDomain,
+  type CustomerRow,
+} from "./customer-resolver.ts";
 import { sanitizeRows } from "./sanitize.ts";
 
 type GmailListResponse = {
@@ -54,33 +57,47 @@ function getHeader(
   key: string,
 ): string | null {
   if (!headers?.length) return null;
-  const header = headers.find((item) => item.name.toLowerCase() === key.toLowerCase());
+  const header = headers.find(
+    (item) => item.name.toLowerCase() === key.toLowerCase(),
+  );
   return header?.value ?? null;
 }
 
 function getGoogleAccessToken(env: Env): string {
-  const authorization = (env as any)?.MESH_REQUEST_CONTEXT?.authorization;
-  if (!authorization || typeof authorization !== "string") {
-    throw new Error("Not authenticated. Please login with Google first.");
+  const googleConfig = (env as any)?.MESH_REQUEST_CONTEXT?.state?.GOOGLE_CONFIG;
+  if (!googleConfig?.access_token) {
+    throw new Error(
+      "Google not configured. Please set GOOGLE_CONFIG.access_token in the MCP state. " +
+        "Get a token from Google OAuth Playground (https://developers.google.com/oauthplayground) " +
+        "with scope: https://www.googleapis.com/auth/gmail.readonly",
+    );
   }
-  return authorization.replace(/^Bearer\s+/i, "");
+  return googleConfig.access_token;
 }
 
-async function findCustomersByName(customerName: string): Promise<NameSearchResult> {
+async function findCustomersByName(
+  customerName: string,
+): Promise<NameSearchResult> {
   const escaped = escapeSqlLiteral(customerName);
-  const baseFrom = `
-    FROM v_customer_contacts c
-    INNER JOIN (SELECT DISTINCT id FROM v_billing) b
-      ON b.id = c.id
+
+  // Get distinct customers from billing data
+  const baseQuery = `
+    FROM (
+      SELECT DISTINCT name, email
+      FROM v_billing
+      WHERE name IS NOT NULL
+    ) c
   `;
 
   const exactRows = await query<CustomerRow>(
-    `SELECT c.id, c.name, c.email
-     ${baseFrom}
+    `SELECT c.name, c.email
+     ${baseQuery}
      WHERE LOWER(c.name) = LOWER('${escaped}')
-     ORDER BY c.id`,
+     ORDER BY c.name`,
   );
-  const exact = sanitizeRows(exactRows as Record<string, unknown>[]) as CustomerRow[];
+  const exact = sanitizeRows(
+    exactRows as Record<string, unknown>[],
+  ) as CustomerRow[];
 
   if (exact.length === 1) {
     return { selected: exact[0], matchType: "exact", candidates: exact };
@@ -90,12 +107,14 @@ async function findCustomersByName(customerName: string): Promise<NameSearchResu
   }
 
   const partialRows = await query<CustomerRow>(
-    `SELECT c.id, c.name, c.email
-     ${baseFrom}
+    `SELECT c.name, c.email
+     ${baseQuery}
      WHERE LOWER(c.name) LIKE LOWER('%${escaped}%')
-     ORDER BY c.name, c.id`,
+     ORDER BY c.name`,
   );
-  const partial = sanitizeRows(partialRows as Record<string, unknown>[]) as CustomerRow[];
+  const partial = sanitizeRows(
+    partialRows as Record<string, unknown>[],
+  ) as CustomerRow[];
 
   if (partial.length === 1) {
     return { selected: partial[0], matchType: "partial", candidates: partial };
@@ -123,8 +142,11 @@ async function listGmailMessages(
   const textContains = filters.textContains?.trim();
   if (subjectContains) {
     const subjectTerms = subjectContains
+
       .split(/\s+/)
+
       .map((term) => term.trim().replace(/[()"]/g, ""))
+
       .filter(Boolean);
     for (const term of subjectTerms) {
       terms.push(`subject:${term}`);
@@ -134,8 +156,11 @@ async function listGmailMessages(
   // Free-text search in Gmail query (can match subject/body).
   if (textContains) {
     const freeTerms = textContains
+
       .split(/\s+/)
+
       .map((term) => term.trim().replace(/[()"]/g, ""))
+
       .filter(Boolean);
     for (const term of freeTerms) {
       terms.push(term);
@@ -153,7 +178,9 @@ async function listGmailMessages(
   }
 
   const gmailQuery = terms.join(" ");
-  const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+  const listUrl = new URL(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+  );
   listUrl.searchParams.set("q", gmailQuery);
   listUrl.searchParams.set("maxResults", String(maxResults));
 
@@ -187,7 +214,9 @@ async function listGmailMessages(
 
       if (!detailResponse.ok) {
         const error = await detailResponse.text();
-        throw new Error(`Gmail message error (${detailResponse.status}): ${error}`);
+        throw new Error(
+          `Gmail message error (${detailResponse.status}): ${error}`,
+        );
       }
 
       const data = (await detailResponse.json()) as GmailMessageResponse;
@@ -218,7 +247,9 @@ async function listGmailMessages(
   if (subjectContains) {
     const normalizedFilter = subjectContains.toLowerCase();
     messages = detailed.filter((message) =>
-      String(message.subject ?? "").toLowerCase().includes(normalizedFilter)
+      String(message.subject ?? "")
+        .toLowerCase()
+        .includes(normalizedFilter),
     );
   }
   if (textContains) {
@@ -226,7 +257,9 @@ async function listGmailMessages(
     messages = messages.filter((message) => {
       const subject = String(message.subject ?? "").toLowerCase();
       const snippet = String(message.snippet ?? "").toLowerCase();
-      return subject.includes(normalizedText) || snippet.includes(normalizedText);
+      return (
+        subject.includes(normalizedText) || snippet.includes(normalizedText)
+      );
     });
   }
 
@@ -234,41 +267,72 @@ async function listGmailMessages(
 }
 
 export const createCustomerEmailsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "customer_emails_get",
     description:
-      "Searches for a customer by ID or name and returns emails sent by that customer via Gmail (Google OAuth).",
+      "Searches for a customer by name and returns emails sent by that customer via Gmail (Google OAuth).",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("Numeric customer ID (recommended, unique). E.g.: 1108. Takes priority over customer_name if provided."),
-      customer_name: z.string().optional()
-        .describe("Customer name for contact table lookup. E.g.: Acme Corp."),
-      email_domain: z.string().optional()
-        .describe("Email domain for corporate search (e.g.: empresa.com or @empresa.com). Searches emails from all contacts matching this domain. Useful for large corporate clients where multiple people may send emails."),
-      subject_contains: z.string().optional()
-        .describe("Text term informed by user. By default this is also used as full-text match (subject/snippet)."),
-      text_contains: z.string().optional()
-        .describe("Filter by text mention in subject OR snippet/body preview. E.g.: invoice"),
-      strict_subject_match: z.boolean().optional()
-        .describe("When true, applies strict subject-only filtering using subject_contains."),
-      start_date: z.string().optional()
-        .describe("Start date for email search. Format: YYYY-MM-DD. E.g.: 2024-01-01"),
-      end_date: z.string().optional()
-        .describe("End date for email search. Format: YYYY-MM-DD. E.g.: 2024-12-31"),
-      max_results: z.preprocess(
-        (value) => {
+      customer_name: z
+        .string()
+        .optional()
+
+        .describe("Customer name for lookup. E.g.: Acme Corp."),
+      email_domain: z
+        .string()
+        .optional()
+
+        .describe(
+          "Email domain for corporate search (e.g.: empresa.com or @empresa.com). Searches emails from all contacts matching this domain. Useful for large corporate clients where multiple people may send emails.",
+        ),
+      subject_contains: z
+        .string()
+        .optional()
+
+        .describe(
+          "Text term informed by user. By default this is also used as full-text match (subject/snippet).",
+        ),
+      text_contains: z
+        .string()
+        .optional()
+
+        .describe(
+          "Filter by text mention in subject OR snippet/body preview. E.g.: invoice",
+        ),
+      strict_subject_match: z
+        .boolean()
+        .optional()
+
+        .describe(
+          "When true, applies strict subject-only filtering using subject_contains.",
+        ),
+      start_date: z
+        .string()
+        .optional()
+
+        .describe(
+          "Start date for email search. Format: YYYY-MM-DD. E.g.: 2024-01-01",
+        ),
+      end_date: z
+        .string()
+        .optional()
+
+        .describe(
+          "End date for email search. Format: YYYY-MM-DD. E.g.: 2024-12-31",
+        ),
+      max_results: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(50).default(10),
-      ).describe("Maximum number of emails returned (default: 10, max: 50)."),
+        }, z.coerce.number().int().min(1).max(50).default(10))
+        .describe("Maximum number of emails returned (default: 10, max: 50)."),
     }),
 
     outputSchema: z.object({
       customer_found: z.boolean(),
-      match_type: z.enum(["id", "exact", "partial", "none", "ambiguous", "domain"]),
+      match_type: z.enum(["exact", "partial", "none", "ambiguous", "domain"]),
       customer: z.any().nullable(),
       candidates: z.array(z.any()),
       domain_contacts: z.array(z.any()).optional(),
@@ -278,14 +342,15 @@ export const createCustomerEmailsTool = (env: Env) =>
     }),
 
     execute: async ({ context }) => {
-      const customerId = clean(context.customer_id);
       const customerName = clean(context.customer_name);
       const emailDomain = clean(context.email_domain);
       const rawSubjectContains = clean(context.subject_contains);
       const rawTextContains = clean(context.text_contains);
       const strictSubjectMatch = context.strict_subject_match === true;
       const effectiveTextContains = rawTextContains ?? rawSubjectContains;
-      const effectiveSubjectContains = strictSubjectMatch ? rawSubjectContains : undefined;
+      const effectiveSubjectContains = strictSubjectMatch
+        ? rawSubjectContains
+        : undefined;
 
       if (emailDomain) {
         const domainClean = emailDomain.trim().toLowerCase().replace(/^@/, "");
@@ -297,7 +362,9 @@ export const createCustomerEmailsTool = (env: Env) =>
           let domainContacts: CustomerRow[] = [];
           try {
             domainContacts = await resolveCustomersByDomain(domainClean);
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
 
           return {
             customer_found: domainContacts.length > 0,
@@ -311,7 +378,9 @@ export const createCustomerEmailsTool = (env: Env) =>
               search_mode: "domain",
               domain: domainClean,
               reason: (err as Error).message,
-              required_scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+              required_scopes: [
+                "https://www.googleapis.com/auth/gmail.readonly",
+              ],
             },
           };
         }
@@ -319,15 +388,22 @@ export const createCustomerEmailsTool = (env: Env) =>
         let domainContacts: CustomerRow[] = [];
         try {
           domainContacts = await resolveCustomersByDomain(domainClean);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         try {
-          const result = await listGmailMessages(accessToken, `@${domainClean}`, context.max_results, {
-            subjectContains: effectiveSubjectContains,
-            textContains: effectiveTextContains,
-            startDate: clean(context.start_date),
-            endDate: clean(context.end_date),
-          });
+          const result = await listGmailMessages(
+            accessToken,
+            `@${domainClean}`,
+            context.max_results,
+            {
+              subjectContains: effectiveSubjectContains,
+              textContains: effectiveTextContains,
+              startDate: clean(context.start_date),
+              endDate: clean(context.end_date),
+            },
+          );
 
           return {
             customer_found: true,
@@ -364,52 +440,27 @@ export const createCustomerEmailsTool = (env: Env) =>
       }
 
       let selected: CustomerRow | null = null;
-      let matchType: "id" | "exact" | "partial" | "none" | "ambiguous" = "none";
+      let matchType: "exact" | "partial" | "none" | "ambiguous" = "none";
       let candidates: CustomerRow[] = [];
 
-      if (customerId) {
-        try {
-          const resolved = await resolveCustomer({
-            customer_id: customerId,
-            customer_name: customerName,
-          });
-          selected = resolved.customer;
-          matchType = resolved.match_type;
-          candidates = [resolved.customer];
-        } catch {
-          return {
-            customer_found: false,
-            match_type: "none" as const,
-            customer: null,
-            candidates: [],
-            total_messages: 0,
-            messages: [],
-            _meta: {
-              search_mode: "standard",
-              reason: "Customer not found for the given customer_id.",
-            },
-          };
-        }
-      } else {
-        if (!customerName?.trim()) {
-          return {
-            customer_found: false,
-            match_type: "none" as const,
-            customer: null,
-            candidates: [],
-            total_messages: 0,
-            messages: [],
-            _meta: {
-              search_mode: "standard",
-              reason: "Please provide customer_id or customer_name to search for a customer.",
-            },
-          };
-        }
-        const search = await findCustomersByName(customerName.trim());
-        selected = search.selected;
-        matchType = search.matchType;
-        candidates = search.candidates;
+      if (!customerName?.trim()) {
+        return {
+          customer_found: false,
+          match_type: "none" as const,
+          customer: null,
+          candidates: [],
+          total_messages: 0,
+          messages: [],
+          _meta: {
+            search_mode: "standard",
+            reason: "Please provide customer_name to search for a customer.",
+          },
+        };
       }
+      const search = await findCustomersByName(customerName.trim());
+      selected = search.selected;
+      matchType = search.matchType;
+      candidates = search.candidates;
 
       if (matchType === "none") {
         return {
@@ -421,7 +472,8 @@ export const createCustomerEmailsTool = (env: Env) =>
           messages: [],
           _meta: {
             search_mode: "standard",
-            reason: "No customer found in the contacts table linked to billing. Try using customer_id or email_domain.",
+            reason:
+              "No customer found in billing database. Try using email_domain.",
           },
         };
       }
@@ -436,7 +488,8 @@ export const createCustomerEmailsTool = (env: Env) =>
           messages: [],
           _meta: {
             search_mode: "standard",
-            reason: "Multiple customers found. Please use customer_id (unique) instead, or try email_domain for corporate searches.",
+            reason:
+              "Multiple customers found. Please provide more specific name, or try email_domain for corporate searches.",
           },
         };
       }
@@ -462,12 +515,17 @@ export const createCustomerEmailsTool = (env: Env) =>
       }
 
       try {
-        const result = await listGmailMessages(accessToken, customer.email, context.max_results, {
-          subjectContains: effectiveSubjectContains,
-          textContains: effectiveTextContains,
-          startDate: clean(context.start_date),
-          endDate: clean(context.end_date),
-        });
+        const result = await listGmailMessages(
+          accessToken,
+          customer.email,
+          context.max_results,
+          {
+            subjectContains: effectiveSubjectContains,
+            textContains: effectiveTextContains,
+            startDate: clean(context.start_date),
+            endDate: clean(context.end_date),
+          },
+        );
 
         return {
           customer_found: true,

@@ -51,6 +51,7 @@ export const getListBlogSourcesTool = (env: Env) =>
       success: z.boolean(),
       total: z.number().optional(),
       sources: z
+
         .array(
           z.object({
             id: z.string(),
@@ -60,6 +61,7 @@ export const getListBlogSourcesTool = (env: Env) =>
             authority: z.string(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -108,9 +110,13 @@ export const getListLinkedInSourcesTool = (env: Env) =>
     description: "Lists all LinkedIn profiles registered for monitoring.",
     inputSchema: z.object({
       active_only: z
+
         .boolean()
+
         .optional()
+
         .default(true)
+
         .describe("If true, lists only active sources (default: true)"),
     }),
     outputSchema: z.object({
@@ -118,6 +124,7 @@ export const getListLinkedInSourcesTool = (env: Env) =>
       total: z.number().optional(),
       filter: z.string().optional(),
       sources: z
+
         .array(
           z.object({
             id: z.string(),
@@ -128,6 +135,7 @@ export const getListLinkedInSourcesTool = (env: Env) =>
             active: z.boolean(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -182,9 +190,13 @@ export const getListRedditSourcesTool = (env: Env) =>
     description: "Lists all subreddits registered for monitoring.",
     inputSchema: z.object({
       active_only: z
+
         .boolean()
+
         .optional()
+
         .default(true)
+
         .describe("If true, lists only active sources (default: true)"),
     }),
     outputSchema: z.object({
@@ -192,6 +204,7 @@ export const getListRedditSourcesTool = (env: Env) =>
       total: z.number().optional(),
       filter: z.string().optional(),
       sources: z
+
         .array(
           z.object({
             id: z.string(),
@@ -202,6 +215,7 @@ export const getListRedditSourcesTool = (env: Env) =>
             active: z.boolean(),
           }),
         )
+
         .optional(),
       error: z.string().optional(),
     }),

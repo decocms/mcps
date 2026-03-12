@@ -98,9 +98,13 @@ export async function getGuild(id: string): Promise<GuildData | null> {
   }
 
   const { data, error } = await client
+
     .from("guilds")
+
     .select("*")
+
     .eq("id", id)
+
     .single();
 
   if (error) {
@@ -240,9 +244,13 @@ export async function getMessage(id: string): Promise<MessageData | null> {
   }
 
   const { data, error } = await client
+
     .from("discord_message")
+
     .select("*")
+
     .eq("id", id)
+
     .single();
 
   if (error) {
@@ -294,7 +302,9 @@ export async function markMessageDeleted(
   }
 
   const { error } = await client
+
     .from("discord_message")
+
     .update({
       deleted: true,
       deleted_at: new Date().toISOString(),
@@ -303,6 +313,7 @@ export async function markMessageDeleted(
       bulk_deleted: bulkDeleted,
       last_updated_at: new Date().toISOString(),
     })
+
     .eq("id", messageId);
 
   if (error) {
@@ -335,7 +346,9 @@ export async function markMessagesDeleted(
   }
 
   const { error } = await client
+
     .from("discord_message")
+
     .update({
       deleted: true,
       deleted_at: new Date().toISOString(),
@@ -344,6 +357,7 @@ export async function markMessagesDeleted(
       bulk_deleted: true,
       last_updated_at: new Date().toISOString(),
     })
+
     .in("id", messageIds);
 
   if (error) {
@@ -390,13 +404,16 @@ export async function updateMessageContent(
   const newHistory = [...existingHistory, historyEntry];
 
   const { error } = await client
+
     .from("discord_message")
+
     .update({
       content: newContent,
       edited_at: editedAt.toISOString(),
       edit_history: newHistory,
       last_updated_at: new Date().toISOString(),
     })
+
     .eq("id", messageId);
 
   if (error) {
@@ -468,7 +485,9 @@ export async function upsertReaction(reaction: ReactionData): Promise<void> {
   };
 
   const { error } = await client
+
     .from("discord_message_reaction")
+
     .upsert(row as any, {
       onConflict: "message_id,emoji_id,emoji_name",
     });
@@ -497,9 +516,13 @@ export async function deleteReaction(
   }
 
   let query = client
+
     .from("discord_message_reaction")
+
     .delete()
+
     .eq("message_id", messageId)
+
     .eq("emoji_name", emojiName);
 
   if (emojiId) {
@@ -528,8 +551,11 @@ export async function deleteAllReactions(messageId: string): Promise<void> {
   }
 
   const { error } = await client
+
     .from("discord_message_reaction")
+
     .delete()
+
     .eq("message_id", messageId);
 
   if (error) {
@@ -554,9 +580,13 @@ export async function getReactionUserIds(
   }
 
   let query = client
+
     .from("discord_message_reaction")
+
     .select("user_ids")
+
     .eq("message_id", messageId)
+
     .eq("emoji_name", emojiName);
 
   if (emojiId) {
@@ -695,9 +725,13 @@ export async function getChannel(id: string): Promise<ChannelData | null> {
   }
 
   const { data, error } = await client
+
     .from("discord_channel")
+
     .select("*")
+
     .eq("id", id)
+
     .single();
 
   if (error) {
@@ -722,12 +756,15 @@ export async function markChannelDeleted(channelId: string): Promise<void> {
   }
 
   const { error } = await client
+
     .from("discord_channel")
+
     .update({
       deleted: true,
       deleted_at: new Date().toISOString(),
       last_updated_at: new Date().toISOString(),
     })
+
     .eq("id", channelId);
 
   if (error) {
@@ -815,10 +852,15 @@ export async function getMember(
   }
 
   const { data, error } = await client
+
     .from("discord_member")
+
     .select("*")
+
     .eq("guild_id", guildId)
+
     .eq("user_id", userId)
+
     .single();
 
   if (error) {
@@ -846,13 +888,17 @@ export async function markMemberLeft(
   }
 
   const { error } = await client
+
     .from("discord_member")
+
     .update({
       is_member: false,
       left_at: new Date().toISOString(),
       last_updated_at: new Date().toISOString(),
     })
+
     .eq("guild_id", guildId)
+
     .eq("user_id", userId);
 
   if (error) {
@@ -898,11 +944,17 @@ export async function getChannelContext(
   }
 
   const { data, error } = await client
+
     .from("discord_channel_context")
+
     .select("*")
+
     .eq("guild_id", guildId)
+
     .eq("channel_id", channelId)
+
     .eq("enabled", true)
+
     .single();
 
   if (error) {
@@ -965,9 +1017,13 @@ export async function deleteChannelContext(
   }
 
   const { error } = await client
+
     .from("discord_channel_context")
+
     .delete()
+
     .eq("guild_id", guildId)
+
     .eq("channel_id", channelId);
 
   if (error) {
@@ -988,10 +1044,15 @@ export async function listChannelContexts(
   }
 
   const { data, error } = await client
+
     .from("discord_channel_context")
+
     .select("*")
+
     .eq("guild_id", guildId)
+
     .eq("enabled", true)
+
     .order("channel_name", { ascending: true });
 
   if (error) {

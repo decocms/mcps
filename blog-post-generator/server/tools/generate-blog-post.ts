@@ -19,43 +19,67 @@ const BlogPostRecommendationSchema = z.object({
   estimated_word_count: z.number().optional().describe("Estimated word count"),
   core_angle: z.string().optional().describe("Core strategic angle"),
   problem_addressed: z
+
     .string()
+
     .optional()
+
     .describe("Problem the post addresses"),
   why_it_differs: z
+
     .string()
+
     .optional()
+
     .describe("Why this differs from existing content"),
   primary_audience: z.string().optional().describe("Primary target audience"),
   why_now: z.string().optional().describe("Why this topic is timely"),
   key_sections: z
+
     .array(
       z.object({
         section_title: z.string(),
         section_goal: z.string(),
       }),
     )
+
     .optional()
+
     .describe("Key sections of the article"),
   primary_keywords: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Primary SEO keywords"),
   secondary_keywords: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Secondary SEO keywords"),
   suggested_channels: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Suggested distribution channels"),
   engagement_potential: z
+
     .string()
+
     .optional()
+
     .describe("Engagement potential rating"),
   engagement_reasoning: z
+
     .string()
+
     .optional()
+
     .describe("Reasoning for engagement potential"),
 });
 
@@ -71,59 +95,92 @@ export const generateBlogPostTool = (env: Env) =>
       "Returns 4 blog post suggestions with title, content, and summary.",
     inputSchema: z.object({
       contextText: z
+
         .string()
+
         .optional()
+
         .describe(
           "Plain text context for blog post generation. Use this OR contextJson, not both.",
         ),
       contextJson: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe(
           "JSON context for blog post generation (e.g., from content-scraper). Use this OR contextText, not both.",
         ),
       toneOfVoiceText: z
+
         .string()
+
         .optional()
+
         .describe(
           "Plain text describing the desired tone of voice. Use this OR toneOfVoiceJson, not both.",
         ),
       toneOfVoiceJson: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe(
           "JSON describing the desired tone of voice with structured attributes. Use this OR toneOfVoiceText, not both.",
         ),
       additionalInstructions: z
+
         .string()
+
         .optional()
+
         .describe("Additional instructions for blog post generation"),
       content_purpose: z
+
         .string()
+
         .optional()
+
         .describe("Content purpose for blog post generation"),
       brand_context: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe("Brand context as JSON for blog post generation"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       recommendations: z
+
         .array(BlogPostRecommendationSchema)
+
         .optional()
+
         .describe("Generated blog post recommendations"),
       analysis_context: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe("Analysis context from the webhook"),
       recommendation_rationale: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe("Rationale for recommendations"),
       raw_response: z
+
         .unknown()
+
         .optional()
+
         .describe("Raw response from webhook for additional details"),
       error: z.string().optional(),
     }),
@@ -248,7 +305,9 @@ export const generateBlogPostTool = (env: Env) =>
             return {
               success: true,
               recommendations: legacyPosts
+
                 .slice(0, 4)
+
                 .map((post: Record<string, unknown>) => ({
                   title: String(post.title ?? ""),
                   subtitle: String(post.subtitle ?? post.summary ?? ""),

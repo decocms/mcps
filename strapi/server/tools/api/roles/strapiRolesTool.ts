@@ -10,21 +10,30 @@ export const createStrapiGetRolesTool = (env: Env) =>
     description: "Lista roles (funções) disponíveis no Strapi CMS.",
     inputSchema: z.object({
       filters: z
+
         .string()
+
         .optional()
+
         .describe("Filtros para a consulta de roles (formato JSON string)"),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({
@@ -127,8 +136,11 @@ export const createStrapiCreateRoleTool = (env: Env) =>
       description: z.string().optional().describe("Descrição do role"),
       type: z.string().optional().describe("Tipo do role"),
       permissions: z
+
         .string()
+
         .optional()
+
         .describe("Permissões do role (formato JSON string)"),
     }),
     outputSchema: z.object({
@@ -191,14 +203,19 @@ export const createStrapiUpdateRoleTool = (env: Env) =>
     description: "Atualiza um role existente no Strapi CMS.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do role a ser atualizado"),
       name: z.string().optional().describe("Novo nome do role"),
       description: z.string().optional().describe("Nova descrição do role"),
       type: z.string().optional().describe("Novo tipo do role"),
       permissions: z
+
         .string()
+
         .optional()
+
         .describe("Novas permissões do role (formato JSON string)"),
     }),
     outputSchema: z.object({
@@ -263,7 +280,9 @@ export const createStrapiDeleteRoleTool = (env: Env) =>
     description: "Exclui um role no Strapi CMS.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do role a ser excluído"),
     }),
     outputSchema: z.object({
@@ -310,23 +329,32 @@ export const createStrapiGetPermissionsTool = (env: Env) =>
     description: "Lista permissões disponíveis no Strapi CMS.",
     inputSchema: z.object({
       filters: z
+
         .string()
+
         .optional()
+
         .describe(
           "Filtros para a consulta de permissões (formato JSON string)",
         ),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({

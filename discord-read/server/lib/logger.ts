@@ -168,10 +168,12 @@ export class HyperDXLogger {
     // If API key is configured, also send to HyperDX API
     if (this.apiKey) {
       this.sendToHyperDX(logEntry)
+
         .then(() => {
           // Debug: uncomment to verify sends
           // console.log("[HyperDX] ✅ Log sent successfully");
         })
+
         .catch((error) => {
           // Don't block on HyperDX send failures, just log to console
           console.error("[HyperDX] ❌ Failed to send log:", error.message);
@@ -213,7 +215,9 @@ export class HyperDXLogger {
                       ).toUpperCase(),
                       body: { stringValue: String(logEntry.body) },
                       attributes: Object.entries(logEntry)
+
                         .filter(([key]) => key !== "body" && key !== "level")
+
                         .map(([key, value]) => ({
                           key,
                           value: { stringValue: String(value) },

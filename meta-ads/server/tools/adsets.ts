@@ -36,16 +36,25 @@ export const createGetAdSetsTool = (env: Env) =>
       "Get ad sets for a Meta Ads account. Can filter by campaign ID. Returns ad set details including targeting, budget, and optimization settings.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
       limit: z.coerce
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Maximum number of ad sets to return (default: 50)"),
       campaign_id: z
+
         .string()
+
         .optional()
+
         .describe("Filter ad sets by campaign ID"),
     }),
     outputSchema: z.object({
@@ -138,41 +147,57 @@ export const createGetAdSetDetailsTool = (env: Env) =>
       billing_event: z.string().optional(),
       optimization_goal: z.string().optional(),
       targeting: z
+
         .object({
           age_min: z.number().optional(),
           age_max: z.number().optional(),
           genders: z.array(z.number()).optional(),
           geo_locations: z
+
             .object({
               countries: z.array(z.string()).optional(),
               regions: z
+
                 .array(
                   z.object({ key: z.string(), name: z.string() }).passthrough(),
                 )
+
                 .optional(),
               cities: z
+
                 .array(
                   z.object({ key: z.string(), name: z.string() }).passthrough(),
                 )
+
                 .optional(),
             })
+
             .passthrough()
+
             .optional(),
           interests: z
+
             .array(z.object({ id: z.string(), name: z.string() }).passthrough())
+
             .optional(),
           behaviors: z
+
             .array(z.object({ id: z.string(), name: z.string() }).passthrough())
+
             .optional(),
           custom_audiences: z
+
             .array(z.object({ id: z.string(), name: z.string() }).passthrough())
+
             .optional(),
           publisher_platforms: z.array(z.string()).optional(),
           facebook_positions: z.array(z.string()).optional(),
           instagram_positions: z.array(z.string()).optional(),
           device_platforms: z.array(z.string()).optional(),
         })
+
         .passthrough()
+
         .optional(),
       promoted_object: z.record(z.string(), z.unknown()).optional(),
     }),
@@ -210,20 +235,31 @@ const targetingInputSchema = z.object({
   age_min: z.number().optional().describe("Minimum age (18-65)"),
   age_max: z.number().optional().describe("Maximum age (18-65)"),
   genders: z
+
     .array(z.number())
+
     .optional()
+
     .describe("Gender targeting: 1 = male, 2 = female. Empty for all."),
   geo_locations: z
+
     .object({
       countries: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Array of country codes (e.g., ['US', 'BR', 'GB'])"),
       regions: z
+
         .array(z.object({ key: z.string() }))
+
         .optional()
+
         .describe("Array of region keys"),
       cities: z
+
         .array(
           z.object({
             key: z.string(),
@@ -231,37 +267,59 @@ const targetingInputSchema = z.object({
             distance_unit: z.string().optional(),
           }),
         )
+
         .optional()
+
         .describe("Array of city keys with optional radius"),
       location_types: z.array(z.string()).optional(),
     })
+
     .optional()
+
     .describe("Geographic targeting"),
   interests: z
+
     .array(z.object({ id: z.string() }))
+
     .optional()
+
     .describe("Array of interest IDs for targeting"),
   behaviors: z
+
     .array(z.object({ id: z.string() }))
+
     .optional()
+
     .describe("Array of behavior IDs for targeting"),
   custom_audiences: z
+
     .array(z.object({ id: z.string() }))
+
     .optional()
+
     .describe("Array of custom audience IDs"),
   excluded_custom_audiences: z
+
     .array(z.object({ id: z.string() }))
+
     .optional()
+
     .describe("Array of custom audience IDs to exclude"),
   publisher_platforms: z
+
     .array(z.enum(["facebook", "instagram", "audience_network", "messenger"]))
+
     .optional()
+
     .describe("Platforms to show ads on"),
   facebook_positions: z.array(z.string()).optional(),
   instagram_positions: z.array(z.string()).optional(),
   device_platforms: z
+
     .array(z.enum(["mobile", "desktop"]))
+
     .optional()
+
     .describe("Device types to target"),
 });
 
@@ -275,19 +333,26 @@ export const createCreateAdSetTool = (env: Env) =>
       "Create a new Meta Ads ad set. This is STEP 2 of 5 to create ads. REQUIRES: A campaign_id from CREATE_CAMPAIGN. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE (optional) → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. Define targeting, budget, optimization goal, and billing settings.",
     inputSchema: z.object({
       account_id: z
+
         .string()
+
         .describe("Meta Ads account ID (format: act_XXXXXXXXX)"),
       campaign_id: z.string().describe("Campaign ID to create the ad set in"),
       name: z.string().describe("Ad set name"),
       status: z
+
         .enum(["ACTIVE", "PAUSED"])
+
         .optional()
+
         .default("PAUSED")
+
         .describe("Ad set status (default: PAUSED)"),
       targeting: targetingInputSchema.describe(
         "Targeting specifications for the ad set",
       ),
       optimization_goal: z
+
         .enum([
           "NONE",
           "APP_INSTALLS",
@@ -307,10 +372,12 @@ export const createCreateAdSetTool = (env: Env) =>
           "THRUPLAY",
           "CONVERSATIONS",
         ])
+
         .describe(
           "What to optimize for. LINK_CLICKS for traffic, LANDING_PAGE_VIEWS for quality traffic, LEAD_GENERATION for leads, OFFSITE_CONVERSIONS for purchases, IMPRESSIONS for reach.",
         ),
       billing_event: z
+
         .enum([
           "APP_INSTALLS",
           "CLICKS",
@@ -321,60 +388,92 @@ export const createCreateAdSetTool = (env: Env) =>
           "POST_ENGAGEMENT",
           "THRUPLAY",
         ])
+
         .describe(
           "When you get charged. IMPRESSIONS is most common, LINK_CLICKS for CPC campaigns, THRUPLAY for video views.",
         ),
       bid_strategy: z
+
         .enum([
           "LOWEST_COST_WITHOUT_CAP",
           "LOWEST_COST_WITH_BID_CAP",
           "COST_CAP",
         ])
+
         .optional()
+
         .describe("Bid strategy (default: LOWEST_COST_WITHOUT_CAP)"),
       bid_amount: z
+
         .string()
+
         .optional()
+
         .describe("Bid amount in cents (required for bid cap strategies)"),
       daily_budget: z
+
         .string()
+
         .optional()
+
         .describe(
           "Daily budget in cents (e.g., '5000' for $50.00). Required if campaign doesn't use Campaign Budget Optimization.",
         ),
       lifetime_budget: z
+
         .string()
+
         .optional()
+
         .describe(
           "Lifetime budget in cents. Requires start_time and end_time.",
         ),
       start_time: z
+
         .string()
+
         .optional()
+
         .describe("Start time in ISO 8601 format"),
       end_time: z
+
         .string()
+
         .optional()
+
         .describe("End time in ISO 8601 format (required for lifetime_budget)"),
       promoted_object: z
+
         .object({
           page_id: z.string().optional().describe("Facebook Page ID"),
           pixel_id: z
+
             .string()
+
             .optional()
+
             .describe("Meta Pixel ID for conversion tracking"),
           application_id: z
+
             .string()
+
             .optional()
+
             .describe("App ID for app promotion"),
           custom_event_type: z
+
             .string()
+
             .optional()
+
             .describe("Custom conversion event type (e.g., PURCHASE, LEAD)"),
         })
+
         .optional()
+
         .describe("Object being promoted (page, pixel, or app)"),
       destination_type: z
+
         .enum([
           "WEBSITE",
           "APP",
@@ -383,13 +482,17 @@ export const createCreateAdSetTool = (env: Env) =>
           "INSTAGRAM_DIRECT",
           "FACEBOOK",
         ])
+
         .optional()
+
         .describe("Where users are sent after clicking"),
     }),
     outputSchema: z.object({
       id: z.string().describe("ID of the created ad set"),
       success: z
+
         .boolean()
+
         .describe("Whether the ad set was created successfully"),
     }),
     execute: async ({ context }) => {
@@ -432,13 +535,19 @@ export const createUpdateAdSetTool = (env: Env) =>
       adset_id: z.string().describe("Ad set ID to update"),
       name: z.string().optional().describe("New ad set name"),
       status: z
+
         .enum(["ACTIVE", "PAUSED", "DELETED", "ARCHIVED"])
+
         .optional()
+
         .describe("New status. Use PAUSED to pause, ACTIVE to activate."),
       targeting: targetingInputSchema
+
         .optional()
+
         .describe("New targeting settings"),
       optimization_goal: z
+
         .enum([
           "NONE",
           "APP_INSTALLS",
@@ -458,9 +567,12 @@ export const createUpdateAdSetTool = (env: Env) =>
           "THRUPLAY",
           "CONVERSATIONS",
         ])
+
         .optional()
+
         .describe("New optimization goal"),
       billing_event: z
+
         .enum([
           "APP_INSTALLS",
           "CLICKS",
@@ -471,21 +583,29 @@ export const createUpdateAdSetTool = (env: Env) =>
           "POST_ENGAGEMENT",
           "THRUPLAY",
         ])
+
         .optional()
+
         .describe("New billing event"),
       bid_strategy: z
+
         .enum([
           "LOWEST_COST_WITHOUT_CAP",
           "LOWEST_COST_WITH_BID_CAP",
           "COST_CAP",
         ])
+
         .optional()
+
         .describe("New bid strategy"),
       bid_amount: z.string().optional().describe("New bid amount in cents"),
       daily_budget: z.string().optional().describe("New daily budget in cents"),
       lifetime_budget: z
+
         .string()
+
         .optional()
+
         .describe("New lifetime budget in cents"),
       start_time: z.string().optional().describe("New start time"),
       end_time: z.string().optional().describe("New end time"),

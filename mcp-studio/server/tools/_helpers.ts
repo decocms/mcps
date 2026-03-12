@@ -108,11 +108,13 @@ export function buildWhereClause(
   // Logical condition (and, or, not)
   if ("operator" in whereExpr && "conditions" in whereExpr) {
     const conditions = (whereExpr.conditions || [])
+
       .map((cond) => {
         const result = buildWhereClause(cond, params);
         params = result.params;
         return result.clause;
       })
+
       .filter(Boolean); // Filter out empty clauses
 
     // If all conditions resolved to empty, return empty

@@ -40,7 +40,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -101,7 +101,10 @@ describe("customer_billing_get", () => {
 
   it("deve retornar métricas financeiras corretas para faturas pagas", async () => {
     // Simular 2 faturas pagas
-    mockQuery.mockResolvedValueOnce([INVOICE_PAID, { ...INVOICE_PAID, reference_month: "2024-12-01" }]);
+    mockQuery.mockResolvedValueOnce([
+      INVOICE_PAID,
+      { ...INVOICE_PAID, reference_month: "2024-12-01" },
+    ]);
 
     const result = await capturedExecute({
       context: { customer_id: "1108", limit: 50 },
@@ -157,11 +160,11 @@ describe("customer_billing_get", () => {
 
   it("deve propagar erro quando cliente não é encontrado", async () => {
     mockResolveCustomer.mockRejectedValueOnce(
-      new Error("Customer not found for the given customer_id.")
+      new Error("Customer not found for the given customer_id."),
     );
 
     await expect(
-      capturedExecute({ context: { customer_id: "9999", limit: 50 } })
+      capturedExecute({ context: { customer_id: "9999", limit: 50 } }),
     ).rejects.toThrow("Customer not found");
   });
 
@@ -262,8 +265,21 @@ describe("customer_billing_get", () => {
 
   it("deve calcular métricas apenas sobre faturas retornadas (não todas)", async () => {
     // Simular que o mock retorna apenas 2 faturas (como se months=2)
-    const inv1 = { ...INVOICE_PAID, amount: 1000, extra_pageviews_price: 300, extra_req_price: 0, extra_bw_price: 0 };
-    const inv2 = { ...INVOICE_PAID, amount: 1500, extra_pageviews_price: 400, extra_req_price: 0, extra_bw_price: 0, reference_month: "2025-02-01" };
+    const inv1 = {
+      ...INVOICE_PAID,
+      amount: 1000,
+      extra_pageviews_price: 300,
+      extra_req_price: 0,
+      extra_bw_price: 0,
+    };
+    const inv2 = {
+      ...INVOICE_PAID,
+      amount: 1500,
+      extra_pageviews_price: 400,
+      extra_req_price: 0,
+      extra_bw_price: 0,
+      reference_month: "2025-02-01",
+    };
     mockQuery.mockResolvedValueOnce([inv1, inv2]);
 
     const result = await capturedExecute({

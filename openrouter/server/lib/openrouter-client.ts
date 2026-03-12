@@ -270,8 +270,11 @@ export class OpenRouterClient {
     }
 
     return content
+
       .map((part) => (part.type === "text" ? (part.text ?? "") : ""))
+
       .join("")
+
       .trim();
   }
 
@@ -313,13 +316,16 @@ export class OpenRouterClient {
 
     if (Array.isArray(message.content)) {
       return message.content
+
         .map((part) => {
           if (part.type === "text") {
             return part.text ?? "";
           }
           return "";
         })
+
         .join("")
+
         .trim();
     }
 

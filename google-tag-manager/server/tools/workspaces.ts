@@ -37,15 +37,21 @@ export const createListWorkspacesTool = (env: Env) =>
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       containerId: z.string().describe("Container ID (e.g., '67890')"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       workspaces: z.array(WorkspaceSchema).describe("List of workspaces"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {

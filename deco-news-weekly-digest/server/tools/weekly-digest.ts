@@ -43,6 +43,7 @@ const CategoryEnum = z.enum([
  * Schema for a weekly report article (output - all fields optional, allows extra fields from DB)
  */
 const ArticleSchema = z
+
   .object({
     id: z.number().optional(),
     url: z.string().optional(),
@@ -65,6 +66,7 @@ const ArticleSchema = z
     image_url: z.string().optional(),
     image_alt_text: z.string().optional(),
   })
+
   .passthrough();
 
 type Article = z.infer<typeof ArticleSchema>;
@@ -116,30 +118,49 @@ export const listWeeklyDigestTool = (env: Env) =>
       "Supports pagination, filtering by status, category, and searching by title.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .default(20)
+
         .describe("Maximum number of articles to return (default: 20)"),
       offset: z
+
         .number()
+
         .int()
+
         .min(0)
+
         .default(0)
+
         .describe("Number of articles to skip (default: 0)"),
       status: StatusEnum.optional().describe("Filter by article status"),
       category: CategoryEnum.optional().describe("Filter by category"),
       search: z
+
         .string()
+
         .optional()
+
         .describe("Search term to filter by title or content"),
       orderBy: z
+
         .enum(["created_at", "published_at", "title", "reading_time"])
+
         .default("created_at")
+
         .describe("Field to order by (default: created_at)"),
       orderDirection: z
+
         .enum(["asc", "desc"])
+
         .default("desc")
+
         .describe("Order direction (default: desc)"),
     }),
     outputSchema: z.object({
@@ -236,41 +257,60 @@ export const saveWeeklyDigestArticleTool = (env: Env) =>
       url: z.string().url().describe("URL of the article (must be unique)"),
       title: z.string().min(1).describe("Title of the article"),
       source_title: z
+
         .string()
+
         .optional()
+
         .describe("Title of the source/publication"),
       status: StatusEnum.default("draft").describe("Status of the article"),
       content: z.string().optional().describe("Full content of the article"),
       slug: z.string().optional().describe("URL-friendly slug for the article"),
       summary: z.string().optional().describe("Brief summary of the article"),
       key_points: z
+
         .string()
+
         .optional()
+
         .describe(
           "Key points from the article (JSON array or comma-separated)",
         ),
       meta_title: z.string().optional().describe("SEO meta title"),
       meta_description: z.string().optional().describe("SEO meta description"),
       keywords: z
+
         .string()
+
         .optional()
+
         .describe("SEO keywords (comma-separated)"),
       category: CategoryEnum.optional().describe("Article category"),
       tags: z.string().optional().describe("Article tags (comma-separated)"),
       author: z.string().optional().describe("Author name"),
       reading_time: z
+
         .number()
+
         .int()
+
         .optional()
+
         .describe("Estimated reading time in minutes"),
       published_at: z
+
         .string()
+
         .optional()
+
         .describe("Publication date (ISO 8601 format)"),
       image_url: z.string().optional().describe("Main image URL"),
       image_alt_text: z
+
         .string()
+
         .optional()
+
         .describe("Alt text for the main image"),
     }),
     outputSchema: z.object({
@@ -299,8 +339,11 @@ export const saveWeeklyDigestArticleTool = (env: Env) =>
         const slug =
           context.slug ||
           context.title
+
             .toLowerCase()
+
             .replace(/[^a-z0-9]+/g, "-")
+
             .replace(/^-|-$/g, "");
 
         const insertQuery = `
@@ -373,6 +416,7 @@ export const updateWeeklyDigestArticleTool = (env: Env) =>
       id: z.number().int().optional().describe("Article ID to update"),
       url: z.string().url().optional().describe("Article URL to update"),
       updates: z
+
         .object({
           title: z.string().optional(),
           source_title: z.string().optional(),
@@ -392,6 +436,7 @@ export const updateWeeklyDigestArticleTool = (env: Env) =>
           image_url: z.string().optional(),
           image_alt_text: z.string().optional(),
         })
+
         .describe("Fields to update"),
     }),
     outputSchema: z.object({

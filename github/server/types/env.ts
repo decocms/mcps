@@ -70,16 +70,22 @@ export const StateSchema = z.object({
    * - "decocms/mesh" → Only the decocms/mesh repository
    */
   TARGET: z
+
     .string()
+
     .default("")
+
     .describe(
       'Webhook target. Leave empty for all repos, use "org:name" for organization webhook, or "owner/repo" for a specific repository.',
     ),
 
   // User-selectable webhook events
   WEBHOOK_EVENTS: z
+
     .array(z.enum(GITHUB_WEBHOOK_EVENTS))
+
     .default(["push", "pull_request", "issues", "release"])
+
     .describe(
       "GitHub webhook events to subscribe to. Select the events you want to receive.",
     ),

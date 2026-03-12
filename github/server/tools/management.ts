@@ -33,9 +33,13 @@ export const createListRepositoriesTool = (env: Env) =>
       "Returns repository names, descriptions, and visibility settings.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .optional()
+
         .default(100)
+
         .describe("Maximum number of repositories to return"),
     }),
     outputSchema: z.object({

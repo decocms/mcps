@@ -26,7 +26,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -110,7 +110,7 @@ describe("customer_risk_score", () => {
 
   it("deve calcular score baixo para cliente com pagamentos em dia", async () => {
     const invoices = Array.from({ length: 6 }, (_, i) =>
-      makePerfectInvoice(`2025-0${i + 1}-01`)
+      makePerfectInvoice(`2025-0${i + 1}-01`),
     );
     mockQuery.mockResolvedValueOnce(invoices);
 
@@ -124,7 +124,7 @@ describe("customer_risk_score", () => {
 
   it("deve calcular score alto para cliente problematico", async () => {
     const invoices = Array.from({ length: 6 }, (_, i) =>
-      makeProblematicInvoice(`2025-0${i + 1}-01`)
+      makeProblematicInvoice(`2025-0${i + 1}-01`),
     );
     mockQuery.mockResolvedValueOnce(invoices);
 
@@ -175,13 +175,15 @@ describe("customer_risk_score", () => {
       context: { customer_id: "1108" },
     });
 
-    const overdueIssue = result.issues.find((i: string) => i.includes("unpaid"));
+    const overdueIssue = result.issues.find((i: string) =>
+      i.includes("unpaid"),
+    );
     expect(overdueIssue).toBeDefined();
   });
 
   it("deve gerar action sobre tiering quando gap e alto", async () => {
     const invoices = Array.from({ length: 6 }, (_, i) =>
-      makeProblematicInvoice(`2025-0${i + 1}-01`)
+      makeProblematicInvoice(`2025-0${i + 1}-01`),
     );
     mockQuery.mockResolvedValueOnce(invoices);
 
@@ -189,15 +191,15 @@ describe("customer_risk_score", () => {
       context: { customer_id: "1108" },
     });
 
-    const tieringAction = result.recommended_actions.find(
-      (a: string) => a.includes("tiering"),
+    const tieringAction = result.recommended_actions.find((a: string) =>
+      a.includes("tiering"),
     );
     expect(tieringAction).toBeDefined();
   });
 
   it("nao deve sugerir upgrade quando overage eh alto mas nao existe tier mais barato", async () => {
     const invoices = Array.from({ length: 6 }, (_, i) =>
-      makeHighOverageNoTierGapInvoice(`2025-0${i + 1}-01`)
+      makeHighOverageNoTierGapInvoice(`2025-0${i + 1}-01`),
     );
     mockQuery.mockResolvedValueOnce(invoices);
 
@@ -205,15 +207,17 @@ describe("customer_risk_score", () => {
       context: { customer_id: "1108" },
     });
 
-    expect(result.issues.some((i: string) => i.includes("High overage"))).toBe(true);
+    expect(result.issues.some((i: string) => i.includes("High overage"))).toBe(
+      true,
+    );
     expect(
       result.recommended_actions.some((a: string) =>
-        a.includes("Suggest plan upgrade")
+        a.includes("Suggest plan upgrade"),
       ),
     ).toBe(false);
     expect(
       result.recommended_actions.some((a: string) =>
-        a.includes("no cheaper tier identified")
+        a.includes("no cheaper tier identified"),
       ),
     ).toBe(true);
   });

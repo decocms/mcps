@@ -67,32 +67,52 @@ export const createListCampaignsTool = (env: Env) =>
       "List all campaigns for an advertiser with optional filters for name, objective, and status.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_ids: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Filter by specific campaign IDs"),
       campaign_name: z
+
         .string()
+
         .optional()
+
         .describe("Filter by campaign name (partial match)"),
       objective_type: CampaignObjectiveSchema.optional().describe(
         "Filter by objective type",
       ),
       page: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Page number (default: 1)"),
       page_size: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Items per page (default: 50, max: 1000)"),
     }),
     outputSchema: z.object({
@@ -140,8 +160,11 @@ export const createGetCampaignTool = (env: Env) =>
       "Get detailed information about a specific campaign by its ID.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_id: z.string().describe("Campaign ID to retrieve"),
     }),
@@ -182,8 +205,11 @@ export const createCreateCampaignTool = (env: Env) =>
       "Create a new advertising campaign. Requires advertiser ID, name, and objective type.",
     inputSchema: z.object({
       advertiser_id: z
+
         .string()
+
         .optional()
+
         .describe("Advertiser ID (optional if configured in MCP)"),
       campaign_name: z.string().describe("Campaign name (required)"),
       objective_type: CampaignObjectiveSchema.describe(
@@ -193,9 +219,13 @@ export const createCreateCampaignTool = (env: Env) =>
         "Budget mode: BUDGET_MODE_INFINITE (no limit), BUDGET_MODE_DAY (daily), BUDGET_MODE_TOTAL (lifetime)",
       ),
       budget: z.coerce
+
         .number()
+
         .positive()
+
         .optional()
+
         .describe("Budget amount (required if budget_mode is DAY or TOTAL)"),
       operation_status: OperationStatusSchema.optional().describe(
         "Initial status: ENABLE or DISABLE (default: ENABLE)",
@@ -245,23 +275,32 @@ export const createUpdateCampaignTool = (env: Env) =>
     description:
       "Update an existing campaign. Only provided fields will be updated. At least one field to update must be provided.",
     inputSchema: z
+
       .object({
         advertiser_id: z
+
           .string()
+
           .optional()
+
           .describe("Advertiser ID (optional if configured in MCP)"),
         campaign_id: z.string().describe("Campaign ID to update (required)"),
         campaign_name: z.string().optional().describe("New campaign name"),
         budget_mode: BudgetModeSchema.optional().describe("New budget mode"),
         budget: z.coerce
+
           .number()
+
           .positive()
+
           .optional()
+
           .describe("New budget amount"),
         operation_status: OperationStatusSchema.optional().describe(
           "New status: ENABLE, DISABLE, or DELETE",
         ),
       })
+
       .refine(
         (data) =>
           data.campaign_name !== undefined ||

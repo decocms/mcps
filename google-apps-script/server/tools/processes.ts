@@ -41,35 +41,59 @@ export const createListUserProcessesTool = (env: Env) =>
       "Lists information about processes (script executions) made by or on behalf of the authenticated user across all scripts.",
     inputSchema: z.object({
       pageSize: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(200)
+
         .optional()
+
         .describe("Maximum number of processes to return (1-200, default: 50)"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching the next page of results"),
       scriptId: z
+
         .string()
+
         .optional()
+
         .describe("Filter by specific script ID (optional)"),
       deploymentId: z
+
         .string()
+
         .optional()
+
         .describe("Filter by specific deployment ID (optional)"),
       functionName: z
+
         .string()
+
         .optional()
+
         .describe("Filter by function name (optional)"),
       types: z
+
         .array(ProcessTypeEnum)
+
         .optional()
+
         .describe("Filter by process types (optional)"),
       statuses: z
+
         .array(ProcessStatusEnum)
+
         .optional()
+
         .describe("Filter by process statuses (optional)"),
     }),
     outputSchema: z.object({
@@ -131,31 +155,52 @@ export const createListScriptProcessesTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       pageSize: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(200)
+
         .optional()
+
         .describe("Maximum number of processes to return (1-200, default: 50)"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching the next page of results"),
       deploymentId: z
+
         .string()
+
         .optional()
+
         .describe("Filter by specific deployment ID (optional)"),
       functionName: z
+
         .string()
+
         .optional()
+
         .describe("Filter by function name (optional)"),
       types: z
+
         .array(ProcessTypeEnum)
+
         .optional()
+
         .describe("Filter by process types (optional)"),
       statuses: z
+
         .array(ProcessStatusEnum)
+
         .optional()
+
         .describe("Filter by process statuses (optional)"),
     }),
     outputSchema: z.object({
@@ -215,8 +260,11 @@ export const createGetRunningProcessesTool = (env: Env) =>
       "Gets all currently running processes for the authenticated user. Paginates through all results to ensure no running processes are missed. Useful for monitoring active script executions.",
     inputSchema: z.object({
       scriptId: z
+
         .string()
+
         .optional()
+
         .describe("Filter by specific script ID (optional)"),
     }),
     outputSchema: z.object({

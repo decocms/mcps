@@ -31,23 +31,36 @@ export const createListObjectsTool = (env: Env) =>
       "List objects in the S3 bucket. Supports prefix filtering and pagination for large buckets.",
     inputSchema: z.object({
       prefix: z
+
         .string()
+
         .optional()
+
         .describe(
           "Filter objects by prefix (e.g., 'folder/' for folder contents)",
         ),
       maxKeys: z
+
         .number()
+
         .optional()
+
         .default(1000)
+
         .describe("Maximum number of keys to return (default: 1000)"),
       continuationToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for pagination from previous response"),
       delimiter: z
+
         .string()
+
         .optional()
+
         .describe(
           "Character to group keys by common prefixes (typically '/'). When set, objects are grouped into CommonPrefixes for folder-like browsing.",
         ),
@@ -62,15 +75,23 @@ export const createListObjectsTool = (env: Env) =>
         }),
       ),
       nextContinuationToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
       isTruncated: z
+
         .boolean()
+
         .describe("Whether there are more results available"),
       commonPrefixes: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "Common prefixes (folders) when delimiter is specified (e.g., ['folder-a/', 'folder-b/'])",
         ),
@@ -123,8 +144,11 @@ export const createGetObjectMetadataTool = (env: Env) =>
       lastModified: z.string().describe("Last modified timestamp"),
       etag: z.string().describe("Entity tag for the object"),
       metadata: z
+
         .record(z.string(), z.string())
+
         .optional()
+
         .describe("Custom metadata key-value pairs"),
     }),
     execute: async ({ context }) => {
@@ -160,8 +184,11 @@ export const createGetPresignedUrlTool = (env: Env) =>
     inputSchema: z.object({
       key: z.string().describe("Object key/path to generate URL for"),
       expiresIn: z
+
         .number()
+
         .optional()
+
         .describe(
           "URL expiration time in seconds (default: from state config or 3600)",
         ),
@@ -169,7 +196,9 @@ export const createGetPresignedUrlTool = (env: Env) =>
     outputSchema: z.object({
       url: z.string().describe("Presigned URL for downloading the object"),
       expiresIn: z
+
         .number()
+
         .describe("Expiration time in seconds that was used"),
     }),
     execute: async ({ context }) => {
@@ -205,20 +234,28 @@ export const createPutPresignedUrlTool = (env: Env) =>
     inputSchema: z.object({
       key: z.string().describe("Object key/path for the upload"),
       expiresIn: z
+
         .number()
+
         .optional()
+
         .describe(
           "URL expiration time in seconds (default: from state config or 3600)",
         ),
       contentType: z
+
         .string()
+
         .optional()
+
         .describe("MIME type for the object being uploaded"),
     }),
     outputSchema: z.object({
       url: z.string().describe("Presigned URL for uploading the object"),
       expiresIn: z
+
         .number()
+
         .describe("Expiration time in seconds that was used"),
     }),
     execute: async ({ context }) => {
@@ -287,21 +324,28 @@ export const createDeleteObjectsTool = (env: Env) =>
       "Delete multiple objects in a single batch operation (max 1000 objects)",
     inputSchema: z.object({
       keys: z
+
         .array(z.string())
+
         .max(1000)
+
         .describe("Array of object keys/paths to delete (max 1000)"),
     }),
     outputSchema: z.object({
       deleted: z
+
         .array(z.string())
+
         .describe("Array of successfully deleted keys"),
       errors: z
+
         .array(
           z.object({
             key: z.string(),
             message: z.string(),
           }),
         )
+
         .describe("Array of errors for failed deletions"),
     }),
     execute: async ({ context }) => {

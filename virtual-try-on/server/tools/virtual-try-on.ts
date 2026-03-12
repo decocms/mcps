@@ -180,7 +180,9 @@ function buildTryOnPrompt(args: {
     "Do not add text, watermarks, or logos.",
     userInstruction ? `Extra instruction: ${userInstruction}` : "",
   ]
+
     .filter(Boolean)
+
     .join("\n");
 }
 

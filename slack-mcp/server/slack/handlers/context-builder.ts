@@ -116,7 +116,9 @@ export async function buildContextMessages(
       contextConfig.maxMessagesToFetch,
     );
     allMessages = threadMessages
+
       .filter((msg) => msg.ts !== currentTs && msg.text)
+
       .sort((a, b) => Number.parseFloat(a.ts) - Number.parseFloat(b.ts));
   } else {
     const channelMessages = await getChannelHistory(channel, {
@@ -124,7 +126,9 @@ export async function buildContextMessages(
       latest: currentTs,
     });
     allMessages = channelMessages
+
       .filter((msg) => msg.ts !== currentTs && msg.text)
+
       .sort((a, b) => Number.parseFloat(a.ts) - Number.parseFloat(b.ts));
   }
 

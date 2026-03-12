@@ -28,18 +28,26 @@ const ContainerSchema = z.object({
   name: z.string().describe("Container name"),
   publicId: z.string().optional().describe("Public container ID (GTM-XXXXX)"),
   usageContext: z
+
     .array(ContainerUsageContextSchema)
+
     .describe("Usage contexts (web, mobile, etc)"),
   fingerprint: z.string().describe("Fingerprint for optimistic locking"),
   tagManagerUrl: z.string().describe("Tag Manager URL for this container"),
   domainName: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Associated domain names"),
   notes: z.string().optional().describe("Container notes"),
   taggingServerUrls: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Server-side tagging URLs"),
 });
 
@@ -55,15 +63,21 @@ export const createListContainersTool = (env: Env) =>
     inputSchema: z.object({
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       containers: z.array(ContainerSchema).describe("List of containers"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -150,11 +164,16 @@ export const createCreateContainerTool = (env: Env) =>
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       name: z.string().describe("Container name"),
       usageContext: z
+
         .array(ContainerUsageContextSchema)
+
         .describe("Usage contexts: web, android, ios, amp, or server"),
       domainName: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Associated domain names for web containers"),
       notes: z.string().optional().describe("Container notes"),
     }),

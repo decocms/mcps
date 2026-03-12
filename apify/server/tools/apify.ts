@@ -18,25 +18,42 @@ import { APIFY_ERROR_MESSAGES } from "../constants.ts";
 
 const listActorsInputSchema = z.object({
   limit: z
+
     .number()
+
     .int()
+
     .min(1)
+
     .max(25)
+
     .optional()
+
     .describe("Maximum number of actors to return (default: 10)"),
   offset: z
+
     .number()
+
     .int()
+
     .min(0)
+
     .optional()
+
     .describe("Number of actors to skip (default: 0)"),
   my: z
+
     .boolean()
+
     .optional()
+
     .describe("If true, only return actors owned by the user"),
   desc: z
+
     .boolean()
+
     .optional()
+
     .describe("If true, sort results in descending order by creation date"),
 });
 
@@ -47,27 +64,44 @@ const getActorInputSchema = z.object({
 const listActorRunsInputSchema = z.object({
   actorId: z.string().describe("The ID of the actor"),
   limit: z
+
     .number()
+
     .int()
+
     .min(1)
+
     .max(1000)
+
     .optional()
+
     .describe("Maximum number of runs to return (default: 10)"),
   offset: z
+
     .number()
+
     .int()
+
     .min(0)
+
     .optional()
+
     .describe("Number of runs to skip (default: 0)"),
   status: z
+
     .string()
+
     .optional()
+
     .describe(
       "Filter runs by status (READY, RUNNING, SUCCEEDED, FAILED, etc.)",
     ),
   desc: z
+
     .boolean()
+
     .optional()
+
     .describe("If true, sort results in descending order by creation date"),
 });
 
@@ -75,29 +109,45 @@ const getActorRunInputSchema = z.object({
   actorId: z.string().describe("The ID of the actor"),
   runId: z.string().describe("The ID of the actor run"),
   includeDatasetItems: z
+
     .boolean()
+
     .optional()
+
     .describe("If true, include dataset items in the response"),
 });
 
 const runActorInputSchema = z.object({
   actorId: z.string().describe("The ID of the actor to run"),
   input: z
+
     .string()
+
     .describe("Input data for the actor run (Stringified JSON object)"),
   timeout: z
+
     .number()
+
     .int()
+
     .optional()
+
     .describe("Maximum timeout for the run in seconds"),
   memory: z
+
     .number()
+
     .int()
+
     .optional()
+
     .describe("Amount of memory allocated for the run in megabytes"),
   build: z
+
     .string()
+
     .optional()
+
     .describe("Specific build version to use (optional)"),
 });
 
@@ -106,11 +156,13 @@ const runActorSyncOutputSchema = z.object({
 });
 
 const runActorAsyncOutputSchema = z
+
   .object({
     id: z.string().describe("Run ID"),
     status: z.string().describe("Current status of the run"),
     actorId: z.string().describe("Actor ID"),
   })
+
   .passthrough();
 
 // ============================================================================

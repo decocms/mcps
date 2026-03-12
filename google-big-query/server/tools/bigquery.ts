@@ -24,18 +24,26 @@ const TableFieldSchemaZod: z.ZodType<{
 }> = z.object({
   name: z.string().describe("Field name"),
   type: z
+
     .string()
+
     .describe(
       "Field type (STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP, RECORD, etc.)",
     ),
   mode: z
+
     .string()
+
     .optional()
+
     .describe("Field mode (NULLABLE, REQUIRED, REPEATED)"),
   description: z.string().optional().describe("Field description"),
   fields: z
+
     .array(z.lazy(() => TableFieldSchemaZod))
+
     .optional()
+
     .describe("Nested fields for RECORD type"),
 });
 
@@ -54,8 +62,11 @@ const TableInfoSchema = z.object({
   datasetId: z.string().describe("Dataset ID"),
   projectId: z.string().describe("Project ID"),
   type: z
+
     .string()
+
     .optional()
+
     .describe("Table type (TABLE, VIEW, MATERIALIZED_VIEW, etc.)"),
   friendlyName: z.string().optional().describe("Table friendly name"),
   description: z.string().optional().describe("Table description"),
@@ -90,43 +101,66 @@ export const createQueryTool = (env: Env) =>
           "Opaque token returned by a previous call. Pass this to fetch the next page without re-executing the query.",
         ),
       useLegacySql: z
+
         .boolean()
+
         .optional()
+
         .describe("Use legacy SQL syntax (default: false, uses standard SQL)"),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
         .max(200000)
         .optional()
+
         .describe("Maximum number of rows to return (default: 1000)"),
       timeoutMs: z.coerce
+
         .number()
+
         .int()
+
         .optional()
+
         .describe("Query timeout in milliseconds (default: 60000)"),
       useQueryCache: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether to use query cache (default: true)"),
       defaultDatasetId: z
+
         .string()
+
         .optional()
+
         .describe("Default dataset for unqualified table names"),
     }),
     outputSchema: z.object({
       schema: z
+
         .object({
           fields: z.array(TableFieldSchemaZod).optional(),
         })
+
         .describe("Query result schema"),
       rows: z
+
         .array(z.record(z.string(), z.unknown()))
+
         .describe("Query result rows as objects"),
       totalRows: z.string().describe("Total number of rows in result"),
       cacheHit: z.boolean().describe("Whether results came from cache"),
       totalBytesProcessed: z
+
         .string()
+
         .describe("Total bytes processed by the query"),
       nextPageToken: z
         .string()
@@ -234,8 +268,11 @@ export const createGetDatasetTool = (env: Env) =>
       dataset: DatasetSchema.describe("Dataset information"),
       creationTime: z.string().optional().describe("Dataset creation time"),
       lastModifiedTime: z
+
         .string()
+
         .optional()
+
         .describe("Last modification time"),
     }),
     execute: async ({ context }) => {
@@ -275,26 +312,41 @@ export const createListDatasetsTool = (env: Env) =>
     inputSchema: z.object({
       projectId: z.string().describe("Google Cloud project ID"),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Maximum number of datasets to return"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
       all: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether to list all datasets, including hidden ones"),
     }),
     outputSchema: z.object({
       datasets: z.array(DatasetSchema).describe("List of datasets"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -337,22 +389,34 @@ export const createListTablesTool = (env: Env) =>
       projectId: z.string().describe("Google Cloud project ID"),
       datasetId: z.string().describe("Dataset ID"),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(1000)
+
         .optional()
+
         .describe("Maximum number of tables to return"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       tables: z.array(TableInfoSchema).describe("List of tables"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
       totalItems: z.number().optional().describe("Total number of tables"),
     }),
@@ -443,6 +507,7 @@ export const createGetTableSchemaTool = (env: Env) =>
     description:
       "Get the schema of a specific BigQuery table. Returns all fields with their types, modes, and descriptions.",
     inputSchema: z
+
       .object({
         /**
          * Fully qualified reference, useful for copy/paste from `bigquery_list_tables`
@@ -451,28 +516,41 @@ export const createGetTableSchemaTool = (env: Env) =>
          * - "my-project.my_dataset.my_table"
          */
         tableRef: z
+
           .string()
+
           .optional()
+
           .describe(
             'Fully qualified table reference ("project:dataset.table" or "project.dataset.table").',
           ),
         projectId: z
+
           .string()
+
           .optional()
+
           .describe("Google Cloud project ID (required if tableRef not set)"),
         datasetId: z
+
           .string()
+
           .optional()
+
           .describe(
             'Dataset ID (required if tableRef not set). Also accepts "project:dataset".',
           ),
         tableId: z
+
           .string()
+
           .optional()
+
           .describe(
             'Table ID (required if tableRef not set). Also accepts "dataset.table" or "project:dataset.table".',
           ),
       })
+
       .superRefine((value, ctx) => {
         if (value.tableRef) {
           return;
@@ -513,9 +591,11 @@ export const createGetTableSchemaTool = (env: Env) =>
         numBytes: z.string().optional(),
       }),
       schema: z
+
         .object({
           fields: z.array(TableFieldSchemaZod).optional(),
         })
+
         .describe("Table schema"),
     }),
     execute: async ({ context }) => {

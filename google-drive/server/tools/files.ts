@@ -25,18 +25,27 @@ export const createListFilesTool = (env: Env) =>
     description: "List files in Google Drive. Can filter with query syntax.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .optional()
+
         .describe(
           "Search query (e.g., \"name contains 'report'\" or \"mimeType='application/pdf'\")",
         ),
       pageSize: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Max results (default 100)"),
       orderBy: z
+
         .string()
+
         .optional()
+
         .describe("Sort order (e.g., 'modifiedTime desc', 'name')"),
     }),
     outputSchema: z.object({
@@ -79,8 +88,11 @@ export const createCreateFileTool = (env: Env) =>
     inputSchema: z.object({
       name: z.string().describe("File name"),
       mimeType: z
+
         .string()
+
         .optional()
+
         .describe(
           "MIME type (e.g., 'application/vnd.google-apps.document' for Google Doc)",
         ),
@@ -115,12 +127,18 @@ export const createUpdateFileTool = (env: Env) =>
       starred: z.boolean().optional().describe("Star/unstar the file"),
       trashed: z.boolean().optional().describe("Move to/from trash"),
       addParents: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Folder IDs to add as parents"),
       removeParents: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Folder IDs to remove as parents"),
     }),
     outputSchema: z.object({
@@ -193,13 +211,18 @@ export const createSearchFilesTool = (env: Env) =>
       "Search files using Drive query syntax. Supports name, type, content, owner filters.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .describe(
           "Search query (e.g., \"fullText contains 'budget'\" or \"'folderId' in parents\")",
         ),
       maxResults: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Max results (default 100)"),
     }),
     outputSchema: z.object({

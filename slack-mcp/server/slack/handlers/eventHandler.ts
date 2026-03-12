@@ -553,10 +553,12 @@ async function handleAppMention(
   // Format text files for LLM
   const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
   const textFileContent = textFiles
+
     .map((file) => {
       const language = getLanguageFromFilename(file.name);
       return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
     })
+
     .join("\n\n");
 
   // Add transcriptions and text files to the message text
@@ -671,10 +673,12 @@ async function handleMessage(
   // Format text files for LLM
   const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
   const textFileContent = textFiles
+
     .map((file) => {
       const language = getLanguageFromFilename(file.name);
       return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
     })
+
     .join("\n\n");
 
   // Add transcriptions and text files to the message text

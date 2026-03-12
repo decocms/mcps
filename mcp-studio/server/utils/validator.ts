@@ -392,7 +392,9 @@ export async function validateWorkflow(
           field: "action.toolName",
           ref: toolName,
           message: `Tool '${toolName}' not found in connections. Available: ${currentTools
+
             .map((t) => t.name)
+
             .join(", ")}`,
         });
       }

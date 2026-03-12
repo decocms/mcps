@@ -25,24 +25,38 @@ export const createSearchLogsTool = (_env: Env) =>
       "Search logs from HyperDX. Returns distinct log messages matching your query with their occurrence count. Use this to find errors, debug issues, or explore log data.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .describe(
           "Search query (e.g., 'level:error', 'service:admin', 'level:error service:api').",
         ),
       startTime: z
+
         .number()
+
         .optional()
+
         .default(() => Date.now() - 15 * 60 * 1000)
+
         .describe("Start time in ms. Defaults to 15 minutes ago."),
       endTime: z
+
         .number()
+
         .optional()
+
         .default(() => Date.now())
+
         .describe("End time in ms. Defaults to now."),
       limit: z
+
         .number()
+
         .optional()
+
         .default(50)
+
         .describe("Max number of distinct messages to return. Defaults to 50."),
     }),
     outputSchema: z.object({
@@ -75,11 +89,14 @@ export const createSearchLogsTool = (_env: Env) =>
       // Transform response: extract body from group and count from series_0.data
       type LogEntry = { message: string; count: number };
       const logs: LogEntry[] = (response.data ?? [])
+
         .map((item: Record<string, unknown>) => ({
           message: (item.group as string[])?.[0] ?? "",
           count: (item["series_0.data"] as number) ?? 0,
         }))
+
         .sort((a: LogEntry, b: LogEntry) => b.count - a.count)
+
         .slice(0, context.limit);
 
       return {
@@ -101,29 +118,47 @@ export const createGetLogDetailsTool = (_env: Env) =>
       "Get detailed log entries with custom fields from HyperDX. Group by any fields you want to see in the results.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .describe("Search query (e.g., 'level:error service:admin')."),
       groupBy: z
+
         .array(z.string())
+
         .optional()
+
         .default(DEFAULT_GROUP_BY)
+
         .describe(
           "Fields to group by and return. Defaults to ['body', 'service', 'site']. Other useful fields: trace_id, span_id, userEmail, env, level.",
         ),
       startTime: z
+
         .number()
+
         .optional()
+
         .default(() => Date.now() - 15 * 60 * 1000)
+
         .describe("Start time in ms. Defaults to 15 minutes ago."),
       endTime: z
+
         .number()
+
         .optional()
+
         .default(() => Date.now())
+
         .describe("End time in ms. Defaults to now."),
       limit: z
+
         .number()
+
         .optional()
+
         .default(20)
+
         .describe("Max entries to return. Defaults to 20."),
     }),
     outputSchema: z.object({
@@ -131,7 +166,9 @@ export const createGetLogDetailsTool = (_env: Env) =>
       entries: z.array(
         z.object({
           values: z
+
             .array(z.string())
+
             .describe("Values for each field in order."),
           count: z.number(),
         }),
@@ -156,10 +193,12 @@ export const createGetLogDetailsTool = (_env: Env) =>
       });
 
       const entries = (response.data ?? [])
+
         .map((item: Record<string, unknown>) => ({
           values: (item.group as string[]) ?? [],
           count: (item["series_0.data"] as number) ?? 0,
         }))
+
         .slice(0, context.limit);
 
       return {

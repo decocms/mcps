@@ -10,6 +10,7 @@ O servidor expoe 10 tools que um agente de IA (Claude, GPT, etc.) pode chamar:
 
 | Tool | O que retorna |
 |------|---------------|
+| `airtable_sync` | Sincroniza dados do Airtable para o DuckDB on-demand (no startup isso e automatico via env vars) |
 | `upload_csv` | Faz upload de CSV (billing ou contacts) e recarrega os dados sem reiniciar |
 | `customer_billing_get` | Historico de faturas, status de pagamento, DSO, overage, alerta de margem |
 | `customer_usage_get` | Pageviews, requests, bandwidth com tendencia e deteccao de anomalias |
@@ -35,9 +36,10 @@ O servidor expoe 10 tools que um agente de IA (Claude, GPT, etc.) pode chamar:
 ```
 customer-insights/
   server/
-    main.ts              # Entry point — inicia DuckDB, registra tools, sobe servidor
+    main.ts              # Entry point — inicia DuckDB, auto-sync Airtable, sobe servidor
     db.ts                # Camada DuckDB — views, snapshots, CRUD
-    data/                # CSVs uploadados (criado automaticamente)
+    airtable.ts          # Logica core de sync com Airtable (startup + tool)
+    data/                # CSVs persistidos em disco (criado automaticamente)
     tools/
       index.ts           # Registro das 10 tools
       upload-csv.ts      # upload_csv
@@ -50,10 +52,10 @@ customer-insights/
       invoice-explainer.ts # customer_invoice_explain
       health-list.ts     # customer_health_list
       risk-score.ts      # customer_risk_score
-      customer-resolver.ts  # Resolve cliente por ID, nome ou dominio de email
+      customer-resolver.ts  # Resolve cliente por nome ou dominio de email
       sanitize.ts        # Converte BigInt/Date para tipos JSON-safe
     types/
-      env.ts             # Tipos de ambiente e schema de state (LLM_CONFIG)
+      env.ts             # Tipos de ambiente e schema de state (GOOGLE_CONFIG)
     __tests__/           # Arquivos de teste das tools e utilitarios
       sanitize.test.ts
       customer-resolver.test.ts
@@ -86,22 +88,21 @@ bun install
 
 ### Variaveis de ambiente
 
-Crie o arquivo `mcps/customer-insights/.env`:
+| Variavel | Obrigatoria | Descricao |
+|----------|-------------|-----------|
+| `AIRTABLE_API_KEY` | Sim (producao) | Personal access token do Airtable (`pat...`) |
+| `AIRTABLE_VIEW_URL` | Sim (producao) | URL interna da view do Airtable (ex: `https://airtable.com/appXXX/tblXXX/viwXXX`) |
+
+Configure em um arquivo `.env` na raiz do projeto:
 
 ```env
-GOOGLE_CLIENT_ID=seu_client_id
-GOOGLE_CLIENT_SECRET=seu_client_secret
+AIRTABLE_API_KEY=pat...
+AIRTABLE_VIEW_URL=https://airtable.com/appXXX/tblXXX/viwXXX
 ```
 
-### Configurar OAuth no Google Cloud
+> **Importante:** Use a URL interna da view, não o link de compartilhamento. Para obtê-la: abra o Airtable logado na sua conta, navegue até a view desejada, e copie a URL do browser. Ela deve conter três segmentos: `app...`, `tbl...`, `viw...`. URLs de compartilhamento (`shr...`) não funcionam com a API REST do Airtable.
 
-1. Crie um projeto no [Google Cloud Console](https://console.cloud.google.com/)
-2. Ative a Gmail API
-3. Crie um OAuth Client (tipo **Web application**)
-4. Adicione as redirect URIs:
-   - `https://sites-customer-insights.decocache.com/oauth/callback`
-   - `http://localhost:8001/oauth/callback` (desenvolvimento local)
-5. Em "OAuth consent screen", adicione seu usuario em "Test users" enquanto o app estiver em modo Testing
+Sem essas variaveis o servidor sobe normalmente, mas o DuckDB iniciara vazio. Use a tool `airtable_sync` para carregar dados manualmente nesse caso.
 
 ### Rodar
 
@@ -129,10 +130,16 @@ Suite de testes cobrindo tools + db + sanitize.
 
 O DuckDB sobe em memoria e cria views SQL a partir de CSVs armazenados em `server/data/`.
 
-- Use a tool `upload_csv` para enviar os CSVs via URL (Google Drive, S3, etc.)
-- Os arquivos sao salvos em `server/data/` e o DuckDB recarrega automaticamente
-- Se nenhum CSV foi uploadado, as views ficam vazias ate o primeiro upload
-- CSVs corrompidos sao detectados e deletados automaticamente na inicializacao
+No startup, o servidor sincroniza automaticamente com o Airtable se as variaveis de ambiente `AIRTABLE_API_KEY` e `AIRTABLE_VIEW_URL` estiverem configuradas. O fluxo e:
+
+1. `initDb()` tenta carregar `billing.csv` do disco (dado persistido de runs anteriores)
+2. Se as env vars estiverem presentes, o servidor faz um sync com o Airtable e recarrega o DuckDB com dados frescos
+3. Se o sync falhar (rede, token expirado), o servidor continua com os dados do disco e loga o erro
+4. Se as env vars nao estiverem presentes, o DuckDB usa os dados do disco ou fica vazio
+
+Para sincronizar manualmente a qualquer momento, use a tool `airtable_sync`.
+
+CSVs corrompidos sao detectados e deletados automaticamente na inicializacao.
 
 **Views criadas:**
 - **`v_billing`** — dados de faturamento (valores BRL parseados automaticamente)
@@ -140,18 +147,17 @@ O DuckDB sobe em memoria e cria views SQL a partir de CSVs armazenados em `serve
 - **`usage_stats`** — tabela para dados CDN
 
 **Tabela interna:**
-- **`summary_snapshots`** — cache de resumos executivos gerados (customer_id como PK, upsert)
+- **`summary_snapshots`** — cache de resumos executivos gerados (customer_name como PK, upsert)
 
 Os valores monetarios em BRL sao parseados automaticamente nos dois formatos encontrados nos dados: `R$1.855,92` (virgula decimal) e `R$2783.28` (ponto decimal para tiering).
 
 ### Resolucao de cliente
 
-Todas as tools aceitam `customer_id` (numerico, recomendado) ou `customer_name` (texto). O resolver tenta encontrar o cliente e retorna um dos status:
+Todas as tools aceitam `customer_name` (texto). O resolver tenta encontrar o cliente e retorna um dos status:
 
-- **`id`** — encontrado por ID direto (mais confiavel, unico)
 - **`exact`** — nome bateu exatamente (case-insensitive)
-- **`partial`** — um unico resultado parcial
-- **`ambiguous`** — multiplos candidatos encontrados (retorna lista com IDs para desambiguacao)
+- **`partial`** — um unico resultado parcial (substring match)
+- **`ambiguous`** — multiplos candidatos encontrados (retorna lista de nomes/emails para desambiguacao)
 - **`none`** — nenhum cliente encontrado
 
 Tambem suporta busca por dominio de email via `resolveCustomersByDomain` (usado internamente por `customer_emails_get`).
@@ -170,6 +176,23 @@ O sistema de summary usa um modelo generate + get:
 Esse modelo evita re-computar a analise a cada consulta.
 
 ## Tools em detalhe
+
+### `airtable_sync`
+
+Sincroniza manualmente os dados do Airtable para o DuckDB. Em producao isso ocorre automaticamente no startup via env vars — esta tool e para refreshes on-demand ou para sobrescrever credenciais por chamada.
+
+**Entrada (todos opcionais — usa env vars por padrao):**
+```json
+{
+  "api_key": "pat...",
+  "view_url": "https://airtable.com/appXXX/shrXXX"
+}
+```
+
+**O que retorna:**
+- `success`, `rows_loaded`, `view_name`, `table_name`, `message`
+
+---
 
 ### `upload_csv`
 
@@ -225,7 +248,7 @@ Retorna o historico completo de faturas com metricas financeiras avancadas.
 **Entrada:**
 ```json
 {
-  "customer_id": "1108"
+  "customer_name": "Paula Piva"
 }
 ```
 
@@ -250,7 +273,7 @@ Retorna dados de consumo tecnico com tendencia e alertas automaticos.
 **Entrada:**
 ```json
 {
-  "customer_id": "1108",
+  "customer_name": "Paula Piva",
   "months": 12
 }
 ```
@@ -276,7 +299,7 @@ Monta uma linha do tempo unificada cruzando tres fontes de dados.
 **Entrada:**
 ```json
 {
-  "customer_id": "1108",
+  "customer_name": "Paula Piva",
   "include_emails": true,
   "order": "desc"
 }
@@ -295,7 +318,7 @@ A correlacao causa-efeito fica visivel: um pico de erros seguido de email de rec
 
 ![emailsGet](./assets/emailsGet.png)
 
-Busca emails do cliente diretamente do Gmail via OAuth. Suporta busca por dominio de email para clientes corporativos.
+Busca emails do cliente diretamente do Gmail. Suporta busca por dominio de email para clientes corporativos.
 
 **Entrada:**
 ```json
@@ -311,7 +334,7 @@ Busca emails do cliente diretamente do Gmail via OAuth. Suporta busca por domini
 - Lista de mensagens com subject, from, to, date e snippet
 - Busca por dominio: se `email_domain` for fornecido, busca todos os contatos do dominio
 
-Requer login com Google OAuth.
+**Requer configuracao de `GOOGLE_CONFIG` no state** (veja secao abaixo).
 
 ---
 
@@ -322,7 +345,7 @@ Gera e salva um snapshot de resumo executivo completo. Esta e a operacao pesada 
 **Entrada:**
 ```json
 {
-  "customer_id": "1108",
+  "customer_name": "Paula Piva",
   "billing_status": "paid",
   "include_email_history": true,
   "email_max_results": 5
@@ -354,7 +377,7 @@ Retorna o resumo executivo de um cliente. Busca snapshot salvo primeiro, gera on
 **Entrada:**
 ```json
 {
-  "customer_id": "1108",
+  "customer_name": "Paula Piva",
   "force_refresh": false
 }
 ```
@@ -368,6 +391,28 @@ Retorna o resumo executivo de um cliente. Busca snapshot salvo primeiro, gera on
 - Dados brutos usados na analise (`data_sources`)
 
 **Funciona sem LLM**: gera analise programatica completa. Se `LLM_CONFIG` estiver configurado, enriquece com IA.
+
+### Configurar Gmail (opcional)
+
+Para usar a tool `customer_emails_get`, configure `GOOGLE_CONFIG` no state do MCP:
+
+```json
+{
+  "GOOGLE_CONFIG": {
+    "access_token": "ya29.a0ARrdaM..."
+  }
+}
+```
+
+**Como obter o access_token:**
+
+1. Acesse [Google OAuth Playground](https://developers.google.com/oauthplayground/)
+2. Em "Step 1", selecione **Gmail API v1** > `https://www.googleapis.com/auth/gmail.readonly`
+3. Clique em "Authorize APIs" e faca login com sua conta Google
+4. Em "Step 2", clique em "Exchange authorization code for tokens"
+5. Copie o `access_token` gerado
+
+**Nota:** O access_token expira apos 1 hora. Para uso prolongado, configure tambem o `refresh_token`.
 
 ### Configurar LLM (opcional)
 
@@ -395,7 +440,7 @@ Breakdown detalhado de uma fatura especifica para um determinado mes.
 **Entrada:**
 ```json
 {
-  "customer_id": "1108",
+  "customer_name": "Paula Piva",
   "month": "2025-11"
 }
 ```
@@ -442,7 +487,7 @@ Score de risco de churn (0-10) com 5 fatores ponderados para um cliente especifi
 **Entrada:**
 ```json
 {
-  "customer_id": "1108"
+  "customer_name": "Paula Piva"
 }
 ```
 
@@ -487,13 +532,14 @@ Para visao de portfolio:
 
 | Decisao | Motivo |
 |---------|--------|
-| Upload CSV via tool | Em prod nao faz sentido ter CSV hardcoded. Upload dinamico com reload do DuckDB. |
-| DuckDB in-memory | Processa CSVs com SQL sem precisar de banco externo. Setup zero. |
+| Airtable via env vars + auto-sync no startup | Credenciais sao de servidor, nao de usuario. Env vars sao o lugar certo em producao. Auto-sync garante DuckDB sempre populado sem chamada manual. |
+| Logica Airtable em modulo separado (airtable.ts) | Permite reusar o mesmo sync no startup (main.ts) e no tool (airtable_sync) sem duplicacao. |
+| DuckDB in-memory com CSV em disco | Processa dados com SQL sem banco externo (setup zero). CSV em disco serve como durabilidade entre restarts — se o sync falhar, o servidor usa os dados do run anterior. |
 | Customer Resolver centralizado | Evita duplicacao de logica de busca. Trata ambiguidade de nome retornando candidatos. Suporta busca por dominio de email. |
 | Summary split (generate + get) | Separa operacao pesada (~3-5s) da leitura instantanea. Evita re-computar a cada consulta. |
-| Snapshots no DuckDB | Cache de resumos na mesma engine. Upsert por customer_id. Nao precisa de Redis/memcached. |
+| Snapshots no DuckDB | Cache de resumos na mesma engine. Upsert por customer_name. Nao precisa de Redis/memcached. |
 | Sanitizacao recursiva (BigInt + Date) | DuckDB retorna BigInt e Date nativos. Sanitizer recursivo converte antes do JSON.stringify. |
-| OAuth so para Gmail | Separa dados locais (billing/usage) de integracao externa. Minimiza permissoes (readonly). |
+| Gmail via state config | Token OAuth e por-usuario (nao por-servidor). State e o lugar certo para credenciais de usuario. |
 | Summary sem LLM obrigatorio | Analise programatica funciona sempre. LLM so enriquece se disponivel. |
 | Parsing duplo de BRL | CSVs tem dois formatos de moeda brasileira. O parser aceita ambos. |
 | Zod em todas as tools | Validacao de input e output com schemas tipados. Garante contrato entre agente e servidor. |

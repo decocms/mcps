@@ -22,7 +22,13 @@ import type { Env } from "../main.ts";
 import { query } from "../db.ts";
 import { resolveCustomer } from "./customer-resolver.ts";
 import { sanitize, sanitizeRows } from "./sanitize.ts";
-import { clean, toDateOnly, escapeSqlLiteral, daysBetween, round2 } from "./utils.ts";
+import {
+  clean,
+  toDateOnly,
+  escapeSqlLiteral,
+  daysBetween,
+  round2,
+} from "./utils.ts";
 
 export const createBillingTool = (_env: Env) =>
   createPrivateTool({
@@ -36,41 +42,66 @@ export const createBillingTool = (_env: Env) =>
       "Display ALL returned invoices — NEVER show a subset.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("ID numérico do cliente (único e recomendado). Ex: 1108. Tem prioridade sobre o nome."),
-      customer_name: z.string().optional()
-        .describe("Nome do cliente (busca exata ou parcial). Ex: Acme Corp. Nomes podem se repetir, prefira o ID."),
-      status: z.string().optional()
-        .describe("Filtro por status da fatura. Opções: paid (pago), overdue (atrasada), pending (pendente)."),
-      months: z.preprocess(
-        (value) => {
+      customer_name: z
+        .string()
+
+        .describe("Nome do cliente (busca exata ou parcial). Ex: Acme Corp."),
+      status: z
+        .string()
+        .optional()
+
+        .describe(
+          "Filtro por status da fatura. Opções: paid (pago), overdue (atrasada), pending (pendente).",
+        ),
+      months: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(60).optional(),
-      ).describe("Obrigatório para pedidos de tempo como 'últimos 6 meses'. Retorna apenas os N meses mais recentes."),
-      start_reference_month: z.string().optional()
-        .describe("Data inicial do período de uso (billing period). Formato: YYYY-MM-DD."),
-      end_reference_month: z.string().optional()
-        .describe("Data final do período de uso (billing period). Formato: YYYY-MM-DD."),
-      start_due_date: z.string().optional()
+        }, z.coerce.number().int().min(1).max(60).optional())
+        .describe(
+          "Obrigatório para pedidos de tempo como 'últimos 6 meses'. Retorna apenas os N meses mais recentes.",
+        ),
+      start_reference_month: z
+        .string()
+        .optional()
+
+        .describe(
+          "Data inicial do período de uso (billing period). Formato: YYYY-MM-DD.",
+        ),
+      end_reference_month: z
+        .string()
+        .optional()
+
+        .describe(
+          "Data final do período de uso (billing period). Formato: YYYY-MM-DD.",
+        ),
+      start_due_date: z
+        .string()
+        .optional()
+
         .describe("Data inicial de vencimento da fatura. Formato: YYYY-MM-DD."),
-      end_due_date: z.string().optional()
+      end_due_date: z
+        .string()
+        .optional()
+
         .describe("Data final de vencimento da fatura. Formato: YYYY-MM-DD."),
-      limit: z.preprocess(
-        (value) => {
+      limit: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(120).default(6),
-      ).describe("Limite de faturas retornadas (padrão: 6, máx: 120). Use months para filtros de tempo."),
+        }, z.coerce.number().int().min(1).max(120).default(6))
+        .describe(
+          "Limite de faturas retornadas (padrão: 6, máx: 120). Use months para filtros de tempo.",
+        ),
     }),
 
     outputSchema: z.object({
       customer: z.any(),
-      match_type: z.enum(["id", "exact", "partial"]),
+      match_type: z.enum(["exact", "partial"]),
       total_invoices: z.number(),
       metrics: z.object({
         average_monthly_billing: z.number(),
@@ -107,21 +138,21 @@ export const createBillingTool = (_env: Env) =>
     execute: async ({ context }) => {
       // Normalize inputs: clean() trims whitespace and converts empty strings
       // to undefined so we can safely check truthiness throughout.
-      const customerId = clean(context.customer_id);
       const customerName = clean(context.customer_name);
       const statusFilter = clean(context.status);
 
-      // Resolve the customer against the contacts + billing views.
+      // Resolve the customer against v_billing.
       // resolveCustomer throws if no match is found, halting execution early
-      // rather than running an expensive billing query for an unknown ID.
+      // rather than running an expensive billing query for an unknown name.
       const resolved = await resolveCustomer({
-        customer_id: customerId,
         customer_name: customerName,
       });
 
-      // Build the WHERE clause dynamically — start with the customer ID filter
+      // Build the WHERE clause dynamically — start with the customer name filter
       // and append optional date/status constraints as they are provided.
-      const conditions = [`id = ${resolved.customer.id}`];
+      const conditions = [
+        `name = '${escapeSqlLiteral(resolved.customer.name)}'`,
+      ];
 
       if (statusFilter) {
         conditions.push(
@@ -156,7 +187,7 @@ export const createBillingTool = (_env: Env) =>
         conditions.push(`reference_month >= (
           SELECT MIN(rm) FROM (
             SELECT DISTINCT reference_month AS rm FROM v_billing
-            WHERE id = ${resolved.customer.id}
+            WHERE name = '${escapeSqlLiteral(resolved.customer.name)}'
             ORDER BY rm DESC
             LIMIT ${monthsParam}
           )
@@ -210,7 +241,9 @@ export const createBillingTool = (_env: Env) =>
       // ones haven't been collected yet.
       for (const inv of invoices) {
         const amount = typeof inv.amount === "number" ? inv.amount : 0;
-        const st = String(inv.status ?? "").toLowerCase().trim();
+        const st = String(inv.status ?? "")
+          .toLowerCase()
+          .trim();
         const dueDate = inv.due_date ? new Date(String(inv.due_date)) : null;
         const paidDate = inv.paid_date ? new Date(String(inv.paid_date)) : null;
 
@@ -255,9 +288,10 @@ export const createBillingTool = (_env: Env) =>
         ? daysBetween(now, lastPaidDate)
         : null;
 
-      const dsoAvg = dsoValues.length > 0
-        ? round2(dsoValues.reduce((a, b) => a + b, 0) / dsoValues.length)
-        : null;
+      const dsoAvg =
+        dsoValues.length > 0
+          ? round2(dsoValues.reduce((a, b) => a + b, 0) / dsoValues.length)
+          : null;
 
       let totalExtraPV = 0;
       let totalExtraRQ = 0;
@@ -267,21 +301,29 @@ export const createBillingTool = (_env: Env) =>
       let latestSeats: number | null = null;
 
       for (const inv of invoices) {
-        totalExtraPV += typeof inv.extra_pageviews_price === "number" ? inv.extra_pageviews_price : 0;
-        totalExtraRQ += typeof inv.extra_req_price === "number" ? inv.extra_req_price : 0;
-        totalExtraBW += typeof inv.extra_bw_price === "number" ? inv.extra_bw_price : 0;
-        totalSeatsCost += typeof inv.seats_builder_cost === "number" ? inv.seats_builder_cost : 0;
-        totalSupportPrice += typeof inv.support_price === "number" ? inv.support_price : 0;
+        totalExtraPV +=
+          typeof inv.extra_pageviews_price === "number"
+            ? inv.extra_pageviews_price
+            : 0;
+        totalExtraRQ +=
+          typeof inv.extra_req_price === "number" ? inv.extra_req_price : 0;
+        totalExtraBW +=
+          typeof inv.extra_bw_price === "number" ? inv.extra_bw_price : 0;
+        totalSeatsCost +=
+          typeof inv.seats_builder_cost === "number"
+            ? inv.seats_builder_cost
+            : 0;
+        totalSupportPrice +=
+          typeof inv.support_price === "number" ? inv.support_price : 0;
         if (latestSeats === null && typeof inv.seats_builders === "number") {
           latestSeats = inv.seats_builders;
         }
       }
 
       const overageTotal = round2(totalExtraPV + totalExtraRQ + totalExtraBW);
-      const overagePercentage = totalBilled > 0
-        ? round2((overageTotal / totalBilled) * 100)
-        : 0;
-      
+      const overagePercentage =
+        totalBilled > 0 ? round2((overageTotal / totalBilled) * 100) : 0;
+
       // Flag customers where overage charges exceed 40% of total billing —
       // a sign that they've outgrown their current plan and are effectively
       // paying premium rates for usage that a higher tier would cover cheaper.
@@ -290,25 +332,37 @@ export const createBillingTool = (_env: Env) =>
       const summaryLines: string[] = [];
       summaryLines.push(
         `Resumo financeiro (${invoices.length} fatura${invoices.length !== 1 ? "s" : ""}, ` +
-        `período: ${oldestMonth} a ${newestMonth}):`,
+          `período: ${oldestMonth} a ${newestMonth}):`,
       );
-      summaryLines.push(`• Total faturado: R$${round2(totalBilled).toFixed(2)}`);
-      summaryLines.push(`• Total pago: R$${round2(paidTotal).toFixed(2)} (${invoicesPaid} fatura${invoicesPaid !== 1 ? "s" : ""})`);
+      summaryLines.push(
+        `• Total faturado: R$${round2(totalBilled).toFixed(2)}`,
+      );
+      summaryLines.push(
+        `• Total pago: R$${round2(paidTotal).toFixed(2)} (${invoicesPaid} fatura${invoicesPaid !== 1 ? "s" : ""})`,
+      );
       if (overdueTotal > 0) {
-        summaryLines.push(`• Total em atraso: R$${round2(overdueTotal).toFixed(2)} (${invoicesOverdue} fatura${invoicesOverdue !== 1 ? "s" : ""})`);
+        summaryLines.push(
+          `• Total em atraso: R$${round2(overdueTotal).toFixed(2)} (${invoicesOverdue} fatura${invoicesOverdue !== 1 ? "s" : ""})`,
+        );
       } else {
         summaryLines.push(`• Faturas em atraso: 0`);
       }
       summaryLines.push(`• Média mensal: R$${avgMonthly.toFixed(2)}`);
       if (lastPaymentDaysAgo !== null) {
-        summaryLines.push(`• Dias desde último pagamento: ${lastPaymentDaysAgo}`);
+        summaryLines.push(
+          `• Dias desde último pagamento: ${lastPaymentDaysAgo}`,
+        );
       }
       if (dsoAvg !== null) {
         summaryLines.push(`• DSO médio: ${dsoAvg} dias`);
       }
-      summaryLines.push(`• Overages: R$${overageTotal.toFixed(2)} (${overagePercentage.toFixed(1)}% do total)`);
+      summaryLines.push(
+        `• Overages: R$${overageTotal.toFixed(2)} (${overagePercentage.toFixed(1)}% do total)`,
+      );
       if (marginBleedAlert) {
-        summaryLines.push(`⚠️ ALERTA: Overages acima de 40% do faturamento — avaliar upgrade de plano.`);
+        summaryLines.push(
+          `⚠️ ALERTA: Overages acima de 40% do faturamento — avaliar upgrade de plano.`,
+        );
       }
       const summaryText = summaryLines.join("\n");
 
@@ -316,12 +370,16 @@ export const createBillingTool = (_env: Env) =>
         "reference_month | amount_brl | status | due_date | paid_date | extra_pageviews_brl",
       ];
       for (const inv of invoices) {
-        const referenceMonth = toDateOnly(inv.reference_month)?.slice(0, 7) ?? "N/A";
+        const referenceMonth =
+          toDateOnly(inv.reference_month)?.slice(0, 7) ?? "N/A";
         const amount = typeof inv.amount === "number" ? inv.amount : 0;
         const status = String(inv.status ?? "");
         const dueDate = toDateOnly(inv.due_date) ?? "N/A";
         const paidDate = toDateOnly(inv.paid_date) ?? "N/A";
-        const extraPV = typeof inv.extra_pageviews_price === "number" ? inv.extra_pageviews_price : 0;
+        const extraPV =
+          typeof inv.extra_pageviews_price === "number"
+            ? inv.extra_pageviews_price
+            : 0;
         invoiceTableLines.push(
           `${referenceMonth} | R$${amount.toFixed(2)} | ${status} | ${dueDate} | ${paidDate} | R$${extraPV.toFixed(2)}`,
         );
@@ -331,14 +389,17 @@ export const createBillingTool = (_env: Env) =>
       const appliedFilters: string[] = [];
       if (monthsParam) appliedFilters.push(`months=${monthsParam}`);
       if (statusFilter) appliedFilters.push(`status=${statusFilter}`);
-      if (startRefMonth) appliedFilters.push(`start_reference_month=${startRefMonth}`);
-      if (endRefMonth) appliedFilters.push(`end_reference_month=${endRefMonth}`);
+      if (startRefMonth)
+        appliedFilters.push(`start_reference_month=${startRefMonth}`);
+      if (endRefMonth)
+        appliedFilters.push(`end_reference_month=${endRefMonth}`);
       if (startDueDate) appliedFilters.push(`start_due_date=${startDueDate}`);
       if (endDueDate) appliedFilters.push(`end_due_date=${endDueDate}`);
 
-      const filterDesc = appliedFilters.length > 0
-        ? `Filtros aplicados: ${appliedFilters.join(", ")}.`
-        : `Nenhum filtro aplicado (mostrando até ${context.limit} faturas mais recentes).`;
+      const filterDesc =
+        appliedFilters.length > 0
+          ? `Filtros aplicados: ${appliedFilters.join(", ")}.`
+          : `Nenhum filtro aplicado (mostrando até ${context.limit} faturas mais recentes).`;
 
       const llmInstruction =
         `IMPORTANTE: Esta resposta contém ${invoices.length} fatura(s). ${filterDesc} ` +

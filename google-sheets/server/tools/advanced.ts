@@ -26,34 +26,53 @@ export const createCreateChartTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID where data is located"),
       chartType: z
+
         .enum(["BAR", "LINE", "COLUMN", "AREA", "PIE"])
+
         .describe("Type of chart"),
       startRow: z.coerce.number().describe("Start row of data range (0-based)"),
       endRow: z.coerce.number().describe("End row of data range (exclusive)"),
       startColumn: z.coerce
+
         .number()
+
         .describe("Start column of data range (0-based)"),
       endColumn: z.coerce
+
         .number()
+
         .describe("End column of data range (exclusive)"),
       positionRow: z.coerce
+
         .number()
+
         .describe("Row where chart anchor will be placed"),
       positionColumn: z.coerce
+
         .number()
+
         .describe("Column where chart anchor will be placed"),
       title: z.string().optional().describe("Chart title"),
       width: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Chart width in pixels (default: 600)"),
       height: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Chart height in pixels (default: 400)"),
       legendPosition: z
+
         .string()
+
         .optional()
+
         .describe(
           "Legend position: BOTTOM_LEGEND, RIGHT_LEGEND, TOP_LEGEND, LEFT_LEGEND, NO_LEGEND",
         ),
@@ -128,6 +147,7 @@ export const createAddDataValidationTool = (env: Env) =>
       startColumn: z.coerce.number().describe("Start column index (0-based)"),
       endColumn: z.coerce.number().describe("End column index (exclusive)"),
       validationType: z
+
         .enum([
           "ONE_OF_LIST",
           "ONE_OF_RANGE",
@@ -138,24 +158,37 @@ export const createAddDataValidationTool = (env: Env) =>
           "TEXT_CONTAINS",
           "CUSTOM_FORMULA",
         ])
+
         .describe("Type of validation"),
       values: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "Values for validation (list items, formula, range, or comparison values)",
         ),
       strict: z
+
         .boolean()
+
         .optional()
+
         .describe("Reject invalid input (default: true)"),
       showDropdown: z
+
         .boolean()
+
         .optional()
+
         .describe("Show dropdown UI for lists (default: true)"),
       inputMessage: z
+
         .string()
+
         .optional()
+
         .describe("Message shown when cell is selected"),
     }),
     outputSchema: z.object({
@@ -233,6 +266,7 @@ export const createAddConditionalFormattingTool = (env: Env) =>
       startColumn: z.coerce.number().describe("Start column index (0-based)"),
       endColumn: z.coerce.number().describe("End column index (exclusive)"),
       conditionType: z
+
         .enum([
           "NUMBER_GREATER",
           "NUMBER_GREATER_THAN_EQ",
@@ -262,10 +296,14 @@ export const createAddConditionalFormattingTool = (env: Env) =>
           "CUSTOM_FORMULA",
           "BOOLEAN",
         ])
+
         .describe("Type of condition"),
       conditionValues: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Values for comparison (e.g., ['100'] for NUMBER_GREATER)"),
       backgroundColor: ColorSchema.optional().describe(
         "Background color when condition is true",
@@ -275,12 +313,18 @@ export const createAddConditionalFormattingTool = (env: Env) =>
       ),
       bold: z.boolean().optional().describe("Bold text when condition is true"),
       italic: z
+
         .boolean()
+
         .optional()
+
         .describe("Italic text when condition is true"),
       ruleIndex: z.coerce
+
         .number()
+
         .optional()
+
         .describe("Rule priority index (0 = highest priority)"),
     }),
     outputSchema: z.object({
@@ -323,7 +367,9 @@ export const createClearConditionalFormattingTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       ruleIndex: z.coerce
+
         .number()
+
         .describe("Index of the rule to delete (0 = first rule)"),
     }),
     outputSchema: z.object({
@@ -361,12 +407,18 @@ export const createProtectRangeTool = (env: Env) =>
       startColumn: z.coerce.number().describe("Start column index (0-based)"),
       endColumn: z.coerce.number().describe("End column index (exclusive)"),
       description: z
+
         .string()
+
         .optional()
+
         .describe("Description of why this range is protected"),
       warningOnly: z
+
         .boolean()
+
         .optional()
+
         .describe(
           "If true, show warning but allow edit (default: false = block edit)",
         ),
@@ -400,7 +452,9 @@ export const createUnprotectRangeTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       protectedRangeId: z.coerce
+
         .number()
+
         .describe("Protected range ID to remove"),
     }),
     outputSchema: z.object({

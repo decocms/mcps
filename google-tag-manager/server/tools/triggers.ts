@@ -57,16 +57,24 @@ const TriggerSchema = z.object({
   triggerId: z.string().describe("Trigger ID"),
   name: z.string().describe("Trigger name"),
   type: z
+
     .string()
+
     .describe("Trigger type (e.g., 'pageview', 'customEvent', 'click')"),
   filter: z.array(ConditionSchema).optional().describe("Filter conditions"),
   autoEventFilter: z
+
     .array(ConditionSchema)
+
     .optional()
+
     .describe("Auto-event filter conditions"),
   customEventFilter: z
+
     .array(ConditionSchema)
+
     .optional()
+
     .describe("Custom event filter conditions"),
   eventName: ParameterSchema.optional().describe("Event name parameter"),
   fingerprint: z.string().describe("Fingerprint for optimistic locking"),
@@ -89,15 +97,21 @@ export const createListTriggersTool = (env: Env) =>
       containerId: z.string().describe("Container ID (e.g., '67890')"),
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       triggers: z.array(TriggerSchema).describe("List of triggers"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -201,16 +215,24 @@ export const createCreateTriggerTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       name: z.string().describe("Trigger name"),
       type: z
+
         .string()
+
         .describe("Trigger type (e.g., 'pageview', 'customEvent', 'click')"),
       filter: z.array(ConditionSchema).optional().describe("Filter conditions"),
       autoEventFilter: z
+
         .array(ConditionSchema)
+
         .optional()
+
         .describe("Auto-event filter conditions"),
       customEventFilter: z
+
         .array(ConditionSchema)
+
         .optional()
+
         .describe("Custom event filter conditions"),
       eventName: ParameterSchema.optional().describe(
         "Event name parameter for custom events",
@@ -281,18 +303,26 @@ export const createUpdateTriggerTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       triggerId: z.string().describe("Trigger ID to update"),
       fingerprint: z
+
         .string()
+
         .describe("Current fingerprint for optimistic locking"),
       name: z.string().describe("Trigger name"),
       type: z.string().describe("Trigger type (e.g., 'pageview', 'click')"),
       filter: z.array(ConditionSchema).optional().describe("Filter conditions"),
       autoEventFilter: z
+
         .array(ConditionSchema)
+
         .optional()
+
         .describe("Auto-event filter conditions"),
       customEventFilter: z
+
         .array(ConditionSchema)
+
         .optional()
+
         .describe("Custom event filter conditions"),
       eventName: ParameterSchema.optional().describe("Event name parameter"),
       notes: z.string().optional().describe("Trigger notes"),

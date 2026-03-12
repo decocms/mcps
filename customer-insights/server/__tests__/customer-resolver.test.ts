@@ -25,7 +25,11 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // ── Fixtures ──────────────────────────────────────────────────────────
-const CUSTOMER_ACME = { id: 1108, name: "Acme Corp", email: "contact@acme.com" };
+const CUSTOMER_ACME = {
+  id: 1108,
+  name: "Acme Corp",
+  email: "contact@acme.com",
+};
 const CUSTOMER_BETA = { id: 2001, name: "Beta Inc", email: "admin@beta.io" };
 
 // ── Mock de db.ts ──────────────────────────────────────────────────────
@@ -45,7 +49,10 @@ const { resolveCustomer, resolveCustomersByDomain } = await import(
 
 type CustomerRow = { id: number; name: string; email: string };
 type CustomerMatchType = "id" | "exact" | "partial";
-type ResolvedCustomer = { customer: CustomerRow; match_type: CustomerMatchType };
+type ResolvedCustomer = {
+  customer: CustomerRow;
+  match_type: CustomerMatchType;
+};
 
 // ── Testes ─────────────────────────────────────────────────────────────
 
@@ -56,20 +63,22 @@ describe("resolveCustomer — validação de input", () => {
   });
 
   it("deve lançar erro quando nenhum parâmetro é fornecido", async () => {
-    await expect(
-      resolveCustomer({})
-    ).rejects.toThrow("Please provide customer_id (recommended, unique) or customer_name.");
+    await expect(resolveCustomer({})).rejects.toThrow(
+      "Please provide customer_id (recommended, unique) or customer_name.",
+    );
   });
 
   it("deve lançar erro quando parâmetros são strings vazias", async () => {
     await expect(
-      resolveCustomer({ customer_id: "", customer_name: "" })
-    ).rejects.toThrow("Please provide customer_id (recommended, unique) or customer_name.");
+      resolveCustomer({ customer_id: "", customer_name: "" }),
+    ).rejects.toThrow(
+      "Please provide customer_id (recommended, unique) or customer_name.",
+    );
   });
 
   it("deve lançar erro quando parâmetros são somente espaços", async () => {
     await expect(
-      resolveCustomer({ customer_id: "   ", customer_name: "   " })
+      resolveCustomer({ customer_id: "   ", customer_name: "   " }),
     ).rejects.toThrow();
   });
 });
@@ -90,16 +99,16 @@ describe("resolveCustomer — busca por ID", () => {
 
   it("deve lançar erro quando ID não encontra cliente", async () => {
     // mockQueryFn default retorna []
-    await expect(
-      resolveCustomer({ customer_id: "9999" })
-    ).rejects.toThrow("Customer not found for the given customer_id.");
+    await expect(resolveCustomer({ customer_id: "9999" })).rejects.toThrow(
+      "Customer not found for the given customer_id.",
+    );
   });
 
   it("deve lançar erro quando ID não é numérico", async () => {
     // Number("abc") = NaN → findById retorna null
-    await expect(
-      resolveCustomer({ customer_id: "abc" })
-    ).rejects.toThrow("Customer not found for the given customer_id.");
+    await expect(resolveCustomer({ customer_id: "abc" })).rejects.toThrow(
+      "Customer not found for the given customer_id.",
+    );
   });
 
   it("deve priorizar customer_id sobre customer_name", async () => {
@@ -129,7 +138,8 @@ describe("resolveCustomer — busca por nome", () => {
 
   it("deve resolver por nome parcial quando exact vazio e partial tem 1", async () => {
     mockQueryFn
-      .mockResolvedValueOnce([])               // exact match vazio
+
+      .mockResolvedValueOnce([]) // exact match vazio
       .mockResolvedValueOnce([CUSTOMER_ACME]); // partial match
 
     const result = await resolveCustomer({ customer_name: "Acme" });
@@ -139,19 +149,20 @@ describe("resolveCustomer — busca por nome", () => {
   it("deve lançar erro de ambiguidade quando exact retorna múltiplos", async () => {
     mockQueryFn.mockResolvedValueOnce([CUSTOMER_ACME, CUSTOMER_BETA]);
 
-    await expect(
-      resolveCustomer({ customer_name: "Corp" })
-    ).rejects.toThrow(/Ambiguous name.*Please use customer_id/);
+    await expect(resolveCustomer({ customer_name: "Corp" })).rejects.toThrow(
+      /Ambiguous name.*Please use customer_id/,
+    );
   });
 
   it("deve lançar erro de ambiguidade quando partial retorna múltiplos", async () => {
     mockQueryFn
-      .mockResolvedValueOnce([])                           // exact vazio
+
+      .mockResolvedValueOnce([]) // exact vazio
       .mockResolvedValueOnce([CUSTOMER_ACME, CUSTOMER_BETA]); // partial múltiplos
 
-    await expect(
-      resolveCustomer({ customer_name: "Corp" })
-    ).rejects.toThrow(/Ambiguous name.*Please use customer_id/);
+    await expect(resolveCustomer({ customer_name: "Corp" })).rejects.toThrow(
+      /Ambiguous name.*Please use customer_id/,
+    );
   });
 
   it("deve incluir IDs dos candidatos na mensagem de ambiguidade", async () => {
@@ -170,7 +181,7 @@ describe("resolveCustomer — busca por nome", () => {
   it("deve lançar erro quando nenhum match é encontrado", async () => {
     // exact e partial ambos retornam []
     await expect(
-      resolveCustomer({ customer_name: "Inexistente" })
+      resolveCustomer({ customer_name: "Inexistente" }),
     ).rejects.toThrow("Customer not found in contacts/billing database");
   });
 
@@ -184,15 +195,15 @@ describe("resolveCustomer — busca por nome", () => {
 
 describe("resolveCustomersByDomain — validação de input", () => {
   it("deve lançar erro com domínio vazio", async () => {
-    await expect(
-      resolveCustomersByDomain("")
-    ).rejects.toThrow("Please provide a valid email domain");
+    await expect(resolveCustomersByDomain("")).rejects.toThrow(
+      "Please provide a valid email domain",
+    );
   });
 
   it("deve lançar erro com domínio somente @", async () => {
-    await expect(
-      resolveCustomersByDomain("@")
-    ).rejects.toThrow("Please provide a valid email domain");
+    await expect(resolveCustomersByDomain("@")).rejects.toThrow(
+      "Please provide a valid email domain",
+    );
   });
 });
 

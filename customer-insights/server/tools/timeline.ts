@@ -43,7 +43,7 @@ type BillingRow = {
   plan: unknown;
 };
 
-import { clean } from "./utils.ts";
+import { clean, escapeSqlLiteral } from "./utils.ts";
 
 function toIso(value: unknown): string | null {
   if (value === null || value === undefined) return null;
@@ -90,14 +90,18 @@ function parseDateHeaderToIso(value: unknown): string | null {
 
 function normalizeText(value: unknown): string {
   return String(value ?? "")
+
     .toLowerCase()
+
     .normalize("NFD")
+
     .replace(/[\u0300-\u036f]/g, "");
 }
 
 function getGoogleAccessToken(env: Env): string {
-  const authorization = (env as { MESH_REQUEST_CONTEXT?: { authorization?: unknown } })
-    .MESH_REQUEST_CONTEXT?.authorization;
+  const authorization = (
+    env as { MESH_REQUEST_CONTEXT?: { authorization?: unknown } }
+  ).MESH_REQUEST_CONTEXT?.authorization;
   if (!authorization || typeof authorization !== "string") {
     throw new Error("Not authenticated. Please login with Google first.");
   }
@@ -109,7 +113,9 @@ function getHeader(
   key: string,
 ): string | null {
   if (!headers?.length) return null;
-  const header = headers.find((item) => item.name.toLowerCase() === key.toLowerCase());
+  const header = headers.find(
+    (item) => item.name.toLowerCase() === key.toLowerCase(),
+  );
   return header?.value ?? null;
 }
 
@@ -118,7 +124,9 @@ async function listGmailMessages(
   fromEmail: string,
   maxResults: number,
 ): Promise<Array<Record<string, unknown>>> {
-  const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+  const listUrl = new URL(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+  );
   listUrl.searchParams.set("q", `from:${fromEmail}`);
   listUrl.searchParams.set("maxResults", String(maxResults));
 
@@ -152,7 +160,9 @@ async function listGmailMessages(
       });
       if (!detailResponse.ok) {
         const error = await detailResponse.text();
-        throw new Error(`Gmail message error (${detailResponse.status}): ${error}`);
+        throw new Error(
+          `Gmail message error (${detailResponse.status}): ${error}`,
+        );
       }
 
       const data = (await detailResponse.json()) as {
@@ -186,12 +196,21 @@ async function listGmailMessages(
   );
 }
 
-function classifyEmailEvent(subject: string, snippet: string): {
+function classifyEmailEvent(
+  subject: string,
+  snippet: string,
+): {
   type: TimelineEvent["type"];
   title: string;
 } {
   const text = normalizeText(`${subject} ${snippet}`);
-  const criticalKeywords = ["cancelamento", "processo", "procon", "advogado", "fraude"];
+  const criticalKeywords = [
+    "cancelamento",
+    "processo",
+    "procon",
+    "advogado",
+    "fraude",
+  ];
   const warningKeywords = [
     "problema",
     "erro",
@@ -285,16 +304,20 @@ function buildBillingEvents(rows: BillingRow[]): TimelineEvent[] {
 function buildUsageEvents(rows: BillingRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   const ordered = rows
+
     .map((row) => ({
       reference_month: toIso(row.reference_month),
       pageviews: toNumber(row.pageviews),
       requests: toNumber(row.requests),
-      bandwidth: row.bandwidth === null || row.bandwidth === undefined
-        ? null
-        : toNumber(row.bandwidth),
+      bandwidth:
+        row.bandwidth === null || row.bandwidth === undefined
+          ? null
+          : toNumber(row.bandwidth),
       plan: row.plan ?? null,
     }))
+
     .filter((row) => !!row.reference_month)
+
     .sort(
       (a, b) =>
         new Date(a.reference_month as string).getTime() -
@@ -324,7 +347,8 @@ function buildUsageEvents(rows: BillingRow[]): TimelineEvent[] {
     if (idx === 0) return;
 
     const prev = ordered[idx - 1];
-    const pageviewsRatio = prev.pageviews > 0 ? row.pageviews / prev.pageviews : 1;
+    const pageviewsRatio =
+      prev.pageviews > 0 ? row.pageviews / prev.pageviews : 1;
     const requestsRatio = prev.requests > 0 ? row.requests / prev.requests : 1;
     const strongestRatio = Math.max(pageviewsRatio, requestsRatio);
 
@@ -357,7 +381,9 @@ function buildUsageEvents(rows: BillingRow[]): TimelineEvent[] {
   return events;
 }
 
-function buildEmailEvents(messages: Array<Record<string, unknown>>): TimelineEvent[] {
+function buildEmailEvents(
+  messages: Array<Record<string, unknown>>,
+): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   messages.forEach((message) => {
@@ -411,7 +437,10 @@ function applyDateFilter(
   });
 }
 
-function sortEvents(events: TimelineEvent[], order: "asc" | "desc"): TimelineEvent[] {
+function sortEvents(
+  events: TimelineEvent[],
+  order: "asc" | "desc",
+): TimelineEvent[] {
   return events.sort((a, b) => {
     const aTs = Date.parse(a.occurred_at);
     const bTs = Date.parse(b.occurred_at);
@@ -426,53 +455,76 @@ export const createTimelineTool = (env: Env) =>
       "Builds a unified customer timeline with billing, usage, and email events in chronological order.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("Numeric customer ID (recommended, unique). E.g.: 1108. Takes priority over customer_name if provided."),
-      customer_name: z.string().optional()
-        .describe("Customer name (exact and partial search). E.g.: Acme Corp. Warning: names are not unique — prefer customer_id."),
-      max_events: z.preprocess(
-        (value) => {
+      customer_name: z
+        .string()
+
+        .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
+      max_events: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(500).default(100),
-      ).describe("Maximum number of events returned (default: 100, max: 500)."),
-      order: z.string().default("desc")
-        .describe("Chronological order. Options: asc (oldest first) | desc (default, most recent first)"),
-      include_emails: z.preprocess(
-        (value) => {
+        }, z.coerce.number().int().min(1).max(500).default(100))
+        .describe(
+          "Maximum number of events returned (default: 100, max: 500).",
+        ),
+      order: z
+        .string()
+        .default("desc")
+
+        .describe(
+          "Chronological order. Options: asc (oldest first) | desc (default, most recent first)",
+        ),
+      include_emails: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string") {
             const normalized = value.trim().toLowerCase();
             if (normalized === "") return undefined;
-            if (["true", "1", "yes", "y", "on"].includes(normalized)) return true;
-            if (["false", "0", "no", "n", "off"].includes(normalized)) return false;
+            if (["true", "1", "yes", "y", "on"].includes(normalized))
+              return true;
+            if (["false", "0", "no", "n", "off"].includes(normalized))
+              return false;
           }
           return value;
-        },
-        z.boolean().default(true),
-      ).describe("Include email events (requires Google OAuth). Default: true"),
-      email_max_results: z.preprocess(
-        (value) => {
+        }, z.boolean().default(true))
+        .describe(
+          "Include email events (requires Google OAuth). Default: true",
+        ),
+      email_max_results: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(50).default(15),
-      ).describe("Maximum number of emails collected for timeline (default: 15, max: 50)."),
-      start_date: z.string().optional()
+        }, z.coerce.number().int().min(1).max(50).default(15))
+        .describe(
+          "Maximum number of emails collected for timeline (default: 15, max: 50).",
+        ),
+      start_date: z
+        .string()
+        .optional()
+
         .describe("Start date filter. Format: YYYY-MM-DD. E.g.: 2024-01-01"),
-      end_date: z.string().optional()
+      end_date: z
+        .string()
+        .optional()
+
         .describe("End date filter. Format: YYYY-MM-DD. E.g.: 2024-12-31"),
-      sources: z.string().optional()
-        .describe("Filter which sources appear in timeline. Comma-separated options: billing, usage, gmail. E.g.: billing,usage"),
+      sources: z
+        .string()
+        .optional()
+
+        .describe(
+          "Filter which sources appear in timeline. Comma-separated options: billing, usage, gmail. E.g.: billing,usage",
+        ),
     }),
 
     outputSchema: z.object({
       customer_found: z.boolean(),
       customer: z.any().nullable(),
-      match_type: z.enum(["id", "exact", "partial"]).optional(),
+      match_type: z.enum(["exact", "partial"]).optional(),
       total_events: z.number(),
       events: z.array(z.any()),
       summary: z.any(),
@@ -481,7 +533,6 @@ export const createTimelineTool = (env: Env) =>
 
     execute: async ({ context }) => {
       const resolved = await resolveCustomer({
-        customer_id: clean(context.customer_id),
         customer_name: clean(context.customer_name),
       });
       const customer = resolved.customer;
@@ -498,7 +549,7 @@ export const createTimelineTool = (env: Env) =>
           bandwidth,
           plan
         FROM v_billing
-        WHERE id = ${customer.id}
+        WHERE name = '${escapeSqlLiteral(customer.name)}'
         ORDER BY due_date DESC`,
       );
 
@@ -532,20 +583,27 @@ export const createTimelineTool = (env: Env) =>
 
       const rawSources = clean(context.sources as unknown as string);
       const sourcesArr = rawSources
-        ? rawSources.split(",").map((s: string) => s.trim()).filter(Boolean)
+        ? rawSources
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
         : null;
-      const sourceFilter = sourcesArr?.length
-        ? new Set(sourcesArr)
-        : null;
-      const allEvents = [...billingEvents, ...usageEvents, ...emailEvents].filter((event) =>
-        sourceFilter ? sourceFilter.has(event.source) : true
+      const sourceFilter = sourcesArr?.length ? new Set(sourcesArr) : null;
+      const allEvents = [
+        ...billingEvents,
+        ...usageEvents,
+        ...emailEvents,
+      ].filter((event) =>
+        sourceFilter ? sourceFilter.has(event.source) : true,
       );
       const filtered = applyDateFilter(
         allEvents,
         clean(context.start_date),
         clean(context.end_date),
       );
-      const order = (clean(context.order) === "asc" ? "asc" : "desc") as "asc" | "desc";
+      const order = (clean(context.order) === "asc" ? "asc" : "desc") as
+        | "asc"
+        | "desc";
       const ordered = sortEvents(filtered, order).slice(0, context.max_events);
 
       return sanitize({
@@ -555,9 +613,12 @@ export const createTimelineTool = (env: Env) =>
         total_events: ordered.length,
         events: ordered,
         summary: {
-          billing_events: ordered.filter((event) => event.source === "billing").length,
-          usage_events: ordered.filter((event) => event.source === "usage").length,
-          email_events: ordered.filter((event) => event.source === "gmail").length,
+          billing_events: ordered.filter((event) => event.source === "billing")
+            .length,
+          usage_events: ordered.filter((event) => event.source === "usage")
+            .length,
+          email_events: ordered.filter((event) => event.source === "gmail")
+            .length,
           complaint_events: ordered.filter(
             (event) => event.type === "customer_complaint",
           ).length,

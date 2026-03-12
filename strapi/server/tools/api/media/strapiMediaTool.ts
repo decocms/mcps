@@ -15,21 +15,30 @@ export const createStrapiGetMediaTool = (env: Env) =>
       "Lista arquivos de mídia do Strapi CMS com filtros e paginação.",
     inputSchema: z.object({
       filters: z
+
         .string()
+
         .optional()
+
         .describe("Filtros para a consulta (formato JSON string)"),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({
@@ -132,23 +141,35 @@ export const createStrapiUploadMediaTool = (env: Env) =>
       "Faz upload de um arquivo de mídia para o Strapi CMS a partir de uma URL.",
     inputSchema: z.object({
       fileUrl: z
+
         .string()
+
         .url()
+
         .describe("URL do arquivo a ser baixado e enviado"),
       fileName: z
+
         .string()
+
         .optional()
+
         .describe(
           "Nome do arquivo (opcional, será extraído da URL se omitido)",
         ),
       alternativeText: z
+
         .string()
+
         .optional()
+
         .describe("Texto alternativo para o arquivo"),
       caption: z.string().optional().describe("Legenda do arquivo"),
       folder: z
+
         .union([z.string(), z.number()])
+
         .optional()
+
         .describe("ID da pasta onde salvar o arquivo"),
     }),
     outputSchema: z.object({
@@ -222,12 +243,12 @@ export const createStrapiUploadMediaTool = (env: Env) =>
         }
 
         // Get Strapi credentials
-        const apiEndpoint = (
-          await import("../../../lib/env.ts")
-        ).getStrapiApiEndpoint(env);
-        const apiToken = (
-          await import("../../../lib/env.ts")
-        ).getStrapiApiToken(env);
+        const apiEndpoint = (await import("../../../lib/env.ts"))
+
+          .getStrapiApiEndpoint(env);
+        const apiToken = (await import("../../../lib/env.ts"))
+
+          .getStrapiApiToken(env);
 
         // Make upload request
         const uploadResponse = await fetch(`${apiEndpoint}/api/upload`, {
@@ -272,8 +293,11 @@ export const createStrapiUpdateMediaTool = (env: Env) =>
       alternativeText: z.string().optional().describe("Novo texto alternativo"),
       caption: z.string().optional().describe("Nova legenda"),
       folder: z
+
         .union([z.string(), z.number()])
+
         .optional()
+
         .describe("ID da nova pasta"),
     }),
     outputSchema: z.object({
@@ -340,7 +364,9 @@ export const createStrapiDeleteMediaTool = (env: Env) =>
     description: "Exclui um arquivo de mídia no Strapi CMS.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do arquivo de mídia a ser excluído"),
     }),
     outputSchema: z.object({
@@ -388,21 +414,30 @@ export const createStrapiGetMediaFoldersTool = (env: Env) =>
     description: "Lista pastas de mídia do Strapi CMS.",
     inputSchema: z.object({
       filters: z
+
         .string()
+
         .optional()
+
         .describe("Filtros para a consulta (formato JSON string)"),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
           start: z.number().optional(),
           limit: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({

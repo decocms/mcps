@@ -68,14 +68,21 @@ export const createStrapiCreateLocaleTool = (env: Env) =>
       "Cria um novo idioma (locale) no Strapi CMS. Requer o plugin i18n habilitado.",
     inputSchema: z.object({
       name: z
+
         .string()
+
         .describe("Nome do idioma (ex: 'Português (Brasil)', 'English')"),
       code: z
+
         .string()
+
         .describe("Código ISO do idioma (ex: 'pt-BR', 'en', 'es', 'fr')"),
       isDefault: z
+
         .boolean()
+
         .optional()
+
         .describe("Define como idioma padrão (default: false)"),
     }),
     outputSchema: z.object({
@@ -140,7 +147,9 @@ export const createStrapiDeleteLocaleTool = (env: Env) =>
       "Remove um idioma (locale) do Strapi CMS. Não é possível remover o locale padrão.",
     inputSchema: z.object({
       id: z
+
         .union([z.string(), z.number()])
+
         .describe("ID do locale a ser removido"),
     }),
     outputSchema: z.object({
@@ -197,33 +206,47 @@ export const createStrapiGetContentByLocaleTool = (env: Env) =>
       "Lista conteúdo filtrado por idioma (locale) no Strapi CMS. Requer i18n habilitado no content type.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       locale: z.string().describe("Código do locale (ex: 'pt-BR', 'en', 'es')"),
       filters: z
+
         .string()
+
         .optional()
+
         .describe(
           'Filtros adicionais (formato JSON string, ex: {"title":{"$contains":"hello"}})',
         ),
       populate: z
+
         .string()
+
         .optional()
+
         .describe(
           'Campos para popular (ex: "cover,category" ou JSON string para populate profundo)',
         ),
       sort: z
+
         .union([z.string(), z.array(z.string())])
+
         .optional()
+
         .describe("Ordenação dos resultados"),
       pagination: z
+
         .object({
           page: z.number().optional(),
           pageSize: z.number().optional(),
         })
+
         .optional()
+
         .describe("Configurações de paginação"),
     }),
     outputSchema: z.object({

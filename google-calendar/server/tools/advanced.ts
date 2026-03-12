@@ -24,16 +24,25 @@ const TimeSlotSchema = z.object({
 
 const EventDateTimeSchema = z.object({
   date: z
+
     .string()
+
     .optional()
+
     .describe("Date for all-day events (YYYY-MM-DD format)"),
   dateTime: z
+
     .string()
+
     .optional()
+
     .describe("DateTime for timed events (RFC3339 format)"),
   timeZone: z
+
     .string()
+
     .optional()
+
     .describe("Timezone (e.g., 'America/Sao_Paulo')"),
 });
 
@@ -45,12 +54,18 @@ const EventSchema = z.object({
   start: EventDateTimeSchema.describe("Event start time"),
   end: EventDateTimeSchema.describe("Event end time"),
   status: z
+
     .enum(["confirmed", "tentative", "cancelled"])
+
     .optional()
+
     .describe("Event status"),
   htmlLink: z
+
     .string()
+
     .optional()
+
     .describe("Link to the event in Google Calendar"),
 });
 
@@ -65,15 +80,22 @@ export const createMoveEventTool = (env: Env) =>
       "Move an event from one calendar to another. The event will be removed from the source calendar and added to the destination calendar.",
     inputSchema: z.object({
       sourceCalendarId: z
+
         .string()
+
         .describe("Calendar ID where the event currently exists"),
       eventId: z.string().describe("Event ID to move"),
       destinationCalendarId: z
+
         .string()
+
         .describe("Calendar ID to move the event to"),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive email notifications about the move"),
     }),
     outputSchema: z.object({
@@ -119,42 +141,65 @@ export const createFindAvailableSlotsTool = (env: Env) =>
       "Find available time slots across one or more calendars. Useful for scheduling meetings by finding times when all participants are free.",
     inputSchema: z.object({
       calendarIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe("List of calendar IDs to check. Defaults to ['primary']"),
       timeMin: z
+
         .string()
+
         .describe(
           "Start of the search range (RFC3339 format, e.g., '2024-01-15T08:00:00Z')",
         ),
       timeMax: z
+
         .string()
+
         .describe(
           "End of the search range (RFC3339 format, e.g., '2024-01-15T18:00:00Z')",
         ),
       slotDurationMinutes: z.coerce
+
         .number()
+
         .int()
+
         .min(5)
+
         .max(480)
+
         .describe(
           "Duration of each slot in minutes (e.g., 30 for 30-minute meetings)",
         ),
       timeZone: z
+
         .string()
+
         .optional()
+
         .describe("Timezone for the search (e.g., 'America/Sao_Paulo')"),
       maxSlots: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(50)
+
         .optional()
+
         .describe("Maximum number of slots to return (default: 10)"),
     }),
     outputSchema: z.object({
       availableSlots: z
+
         .array(TimeSlotSchema)
+
         .describe("List of available time slots"),
       totalFound: z.number().describe("Total number of available slots found"),
       searchRange: z.object({
@@ -202,15 +247,21 @@ export const createDuplicateEventTool = (env: Env) =>
       "Create a copy of an existing event. You can optionally change the date/time and target calendar.",
     inputSchema: z.object({
       sourceCalendarId: z
+
         .string()
+
         .optional()
+
         .describe(
           "Calendar ID where the original event exists (default: 'primary')",
         ),
       eventId: z.string().describe("Event ID to duplicate"),
       targetCalendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID for the new event (default: same as source)"),
       newStart: EventDateTimeSchema.optional().describe(
         "New start time for the duplicated event (keeps original if not provided)",
@@ -219,14 +270,20 @@ export const createDuplicateEventTool = (env: Env) =>
         "New end time for the duplicated event (keeps original if not provided)",
       ),
       newSummary: z
+
         .string()
+
         .optional()
+
         .describe(
           "New title for the duplicated event (adds 'Copy of' prefix if not provided)",
         ),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive email notifications"),
     }),
     outputSchema: z.object({

@@ -37,7 +37,9 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
     case "function": {
       // Create a host function bridge that can be called from guest context
       const functionId = `__hostFn_${Date.now()}_${Math.random()
+
         .toString(36)
+
         .substr(2, 9)}`;
 
       // Store the function in a way that can be accessed from guest context
@@ -63,6 +65,7 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
 
               // Start the async operation
               result
+
                 .then((resolvedValue: unknown) => {
                   try {
                     const quickJSValue = toQuickJS(ctx, resolvedValue);
@@ -81,6 +84,7 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
                     ctx.runtime.executePendingJobs();
                   }
                 })
+
                 .catch((error: unknown) => {
                   const errorMsg = inspect(error);
                   const errorHandle = ctx.newString(

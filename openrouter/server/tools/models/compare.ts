@@ -20,15 +20,22 @@ export const createCompareModelsTool = (env: Env) =>
       "Useful when deciding between multiple models for a task.",
     inputSchema: z.object({
       modelIds: z
+
         .array(z.string())
+
         .min(2)
+
         .max(5)
+
         .describe(
           "Array of 2-5 model IDs to compare (e.g., ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash-exp'])",
         ),
       criteria: z
+
         .array(z.enum(["price", "context_length", "modality", "moderation"]))
+
         .optional()
+
         .describe(
           "Specific criteria to focus on in comparison. If not specified, all criteria are included.",
         ),
@@ -39,13 +46,18 @@ export const createCompareModelsTool = (env: Env) =>
           modelId: z.string(),
           name: z.string(),
           metrics: z
+
             .record(z.string(), z.any())
+
             .describe("Model metrics based on selected criteria"),
         }),
       ),
       recommendation: z
+
         .string()
+
         .optional()
+
         .describe("Automated recommendation based on comparison"),
     }),
     execute: async ({ context }) => {

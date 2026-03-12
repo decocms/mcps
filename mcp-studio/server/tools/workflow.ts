@@ -243,17 +243,25 @@ Example workflow with a step that references the output of another step:
       data: z.object({
         title: z.string(),
         steps: z
+
           .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+
           .optional(),
         virtual_mcp_id: z
+
           .string()
+
           .default("")
+
           .describe(
             "The gateway ID to use for the workflow execution. The execution will only be able to use tools from this gateway.",
           ),
         description: z
+
           .string()
+
           .optional()
+
           .describe("The description of the workflow"),
       }),
     }),
@@ -389,7 +397,9 @@ export const createUpdateTool = (env: Env) =>
       data: z.object({
         title: z.string().optional(),
         steps: z
+
           .array(z.object(StepSchema.omit({ outputSchema: true }).shape))
+
           .optional(),
         virtual_mcp_id: z.string().optional(),
         description: z.string().optional(),
@@ -417,12 +427,16 @@ export const createAppendStepTool = (env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("The ID of the workflow to append the step to"),
       step: z
+
         .object(StepSchema.omit({ outputSchema: true }).shape)
+
         .describe("The step to append"),
     }),
     outputSchema: z.object({
       success: z
+
         .boolean()
+
         .describe("Whether the step was appended successfully"),
     }),
     execute: async ({ context }) => {
@@ -460,16 +474,21 @@ export const createUpdateStepsTool = (env: Env) =>
     description: "Update one or more steps of a workflow",
     inputSchema: z.object({
       steps: z
+
         .array(
           z.object(StepSchema.omit({ outputSchema: true }).shape).partial(),
         )
+
         .optional()
+
         .describe("The steps to update"),
       id: z.string().describe("The ID of the workflow to update"),
     }),
     outputSchema: z.object({
       success: z
+
         .boolean()
+
         .describe("Whether the step was updated successfully"),
     }),
     execute: async ({ context }) => {

@@ -16,18 +16,27 @@ import { PRIMARY_CALENDAR } from "../constants.ts";
 
 const EventDateTimeSchema = z.object({
   date: z
+
     .string()
+
     .optional()
+
     .describe("Date for all-day events (YYYY-MM-DD format)"),
   dateTime: z
+
     .string()
+
     .optional()
+
     .describe(
       "DateTime for timed events (RFC3339 format, e.g., 2024-01-15T10:00:00-03:00)",
     ),
   timeZone: z
+
     .string()
+
     .optional()
+
     .describe("Timezone (e.g., 'America/Sao_Paulo')"),
 });
 
@@ -36,17 +45,24 @@ const AttendeeSchema = z.object({
   displayName: z.string().optional().describe("Attendee display name"),
   optional: z.boolean().optional().describe("Whether attendance is optional"),
   responseStatus: z
+
     .enum(["needsAction", "declined", "tentative", "accepted"])
+
     .optional()
+
     .describe("Attendee response status"),
 });
 
 const ReminderSchema = z.object({
   method: z.enum(["email", "popup"]).describe("Reminder method"),
   minutes: z.coerce
+
     .number()
+
     .int()
+
     .min(0)
+
     .describe("Minutes before event to remind"),
 });
 
@@ -58,37 +74,52 @@ const EventSchema = z.object({
   start: EventDateTimeSchema.describe("Event start time"),
   end: EventDateTimeSchema.describe("Event end time"),
   status: z
+
     .enum(["confirmed", "tentative", "cancelled"])
+
     .optional()
+
     .describe("Event status"),
   htmlLink: z
+
     .string()
+
     .optional()
+
     .describe("Link to the event in Google Calendar"),
   created: z.string().optional().describe("Creation timestamp"),
   updated: z.string().optional().describe("Last update timestamp"),
   creator: z
+
     .object({
       email: z.string().optional(),
       displayName: z.string().optional(),
       self: z.boolean().optional(),
     })
+
     .optional()
+
     .describe("Event creator"),
   organizer: z
+
     .object({
       email: z.string().optional(),
       displayName: z.string().optional(),
       self: z.boolean().optional(),
     })
+
     .optional()
+
     .describe("Event organizer"),
   attendees: z.array(AttendeeSchema).optional().describe("Event attendees"),
   hangoutLink: z.string().optional().describe("Google Meet link"),
   colorId: z.string().optional().describe("Event color ID"),
   visibility: z
+
     .enum(["default", "public", "private", "confidential"])
+
     .optional()
+
     .describe("Event visibility"),
 });
 
@@ -103,35 +134,56 @@ export const createListEventsTool = (env: Env) =>
       "List events from a calendar with optional filters for date range, search query, and pagination.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       timeMin: z
+
         .string()
+
         .optional()
+
         .describe(
           "Start of time range (RFC3339 format). If not provided, defaults to 7 days ago. Required if singleEvents is true.",
         ),
       timeMax: z
+
         .string()
+
         .optional()
+
         .describe("End of time range (RFC3339 format)"),
       maxResults: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(2500)
+
         .optional()
+
         .describe("Maximum number of events to return (default: 50)"),
       pageToken: z.string().optional().describe("Token for fetching next page"),
       q: z.string().optional().describe("Free text search query"),
       singleEvents: z
+
         .boolean()
+
         .optional()
+
         .describe("Expand recurring events into instances (requires timeMin)"),
       orderBy: z
+
         .enum(["startTime", "updated"])
+
         .optional()
+
         .describe("Order by field (startTime requires singleEvents=true)"),
       showDeleted: z.boolean().optional().describe("Include deleted events"),
     }),
@@ -207,8 +259,11 @@ export const createGetEventTool = (env: Env) =>
     description: "Get detailed information about a specific event by its ID.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       eventId: z.string().describe("Event ID"),
     }),
@@ -264,8 +319,11 @@ export const createCreateEventTool = (env: Env) =>
       "Create a new event in a calendar. Supports attendees, reminders, and all-day or timed events.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       summary: z.string().describe("Event title"),
       description: z.string().optional().describe("Event description"),
@@ -277,6 +335,7 @@ export const createCreateEventTool = (env: Env) =>
         "Event end (use 'date' for all-day, 'dateTime' for timed events)",
       ),
       attendees: z
+
         .array(
           z.object({
             email: z.email().describe("Attendee email"),
@@ -284,31 +343,49 @@ export const createCreateEventTool = (env: Env) =>
             optional: z.boolean().optional().describe("Is attendance optional"),
           }),
         )
+
         .optional()
+
         .describe("List of attendees to invite"),
       reminders: z
+
         .object({
           useDefault: z.boolean().describe("Use default reminders"),
           overrides: z
+
             .array(ReminderSchema)
+
             .optional()
+
             .describe("Custom reminders"),
         })
+
         .optional()
+
         .describe("Reminder settings"),
       colorId: z.string().optional().describe("Event color ID (1-11)"),
       visibility: z
+
         .enum(["default", "public", "private", "confidential"])
+
         .optional()
+
         .describe("Event visibility"),
       guestsCanSeeOtherGuests: z
+
         .boolean()
+
         .optional()
+
         .default(true)
+
         .describe("Whether guests can see other attendees (default: true)"),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive email notifications"),
     }),
     outputSchema: z.object({
@@ -373,8 +450,11 @@ export const createUpdateEventTool = (env: Env) =>
       "Update an existing event. Only provided fields will be updated.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       eventId: z.string().describe("Event ID to update"),
       summary: z.string().optional().describe("New event title"),
@@ -383,6 +463,7 @@ export const createUpdateEventTool = (env: Env) =>
       start: EventDateTimeSchema.optional().describe("New start time"),
       end: EventDateTimeSchema.optional().describe("New end time"),
       attendees: z
+
         .array(
           z.object({
             email: z.email(),
@@ -390,20 +471,31 @@ export const createUpdateEventTool = (env: Env) =>
             optional: z.boolean().optional(),
           }),
         )
+
         .optional()
+
         .describe("Updated attendees list"),
       colorId: z.string().optional().describe("New color ID"),
       visibility: z
+
         .enum(["default", "public", "private", "confidential"])
+
         .optional()
+
         .describe("New visibility setting"),
       guestsCanSeeOtherGuests: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether guests can see other attendees"),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive email notifications"),
     }),
     outputSchema: z.object({
@@ -467,13 +559,19 @@ export const createDeleteEventTool = (env: Env) =>
     description: "Delete an event from a calendar.",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       eventId: z.string().describe("Event ID to delete"),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive cancellation notifications"),
     }),
     outputSchema: z.object({
@@ -509,17 +607,25 @@ export const createQuickAddEventTool = (env: Env) =>
       "Create an event using natural language text. Google Calendar will parse the text to extract event details like date, time, and title. Examples: 'Meeting with John tomorrow at 3pm', 'Dentist appointment on Friday at 10am'",
     inputSchema: z.object({
       calendarId: z
+
         .string()
+
         .optional()
+
         .describe("Calendar ID (default: 'primary')"),
       text: z
+
         .string()
+
         .describe(
           "Natural language description of the event (e.g., 'Meeting with John tomorrow at 3pm')",
         ),
       sendUpdates: z
+
         .enum(["all", "externalOnly", "none"])
+
         .optional()
+
         .describe("Who should receive email notifications"),
     }),
     outputSchema: z.object({

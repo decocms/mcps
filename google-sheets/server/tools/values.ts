@@ -16,7 +16,9 @@ export const createReadRangeTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       range: z
+
         .string()
+
         .describe(
           "Range in A1 notation (e.g., 'Sheet1!A1:D10', 'A:D', '1:10')",
         ),
@@ -55,11 +57,16 @@ export const createWriteRangeTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       range: z.string().describe("Range in A1 notation (e.g., 'Sheet1!A1')"),
       values: z
+
         .array(z.array(z.any()))
+
         .describe("2D array of values to write (rows x columns)"),
       raw: z
+
         .boolean()
+
         .optional()
+
         .describe(
           "If true, values are stored as-is. If false (default), values are parsed (formulas work).",
         ),
@@ -97,7 +104,9 @@ export const createAppendRowsTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       range: z
+
         .string()
+
         .describe("Range to append to (e.g., 'Sheet1!A:D' or 'Sheet1')"),
       values: z.array(z.array(z.any())).describe("2D array of rows to append"),
       raw: z.boolean().optional().describe("If true, values are stored as-is"),
@@ -156,7 +165,9 @@ export const createBatchReadTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       ranges: z
+
         .array(z.string())
+
         .describe(
           "Array of ranges to read (e.g., ['Sheet1!A1:B10', 'Sheet2!A1:C5'])",
         ),
@@ -193,12 +204,14 @@ export const createBatchWriteTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       data: z
+
         .array(
           z.object({
             range: z.string().describe("Range in A1 notation"),
             values: z.array(z.array(z.any())).describe("Values to write"),
           }),
         )
+
         .describe("Array of range-value pairs to write"),
       raw: z.boolean().optional().describe("If true, values are stored as-is"),
     }),
@@ -238,7 +251,9 @@ export const createReadFormulasTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       range: z
+
         .string()
+
         .describe(
           "Range in A1 notation (e.g., 'Sheet1!A1:D10', 'A:D', '1:10')",
         ),
@@ -246,7 +261,9 @@ export const createReadFormulasTool = (env: Env) =>
     outputSchema: z.object({
       range: z.string(),
       formulas: z
+
         .array(z.array(z.any()))
+
         .describe(
           "2D array of formulas (cells without formulas return their value)",
         ),
@@ -285,22 +302,34 @@ export const createGetSheetHeadersTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetName: z.string().describe("Name of the sheet"),
       range: z
+
         .string()
+
         .optional()
+
         .describe("Column range to read headers from (default: A:Z)"),
       headerRow: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("Row number containing headers (default: 1)"),
     }),
     outputSchema: z.object({
       labels: z
+
         .record(z.string(), z.string())
+
         .describe("Mapping of Col1, Col2... to header names"),
       headerMap: z
+
         .record(z.string(), z.number())
+
         .describe("Mapping of header name to column index (0-based)"),
       headerValues: z.array(z.string()).describe("Array of header values"),
       columnCount: z.number().describe("Number of columns with headers"),
@@ -340,33 +369,46 @@ export const createSearchDataTool = (env: Env) =>
       sheetName: z.string().describe("Name of the sheet to search"),
       searchTerm: z.string().describe("Term to search for"),
       searchColumns: z
+
         .array(z.coerce.number().int().min(0))
+
         .optional()
+
         .describe(
           "Column indices to search in (0-based). If not provided, searches all columns.",
         ),
       headerRow: z.coerce
+
         .number()
+
         .int()
+
         .min(0)
+
         .optional()
+
         .describe(
           "Row number containing headers (default: 1). Set to 0 to treat first row as data.",
         ),
       caseSensitive: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether search is case-sensitive (default: false)"),
     }),
     outputSchema: z.object({
       headers: z.array(z.string()).describe("Column headers from the sheet"),
       matches: z
+
         .array(
           z.object({
             rowNumber: z.number().describe("1-based row number in the sheet"),
             values: z.array(z.any()).describe("Cell values for the row"),
           }),
         )
+
         .describe("Matching rows"),
       totalMatches: z.number().describe("Total number of matches found"),
     }),

@@ -25,7 +25,9 @@ import type { Env } from "../main.ts";
  * Server data schema - flexible to accept data from Supabase
  */
 const ServerDataSchema = z
+
   .record(z.string(), z.unknown())
+
   .describe("Server data");
 
 /**
@@ -57,13 +59,18 @@ const LegacyWhereSchema = z.object({
   appName: z.string().optional().describe("Filter by app name"),
   title: z.string().optional().describe("Filter by server title/name"),
   binder: z
+
     .union([z.string(), z.array(z.string())])
+
     .optional()
+
     .describe("Filter by binding type(s)"),
 });
 
 const WhereSchema = z
+
   .union([WhereExpressionSchema, LegacyWhereSchema])
+
   .describe(
     "Filter expression (supports WhereExpression or legacy {appName, title, binder})",
   );
@@ -75,44 +82,67 @@ const WhereSchema = z
  * To get all versions of a server, use COLLECTION_REGISTRY_APP_VERSIONS.
  */
 const ListInputSchema = z
+
   .object({
     cursor: z
+
       .string()
+
       .optional()
+
       .describe(
         "Pagination cursor for fetching next page (e.g., 'ai.exa/exa:3.1.3')",
       ),
     limit: z.coerce
+
       .number()
+
       .int()
+
       .min(1)
+
       .max(100)
+
       .default(30)
+
       .describe("Number of items per page (default: 30)"),
     where: WhereSchema.optional().describe(
       "Standard WhereExpression filter (converted to simple search internally)",
     ),
     tags: z
+
       .array(z.string())
+
       .optional()
+
       .describe(
         "Filter by tags (returns servers that have ANY of the specified tags)",
       ),
     categories: z
+
       .array(z.string())
+
       .optional()
+
       .describe(
         "Filter by categories (returns servers that have ANY of the specified categories). Valid categories: productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation",
       ),
     verified: z
+
       .boolean()
+
       .optional()
+
       .describe("Filter by verification status (true = verified only)"),
     hasRemote: z
+
       .boolean()
+
       .optional()
+
       .describe("Filter servers that support remote execution"),
   })
+
   .describe("Filtering, sorting, and pagination context");
 
 /**
@@ -121,8 +151,11 @@ const ListInputSchema = z
 const ListOutputSchema = z.object({
   items: z.array(RegistryServerSchema),
   nextCursor: z
+
     .string()
+
     .optional()
+
     .describe(
       "Cursor for fetching next page (use in next request if hasMore is true)",
     ),
@@ -133,7 +166,9 @@ const ListOutputSchema = z.object({
  */
 const GetInputSchema = z.object({
   id: z
+
     .string()
+
     .describe(
       "Server name (format: 'ai.exa/exa' or 'ai.exa/exa@3.1.1'). Note: version suffix is ignored, always returns latest version.",
     ),
@@ -152,7 +187,9 @@ const GetOutputSchema = z.object({
  */
 const VersionsInputSchema = z.object({
   name: z
+
     .string()
+
     .describe(
       "Server name to list versions for (e.g., 'ai.exa/exa' or 'com.example/my-server')",
     ),
@@ -394,7 +431,9 @@ export const createVersionsRegistryTool = (_env: Env) =>
     inputSchema: VersionsInputSchema,
     outputSchema: z.object({
       versions: z
+
         .array(RegistryServerSchema)
+
         .describe("Array of all available versions for the server"),
       count: z.number().describe("Total number of versions available"),
     }),
@@ -458,20 +497,24 @@ export const createFiltersRegistryTool = (_env: Env) =>
     inputSchema: z.object({}),
     outputSchema: z.object({
       tags: z
+
         .array(
           z.object({
             value: z.string().describe("Tag name"),
             count: z.number().describe("Number of servers with this tag"),
           }),
         )
+
         .describe("Available tags sorted by usage count (descending)"),
       categories: z
+
         .array(
           z.object({
             value: z.string().describe("Category name"),
             count: z.number().describe("Number of servers in this category"),
           }),
         )
+
         .describe("Available categories sorted by usage count (descending)"),
     }),
     execute: async () => {

@@ -23,13 +23,16 @@ const CalendarFreeBusySchema = z.object({
   calendarId: z.string().describe("Calendar ID"),
   busy: z.array(BusyPeriodSchema).describe("List of busy time periods"),
   errors: z
+
     .array(
       z.object({
         domain: z.string(),
         reason: z.string(),
       }),
     )
+
     .optional()
+
     .describe("Any errors for this calendar"),
 });
 
@@ -44,31 +47,43 @@ export const createGetFreeBusyTool = (env: Env) =>
       "Check free/busy information for one or more calendars within a time range. Useful for finding available meeting times or checking someone's availability.",
     inputSchema: z.object({
       timeMin: z
+
         .string()
+
         .describe(
           "Start of the time range to query (RFC3339 format, e.g., '2024-01-15T00:00:00Z')",
         ),
       timeMax: z
+
         .string()
+
         .describe(
           "End of the time range to query (RFC3339 format, e.g., '2024-01-22T00:00:00Z')",
         ),
       calendarIds: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "List of calendar IDs to query. Defaults to ['primary'] if not specified.",
         ),
       timeZone: z
+
         .string()
+
         .optional()
+
         .describe("Timezone for the query (e.g., 'America/Sao_Paulo')"),
     }),
     outputSchema: z.object({
       timeMin: z.string().describe("Start of queried time range"),
       timeMax: z.string().describe("End of queried time range"),
       calendars: z
+
         .array(CalendarFreeBusySchema)
+
         .describe("Free/busy information for each calendar"),
     }),
     execute: async ({ context }) => {

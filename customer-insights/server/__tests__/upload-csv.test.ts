@@ -57,11 +57,14 @@ describe("upload_csv", () => {
   it("deve fazer upload e retornar sucesso para billing CSV", async () => {
     // Mock do fetch para retornar CSV válido
     globalThis.fetch = mock(() =>
-      Promise.resolve(new Response("id,name\n1,Acme", { status: 200 }))
+      Promise.resolve(new Response("id,name\n1,Acme", { status: 200 })),
     ) as any;
 
     const result = await capturedExecute({
-      context: { data_type: "billing", csv_url: "https://example.com/data.csv" },
+      context: {
+        data_type: "billing",
+        csv_url: "https://example.com/data.csv",
+      },
     });
 
     expect(result.success).toBe(true);
@@ -89,11 +92,16 @@ describe("upload_csv", () => {
 
   it("deve retornar erro quando download falha (HTTP 404)", async () => {
     globalThis.fetch = mock(() =>
-      Promise.resolve(new Response("Not Found", { status: 404, statusText: "Not Found" }))
+      Promise.resolve(
+        new Response("Not Found", { status: 404, statusText: "Not Found" }),
+      ),
     ) as any;
 
     const result = await capturedExecute({
-      context: { data_type: "billing", csv_url: "https://example.com/nonexistent.csv" },
+      context: {
+        data_type: "billing",
+        csv_url: "https://example.com/nonexistent.csv",
+      },
     });
 
     expect(result.success).toBe(false);
@@ -102,11 +110,14 @@ describe("upload_csv", () => {
 
   it("deve retornar erro quando CSV baixado está vazio", async () => {
     globalThis.fetch = mock(() =>
-      Promise.resolve(new Response("", { status: 200 }))
+      Promise.resolve(new Response("", { status: 200 })),
     ) as any;
 
     const result = await capturedExecute({
-      context: { data_type: "billing", csv_url: "https://example.com/empty.csv" },
+      context: {
+        data_type: "billing",
+        csv_url: "https://example.com/empty.csv",
+      },
     });
 
     expect(result.success).toBe(false);
@@ -129,25 +140,35 @@ describe("upload_csv", () => {
     });
 
     // Deve ter convertido para URL de download direto
-    expect(fetchedUrl).toContain("drive.google.com/uc?export=download&id=ABC123");
+    expect(fetchedUrl).toContain(
+      "drive.google.com/uc?export=download&id=ABC123",
+    );
   });
 
   it("deve usar filename correto baseado no data_type", async () => {
     globalThis.fetch = mock(() =>
-      Promise.resolve(new Response("id,name,email\n1,Test,t@t.com", { status: 200 }))
+      Promise.resolve(
+        new Response("id,name,email\n1,Test,t@t.com", { status: 200 }),
+      ),
     ) as any;
 
     await capturedExecute({
-      context: { data_type: "contacts", csv_url: "https://example.com/contacts.csv" },
+      context: {
+        data_type: "contacts",
+        csv_url: "https://example.com/contacts.csv",
+      },
     });
 
     // saveCsv deve ser chamado com "contacts.csv"
-    expect(mockSaveCsv).toHaveBeenCalledWith("contacts.csv", expect.any(String));
+    expect(mockSaveCsv).toHaveBeenCalledWith(
+      "contacts.csv",
+      expect.any(String),
+    );
   });
 
   it("deve propagar erro do reloadView gracefully", async () => {
     globalThis.fetch = mock(() =>
-      Promise.resolve(new Response("invalid csv data", { status: 200 }))
+      Promise.resolve(new Response("invalid csv data", { status: 200 })),
     ) as any;
 
     mockReloadView.mockRejectedValueOnce(new Error("CSV parse error"));

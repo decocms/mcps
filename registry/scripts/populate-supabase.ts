@@ -130,8 +130,11 @@ async function ensureTableExists(supabase: SupabaseClient): Promise<void> {
 
     // Check if table exists by trying a query
     const { error: checkError } = await supabase
+
       .from("mcp_servers")
+
       .select("name")
+
       .limit(1);
 
     if (checkError?.code === "42P01") {
@@ -358,8 +361,11 @@ async function getServersToUpdate(
 
   // Fetch unique names already in database
   const { data: existingServers } = await supabase
+
     .from("mcp_servers")
+
     .select("name")
+
     .eq("is_latest", true);
 
   const existingNames = new Set(
@@ -567,7 +573,9 @@ async function main() {
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = rows.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
+
         .from("mcp_servers")
+
         .upsert(batch, { onConflict: "name,version" });
 
       if (error) {

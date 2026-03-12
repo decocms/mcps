@@ -97,11 +97,17 @@ export function calculatePostScore(
 export function extractTextWithLinks(html: string, baseUrl: string): string {
   // Remove script, style, noscript, nav, footer, header
   let text = html
+
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+
     .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, " ")
+
     .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, " ")
+
     .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, " ")
+
     .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, " ");
 
   // Convert links to markdown [text](url)
@@ -128,14 +134,23 @@ export function extractTextWithLinks(html: string, baseUrl: string): string {
 
   // Decode common HTML entities
   text = text
+
     .replace(/&nbsp;/gi, " ")
+
     .replace(/&amp;/gi, "&")
+
     .replace(/&lt;/gi, "<")
+
     .replace(/&gt;/gi, ">")
+
     .replace(/&quot;/gi, '"')
+
     .replace(/&#39;/gi, "'")
+
     .replace(/&apos;/gi, "'")
+
     .replace(/&#x27;/gi, "'")
+
     .replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(parseInt(code)));
 
   // Clean excessive whitespace
@@ -150,25 +165,41 @@ export function extractTextWithLinks(html: string, baseUrl: string): string {
  */
 export function extractPlainText(html: string): string {
   let text = html
+
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+
     .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, " ")
+
     .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, " ")
+
     .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, " ")
+
     .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, " ")
+
     .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, " ");
 
   text = text.replace(/<[^>]+>/g, " ");
 
   text = text
+
     .replace(/&nbsp;/gi, " ")
+
     .replace(/&amp;/gi, "&")
+
     .replace(/&lt;/gi, "<")
+
     .replace(/&gt;/gi, ">")
+
     .replace(/&quot;/gi, '"')
+
     .replace(/&#39;/gi, "'")
+
     .replace(/&apos;/gi, "'")
+
     .replace(/&#x27;/gi, "'")
+
     .replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(parseInt(code)));
 
   text = text.replace(/\s+/g, " ").trim();
@@ -188,10 +219,15 @@ export function sleep(ms: number): Promise<void> {
  */
 export function normalizeTextForHash(text: string): string {
   return text
+
     .toLowerCase()
+
     .replace(/\s+/g, " ")
+
     .replace(/[^\w\s]/g, "")
+
     .trim()
+
     .slice(0, 1000);
 }
 

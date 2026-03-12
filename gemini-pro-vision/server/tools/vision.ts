@@ -36,8 +36,11 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
 
       const candidate = response.candidates[0];
       const textParts = candidate.content.parts
+
         .filter((part: { text?: string }) => part.text)
+
         .map((part: { text?: string }) => part.text)
+
         .join("\n");
 
       if (!textParts) {
@@ -77,8 +80,11 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
 
       const candidate = response.candidates[0];
       const textParts = candidate.content.parts
+
         .filter((part: { text?: string }) => part.text)
+
         .map((part: { text?: string }) => part.text)
+
         .join("\n");
 
       if (!textParts) {
@@ -123,8 +129,11 @@ const geminiVisionToolsFactory = createImageAnalyzerTools<
 
       const candidate = response.candidates[0];
       const textParts = candidate.content.parts
+
         .filter((part: { text?: string }) => part.text)
+
         .map((part: { text?: string }) => part.text)
+
         .join("\n");
 
       if (!textParts) {

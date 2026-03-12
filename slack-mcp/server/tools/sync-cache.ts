@@ -15,8 +15,11 @@ export const syncCacheTool = {
     "Get cache status. Note: With KV-only storage, configs are automatically persisted to disk.",
   inputSchema: z.object({
     force: z
+
       .boolean()
+
       .optional()
+
       .describe("Ignored - kept for backwards compatibility"),
   }),
   outputSchema: z.object({

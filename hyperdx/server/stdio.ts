@@ -50,21 +50,32 @@ async function main() {
     "Search logs from HyperDX. Returns distinct log messages matching your query with their occurrence count. Use this to find errors, debug issues, or explore log data.",
     {
       query: z
+
         .string()
+
         .describe(
           "Search query (e.g., 'level:error', 'service:admin', 'level:error service:api').",
         ),
       startTime: z
+
         .number()
+
         .optional()
+
         .describe("Start time in ms. Defaults to 15 minutes ago."),
       endTime: z
+
         .number()
+
         .optional()
+
         .describe("End time in ms. Defaults to now."),
       limit: z
+
         .number()
+
         .optional()
+
         .describe("Max number of distinct messages to return. Defaults to 50."),
     },
     async ({ query, startTime, endTime, limit = 50 }) => {
@@ -88,11 +99,14 @@ async function main() {
       });
 
       const logs = (response.data ?? [])
+
         .map((item: Record<string, unknown>) => ({
           message: (item.group as string[])?.[0] ?? "",
           count: (item["series_0.data"] as number) ?? 0,
         }))
+
         .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
+
         .slice(0, limit);
 
       console.error("[SEARCH_LOGS] Found", logs.length, "distinct messages");
@@ -124,25 +138,39 @@ async function main() {
     "Get detailed log entries with custom fields from HyperDX. Group by any fields you want to see in the results.",
     {
       query: z
+
         .string()
+
         .describe("Search query (e.g., 'level:error service:admin')."),
       groupBy: z
+
         .array(z.string())
+
         .optional()
+
         .describe(
           "Fields to group by and return. Defaults to ['body', 'service', 'site']. Other useful fields: trace_id, span_id, userEmail, env, level.",
         ),
       startTime: z
+
         .number()
+
         .optional()
+
         .describe("Start time in ms. Defaults to 15 minutes ago."),
       endTime: z
+
         .number()
+
         .optional()
+
         .describe("End time in ms. Defaults to now."),
       limit: z
+
         .number()
+
         .optional()
+
         .describe("Max entries to return. Defaults to 20."),
     },
     async ({ query, groupBy, startTime, endTime, limit = 20 }) => {
@@ -167,10 +195,12 @@ async function main() {
       });
 
       const entries = (response.data ?? [])
+
         .map((item: Record<string, unknown>) => ({
           values: (item.group as string[]) ?? [],
           count: (item["series_0.data"] as number) ?? 0,
         }))
+
         .slice(0, limit);
 
       console.error("[GET_LOG_DETAILS] Found", entries.length, "entries");
@@ -197,16 +227,23 @@ async function main() {
     "Query time series chart data from HyperDX. Returns aggregated metrics over time with support for multiple series, grouping, and various aggregation functions. Use this to analyze logs, spans, and metrics.",
     {
       startTime: z
+
         .number()
+
         .optional()
+
         .describe(
           "Start time in milliseconds since epoch. Defaults to 15 minutes ago.",
         ),
       endTime: z
+
         .number()
+
         .optional()
+
         .describe("End time in milliseconds since epoch. Defaults to now."),
       granularity: z
+
         .enum([
           "30 second",
           "1 minute",
@@ -223,19 +260,25 @@ async function main() {
           "7 day",
           "30 day",
         ])
+
         .optional()
+
         .describe(
           "Time bucket granularity for aggregation. Defaults to 1 minute.",
         ),
       series: z
+
         .array(
           z.object({
             dataSource: z
+
               .enum(["events", "metrics"])
+
               .describe(
                 "The data source to query. 'events' for logs/spans, 'metrics' for metrics.",
               ),
             aggFn: z
+
               .enum([
                 "avg",
                 "count",
@@ -248,31 +291,46 @@ async function main() {
                 "p99",
                 "sum",
               ])
+
               .describe("Aggregation function to apply."),
             field: z
+
               .string()
+
               .optional()
+
               .describe(
                 "Field to aggregate (required for some aggregation functions like avg, sum, etc).",
               ),
             where: z
+
               .string()
+
               .describe(
                 "Search query filter (e.g., 'level:error service:\"my-service\"').",
               ),
             groupBy: z
+
               .array(z.string())
+
               .describe("Fields to group results by."),
             metricDataType: z
+
               .enum(["Sum", "Gauge", "Histogram"])
+
               .optional()
+
               .describe("Metric data type (only for metrics data source)."),
           }),
         )
+
         .describe("Array of series to query."),
       seriesReturnType: z
+
         .enum(["column", "ratio"])
+
         .optional()
+
         .describe("Return type for multiple series."),
     },
     async ({

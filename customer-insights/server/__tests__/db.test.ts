@@ -59,7 +59,9 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     `);
 
     // Verificar que a tabela foi criada consultando-a
-    const rows = await testQuery("SELECT count(*) AS cnt FROM summary_snapshots");
+    const rows = await testQuery(
+      "SELECT count(*) AS cnt FROM summary_snapshots",
+    );
     expect(rows[0]).toBeDefined();
   });
 
@@ -85,14 +87,16 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     const dataSources = JSON.stringify({ billing: [1, 2] });
     const meta = JSON.stringify({ llm_used: false });
 
-    await testRun(`DELETE FROM summary_snapshots WHERE customer_id = ${customerId}`);
+    await testRun(
+      `DELETE FROM summary_snapshots WHERE customer_id = ${customerId}`,
+    );
     await testRun(`
       INSERT INTO summary_snapshots (customer_id, generated_at, summary_text, data_sources, meta)
       VALUES (${customerId}, now(), '${summaryText}', '${dataSources}', '${meta}')
     `);
 
     const rows = await testQuery<{ customer_id: number; summary_text: string }>(
-      `SELECT customer_id, summary_text FROM summary_snapshots WHERE customer_id = ${customerId}`
+      `SELECT customer_id, summary_text FROM summary_snapshots WHERE customer_id = ${customerId}`,
     );
 
     expect(rows.length).toBe(1);
@@ -116,7 +120,7 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     `);
 
     const rows = await testQuery<{ summary_text: string }>(
-      "SELECT summary_text FROM summary_snapshots WHERE customer_id = 2001"
+      "SELECT summary_text FROM summary_snapshots WHERE customer_id = 2001",
     );
 
     expect(rows.length).toBe(1);
@@ -125,7 +129,7 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
 
   it("deve retornar vazio quando snapshot não existe", async () => {
     const rows = await testQuery(
-      "SELECT * FROM summary_snapshots WHERE customer_id = 99999"
+      "SELECT * FROM summary_snapshots WHERE customer_id = 99999",
     );
     expect(rows.length).toBe(0);
   });
@@ -142,7 +146,7 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     `);
 
     const rows = await testQuery<{ summary_text: string }>(
-      "SELECT summary_text FROM summary_snapshots WHERE customer_id = 3001"
+      "SELECT summary_text FROM summary_snapshots WHERE customer_id = 3001",
     );
 
     expect(rows.length).toBe(1);
@@ -157,7 +161,7 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     `);
 
     const rows = await testQuery<{ generated_at: string }>(
-      "SELECT generated_at::VARCHAR AS generated_at FROM summary_snapshots WHERE customer_id = 4001"
+      "SELECT generated_at::VARCHAR AS generated_at FROM summary_snapshots WHERE customer_id = 4001",
     );
 
     expect(rows.length).toBe(1);
@@ -167,14 +171,17 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
 
   it("deve listar todos os snapshots ordenados por generated_at DESC", async () => {
     const rows = await testQuery<{ customer_id: number }>(
-      "SELECT customer_id FROM summary_snapshots ORDER BY generated_at DESC"
+      "SELECT customer_id FROM summary_snapshots ORDER BY generated_at DESC",
     );
 
     expect(rows.length).toBeGreaterThanOrEqual(2);
   });
 
   it("deve armazenar data_sources como JSON string válido", async () => {
-    const dataSources = JSON.stringify({ billing: [{ id: 1, amount: 500 }], usage: { total: 100 } });
+    const dataSources = JSON.stringify({
+      billing: [{ id: 1, amount: 500 }],
+      usage: { total: 100 },
+    });
     const escaped = dataSources.replace(/'/g, "''");
 
     await testRun("DELETE FROM summary_snapshots WHERE customer_id = 5001");
@@ -184,7 +191,7 @@ describe("db.ts — Snapshot SQL logic (DuckDB isolado)", () => {
     `);
 
     const rows = await testQuery<{ data_sources: string }>(
-      "SELECT data_sources FROM summary_snapshots WHERE customer_id = 5001"
+      "SELECT data_sources FROM summary_snapshots WHERE customer_id = 5001",
     );
 
     expect(rows.length).toBe(1);

@@ -34,7 +34,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -88,8 +88,8 @@ describe("customer_timeline_get", () => {
 
   it("deve criar timeline com eventos de billing", async () => {
     // A timeline tool faz 2 queries: billing + usage
-    mockQuery.mockResolvedValueOnce(BILLING_ROWS);  // billing
-    mockQuery.mockResolvedValueOnce(USAGE_ROWS);      // usage
+    mockQuery.mockResolvedValueOnce(BILLING_ROWS); // billing
+    mockQuery.mockResolvedValueOnce(USAGE_ROWS); // usage
 
     const result = await capturedExecute({
       context: { customer_id: "1108", max_events: 100 },
@@ -112,12 +112,10 @@ describe("customer_timeline_get", () => {
   });
 
   it("deve propagar erro quando cliente não é encontrado", async () => {
-    mockResolveCustomer.mockRejectedValueOnce(
-      new Error("Customer not found")
-    );
+    mockResolveCustomer.mockRejectedValueOnce(new Error("Customer not found"));
 
     await expect(
-      capturedExecute({ context: { customer_id: "9999", max_events: 100 } })
+      capturedExecute({ context: { customer_id: "9999", max_events: 100 } }),
     ).rejects.toThrow("Customer not found");
   });
 

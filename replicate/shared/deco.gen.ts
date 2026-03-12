@@ -769,7 +769,9 @@ export const StateSchema = z.object({
   REPLICATE_API_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/replicate-6ae6811d35fdc65a353fb2f55420005a")
+
       .default("@deco/replicate-6ae6811d35fdc65a353fb2f55420005a"),
   }),
 });

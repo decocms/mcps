@@ -44,6 +44,7 @@ export const createGetRecordingTool = (env: Env) =>
         )
         .optional(),
       highlights: z
+
         .array(
           z.object({
             id: z.string(),

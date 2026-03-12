@@ -17,13 +17,18 @@ import { tools } from "./tools/index.ts";
  */
 export const StateSchema = BaseStateSchema.extend({
   apiKey: z
+
     .string()
+
     .describe(
       "API Key do Datajud para autenticação na API Pública (obtida em https://datajud-wiki.cnj.jus.br/api-publica/acesso/)",
     ),
   defaultTribunal: z
+
     .string()
+
     .optional()
+
     .describe(
       "Código do tribunal padrão (ex: tjdft, tjsp, tjrj). Se não especificado, será necessário informar o tribunal em cada consulta.",
     ),

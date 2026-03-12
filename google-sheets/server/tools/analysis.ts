@@ -19,7 +19,9 @@ export const createAddNamedRangeTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       name: z
+
         .string()
+
         .describe(
           "Name for the range (must be unique, no spaces, start with letter or underscore)",
         ),
@@ -82,20 +84,28 @@ export const createDeleteNamedRangeTool = (env: Env) =>
 
 const PivotGroupSchema = z.object({
   sourceColumnOffset: z.coerce
+
     .number()
+
     .describe("Column offset within source range (0 = first column)"),
   showTotals: z.boolean().optional().describe("Show totals for this group"),
   sortOrder: z
+
     .enum(["ASCENDING", "DESCENDING"])
+
     .optional()
+
     .describe("Sort order"),
 });
 
 const PivotValueSchema = z.object({
   sourceColumnOffset: z.coerce
+
     .number()
+
     .describe("Column offset for values (0-based from source range)"),
   summarizeFunction: z
+
     .enum([
       "SUM",
       "COUNTA",
@@ -111,6 +121,7 @@ const PivotValueSchema = z.object({
       "VAR",
       "VARP",
     ])
+
     .describe("Aggregation function"),
   name: z.string().optional().describe("Display name for the value"),
 });
@@ -123,42 +134,67 @@ export const createPivotTableTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sourceSheetId: z.coerce
+
         .number()
+
         .describe("Sheet ID containing the source data"),
       sourceStartRow: z.coerce
+
         .number()
+
         .describe("Start row of source data (0-based)"),
       sourceEndRow: z.coerce
+
         .number()
+
         .describe("End row of source data (exclusive)"),
       sourceStartColumn: z.coerce
+
         .number()
+
         .describe("Start column of source data (0-based)"),
       sourceEndColumn: z.coerce
+
         .number()
+
         .describe("End column of source data (exclusive)"),
       destinationSheetId: z.coerce
+
         .number()
+
         .describe("Sheet ID where pivot table will be placed"),
       destinationRow: z.coerce
+
         .number()
+
         .describe("Row where pivot table will start (0-based)"),
       destinationColumn: z.coerce
+
         .number()
+
         .describe("Column where pivot table will start (0-based)"),
       rows: z
+
         .array(PivotGroupSchema)
+
         .optional()
+
         .describe("Row groupings - columns from source to use as row headers"),
       columns: z
+
         .array(PivotGroupSchema)
+
         .optional()
+
         .describe(
           "Column groupings - columns from source to use as column headers",
         ),
       values: z
+
         .array(PivotValueSchema)
+
         .optional()
+
         .describe("Values to aggregate (e.g., SUM of Sales)"),
     }),
     outputSchema: z.object({

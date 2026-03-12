@@ -22,14 +22,20 @@ export const createCreateMeetingTool = (env: Env) =>
     description: "Create a new Google Meet meeting space.",
     inputSchema: z.object({
       accessType: z
+
         .enum(["OPEN", "TRUSTED", "RESTRICTED"])
+
         .optional()
+
         .describe(
           "Access level: OPEN (anyone with link), TRUSTED (org only), RESTRICTED (invited only)",
         ),
       entryPointAccess: z
+
         .enum(["ALL", "CREATOR_APP_ONLY"])
+
         .optional()
+
         .describe("Entry point access"),
     }),
     outputSchema: z.object({
@@ -109,12 +115,18 @@ export const createUpdateMeetingTool = (env: Env) =>
     inputSchema: z.object({
       spaceName: z.string().describe("Space name"),
       accessType: z
+
         .enum(["OPEN", "TRUSTED", "RESTRICTED"])
+
         .optional()
+
         .describe("New access level"),
       entryPointAccess: z
+
         .enum(["ALL", "CREATOR_APP_ONLY"])
+
         .optional()
+
         .describe("New entry point access"),
     }),
     outputSchema: z.object({

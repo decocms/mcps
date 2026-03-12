@@ -10,8 +10,11 @@ export const createStrapiContentTypesTool = (env: Env) =>
     description: "Lista todos os tipos de conteúdo disponíveis no Strapi CMS.",
     inputSchema: z.object({
       includeComponents: z
+
         .boolean()
+
         .optional()
+
         .describe("Incluir componentes na resposta"),
     }),
     outputSchema: z.object({
@@ -71,7 +74,9 @@ export const createStrapiContentTypeDetailTool = (env: Env) =>
       "Obtém detalhes de um tipo de conteúdo específico no Strapi CMS.",
     inputSchema: z.object({
       uid: z
+
         .string()
+
         .describe("UID do content type (ex: api::article.article)"),
     }),
     outputSchema: z.object({

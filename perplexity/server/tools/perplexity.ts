@@ -17,45 +17,77 @@ import { PerplexityModels, type Message, MessageSchema } from "../lib/types.ts";
 
 const CommonOptionsSchema = z.object({
   model: z
+
     .enum(PerplexityModels)
+
     .optional()
+
     .describe("The model to use for generation. Defaults to 'sonar'"),
   max_tokens: z
+
     .number()
+
     .optional()
+
     .describe("Maximum number of tokens in the response"),
   temperature: z
+
     .number()
+
     .min(0)
+
     .max(2)
+
     .optional()
+
     .describe("Controls randomness (0-2). Lower is more focused. Default: 0.2"),
   top_p: z
+
     .number()
+
     .min(0)
+
     .max(1)
+
     .optional()
+
     .describe("Controls diversity via nucleus sampling (0-1). Default: 0.9"),
   search_domain_filter: z
+
     .array(z.string())
+
     .max(3)
+
     .optional()
+
     .describe("Limit search to specific domains (max 3)"),
   return_images: z
+
     .boolean()
+
     .optional()
+
     .describe("Include images in search results"),
   return_related_questions: z
+
     .boolean()
+
     .optional()
+
     .describe("Return related questions"),
   search_recency_filter: z
+
     .string()
+
     .optional()
+
     .describe("Filter by time (e.g., 'week', 'day', 'month')"),
   search_context_size: z
+
     .enum(["low", "medium", "high", "maximum"])
+
     .optional()
+
     .describe("Amount of web search context to include. Default: 'high'"),
 });
 
@@ -64,12 +96,15 @@ const OutputSchema = z.object({
   model: z.string().describe("The model used"),
   finish_reason: z.string().optional().describe("Reason for completion"),
   usage: z
+
     .object({
       prompt_tokens: z.number(),
       completion_tokens: z.number(),
       total_tokens: z.number(),
     })
+
     .optional()
+
     .describe("Token usage information"),
 });
 
@@ -84,7 +119,9 @@ export const createAskTool = (env: Env) =>
       "Ask a question to Perplexity AI and get web-backed answers with real-time search. Perfect for factual questions, research, and getting up-to-date information.",
     inputSchema: CommonOptionsSchema.extend({
       prompt: z
+
         .string()
+
         .describe("The question or prompt to ask Perplexity AI"),
     }),
     outputSchema: OutputSchema,
@@ -159,7 +196,9 @@ export const createChatTool = (env: Env) =>
       "Have a multi-turn conversation with Perplexity AI. Allows providing message history for more contextual responses with web-backed answers.",
     inputSchema: CommonOptionsSchema.extend({
       messages: z
+
         .preprocess(normalizeMessages, z.array(MessageSchema).min(1))
+
         .describe(
           "Array of conversation messages. Each message should have 'role' (system/user/assistant) and 'content'. Simple strings are converted to user messages.",
         ),

@@ -32,12 +32,18 @@ export const AspectRatioSchema = z.enum([
 export type AspectRatio = z.infer<typeof AspectRatioSchema>;
 export const GenerateImageInputSchema = z.object({
   prompt: z
+
     .string()
+
     .describe("The text prompt describing the image to generate"),
   baseImageUrl: z
+
     .string()
+
     .nullable()
+
     .optional()
+
     .describe(
       "URL of an existing image to use as base (image-to-image generation)",
     ),

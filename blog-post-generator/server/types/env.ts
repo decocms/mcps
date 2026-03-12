@@ -6,7 +6,9 @@ import { z } from "zod";
 
 export const StateSchema = z.object({
   n8nBlogWebhookUrl: z
+
     .string()
+
     .describe("n8n webhook URL for blog post generation"),
 });
 

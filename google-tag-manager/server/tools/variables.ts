@@ -40,29 +40,46 @@ const VariableSchema = z.object({
   variableId: z.string().describe("Variable ID"),
   name: z.string().describe("Variable name"),
   type: z
+
     .string()
+
     .describe("Variable type (e.g., 'v' for Data Layer, 'c' for Constant)"),
   parameter: z
+
     .array(ParameterSchema)
+
     .optional()
+
     .describe("Variable parameters"),
   fingerprint: z.string().describe("Fingerprint for optimistic locking"),
   notes: z.string().optional().describe("Variable notes"),
   scheduleStartMs: z
+
     .string()
+
     .optional()
+
     .describe("Schedule start time in milliseconds"),
   scheduleEndMs: z
+
     .string()
+
     .optional()
+
     .describe("Schedule end time in milliseconds"),
   disablingTriggerId: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Triggers that disable this variable"),
   enablingTriggerId: z
+
     .array(z.string())
+
     .optional()
+
     .describe("Triggers that enable this variable"),
   tagManagerUrl: z.string().describe("Tag Manager URL for this variable"),
   parentFolderId: z.string().optional().describe("Parent folder ID"),
@@ -83,15 +100,21 @@ export const createListVariablesTool = (env: Env) =>
       containerId: z.string().describe("Container ID (e.g., '67890')"),
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page of results"),
     }),
     outputSchema: z.object({
       variables: z.array(VariableSchema).describe("List of variables"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching next page"),
     }),
     execute: async ({ context }) => {
@@ -199,23 +222,34 @@ export const createCreateVariableTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       name: z.string().describe("Variable name"),
       type: z
+
         .string()
+
         .describe(
           "Variable type (e.g., 'v' for Data Layer, 'c' for Constant, 'jsm' for JavaScript)",
         ),
       parameter: z
+
         .array(ParameterSchema)
+
         .optional()
+
         .describe("Variable parameters"),
       notes: z.string().optional().describe("Variable notes"),
       parentFolderId: z.string().optional().describe("Parent folder ID"),
       disablingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Triggers that disable this variable"),
       enablingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Triggers that enable this variable"),
     }),
     outputSchema: z.object({
@@ -280,22 +314,33 @@ export const createUpdateVariableTool = (env: Env) =>
       workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
       variableId: z.string().describe("Variable ID to update"),
       fingerprint: z
+
         .string()
+
         .describe("Current fingerprint for optimistic locking"),
       name: z.string().describe("Variable name"),
       type: z.string().describe("Variable type (e.g., 'c', 'v', 'jsm')"),
       parameter: z
+
         .array(ParameterSchema)
+
         .optional()
+
         .describe("Variable parameters"),
       notes: z.string().optional().describe("Variable notes"),
       disablingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Disabling trigger IDs"),
       enablingTriggerId: z
+
         .array(z.string())
+
         .optional()
+
         .describe("Enabling trigger IDs"),
     }),
     outputSchema: z.object({

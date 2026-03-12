@@ -27,17 +27,23 @@ import {
  */
 export const StateSchema = BaseStateSchema.extend({
   META_APP_ID: z
+
     .string()
+
     .describe(
       "Meta App ID from https://developers.facebook.com/apps/ - Required to exchange for long-lived token",
     ),
   META_APP_SECRET: z
+
     .string()
+
     .describe(
       "Meta App Secret from App Settings > Basic - Required to exchange for long-lived token (keep this secret!)",
     ),
   META_ACCESS_TOKEN: z
+
     .string()
+
     .describe(
       "Meta Access Token from Graph API Explorer (https://developers.facebook.com/tools/explorer/). Will be automatically exchanged for a long-lived token (~60 days). Required permissions: ads_read, ads_management, pages_read_engagement, business_management",
     ),

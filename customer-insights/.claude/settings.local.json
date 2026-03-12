@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun install)",
+      "Bash(bun run dev)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(bun run check:*)",
+      "Bash(echo:*)",
+      "Bash(timeout 5 bun run:*)",
+      "Bash(bun run:*)"
+    ]
+  }
+}

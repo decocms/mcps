@@ -403,7 +403,9 @@ export const StateSchema = z.object({
   WHISPER_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/whisper-6662d891dfbed6addfec1bce9f6ef48c")
+
       .default("@deco/whisper-6662d891dfbed6addfec1bce9f6ef48c"),
   }),
 });

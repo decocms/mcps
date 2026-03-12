@@ -71,44 +71,62 @@ export const getScrapeAllTool = (env: Env) =>
       "Executes scraping of ALL registered sources (blogs, LinkedIn and Reddit). May take several minutes.",
     inputSchema: z.object({
       linkedin_max_posts: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(5)
+
         .describe("Maximum posts per LinkedIn profile (default: 5)"),
       reddit_limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(10)
+
         .describe("Limit of posts per subreddit (default: 10)"),
     }),
     outputSchema: z.object({
       success: z.boolean(),
       blogs: z
+
         .object({
           success: z.boolean(),
           message: z.string(),
           totalSaved: z.number().optional(),
         })
+
         .optional(),
       linkedin: z
+
         .object({
           success: z.boolean(),
           message: z.string(),
           saved: z.number(),
           relevant: z.number(),
         })
+
         .optional(),
       reddit: z
+
         .object({
           success: z.boolean(),
           message: z.string(),
           saved: z.number(),
           relevant: z.number(),
         })
+
         .optional(),
       error: z.string().optional(),
     }),
@@ -281,15 +299,24 @@ export const getScrapeLinkedInTool = (env: Env) =>
       "Executes scraping of registered LinkedIn profiles. Requires APIFY_API_TOKEN configured.",
     inputSchema: z.object({
       max_posts: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(5)
+
         .describe("Maximum posts per profile (default: 5)"),
       profile_url: z
+
         .string()
+
         .optional()
+
         .describe(
           "Specific profile URL to scrape. If not provided, scrapes all registered profiles.",
         ),
@@ -378,15 +405,24 @@ export const getScrapeRedditTool = (env: Env) =>
       "Executes scraping of registered subreddits. Searches for relevant posts about MCP/AI.",
     inputSchema: z.object({
       limit: z
+
         .number()
+
         .int()
+
         .positive()
+
         .optional()
+
         .default(10)
+
         .describe("Limit of posts per subreddit (default: 10)"),
       subreddit: z
+
         .string()
+
         .optional()
+
         .describe(
           "Specific subreddit to scrape (without 'r/'). If not provided, scrapes all registered.",
         ),

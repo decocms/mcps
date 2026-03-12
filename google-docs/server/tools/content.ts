@@ -16,8 +16,11 @@ export const createInsertTextTool = (env: Env) =>
       documentId: z.string().describe("Document ID"),
       text: z.string().describe("Text to insert"),
       index: z.coerce
+
         .number()
+
         .min(1)
+
         .describe("Position to insert (1 = beginning)"),
     }),
     outputSchema: z.object({
@@ -39,11 +42,13 @@ export const createDeleteContentTool = (env: Env) =>
     id: "delete_content",
     description: "Delete content from a range in the document.",
     inputSchema: z
+
       .object({
         documentId: z.string().describe("Document ID"),
         startIndex: z.coerce.number().min(1).describe("Start position (min 1)"),
         endIndex: z.coerce.number().min(2).describe("End position (exclusive)"),
       })
+
       .refine((data) => data.startIndex < data.endIndex, {
         message: "startIndex must be less than endIndex",
       }),
@@ -74,8 +79,11 @@ export const createReplaceTextTool = (env: Env) =>
       find: z.string().describe("Text to find"),
       replace: z.string().describe("Replacement text"),
       matchCase: z
+
         .boolean()
+
         .optional()
+
         .describe("Case-sensitive search (default false)"),
     }),
     outputSchema: z.object({

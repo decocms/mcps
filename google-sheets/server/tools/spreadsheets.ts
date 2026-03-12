@@ -113,7 +113,9 @@ export const createDeleteSheetTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce
+
         .number()
+
         .describe("Sheet ID (numeric ID, not the title)"),
     }),
     outputSchema: z.object({
@@ -170,16 +172,24 @@ export const createDuplicateSheetTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sourceSheetId: z.coerce.number().describe("Sheet ID to duplicate"),
       newSheetName: z
+
         .string()
+
         .optional()
+
         .describe(
           "Name for the new sheet (optional, auto-generated if not provided)",
         ),
       insertSheetIndex: z.coerce
+
         .number()
+
         .int()
+
         .min(0)
+
         .optional()
+
         .describe("Position index for the new sheet (0-based, optional)"),
     }),
     outputSchema: z.object({
@@ -216,9 +226,13 @@ export const createFreezeRowsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       frozenRowCount: z.coerce
+
         .number()
+
         .int()
+
         .min(0)
+
         .describe("Number of rows to freeze (0 to unfreeze)"),
     }),
     outputSchema: z.object({
@@ -251,9 +265,13 @@ export const createFreezeColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       frozenColumnCount: z.coerce
+
         .number()
+
         .int()
+
         .min(0)
+
         .describe("Number of columns to freeze (0 to unfreeze)"),
     }),
     outputSchema: z.object({
@@ -344,11 +362,16 @@ export const createCopySheetTool = (env: Env) =>
     inputSchema: z.object({
       spreadsheetId: z.string().describe("Source spreadsheet ID"),
       sheetId: z.coerce
+
         .number()
+
         .describe("Sheet ID to copy (numeric ID, not the title)"),
       destinationSpreadsheetId: z
+
         .string()
+
         .optional()
+
         .describe(
           "Destination spreadsheet ID. If not provided, copies within the same spreadsheet.",
         ),

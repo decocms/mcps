@@ -20,46 +20,65 @@ export const createQuerySqlTool = (env: Env) =>
       "Execute a read-only SQL query against the configured database. Only SELECT and other read operations are allowed. Supports standard SQL syntax including JOINs, WHERE clauses, aggregations, and CTEs.",
     inputSchema: z.object({
       query: z
+
         .string()
+
         .describe(
           "The SQL query to execute. Must be a read-only query (SELECT, SHOW, DESCRIBE, EXPLAIN, etc.). Write operations (INSERT, UPDATE, DELETE, etc.) are not allowed.",
         ),
       params: z
+
         .array(z.any())
+
         .optional()
+
         .describe(
           "Optional array of parameters for parameterized queries. Use $1, $2, etc. in PostgreSQL for placeholders.",
         ),
       limit: z
+
         .number()
+
         .optional()
+
         .default(1000)
+
         .describe(
           "Maximum number of rows to return (default: 1000). Use this to prevent accidentally returning too much data.",
         ),
     }),
     outputSchema: z.object({
       rows: z
+
         .array(z.record(z.any()))
+
         .describe(
           "Array of result rows, each row is an object with column names as keys",
         ),
       totalRowCount: z
+
         .number()
+
         .describe("Total number of rows that matched the query"),
       returnedCount: z
+
         .number()
+
         .describe("Number of rows actually returned (after applying limit)"),
       fields: z
+
         .array(
           z.object({
             name: z.string().describe("Column name"),
             dataType: z.string().optional().describe("Data type of the column"),
           }),
         )
+
         .describe("Metadata about the columns in the result set"),
       truncated: z
+
         .boolean()
+
         .describe("Whether the results were truncated due to the limit"),
     }),
     execute: async ({ context }) => {

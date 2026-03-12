@@ -37,7 +37,7 @@ const mockResolveCustomer = mock(() =>
   Promise.resolve({
     customer: { id: 1108, name: "Acme Corp", email: "contact@acme.com" },
     match_type: "id" as const,
-  })
+  }),
 );
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomer: mockResolveCustomer,
@@ -187,7 +187,11 @@ describe("customer_invoice_explain", () => {
   });
 
   it("deve incluir alertas na explicação quando fatura é overdue", async () => {
-    const overdueInvoice = { ...INVOICE_CURRENT, status: "overdue", paid_date: null };
+    const overdueInvoice = {
+      ...INVOICE_CURRENT,
+      status: "overdue",
+      paid_date: null,
+    };
     mockQuery.mockResolvedValueOnce([overdueInvoice]);
 
     const result = await capturedExecute({

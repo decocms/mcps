@@ -35,10 +35,13 @@ const StateSchema = z.object({
   LANGUAGE_MODEL: z.object({
     __type: z.literal("@deco/language-model"),
     value: z
+
       .object({
         id: z.string().optional(),
       })
+
       .loose()
+
       .describe("The language model to be used."),
   }),
 });

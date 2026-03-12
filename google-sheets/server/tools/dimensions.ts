@@ -16,12 +16,17 @@ export const createInsertRowsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start row index (0-based, where to insert)"),
       count: z.coerce.number().describe("Number of rows to insert"),
       inheritFromBefore: z
+
         .boolean()
+
         .optional()
+
         .describe("Inherit formatting from row above (default: false)"),
     }),
     outputSchema: z.object({
@@ -54,12 +59,17 @@ export const createInsertColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start column index (0-based, A=0, B=1, etc.)"),
       count: z.coerce.number().describe("Number of columns to insert"),
       inheritFromBefore: z
+
         .boolean()
+
         .optional()
+
         .describe(
           "Inherit formatting from column to the left (default: false)",
         ),
@@ -125,7 +135,9 @@ export const createDeleteColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start column index (0-based, A=0)"),
       count: z.coerce.number().describe("Number of columns to delete"),
     }),
@@ -158,11 +170,15 @@ export const createMoveRowsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start row index of rows to move (0-based)"),
       count: z.coerce.number().describe("Number of rows to move"),
       destinationIndex: z.coerce
+
         .number()
+
         .describe("Destination row index (0-based)"),
     }),
     outputSchema: z.object({
@@ -195,11 +211,15 @@ export const createMoveColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start column index of columns to move (0-based)"),
       count: z.coerce.number().describe("Number of columns to move"),
       destinationIndex: z.coerce
+
         .number()
+
         .describe("Destination column index (0-based)"),
     }),
     outputSchema: z.object({
@@ -234,8 +254,11 @@ export const createHideRowsTool = (env: Env) =>
       startIndex: z.coerce.number().describe("Start row index (0-based)"),
       count: z.coerce.number().describe("Number of rows to hide"),
       hidden: z
+
         .boolean()
+
         .optional()
+
         .describe("True to hide, false to show (default: true)"),
     }),
     outputSchema: z.object({
@@ -269,12 +292,17 @@ export const createHideColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start column index (0-based, A=0)"),
       count: z.coerce.number().describe("Number of columns to hide"),
       hidden: z
+
         .boolean()
+
         .optional()
+
         .describe("True to hide, false to show (default: true)"),
     }),
     outputSchema: z.object({
@@ -341,7 +369,9 @@ export const createResizeColumnsTool = (env: Env) =>
       spreadsheetId: z.string().describe("Spreadsheet ID"),
       sheetId: z.coerce.number().describe("Sheet ID (numeric)"),
       startIndex: z.coerce
+
         .number()
+
         .describe("Start column index (0-based, A=0)"),
       count: z.coerce.number().describe("Number of columns to resize"),
       pixelSize: z.coerce.number().describe("Width in pixels"),

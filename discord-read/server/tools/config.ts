@@ -27,54 +27,80 @@ export const createSaveConfigTool = (env: Env) =>
       "Save Discord bot configuration (token, authorized guilds, AI model settings). This persists configuration so you don't need to provide the token again.",
     annotations: { destructiveHint: false },
     inputSchema: z
+
       .object({
         botToken: z
+
           .string()
+
           .describe("Discord bot token (from Discord Developer Portal)"),
         discordPublicKey: z
+
           .string()
+
           .describe(
             "Discord application public key (from Discord Developer Portal > General Information)",
           ),
         authorizedGuilds: z
+
           .array(z.string())
+
           .optional()
+
           .describe(
             "List of guild IDs that can use this bot (empty = all guilds allowed)",
           ),
         ownerId: z
+
           .string()
+
           .optional()
+
           .describe("Discord user ID of the bot owner (for admin commands)"),
         commandPrefix: z
+
           .string()
+
           .default("!")
+
           .describe("Command prefix for bot commands"),
         modelProviderId: z
+
           .string()
+
           .optional()
+
           .describe("Model provider connection ID for AI responses"),
         modelId: z.string().optional().describe("Model ID to use"),
         agentId: z.string().optional().describe("Agent ID to use"),
         systemPrompt: z
+
           .string()
+
           .optional()
+
           .describe("Custom system prompt for AI agent"),
         meshApiKey: z
+
           .string()
+
           .optional()
+
           .describe(
             "Mesh API Key (non-expiring) for LLM calls. Generate one in Mesh Dashboard > API Keys.",
           ),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         connectionId: z.string(),
         supabaseConfigured: z.boolean(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context, env } = params;
@@ -176,37 +202,56 @@ export const createUpdateConfigTool = (env: Env) =>
       "Update specific fields in Discord bot configuration without needing to provide all fields. Use this to update system prompt, model settings, etc.",
     annotations: { destructiveHint: false },
     inputSchema: z
+
       .object({
         systemPrompt: z
+
           .string()
+
           .optional()
+
           .describe("Update custom system prompt for AI agent"),
         modelProviderId: z
+
           .string()
+
           .optional()
+
           .describe("Update model provider connection ID"),
         modelId: z.string().optional().describe("Update model ID to use"),
         agentId: z.string().optional().describe("Update agent ID to use"),
         commandPrefix: z
+
           .string()
+
           .optional()
+
           .describe("Update command prefix for bot commands"),
         authorizedGuilds: z
+
           .array(z.string())
+
           .optional()
+
           .describe("Update list of authorized guild IDs"),
         ownerId: z
+
           .string()
+
           .optional()
+
           .describe("Update Discord user ID of the bot owner"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         updatedFields: z.array(z.string()).optional(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { context, env } = params;
@@ -326,9 +371,11 @@ export const createLoadConfigTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         config: z
+
           .object({
             connectionId: z.string(),
             organizationId: z.string(),
@@ -343,10 +390,12 @@ export const createLoadConfigTool = (env: Env) =>
             configuredAt: z.string().optional(),
             updatedAt: z.string().optional(),
           })
+
           .optional(),
         message: z.string(),
         supabaseConfigured: z.boolean(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env } = params;
@@ -415,10 +464,12 @@ export const createDeleteConfigTool = (env: Env) =>
     annotations: { destructiveHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env } = params;
@@ -458,12 +509,14 @@ export const createCacheStatsTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         total: z.number(),
         valid: z.number(),
         expired: z.number(),
         ttl: z.number(),
       })
+
       .strict(),
     execute: async () => {
       return getCacheStats();
@@ -481,10 +534,12 @@ export const createClearCacheTool = (env: Env) =>
     annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
       })
+
       .strict(),
     execute: async () => {
       clearConfigCache();
@@ -510,12 +565,14 @@ export const createGenerateApiKeyTool = (_env: Env) =>
     annotations: { destructiveHint: false },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string(),
         hasApiKey: z.boolean(),
         expiresAt: z.string().nullable(),
       })
+
       .strict(),
     execute: async (params: any) => {
       const { env } = params;

@@ -36,11 +36,14 @@ export const createListGuildChannelsTool = (env: Env) =>
     description: "List all channels from a Discord guild",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         channels: z.array(
           z.object({
@@ -54,6 +57,7 @@ export const createListGuildChannelsTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { guild_id: string };
@@ -102,33 +106,46 @@ export const createCreateChannelTool = (env: Env) =>
     description: "Create a new channel in a Discord guild",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
         name: z.string().describe("Channel name (1-100 characters)"),
         type: z
+
           .enum(["text", "voice", "category", "announcement", "stage", "forum"])
+
           .default("text")
+
           .describe("Channel type"),
         topic: z
+
           .string()
+
           .optional()
+
           .describe("Channel topic (0-1024 characters)"),
         parent_id: z.string().optional().describe("Category ID to nest under"),
         nsfw: z.boolean().optional().describe("Whether the channel is NSFW"),
         position: z.number().optional().describe("Sorting position"),
         reason: z
+
           .string()
+
           .optional()
+
           .describe("Reason for creation (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         name: z.string(),
         type: z.number(),
         guild_id: z.string(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -186,37 +203,55 @@ export const createCreateThreadTool = (env: Env) =>
     description: "Create a thread or forum post in a Discord channel",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         channel_id: z
+
           .string()
+
           .describe("The channel ID (text channel or forum)"),
         name: z.string().describe("Thread name (1-100 characters)"),
         message_id: z
+
           .string()
+
           .optional()
+
           .describe("Message ID to create thread from (for text channels)"),
         auto_archive_duration: z
+
           .enum(["60", "1440", "4320", "10080"])
+
           .optional()
+
           .describe("Minutes until auto-archive (60, 1440, 4320, 10080)"),
         type: z
+
           .enum(["public", "private"])
+
           .default("public")
+
           .describe("Thread type (public or private)"),
         content: z
+
           .string()
+
           .optional()
+
           .describe("Initial message content (for forum posts)"),
         reason: z.string().optional().describe("Reason (audit log)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         id: z.string(),
         name: z.string(),
         parent_id: z.string(),
         type: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -278,11 +313,14 @@ export const createGetActiveThreadsTool = (env: Env) =>
       "Get all active threads in a Discord server (includes forum posts)",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         guild_id: z.string().describe("The guild ID"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         threads: z.array(
           z.object({
@@ -296,6 +334,7 @@ export const createGetActiveThreadsTool = (env: Env) =>
         ),
         count: z.number(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { guild_id: string };
@@ -335,17 +374,23 @@ export const createGetArchivedThreadsTool = (env: Env) =>
     description: "Get archived threads from a Discord channel",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel_id: z.string().describe("The channel ID"),
         type: z
+
           .enum(["public", "private"])
+
           .default("public")
+
           .describe("Thread type"),
         limit: z.number().min(1).max(100).default(50).describe("Max threads"),
         before: z.string().optional().describe("ISO8601 timestamp"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         threads: z.array(
           z.object({
@@ -357,6 +402,7 @@ export const createGetArchivedThreadsTool = (env: Env) =>
         ),
         has_more: z.boolean(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -406,9 +452,11 @@ export const createJoinThreadTool = (env: Env) =>
     description: "Join a thread with the bot",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         thread_id: z.string().describe("The thread ID to join"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {
@@ -428,9 +476,11 @@ export const createLeaveThreadTool = (env: Env) =>
     description: "Leave a thread with the bot",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
+
       .object({
         thread_id: z.string().describe("The thread ID to leave"),
       })
+
       .strict(),
     outputSchema: z.object({ success: z.boolean() }).strict(),
     execute: async ({ context }: { context: unknown }) => {

@@ -137,7 +137,9 @@ const registerPhoneNumber = (env: Env) =>
     inputSchema: z.object({
       phoneNumberId: z.string(),
       pin: z
+
         .string()
+
         .describe(
           "6-digit PIN for two-step verification. Obtained from the REQUEST_CODE_FOR_PHONE_NUMBER tool",
         ),
@@ -171,6 +173,7 @@ const updatePhoneNumberProfile = (env: Env) =>
       email: z.string().optional(),
       websites: z.array(z.string()).optional(),
       vertical: z
+
         .enum([
           "ALCOHOL",
           "APPAREL",
@@ -194,6 +197,7 @@ const updatePhoneNumberProfile = (env: Env) =>
           "RETAIL",
           "TRAVEL",
         ])
+
         .optional(),
       profile_picture_handle: z.string().optional(),
     }),

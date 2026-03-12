@@ -17,11 +17,16 @@ export const createRunScriptTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       functionName: z
+
         .string()
+
         .describe("The name of the function to execute in the given script"),
       parameters: z
+
         .array(z.any())
+
         .optional()
+
         .describe(
           "The parameters to be passed to the function being executed (optional)",
         ),
@@ -30,10 +35,12 @@ export const createRunScriptTool = (env: Env) =>
       done: z.boolean().optional(),
       result: z.any().optional(),
       error: z
+
         .object({
           code: z.number().optional(),
           message: z.string().optional(),
         })
+
         .optional(),
     }),
     execute: async ({ context }) => {
@@ -71,11 +78,16 @@ export const createRunScriptDevModeTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       functionName: z
+
         .string()
+
         .describe("The name of the function to execute in the given script"),
       parameters: z
+
         .array(z.any())
+
         .optional()
+
         .describe(
           "The parameters to be passed to the function being executed (optional)",
         ),
@@ -84,10 +96,12 @@ export const createRunScriptDevModeTool = (env: Env) =>
       done: z.boolean().optional(),
       result: z.any().optional(),
       error: z
+
         .object({
           code: z.number().optional(),
           message: z.string().optional(),
         })
+
         .optional(),
     }),
     execute: async ({ context }) => {

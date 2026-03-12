@@ -15,7 +15,7 @@ import { query } from "../db.ts";
 import { resolveCustomer } from "./customer-resolver.ts";
 import { sanitize, sanitizeRows } from "./sanitize.ts";
 
-import { clean, toDateOnly, round2 } from "./utils.ts";
+import { clean, toDateOnly, round2, escapeSqlLiteral } from "./utils.ts";
 
 function changePct(recent: number, previous: number): number | null {
   if (previous === 0) return recent > 0 ? 100 : null;
@@ -47,27 +47,39 @@ export const createUsageTool = (_env: Env) =>
       "Returns customer usage history with pageviews, requests, bandwidth, efficiency ratios, percentage changes, and anomaly detection.",
 
     inputSchema: z.object({
-      customer_id: z.string().optional()
-        .describe("Numeric customer ID (recommended, unique). E.g.: 1108. Takes priority over customer_name if provided."),
-      customer_name: z.string().optional()
-        .describe("Customer name (exact and partial search). E.g.: Acme Corp. Warning: names are not unique — prefer customer_id."),
-      months: z.preprocess(
-        (value) => {
+      customer_name: z
+        .string()
+
+        .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
+      months: z
+        .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
-          if (typeof value === "string" && value.trim() === "") return undefined;
+          if (typeof value === "string" && value.trim() === "")
+            return undefined;
           return value;
-        },
-        z.coerce.number().int().min(1).max(60).default(12),
-      ).describe("Number of most recent months to return (default: 12, max: 60)."),
-      start_reference_month: z.string().optional()
-        .describe("Start reference month filter. Format: YYYY-MM-DD. E.g.: 2024-01-01"),
-      end_reference_month: z.string().optional()
-        .describe("End reference month filter. Format: YYYY-MM-DD. E.g.: 2024-12-31"),
+        }, z.coerce.number().int().min(1).max(60).default(12))
+        .describe(
+          "Number of most recent months to return (default: 12, max: 60).",
+        ),
+      start_reference_month: z
+        .string()
+        .optional()
+
+        .describe(
+          "Start reference month filter. Format: YYYY-MM-DD. E.g.: 2024-01-01",
+        ),
+      end_reference_month: z
+        .string()
+        .optional()
+
+        .describe(
+          "End reference month filter. Format: YYYY-MM-DD. E.g.: 2024-12-31",
+        ),
     }),
 
     outputSchema: z.object({
       customer: z.any(),
-      match_type: z.enum(["id", "exact", "partial"]),
+      match_type: z.enum(["exact", "partial"]),
       total_points: z.number(),
       usage_history: z.array(z.any()),
       summary: z.any(),
@@ -89,23 +101,26 @@ export const createUsageTool = (_env: Env) =>
         avg_request_pageview_ratio: z.number().nullable(),
         avg_bw_per_10k_pageview: z.number().nullable(),
       }),
-      anomalies: z.array(z.object({
-        type: z.string(),
-        severity: z.enum(["warning", "critical"]),
-        message: z.string(),
-        detail: z.string(),
-      })),
+      anomalies: z.array(
+        z.object({
+          type: z.string(),
+          severity: z.enum(["warning", "critical"]),
+          message: z.string(),
+          detail: z.string(),
+        }),
+      ),
       _llm_instruction: z.string(),
       _meta: z.any(),
     }),
 
     execute: async ({ context }) => {
       const resolved = await resolveCustomer({
-        customer_id: clean(context.customer_id),
         customer_name: clean(context.customer_name),
       });
 
-      const conditions = [`id = ${resolved.customer.id}`];
+      const conditions = [
+        `name = '${escapeSqlLiteral(resolved.customer.name)}'`,
+      ];
 
       const startRef = toDateOnly(clean(context.start_reference_month));
       if (startRef) {
@@ -183,10 +198,21 @@ export const createUsageTool = (_env: Env) =>
         FROM limited`,
       );
 
-      const summaryRaw = sanitize((summaryRow ?? {}) as Record<string, unknown>);
-      const totalBw = typeof summaryRaw.total_bandwidth === "number" ? summaryRaw.total_bandwidth : 0;
-      const totalPv = typeof summaryRaw.total_pageviews === "number" ? summaryRaw.total_pageviews : 0;
-      const totalRq = typeof summaryRaw.total_requests === "number" ? summaryRaw.total_requests : 0;
+      const summaryRaw = sanitize(
+        (summaryRow ?? {}) as Record<string, unknown>,
+      );
+      const totalBw =
+        typeof summaryRaw.total_bandwidth === "number"
+          ? summaryRaw.total_bandwidth
+          : 0;
+      const totalPv =
+        typeof summaryRaw.total_pageviews === "number"
+          ? summaryRaw.total_pageviews
+          : 0;
+      const totalRq =
+        typeof summaryRaw.total_requests === "number"
+          ? summaryRaw.total_requests
+          : 0;
       summaryRaw.total_bandwidth_formatted = formatBandwidth(totalBw);
       summaryRaw.total_pageviews_formatted = formatLargeNumber(totalPv);
       summaryRaw.total_requests_formatted = formatLargeNumber(totalRq);
@@ -249,15 +275,23 @@ export const createUsageTool = (_env: Env) =>
         bandwidth_change_pct: changePct(bwRecent, bwPrev),
       };
 
-      const latestRatio = history.length > 0
-        ? (typeof history[0].request_pageview_ratio === "number" ? history[0].request_pageview_ratio : null)
-        : null;
-      const latestBwRatio = history.length > 0
-        ? (typeof history[0].bw_per_10k_pageview === "number" ? history[0].bw_per_10k_pageview : null)
-        : null;
+      const latestRatio =
+        history.length > 0
+          ? typeof history[0].request_pageview_ratio === "number"
+            ? history[0].request_pageview_ratio
+            : null
+          : null;
+      const latestBwRatio =
+        history.length > 0
+          ? typeof history[0].bw_per_10k_pageview === "number"
+            ? history[0].bw_per_10k_pageview
+            : null
+          : null;
 
-      let ratioSum = 0, ratioCount = 0;
-      let bwRatioSum = 0, bwRatioCount = 0;
+      let ratioSum = 0,
+        ratioCount = 0;
+      let bwRatioSum = 0,
+        bwRatioCount = 0;
       for (const entry of history) {
         if (typeof entry.request_pageview_ratio === "number") {
           ratioSum += entry.request_pageview_ratio;
@@ -272,8 +306,10 @@ export const createUsageTool = (_env: Env) =>
       const efficiency = {
         latest_request_pageview_ratio: latestRatio,
         latest_bw_per_10k_pageview: latestBwRatio,
-        avg_request_pageview_ratio: ratioCount > 0 ? round2(ratioSum / ratioCount) : null,
-        avg_bw_per_10k_pageview: bwRatioCount > 0 ? round2(bwRatioSum / bwRatioCount) : null,
+        avg_request_pageview_ratio:
+          ratioCount > 0 ? round2(ratioSum / ratioCount) : null,
+        avg_bw_per_10k_pageview:
+          bwRatioCount > 0 ? round2(bwRatioSum / bwRatioCount) : null,
       };
 
       const anomalies: Anomaly[] = [];
@@ -287,7 +323,10 @@ export const createUsageTool = (_env: Env) =>
         });
       }
 
-      if (trend.bandwidth_change_pct !== null && trend.pageviews_change_pct !== null) {
+      if (
+        trend.bandwidth_change_pct !== null &&
+        trend.pageviews_change_pct !== null
+      ) {
         const bwGrew = trend.bandwidth_change_pct > 15;
         // Use absolute value: a -50% pageview drop is not "stable" and must not
         // trigger the heavy_assets anomaly, which is only meaningful when
@@ -303,7 +342,10 @@ export const createUsageTool = (_env: Env) =>
         }
       }
 
-      if (trend.pageviews_change_pct !== null && trend.pageviews_change_pct < -25) {
+      if (
+        trend.pageviews_change_pct !== null &&
+        trend.pageviews_change_pct < -25
+      ) {
         anomalies.push({
           type: "usage_drop",
           severity: trend.pageviews_change_pct < -50 ? "critical" : "warning",
@@ -312,7 +354,10 @@ export const createUsageTool = (_env: Env) =>
         });
       }
 
-      if (trend.pageviews_change_pct !== null && trend.pageviews_change_pct > 50) {
+      if (
+        trend.pageviews_change_pct !== null &&
+        trend.pageviews_change_pct > 50
+      ) {
         anomalies.push({
           type: "usage_spike",
           severity: "warning",
@@ -322,11 +367,15 @@ export const createUsageTool = (_env: Env) =>
       }
 
       const refMonths = history
+
         .map((entry) => String(entry.reference_month ?? ""))
+
         .filter(Boolean)
+
         .sort();
       const periodStart = refMonths.length > 0 ? refMonths[0] : null;
-      const periodEnd = refMonths.length > 0 ? refMonths[refMonths.length - 1] : null;
+      const periodEnd =
+        refMonths.length > 0 ? refMonths[refMonths.length - 1] : null;
       const summaryText =
         `Uso agregado em ${summaryRaw.total_months ?? history.length} mês(es) ` +
         `(${periodStart ?? "N/A"} a ${periodEnd ?? "N/A"}): ` +

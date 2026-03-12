@@ -84,7 +84,9 @@ describe("airtable_sync", () => {
       Promise.resolve(
         new Response(
           JSON.stringify(
-            airtableResponse([{ ID: "1108", Valor: "R$1000,00", Status: "paid" }]),
+            airtableResponse([
+              { ID: "1108", Valor: "R$1000,00", Status: "paid" },
+            ]),
           ),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -108,7 +110,9 @@ describe("airtable_sync", () => {
       Promise.resolve(
         new Response(
           JSON.stringify(
-            airtableResponse([{ ID: "1108", Nome: "Paula Piva", Email: "paula@example.com" }]),
+            airtableResponse([
+              { ID: "1108", Nome: "Paula Piva", Email: "paula@example.com" },
+            ]),
           ),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -119,7 +123,10 @@ describe("airtable_sync", () => {
 
     expect(result.success).toBe(true);
     expect(result.synced[0].table).toBe("contacts");
-    expect(mockSaveCsv).toHaveBeenCalledWith("contacts.csv", expect.any(String));
+    expect(mockSaveCsv).toHaveBeenCalledWith(
+      "contacts.csv",
+      expect.any(String),
+    );
     expect(mockReloadView).toHaveBeenCalledWith("contacts");
   });
 
@@ -140,7 +147,10 @@ describe("airtable_sync", () => {
 
     expect(result.success).toBe(true);
     expect(result.synced).toHaveLength(2);
-    expect(result.synced.map((s: any) => s.table)).toEqual(["billing", "contacts"]);
+    expect(result.synced.map((s: any) => s.table)).toEqual([
+      "billing",
+      "contacts",
+    ]);
     expect(mockSaveCsv).toHaveBeenCalledTimes(2);
     expect(mockReloadView).toHaveBeenCalledTimes(2);
   });
@@ -220,7 +230,9 @@ describe("airtable_sync", () => {
 
     await capturedExecute({ context: { tables: "billing" } });
 
-    expect(capturedHeaders["Authorization"]).toBe(`Bearer ${VALID_CONFIG.api_key}`);
+    expect(capturedHeaders["Authorization"]).toBe(
+      `Bearer ${VALID_CONFIG.api_key}`,
+    );
   });
 
   it("deve montar URL correta com baseId e nome da tabela", async () => {

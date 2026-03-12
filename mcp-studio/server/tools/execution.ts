@@ -116,22 +116,32 @@ export const createCreateTool = (env: Env) =>
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
       input: z
+
         .record(z.string(), z.unknown())
+
         .optional()
+
         .describe(
           "The input to the workflow execution. Required only if the workflow has steps that reference the input with the @input.field syntax.",
         ),
       virtual_mcp_id: z
+
         .string()
+
         .describe("The gateway ID to use for the execution"),
       start_at_epoch_ms: z
+
         .number()
+
         .optional()
+
         .describe(
           "The timestamp in milliseconds of when the execution should start. If not provided, the execution will start immediately.",
         ),
       workflow_collection_id: z
+
         .string()
+
         .describe(
           "The id of the workflow collection item to use for the execution",
         ),
@@ -213,7 +223,9 @@ export const createGetExecutionWorkflowTool = (env: Env) =>
       "Get the immutable workflow associated with a workflow execution",
     inputSchema: z.object({
       executionId: z
+
         .string()
+
         .describe("The ID of the workflow execution to get the workflow for"),
     }),
     outputSchema: z.object({
@@ -256,7 +268,9 @@ export const createGetStepResultTool = (env: Env) =>
     description: "Get a single step result by execution ID and step ID",
     inputSchema: z.object({
       executionId: z
+
         .string()
+
         .describe("The execution ID to get the step result from"),
       stepId: z.string().describe("The step ID to get the step result for"),
     }),

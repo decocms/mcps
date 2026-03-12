@@ -95,10 +95,14 @@ export const VideoGenerationRequestSchema = z.object({
   prompt: z.string().describe("Text description of the video to generate"),
   model: VeoModels.optional().default("veo-3.1-generate-preview"),
   aspectRatio: z
+
     .enum(["16:9", "9:16"])
+
     .optional()
+
     .describe("Video aspect ratio"),
   duration: z
+
     .union([
       z.literal(4),
       z.literal(5),
@@ -106,21 +110,30 @@ export const VideoGenerationRequestSchema = z.object({
       z.literal(7),
       z.literal(8),
     ])
+
     .optional()
+
     .describe("Video duration in seconds"),
   resolution: z.enum(["720p", "1080p"]).optional().describe("Video resolution"),
   referenceImages: z
+
     .array(
       z.object({
         url: z.string(),
       }),
     )
+
     .max(3)
+
     .optional()
+
     .describe("Up to 3 reference images to guide generation"),
   personGeneration: z
+
     .enum(["dont_allow", "allow_adult"])
+
     .optional()
+
     .describe("Control person generation in video"),
   negativePrompt: z.string().optional().describe("What to avoid in generation"),
 });
@@ -145,15 +158,21 @@ export const GeneratedVideoSchema = z.object({
 export const OperationResponseSchema = z.object({
   name: z.string().describe("Operation identifier (e.g., 'operations/abc123')"),
   done: z
+
     .boolean()
+
     .optional()
+
     .default(false)
+
     .describe("Whether the operation is complete"),
   metadata: z.any().optional(),
   response: z
+
     .object({
       "@type": z.string().optional(),
       generateVideoResponse: z
+
         .object({
           generatedSamples: z.array(
             z.object({
@@ -161,16 +180,21 @@ export const OperationResponseSchema = z.object({
             }),
           ),
         })
+
         .optional(),
     })
+
     .passthrough()
+
     .optional(),
   error: z
+
     .object({
       code: z.number(),
       message: z.string(),
       details: z.any().optional(),
     })
+
     .optional(),
 });
 

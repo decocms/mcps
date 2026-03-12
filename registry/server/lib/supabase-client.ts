@@ -177,12 +177,19 @@ export interface ListServersResult {
 function sanitizeSearchInput(input: string): string {
   // Escape special PostgREST characters: , . ( ) * % _ \
   return input
+
     .replace(/\\/g, "\\\\") // Backslash first
+
     .replace(/,/g, "\\,") // Comma (separates OR conditions)
+
     .replace(/\./g, "\\.") // Period (operator separator)
+
     .replace(/\(/g, "\\(") // Left paren (grouping)
+
     .replace(/\)/g, "\\)") // Right paren (grouping)
+
     .replace(/\*/g, "\\*") // Asterisk (wildcard)
+
     .replace(/%/g, "\\%") // Percent (wildcard in LIKE)
     .replace(/_/g, "\\_"); // Underscore (single-char wildcard in LIKE)
 }
@@ -195,9 +202,13 @@ function sanitizeSearchInput(input: string): string {
 function buildSearchFilter(search: string): string {
   // Split search into words, filter empty ones, and take max 5 words
   const words = search
+
     .toLowerCase()
+
     .split(/[\s\-_/.]+/)
+
     .filter((word) => word.length >= 2)
+
     .slice(0, 5);
 
   if (words.length === 0) {
@@ -286,7 +297,9 @@ export async function listServers(
 
   // Order: verified first, then by name
   query = query
+
     .order("verified", { ascending: false })
+
     .order("name", { ascending: true });
 
   // Pagination
@@ -317,10 +330,15 @@ export async function getServer(
   name: string,
 ): Promise<RegistryServer | null> {
   const { data, error } = await client
+
     .from("mcp_servers")
+
     .select("*")
+
     .eq("name", name)
+
     .eq("is_latest", true)
+
     .single();
 
   if (error) {
@@ -342,9 +360,13 @@ export async function getServerVersions(
   name: string,
 ): Promise<RegistryServer[]> {
   const { data, error } = await client
+
     .from("mcp_servers")
+
     .select("*")
+
     .eq("name", name)
+
     .order("version", { ascending: false });
 
   if (error) {
@@ -365,7 +387,9 @@ export async function upsertServer(
   data: Partial<McpServerRow> & { name: string; version: string },
 ): Promise<void> {
   const { error } = await client
+
     .from("mcp_servers")
+
     .upsert(data, { onConflict: "name,version" });
 
   if (error) {
@@ -386,7 +410,9 @@ export async function upsertServers(
   for (let i = 0; i < servers.length; i += BATCH_SIZE) {
     const batch = servers.slice(i, i + BATCH_SIZE);
     const { error } = await client
+
       .from("mcp_servers")
+
       .upsert(batch, { onConflict: "name,version" });
 
     if (error) {
@@ -406,9 +432,13 @@ export async function getAvailableFilters(client: SupabaseClient): Promise<{
 }> {
   // Get all latest servers with their tags and categories
   const { data, error } = await client
+
     .from("mcp_servers")
+
     .select("tags, categories")
+
     .eq("is_latest", true)
+
     .eq("unlisted", false);
 
   if (error) {
@@ -438,11 +468,15 @@ export async function getAvailableFilters(client: SupabaseClient): Promise<{
 
   // Convert to sorted arrays
   const tags = Array.from(tagCounts.entries())
+
     .map(([value, count]) => ({ value, count }))
+
     .sort((a, b) => b.count - a.count); // Sort by count desc
 
   const categories = Array.from(categoryCounts.entries())
+
     .map(([value, count]) => ({ value, count }))
+
     .sort((a, b) => b.count - a.count); // Sort by count desc
 
   return { tags, categories };
@@ -464,36 +498,59 @@ export async function getServerStats(client: SupabaseClient): Promise<{
     // Fallback to manual count if RPC doesn't exist
     // ALWAYS filter by is_latest to count only the latest version of each server
     const { count: total } = await client
+
       .from("mcp_servers")
+
       .select("*", { count: "exact", head: true })
+
       .eq("is_latest", true)
+
       .eq("unlisted", false);
 
     const { count: verified } = await client
+
       .from("mcp_servers")
+
       .select("*", { count: "exact", head: true })
+
       .eq("is_latest", true)
+
       .eq("unlisted", false)
+
       .eq("verified", true);
 
     const { count: withRemote } = await client
+
       .from("mcp_servers")
+
       .select("*", { count: "exact", head: true })
+
       .eq("is_latest", true)
+
       .eq("unlisted", false)
+
       .eq("has_remote", true);
 
     const { count: withNpm } = await client
+
       .from("mcp_servers")
+
       .select("*", { count: "exact", head: true })
+
       .eq("is_latest", true)
+
       .eq("unlisted", false)
+
       .eq("is_npm", true);
 
     const { count: unlisted } = await client
+
       .from("mcp_servers")
+
       .select("*", { count: "exact", head: true })
+
       .eq("is_latest", true)
+
       .eq("unlisted", true);
 
     return {

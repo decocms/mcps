@@ -34,18 +34,27 @@ import { z } from "zod";
 export const fileUploadInputSchema = z.object({
   fileUrl: z.string().optional().describe("The URL of the file to upload"),
   fileContent: z
+
     .string()
+
     .optional()
+
     .describe("The content of the file to upload (text only)"),
   fileName: z
+
     .string()
+
     .optional()
+
     .describe(
       "The optional name of the file with extension (if not provided, the file will be named 'file-{timestamp}.txt')",
     ),
   metadata: z
+
     .record(z.string(), z.unknown())
+
     .optional()
+
     .describe("The optional metadata to attach to the file"),
 });
 
@@ -101,8 +110,11 @@ export type FileDeleteOutput = z.infer<typeof fileDeleteOutputSchema>;
 export const fileGetInputSchema = z.object({
   fileId: z.string().describe("The ID of the file to retrieve"),
   includeUrl: z
+
     .boolean()
+
     .optional()
+
     .describe("Whether to include a signed URL for downloading the file"),
 });
 
@@ -114,11 +126,13 @@ export type FileGetInput = z.infer<typeof fileGetInputSchema>;
 export const fileGetOutputSchema = z.object({
   success: z.boolean(),
   file: fileInfoSchema
+
     .extend({
       signed_url: z.string().nullable().optional(),
       percent_done: z.number().nullable().optional(),
       error_message: z.string().nullable().optional(),
     })
+
     .nullable(),
   message: z.string().optional(),
 });

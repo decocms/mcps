@@ -79,7 +79,9 @@ export const createStrapiGetComponentDetailTool = (env: Env) =>
       "Obtém detalhes de um componente específico incluindo seus atributos e configuração.",
     inputSchema: z.object({
       uid: z
+
         .string()
+
         .describe(
           "UID do componente (ex: 'shared.seo', 'sections.hero', 'blocks.rich-text')",
         ),

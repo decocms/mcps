@@ -46,12 +46,16 @@ export function escapeSqlValue(value: SqlValue): string {
 
   // String escaping
   const escaped = value
+
     // Remove null bytes (can cause truncation attacks)
     .replace(/\0/g, "")
+
     // Remove other control characters (except newlines and tabs)
     .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+
     // Escape backslashes first
     .replace(/\\/g, "\\\\")
+
     // Escape single quotes
     .replace(/'/g, "''");
 

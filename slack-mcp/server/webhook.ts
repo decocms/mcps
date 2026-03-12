@@ -55,7 +55,9 @@ export async function verifySlackRequest(
   const computedSignature =
     "v0=" +
     Array.from(new Uint8Array(signatureBuffer))
+
       .map((b) => b.toString(16).padStart(2, "0"))
+
       .join("");
 
   // Constant-time comparison

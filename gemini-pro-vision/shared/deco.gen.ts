@@ -477,7 +477,9 @@ export const StateSchema = z.object({
   GEMINI_VISION_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/gemini-pro-vision-c0210f94a239ceb8fe52be6eefb8c457")
+
       .default("@deco/gemini-pro-vision-c0210f94a239ceb8fe52be6eefb8c457"),
   }),
 });

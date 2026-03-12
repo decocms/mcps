@@ -54,7 +54,9 @@ export async function verifyWebhook({
 
   // Convert to hex string
   const computedHash = Array.from(new Uint8Array(signatureBuffer))
+
     .map((b) => b.toString(16).padStart(2, "0"))
+
     .join("");
 
   // Constant-time comparison to prevent timing attacks

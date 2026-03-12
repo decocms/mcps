@@ -17,17 +17,27 @@ export const createCreateDeploymentTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       versionNumber: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .describe("The version number on which this deployment is based"),
       description: z
+
         .string()
+
         .optional()
+
         .describe("A description for this deployment (optional)"),
       manifestFileName: z
+
         .string()
+
         .optional()
+
         .describe(
           "The manifest file name for this deployment (default: appsscript)",
         ),
@@ -124,17 +134,26 @@ export const createListDeploymentsTool = (env: Env) =>
     inputSchema: z.object({
       scriptId: z.string().describe("The script project's Drive ID"),
       pageSize: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(200)
+
         .optional()
+
         .describe(
           "Maximum number of deployments to return (1-200, default: 50)",
         ),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe("Token for fetching the next page of results"),
     }),
     outputSchema: z.object({
@@ -187,18 +206,29 @@ export const createUpdateDeploymentTool = (env: Env) =>
       scriptId: z.string().describe("The script project's Drive ID"),
       deploymentId: z.string().describe("The deployment ID to update"),
       versionNumber: z.coerce
+
         .number()
+
         .int()
+
         .min(1)
+
         .optional()
+
         .describe("The new version number for this deployment (optional)"),
       description: z
+
         .string()
+
         .optional()
+
         .describe("The new description for this deployment (optional)"),
       manifestFileName: z
+
         .string()
+
         .optional()
+
         .describe("The new manifest file name for this deployment (optional)"),
     }),
     outputSchema: z.object({

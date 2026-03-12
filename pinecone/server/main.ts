@@ -20,7 +20,9 @@ import { tools } from "./tools/index.ts";
 export const StateSchema = BaseStateSchema.extend({
   apiKey: z.string().describe("Pinecone API key for authentication"),
   indexHost: z
+
     .string()
+
     .describe("Pinecone API host URL (e.g., https://api.pinecone.io)"),
   assistant: z.string().describe("Pinecone assistant name"),
 });

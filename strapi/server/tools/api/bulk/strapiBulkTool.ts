@@ -28,12 +28,16 @@ export const createStrapiBulkDeleteTool = (env: Env) =>
       "Exclui múltiplas entradas de conteúdo de uma vez no Strapi CMS. Disponível a partir do Strapi v4.15+.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       ids: z
+
         .string()
+
         .describe(
           "IDs das entradas a deletar (formato JSON array, ex: '[1, 2, 3]' ou '[\"abc123\", \"def456\"]')",
         ),
@@ -121,12 +125,16 @@ export const createStrapiBulkPublishTool = (env: Env) =>
       "Publica múltiplas entradas de conteúdo de uma vez no Strapi CMS. Requer Draft & Publish habilitado.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       ids: z
+
         .string()
+
         .describe(
           "IDs das entradas a publicar (formato JSON array, ex: '[1, 2, 3]' ou '[\"abc123\", \"def456\"]')",
         ),
@@ -213,12 +221,16 @@ export const createStrapiBulkUnpublishTool = (env: Env) =>
       "Despublica múltiplas entradas de conteúdo de uma vez no Strapi CMS, revertendo para rascunho.",
     inputSchema: z.object({
       contentType: z
+
         .string()
+
         .describe(
           "Nome do content type no plural (ex: articles, products, pages)",
         ),
       ids: z
+
         .string()
+
         .describe(
           "IDs das entradas a despublicar (formato JSON array, ex: '[1, 2, 3]' ou '[\"abc123\", \"def456\"]')",
         ),

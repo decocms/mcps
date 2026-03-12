@@ -124,9 +124,13 @@ export async function loadConnectionConfig(
   }
 
   const { data, error } = await client
+
     .from("slack_connections")
+
     .select("*")
+
     .eq("connection_id", connectionId)
+
     .single();
 
   if (error) {
@@ -209,8 +213,11 @@ export async function deleteConnectionConfig(
   }
 
   const { error } = await client
+
     .from("slack_connections")
+
     .delete()
+
     .eq("connection_id", connectionId);
 
   if (error) {
@@ -230,7 +237,9 @@ export async function countConnections(): Promise<number> {
   }
 
   const { count, error } = await client
+
     .from("slack_connections")
+
     .select("*", { count: "exact", head: true });
 
   if (error) {
@@ -252,9 +261,13 @@ export async function loadConnectionByTeamId(
   }
 
   const { data, error } = await client
+
     .from("slack_connections")
+
     .select("*")
+
     .eq("team_id", teamId)
+
     .single();
 
   if (error) {

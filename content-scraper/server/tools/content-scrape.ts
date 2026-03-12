@@ -126,26 +126,42 @@ export const getContentScrapeTool = (env: Env) =>
         'Which table to fetch: "all" for all tables, or "contents", "reddit", "linkedin", "twitter" for a specific one',
       ),
       startIndex: z
+
         .number()
+
         .int()
+
         .positive()
+
         .default(1)
+
         .describe("Start index - which item to start from (default: 1)"),
       endIndex: z
+
         .number()
+
         .int()
+
         .positive()
+
         .default(100)
+
         .describe("End index - which item to fetch up to (default: 100)"),
       onlyThisWeek: z
+
         .boolean()
+
         .default(false)
+
         .describe(
           "If true, returns only content from the last week (default: false)",
         ),
       highScoreOnly: z
+
         .boolean()
+
         .default(false)
+
         .describe(
           "If true, returns only content with post_score > 85% (default: false)",
         ),
@@ -153,33 +169,48 @@ export const getContentScrapeTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean(),
       results: z
+
         .array(
           z.object({
             table: z.string().describe("Table name"),
             data: z
+
               .array(z.record(z.string(), z.unknown()))
+
               .describe("Data returned from the table"),
             count: z.number().describe("Number of records returned"),
           }),
         )
+
         .optional(),
       totalCount: z
+
         .number()
+
         .optional()
+
         .describe("Total number of records returned"),
       range: z
+
         .object({
           startIndex: z.number(),
           endIndex: z.number(),
         })
+
         .optional(),
       weekDateFilter: z
+
         .string()
+
         .optional()
+
         .describe("The week_date value used for filtering (for debugging)"),
       highScoreFilter: z
+
         .boolean()
+
         .optional()
+
         .describe("Whether high score filter (>85%) was applied"),
       error: z.string().optional(),
     }),

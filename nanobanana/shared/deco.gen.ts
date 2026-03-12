@@ -424,7 +424,9 @@ export const StateSchema = z.object({
   NANOBANANA_CONTRACT: z.object({
     value: z.string(),
     __type: z
+
       .literal("@deco/nanobanana-1015fd7069e194c8463a93ff7e5070d1")
+
       .default("@deco/nanobanana-1015fd7069e194c8463a93ff7e5070d1"),
   }),
   FILE_SYSTEM: z.object({

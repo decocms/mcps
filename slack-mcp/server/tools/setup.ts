@@ -24,6 +24,7 @@ export const createGetBotStatusTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         status: z.object({
@@ -35,6 +36,7 @@ export const createGetBotStatusTool = (env: Env) =>
         }),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async () => {
       try {
@@ -89,26 +91,34 @@ export const createGetThreadInfoTool = (_env: Env) =>
       "Get information about a logical conversation thread (used for context management)",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID"),
         thread_identifier: z
+
           .string()
+
           .describe("Thread identifier (message ts or thread_ts)"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         thread: z
+
           .object({
             thread_id: z.string(),
             message_count: z.number(),
             last_activity: z.number(),
             is_active: z.boolean(),
           })
+
           .optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -157,17 +167,21 @@ export const createResetThreadTool = (_env: Env) =>
       "Reset a conversation thread context (clears message history for the thread)",
     annotations: { destructiveHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID"),
         thread_identifier: z.string().describe("Thread identifier to reset"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         message: z.string().optional(),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
@@ -201,17 +215,24 @@ export const createGetThreadHistoryTool = (_env: Env) =>
       "Get the conversation history for a logical thread (internal context, not Slack messages)",
     annotations: { readOnlyHint: true },
     inputSchema: z
+
       .object({
         channel: z.string().describe("Channel ID"),
         thread_identifier: z.string().describe("Thread identifier"),
         count: z
+
           .number()
+
           .optional()
+
           .default(10)
+
           .describe("Number of recent messages to return"),
       })
+
       .strict(),
     outputSchema: z
+
       .object({
         success: z.boolean(),
         messages: z.array(
@@ -224,6 +245,7 @@ export const createGetThreadHistoryTool = (_env: Env) =>
         ),
         error: z.string().optional(),
       })
+
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {

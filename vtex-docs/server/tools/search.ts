@@ -13,20 +13,33 @@ export const vtexDocsSearch = (_env: Env) =>
     inputSchema: z.object({
       query: z.string().describe("The search query in natural language"),
       language: z
+
         .enum(["en", "pt-br"])
+
         .optional()
+
         .describe("Filter by language (optional)"),
       limit: z
+
         .number()
+
         .min(1)
+
         .max(20)
+
         .optional()
+
         .describe("Number of results to return (default: 8)"),
       semanticWeight: z
+
         .number()
+
         .min(0)
+
         .max(1)
+
         .optional()
+
         .describe(
           "Weight for semantic search vs full-text (0-1, default: 0.4)",
         ),

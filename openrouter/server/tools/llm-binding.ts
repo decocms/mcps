@@ -325,7 +325,9 @@ function applyWhereFilter(
         }
         if (whereAny.operator === "like" || whereAny.operator === "contains") {
           return String(modelValue)
+
             .toLowerCase()
+
             .includes(String(whereAny.value).toLowerCase());
         }
         if (whereAny.operator === "in" && Array.isArray(whereAny.value)) {
@@ -753,7 +755,9 @@ function transformGenerateResult(result: unknown): Record<string, unknown> {
   // Transform content array
   const rawContent = Array.isArray(r.content) ? r.content : [];
   const content = rawContent
+
     .map(transformContentPart)
+
     .filter((p): p is NonNullable<typeof p> => p !== null);
 
   // Handle legacy 'text' property - some providers return text at top level
