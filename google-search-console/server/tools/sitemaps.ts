@@ -26,15 +26,21 @@ const SitemapSchema = z.object({
   lastSubmitted: z.string().optional().describe("Last submission date"),
   isPending: z.boolean().optional().describe("Whether the sitemap is pending"),
   isSitemapsIndex: z
+
     .boolean()
+
     .optional()
+
     .describe("Whether this is a sitemap index"),
   lastDownloaded: z.string().optional().describe("Last download date"),
   warnings: z.string().optional().describe("Number of warnings"),
   errors: z.string().optional().describe("Number of errors"),
   contents: z
+
     .array(SitemapContentSchema)
+
     .optional()
+
     .describe("Sitemap contents"),
 });
 
@@ -48,7 +54,9 @@ export const createListSitemapsTool = (env: Env) =>
     description: "List all sitemaps for a site",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -92,7 +100,9 @@ export const createGetSitemapTool = (env: Env) =>
     description: "Get information about a specific sitemap",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -139,7 +149,9 @@ export const createSubmitSitemapTool = (env: Env) =>
     description: "Submit a sitemap to Google Search Console",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -147,7 +159,9 @@ export const createSubmitSitemapTool = (env: Env) =>
     }),
     outputSchema: z.object({
       success: z
+
         .boolean()
+
         .describe("Whether the sitemap was submitted successfully"),
       siteUrl: z.string().describe("The site URL"),
       feedpath: z.string().describe("The sitemap feedpath that was submitted"),
@@ -177,7 +191,9 @@ export const createDeleteSitemapTool = (env: Env) =>
     description: "Delete a sitemap from Google Search Console",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -185,7 +201,9 @@ export const createDeleteSitemapTool = (env: Env) =>
     }),
     outputSchema: z.object({
       success: z
+
         .boolean()
+
         .describe("Whether the sitemap was deleted successfully"),
       siteUrl: z.string().describe("The site URL"),
       feedpath: z.string().describe("The sitemap feedpath that was deleted"),

@@ -21,7 +21,9 @@ export const StateSchema = z.object({
     "Object storage binding (S3-compatible) for storing generated videos.",
   ),
   GOOGLE_GENAI_API_KEY: z
+
     .string()
+
     .describe(
       "Google Gemini API key for accessing Veo video generation models",
     ),

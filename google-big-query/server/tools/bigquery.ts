@@ -89,14 +89,20 @@ export const createQueryTool = (env: Env) =>
     inputSchema: z.object({
       projectId: z.string().describe("Google Cloud project ID"),
       query: z
+
         .string()
+
         .optional()
+
         .describe(
           "SQL query to execute. Required for the first page; omit when passing pageToken.",
         ),
       pageToken: z
+
         .string()
+
         .optional()
+
         .describe(
           "Opaque token returned by a previous call. Pass this to fetch the next page without re-executing the query.",
         ),
@@ -114,7 +120,9 @@ export const createQueryTool = (env: Env) =>
         .int()
 
         .min(1)
+
         .max(200000)
+
         .optional()
 
         .describe("Maximum number of rows to return (default: 1000)"),
@@ -163,8 +171,11 @@ export const createQueryTool = (env: Env) =>
 
         .describe("Total bytes processed by the query"),
       nextPageToken: z
+
         .string()
+
         .optional()
+
         .describe(
           "Pass this as pageToken in the next call to fetch the next page. Absent on the last page.",
         ),

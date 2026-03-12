@@ -456,27 +456,33 @@ export const createTimelineTool = (env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
 
         .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
       max_events: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(500).default(100))
+
         .describe(
           "Maximum number of events returned (default: 100, max: 500).",
         ),
       order: z
+
         .string()
+
         .default("desc")
 
         .describe(
           "Chronological order. Options: asc (oldest first) | desc (default, most recent first)",
         ),
       include_emails: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string") {
@@ -489,31 +495,40 @@ export const createTimelineTool = (env: Env) =>
           }
           return value;
         }, z.boolean().default(true))
+
         .describe(
           "Include email events (requires Google OAuth). Default: true",
         ),
       email_max_results: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(50).default(15))
+
         .describe(
           "Maximum number of emails collected for timeline (default: 15, max: 50).",
         ),
       start_date: z
+
         .string()
+
         .optional()
 
         .describe("Start date filter. Format: YYYY-MM-DD. E.g.: 2024-01-01"),
       end_date: z
+
         .string()
+
         .optional()
 
         .describe("End date filter. Format: YYYY-MM-DD. E.g.: 2024-12-31"),
       sources: z
+
         .string()
+
         .optional()
 
         .describe(
@@ -584,8 +599,11 @@ export const createTimelineTool = (env: Env) =>
       const rawSources = clean(context.sources as unknown as string);
       const sourcesArr = rawSources
         ? rawSources
+
             .split(",")
+
             .map((s: string) => s.trim())
+
             .filter(Boolean)
         : null;
       const sourceFilter = sourcesArr?.length ? new Set(sourcesArr) : null;

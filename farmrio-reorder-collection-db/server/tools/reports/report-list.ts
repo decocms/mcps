@@ -10,6 +10,7 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     collectionId: z.number().int().positive().optional(),
     category: z.string().optional(),
@@ -17,15 +18,18 @@ const inputSchema = z
     limit: z.number().int().positive().max(200).default(20),
     offset: z.number().int().nonnegative().default(0),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     total: z.number().int().nonnegative().optional(),
     items: z.array(reportOutputSchema).optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const reportListTool = (env: Env) =>
@@ -56,15 +60,22 @@ export const reportListTool = (env: Env) =>
 
         const [rows, countRow] = await Promise.all([
           baseQuery
+
             .selectAll()
+
             .orderBy("updated_at", "desc")
+
             .limit(input.limit)
+
             .offset(input.offset)
+
             .execute(),
           baseQuery
+
             .select((expressionBuilder) =>
               expressionBuilder.fn.countAll<number>().as("count"),
             )
+
             .executeTakeFirst(),
         ]);
 

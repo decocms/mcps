@@ -25,7 +25,9 @@ function coerceNumericField(field: any): any {
     if (isIntLike) {
       // Accepts JSON numbers and numeric strings from tool UIs, then normalizes to int.
       return z
+
         .union([z.number().int(), z.string().regex(/^-?\d+$/)])
+
         .transform((value) =>
           typeof value === "string" ? Number.parseInt(value, 10) : value,
         );
@@ -33,7 +35,9 @@ function coerceNumericField(field: any): any {
 
     // Accepts numbers and numeric strings (e.g. "12.5"), normalizing to number.
     return z
+
       .union([z.number(), z.string().regex(/^-?\d+(\.\d+)?$/)])
+
       .transform((value) =>
         typeof value === "string" ? Number(value) : value,
       );

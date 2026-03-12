@@ -42,7 +42,9 @@ const RankedListRowSchema = z.object({
   image: z.string(),
   values: z.array(z.union([z.string(), z.number()])),
   note: z
+
     .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+
     .optional(),
 });
 
@@ -84,7 +86,9 @@ export const createReportsGetTool = (env: Env) =>
       "Get a specific report with full content including all sections.",
     inputSchema: z.object({
       id: z
+
         .string()
+
         .describe("Report identifier (relative path without .md extension)"),
     }),
     outputSchema: z.object({

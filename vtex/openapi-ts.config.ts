@@ -2,7 +2,9 @@ import { defineConfig } from "@hey-api/openapi-ts";
 import { readdirSync } from "fs";
 
 const schemas = readdirSync("./schemas")
+
   .filter((f) => f.endsWith(".json"))
+
   .map((f) => f.replace(/\.json$/, ""));
 
 const sharedPlugins = [

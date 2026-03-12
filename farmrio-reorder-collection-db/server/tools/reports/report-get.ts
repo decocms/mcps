@@ -11,17 +11,21 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     id: z.number().int().positive(),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: reportWithSectionsOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const reportGetTool = (env: Env) =>
@@ -38,9 +42,13 @@ export const reportGetTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const row = await db
+
           .selectFrom("report")
+
           .where("id", "=", input.id)
+
           .selectAll()
+
           .executeTakeFirst();
 
         if (!row) {
@@ -51,10 +59,15 @@ export const reportGetTool = (env: Env) =>
         }
 
         const sections = await db
+
           .selectFrom("report_section")
+
           .where("report_id", "=", row.id)
+
           .selectAll()
+
           .orderBy("position", "asc")
+
           .execute();
 
         const sectionIds = sections.map((s) => s.id);
@@ -63,20 +76,33 @@ export const reportGetTool = (env: Env) =>
           sectionIds.length > 0
             ? await Promise.all([
                 db
+
                   .selectFrom("section_criteria_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .execute(),
                 db
+
                   .selectFrom("section_metric_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .execute(),
                 db
+
                   .selectFrom("section_ranked_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .orderBy("position", "asc")
+
                   .execute(),
               ])
             : [[], [], []];

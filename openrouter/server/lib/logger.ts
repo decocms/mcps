@@ -113,7 +113,9 @@ export class HyperDXLogger {
                     ).toUpperCase(),
                     body: { stringValue: String(logEntry.body) },
                     attributes: Object.entries(logEntry)
+
                       .filter(([key]) => key !== "body" && key !== "level")
+
                       .map(([key, value]) => ({
                         key,
                         value: { stringValue: String(value) },

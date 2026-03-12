@@ -11,18 +11,22 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     reportId: z.number().int().positive(),
     sections: z.array(sectionInputSchema),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     sections: z.array(reportSectionOutputSchema).optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const reportSectionSaveTool = (env: Env) =>
@@ -41,9 +45,13 @@ export const reportSectionSaveTool = (env: Env) =>
         const savedSections = await db.transaction().execute(async (trx) => {
           // Buscar seções existentes para deletar os itens primeiro (sem CASCADE no schema)
           const existingSections = await trx
+
             .selectFrom("report_section")
+
             .where("report_id", "=", input.reportId)
+
             .select("id")
+
             .execute();
 
           const existingIds = existingSections.map((s) => s.id);
@@ -51,22 +59,34 @@ export const reportSectionSaveTool = (env: Env) =>
           if (existingIds.length > 0) {
             await Promise.all([
               trx
+
                 .deleteFrom("section_criteria_item")
+
                 .where("section_id", "in", existingIds)
+
                 .execute(),
               trx
+
                 .deleteFrom("section_metric_item")
+
                 .where("section_id", "in", existingIds)
+
                 .execute(),
               trx
+
                 .deleteFrom("section_ranked_item")
+
                 .where("section_id", "in", existingIds)
+
                 .execute(),
             ]);
 
             await trx
+
               .deleteFrom("report_section")
+
               .where("report_id", "=", input.reportId)
+
               .execute();
           }
 
@@ -74,7 +94,9 @@ export const reportSectionSaveTool = (env: Env) =>
 
           for (const section of input.sections) {
             const insertedSection = await trx
+
               .insertInto("report_section")
+
               .values({
                 report_id: input.reportId,
                 type: section.type,
@@ -85,7 +107,9 @@ export const reportSectionSaveTool = (env: Env) =>
                     : (section.content ?? null),
                 position: section.position,
               })
+
               .returningAll()
+
               .executeTakeFirst();
 
             if (!insertedSection) {
@@ -96,7 +120,9 @@ export const reportSectionSaveTool = (env: Env) =>
 
             if (section.type === "criteria" && section.items.length > 0) {
               await trx
+
                 .insertInto("section_criteria_item")
+
                 .values(
                   section.items.map((item) => ({
                     section_id: sectionId,
@@ -104,12 +130,15 @@ export const reportSectionSaveTool = (env: Env) =>
                     description: item.description ?? null,
                   })),
                 )
+
                 .execute();
             }
 
             if (section.type === "metrics" && section.items.length > 0) {
               await trx
+
                 .insertInto("section_metric_item")
+
                 .values(
                   section.items.map((item) => ({
                     section_id: sectionId,
@@ -119,12 +148,15 @@ export const reportSectionSaveTool = (env: Env) =>
                     status: item.status,
                   })),
                 )
+
                 .execute();
             }
 
             if (section.type === "ranked-list" && section.items.length > 0) {
               await trx
+
                 .insertInto("section_ranked_item")
+
                 .values(
                   section.items.map((item) => ({
                     section_id: sectionId,
@@ -141,6 +173,7 @@ export const reportSectionSaveTool = (env: Env) =>
                     purchase_rate: item.purchaseRate ?? null,
                   })),
                 )
+
                 .execute();
             }
 
@@ -157,20 +190,33 @@ export const reportSectionSaveTool = (env: Env) =>
           sectionIds.length > 0
             ? await Promise.all([
                 db
+
                   .selectFrom("section_criteria_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .execute(),
                 db
+
                   .selectFrom("section_metric_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .execute(),
                 db
+
                   .selectFrom("section_ranked_item")
+
                   .where("section_id", "in", sectionIds)
+
                   .selectAll()
+
                   .orderBy("position", "asc")
+
                   .execute(),
               ])
             : [[], [], []];

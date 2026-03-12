@@ -200,7 +200,9 @@ function applyWhereFilter(
         }
         if (whereAny.operator === "like" || whereAny.operator === "contains") {
           return String(modelValue)
+
             .toLowerCase()
+
             .includes(String(whereAny.value).toLowerCase());
         }
         if (whereAny.operator === "in" && Array.isArray(whereAny.value)) {
@@ -487,6 +489,7 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
           callResponse.stream as ReadableStream<LanguageModelV2StreamPart>,
         );
         usage
+
           .then((u) => {
             state = "commit";
             hook?.end?.(u).then(() => {
@@ -495,6 +498,7 @@ export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
               console.log(`[LLM_DO_STREAM] END ${requestId}`);
             });
           })
+
           .catch(() => {
             // Stream was cancelled -- clean up silently
             finished = true;
@@ -595,7 +599,9 @@ function transformGenerateResult(result: unknown): Record<string, unknown> {
   // Transform content array
   const rawContent = Array.isArray(r.content) ? r.content : [];
   const content = rawContent
+
     .map(transformContentPart)
+
     .filter((p): p is NonNullable<typeof p> => p !== null);
 
   // Handle legacy 'text' property - some providers return text at top level

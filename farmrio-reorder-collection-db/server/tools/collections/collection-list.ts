@@ -10,20 +10,24 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     isEnabled: z.boolean().optional(),
     limit: z.number().int().positive().max(200).default(50),
     offset: z.number().int().nonnegative().default(0),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     total: z.number().int().nonnegative().optional(),
     items: z.array(collectionOutputSchema).optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const collectionListTool = (env: Env) =>
@@ -45,15 +49,22 @@ export const collectionListTool = (env: Env) =>
 
         const [rows, countRow] = await Promise.all([
           baseQuery
+
             .selectAll()
+
             .orderBy("id", "asc")
+
             .limit(input.limit)
+
             .offset(input.offset)
+
             .execute(),
           baseQuery
+
             .select((expressionBuilder) =>
               expressionBuilder.fn.countAll<number>().as("count"),
             )
+
             .executeTakeFirst(),
         ]);
 

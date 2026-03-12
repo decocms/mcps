@@ -167,11 +167,14 @@ export const createHealthListTool = (_env: Env) =>
 
     inputSchema: z.object({
       sort_by: z
+
         .enum(["health_score", "overdue_amount", "overage_pct"])
+
         .default("health_score")
 
         .describe("Sort field. Default: health_score (worst first)."),
       min_invoices: z
+
         .preprocess(
           (v) =>
             v === null ||
@@ -181,10 +184,12 @@ export const createHealthListTool = (_env: Env) =>
               : v,
           z.coerce.number().int().min(0).default(1),
         )
+
         .describe(
           "Minimum number of invoices to include a customer (default: 1).",
         ),
       health_filter: z
+
         .enum([
           "all",
           "critical",
@@ -193,19 +198,23 @@ export const createHealthListTool = (_env: Env) =>
           "healthy",
           "excellent",
         ])
+
         .default("all")
 
         .describe(
           "Filter by health label. Default: all. Note: needs_attention includes critical and at_risk by default (triage mode).",
         ),
       strict_health_filter: z
+
         .boolean()
+
         .default(false)
 
         .describe(
           "When true, applies exact health_filter match. Default false enables triage mode for needs_attention.",
         ),
       limit: z
+
         .preprocess(
           (v) =>
             v === null ||
@@ -215,6 +224,7 @@ export const createHealthListTool = (_env: Env) =>
               : v,
           z.coerce.number().int().min(1).max(500).default(50),
         )
+
         .describe("Maximum number of customers returned (default: 50)."),
     }),
 

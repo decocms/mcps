@@ -18,18 +18,27 @@ const TIMEOUT_MS = 120_000;
 
 const GenerateImageInputSchema = z.object({
   prompt: z
+
     .string()
+
     .describe("The text prompt describing the image to generate"),
   baseImageUrl: z
+
     .string()
+
     .nullable()
+
     .optional()
+
     .describe(
       "URL of an existing image to use as base (image-to-image generation)",
     ),
   baseImageUrls: z
+
     .array(z.string())
+
     .optional()
+
     .describe(
       "Array of image URLs to use as base (for multi-image generation like virtual try-on). If provided, takes precedence over baseImageUrl.",
     ),
@@ -37,8 +46,11 @@ const GenerateImageInputSchema = z.object({
     "Aspect ratio for the generated image (default: 1:1)",
   ),
   model: z
+
     .enum(models.options)
+
     .optional()
+
     .describe(
       "Model to use for image generation (default: gemini-3.1-flash-image-preview)",
     ),

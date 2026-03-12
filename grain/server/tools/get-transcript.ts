@@ -15,7 +15,9 @@ export const createGetTranscriptTool = (env: Env) =>
     inputSchema: z.object({
       recordingId: z.string().describe("The recording UUID"),
       format: TranscriptFormatSchema.optional()
+
         .default("txt")
+
         .describe("Output format (default: txt)"),
     }),
     outputSchema: z.object({

@@ -13,13 +13,16 @@ const all = args.includes("--all");
 const dirs = await readdir(root, { withFileTypes: true });
 
 const allMcps = dirs
+
   .filter(
     (d) =>
       d.isDirectory() &&
       existsSync(path.join(root, d.name, "app.json")) &&
       existsSync(path.join(root, d.name, "tsconfig.json")),
   )
+
   .map((d) => d.name)
+
   .sort();
 
 let mcps: string[];

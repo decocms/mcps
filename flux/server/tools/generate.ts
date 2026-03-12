@@ -24,75 +24,118 @@ export const createGenerateImageTool = (env: Env) =>
     inputSchema: z.object({
       prompt: z.string().describe("Text description of the image to generate"),
       model: z
+
         .enum(FluxModels)
+
         .optional()
+
         .describe(
           "FLUX model to use. Default: flux-kontext-max (best quality, supports reference images). Use flux-dev for faster/cheaper generation.",
         ),
       input_image: z
+
         .string()
+
         .optional()
+
         .describe(
           "Primary reference image as a base64-encoded string or URL. Used for style/content guidance or editing.",
         ),
       input_image_2: z
+
         .string()
+
         .optional()
+
         .describe("Second reference image (base64 or URL)."),
       input_image_3: z
+
         .string()
+
         .optional()
+
         .describe("Third reference image (base64 or URL)."),
       input_image_4: z
+
         .string()
+
         .optional()
+
         .describe("Fourth reference image (base64 or URL)."),
       aspect_ratio: z
+
         .string()
+
         .optional()
+
         .describe(
           "Aspect ratio (e.g. '16:9', '1:1', '9:16'). Used by Kontext and Ultra models instead of width/height.",
         ),
       width: z
+
         .number()
+
         .min(64)
+
         .max(1440)
+
         .multipleOf(32)
+
         .optional()
+
         .describe(
           "Image width in pixels (must be multiple of 32). Default: 1024. Not used with Kontext/Ultra models — use aspect_ratio instead.",
         ),
       height: z
+
         .number()
+
         .min(64)
+
         .max(1440)
+
         .multipleOf(32)
+
         .optional()
+
         .describe(
           "Image height in pixels (must be multiple of 32). Default: 768. Not used with Kontext/Ultra models — use aspect_ratio instead.",
         ),
       seed: z
+
         .number()
+
         .optional()
+
         .describe("Random seed for reproducible generation"),
       output_format: z
+
         .enum(["jpeg", "png"])
+
         .optional()
+
         .describe(
           "Output image format. Default: png for Kontext models, jpeg for others.",
         ),
       safety_tolerance: z
+
         .number()
+
         .min(0)
+
         .max(6)
+
         .optional()
+
         .describe(
           "Safety filter tolerance (0=strictest, 6=most permissive). Default: 2",
         ),
     }),
     outputSchema: z.object({
       image_url: z
+
         .string()
+
         .describe("URL to the generated image (valid for 10 minutes)"),
       model: z.string().describe("The model used for generation"),
       status: z.string().describe("Generation status"),

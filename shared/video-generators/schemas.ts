@@ -78,8 +78,11 @@ export const createGenerateVideoInputSchema = <T extends string>(
     ...generateVideoBaseFields,
     model: defaultModel
       ? z
+
           .enum(models as [T, ...T[]])
+
           .optional()
+
           .describe(
             `Model to use for video generation (default: ${defaultModel})`,
           )
@@ -166,8 +169,11 @@ export const createExtendVideoInputSchema = <T extends string>(
     ...extendVideoBaseFields,
     model: defaultModel
       ? z
+
           .enum(models as [T, ...T[]])
+
           .optional()
+
           .describe(
             `Model to use for video extension (default: ${defaultModel})`,
           )

@@ -67,35 +67,50 @@ export function normalizeSkuIdsInput(
   }
 
   return trimmed
+
     .split(",")
+
     .map((skuId) => skuId.trim())
+
     .filter((skuId) => skuId.length > 0);
 }
 
 const reorderCollectionInputSchema = z
+
   .object({
     collectionId: z.coerce
+
       .number()
+
       .int()
+
       .positive()
+
       .describe("Collection ID to overwrite."),
     skuIds: z.preprocess(
       normalizeSkuIdsInput,
       z
+
         .array(z.coerce.number().int().positive())
+
         .optional()
+
         .describe("Ordered SKU IDs that should remain in the collection."),
     ),
     productIds: z.preprocess(
       normalizeSkuIdsInput,
       z
+
         .array(z.coerce.number().int().positive())
+
         .optional()
+
         .describe(
           "Ordered product IDs. Their SKUs are resolved and included in order.",
         ),
     ),
   })
+
   .refine(
     (data) =>
       (data.skuIds?.length ?? 0) > 0 || (data.productIds?.length ?? 0) > 0,
@@ -119,10 +134,12 @@ function uniqueSkuIds(skuIds: number[]): number[] {
 
 export function buildCollectionImportXml(skuIds: number[]): string {
   const items = skuIds
+
     .map(
       (skuId) =>
         `<CollectionItemDTO><SkuId>${skuId}</SkuId></CollectionItemDTO>`,
     )
+
     .join("");
   return `<?xml version="1.0" encoding="utf-8"?><ArrayOfCollectionItemDTO>${items}</ArrayOfCollectionItemDTO>`;
 }
@@ -133,7 +150,9 @@ export function buildCollectionImportCsv(
 ): string {
   const header = "SKU,PRODUCT,SKUREFID,PRODUCTREFID";
   const rows = ids
+
     .map((id) => (column === "sku" ? `${id},,,` : `,${id},,`))
+
     .join("\n");
   return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
 }
@@ -144,7 +163,9 @@ export function buildCollectionImportXlsLikeContent(
 ): string {
   const header = "SKU\tPRODUCT\tSKUREFID\tPRODUCTREFID";
   const rows = ids
+
     .map((id) => (column === "sku" ? `${id}\t\t\t` : `\t${id}\t\t`))
+
     .join("\n");
   return rows.length > 0 ? `${header}\n${rows}` : `${header}\n`;
 }

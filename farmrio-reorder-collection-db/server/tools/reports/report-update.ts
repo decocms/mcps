@@ -11,6 +11,7 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     id: z.number().int().positive(),
     title: z.string().min(1).optional(),
@@ -20,7 +21,9 @@ const inputSchema = z
     source: z.string().optional(),
     tags: z.array(z.string()).optional(),
   })
+
   .strict()
+
   .refine(
     (data) =>
       data.title !== undefined ||
@@ -33,11 +36,13 @@ const inputSchema = z
   );
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: reportOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const reportUpdateTool = (env: Env) =>
@@ -81,10 +86,15 @@ export const reportUpdateTool = (env: Env) =>
         }
 
         const updated = await db
+
           .updateTable("report")
+
           .set(patch)
+
           .where("id", "=", input.id)
+
           .returningAll()
+
           .executeTakeFirst();
 
         if (!updated) {

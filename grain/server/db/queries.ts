@@ -33,7 +33,9 @@ function throwIfError(error: PostgrestError | null, action: string): void {
 
 function buildParticipantsText(participants: RecordingParticipant[]): string {
   return participants
+
     .map((p) => [p.name, p.email].filter(Boolean).join(" "))
+
     .join(", ");
 }
 
@@ -75,7 +77,9 @@ export async function indexRecording(data: EnrichedWebhookData): Promise<void> {
   const row = toDbRow(data);
 
   const { error } = await client
+
     .from("grain_recordings")
+
     .upsert(row, { onConflict: "id" });
 
   throwIfError(error, "upsert indexed recording");
@@ -95,9 +99,13 @@ export async function searchIndexedRecordings(
 ): Promise<GrainRecordingRow[]> {
   const client = getSupabaseClient();
   let qb = client
+
     .from("grain_recordings")
+
     .select("*")
+
     .order("start_datetime", { ascending: false })
+
     .limit(filters.limit);
 
   if (filters.startDate) {

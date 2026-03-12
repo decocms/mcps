@@ -31,8 +31,11 @@ export const createReportsListTool = (env: Env) =>
       "List available reports with optional filters. Returns report summaries (metadata only, no sections).",
     inputSchema: z.object({
       category: z
+
         .string()
+
         .optional()
+
         .describe("Filter by category (e.g., 'performance', 'security')"),
       status: ReportStatusEnum.optional().describe(
         "Filter by report status (passing, warning, failing, info)",

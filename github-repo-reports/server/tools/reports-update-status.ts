@@ -28,7 +28,9 @@ export const createReportsUpdateStatusTool = (env: Env) =>
     inputSchema: z.object({
       reportId: z.string().describe("Report identifier"),
       lifecycleStatus: z
+
         .enum(["unread", "read", "dismissed"])
+
         .describe("New lifecycle status"),
     }),
     outputSchema: z.object({

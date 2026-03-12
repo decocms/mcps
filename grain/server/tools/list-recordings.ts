@@ -12,8 +12,11 @@ export const createListRecordingsTool = (env: Env) =>
       "Filter by date range, title keywords, or meeting attendance role.",
     inputSchema: z.object({
       cursor: z
+
         .string()
+
         .optional()
+
         .describe("Pagination cursor from a previous response"),
       start_date: z
 
@@ -34,21 +37,32 @@ export const createListRecordingsTool = (env: Env) =>
           "Only recordings starting before this date (ISO 8601, e.g. '2025-02-01')",
         ),
       title: z
+
         .string()
 
         .optional()
+
         .describe("Case-insensitive title search (e.g. 'All Hands')"),
       attendance: z
+
         .enum(["hosted", "attended"])
+
         .optional()
+
         .describe("Filter by your role: 'hosted' or 'attended'"),
       include_highlights: z
+
         .boolean()
+
         .optional()
+
         .describe("Include highlights in response"),
       include_participants: z
+
         .boolean()
+
         .optional()
+
         .describe("Include participant list in response"),
     }),
     outputSchema: z.object({

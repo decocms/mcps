@@ -79,12 +79,14 @@ const IndexStatusInspectionResultSchema = z.object({
 const AmpInspectionResultSchema = z.object({
   verdict: VerdictSchema.optional(),
   issues: z
+
     .array(
       z.object({
         severity: z.enum(["ERROR", "WARNING", "INFO"]),
         issueMessage: z.string().optional(),
       }),
     )
+
     .optional(),
   ampIndexStateVerdict: VerdictSchema.optional(),
   indexStatusVerdict: VerdictSchema.optional(),
@@ -97,31 +99,37 @@ const AmpInspectionResultSchema = z.object({
 const MobileUsabilityInspectionResultSchema = z.object({
   verdict: VerdictSchema.optional(),
   issues: z
+
     .array(
       z.object({
         severity: z.enum(["ERROR", "WARNING", "INFO"]),
         issueMessage: z.string().optional(),
       }),
     )
+
     .optional(),
 });
 
 const RichResultsInspectionResultSchema = z.object({
   verdict: VerdictSchema.optional(),
   detectedItems: z
+
     .array(
       z.object({
         richResultType: z.string().optional(),
         items: z
+
           .array(
             z.object({
               name: z.string().optional(),
               invalidArgument: z.string().optional(),
             }),
           )
+
           .optional(),
       }),
     )
+
     .optional(),
 });
 
@@ -144,14 +152,19 @@ export const createInspectUrlTool = (env: Env) =>
       "Inspect a URL's Google index status, including indexing state, mobile usability, AMP status, and rich results",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
       inspectionUrl: z.string().url().describe("URL to inspect (full URL)"),
       languageCode: z
+
         .string()
+
         .optional()
+
         .describe("Language code (e.g., 'en', 'pt-BR') for localized results"),
     }),
     outputSchema: z.object({

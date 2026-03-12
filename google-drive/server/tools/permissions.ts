@@ -8,6 +8,7 @@ import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
 
 const PermissionSchema = z
+
   .object({
     id: z.string(),
     type: z.enum(["user", "group", "domain", "anyone"]),
@@ -23,6 +24,7 @@ const PermissionSchema = z
     domain: z.string().optional(),
     displayName: z.string().optional(),
   })
+
   .passthrough();
 
 export const createListPermissionsTool = (env: Env) =>

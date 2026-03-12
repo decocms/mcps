@@ -13,12 +13,17 @@ const GarmentTypeSchema = z.enum([
 ]);
 
 const VirtualTryOnInputSchema = z
+
   .object({
     personImageUrl: z
+
       .string()
+
       .url()
+
       .describe("URL of the person photo (full-body preferred)."),
     garments: z
+
       .preprocess(
         (val) => {
           // Handle empty string or null/undefined
@@ -34,18 +39,24 @@ const VirtualTryOnInputSchema = z
           return val;
         },
         z
+
           .array(
             z.object({
               imageUrl: z.string().url().describe("URL of the garment image."),
               type: GarmentTypeSchema.optional()
+
                 .default("unknown")
+
                 .describe("Optional garment type hint."),
             }),
           )
+
           .optional(),
       )
+
       .describe("One or more garment reference images (URL-based)."),
     skuIds: z
+
       .preprocess((val) => {
         // Handle empty string or null/undefined
         if (val === "" || val === null || val === undefined) return undefined;
@@ -60,24 +71,35 @@ const VirtualTryOnInputSchema = z
         }
         return val;
       }, z.array(z.coerce.number()).optional())
+
       .describe(
         "List of VTEX SKU IDs to fetch garment images from. Requires VTEX binding.",
       ),
     instruction: z
+
       .string()
+
       .optional()
+
       .describe(
         "Optional extra instruction (e.g., 'tuck the shirt', 'keep jacket open').",
       ),
     preserveFace: z
+
       .boolean()
+
       .default(true)
+
       .describe("Try to preserve the person's identity/face."),
     preserveBackground: z
+
       .boolean()
+
       .default(true)
+
       .describe("Try to keep the original background."),
     aspectRatio: z
+
       .enum([
         "1:1",
         "2:3",
@@ -90,13 +112,19 @@ const VirtualTryOnInputSchema = z
         "16:9",
         "21:9",
       ])
+
       .optional()
+
       .describe("Requested output aspect ratio (if supported by generator)."),
     model: z
+
       .string()
+
       .optional()
+
       .describe("Optional model override to send to the generator."),
   })
+
   .refine(
     (data) => {
       const hasGarments = data.garments && data.garments.length > 0;

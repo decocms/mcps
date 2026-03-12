@@ -19,12 +19,14 @@ import {
 const SiteEntrySchema = z.object({
   siteUrl: z.string().describe("Site URL"),
   permissionLevel: z
+
     .enum([
       "siteOwner",
       "siteFullUser",
       "siteRestrictedUser",
       "siteUnverifiedUser",
     ])
+
     .describe("Permission level for the site"),
 });
 
@@ -68,7 +70,9 @@ export const createGetSiteTool = (env: Env) =>
     description: "Get information about a specific site",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -102,7 +106,9 @@ export const createAddSiteTool = (env: Env) =>
     description: "Add a new site to Google Search Console",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL to add (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
@@ -135,14 +141,18 @@ export const createRemoveSiteTool = (env: Env) =>
     description: "Remove a site from Google Search Console",
     inputSchema: z.object({
       siteUrl: z
+
         .string()
+
         .describe(
           "Site URL to remove (e.g., 'sc-domain:example.com' or 'https://example.com/')",
         ),
     }),
     outputSchema: z.object({
       success: z
+
         .boolean()
+
         .describe("Whether the site was removed successfully"),
       siteUrl: z.string().describe("The site URL that was removed"),
     }),

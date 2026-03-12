@@ -11,13 +11,16 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     farmCollectionId: z.string().min(1),
     decoCollectionId: z.string().optional(),
     title: z.string().min(1).optional(),
     isEnabled: z.boolean().optional(),
   })
+
   .strict()
+
   .refine(
     (data) =>
       data.decoCollectionId !== undefined ||
@@ -27,11 +30,13 @@ const inputSchema = z
   );
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: collectionOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const collectionUpdateTool = (env: Env) =>
@@ -62,10 +67,15 @@ export const collectionUpdateTool = (env: Env) =>
         }
 
         const updated = await db
+
           .updateTable("collection")
+
           .set(patch)
+
           .where("farm_collection_id", "=", input.farmCollectionId)
+
           .returningAll()
+
           .executeTakeFirst();
 
         if (!updated) {

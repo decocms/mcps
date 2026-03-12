@@ -43,57 +43,72 @@ export const createBillingTool = (_env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
 
         .describe("Nome do cliente (busca exata ou parcial). Ex: Acme Corp."),
       status: z
+
         .string()
+
         .optional()
 
         .describe(
           "Filtro por status da fatura. Opções: paid (pago), overdue (atrasada), pending (pendente).",
         ),
       months: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(60).optional())
+
         .describe(
           "Obrigatório para pedidos de tempo como 'últimos 6 meses'. Retorna apenas os N meses mais recentes.",
         ),
       start_reference_month: z
+
         .string()
+
         .optional()
 
         .describe(
           "Data inicial do período de uso (billing period). Formato: YYYY-MM-DD.",
         ),
       end_reference_month: z
+
         .string()
+
         .optional()
 
         .describe(
           "Data final do período de uso (billing period). Formato: YYYY-MM-DD.",
         ),
       start_due_date: z
+
         .string()
+
         .optional()
 
         .describe("Data inicial de vencimento da fatura. Formato: YYYY-MM-DD."),
       end_due_date: z
+
         .string()
+
         .optional()
 
         .describe("Data final de vencimento da fatura. Formato: YYYY-MM-DD."),
       limit: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(120).default(6))
+
         .describe(
           "Limite de faturas retornadas (padrão: 6, máx: 120). Use months para filtros de tempo.",
         ),
@@ -242,7 +257,9 @@ export const createBillingTool = (_env: Env) =>
       for (const inv of invoices) {
         const amount = typeof inv.amount === "number" ? inv.amount : 0;
         const st = String(inv.status ?? "")
+
           .toLowerCase()
+
           .trim();
         const dueDate = inv.due_date ? new Date(String(inv.due_date)) : null;
         const paidDate = inv.paid_date ? new Date(String(inv.paid_date)) : null;

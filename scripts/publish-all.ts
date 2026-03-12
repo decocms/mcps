@@ -192,7 +192,9 @@ async function getLastCommitter(mcpFolder: string): Promise<GitCommitter> {
   try {
     const fmt = "%an|||%ae";
     const result = await $`git log -1 --format=${fmt} -- ${mcpFolder}/`
+
       .cwd(ROOT)
+
       .quiet();
     const output = result.stdout.toString().trim();
     const [name, email] = output.split("|||");

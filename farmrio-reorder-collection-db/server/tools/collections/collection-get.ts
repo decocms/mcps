@@ -10,17 +10,21 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     farmCollectionId: z.string().min(1),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: collectionOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const collectionGetTool = (env: Env) =>
@@ -37,9 +41,13 @@ export const collectionGetTool = (env: Env) =>
         const db = (await getDb(getDatabaseUrl(env))).db;
 
         const row = await db
+
           .selectFrom("collection")
+
           .where("farm_collection_id", "=", input.farmCollectionId)
+
           .selectAll()
+
           .executeTakeFirst();
 
         if (!row) {

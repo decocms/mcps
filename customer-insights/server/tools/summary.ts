@@ -872,32 +872,49 @@ export const createSummaryTool = (env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
+
         .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
       billing_status: z
+
         .string()
+
         .optional()
+
         .describe(
           "Status filter for billing in the summary. Options: paid | pending | overdue | open | registered",
         ),
       include_email_history: z
+
         .boolean()
+
         .default(true)
+
         .describe(
           "If false, does not attempt to fetch emails from Gmail. Default: true",
         ),
       email_max_results: z
+
         .number()
+
         .int()
+
         .min(1)
+
         .max(50)
+
         .default(5)
+
         .describe(
           "Maximum number of emails considered in the summary (default: 5, max: 50).",
         ),
       force_refresh: z
+
         .boolean()
+
         .default(false)
+
         .describe(
           "If true, ignores any existing snapshot and regenerates the summary. Default: false",
         ),

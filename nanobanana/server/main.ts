@@ -21,7 +21,9 @@ export const StateSchema = z.object({
     "Object storage binding (S3-compatible) for storing generated images.",
   ),
   NANOBANANA_API_KEY: z
+
     .string()
+
     .describe(
       "OpenRouter API key for accessing Gemini image generation models",
     ),

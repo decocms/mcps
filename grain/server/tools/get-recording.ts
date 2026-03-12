@@ -13,16 +13,25 @@ export const createGetRecordingTool = (env: Env) =>
     inputSchema: z.object({
       recordingId: z.string().describe("The recording UUID"),
       include_highlights: z
+
         .boolean()
+
         .optional()
+
         .describe("Include highlights (default false)"),
       include_transcript: z
+
         .boolean()
+
         .optional()
+
         .describe("Include transcript as JSON (default false)"),
       include_notes: z
+
         .boolean()
+
         .optional()
+
         .describe("Include AI intelligence notes as markdown (default false)"),
     }),
     outputSchema: z.object({
@@ -35,6 +44,7 @@ export const createGetRecordingTool = (env: Env) =>
       owners: z.array(z.string()).optional(),
       tags: z.array(z.string()).optional(),
       participants: z
+
         .array(
           z.object({
             email: z.string(),
@@ -42,6 +52,7 @@ export const createGetRecordingTool = (env: Env) =>
             scope: z.string(),
           }),
         )
+
         .optional(),
       highlights: z
 
@@ -55,8 +66,10 @@ export const createGetRecordingTool = (env: Env) =>
             url: z.string(),
           }),
         )
+
         .optional(),
       transcript_json: z
+
         .array(
           z.object({
             speaker: z.string(),
@@ -65,6 +78,7 @@ export const createGetRecordingTool = (env: Env) =>
             end_time: z.number(),
           }),
         )
+
         .optional(),
       intelligence_notes_md: z.string().optional(),
     }),

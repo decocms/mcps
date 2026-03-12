@@ -20,7 +20,9 @@ export const StateSchema = z.object({
    * The GitHub App must have access to this repository.
    */
   REPO: z
+
     .string()
+
     .describe(
       'Target repository in "owner/repo" format (e.g., "acme/my-reports")',
     ),
@@ -31,8 +33,11 @@ export const StateSchema = z.object({
    * under this directory. Subdirectories become tags.
    */
   PATH: z
+
     .string()
+
     .default("reports")
+
     .describe("Path to the reports directory in the repository"),
 
   /**
@@ -40,8 +45,11 @@ export const StateSchema = z.object({
    * Defaults to "reports" — a dedicated branch for report storage.
    */
   BRANCH: z
+
     .string()
+
     .default("reports")
+
     .describe("Git branch to read reports from"),
 });
 

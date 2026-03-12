@@ -12,22 +12,27 @@ import type {
 // ─── Schemas de input para seções ────────────────────────────────────────────
 
 export const sectionCriteriaItemInputSchema = z
+
   .object({
     label: z.string().min(1),
     description: z.string().optional(),
   })
+
   .strict();
 
 export const sectionMetricItemInputSchema = z
+
   .object({
     label: z.string().min(1),
     value: z.number(),
     unit: z.string().optional(),
     status: z.enum(["info", "warning", "error", "success"]),
   })
+
   .strict();
 
 export const sectionRankedItemInputSchema = z
+
   .object({
     position: z.number().int().positive(),
     delta: z.number().int(),
@@ -41,10 +46,12 @@ export const sectionRankedItemInputSchema = z
     addToCartRate: z.number().optional(),
     purchaseRate: z.number().optional(),
   })
+
   .strict();
 
 export const sectionInputSchema = z.discriminatedUnion("type", [
   z
+
     .object({
       type: z.literal("criteria"),
       title: z.string().optional(),
@@ -52,8 +59,10 @@ export const sectionInputSchema = z.discriminatedUnion("type", [
       position: z.number().int().positive(),
       items: z.array(sectionCriteriaItemInputSchema),
     })
+
     .strict(),
   z
+
     .object({
       type: z.literal("metrics"),
       title: z.string().optional(),
@@ -61,16 +70,20 @@ export const sectionInputSchema = z.discriminatedUnion("type", [
       position: z.number().int().positive(),
       items: z.array(sectionMetricItemInputSchema),
     })
+
     .strict(),
   z
+
     .object({
       type: z.literal("note"),
       title: z.string().optional(),
       content: z.string().min(1),
       position: z.number().int().positive(),
     })
+
     .strict(),
   z
+
     .object({
       type: z.literal("ranked-list"),
       title: z.string().optional(),
@@ -78,20 +91,24 @@ export const sectionInputSchema = z.discriminatedUnion("type", [
       position: z.number().int().positive(),
       items: z.array(sectionRankedItemInputSchema),
     })
+
     .strict(),
 ]);
 
 // ─── Schemas de output ────────────────────────────────────────────────────────
 
 export const sectionCriteriaItemOutputSchema = z
+
   .object({
     id: z.number().int(),
     label: z.string(),
     description: z.string().nullable(),
   })
+
   .strict();
 
 export const sectionMetricItemOutputSchema = z
+
   .object({
     id: z.number().int(),
     label: z.string(),
@@ -99,9 +116,11 @@ export const sectionMetricItemOutputSchema = z
     unit: z.string().nullable(),
     status: z.enum(["info", "warning", "error", "success"]),
   })
+
   .strict();
 
 export const sectionRankedItemOutputSchema = z
+
   .object({
     id: z.number().int(),
     position: z.number().int(),
@@ -116,6 +135,7 @@ export const sectionRankedItemOutputSchema = z
     addToCartRate: z.number().nullable(),
     purchaseRate: z.number().nullable(),
   })
+
   .strict();
 
 export const reportSectionOutputSchema = z.object({
@@ -131,6 +151,7 @@ export const reportSectionOutputSchema = z.object({
 });
 
 export const reportOutputSchema = z
+
   .object({
     id: z.number().int(),
     collectionId: z.number().int(),
@@ -142,15 +163,19 @@ export const reportOutputSchema = z
     tags: z.array(z.string()).nullable(),
     updatedAt: z.string(),
   })
+
   .strict();
 
 export const reportWithSectionsOutputSchema = reportOutputSchema
+
   .omit({})
+
   .extend({
     sections: z.array(reportSectionOutputSchema),
   });
 
 export const collectionOutputSchema = z
+
   .object({
     id: z.number().int(),
     farmCollectionId: z.string(),
@@ -158,6 +183,7 @@ export const collectionOutputSchema = z
     title: z.string(),
     isEnabled: z.boolean(),
   })
+
   .strict();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

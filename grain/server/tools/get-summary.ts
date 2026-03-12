@@ -13,19 +13,25 @@ export const createGetSummaryTool = (env: Env) =>
     inputSchema: z.object({
       recordingId: z.string().describe("The recording UUID"),
       format: z
+
         .enum(["md", "json", "text"])
+
         .optional()
+
         .default("md")
+
         .describe("Notes format: md (markdown), json, or text (default: md)"),
     }),
     outputSchema: z.object({
       id: z.string(),
       title: z.string(),
       intelligence_notes: z
+
         .union([
           z.string(),
           z.array(z.object({ title: z.string(), body: z.string() })),
         ])
+
         .optional(),
     }),
     execute: async ({ context }) => {

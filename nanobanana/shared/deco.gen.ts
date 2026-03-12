@@ -434,7 +434,9 @@ export const StateSchema = z.object({
     __type: z.literal("@deco/file-system").default("@deco/file-system"),
   }),
   NANOBANANA_API_KEY: z
+
     .string()
+
     .describe(
       "OpenRouter API key for accessing Gemini image generation models",
     ),

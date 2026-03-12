@@ -248,7 +248,9 @@ async function listGmailMessages(
     const normalizedFilter = subjectContains.toLowerCase();
     messages = detailed.filter((message) =>
       String(message.subject ?? "")
+
         .toLowerCase()
+
         .includes(normalizedFilter),
     );
   }
@@ -274,59 +276,75 @@ export const createCustomerEmailsTool = (env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
+
         .optional()
 
         .describe("Customer name for lookup. E.g.: Acme Corp."),
       email_domain: z
+
         .string()
+
         .optional()
 
         .describe(
           "Email domain for corporate search (e.g.: empresa.com or @empresa.com). Searches emails from all contacts matching this domain. Useful for large corporate clients where multiple people may send emails.",
         ),
       subject_contains: z
+
         .string()
+
         .optional()
 
         .describe(
           "Text term informed by user. By default this is also used as full-text match (subject/snippet).",
         ),
       text_contains: z
+
         .string()
+
         .optional()
 
         .describe(
           "Filter by text mention in subject OR snippet/body preview. E.g.: invoice",
         ),
       strict_subject_match: z
+
         .boolean()
+
         .optional()
 
         .describe(
           "When true, applies strict subject-only filtering using subject_contains.",
         ),
       start_date: z
+
         .string()
+
         .optional()
 
         .describe(
           "Start date for email search. Format: YYYY-MM-DD. E.g.: 2024-01-01",
         ),
       end_date: z
+
         .string()
+
         .optional()
 
         .describe(
           "End date for email search. Format: YYYY-MM-DD. E.g.: 2024-12-31",
         ),
       max_results: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(50).default(10))
+
         .describe("Maximum number of emails returned (default: 10, max: 50)."),
     }),
 

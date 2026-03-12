@@ -11,8 +11,11 @@ const SCHEMAS = ["catalog", "orders", "logistics"] as const;
  */
 function sanitizeMethodName(name: string): string {
   return name
+
     .replace(/@/g, "_") // Replace @ with underscore
+
     .replace(/[^a-zA-Z0-9_]/g, "") // Remove other invalid chars
+
     .replace(/^_+/, "") // Remove leading underscores
     .replace(/_+$/, ""); // Remove trailing underscores
 }

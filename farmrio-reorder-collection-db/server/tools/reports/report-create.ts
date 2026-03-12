@@ -11,6 +11,7 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     collectionId: z.number().int().positive(),
     title: z.string().min(1),
@@ -20,14 +21,17 @@ const inputSchema = z
     source: z.string().optional(),
     tags: z.array(z.string()).optional(),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: reportOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const reportCreateTool = (env: Env) =>
@@ -55,9 +59,13 @@ export const reportCreateTool = (env: Env) =>
         };
 
         const created = await db
+
           .insertInto("report")
+
           .values(payload)
+
           .returningAll()
+
           .executeTakeFirst();
 
         if (!created) {

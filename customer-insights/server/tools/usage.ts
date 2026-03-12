@@ -48,28 +48,35 @@ export const createUsageTool = (_env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
 
         .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
       months: z
+
         .preprocess((value) => {
           if (value === null || value === undefined) return undefined;
           if (typeof value === "string" && value.trim() === "")
             return undefined;
           return value;
         }, z.coerce.number().int().min(1).max(60).default(12))
+
         .describe(
           "Number of most recent months to return (default: 12, max: 60).",
         ),
       start_reference_month: z
+
         .string()
+
         .optional()
 
         .describe(
           "Start reference month filter. Format: YYYY-MM-DD. E.g.: 2024-01-01",
         ),
       end_reference_month: z
+
         .string()
+
         .optional()
 
         .describe(

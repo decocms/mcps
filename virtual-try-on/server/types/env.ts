@@ -18,7 +18,9 @@ export const StateSchema = z.object({
     "Image generator binding (any MCP that provides GENERATE_IMAGE tool).",
   ),
   VTEX: BindingOf("vtex")
+
     .optional()
+
     .describe(
       "VTEX binding (provides VTEX_GET_SKU_IMAGES_PUBLIC tool for fetching product images).",
     ),

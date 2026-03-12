@@ -511,10 +511,12 @@ export const createInvoiceExplainerTool = (_env: Env) =>
 
     inputSchema: z.object({
       customer_name: z
+
         .string()
 
         .describe("Customer name (exact or partial search). E.g.: Acme Corp."),
       reference_month: z
+
         .string()
 
         .describe(

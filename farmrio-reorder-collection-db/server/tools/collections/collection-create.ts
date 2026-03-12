@@ -11,20 +11,24 @@ import {
 } from "../utils.ts";
 
 const inputSchema = z
+
   .object({
     farmCollectionId: z.string().min(1),
     decoCollectionId: z.string().optional(),
     title: z.string().min(1),
     isEnabled: z.boolean().default(true),
   })
+
   .strict();
 
 const outputSchema = z
+
   .object({
     success: z.boolean(),
     item: collectionOutputSchema.optional(),
     error: z.string().optional(),
   })
+
   .strict();
 
 export const collectionCreateTool = (env: Env) =>
@@ -47,9 +51,13 @@ export const collectionCreateTool = (env: Env) =>
         };
 
         const created = await db
+
           .insertInto("collection")
+
           .values(payload)
+
           .returningAll()
+
           .executeTakeFirst();
 
         if (!created) {

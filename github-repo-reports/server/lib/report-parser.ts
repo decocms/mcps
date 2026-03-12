@@ -231,7 +231,9 @@ export function deriveTagsFromPath(reportId: string): string[] {
  */
 function titleFromFilename(filename: string): string {
   return filename
+
     .replace(/[-_]/g, " ")
+
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 

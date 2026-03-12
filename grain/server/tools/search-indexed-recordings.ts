@@ -25,17 +25,22 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
         .string()
 
         .optional()
+
         .describe("Recordings on or after this date (ISO 8601)"),
       end_date: z
 
         .string()
 
         .optional()
+
         .describe("Recordings on or before this date (ISO 8601)"),
       tag: z.string().optional().describe("Filter by exact tag"),
       owner: z
+
         .string()
+
         .optional()
+
         .describe("Filter by owner email (exact match)"),
       limit: z
 
@@ -50,6 +55,7 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
         .default(10)
 
         .optional()
+
         .describe("Max results (1-100, default 10)"),
     }),
     outputSchema: z.object({
