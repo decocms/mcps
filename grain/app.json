@@ -4,16 +4,21 @@
   "friendlyName": "Grain",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-grain.decocache.com/mcp"
+    "url": "https://api.grain.com/_/mcp"
   },
-  "description": "Integrate with Grain to access and manage your meeting recordings, transcripts and AI summaries.",
+  "description": "Record, transcribe, and analyze meetings with Grain. Access recordings, transcripts, insights, and search through meetings with AI assistance.",
   "icon": "https://assets.decocache.com/mcp/1bfc7176-e7be-487c-83e6-4b9e970a8e10/Grain.svg",
   "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
   "metadata": {
-    "categories": ["Productivity", "Communication"],
-    "official": false,
-    "tags": ["grain", "meetings", "recordings", "transcripts", "ai-summaries", "video", "productivity", "collaboration"],
-    "short_description": "Integrate with Grain to access and manage your meeting recordings, transcripts and AI summaries.",
-    "mesh_description": "The Grain MCP is maintained by Deco and built on top of Grain public APIs. It lets AI agents list recordings, retrieve full meeting details, fetch only transcripts or summaries to reduce token usage, and search indexed recordings stored in Supabase. The MCP creates and manages Grain webhooks so new recording events are indexed automatically, enabling fast local search while still supporting direct API access for complete data."
+    "categories": ["Collaboration"],
+    "official": true,
+    "tags": ["meetings", "transcription", "recording", "video", "collaboration", "grain", "ai-notes", "insights", "productivity"],
+    "short_description": "Record, transcribe, and analyze meetings with Grain",
+    "mesh_description": "Grain is a powerful meeting recording and analysis platform that helps teams capture, share, and learn from their customer conversations and internal meetings. This official MCP provides natural language access to your meeting recordings across Zoom, Google Meet, and Microsoft Teams. Automatically transcribe meetings with high accuracy in multiple languages, search through transcripts to find specific moments or topics, and create highlights and clips from important discussions. Extract AI-powered insights including action items, key decisions, questions asked, and sentiment analysis. Share meeting highlights with your team through integrations with Slack, Notion, and CRM systems. Build a searchable knowledge base of customer feedback, product discussions, and sales calls. Use Grain's AI to summarize long meetings, identify common themes across multiple conversations, and track important topics over time. Create custom highlight reels for onboarding, training, and knowledge sharing. Collaborate with team members by adding comments and reactions to specific moments in recordings. Perfect for sales teams analyzing customer calls, product teams gathering user feedback, and customer success teams improving support quality. The MCP enables seamless access to your meeting library, transcript search, insight extraction, and clip creation through conversational commands."
   }
 }
