@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Need full history for git diff
+          fetch-depth: 0
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -30,43 +30,36 @@ jobs:
       - name: Detect changed MCPs
         id: detect
         run: |
-          # Check if MCPs were manually specified via workflow_dispatch
           MANUAL_MCPS="${{ github.event.inputs.mcps }}"
-          
+
           if [ -n "$MANUAL_MCPS" ]; then
             echo "📋 Manual deployment triggered for: $MANUAL_MCPS"
-            # Convert comma-separated list to JSON array
             CHANGED_MCPS=$(echo "$MANUAL_MCPS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
             echo "Changed MCPs: $CHANGED_MCPS"
           else
-            # Get the previous commit to compare against
             PREVIOUS_COMMIT="${{ github.event.before }}"
-            
-            # Handle case where there's no valid previous commit (first push, squash merge, force push)
+
             if [ "$PREVIOUS_COMMIT" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS_COMMIT" ]; then
               echo "No valid previous commit, comparing against HEAD~1"
               PREVIOUS_COMMIT="HEAD~1"
             fi
-            
-            # Verify the commit exists, fallback to HEAD~1 if not
+
             if ! git cat-file -e "$PREVIOUS_COMMIT" 2>/dev/null; then
               echo "Previous commit not found, comparing against HEAD~1"
               PREVIOUS_COMMIT="HEAD~1"
             fi
-            
-            # Detect changed MCPs
+
             CHANGED_MCPS=$(bun run scripts/detect-changed-mcps.ts "$PREVIOUS_COMMIT" HEAD)
             echo "Changed MCPs: $CHANGED_MCPS"
           fi
-          
-          # Filter deployable MCPs (in deploy.json OR has app.json for registry publish)
-          DEPLOYABLE_MCPS=$(bun run scripts/filter-deployable-mcps.ts "$CHANGED_MCPS")
+
+          # Filter to only MCPs that are in deploy.json (have a server to deploy)
+          DEPLOY_KEYS=$(jq -c 'keys' deploy.json)
+          DEPLOYABLE_MCPS=$(echo "$CHANGED_MCPS" | jq -c --argjson keys "$DEPLOY_KEYS" '[.[] | select(. as $m | $keys | index($m) != null)]')
           echo "Deployable MCPs: $DEPLOYABLE_MCPS"
-          
-          # Set outputs
+
           echo "mcps=$DEPLOYABLE_MCPS" >> $GITHUB_OUTPUT
-          
-          # Check if array is not empty
+
           if [ "$DEPLOYABLE_MCPS" = "[]" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
@@ -103,7 +96,6 @@ jobs:
           PINECONE_TOKEN: ${{ secrets.PINECONE_TOKEN }}
           PINECONE_INDEX: ${{ secrets.PINECONE_INDEX }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
