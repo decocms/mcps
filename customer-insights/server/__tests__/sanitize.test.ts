@@ -75,7 +75,12 @@ describe("sanitize", () => {
   // ── Arrays ──────────────────────────────────────────────────────────
 
   it("deve sanitizar recursivamente elementos de um array", () => {
-    const input = [BigInt(1), "hello", new Date("2025-01-01"), null] as unknown[];
+    const input = [
+      BigInt(1),
+      "hello",
+      new Date("2025-01-01"),
+      null,
+    ] as unknown[];
     const result = sanitize(input);
     expect(result).toEqual([1, "hello", "2025-01-01", null]);
   });
