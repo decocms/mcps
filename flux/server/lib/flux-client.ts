@@ -1,7 +1,7 @@
 const BASE_URL = "https://api.bfl.ai/v1";
 const POLL_INTERVAL_MS = 1000;
-const MAX_POLL_TIME_MS = 120_000;
-const FETCH_TIMEOUT_MS = 30_000;
+const MAX_POLL_TIME_MS = 300_000;
+const FETCH_TIMEOUT_MS = 60_000;
 
 interface GenerateResponse {
   id: string;
@@ -85,7 +85,7 @@ async function pollResult(
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  throw new Error("FLUX generation timed out after 120 seconds");
+  throw new Error("FLUX generation timed out after 300 seconds");
 }
 
 export const createFluxClient = (config: FluxClientConfig) => ({
