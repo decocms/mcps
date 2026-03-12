@@ -20,7 +20,6 @@
     "build": "bun run ./scripts/build-mcp.ts"
   },
   "workspaces": [
-    "apify",
     "blog-post-generator",
     "content-scraper",
     "data-for-seo",
