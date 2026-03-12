@@ -1,8 +1,8 @@
 import type { Env } from "../../shared/deco.gen.ts";
 
 /**
- * Get Perplexity API key from Authorization header
- * The token is used directly as the Perplexity API key
+ * Get Perplexity API key from Authorization header.
+ * The Bearer token is used directly as the Perplexity API key.
  *
  * @param env - The environment containing the mesh request context
  * @returns The Perplexity API key to use for requests

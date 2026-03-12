@@ -3,222 +3,332 @@
     "site": "github-mcp",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["github/**", "shared/**"]
+    "watch": [
+      "github/**",
+      "shared/**"
+    ]
   },
   "openrouter": {
     "site": "openrouter",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["openrouter/**", "shared/**"]
+    "watch": [
+      "openrouter/**",
+      "shared/**"
+    ]
   },
   "registry": {
     "site": "registry",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["registry/**", "shared/**"]
+    "watch": [
+      "registry/**",
+      "shared/**"
+    ]
   },
   "meta-ads": {
     "site": "meta-ads",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["meta-ads/**", "shared/**"]
+    "watch": [
+      "meta-ads/**",
+      "shared/**"
+    ]
   },
   "google-calendar": {
     "site": "google-calendar",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-calendar/**", "shared/**"]
+    "watch": [
+      "google-calendar/**",
+      "shared/**"
+    ]
   },
   "google-tag-manager": {
     "site": "google-tag-manager",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-tag-manager/**", "shared/**"]
+    "watch": [
+      "google-tag-manager/**",
+      "shared/**"
+    ]
   },
   "content-scraper": {
     "site": "content-scraper",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["content-scraper/**", "shared/**"]
+    "watch": [
+      "content-scraper/**",
+      "shared/**"
+    ]
   },
   "data-for-seo": {
     "site": "data-for-seo",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["data-for-seo/**", "shared/**"]
+    "watch": [
+      "data-for-seo/**",
+      "shared/**"
+    ]
   },
   "google-big-query": {
     "site": "google-big-query",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-big-query/**", "shared/**"]
+    "watch": [
+      "google-big-query/**",
+      "shared/**"
+    ]
   },
   "deco-llm": {
     "site": "deco-llm",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["deco-llm/**", "shared/**"]
+    "watch": [
+      "deco-llm/**",
+      "shared/**"
+    ]
   },
   "google-gemini": {
     "site": "google-gemini",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-gemini/**", "shared/**"]
+    "watch": [
+      "google-gemini/**",
+      "shared/**"
+    ]
   },
   "whatsappagent": {
     "site": "whatsappagent",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["whatsapp/**", "shared/**"]
+    "watch": [
+      "whatsapp/**",
+      "shared/**"
+    ]
   },
   "hyperdx": {
     "site": "hyperdx",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["hyperdx/**", "shared/**"]
+    "watch": [
+      "hyperdx/**",
+      "shared/**"
+    ]
   },
   "object-storage": {
     "site": "object-storage",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["object-storage/**"]
+    "watch": [
+      "object-storage/**"
+    ]
   },
   "deco-news-weekly-digest": {
     "site": "deco-news-weekly-digest",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["deco-news-weekly-digest/**", "shared/**"]
+    "watch": [
+      "deco-news-weekly-digest/**",
+      "shared/**"
+    ]
   },
   "slack-mcp": {
     "site": "slack-mcp",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["slack-mcp/**", "shared/**"]
+    "watch": [
+      "slack-mcp/**",
+      "shared/**"
+    ]
   },
   "strapi": {
     "site": "strapi",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["strapi/**", "shared/**"]
+    "watch": [
+      "strapi/**",
+      "shared/**"
+    ]
   },
   "tiktok-ads": {
     "site": "tiktok-ads",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["tiktok-ads/**", "shared/**"]
+    "watch": [
+      "tiktok-ads/**",
+      "shared/**"
+    ]
   },
   "virtual-try-on": {
     "site": "virtual-try-on",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["virtual-try-on/**", "shared/**"]
+    "watch": [
+      "virtual-try-on/**",
+      "shared/**"
+    ]
   },
   "google-sheets": {
     "site": "google-sheets",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-sheets/**", "shared/**"]
+    "watch": [
+      "google-sheets/**",
+      "shared/**"
+    ]
   },
   "google-drive": {
     "site": "google-drive",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-drive/**", "shared/**"]
+    "watch": [
+      "google-drive/**",
+      "shared/**"
+    ]
   },
   "google-meet": {
     "site": "google-meet",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-meet/**", "shared/**"]
+    "watch": [
+      "google-meet/**",
+      "shared/**"
+    ]
   },
   "google-search-console": {
     "site": "google-search-console",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-search-console/**", "shared/**"]
+    "watch": [
+      "google-search-console/**",
+      "shared/**"
+    ]
   },
   "google-slides": {
     "site": "google-slides",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-slides/**", "shared/**"]
+    "watch": [
+      "google-slides/**",
+      "shared/**"
+    ]
   },
   "google-forms": {
     "site": "google-forms",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["google-forms/**", "shared/**"]
+    "watch": [
+      "google-forms/**",
+      "shared/**"
+    ]
   },
   "grain": {
     "site": "grain",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["grain/**", "shared/**"]
+    "watch": [
+      "grain/**",
+      "shared/**"
+    ]
   },
   "blog-post-generator": {
     "site": "blog-generator",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["blog-post-generator/**", "shared/**"]
+    "watch": [
+      "blog-post-generator/**",
+      "shared/**"
+    ]
   },
   "vtex-docs": {
     "site": "vtex-docs",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["vtex-docs/**", "shared/**"]
+    "watch": [
+      "vtex-docs/**",
+      "shared/**"
+    ]
   },
   "vtex": {
     "site": "vtex",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["vtex/**", "shared/**"]
+    "watch": [
+      "vtex/**",
+      "shared/**"
+    ]
   },
   "perplexity": {
     "site": "perplexity",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["perplexity/**", "shared/**"]
+    "watch": [
+      "perplexity/**",
+      "shared/**"
+    ]
   },
   "apify": {
     "site": "apify",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["apify/**", "shared/**"]
+    "watch": [
+      "apify/**",
+      "shared/**"
+    ]
   },
   "discord-read": {
     "site": "discord-read",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["discord-read/**", "shared/**"]
+    "watch": [
+      "discord-read/**",
+      "shared/**"
+    ]
   },
   "mcp-studio": {
     "site": "mcp-studio",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["mcp-studio/**", "shared/**"]
+    "watch": [
+      "mcp-studio/**",
+      "shared/**"
+    ]
   },
   "nanobanana": {
     "site": "nanobanana",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["nanobanana/**", "shared/**"]
+    "watch": [
+      "nanobanana/**",
+      "shared/**"
+    ]
   },
   "github-repo-reports": {
     "site": "github-repo-reports",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["github-repo-reports/**", "shared/**"]
+    "watch": [
+      "github-repo-reports/**",
+      "shared/**"
+    ]
   },
   "farmrio-reorder-collection-db": {
     "site": "farmrio-reorder-collection-db",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["farmrio-reorder-collection-db/**", "shared/**"]
+    "watch": [
+      "farmrio-reorder-collection-db/**",
+      "shared/**"
+    ]
   },
   "flux": {
     "site": "flux",
     "entrypoint": "./dist/server/main.js",
     "platformName": "kubernetes-bun",
-    "watch": ["flux/**", "shared/**"]
+    "watch": [
+      "flux/**",
+      "shared/**"
+    ]
   }
 }
