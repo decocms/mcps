@@ -186,7 +186,7 @@ For **official external servers**, remove the `auth` field and set `"official": 
 
 1. Create `<mcp-name>/` directory with files above
 2. Add to root `package.json` workspaces array (alphabetical)
-3. Add entry to `deploy.json` with `platformName: "kubernetes-bun"` (for custom servers)
+3. Add entry to `deploy.json` — use `platformName: "kubernetes-bun"` for deco HTTP servers, or `platformName: "cloudflare-workers"` if the MCP uses `wrangler.toml`
 4. Run `bun install` to update `bun.lock`
 
 ---
