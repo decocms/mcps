@@ -1,0 +1,137 @@
+/**
+ * Tool: UPLOAD_CSV (upload_csv)
+ *
+ * Downloads a billing CSV from a public URL, saves it to the data/ directory,
+ * and reloads the DuckDB view in real-time. This allows updating the data
+ * source without restarting the server.
+ */
+
+import { createPrivateTool } from "@decocms/runtime/tools";
+import { z } from "zod";
+import type { Env } from "../main.ts";
+import { saveCsv, reloadView } from "../db.ts";
+
+// Rejects URLs that point to private or internal network addresses to prevent
+// server-side request forgery (SSRF). Only HTTPS is allowed, and hostnames
+// matching known private ranges are blocked regardless of other conditions.
+function validatePublicUrl(rawUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid URL: ${rawUrl}`);
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error("Only HTTPS URLs are allowed for CSV downloads.");
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // IPv4 private ranges, loopback, link-local (AWS metadata endpoint included),
+  // and IPv6 loopback — none of these should be reachable by this tool.
+  const privatePatterns = [
+    /^localhost$/,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^0\./,
+    /^\[?::1\]?$/,
+  ];
+
+  if (privatePatterns.some((p) => p.test(hostname))) {
+    throw new Error(
+      `URL "${rawUrl}" resolves to a private or internal address, which is not allowed.`,
+    );
+  }
+}
+
+export const createUploadCsvTool = (_env: Env) =>
+  createPrivateTool({
+    id: "upload_csv",
+    description:
+      "Downloads a CSV from a URL and updates the data source. " +
+      "Google Drive view/share links are automatically converted to direct download — " +
+      "just paste the link as-is, no conversion needed. Also supports S3 presigned URLs " +
+      "and any direct CSV link. The DuckDB view reloads automatically.",
+
+    inputSchema: z.object({
+      csv_url: z
+
+        .string()
+
+        .describe(
+          "Public URL to the billing CSV file. Google Drive links (view, share, or download) are auto-converted — " +
+            "paste any drive.google.com/file/d/... link directly. Also supports direct .csv URLs and S3 presigned URLs.",
+        ),
+    }),
+
+    outputSchema: z.object({
+      success: z.boolean(),
+      file_saved: z.string(),
+      rows_loaded: z.number(),
+      message: z.string(),
+    }),
+
+    execute: async ({ context }) => {
+      const { csv_url } = context;
+
+      if (!csv_url || csv_url.trim().length === 0) {
+        return {
+          success: false,
+          file_saved: "",
+          rows_loaded: 0,
+          message: "CSV URL is empty.",
+        };
+      }
+
+      try {
+        let downloadUrl = csv_url.trim();
+
+        const gdriveMatch = downloadUrl.match(
+          /drive\.google\.com\/file\/d\/([^/]+)/,
+        );
+        if (gdriveMatch) {
+          downloadUrl = `https://drive.google.com/uc?export=download&id=${gdriveMatch[1]}`;
+        }
+
+        // SSRF guard: reject URLs that resolve to private/internal addresses.
+        // We parse the final downloadUrl (after any Google Drive rewrite) so the
+        // check is applied to whatever host will actually be contacted.
+        validatePublicUrl(downloadUrl);
+
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to download CSV: HTTP ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const csvContent = await response.text();
+
+        if (!csvContent || csvContent.trim().length === 0) {
+          throw new Error("Downloaded file is empty.");
+        }
+
+        const filePath = saveCsv("billing.csv", csvContent);
+        const rowCount = await reloadView();
+
+        return {
+          success: true,
+          file_saved: filePath,
+          rows_loaded: rowCount,
+          message: `Billing data updated successfully. ${rowCount} rows loaded from URL.`,
+        };
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        return {
+          success: false,
+          file_saved: "",
+          rows_loaded: 0,
+          message: `Failed to load CSV: ${errorMsg}`,
+        };
+      }
+    },
+  });

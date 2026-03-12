@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun run check:*)",
+      "Bash(bun test:*)",
+      "Bash(cat:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(bun install)",
+      "Bash(ls:*)",
+      "Bash(bun -e:*)",
+      "Bash(timeout 5 bun run:*)"
+    ]
+  }
+}
