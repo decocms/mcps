@@ -63,7 +63,7 @@ jobs:
           PUBLISHABLE='[]'
           for mcp in $(echo "$CHANGED_MCPS" | jq -r '.[]'); do
             if [ -f "$mcp/app.json" ]; then
-              PUBLISHABLE=$(echo "$PUBLISHABLE" | jq --arg m "$mcp" '. + [$m]')
+              PUBLISHABLE=$(echo "$PUBLISHABLE" | jq -c --arg m "$mcp" '. + [$m]')
             fi
           done
 
