@@ -27,12 +27,12 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
 
-const mockResolveByDomain = mock(() => Promise.resolve([]));
+const mockResolveByDomain = mock(() => Promise.resolve([] as any[]));
 
 mock.module("../tools/customer-resolver.ts", () => ({
   resolveCustomersByDomain: mockResolveByDomain,

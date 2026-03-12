@@ -27,13 +27,13 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
 
 import { createHealthListTool } from "../tools/health-list.ts";
-const _tool = createHealthListTool({} as any);
+createHealthListTool({} as any);
 
 // ── Fixtures ──────────────────────────────────────────────────────────
 // Cliente saudável: todos pagos, sem overdue, uso estável

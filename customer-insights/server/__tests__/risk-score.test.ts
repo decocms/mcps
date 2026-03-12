@@ -17,7 +17,7 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
@@ -33,7 +33,7 @@ mock.module("../tools/customer-resolver.ts", () => ({
 }));
 
 import { createRiskScoreTool } from "../tools/risk-score.ts";
-const _tool = createRiskScoreTool({} as any);
+createRiskScoreTool({} as any);
 
 function makePerfectInvoice(month: string) {
   return {

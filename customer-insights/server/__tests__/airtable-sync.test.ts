@@ -12,7 +12,7 @@
  * - Paginação automática (múltiplas páginas via offset)
  */
 
-import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // ── Mock setup ──────────────────────────────────────────────────────
 let capturedExecute: Function;
@@ -85,7 +85,7 @@ describe("airtable_sync", () => {
   });
 
   it("deve retornar erro quando credenciais não estão configuradas", async () => {
-    mockResolveCredentials.mockReturnValue(null);
+    mockResolveCredentials.mockReturnValue(null as any);
 
     const result = await capturedExecute({ context: {} });
 

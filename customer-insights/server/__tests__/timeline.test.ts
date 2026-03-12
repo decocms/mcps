@@ -25,7 +25,7 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
@@ -41,7 +41,7 @@ mock.module("../tools/customer-resolver.ts", () => ({
 }));
 
 import { createTimelineTool } from "../tools/timeline.ts";
-const _tool = createTimelineTool({} as any);
+createTimelineTool({} as any);
 
 // ── Fixtures ──────────────────────────────────────────────────────────
 const BILLING_ROWS = [

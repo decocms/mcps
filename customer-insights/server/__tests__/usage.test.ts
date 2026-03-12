@@ -25,7 +25,7 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
@@ -41,7 +41,7 @@ mock.module("../tools/customer-resolver.ts", () => ({
 }));
 
 import { createUsageTool } from "../tools/usage.ts";
-const _tool = createUsageTool({} as any);
+createUsageTool({} as any);
 
 // ── Fixtures ──────────────────────────────────────────────────────────
 function makeUsageRow(month: string, pv: number, req: number, bw: number) {
@@ -229,8 +229,9 @@ describe("customer_usage_get", () => {
       context: { customer_id: "1108", months: 6 },
     });
 
-    const summarySql = String(mockQuery.mock.calls[1]?.[0] ?? "");
-    const trendSql = String(mockQuery.mock.calls[2]?.[0] ?? "");
+    const calls = mockQuery.mock.calls as unknown[][];
+    const summarySql = String(calls[1]?.[0] ?? "");
+    const trendSql = String(calls[2]?.[0] ?? "");
     expect(summarySql).toContain("WHERE rn <= 6");
     expect(trendSql).toContain("WHERE rn <= 6");
   });

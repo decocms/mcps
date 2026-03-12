@@ -31,8 +31,8 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
-const mockGetSnapshot = mock(() => Promise.resolve(null));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
+const mockGetSnapshot = mock(() => Promise.resolve(null as any));
 const mockSaveSnapshot = mock(() => Promise.resolve());
 
 mock.module("../db.ts", () => ({

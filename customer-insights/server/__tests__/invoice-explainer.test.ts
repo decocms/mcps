@@ -28,7 +28,7 @@ mock.module("@decocms/runtime/tools", () => ({
   },
 }));
 
-const mockQuery = mock(() => Promise.resolve([]));
+const mockQuery = mock(() => Promise.resolve([] as any[]));
 mock.module("../db.ts", () => ({
   query: mockQuery,
 }));
@@ -44,7 +44,7 @@ mock.module("../tools/customer-resolver.ts", () => ({
 }));
 
 import { createInvoiceExplainerTool } from "../tools/invoice-explainer.ts";
-const _tool = createInvoiceExplainerTool({} as any);
+createInvoiceExplainerTool({} as any);
 
 // ── Fixtures ──────────────────────────────────────────────────────────
 const INVOICE_CURRENT = {

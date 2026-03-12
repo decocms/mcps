@@ -48,34 +48,34 @@ describe("sanitize", () => {
 
   it("deve converter BigInt para Number", () => {
     // DuckDB retorna BigInt para colunas inteiras; JSON.stringify falha com BigInt
-    expect(sanitize(BigInt(12345))).toBe(12345);
-    expect(sanitize(BigInt(0))).toBe(0);
-    expect(sanitize(BigInt(-999))).toBe(-999);
+    expect(sanitize(BigInt(12345) as unknown)).toBe(12345);
+    expect(sanitize(BigInt(0) as unknown)).toBe(0);
+    expect(sanitize(BigInt(-999) as unknown)).toBe(-999);
   });
 
   it("deve converter BigInt grande para Number", () => {
     // BigInts dentro do range seguro de Number devem converter corretamente
     const bigVal = BigInt(Number.MAX_SAFE_INTEGER);
-    expect(sanitize(bigVal)).toBe(Number.MAX_SAFE_INTEGER);
+    expect(sanitize(bigVal as unknown)).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   // ── Date → string ISO curta ─────────────────────────────────────────
 
   it("deve converter Date válida para string YYYY-MM-DD", () => {
     const date = new Date("2025-03-15T10:30:00Z");
-    expect(sanitize(date)).toBe("2025-03-15");
+    expect(sanitize(date as unknown)).toBe("2025-03-15");
   });
 
   it("deve converter Date inválida para null", () => {
     // Datas inválidas (NaN) não devem quebrar o JSON
     const invalidDate = new Date("invalid-date-string");
-    expect(sanitize(invalidDate)).toBeNull();
+    expect(sanitize(invalidDate as unknown)).toBeNull();
   });
 
   // ── Arrays ──────────────────────────────────────────────────────────
 
   it("deve sanitizar recursivamente elementos de um array", () => {
-    const input = [BigInt(1), "hello", new Date("2025-01-01"), null];
+    const input = [BigInt(1), "hello", new Date("2025-01-01"), null] as unknown[];
     const result = sanitize(input);
     expect(result).toEqual([1, "hello", "2025-01-01", null]);
   });
@@ -85,7 +85,7 @@ describe("sanitize", () => {
   });
 
   it("deve lidar com arrays aninhados", () => {
-    const input = [[BigInt(10)], [BigInt(20)]];
+    const input = [[BigInt(10)], [BigInt(20)]] as unknown[];
     expect(sanitize(input)).toEqual([[10], [20]]);
   });
 
@@ -98,7 +98,7 @@ describe("sanitize", () => {
       created: new Date("2024-06-01"),
       active: true,
       notes: null,
-    };
+    } as unknown;
     const result = sanitize(input);
     expect(result).toEqual({
       id: 1108,
@@ -121,7 +121,7 @@ describe("sanitize", () => {
           date: new Date("2025-12-25"),
         },
       },
-    };
+    } as unknown;
     const result = sanitize(input);
     expect(result).toEqual({
       level1: {
@@ -137,7 +137,7 @@ describe("sanitize", () => {
     const input = {
       items: [BigInt(1), BigInt(2), BigInt(3)],
       meta: { count: BigInt(3) },
-    };
+    } as unknown;
     const result = sanitize(input);
     expect(result).toEqual({
       items: [1, 2, 3],

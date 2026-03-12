@@ -8,7 +8,8 @@
       "Bash(bun install)",
       "Bash(ls:*)",
       "Bash(bun -e:*)",
-      "Bash(timeout 5 bun run:*)"
+      "Bash(timeout 5 bun run:*)",
+      "Bash(bun run check:types:*)"
     ]
   }
 }
