@@ -246,6 +246,8 @@ export const createSearchTool = (env: Env) =>
         .describe("Maximum tokens to extract per webpage (default: 1024)"),
       country: z
         .string()
+        .length(2)
+        .toUpperCase()
         .optional()
         .describe(
           "ISO 3166-1 alpha-2 country code for regional results (e.g., 'US', 'GB')",

@@ -57,10 +57,8 @@ async function makeApiRequest(
   endpoint: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  const TIMEOUT_MS = parseInt(
-    process.env.PERPLEXITY_TIMEOUT_MS || "300000",
-    10,
-  );
+  const parsed = parseInt(process.env.PERPLEXITY_TIMEOUT_MS || "", 10);
+  const TIMEOUT_MS = Number.isNaN(parsed) ? 300000 : parsed;
   const url = `${PERPLEXITY_BASE_URL}/${endpoint}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -148,6 +146,28 @@ export async function consumeSSEStream(
         if (delta?.content) contentParts.push(delta.content);
       } catch {
         // Skip malformed JSON chunks
+      }
+    }
+  }
+
+  // Process any remaining buffer content after stream ends
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith("data:")) {
+      const data = trimmed.slice("data:".length).trim();
+      if (data && data !== "[DONE]") {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.id) id = parsed.id;
+          if (parsed.model) model = parsed.model;
+          if (parsed.created) created = parsed.created;
+          if (parsed.citations) citations = parsed.citations;
+          if (parsed.usage) usage = parsed.usage;
+          const delta = parsed.choices?.[0]?.delta;
+          if (delta?.content) contentParts.push(delta.content);
+        } catch {
+          // Skip malformed final chunk
+        }
       }
     }
   }
