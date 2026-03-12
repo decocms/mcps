@@ -1,13 +1,11 @@
 #!/usr/bin/env bun
 
 /**
- * Deployment script for MCPs in the monorepo
+ * Deployment script for Cloudflare Workers MCPs (wrangler.toml).
  * Usage: bun run scripts/deploy.ts [mcp-name] [--env KEY=VALUE]...
  *
- * Options:
- *   --env KEY=VALUE: Set environment variable (can be used multiple times)
- *
- * Note: Registry publishing (app.json) is handled separately by publish-registry.yml
+ * Only runs deco deploy for MCPs with a wrangler.toml.
+ * kubernetes-bun MCPs are deployed via publish-registry.yml (deco registry publish).
  */
 
 import { $ } from "bun";
@@ -51,13 +49,21 @@ if (!existsSync(mcpPath)) {
   process.exit(1);
 }
 
+const wranglerPath = join(mcpPath, "wrangler.toml");
+if (!existsSync(wranglerPath)) {
+  console.log(
+    `ℹ️  ${mcpName} is a kubernetes-bun MCP — deployment handled by publish-registry.yml`,
+  );
+  process.exit(0);
+}
+
 const packageJsonPath = join(mcpPath, "package.json");
 if (!existsSync(packageJsonPath)) {
   console.error(`❌ Error: No package.json found in ${mcpName}`);
   process.exit(1);
 }
 
-console.log(`\n🚀 Deploying MCP: ${mcpName}`);
+console.log(`\n🚀 Deploying Cloudflare Workers MCP: ${mcpName}`);
 console.log(`📁 Path: ${mcpPath}\n`);
 
 try {
@@ -75,13 +81,6 @@ try {
   // Build
   console.log("🔨 Building...");
   await $`bun run build`;
-
-  // Remove wrangler.json after build (Cloudflare Workers doesn't accept it)
-  const wranglerJsonPath = join(mcpPath, "dist/server/wrangler.json");
-  if (existsSync(wranglerJsonPath)) {
-    console.log("🧹 Removing wrangler.json from build output...");
-    await $`rm ${wranglerJsonPath}`;
-  }
 
   const deployToken = process.env.DECO_DEPLOY_TOKEN;
   if (!deployToken) {
@@ -124,7 +123,6 @@ try {
   for (const envVar of envArgs) {
     baseCmd.push("--env", envVar);
   }
-
   for (const envVar of autoEnvArgs) {
     baseCmd.push("--env", envVar);
   }
@@ -136,9 +134,9 @@ try {
     );
   }
 
-  console.log(`🚀 Deploying to production...`);
+  console.log(`🚀 Deploying to production (Cloudflare Workers)...`);
   await $`${baseCmd}`.quiet();
-  console.log(`\n✅ Deployed successfully to production!`);
+  console.log(`\n✅ Deployed successfully!`);
 
   process.exit(0);
 } catch (error) {

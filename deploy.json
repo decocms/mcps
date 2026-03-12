@@ -321,5 +321,77 @@
       "flux/**",
       "shared/**"
     ]
+  },
+  "sora": {
+    "site": "sora",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "sora/**",
+      "shared/**"
+    ]
+  },
+  "gemini-pro-vision": {
+    "site": "gemini-pro-vision",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "gemini-pro-vision/**",
+      "shared/**"
+    ]
+  },
+  "pinecone": {
+    "site": "pinecone",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "pinecone/**",
+      "shared/**"
+    ]
+  },
+  "reddit": {
+    "site": "reddit",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "reddit/**",
+      "shared/**"
+    ]
+  },
+  "replicate": {
+    "site": "replicate",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "replicate/**",
+      "shared/**"
+    ]
+  },
+  "readonly-sql": {
+    "site": "readonly-sql",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "readonly-sql/**",
+      "shared/**"
+    ]
+  },
+  "datajud": {
+    "site": "datajud",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "datajud/**",
+      "shared/**"
+    ]
+  },
+  "whisper": {
+    "site": "whisper",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "whisper/**",
+      "shared/**"
+    ]
   }
 }
