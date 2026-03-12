@@ -268,15 +268,6 @@
       "shared/**"
     ]
   },
-  "apify": {
-    "site": "apify",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watch": [
-      "apify/**",
-      "shared/**"
-    ]
-  },
   "discord-read": {
     "site": "discord-read",
     "entrypoint": "./dist/server/main.js",
