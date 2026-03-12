@@ -1,202 +1,275 @@
 /**
  * Perplexity AI Tools
  *
- * Tools for asking questions and having conversations with Perplexity AI
+ * 4 tools matching the original @perplexity-ai/mcp-server package:
+ * - perplexity_ask       → sonar-pro (quick Q&A with citations)
+ * - perplexity_research  → sonar-deep-research (deep multi-source, SSE streaming)
+ * - perplexity_reason    → sonar-reasoning-pro (step-by-step reasoning)
+ * - perplexity_search    → /search endpoint (raw web results)
  */
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getPerplexityApiKey } from "../lib/env.ts";
-import { createPerplexityClient } from "../lib/perplexity-client.ts";
-import { PerplexityModels, type Message, MessageSchema } from "../lib/types.ts";
+import {
+  performChatCompletion,
+  performSearch,
+  type Message,
+  type ChatOptions,
+} from "../lib/perplexity-client.ts";
 
 // ============================================================================
-// Schema Definitions
+// Shared field definitions (identical to original package)
 // ============================================================================
 
-const CommonOptionsSchema = z.object({
-  model: z
-    .enum(PerplexityModels)
-    .optional()
-    .describe("The model to use for generation. Defaults to 'sonar'"),
-  max_tokens: z
-    .number()
-    .optional()
-    .describe("Maximum number of tokens in the response"),
-  temperature: z
-    .number()
-    .min(0)
-    .max(2)
-    .optional()
-    .describe("Controls randomness (0-2). Lower is more focused. Default: 0.2"),
-  top_p: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .describe("Controls diversity via nucleus sampling (0-1). Default: 0.9"),
-  search_domain_filter: z
-    .array(z.string())
-    .max(3)
-    .optional()
-    .describe("Limit search to specific domains (max 3)"),
-  return_images: z
-    .boolean()
-    .optional()
-    .describe("Include images in search results"),
-  return_related_questions: z
-    .boolean()
-    .optional()
-    .describe("Return related questions"),
-  search_recency_filter: z
-    .string()
-    .optional()
-    .describe("Filter by time (e.g., 'week', 'day', 'month')"),
-  search_context_size: z
-    .enum(["low", "medium", "high", "maximum"])
-    .optional()
-    .describe("Amount of web search context to include. Default: 'high'"),
+const MessageSchema = z.object({
+  role: z
+    .enum(["system", "user", "assistant"])
+    .describe("Role of the message sender"),
+  content: z.string().describe("The content of the message"),
 });
 
-const OutputSchema = z.object({
-  answer: z.string().describe("The AI-generated answer"),
-  model: z.string().describe("The model used"),
-  finish_reason: z.string().optional().describe("Reason for completion"),
-  usage: z
-    .object({
-      prompt_tokens: z.number(),
-      completion_tokens: z.number(),
-      total_tokens: z.number(),
-    })
-    .optional()
-    .describe("Token usage information"),
-});
+const messagesField = z
+  .array(MessageSchema)
+  .describe("Array of conversation messages");
+
+const stripThinkingField = z
+  .boolean()
+  .optional()
+  .describe(
+    "If true, removes <think>...</think> tags and their content from the response to save context tokens. Default is false.",
+  );
+
+const searchRecencyFilterField = z
+  .enum(["hour", "day", "week", "month", "year"])
+  .optional()
+  .describe(
+    "Filter search results by recency. Use 'hour' for very recent news, 'day' for today's updates, 'week' for this week, etc.",
+  );
+
+const searchDomainFilterField = z
+  .array(z.string())
+  .optional()
+  .describe(
+    "Restrict search results to specific domains (e.g., ['wikipedia.org', 'arxiv.org']). Use '-' prefix for exclusion (e.g., ['-reddit.com']).",
+  );
+
+const searchContextSizeField = z
+  .enum(["low", "medium", "high"])
+  .optional()
+  .describe(
+    "Controls how much web context is retrieved. 'low' (default) is fastest, 'high' provides more comprehensive results.",
+  );
+
+const reasoningEffortField = z
+  .enum(["minimal", "low", "medium", "high"])
+  .optional()
+  .describe(
+    "Controls depth of deep research reasoning. Higher values produce more thorough analysis.",
+  );
 
 // ============================================================================
-// Ask Tool
+// perplexity_ask
 // ============================================================================
 
 export const createAskTool = (env: Env) =>
   createPrivateTool({
-    id: "ask",
+    id: "perplexity_ask",
     description:
-      "Ask a question to Perplexity AI and get web-backed answers with real-time search. Perfect for factual questions, research, and getting up-to-date information.",
-    inputSchema: CommonOptionsSchema.extend({
-      prompt: z
-        .string()
-        .describe("The question or prompt to ask Perplexity AI"),
+      "Answer a question using web-grounded AI (Sonar Pro model). " +
+      "Best for: quick factual questions, summaries, explanations, and general Q&A. " +
+      "Returns a text response with numbered citations. Fastest and cheapest option. " +
+      "Supports filtering by recency (hour/day/week/month/year), domain restrictions, and search context size. " +
+      "For in-depth multi-source research, use perplexity_research instead. " +
+      "For step-by-step reasoning and analysis, use perplexity_reason instead.",
+    inputSchema: z.object({
+      messages: messagesField,
+      search_recency_filter: searchRecencyFilterField,
+      search_domain_filter: searchDomainFilterField,
+      search_context_size: searchContextSizeField,
     }),
-    outputSchema: OutputSchema,
+    outputSchema: z.object({
+      response: z
+        .string()
+        .describe(
+          "AI-generated text response with numbered citation references",
+        ),
+    }),
     execute: async ({ context }) => {
       const apiKey = getPerplexityApiKey(env);
-      const client = createPerplexityClient({ apiKey });
-
-      const response = await client.chatCompletion({
-        model: context.model ?? "sonar",
-        messages: [{ role: "user", content: context.prompt }],
-        max_tokens: context.max_tokens,
-        temperature: context.temperature ?? 0.2,
-        top_p: context.top_p ?? 0.9,
-        search_domain_filter: context.search_domain_filter,
-        return_images: context.return_images ?? false,
-        return_related_questions: context.return_related_questions ?? false,
-        search_recency_filter: context.search_recency_filter,
-        web_search_options: {
-          search_context_size: context.search_context_size ?? "high",
-        },
-      });
-
-      const answer =
-        response.choices[0]?.message?.content || "No response generated";
-
-      return {
-        answer,
-        model: context.model ?? "sonar",
-        finish_reason: response.choices[0]?.finish_reason,
-        usage: {
-          prompt_tokens: response.usage.prompt_tokens,
-          completion_tokens: response.usage.completion_tokens,
-          total_tokens: response.usage.total_tokens,
-        },
+      const options: ChatOptions = {
+        ...(context.search_recency_filter && {
+          search_recency_filter: context.search_recency_filter,
+        }),
+        ...(context.search_domain_filter && {
+          search_domain_filter: context.search_domain_filter,
+        }),
+        ...(context.search_context_size && {
+          search_context_size: context.search_context_size,
+        }),
       };
+      const response = await performChatCompletion(
+        apiKey,
+        context.messages as Message[],
+        "sonar-pro",
+        false,
+        Object.keys(options).length > 0 ? options : undefined,
+      );
+      return { response };
     },
   });
 
 // ============================================================================
-// Chat Tool
+// perplexity_research
 // ============================================================================
 
-// Helper to normalize messages - converts strings to user messages
-const normalizeMessages = (val: unknown): unknown => {
-  // If string, try to parse as JSON first
-  if (typeof val === "string") {
-    try {
-      val = JSON.parse(val);
-    } catch {
-      // If not valid JSON, treat as a single user message
-      return [{ role: "user", content: val }];
-    }
-  }
-
-  // If array, normalize each item
-  if (Array.isArray(val)) {
-    return val.map((item) => {
-      if (typeof item === "string") {
-        return { role: "user", content: item };
-      }
-      return item;
-    });
-  }
-
-  return val;
-};
-
-export const createChatTool = (env: Env) =>
+export const createResearchTool = (env: Env) =>
   createPrivateTool({
-    id: "chat",
+    id: "perplexity_research",
     description:
-      "Have a multi-turn conversation with Perplexity AI. Allows providing message history for more contextual responses with web-backed answers.",
-    inputSchema: CommonOptionsSchema.extend({
-      messages: z
-        .preprocess(normalizeMessages, z.array(MessageSchema).min(1))
+      "Conduct deep, multi-source research on a topic (Sonar Deep Research model). " +
+      "Best for: literature reviews, comprehensive overviews, investigative queries needing " +
+      "many sources. Returns a detailed response with numbered citations. " +
+      "Significantly slower than other tools (30+ seconds). " +
+      "For quick factual questions, use perplexity_ask instead. " +
+      "For logical analysis and reasoning, use perplexity_reason instead.",
+    inputSchema: z.object({
+      messages: messagesField,
+      strip_thinking: stripThinkingField,
+      reasoning_effort: reasoningEffortField,
+    }),
+    outputSchema: z.object({
+      response: z
+        .string()
         .describe(
-          "Array of conversation messages. Each message should have 'role' (system/user/assistant) and 'content'. Simple strings are converted to user messages.",
+          "AI-generated text response with numbered citation references",
         ),
     }),
-    outputSchema: OutputSchema,
     execute: async ({ context }) => {
       const apiKey = getPerplexityApiKey(env);
-      const client = createPerplexityClient({ apiKey });
-
-      const response = await client.chatCompletion({
-        model: context.model ?? "sonar",
-        messages: context.messages as Message[],
-        max_tokens: context.max_tokens,
-        temperature: context.temperature ?? 0.2,
-        top_p: context.top_p ?? 0.9,
-        search_domain_filter: context.search_domain_filter,
-        return_images: context.return_images ?? false,
-        return_related_questions: context.return_related_questions ?? false,
-        search_recency_filter: context.search_recency_filter,
-        web_search_options: {
-          search_context_size: context.search_context_size ?? "high",
-        },
-      });
-
-      const answer =
-        response.choices[0]?.message?.content || "No response generated";
-
-      return {
-        answer,
-        model: context.model ?? "sonar",
-        finish_reason: response.choices[0]?.finish_reason,
-        usage: {
-          prompt_tokens: response.usage.prompt_tokens,
-          completion_tokens: response.usage.completion_tokens,
-          total_tokens: response.usage.total_tokens,
-        },
+      const stripThinking = context.strip_thinking === true;
+      const options: ChatOptions = {
+        ...(context.reasoning_effort && {
+          reasoning_effort: context.reasoning_effort,
+        }),
       };
+      const response = await performChatCompletion(
+        apiKey,
+        context.messages as Message[],
+        "sonar-deep-research",
+        stripThinking,
+        Object.keys(options).length > 0 ? options : undefined,
+      );
+      return { response };
+    },
+  });
+
+// ============================================================================
+// perplexity_reason
+// ============================================================================
+
+export const createReasonTool = (env: Env) =>
+  createPrivateTool({
+    id: "perplexity_reason",
+    description:
+      "Analyze a question using step-by-step reasoning with web grounding (Sonar Reasoning Pro model). " +
+      "Best for: math, logic, comparisons, complex arguments, and tasks requiring chain-of-thought. " +
+      "Returns a reasoned response with numbered citations. " +
+      "Supports filtering by recency (hour/day/week/month/year), domain restrictions, and search context size. " +
+      "For quick factual questions, use perplexity_ask instead. " +
+      "For comprehensive multi-source research, use perplexity_research instead.",
+    inputSchema: z.object({
+      messages: messagesField,
+      strip_thinking: stripThinkingField,
+      search_recency_filter: searchRecencyFilterField,
+      search_domain_filter: searchDomainFilterField,
+      search_context_size: searchContextSizeField,
+    }),
+    outputSchema: z.object({
+      response: z
+        .string()
+        .describe(
+          "AI-generated text response with numbered citation references",
+        ),
+    }),
+    execute: async ({ context }) => {
+      const apiKey = getPerplexityApiKey(env);
+      const stripThinking = context.strip_thinking === true;
+      const options: ChatOptions = {
+        ...(context.search_recency_filter && {
+          search_recency_filter: context.search_recency_filter,
+        }),
+        ...(context.search_domain_filter && {
+          search_domain_filter: context.search_domain_filter,
+        }),
+        ...(context.search_context_size && {
+          search_context_size: context.search_context_size,
+        }),
+      };
+      const response = await performChatCompletion(
+        apiKey,
+        context.messages as Message[],
+        "sonar-reasoning-pro",
+        stripThinking,
+        Object.keys(options).length > 0 ? options : undefined,
+      );
+      return { response };
+    },
+  });
+
+// ============================================================================
+// perplexity_search
+// ============================================================================
+
+export const createSearchTool = (env: Env) =>
+  createPrivateTool({
+    id: "perplexity_search",
+    description:
+      "Search the web and return a ranked list of results with titles, URLs, snippets, and dates. " +
+      "Best for: finding specific URLs, checking recent news, verifying facts, discovering sources. " +
+      "Returns formatted results (title, URL, snippet, date) — no AI synthesis. " +
+      "For AI-generated answers with citations, use perplexity_ask instead.",
+    inputSchema: z.object({
+      query: z.string().describe("Search query string"),
+      max_results: z
+        .number()
+        .min(1)
+        .max(20)
+        .optional()
+        .describe("Maximum number of results to return (1-20, default: 10)"),
+      max_tokens_per_page: z
+        .number()
+        .min(256)
+        .max(2048)
+        .optional()
+        .describe("Maximum tokens to extract per webpage (default: 1024)"),
+      country: z
+        .string()
+        .length(2)
+        .toUpperCase()
+        .optional()
+        .describe(
+          "ISO 3166-1 alpha-2 country code for regional results (e.g., 'US', 'GB')",
+        ),
+    }),
+    outputSchema: z.object({
+      results: z
+        .string()
+        .describe(
+          "Formatted search results, each with title, URL, snippet, and date",
+        ),
+    }),
+    execute: async ({ context }) => {
+      const apiKey = getPerplexityApiKey(env);
+      const results = await performSearch(
+        apiKey,
+        context.query,
+        context.max_results ?? 10,
+        context.max_tokens_per_page ?? 1024,
+        context.country,
+      );
+      return { results };
     },
   });
 
@@ -204,4 +277,9 @@ export const createChatTool = (env: Env) =>
 // Export all perplexity tools
 // ============================================================================
 
-export const perplexityTools = [createAskTool, createChatTool];
+export const perplexityTools = [
+  createAskTool,
+  createResearchTool,
+  createReasonTool,
+  createSearchTool,
+];
