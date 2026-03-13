@@ -14,10 +14,16 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     mode: "PKCE",
     authorizationServer: "https://airtable.com",
     authorizationUrl: (callbackUrl) => {
+      const callback = new URL(callbackUrl);
+      const state = callback.searchParams.get("state");
+      callback.searchParams.delete("state");
+
       const url = new URL("https://airtable.com/oauth2/v1/authorize");
-      url.searchParams.set("redirect_uri", callbackUrl);
+      url.searchParams.set("client_id", process.env.AIRTABLE_CLIENT_ID ?? "");
+      url.searchParams.set("redirect_uri", callback.toString());
       url.searchParams.set("response_type", "code");
       url.searchParams.set("scope", AIRTABLE_SCOPES.join(" "));
+      if (state) url.searchParams.set("state", state);
       return url.toString();
     },
     exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
@@ -25,6 +31,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
+          client_id: process.env.AIRTABLE_CLIENT_ID ?? "",
           grant_type: "authorization_code",
           code,
           redirect_uri: redirect_uri ?? "",

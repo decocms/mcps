@@ -52,15 +52,24 @@ export const createUpdateTableTool = (env: Env) =>
     id: "airtable_update_table",
     description:
       "Update the name or description of an existing Airtable table.",
-    inputSchema: z.object({
-      baseId: z.string().describe("The ID of the base."),
-      tableId: z.string().describe("The ID of the table to update."),
-      name: z.string().optional().describe("New name for the table."),
-      description: z
-        .string()
-        .optional()
-        .describe("New description for the table."),
-    }),
+    inputSchema: z
+      .object({
+        baseId: z.string().describe("The ID of the base."),
+        tableId: z.string().describe("The ID of the table to update."),
+        name: z.string().optional().describe("New name for the table."),
+        description: z
+          .string()
+          .optional()
+          .describe("New description for the table."),
+      })
+      .refine(
+        ({ name, description }) =>
+          name !== undefined || description !== undefined,
+        {
+          message:
+            "Provide at least one field to update (name or description).",
+        },
+      ),
     execute: async ({ context }) => {
       const client = new AirtableClient(getAccessToken(env));
       return await client.updateTable(context.baseId, context.tableId, {

@@ -37,16 +37,25 @@ export const createUpdateFieldTool = (env: Env) =>
     id: "airtable_update_field",
     description:
       "Update the name or description of an existing field in an Airtable table.",
-    inputSchema: z.object({
-      baseId: z.string().describe("The ID of the base."),
-      tableId: z.string().describe("The ID of the table."),
-      fieldId: z.string().describe("The ID of the field to update."),
-      name: z.string().optional().describe("New name for the field."),
-      description: z
-        .string()
-        .optional()
-        .describe("New description for the field."),
-    }),
+    inputSchema: z
+      .object({
+        baseId: z.string().describe("The ID of the base."),
+        tableId: z.string().describe("The ID of the table."),
+        fieldId: z.string().describe("The ID of the field to update."),
+        name: z.string().optional().describe("New name for the field."),
+        description: z
+          .string()
+          .optional()
+          .describe("New description for the field."),
+      })
+      .refine(
+        ({ name, description }) =>
+          name !== undefined || description !== undefined,
+        {
+          message:
+            "Provide at least one field to update (name or description).",
+        },
+      ),
     execute: async ({ context }) => {
       const client = new AirtableClient(getAccessToken(env));
       return await client.updateField(

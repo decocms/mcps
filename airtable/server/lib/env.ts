@@ -5,8 +5,9 @@ export function getAccessToken(env: Env): string {
   if (!auth) {
     throw new Error("Missing authorization header. Please authenticate first.");
   }
-  if (!auth.startsWith("Bearer ")) {
+  const match = auth.match(/^Bearer\s+(.+)$/i);
+  if (!match || !match[1].trim()) {
     throw new Error("Invalid authorization header. Expected Bearer token.");
   }
-  return auth.slice(7);
+  return match[1].trim();
 }
