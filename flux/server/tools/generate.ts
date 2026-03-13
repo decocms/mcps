@@ -169,8 +169,8 @@ export const createGetImageResultTool = (env: Env) =>
 
       return {
         status: result.status,
-        image_url: result.result?.sample,
-        progress: result.progress,
+        image_url: result.result?.sample ?? undefined,
+        progress: result.progress ?? undefined,
       };
     },
   });
