@@ -16,11 +16,11 @@ const FluxModels = [
   "flux-dev",
 ] as const;
 
-export const createGenerateImageTool = (env: Env) =>
+export const createSubmitImageTool = (env: Env) =>
   createPrivateTool({
-    id: "generate_image",
+    id: "submit_image",
     description:
-      "Generate an image from a text prompt using FLUX models from Black Forest Labs. Supports reference images for style/content guidance. Returns a URL to the generated image (valid for 10 minutes — download it promptly).",
+      "Submit an image generation request using FLUX models from Black Forest Labs. Returns a request_id immediately — use get_image_result to poll for the result.",
     inputSchema: z.object({
       prompt: z.string().describe("Text description of the image to generate"),
       model: z
@@ -91,11 +91,12 @@ export const createGenerateImageTool = (env: Env) =>
         ),
     }),
     outputSchema: z.object({
-      image_url: z
+      request_id: z
         .string()
-        .describe("URL to the generated image (valid for 10 minutes)"),
+        .describe(
+          "The request ID to use with get_image_result to check status and retrieve the generated image",
+        ),
       model: z.string().describe("The model used for generation"),
-      status: z.string().describe("Generation status"),
     }),
     execute: async ({ context }) => {
       const apiKey = getFluxApiKey(env);
@@ -125,21 +126,53 @@ export const createGenerateImageTool = (env: Env) =>
         params.safety_tolerance = context.safety_tolerance;
 
       const generation = await client.generateImage(model, params);
-      const result = await client.pollResult(generation.polling_url);
-
-      const imageUrl = result.result?.sample;
-      if (!imageUrl) {
-        throw new Error(
-          "FLUX generation completed but no image URL was returned",
-        );
-      }
 
       return {
-        image_url: imageUrl,
+        request_id: generation.id,
         model,
-        status: result.status,
       };
     },
   });
 
-export const generateTools = [createGenerateImageTool];
+export const createGetImageResultTool = (env: Env) =>
+  createPrivateTool({
+    id: "get_image_result",
+    description:
+      "Check the status of a FLUX image generation request. Returns the current status and, when ready, the image URL (valid for 10 minutes — download it promptly). Poll this tool until status is 'Ready'. Stop polling if status is 'Error', 'Task not found', 'Request Moderated', or 'Content Moderated' — these are terminal failures.",
+    inputSchema: z.object({
+      request_id: z
+        .string()
+        .describe("The request ID returned by submit_image"),
+    }),
+    outputSchema: z.object({
+      status: z
+        .string()
+        .describe(
+          "Generation status: Pending, Ready, Error, Task not found, Request Moderated, or Content Moderated",
+        ),
+      image_url: z
+        .string()
+        .optional()
+        .describe(
+          "URL to the generated image (only present when status is Ready, valid for 10 minutes)",
+        ),
+      progress: z
+        .number()
+        .optional()
+        .describe("Generation progress (0-1), available while Pending"),
+    }),
+    execute: async ({ context }) => {
+      const apiKey = getFluxApiKey(env);
+      const client = createFluxClient({ apiKey });
+
+      const result = await client.getResult(context.request_id);
+
+      return {
+        status: result.status,
+        image_url: result.result?.sample ?? undefined,
+        progress: result.progress ?? undefined,
+      };
+    },
+  });
+
+export const generateTools = [createSubmitImageTool, createGetImageResultTool];
