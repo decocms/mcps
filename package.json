@@ -20,6 +20,7 @@
     "build": "bun run ./scripts/build-mcp.ts"
   },
   "workspaces": [
+    "airtable",
     "blog-post-generator",
     "content-scraper",
     "data-for-seo",
