@@ -138,7 +138,7 @@ export const createGetImageResultTool = (env: Env) =>
   createPrivateTool({
     id: "get_image_result",
     description:
-      "Check the status of a FLUX image generation request. Returns the current status and, when ready, the image URL (valid for 10 minutes — download it promptly). Poll this tool until status is 'Ready'.",
+      "Check the status of a FLUX image generation request. Returns the current status and, when ready, the image URL (valid for 10 minutes — download it promptly). Poll this tool until status is 'Ready'. Stop polling if status is 'Error', 'Task not found', 'Request Moderated', or 'Content Moderated' — these are terminal failures.",
     inputSchema: z.object({
       request_id: z
         .string()
