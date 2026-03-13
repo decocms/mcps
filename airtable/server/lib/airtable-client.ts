@@ -99,7 +99,8 @@ export class AirtableClient {
       }
     }
     const qs = params.toString();
-    return this.request(`/${baseId}/${tableIdOrName}${qs ? `?${qs}` : ""}`);
+    const table = encodeURIComponent(tableIdOrName);
+    return this.request(`/${baseId}/${table}${qs ? `?${qs}` : ""}`);
   }
 
   async getRecord(
@@ -107,7 +108,8 @@ export class AirtableClient {
     tableIdOrName: string,
     recordId: string,
   ): Promise<AirtableRecord> {
-    return this.request(`/${baseId}/${tableIdOrName}/${recordId}`);
+    const table = encodeURIComponent(tableIdOrName);
+    return this.request(`/${baseId}/${table}/${recordId}`);
   }
 
   async createRecords(
@@ -116,7 +118,8 @@ export class AirtableClient {
     records: Array<{ fields: FieldSet }>,
     typecast?: boolean,
   ): Promise<{ records: AirtableRecord[] }> {
-    return this.request(`/${baseId}/${tableIdOrName}`, {
+    const table = encodeURIComponent(tableIdOrName);
+    return this.request(`/${baseId}/${table}`, {
       method: "POST",
       body: JSON.stringify({ records, typecast }),
     });
@@ -125,11 +128,12 @@ export class AirtableClient {
   async updateRecords(
     baseId: string,
     tableIdOrName: string,
-    records: Array<{ id: string; fields: FieldSet }>,
+    records: Array<{ id?: string; fields: FieldSet }>,
     typecast?: boolean,
     performUpsert?: { fieldsToMergeOn: string[] },
   ): Promise<{ records: AirtableRecord[] }> {
-    return this.request(`/${baseId}/${tableIdOrName}`, {
+    const table = encodeURIComponent(tableIdOrName);
+    return this.request(`/${baseId}/${table}`, {
       method: "PATCH",
       body: JSON.stringify({ records, typecast, performUpsert }),
     });
@@ -144,7 +148,8 @@ export class AirtableClient {
     for (const id of recordIds) {
       params.append("records[]", id);
     }
-    return this.request(`/${baseId}/${tableIdOrName}?${params.toString()}`, {
+    const table = encodeURIComponent(tableIdOrName);
+    return this.request(`/${baseId}/${table}?${params.toString()}`, {
       method: "DELETE",
     });
   }

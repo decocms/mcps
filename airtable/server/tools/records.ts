@@ -87,10 +87,8 @@ export const createSearchRecordsTool = (env: Env) =>
       searchTerm: z.string().describe("The term to search for."),
       searchFields: z
         .array(z.string())
-        .optional()
-        .describe(
-          "Field names to search in. If not provided, searches all fields.",
-        ),
+        .min(1)
+        .describe("Field names to search in (required)."),
       maxRecords: z
         .number()
         .optional()
@@ -113,15 +111,11 @@ export const createSearchRecordsTool = (env: Env) =>
       const { baseId, tableIdOrName, searchTerm, searchFields, ...options } =
         context;
 
-      let filterByFormula: string;
-      if (searchFields && searchFields.length > 0) {
-        const fieldFormulas = searchFields.map(
-          (field: string) => `SEARCH("${searchTerm}", {${field}})`,
-        );
-        filterByFormula = `OR(${fieldFormulas.join(",")})`;
-      } else {
-        filterByFormula = `SEARCH("${searchTerm}", ARRAYJOIN(RECORD_ID()))`;
-      }
+      const escapedTerm = searchTerm.replace(/"/g, '\\"');
+      const fieldFormulas = searchFields.map(
+        (field: string) => `SEARCH("${escapedTerm}", {${field}})`,
+      );
+      const filterByFormula = `OR(${fieldFormulas.join(",")})`;
 
       const client = new AirtableClient(getAccessToken(env));
       return await client.listRecords(baseId, tableIdOrName, {
@@ -177,7 +171,12 @@ export const createUpdateRecordsTool = (env: Env) =>
       records: z
         .array(
           z.object({
-            id: z.string().describe("The ID of the record to update."),
+            id: z
+              .string()
+              .optional()
+              .describe(
+                "The ID of the record to update. Optional when using performUpsert.",
+              ),
             fields: z
               .record(z.string(), z.unknown())
               .describe("Field name-value pairs to update."),

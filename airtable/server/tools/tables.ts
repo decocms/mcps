@@ -4,16 +4,9 @@ import type { Env } from "../main.ts";
 import { getAccessToken } from "../lib/env.ts";
 import { AirtableClient } from "../lib/airtable-client.ts";
 
-const FieldOptionSchema = z.object({
-  choices: z
-    .array(
-      z.object({
-        name: z.string(),
-        color: z.string().optional(),
-      }),
-    )
-    .optional(),
-});
+const FieldOptionSchema = z
+  .record(z.string(), z.unknown())
+  .describe("Field-type-specific options (e.g., choices for select fields).");
 
 export const createCreateTableTool = (env: Env) =>
   createPrivateTool({

@@ -8,6 +8,4 @@ export const AIRTABLE_SCOPES = [
   "schema.bases:read",
   "schema.bases:write",
   "user.email:read",
-  "data.recordComments:read",
-  "data.recordComments:write",
 ];

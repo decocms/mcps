@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@decocms/mcps-shared": "1.0.0",
+    "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   }
 }
