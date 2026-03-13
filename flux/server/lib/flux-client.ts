@@ -66,18 +66,7 @@ async function getResult(
     throw new Error(`FLUX polling error: ${response.status} - ${error}`);
   }
 
-  const result = (await response.json()) as GetResultResponse;
-
-  if (
-    result.status === "Error" ||
-    result.status === "Task not found" ||
-    result.status === "Request Moderated" ||
-    result.status === "Content Moderated"
-  ) {
-    throw new Error(`FLUX generation failed: ${result.status}`);
-  }
-
-  return result;
+  return (await response.json()) as GetResultResponse;
 }
 
 export const createFluxClient = (config: FluxClientConfig) => ({
