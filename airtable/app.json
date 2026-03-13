@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "airtable",
+  "friendlyName": "Airtable",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-airtable.decocache.com/mcp"
+  },
+  "description": "Connect AI agents to Airtable for database operations including records, tables, fields, and bases management.",
+  "icon": "https://assets.decocache.com/decocms/airtable-icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity", "Data"],
+    "official": false,
+    "tags": ["airtable", "database", "spreadsheet", "records", "tables"],
+    "short_description": "Airtable database operations with OAuth authentication.",
+    "mesh_description": "The Airtable MCP provides AI agents with full access to Airtable's API for managing bases, tables, fields, and records. It supports listing and searching records with formula-based filtering, creating and updating records in batches of up to 10, and managing table schemas including creating tables and fields. Authentication uses OAuth 2.0 with PKCE for secure token exchange, supporting scopes for records, schema, email, and comments access."
+  }
+}

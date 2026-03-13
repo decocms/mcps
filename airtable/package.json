@@ -1,0 +1,22 @@
+{
+  "name": "@decocms/airtable",
+  "version": "1.0.0",
+  "description": "Airtable MCP for database operations",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.8",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "typescript": "^5.7.2"
+  }
+}

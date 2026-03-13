@@ -1,4 +1,13 @@
 {
+  "airtable": {
+    "site": "airtable",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "airtable/**",
+      "shared/**"
+    ]
+  },
   "github": {
     "site": "github-mcp",
     "entrypoint": "./dist/server/main.js",
