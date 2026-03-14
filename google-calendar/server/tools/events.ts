@@ -599,7 +599,18 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
         .max(1440)
         .optional()
         .default(15)
-        .describe("How many minutes ahead to look for events (default: 15)."),
+        .describe(
+          "How many minutes ahead to search for events (default: 15). Use a value slightly larger than the cron interval for safety overlap.",
+        ),
+      notifyWithinMinutes: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(1440)
+        .optional()
+        .describe(
+          "Only emit events to the event bus if they start within this many minutes. When set, events found in the search window but beyond this threshold are returned but NOT emitted. Use this to avoid duplicate notifications when using overlap (e.g., cron every 10 min, minutesAhead=12, notifyWithinMinutes=10).",
+        ),
       calendarId: z
         .string()
         .optional()
@@ -607,6 +618,9 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
     }),
     outputSchema: z.object({
       eventsFound: z.number().describe("Number of upcoming events found"),
+      eventsNotified: z
+        .number()
+        .describe("Number of events emitted to the event bus"),
       events: z
         .array(
           z.object({
@@ -615,6 +629,9 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
             start: EventDateTimeSchema,
             end: EventDateTimeSchema,
             minutesUntilStart: z.number().optional(),
+            notified: z
+              .boolean()
+              .describe("Whether this event was emitted to the event bus"),
           }),
         )
         .describe("List of upcoming events"),
@@ -625,10 +642,10 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
       });
 
       const calendarId = context.calendarId || PRIMARY_CALENDAR;
+      const minutesAhead = context.minutesAhead ?? 15;
+      const notifyThreshold = context.notifyWithinMinutes ?? minutesAhead;
       const now = new Date();
-      const ahead = new Date(
-        now.getTime() + (context.minutesAhead ?? 15) * 60 * 1000,
-      );
+      const ahead = new Date(now.getTime() + minutesAhead * 60 * 1000);
 
       const allItems: import("../lib/types.ts").Event[] = [];
       let pageToken: string | undefined;
@@ -647,30 +664,37 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
         pageToken = response.nextPageToken;
       } while (pageToken);
 
-      for (const event of allItems) {
+      let eventsNotified = 0;
+
+      const events = allItems.map((event) => {
         const startTime = event.start?.dateTime || event.start?.date;
         const minutesUntilStart = startTime
           ? Math.round((new Date(startTime).getTime() - now.getTime()) / 60000)
           : undefined;
-        publishEventUpcoming(env, event, calendarId, minutesUntilStart);
-      }
+
+        const shouldNotify =
+          minutesUntilStart !== undefined &&
+          minutesUntilStart <= notifyThreshold;
+
+        if (shouldNotify) {
+          publishEventUpcoming(env, event, calendarId, minutesUntilStart);
+          eventsNotified++;
+        }
+
+        return {
+          id: event.id,
+          summary: event.summary,
+          start: event.start,
+          end: event.end,
+          minutesUntilStart,
+          notified: shouldNotify,
+        };
+      });
 
       return {
         eventsFound: allItems.length,
-        events: allItems.map((event) => {
-          const startTime = event.start?.dateTime || event.start?.date;
-          return {
-            id: event.id,
-            summary: event.summary,
-            start: event.start,
-            end: event.end,
-            minutesUntilStart: startTime
-              ? Math.round(
-                  (new Date(startTime).getTime() - now.getTime()) / 60000,
-                )
-              : undefined,
-          };
-        }),
+        eventsNotified,
+        events,
       };
     },
   });
