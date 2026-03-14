@@ -1,19 +1,21 @@
 import type { Env } from "../main.ts";
 import type { Event } from "./types.ts";
 
-async function publish(
+function publish(
   env: Env,
   event: { type: string; subject: string; data: Record<string, unknown> },
-): Promise<void> {
-  try {
-    await env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS?.EVENT_PUBLISH(event);
-    console.log(`[EventBus] Published ${event.type}: ${event.subject}`);
-  } catch (error) {
-    console.error(
-      `[EventBus] Failed to publish ${event.type}:`,
-      error instanceof Error ? error.message : error,
-    );
-  }
+): void {
+  const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
+  if (!eventBus) return;
+
+  eventBus.EVENT_PUBLISH(event).then(
+    () => console.log(`[EventBus] Published ${event.type}: ${event.subject}`),
+    (error: unknown) =>
+      console.error(
+        `[EventBus] Failed to publish ${event.type}:`,
+        error instanceof Error ? error.message : error,
+      ),
+  );
 }
 
 function eventData(event: Event, calendarId?: string): Record<string, unknown> {
@@ -32,13 +34,13 @@ function eventData(event: Event, calendarId?: string): Record<string, unknown> {
   };
 }
 
-export async function publishEventUpcoming(
+export function publishEventUpcoming(
   env: Env,
   event: Event,
   calendarId?: string,
   minutesUntilStart?: number,
-): Promise<void> {
-  await publish(env, {
+): void {
+  publish(env, {
     type: "google-calendar.event.upcoming",
     subject: event.id,
     data: {
@@ -48,36 +50,36 @@ export async function publishEventUpcoming(
   });
 }
 
-export async function publishEventCreated(
+export function publishEventCreated(
   env: Env,
   event: Event,
   calendarId?: string,
-): Promise<void> {
-  await publish(env, {
+): void {
+  publish(env, {
     type: "google-calendar.event.created",
     subject: event.id,
     data: eventData(event, calendarId),
   });
 }
 
-export async function publishEventUpdated(
+export function publishEventUpdated(
   env: Env,
   event: Event,
   calendarId?: string,
-): Promise<void> {
-  await publish(env, {
+): void {
+  publish(env, {
     type: "google-calendar.event.updated",
     subject: event.id,
     data: eventData(event, calendarId),
   });
 }
 
-export async function publishEventDeleted(
+export function publishEventDeleted(
   env: Env,
   eventId: string,
   calendarId?: string,
-): Promise<void> {
-  await publish(env, {
+): void {
+  publish(env, {
     type: "google-calendar.event.deleted",
     subject: eventId,
     data: { event_id: eventId, calendar_id: calendarId },

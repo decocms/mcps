@@ -341,7 +341,7 @@ export const createCreateEventTool = (env: Env) =>
         sendUpdates: context.sendUpdates,
       });
 
-      await publishEventCreated(env, event, calendarId);
+      publishEventCreated(env, event, calendarId);
 
       return {
         event: {
@@ -439,7 +439,7 @@ export const createUpdateEventTool = (env: Env) =>
         sendUpdates: context.sendUpdates,
       });
 
-      await publishEventUpdated(env, event, calendarId);
+      publishEventUpdated(env, event, calendarId);
 
       return {
         event: {
@@ -504,7 +504,7 @@ export const createDeleteEventTool = (env: Env) =>
         context.sendUpdates,
       );
 
-      await publishEventDeleted(env, context.eventId, calendarId);
+      publishEventDeleted(env, context.eventId, calendarId);
 
       return {
         success: true,
@@ -552,7 +552,7 @@ export const createQuickAddEventTool = (env: Env) =>
         context.sendUpdates,
       );
 
-      await publishEventCreated(env, event, calendarId);
+      publishEventCreated(env, event, calendarId);
 
       return {
         event: {
@@ -630,27 +630,34 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
         now.getTime() + (context.minutesAhead ?? 15) * 60 * 1000,
       );
 
-      const response = await client.listEvents({
-        calendarId,
-        timeMin: now.toISOString(),
-        timeMax: ahead.toISOString(),
-        singleEvents: true,
-        orderBy: "startTime",
-      });
+      const allItems: import("../lib/types.ts").Event[] = [];
+      let pageToken: string | undefined;
 
-      const items = response.items ?? [];
+      do {
+        const response = await client.listEvents({
+          calendarId,
+          timeMin: now.toISOString(),
+          timeMax: ahead.toISOString(),
+          singleEvents: true,
+          orderBy: "startTime",
+          pageToken,
+        });
 
-      for (const event of items) {
+        allItems.push(...(response.items ?? []));
+        pageToken = response.nextPageToken;
+      } while (pageToken);
+
+      for (const event of allItems) {
         const startTime = event.start?.dateTime || event.start?.date;
         const minutesUntilStart = startTime
           ? Math.round((new Date(startTime).getTime() - now.getTime()) / 60000)
           : undefined;
-        await publishEventUpcoming(env, event, calendarId, minutesUntilStart);
+        publishEventUpcoming(env, event, calendarId, minutesUntilStart);
       }
 
       return {
-        eventsFound: items.length,
-        events: items.map((event) => {
+        eventsFound: allItems.length,
+        events: allItems.map((event) => {
           const startTime = event.start?.dateTime || event.start?.date;
           return {
             id: event.id,

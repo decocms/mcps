@@ -10,6 +10,10 @@ import { type Env, StateSchema } from "../shared/deco.gen.ts";
 export type { Env };
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
+  configuration: {
+    scopes: ["EVENT_BUS::*"],
+    state: StateSchema,
+  },
   events: {
     handlers: {
       SELF: {

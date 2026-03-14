@@ -15,6 +15,7 @@ import { PRIMARY_CALENDAR } from "../constants.ts";
 import {
   publishEventUpdated,
   publishEventCreated,
+  publishEventDeleted,
 } from "../lib/event-publisher.ts";
 
 // ============================================================================
@@ -96,7 +97,8 @@ export const createMoveEventTool = (env: Env) =>
         context.sendUpdates,
       );
 
-      await publishEventUpdated(env, event, context.destinationCalendarId);
+      publishEventDeleted(env, context.eventId, context.sourceCalendarId);
+      publishEventUpdated(env, event, context.destinationCalendarId);
 
       return {
         event: {
@@ -308,7 +310,7 @@ export const createDuplicateEventTool = (env: Env) =>
         sendUpdates: context.sendUpdates,
       });
 
-      await publishEventCreated(env, newEvent, targetCalendarId);
+      publishEventCreated(env, newEvent, targetCalendarId);
 
       return {
         originalEvent: {
