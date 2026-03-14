@@ -12,6 +12,10 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
 import { PRIMARY_CALENDAR } from "../constants.ts";
+import {
+  publishEventUpdated,
+  publishEventCreated,
+} from "../lib/event-publisher.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -91,6 +95,8 @@ export const createMoveEventTool = (env: Env) =>
         context.destinationCalendarId,
         context.sendUpdates,
       );
+
+      await publishEventUpdated(env, event, context.destinationCalendarId);
 
       return {
         event: {
@@ -301,6 +307,8 @@ export const createDuplicateEventTool = (env: Env) =>
         visibility: originalEvent.visibility,
         sendUpdates: context.sendUpdates,
       });
+
+      await publishEventCreated(env, newEvent, targetCalendarId);
 
       return {
         originalEvent: {
