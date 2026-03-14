@@ -15,6 +15,7 @@ import { calendarTools } from "./calendars.ts";
 import { eventTools } from "./events.ts";
 import { freebusyTools } from "./freebusy.ts";
 import { advancedTools } from "./advanced.ts";
+import { utilTools } from "./utils.ts";
 
 // Export all tools from all modules
 export const tools = [
@@ -26,4 +27,6 @@ export const tools = [
   ...freebusyTools,
   // Advanced tools
   ...advancedTools,
+  // Utility tools
+  ...utilTools,
 ];

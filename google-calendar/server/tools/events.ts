@@ -9,6 +9,12 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
 import { PRIMARY_CALENDAR } from "../constants.ts";
+import {
+  publishEventCreated,
+  publishEventUpdated,
+  publishEventDeleted,
+  publishEventUpcoming,
+} from "../lib/event-publisher.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -319,8 +325,9 @@ export const createCreateEventTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
       const event = await client.createEvent({
-        calendarId: context.calendarId || PRIMARY_CALENDAR,
+        calendarId,
         summary: context.summary,
         description: context.description,
         location: context.location,
@@ -333,6 +340,8 @@ export const createCreateEventTool = (env: Env) =>
         guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests ?? true,
         sendUpdates: context.sendUpdates,
       });
+
+      publishEventCreated(env, event, calendarId);
 
       return {
         event: {
@@ -414,8 +423,9 @@ export const createUpdateEventTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
       const event = await client.updateEvent({
-        calendarId: context.calendarId || PRIMARY_CALENDAR,
+        calendarId,
         eventId: context.eventId,
         summary: context.summary,
         description: context.description,
@@ -428,6 +438,8 @@ export const createUpdateEventTool = (env: Env) =>
         guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests,
         sendUpdates: context.sendUpdates,
       });
+
+      publishEventUpdated(env, event, calendarId);
 
       return {
         event: {
@@ -485,11 +497,14 @@ export const createDeleteEventTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
       await client.deleteEvent(
-        context.calendarId || PRIMARY_CALENDAR,
+        calendarId,
         context.eventId,
         context.sendUpdates,
       );
+
+      publishEventDeleted(env, context.eventId, calendarId);
 
       return {
         success: true,
@@ -530,11 +545,14 @@ export const createQuickAddEventTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
       const event = await client.quickAddEvent(
-        context.calendarId || PRIMARY_CALENDAR,
+        calendarId,
         context.text,
         context.sendUpdates,
       );
+
+      publishEventCreated(env, event, calendarId);
 
       return {
         event: {
@@ -565,6 +583,99 @@ export const createQuickAddEventTool = (env: Env) =>
   });
 
 // ============================================================================
+// Check Upcoming Events Tool
+// ============================================================================
+
+export const createCheckUpcomingEventsTool = (env: Env) =>
+  createPrivateTool({
+    id: "check_upcoming_events",
+    description:
+      "Check for calendar events starting within the next N minutes and emit them to the event bus. Designed to be called periodically by the mesh.",
+    inputSchema: z.object({
+      minutesAhead: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(1440)
+        .optional()
+        .default(15)
+        .describe("How many minutes ahead to look for events (default: 15)."),
+      calendarId: z
+        .string()
+        .optional()
+        .describe("Calendar to check (default: 'primary')."),
+    }),
+    outputSchema: z.object({
+      eventsFound: z.number().describe("Number of upcoming events found"),
+      events: z
+        .array(
+          z.object({
+            id: z.string(),
+            summary: z.string().optional(),
+            start: EventDateTimeSchema,
+            end: EventDateTimeSchema,
+            minutesUntilStart: z.number().optional(),
+          }),
+        )
+        .describe("List of upcoming events"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GoogleCalendarClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
+      const now = new Date();
+      const ahead = new Date(
+        now.getTime() + (context.minutesAhead ?? 15) * 60 * 1000,
+      );
+
+      const allItems: import("../lib/types.ts").Event[] = [];
+      let pageToken: string | undefined;
+
+      do {
+        const response = await client.listEvents({
+          calendarId,
+          timeMin: now.toISOString(),
+          timeMax: ahead.toISOString(),
+          singleEvents: true,
+          orderBy: "startTime",
+          pageToken,
+        });
+
+        allItems.push(...(response.items ?? []));
+        pageToken = response.nextPageToken;
+      } while (pageToken);
+
+      for (const event of allItems) {
+        const startTime = event.start?.dateTime || event.start?.date;
+        const minutesUntilStart = startTime
+          ? Math.round((new Date(startTime).getTime() - now.getTime()) / 60000)
+          : undefined;
+        publishEventUpcoming(env, event, calendarId, minutesUntilStart);
+      }
+
+      return {
+        eventsFound: allItems.length,
+        events: allItems.map((event) => {
+          const startTime = event.start?.dateTime || event.start?.date;
+          return {
+            id: event.id,
+            summary: event.summary,
+            start: event.start,
+            end: event.end,
+            minutesUntilStart: startTime
+              ? Math.round(
+                  (new Date(startTime).getTime() - now.getTime()) / 60000,
+                )
+              : undefined,
+          };
+        }),
+      };
+    },
+  });
+
+// ============================================================================
 // Export all event tools
 // ============================================================================
 
@@ -575,4 +686,5 @@ export const eventTools = [
   createUpdateEventTool,
   createDeleteEventTool,
   createQuickAddEventTool,
+  createCheckUpcomingEventsTool,
 ];
