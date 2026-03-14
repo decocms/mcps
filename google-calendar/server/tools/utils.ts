@@ -2,6 +2,22 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
+function formatInTimeZone(date: Date, timeZone: string): string {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "longOffset",
+  });
+  return formatter.format(date);
+}
+
 export const createGetCurrentTimeTool = (_env: Env) =>
   createPrivateTool({
     id: "get_current_time",
@@ -37,11 +53,7 @@ export const createGetCurrentTimeTool = (_env: Env) =>
       const utc = now.toISOString();
 
       if (context.timeZone) {
-        const localTime = now.toLocaleString("en-US", {
-          timeZone: context.timeZone,
-          dateStyle: "full",
-          timeStyle: "long",
-        });
+        const localTime = formatInTimeZone(now, context.timeZone);
 
         return {
           utc,
@@ -77,11 +89,7 @@ export const createGetCurrentTimeTool = (_env: Env) =>
         utc,
         timezones: commonTimezones.map((tz) => ({
           timeZone: tz,
-          localTime: now.toLocaleString("en-US", {
-            timeZone: tz,
-            dateStyle: "full",
-            timeStyle: "long",
-          }),
+          localTime: formatInTimeZone(now, tz),
         })),
       };
     },
