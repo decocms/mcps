@@ -13,7 +13,6 @@ import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
 import { PRIMARY_CALENDAR } from "../constants.ts";
 import {
-  publishEventUpdated,
   publishEventCreated,
   publishEventDeleted,
 } from "../lib/event-publisher.ts";
@@ -98,7 +97,7 @@ export const createMoveEventTool = (env: Env) =>
       );
 
       publishEventDeleted(env, context.eventId, context.sourceCalendarId);
-      publishEventUpdated(env, event, context.destinationCalendarId);
+      publishEventCreated(env, event, context.destinationCalendarId);
 
       return {
         event: {

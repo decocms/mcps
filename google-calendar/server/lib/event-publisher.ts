@@ -8,14 +8,21 @@ function publish(
   const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
   if (!eventBus) return;
 
-  eventBus.EVENT_PUBLISH(event).then(
-    () => console.log(`[EventBus] Published ${event.type}: ${event.subject}`),
-    (error: unknown) =>
-      console.error(
-        `[EventBus] Failed to publish ${event.type}:`,
-        error instanceof Error ? error.message : error,
-      ),
-  );
+  try {
+    eventBus.EVENT_PUBLISH(event).then(
+      () => console.log(`[EventBus] Published ${event.type}: ${event.subject}`),
+      (error: unknown) =>
+        console.error(
+          `[EventBus] Failed to publish ${event.type}:`,
+          error instanceof Error ? error.message : error,
+        ),
+    );
+  } catch (error) {
+    console.error(
+      `[EventBus] Failed to publish ${event.type}:`,
+      error instanceof Error ? (error as Error).message : error,
+    );
+  }
 }
 
 function eventData(event: Event, calendarId?: string): Record<string, unknown> {
