@@ -352,6 +352,10 @@ export const createWatchCalendarTool = (env: Env) =>
         .describe("Calendar ID to watch (default: 'primary')"),
       webhookUrl: z
         .string()
+        .url()
+        .refine((url) => url.startsWith("https://"), {
+          message: "Webhook URL must use HTTPS",
+        })
         .describe(
           "HTTPS URL that will receive push notifications. Must be publicly accessible and verified with Google.",
         ),
@@ -375,6 +379,7 @@ export const createWatchCalendarTool = (env: Env) =>
         .describe("Resource ID (needed to stop the watch later)"),
       expiration: z
         .string()
+        .optional()
         .describe("When the watch expires (ISO 8601 timestamp)"),
     }),
     execute: async ({ context }) => {
@@ -398,7 +403,9 @@ export const createWatchCalendarTool = (env: Env) =>
       return {
         channelId: response.id,
         resourceId: response.resourceId,
-        expiration: new Date(Number(response.expiration)).toISOString(),
+        expiration: response.expiration
+          ? new Date(Number(response.expiration)).toISOString()
+          : undefined,
       };
     },
   });

@@ -191,6 +191,7 @@ export interface CreateEventInput {
     email: string;
     displayName?: string;
     optional?: boolean;
+    responseStatus?: "needsAction" | "declined" | "tentative" | "accepted";
   }>;
   reminders?: {
     useDefault: boolean;
@@ -252,5 +253,5 @@ export interface WatchResponse {
   id: string;
   resourceId: string;
   resourceUri: string;
-  expiration: string;
+  expiration?: string;
 }

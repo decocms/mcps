@@ -612,7 +612,12 @@ export const createRespondToEventTool = (env: Env) =>
       const currentEvent = await client.getEvent(calendarId, context.eventId);
 
       const selfAttendee = currentEvent.attendees?.find((a) => a.self);
-      const previousStatus = selfAttendee?.responseStatus;
+      if (!selfAttendee) {
+        throw new Error(
+          "Cannot respond to this event because the authenticated user is not an attendee.",
+        );
+      }
+      const previousStatus = selfAttendee.responseStatus;
 
       // Update the attendees list with our new response
       const updatedAttendees = currentEvent.attendees?.map((a) =>
@@ -634,6 +639,7 @@ export const createRespondToEventTool = (env: Env) =>
           email: a.email,
           displayName: a.displayName,
           optional: a.optional,
+          responseStatus: a.responseStatus,
         })),
         sendUpdates: context.sendUpdates,
       });
