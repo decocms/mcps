@@ -7,7 +7,7 @@
     "url": "https://mcp.clickhouse.cloud/mcp"
   },
   "description": "Query and manage ClickHouse databases. Run SQL, explore schemas, and analyze data at scale.",
-  "icon": "https://clickhouse.com/images/ch_gh_avatar.png",
+  "icon": "https://assets.decocache.com/decocms/5eb5c226-a13c-46f6-891f-38c1654a14fb/clickhouse-yellow-badge.svg",
   "unlisted": false,
   "metadata": {
     "categories": ["Database", "Analytics"],
