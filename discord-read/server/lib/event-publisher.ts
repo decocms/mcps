@@ -28,6 +28,10 @@ export async function publishMessageCreated(
           message.channel && "name" in message.channel
             ? message.channel.name
             : undefined,
+        parent_id:
+          message.channel && "parentId" in message.channel
+            ? message.channel.parentId
+            : undefined,
         author_id: message.author.id,
         author_username: message.author.username,
         author_bot: message.author.bot,

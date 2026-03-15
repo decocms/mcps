@@ -71,6 +71,7 @@ interface ActionResult {
   priority?: string | null;
   summary?: string | null;
   suggested_reply?: string | null;
+  details?: string[];
 }
 
 type ToolResult =
@@ -214,6 +215,25 @@ export default function InboxPage() {
         title="Suggested Reply"
         message={r.message}
         longText={r.suggested_reply || undefined}
+      />
+    );
+  }
+
+  // Resolve conversation result (has details array of strings)
+  if (
+    toolName === "inbox_resolve_conversation" &&
+    "message" in result &&
+    "details" in result
+  ) {
+    const r = result as ActionResult;
+    return (
+      <ActionResultView
+        title="Resolved"
+        message={r.message}
+        details={r.details?.map((d, i) => ({
+          label: `Step ${i + 1}`,
+          value: d,
+        }))}
       />
     );
   }

@@ -1,4 +1,4 @@
-import { replyTool } from "./actions.ts";
+import { replyTool, resolveConversationTool } from "./actions.ts";
 import { classifyTool, suggestReplyTool, summarizeTool } from "./ai.ts";
 import {
   archiveConversationsTool,
@@ -19,6 +19,7 @@ export const tools = [
   archiveConversationsTool,
   statsTool,
   replyTool,
+  resolveConversationTool,
   classifyTool,
   summarizeTool,
   suggestReplyTool,

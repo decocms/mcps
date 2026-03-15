@@ -19,6 +19,7 @@ const TOOL_PAGES: Record<string, React.ComponentType> = {
   inbox_remove_source: InboxPage,
   inbox_archive: InboxPage,
   inbox_reply: InboxPage,
+  inbox_resolve_conversation: InboxPage,
   inbox_classify: InboxPage,
   inbox_summarize: InboxPage,
   inbox_suggest_reply: InboxPage,

@@ -445,6 +445,148 @@ export const createLeaveThreadTool = (env: Env) =>
   });
 
 // ============================================================================
+// Edit Thread
+// ============================================================================
+
+export const createEditThreadTool = (env: Env) =>
+  createTool({
+    id: "DISCORD_EDIT_THREAD",
+    description:
+      "Edit a thread or forum post — change name, archive status, or applied tags (for forum posts, use applied_tags to add/remove tags like 'Solved')",
+    annotations: { destructiveHint: false, openWorldHint: true },
+    inputSchema: z
+      .object({
+        thread_id: z.string().describe("The thread/forum post ID to edit"),
+        name: z
+          .string()
+          .optional()
+          .describe("New thread name (1-100 characters)"),
+        archived: z
+          .boolean()
+          .optional()
+          .describe("Whether to archive the thread"),
+        locked: z.boolean().optional().describe("Whether to lock the thread"),
+        applied_tags: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Tag IDs to apply (forum posts only). Replaces all current tags. Max 5.",
+          ),
+        auto_archive_duration: z
+          .enum(["60", "1440", "4320", "10080"])
+          .optional()
+          .describe("Minutes until auto-archive"),
+        reason: z.string().optional().describe("Reason (audit log)"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        archived: z.boolean(),
+        locked: z.boolean(),
+        applied_tags: z.array(z.string()).optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        thread_id: string;
+        name?: string;
+        archived?: boolean;
+        locked?: boolean;
+        applied_tags?: string[];
+        auto_archive_duration?: string;
+        reason?: string;
+      };
+
+      const body: Record<string, unknown> = {};
+      if (input.name !== undefined) body.name = input.name;
+      if (input.archived !== undefined) body.archived = input.archived;
+      if (input.locked !== undefined) body.locked = input.locked;
+      if (input.applied_tags !== undefined)
+        body.applied_tags = input.applied_tags;
+      if (input.auto_archive_duration !== undefined)
+        body.auto_archive_duration = parseInt(input.auto_archive_duration, 10);
+
+      const result = await discordAPI<{
+        id: string;
+        name: string;
+        thread_metadata: { archived: boolean; locked: boolean };
+        applied_tags?: string[];
+      }>(env, `/channels/${input.thread_id}`, {
+        method: "PATCH",
+        body,
+        reason: input.reason,
+      });
+
+      return {
+        id: result.id,
+        name: result.name,
+        archived: result.thread_metadata?.archived ?? false,
+        locked: result.thread_metadata?.locked ?? false,
+        applied_tags: result.applied_tags,
+      };
+    },
+  });
+
+// ============================================================================
+// Get Forum Tags
+// ============================================================================
+
+export const createGetForumTagsTool = (env: Env) =>
+  createTool({
+    id: "DISCORD_GET_FORUM_TAGS",
+    description:
+      "Get available tags from a forum channel. Use this to find tag IDs (e.g. 'Solved') before applying them with DISCORD_EDIT_THREAD.",
+    annotations: { readOnlyHint: true },
+    inputSchema: z
+      .object({
+        channel_id: z.string().describe("The forum channel ID"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        tags: z.array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            moderated: z.boolean(),
+            emoji_id: z.string().nullable(),
+            emoji_name: z.string().nullable(),
+          }),
+        ),
+        channel_name: z.string(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { channel_id: string };
+
+      const channel = await discordAPI<{
+        id: string;
+        name: string;
+        available_tags?: Array<{
+          id: string;
+          name: string;
+          moderated: boolean;
+          emoji_id: string | null;
+          emoji_name: string | null;
+        }>;
+      }>(env, `/channels/${input.channel_id}`);
+
+      return {
+        tags: (channel.available_tags ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+          moderated: t.moderated,
+          emoji_id: t.emoji_id,
+          emoji_name: t.emoji_name,
+        })),
+        channel_name: channel.name,
+      };
+    },
+  });
+
+// ============================================================================
 // Export
 // ============================================================================
 
@@ -452,8 +594,10 @@ export const discordChannelTools = [
   createListGuildChannelsTool,
   createCreateChannelTool,
   createCreateThreadTool,
+  createEditThreadTool,
   createGetActiveThreadsTool,
   createGetArchivedThreadsTool,
+  createGetForumTagsTool,
   createJoinThreadTool,
   createLeaveThreadTool,
 ];

@@ -6,6 +6,7 @@ interface DiscordEvent {
   type: string;
   data: {
     channel_id?: string;
+    parent_id?: string;
     guild_id?: string;
     author_id?: string;
     author_username?: string;
@@ -25,8 +26,8 @@ export async function processDiscordEvent(
   const channelId = data.channel_id;
   if (!channelId || !data.content || !data.message_id) return;
 
-  // Check if this channel is a monitored source
-  const sources = await runSQL<{
+  // Check if this channel is a monitored source (direct channel match)
+  let sources = await runSQL<{
     id: string;
     connection_id: string;
   }>(
@@ -35,16 +36,52 @@ export async function processDiscordEvent(
     ["discord", channelId],
   );
 
+  let isForumThread = false;
+
+  // If no direct match, check if this is a forum thread (parent_id matches a monitored forum channel)
+  if (sources.length === 0 && data.parent_id) {
+    sources = await runSQL<{
+      id: string;
+      connection_id: string;
+    }>(
+      env,
+      "SELECT id, connection_id FROM inbox_source WHERE source_type = ? AND external_channel_id = ? AND enabled = true",
+      ["discord", data.parent_id],
+    );
+    if (sources.length > 0) {
+      isForumThread = true;
+    }
+  }
+
   if (sources.length === 0) return;
   const source = sources[0];
 
-  // For Discord, group by referenced_message_id or treat each message as part of a channel conversation
-  const threadId = data.referenced_message_id || data.message_id;
+  // For forum threads: group all messages by the thread (channel_id IS the thread)
+  // For regular channels: group by referenced_message_id
+  const threadId = isForumThread
+    ? channelId
+    : data.referenced_message_id || data.message_id;
 
-  // Try to find existing conversation by referenced message
+  // Try to find existing conversation
   let conversationId: string | null = null;
 
-  if (data.referenced_message_id) {
+  if (isForumThread) {
+    // Forum posts: all messages in the same thread belong to one conversation
+    const existing = await runSQL<{ id: string; message_count: number }>(
+      env,
+      "SELECT id, message_count FROM inbox_conversation WHERE source_id = ? AND external_thread_id = ?",
+      [source.id, threadId],
+    );
+    if (existing.length > 0) {
+      conversationId = existing[0].id;
+      await runSQL(
+        env,
+        "UPDATE inbox_conversation SET last_message_at = NOW(), message_count = ?, updated_at = NOW() WHERE id = ?",
+        [existing[0].message_count + 1, conversationId],
+      );
+    }
+  } else if (data.referenced_message_id) {
+    // Regular channels: find by referenced message
     const existing = await runSQL<{ id: string; message_count: number }>(
       env,
       "SELECT c.id, c.message_count FROM inbox_conversation c JOIN inbox_message m ON m.conversation_id = c.id WHERE c.source_id = ? AND m.external_message_id = ?",
@@ -99,18 +136,20 @@ export async function processDiscordEvent(
       hasAttachments,
       JSON.stringify({
         channel_id: channelId,
+        parent_id: data.parent_id,
         guild_id: data.guild_id,
         referenced_message_id: data.referenced_message_id,
+        is_forum_thread: isForumThread,
       }),
     ],
   );
 
   console.log(
-    `[DISCORD] Ingested message ${data.message_id} into conversation ${conversationId}`,
+    `[DISCORD] Ingested message ${data.message_id} into conversation ${conversationId}${isForumThread ? " (forum thread)" : ""}`,
   );
 
   // Auto-classify new conversations (fire and forget)
-  if (!data.referenced_message_id) {
+  if (!data.referenced_message_id && !isForumThread) {
     classifyConversation(env, data.content, data.author_username || "Unknown")
       .then((result) => {
         if (result) {
