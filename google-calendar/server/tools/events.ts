@@ -629,6 +629,20 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
             start: EventDateTimeSchema,
             end: EventDateTimeSchema,
             minutesUntilStart: z.number().optional(),
+            attendees: z
+              .array(
+                z.object({
+                  email: z.string(),
+                  displayName: z.string().optional(),
+                  organizer: z.boolean().optional(),
+                  self: z.boolean().optional(),
+                  responseStatus: z
+                    .enum(["needsAction", "declined", "tentative", "accepted"])
+                    .optional(),
+                }),
+              )
+              .optional()
+              .describe("List of event attendees with their response status"),
             notified: z
               .boolean()
               .describe("Whether this event was emitted to the event bus"),
@@ -686,6 +700,13 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
           summary: event.summary,
           start: event.start,
           end: event.end,
+          attendees: event.attendees?.map((a) => ({
+            email: a.email,
+            displayName: a.displayName,
+            organizer: a.organizer,
+            self: a.self,
+            responseStatus: a.responseStatus,
+          })),
           minutesUntilStart,
           notified: shouldNotify,
         };
