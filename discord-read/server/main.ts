@@ -198,6 +198,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const authorizedGuildsStr = state?.AUTHORIZED_GUILDS;
       const botOwnerId = state?.BOT_OWNER_ID;
       const commandPrefix = state?.COMMAND_PREFIX || "!";
+      const superAdminsStr = state?.BOT_SUPER_ADMINS;
 
       // Parse authorized guilds (comma-separated string to array)
       const authorizedGuilds = authorizedGuildsStr
@@ -206,6 +207,21 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             .map((g) => g.trim())
             .filter(Boolean)
         : [];
+
+      // Parse and set super admins (comma-separated string to array)
+      const superAdmins = superAdminsStr
+        ? superAdminsStr
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean)
+        : [];
+      if (superAdmins.length > 0) {
+        const { setSuperAdmins } = await import(
+          "./discord/handlers/messageHandler.ts"
+        );
+        setSuperAdmins(superAdmins);
+        console.log(`[CONFIG] Super admins: ${superAdmins.length} configured`);
+      }
 
       // If we have a connection ID, sync to config-cache (discordPublicKey is optional but needed for webhooks)
       if (connectionId && organizationId && meshUrl) {

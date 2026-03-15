@@ -13,10 +13,15 @@ import {
 import type { Env } from "../../types/env.ts";
 import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
-// Super Admins - always have full permissions everywhere
-const SUPER_ADMINS = [
-  "607266543859925014", // Jonas (dev)
-];
+// Super Admins - configurable via BOT_SUPER_ADMINS state field
+let superAdmins: string[] = [];
+
+/**
+ * Update the super admins list (called from config onChange or bot-manager)
+ */
+export function setSuperAdmins(ids: string[]): void {
+  superAdmins = ids;
+}
 
 // Track processed messages to prevent duplicates
 const processedMessages = new Set<string>();
@@ -36,7 +41,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (was 5 minutes)
  * Check if a user is a super admin
  */
 export function isSuperAdmin(userId: string): boolean {
-  return SUPER_ADMINS.includes(userId);
+  return superAdmins.includes(userId);
 }
 
 /**
