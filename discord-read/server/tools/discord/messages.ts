@@ -747,6 +747,11 @@ export const createGetChannelMessagesTool = (env: Env) =>
       .strict(),
     outputSchema: z
       .object({
+        formatted_output: z
+          .string()
+          .describe(
+            "Pre-formatted message list ready to display. ALWAYS show this to the user as-is.",
+          ),
         messages: z.array(
           z.object({
             id: z.string(),
@@ -785,14 +790,31 @@ export const createGetChannelMessagesTool = (env: Env) =>
         }>
       >(env, `/channels/${input.channel_id}/messages?${params.toString()}`);
 
+      const mapped = messages.map((m) => ({
+        id: m.id,
+        content: m.content,
+        author: { id: m.author.id, username: m.author.username },
+        timestamp: m.timestamp,
+      }));
+
+      // Pre-format for display so the LLM doesn't need to reformat
+      const formatted = mapped
+        .slice()
+        .reverse()
+        .map((m, i) => {
+          const date = new Date(m.timestamp);
+          const ts = date.toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+          });
+          const text = m.content || "*[sem conteúdo de texto]*";
+          return `${i + 1}. **${m.author.username}** (${ts}): ${text}`;
+        })
+        .join("\n");
+
       return {
-        messages: messages.map((m) => ({
-          id: m.id,
-          content: m.content,
-          author: { id: m.author.id, username: m.author.username },
-          timestamp: m.timestamp,
-        })),
-        count: messages.length,
+        formatted_output: formatted || "Nenhuma mensagem encontrada.",
+        messages: mapped,
+        count: mapped.length,
       };
     },
   });
