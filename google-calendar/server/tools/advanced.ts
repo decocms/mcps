@@ -337,6 +337,111 @@ export const createDuplicateEventTool = (env: Env) =>
   });
 
 // ============================================================================
+// Watch Calendar Tool
+// ============================================================================
+
+export const createWatchCalendarTool = (env: Env) =>
+  createPrivateTool({
+    id: "watch_calendar",
+    description:
+      "Set up push notifications (webhook) to receive real-time updates when events in a calendar change. The webhook URL will receive POST requests when events are created, updated, or deleted.",
+    inputSchema: z.object({
+      calendarId: z
+        .string()
+        .optional()
+        .describe("Calendar ID to watch (default: 'primary')"),
+      webhookUrl: z
+        .string()
+        .url()
+        .refine((url) => url.startsWith("https://"), {
+          message: "Webhook URL must use HTTPS",
+        })
+        .describe(
+          "HTTPS URL that will receive push notifications. Must be publicly accessible and verified with Google.",
+        ),
+      ttlHours: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(720)
+        .optional()
+        .default(24)
+        .describe(
+          "How long the watch should last in hours (default: 24, max: 720 / 30 days)",
+        ),
+    }),
+    outputSchema: z.object({
+      channelId: z
+        .string()
+        .describe("Channel ID (needed to stop the watch later)"),
+      resourceId: z
+        .string()
+        .describe("Resource ID (needed to stop the watch later)"),
+      expiration: z
+        .string()
+        .optional()
+        .describe("When the watch expires (ISO 8601 timestamp)"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GoogleCalendarClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
+      const channelId = crypto.randomUUID();
+      const ttlSeconds = (context.ttlHours ?? 24) * 3600;
+
+      const response = await client.watchCalendar(calendarId, {
+        id: channelId,
+        type: "web_hook",
+        address: context.webhookUrl,
+        params: {
+          ttl: String(ttlSeconds),
+        },
+      });
+
+      return {
+        channelId: response.id,
+        resourceId: response.resourceId,
+        expiration: response.expiration
+          ? new Date(Number(response.expiration)).toISOString()
+          : undefined,
+      };
+    },
+  });
+
+// ============================================================================
+// Stop Watch Tool
+// ============================================================================
+
+export const createStopWatchTool = (env: Env) =>
+  createPrivateTool({
+    id: "stop_watch",
+    description:
+      "Stop receiving push notifications for a previously created watch channel. Use the channelId and resourceId returned by watch_calendar.",
+    inputSchema: z.object({
+      channelId: z.string().describe("Channel ID returned by watch_calendar"),
+      resourceId: z.string().describe("Resource ID returned by watch_calendar"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean().describe("Whether the watch was stopped"),
+      message: z.string().describe("Result message"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GoogleCalendarClient({
+        accessToken: getAccessToken(env),
+      });
+
+      await client.stopWatch(context.channelId, context.resourceId);
+
+      return {
+        success: true,
+        message: `Watch channel ${context.channelId} stopped successfully`,
+      };
+    },
+  });
+
+// ============================================================================
 // Export all advanced tools
 // ============================================================================
 
@@ -344,4 +449,6 @@ export const advancedTools = [
   createMoveEventTool,
   createFindAvailableSlotsTool,
   createDuplicateEventTool,
+  createWatchCalendarTool,
+  createStopWatchTool,
 ];
