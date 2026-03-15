@@ -1,0 +1,18 @@
+{
+	"scopeName": "deco",
+	"name": "multi-channel-inbox",
+	"friendlyName": "Multi Channel Inbox",
+	"description": "Unified support inbox for Slack, Discord and Gmail",
+	"icon": "",
+	"connection": {
+		"type": "HTTP",
+		"url": "https://sites-multi-channel-inbox.decocache.com/api/mcp"
+	},
+	"unlisted": true,
+	"metadata": {
+		"categories": [],
+		"official": false,
+		"tags": ["template", "mcp-app"],
+		"short_description": "Unified support inbox for Slack, Discord and Gmail"
+	}
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+bun.lock
+*.tsbuildinfo
+.context/
