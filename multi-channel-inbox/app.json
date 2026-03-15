@@ -6,12 +6,7 @@
 	"icon": "",
 	"connection": {
 		"type": "HTTP",
-		"url": "https://sites-multi-channel-inbox.decocache.com/api/mcp",
-		"configSchema": {
-			"type": "object",
-			"properties": {},
-			"required": []
-		}
+		"url": "https://sites-multi-channel-inbox.decocache.com/api/mcp"
 	},
 	"unlisted": true,
 	"metadata": {

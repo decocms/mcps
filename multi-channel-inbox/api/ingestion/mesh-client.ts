@@ -32,6 +32,13 @@ export async function callMeshTool(
     }),
   });
 
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Mesh request failed with status ${response.status}: ${body}`,
+    );
+  }
+
   const data = (await response.json()) as {
     result?: MeshToolCallResult;
     error?: { message: string };

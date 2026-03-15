@@ -18,8 +18,12 @@ interface GmailMessage {
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let isPolling = false;
+let latestEnv: Env | null = null;
 
 export function startGmailPolling(env: Env): void {
+  // Always update the latest env so background polls use fresh tokens
+  latestEnv = env;
+
   if (pollInterval) {
     clearInterval(pollInterval);
   }
@@ -41,7 +45,9 @@ export function startGmailPolling(env: Env): void {
   );
 
   pollInterval = setInterval(() => {
-    pollAllGmailSources(env).catch((err) =>
+    const currentEnv = latestEnv;
+    if (!currentEnv) return;
+    pollAllGmailSources(currentEnv).catch((err) =>
       console.error("[GMAIL] Poll error:", err),
     );
   }, intervalMs);

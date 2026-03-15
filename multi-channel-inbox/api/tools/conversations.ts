@@ -188,7 +188,7 @@ export const updateConversationTool = (env: Env) =>
         updates.push("tags = ?");
         params.push(context.tags);
       }
-      if (context.category) {
+      if (context.category !== undefined) {
         updates.push("category = ?");
         params.push(context.category);
       }
@@ -292,7 +292,7 @@ export const statsTool = (env: Env) =>
         count: number;
       }>(
         env,
-        "SELECT priority, COUNT(*) as count FROM inbox_conversation WHERE status != 'archived' GROUP BY priority",
+        "SELECT priority, COUNT(*) as count FROM inbox_conversation WHERE status != 'archived' AND priority IS NOT NULL GROUP BY priority",
         [],
       );
 

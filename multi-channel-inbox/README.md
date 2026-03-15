@@ -20,5 +20,6 @@ bun run dev
 1. Create `api/tools/my-tool.ts` using `createTool`
 2. Register in `api/tools/index.ts`
 3. Create `web/tools/my-tool/index.tsx` for the UI
-4. Create `api/resources/my-tool.ts` serving `dist/client/index.html`
-5. Update build scripts in `package.json`
+4. Register the page component in `TOOL_PAGES` in `web/router.tsx` (key must match the tool's `id`)
+5. Create `api/resources/my-tool.ts` serving `dist/client/index.html`
+6. Update build scripts in `package.json`
