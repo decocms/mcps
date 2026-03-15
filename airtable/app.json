@@ -7,7 +7,7 @@
     "url": "https://sites-airtable.decocache.com/mcp"
   },
   "description": "Connect AI agents to Airtable for database operations including records, tables, fields, and bases management.",
-  "icon": "https://assets.decocache.com/decocms/airtable-icon.png",
+  "icon": "https://www.airtable.com/favicon.ico",
   "unlisted": false,
   "metadata": {
     "categories": ["Productivity", "Data"],
