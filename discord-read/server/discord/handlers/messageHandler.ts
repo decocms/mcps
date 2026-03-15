@@ -5,7 +5,11 @@
  * All interactions are via natural language - no built-in commands.
  */
 
-import { type Message, type TextChannel, type MessageCreateOptions } from "discord.js";
+import {
+  type Message,
+  type TextChannel,
+  type MessageCreateOptions,
+} from "discord.js";
 import type { Env } from "../../types/env.ts";
 import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
@@ -86,7 +90,10 @@ async function getCachedChannelContext(
 /**
  * Invalidate channel context cache (call when prompt is updated)
  */
-export function invalidateChannelContextCache(guildId: string, channelId: string): void {
+export function invalidateChannelContextCache(
+  guildId: string,
+  channelId: string,
+): void {
   const cacheKey = `${guildId}:${channelId}`;
   channelContextCache.delete(cacheKey);
 }
@@ -94,7 +101,10 @@ export function invalidateChannelContextCache(guildId: string, channelId: string
 /**
  * Safe reply helper - uses channel.send if reply fails
  */
-async function safeReply(message: Message, content: string | MessageCreateOptions): Promise<void> {
+async function safeReply(
+  message: Message,
+  content: string | MessageCreateOptions,
+): Promise<void> {
   try {
     const channel = message.channel;
     if (!("send" in channel)) {
@@ -118,7 +128,10 @@ async function safeReply(message: Message, content: string | MessageCreateOption
 /**
  * Index a message to the database.
  */
-export async function indexMessage(message: Message, isDM: boolean = false): Promise<void> {
+export async function indexMessage(
+  message: Message,
+  isDM: boolean = false,
+): Promise<void> {
   const traceId = HyperDXLogger.generateTraceId();
 
   try {
@@ -138,7 +151,8 @@ export async function indexMessage(message: Message, isDM: boolean = false): Pro
     const channel = message.channel;
     const isThread = "isThread" in channel && channel.isThread();
     const parentId = isThread ? channel.parentId : null;
-    const categoryId = "parentId" in channel && !isThread ? channel.parentId : null;
+    const categoryId =
+      "parentId" in channel && !isThread ? channel.parentId : null;
 
     // Index the message with all available data
     await db.upsertMessage({
@@ -315,7 +329,12 @@ async function handleDefaultAgent(
 
   // Import modules
   const [
-    { generateResponse, generateResponseWithStreaming, isLLMConfigured, isStreamingEnabled },
+    {
+      generateResponse,
+      generateResponseWithStreaming,
+      isLLMConfigured,
+      isStreamingEnabled,
+    },
     { getSystemPrompt },
     { sendThinkingMessage, updateThinkingMessage, splitMessage },
   ] = await Promise.all([
@@ -349,7 +368,10 @@ async function handleDefaultAgent(
 
   try {
     const startTime = Date.now();
-    const channelName = "name" in message.channel ? (message.channel.name ?? undefined) : undefined;
+    const channelName =
+      "name" in message.channel
+        ? (message.channel.name ?? undefined)
+        : undefined;
 
     // Fetch context and channel prompt in parallel
     const [contextMessages, channelPrompt] = await Promise.all([
@@ -460,8 +482,8 @@ async function handleDefaultAgent(
     if (thinkingMsg && useStreaming) {
       // Streaming mode: update message in real-time
       const toolProcessingMessage =
-        env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG?.TOOL_PROCESSING_MESSAGE ??
-        "🔧 Processing...";
+        env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
+          ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processing...";
 
       responseContent = await generateResponseWithStreaming(
         llmMessages,
@@ -470,10 +492,18 @@ async function handleDefaultAgent(
             await updateThinkingMessage(thinkingMsg!, text, authorMention);
           } else if (text === "") {
             // Tool is being called - replace stale thinking text with processing indicator
-            await updateThinkingMessage(thinkingMsg!, toolProcessingMessage, authorMention);
+            await updateThinkingMessage(
+              thinkingMsg!,
+              toolProcessingMessage,
+              authorMention,
+            );
           } else {
             // Streaming text with cursor indicator
-            await updateThinkingMessage(thinkingMsg!, text + " ▌", authorMention);
+            await updateThinkingMessage(
+              thinkingMsg!,
+              text + " ▌",
+              authorMention,
+            );
           }
         },
       );
@@ -487,7 +517,8 @@ async function handleDefaultAgent(
           userName: message.author.username,
         },
       });
-      responseContent = response.content || "Desculpe, não consegui gerar uma resposta.";
+      responseContent =
+        response.content || "Desculpe, não consegui gerar uma resposta.";
     }
 
     const durationMs = Date.now() - startTime;
@@ -570,7 +601,10 @@ async function handleDefaultAgent(
       errorMsg.includes("401") ||
       errorMsg.includes("403")
     ) {
-      console.log("[Agent] ⚠️ Session/auth error - not sending to chat:", errorMsg);
+      console.log(
+        "[Agent] ⚠️ Session/auth error - not sending to chat:",
+        errorMsg,
+      );
       // Just delete the thinking message if it exists
       if (thinkingMsg) {
         try {
@@ -594,7 +628,11 @@ async function handleDefaultAgent(
 
     // Update thinking message with error, or send new message
     if (thinkingMsg) {
-      await updateThinkingMessage(thinkingMsg, errorResponse, `<@${message.author.id}>`);
+      await updateThinkingMessage(
+        thinkingMsg,
+        errorResponse,
+        `<@${message.author.id}>`,
+      );
     } else {
       await safeReply(message, errorResponse);
     }
@@ -625,7 +663,9 @@ async function processPromptMarkers(
   const db = await import("../../../shared/db.ts");
 
   // Check for SAVE_CHANNEL_PROMPT marker
-  const saveMatch = content.match(/\[SAVE_CHANNEL_PROMPT\]([\s\S]*?)\[\/SAVE_CHANNEL_PROMPT\]/i);
+  const saveMatch = content.match(
+    /\[SAVE_CHANNEL_PROMPT\]([\s\S]*?)\[\/SAVE_CHANNEL_PROMPT\]/i,
+  );
 
   if (saveMatch) {
     const promptToSave = saveMatch[1].trim();
@@ -648,7 +688,10 @@ async function processPromptMarkers(
     }
 
     // Remove the marker from the response (user won't see it)
-    content = content.replace(/\[SAVE_CHANNEL_PROMPT\][\s\S]*?\[\/SAVE_CHANNEL_PROMPT\]/gi, "");
+    content = content.replace(
+      /\[SAVE_CHANNEL_PROMPT\][\s\S]*?\[\/SAVE_CHANNEL_PROMPT\]/gi,
+      "",
+    );
   }
 
   // Check for CLEAR_CHANNEL_PROMPT marker
@@ -706,7 +749,10 @@ export async function handleMessageDelete(
  * Handle bulk message deletion (e.g., from mod actions or prune)
  */
 export async function handleMessageDeleteBulk(
-  messages: Map<string, Message | { id: string; guild?: { id: string } | null }>,
+  messages: Map<
+    string,
+    Message | { id: string; guild?: { id: string } | null }
+  >,
 ): Promise<void> {
   const messageIds = Array.from(messages.keys());
   if (messageIds.length === 0) return;
@@ -735,7 +781,9 @@ export async function handleMessageDeleteBulk(
  */
 export async function handleMessageUpdate(
   oldMessage: Message | { id: string; content?: string | null },
-  newMessage: Message | { id: string; content?: string | null; editedAt?: Date | null },
+  newMessage:
+    | Message
+    | { id: string; content?: string | null; editedAt?: Date | null },
 ): Promise<void> {
   // Skip if no content change (could be embed update, etc.)
   if (oldMessage.content === newMessage.content) return;
@@ -747,10 +795,16 @@ export async function handleMessageUpdate(
 
     // Get editedAt from newMessage if it's a full Message object
     const editedAt =
-      "editedAt" in newMessage && newMessage.editedAt ? newMessage.editedAt : new Date();
+      "editedAt" in newMessage && newMessage.editedAt
+        ? newMessage.editedAt
+        : new Date();
 
     // Update the message content and add to edit history
-    await db.updateMessageContent(newMessage.id, newMessage.content || null, editedAt);
+    await db.updateMessageContent(
+      newMessage.id,
+      newMessage.content || null,
+      editedAt,
+    );
   } catch (error) {
     console.log(
       "[Message] Could not update edited message:",
