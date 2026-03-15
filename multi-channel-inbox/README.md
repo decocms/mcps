@@ -1,4 +1,4 @@
-# Multi Channel Inbox
+# Multi Channel Inbox 
 
 Unified support inbox that aggregates messages from Slack, Discord and Gmail into a single interface with conversation tracking, AI classification and cross-platform replies.
 
