@@ -357,9 +357,9 @@ function registerEventHandlers(client: Client, env: Env): void {
         );
 
       // Publish message.created event to EVENT_BUS (async, don't await)
-      publishMessageCreated(currentEnv, message).catch(() => {
-        /* ignore */
-      });
+      publishMessageCreated(currentEnv, message).catch((err) =>
+        console.error("[Event] Publish failed:", err?.message ?? err),
+      );
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
@@ -630,9 +630,9 @@ function registerEventHandlers(client: Client, env: Env): void {
     try {
       await handleMemberJoin(member);
       // Publish event
-      publishMemberJoined(currentEnv, member).catch(() => {
-        /* ignore */
-      });
+      publishMemberJoined(currentEnv, member).catch((err) =>
+        console.error("[Event] Publish failed:", err?.message ?? err),
+      );
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
     }
