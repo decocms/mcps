@@ -508,16 +508,31 @@ async function handleDefaultAgent(
 
     let responseContent: string;
 
+    const toolProcessingMessage =
+      env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
+        ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processando...";
+
     // Use streaming if we have a thinking message, otherwise use regular generation
     if (thinkingMsg && useStreaming) {
-      // Streaming mode: only update on completion (matches Slack's pattern)
-      // Animation keeps running until isComplete arrives
+      // Streaming mode: wait-for-final pattern with tool processing support
+      // Animation keeps running until isComplete or a tool call arrives
       responseContent = await generateResponseWithStreaming(
         llmMessages,
         async (text, isComplete) => {
-          if (!isComplete) return;
-          thinkingAnimation?.stop();
-          await updateThinkingMessage(thinkingMsg!, text, authorMention);
+          if (isComplete) {
+            // Final response arrived — stop animation and show it
+            thinkingAnimation?.stop();
+            await updateThinkingMessage(thinkingMsg!, text, authorMention);
+          } else if (text === "") {
+            // A tool is being called (text cleared to "") — show processing message
+            thinkingAnimation?.stop();
+            await updateThinkingMessage(
+              thinkingMsg!,
+              toolProcessingMessage,
+              authorMention,
+            );
+          }
+          // Otherwise ignore intermediate text deltas
         },
       );
     } else {
