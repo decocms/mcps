@@ -67,6 +67,10 @@ async function processLines(
       state.toolCallCount++;
       state.hasActiveToolCycle = true;
       state.textContent = "";
+      // Notify callback that pre-tool text was cleared (so UI can replace stale thinking text)
+      if (onStream) {
+        await onStream("", false);
+      }
       console.log(
         `[MeshChat] Tool call #${state.toolCallCount}: ${parsed.toolName ?? "unknown"}`,
       );

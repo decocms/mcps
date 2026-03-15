@@ -13,7 +13,7 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
+import { updateEnv, getCurrentEnv, ensureBotRunning } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
@@ -256,17 +256,29 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
-      // NOTE: Discord client is NOT auto-initialized on config save
-      // User must manually start the bot using DISCORD_BOT_START tool
-      // This prevents issues with multiple instances and unwanted bot starts
+      // Auto-initialize Discord client when config is available
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
       if (hasAuth) {
-        if (discordInitialized && getDiscordClient()) {
+        if (discordInitialized && getDiscordClient()?.isReady()) {
           console.log("[CONFIG] ✅ Bot is running");
         } else {
-          console.log(
-            "[CONFIG] ℹ️ Bot not started. Use DISCORD_BOT_START tool to start the bot.",
-          );
+          console.log("[CONFIG] ⚡ Auto-starting Discord bot...");
+          try {
+            const started = await ensureBotRunning(env);
+            if (started) {
+              discordInitialized = true;
+              console.log("[CONFIG] ✅ Bot auto-started successfully");
+            } else {
+              console.log(
+                "[CONFIG] ⚠️ Bot auto-start failed. Use DISCORD_BOT_START tool manually.",
+              );
+            }
+          } catch (error) {
+            console.error(
+              "[CONFIG] ❌ Bot auto-start error:",
+              error instanceof Error ? error.message : String(error),
+            );
+          }
         }
       } else {
         logger.info(
