@@ -419,11 +419,15 @@ export function getSystemPrompt(context?: {
 
     if (contextInfo.length > 0) {
       prompt += `\n\n---\n\n## **Current Context**\n\n${contextInfo.join("\n")}`;
-      prompt += `\n\n⚠️ **CRITICAL**: When using Discord tools, **ALWAYS use the guild_id shown above** (${context.guildId ? `\`${context.guildId}\`` : "from context"}).`;
-      prompt += `\n\n**Examples**:`;
-      prompt += `\n- ✅ CORRECT: Use \`guildId: "${context.guildId}"\` when calling Discord tools`;
-      prompt += `\n- ❌ WRONG: Never guess or use a different guild ID`;
-      prompt += `\n- ❌ WRONG: Never use server names as IDs`;
+      prompt += `\n\n⚠️ **CRITICAL**: When using Discord tools, **ALWAYS use the IDs shown above**:`;
+      if (context.guildId) {
+        prompt += `\n- **guild_id**: \`${context.guildId}\``;
+      }
+      if (context.channelId) {
+        prompt += `\n- **channel_id**: \`${context.channelId}\` (current channel)`;
+      }
+      prompt += `\n\nWhen the user says "this channel", "here", "desse canal", etc., use channel_id \`${context.channelId || "from context"}\`.`;
+      prompt += `\n- ❌ WRONG: Never guess IDs, never use server/channel names as IDs, never leave IDs undefined`;
     }
 
     // Add channel-specific prompt if configured
