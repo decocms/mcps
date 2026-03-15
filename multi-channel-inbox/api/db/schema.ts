@@ -12,7 +12,15 @@ CREATE TABLE IF NOT EXISTS inbox_source (
   gmail_query TEXT,
   enabled BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_channel_id_required CHECK (
+    (source_type IN ('slack', 'discord') AND external_channel_id IS NOT NULL)
+    OR source_type = 'gmail'
+  ),
+  CONSTRAINT chk_gmail_filter_required CHECK (
+    (source_type = 'gmail' AND (gmail_label IS NOT NULL OR gmail_query IS NOT NULL))
+    OR source_type IN ('slack', 'discord')
+  )
 )`;
 
 const CREATE_INBOX_CONVERSATION = `

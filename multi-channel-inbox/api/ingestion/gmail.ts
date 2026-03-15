@@ -17,14 +17,20 @@ interface GmailMessage {
 }
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let isPolling = false;
 
 export function startGmailPolling(env: Env): void {
   if (pollInterval) {
     clearInterval(pollInterval);
   }
 
-  const intervalMinutes =
+  const MIN_POLL_INTERVAL_MINUTES = 1;
+  const configuredInterval =
     env.MESH_REQUEST_CONTEXT?.state?.GMAIL_POLL_INTERVAL_MINUTES ?? 3;
+  const intervalMinutes = Math.max(
+    configuredInterval,
+    MIN_POLL_INTERVAL_MINUTES,
+  );
   const intervalMs = intervalMinutes * 60 * 1000;
 
   console.log(`[GMAIL] Starting polling every ${intervalMinutes} minutes`);
@@ -50,23 +56,32 @@ export function stopGmailPolling(): void {
 }
 
 async function pollAllGmailSources(env: Env): Promise<void> {
-  const sources = await runSQL<{
-    id: string;
-    connection_id: string;
-    gmail_label: string | null;
-    gmail_query: string | null;
-  }>(
-    env,
-    "SELECT id, connection_id, gmail_label, gmail_query FROM inbox_source WHERE source_type = 'gmail' AND enabled = true",
-    [],
-  );
+  if (isPolling) {
+    console.log("[GMAIL] Poll already in progress, skipping");
+    return;
+  }
+  isPolling = true;
+  try {
+    const sources = await runSQL<{
+      id: string;
+      connection_id: string;
+      gmail_label: string | null;
+      gmail_query: string | null;
+    }>(
+      env,
+      "SELECT id, connection_id, gmail_label, gmail_query FROM inbox_source WHERE source_type = 'gmail' AND enabled = true",
+      [],
+    );
 
-  for (const source of sources) {
-    try {
-      await pollGmailSource(env, source);
-    } catch (err) {
-      console.error(`[GMAIL] Error polling source ${source.id}:`, err);
+    for (const source of sources) {
+      try {
+        await pollGmailSource(env, source);
+      } catch (err) {
+        console.error(`[GMAIL] Error polling source ${source.id}:`, err);
+      }
     }
+  } finally {
+    isPolling = false;
   }
 }
 
@@ -109,8 +124,13 @@ async function pollGmailSource(
     messages = parseJsonFromResult<{ messages: GmailMessage[] }>(
       searchResult,
     ).messages;
-  } catch {
-    console.log(`[GMAIL] No new messages for source ${source.id}`);
+  } catch (err) {
+    console.error(
+      `[GMAIL] Failed to parse search result for source ${source.id}:`,
+      err,
+      "Raw result:",
+      JSON.stringify(searchResult).slice(0, 500),
+    );
     return;
   }
 
@@ -144,14 +164,18 @@ async function pollGmailSource(
     await ingestGmailMessage(env, source.id, fullMsg);
   }
 
-  // Update sync state
-  await runSQL(
-    env,
-    `INSERT INTO inbox_gmail_sync_state (source_id, last_poll_at)
-     VALUES (?, NOW())
-     ON CONFLICT (source_id) DO UPDATE SET last_poll_at = NOW()`,
-    [source.id],
-  );
+  // Only advance sync state if we got fewer than maxResults (i.e., we got all messages).
+  // Otherwise we may skip emails that haven't been fetched yet.
+  const maxResults = 50;
+  if (messages.length < maxResults) {
+    await runSQL(
+      env,
+      `INSERT INTO inbox_gmail_sync_state (source_id, last_poll_at)
+       VALUES (?, NOW())
+       ON CONFLICT (source_id) DO UPDATE SET last_poll_at = NOW()`,
+      [source.id],
+    );
+  }
 
   console.log(
     `[GMAIL] Polled ${messages.length} messages for source ${source.id}`,
@@ -212,7 +236,7 @@ async function ingestGmailMessage(
       msg.id,
       senderName,
       msg.from || "",
-      msg.bodyText || msg.snippet || "",
+      content,
       msg.body || null,
       msg.hasAttachments ?? false,
       JSON.stringify({

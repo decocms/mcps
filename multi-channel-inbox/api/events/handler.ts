@@ -20,6 +20,8 @@ export async function handleInboxEvents(
   events: CloudEvent[],
   env: Env,
 ): Promise<void> {
+  const errors: { event: string; error: unknown }[] = [];
+
   for (const event of events) {
     try {
       if (event.type.startsWith("slack.message")) {
@@ -35,6 +37,14 @@ export async function handleInboxEvents(
       }
     } catch (error) {
       console.error(`[EVENTS] Error processing ${event.type}:`, error);
+      errors.push({ event: event.type, error });
     }
+  }
+
+  if (errors.length > 0) {
+    throw new AggregateError(
+      errors.map((e) => e.error),
+      `[EVENTS] ${errors.length} event(s) failed: ${errors.map((e) => e.event).join(", ")}`,
+    );
   }
 }

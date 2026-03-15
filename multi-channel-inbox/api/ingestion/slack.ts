@@ -76,7 +76,14 @@ export async function processSlackEvent(
     );
   }
 
-  // Insert message
+  // Insert message (idempotency check — skip if already ingested)
+  const existingMsg = await runSQL(
+    env,
+    "SELECT id FROM inbox_message WHERE external_message_id = ? AND source_type = 'slack'",
+    [data.ts],
+  );
+  if (existingMsg.length > 0) return;
+
   const messageId = crypto.randomUUID();
   const hasAttachments = (data.files?.length ?? 0) > 0;
 

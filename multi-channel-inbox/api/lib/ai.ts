@@ -51,10 +51,34 @@ Respond with JSON only, no explanation.`,
     },
   ];
 
+  const ALLOWED_CATEGORIES = [
+    "bug",
+    "feature_request",
+    "billing",
+    "general_question",
+    "complaint",
+    "praise",
+    "spam",
+    "other",
+  ];
+  const ALLOWED_PRIORITIES = ["low", "normal", "high", "urgent"];
+
   try {
     const response = await generateResponse(config, messages);
     const cleaned = response.replace(/```json\n?|\n?```/g, "").trim();
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+
+    if (
+      !parsed.category ||
+      !parsed.priority ||
+      !ALLOWED_CATEGORIES.includes(parsed.category) ||
+      !ALLOWED_PRIORITIES.includes(parsed.priority)
+    ) {
+      console.error("[AI] Classification returned invalid values:", parsed);
+      return null;
+    }
+
+    return parsed;
   } catch (err) {
     console.error("[AI] Classification failed:", err);
     return null;

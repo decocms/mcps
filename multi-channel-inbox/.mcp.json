@@ -2,7 +2,7 @@
 	"mcpServers": {
 		"mcp-app": {
 			"type": "sse",
-			"url": "http://localhost:3001/mcp"
+			"url": "http://localhost:3001/api/mcp"
 		}
 	}
 }
