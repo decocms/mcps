@@ -483,7 +483,7 @@ async function handleDefaultAgent(
       // Streaming mode: update message in real-time
       const toolProcessingMessage =
         env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
-          ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processing...";
+          ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processando...";
 
       responseContent = await generateResponseWithStreaming(
         llmMessages,

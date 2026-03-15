@@ -144,7 +144,7 @@ export const StateSchema = z.object({
         ),
       TOOL_PROCESSING_MESSAGE: z
         .string()
-        .default("🔧 Processing...")
+        .default("🔧 Processando...")
         .describe(
           "Message shown while a tool is being executed (e.g. '🔧 Processando...', '🔧 Processing...')",
         ),
