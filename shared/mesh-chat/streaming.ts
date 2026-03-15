@@ -73,6 +73,17 @@ async function processLines(
       }
       console.log(
         `[MeshChat] Tool call #${state.toolCallCount}: ${parsed.toolName ?? "unknown"}`,
+        parsed.args ? `args=${parsed.args}` : "",
+        parsed.input
+          ? `input=${JSON.stringify(parsed.input).slice(0, 300)}`
+          : "",
+      );
+    } else if (type === "tool-input-available") {
+      // Log the full tool input the LLM constructed — helps debug missing params
+      console.log(
+        `[MeshChat] Tool input for ${parsed.toolCallId ?? "unknown"}: ${JSON.stringify(
+          parsed.input ?? parsed.args,
+        ).slice(0, 500)}`,
       );
     } else if (type === "tool-result" || type === "tool-output-available") {
       state.hasActiveToolCycle = false;
