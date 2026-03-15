@@ -259,7 +259,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Auto-initialize Discord client when config is available
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
       if (hasAuth) {
-        if (discordInitialized && getDiscordClient()) {
+        if (discordInitialized && getDiscordClient()?.isReady()) {
           console.log("[CONFIG] ✅ Bot is running");
         } else {
           console.log("[CONFIG] ⚡ Auto-starting Discord bot...");
