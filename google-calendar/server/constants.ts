@@ -15,6 +15,11 @@ export const ENDPOINTS = {
     `${GOOGLE_CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
   QUICK_ADD: (calendarId: string) =>
     `${GOOGLE_CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/quickAdd`,
+  INSTANCES: (calendarId: string, eventId: string) =>
+    `${GOOGLE_CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}/instances`,
+  WATCH: (calendarId: string) =>
+    `${GOOGLE_CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/watch`,
+  STOP_CHANNEL: `${GOOGLE_CALENDAR_API_BASE}/channels/stop`,
   FREEBUSY: `${GOOGLE_CALENDAR_API_BASE}/freeBusy`,
 };
 

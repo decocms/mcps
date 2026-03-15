@@ -90,13 +90,91 @@ const EventSchema = z.object({
     .optional()
     .describe("Event organizer"),
   attendees: z.array(AttendeeSchema).optional().describe("Event attendees"),
+  recurrence: z
+    .array(z.string())
+    .optional()
+    .describe("Recurrence rules (RRULE format)"),
+  recurringEventId: z
+    .string()
+    .optional()
+    .describe("ID of the recurring event this instance belongs to"),
   hangoutLink: z.string().optional().describe("Google Meet link"),
+  conferenceData: z
+    .object({
+      entryPoints: z
+        .array(
+          z.object({
+            entryPointType: z.string(),
+            uri: z.string(),
+            label: z.string().optional(),
+          }),
+        )
+        .optional()
+        .describe("Conference entry points (video, phone, etc.)"),
+      conferenceSolution: z
+        .object({
+          name: z.string(),
+          iconUri: z.string(),
+        })
+        .optional(),
+      conferenceId: z.string().optional(),
+    })
+    .optional()
+    .describe("Conference/video call data"),
   colorId: z.string().optional().describe("Event color ID"),
   visibility: z
     .enum(["default", "public", "private", "confidential"])
     .optional()
     .describe("Event visibility"),
 });
+
+// ============================================================================
+// Helper: Map API Event to output schema
+// ============================================================================
+
+function mapEvent(event: import("../lib/types.ts").Event) {
+  return {
+    id: event.id,
+    summary: event.summary,
+    description: event.description,
+    location: event.location,
+    start: event.start,
+    end: event.end,
+    status: event.status,
+    htmlLink: event.htmlLink,
+    created: event.created,
+    updated: event.updated,
+    creator: event.creator,
+    organizer: event.organizer,
+    attendees: event.attendees?.map((attendee) => ({
+      email: attendee.email,
+      displayName: attendee.displayName,
+      optional: attendee.optional,
+      responseStatus: attendee.responseStatus,
+    })),
+    recurrence: event.recurrence,
+    recurringEventId: event.recurringEventId,
+    hangoutLink: event.hangoutLink,
+    conferenceData: event.conferenceData
+      ? {
+          entryPoints: event.conferenceData.entryPoints?.map((ep) => ({
+            entryPointType: ep.entryPointType,
+            uri: ep.uri,
+            label: ep.label,
+          })),
+          conferenceSolution: event.conferenceData.conferenceSolution
+            ? {
+                name: event.conferenceData.conferenceSolution.name,
+                iconUri: event.conferenceData.conferenceSolution.iconUri,
+              }
+            : undefined,
+          conferenceId: event.conferenceData.conferenceId,
+        }
+      : undefined,
+    colorId: event.colorId,
+    visibility: event.visibility,
+  };
+}
 
 // ============================================================================
 // List Events Tool
@@ -173,29 +251,7 @@ export const createListEventsTool = (env: Env) =>
       });
 
       return {
-        events: response.items.map((event) => ({
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          location: event.location,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          htmlLink: event.htmlLink,
-          created: event.created,
-          updated: event.updated,
-          creator: event.creator,
-          organizer: event.organizer,
-          attendees: event.attendees?.map((attendee) => ({
-            email: attendee.email,
-            displayName: attendee.displayName,
-            optional: attendee.optional,
-            responseStatus: attendee.responseStatus,
-          })),
-          hangoutLink: event.hangoutLink,
-          colorId: event.colorId,
-          visibility: event.visibility,
-        })),
+        events: response.items.map(mapEvent),
         nextPageToken: response.nextPageToken,
         summary: response.summary,
         timeZone: response.timeZone,
@@ -231,31 +287,7 @@ export const createGetEventTool = (env: Env) =>
         context.eventId,
       );
 
-      return {
-        event: {
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          location: event.location,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          htmlLink: event.htmlLink,
-          created: event.created,
-          updated: event.updated,
-          creator: event.creator,
-          organizer: event.organizer,
-          attendees: event.attendees?.map((attendee) => ({
-            email: attendee.email,
-            displayName: attendee.displayName,
-            optional: attendee.optional,
-            responseStatus: attendee.responseStatus,
-          })),
-          hangoutLink: event.hangoutLink,
-          colorId: event.colorId,
-          visibility: event.visibility,
-        },
-      };
+      return { event: mapEvent(event) };
     },
   });
 
@@ -292,6 +324,18 @@ export const createCreateEventTool = (env: Env) =>
         )
         .optional()
         .describe("List of attendees to invite"),
+      recurrence: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Recurrence rules (RRULE format). Examples: ['RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR'], ['RRULE:FREQ=DAILY;COUNT=10'], ['RRULE:FREQ=MONTHLY;BYMONTHDAY=15']",
+        ),
+      addGoogleMeet: z
+        .boolean()
+        .optional()
+        .describe(
+          "Add a Google Meet video conference link to this event automatically",
+        ),
       reminders: z
         .object({
           useDefault: z.boolean().describe("Use default reminders"),
@@ -333,41 +377,29 @@ export const createCreateEventTool = (env: Env) =>
         location: context.location,
         start: context.start,
         end: context.end,
+        recurrence: context.recurrence,
         attendees: context.attendees,
         reminders: context.reminders,
         colorId: context.colorId,
         visibility: context.visibility,
         guestsCanSeeOtherGuests: context.guestsCanSeeOtherGuests ?? true,
         sendUpdates: context.sendUpdates,
+        ...(context.addGoogleMeet
+          ? {
+              conferenceDataVersion: 1 as const,
+              conferenceData: {
+                createRequest: {
+                  requestId: crypto.randomUUID(),
+                  conferenceSolutionKey: { type: "hangoutsMeet" },
+                },
+              },
+            }
+          : {}),
       });
 
       publishEventCreated(env, event, calendarId);
 
-      return {
-        event: {
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          location: event.location,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          htmlLink: event.htmlLink,
-          created: event.created,
-          updated: event.updated,
-          creator: event.creator,
-          organizer: event.organizer,
-          attendees: event.attendees?.map((attendee) => ({
-            email: attendee.email,
-            displayName: attendee.displayName,
-            optional: attendee.optional,
-            responseStatus: attendee.responseStatus,
-          })),
-          hangoutLink: event.hangoutLink,
-          colorId: event.colorId,
-          visibility: event.visibility,
-        },
-      };
+      return { event: mapEvent(event) };
     },
   });
 
@@ -391,6 +423,10 @@ export const createUpdateEventTool = (env: Env) =>
       location: z.string().optional().describe("New event location"),
       start: EventDateTimeSchema.optional().describe("New start time"),
       end: EventDateTimeSchema.optional().describe("New end time"),
+      recurrence: z
+        .array(z.string())
+        .optional()
+        .describe("Updated recurrence rules (RRULE format)"),
       attendees: z
         .array(
           z.object({
@@ -432,6 +468,7 @@ export const createUpdateEventTool = (env: Env) =>
         location: context.location,
         start: context.start,
         end: context.end,
+        recurrence: context.recurrence,
         attendees: context.attendees,
         colorId: context.colorId,
         visibility: context.visibility,
@@ -441,31 +478,7 @@ export const createUpdateEventTool = (env: Env) =>
 
       publishEventUpdated(env, event, calendarId);
 
-      return {
-        event: {
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          location: event.location,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          htmlLink: event.htmlLink,
-          created: event.created,
-          updated: event.updated,
-          creator: event.creator,
-          organizer: event.organizer,
-          attendees: event.attendees?.map((attendee) => ({
-            email: attendee.email,
-            displayName: attendee.displayName,
-            optional: attendee.optional,
-            responseStatus: attendee.responseStatus,
-          })),
-          hangoutLink: event.hangoutLink,
-          colorId: event.colorId,
-          visibility: event.visibility,
-        },
-      };
+      return { event: mapEvent(event) };
     },
   });
 
@@ -554,30 +567,144 @@ export const createQuickAddEventTool = (env: Env) =>
 
       publishEventCreated(env, event, calendarId);
 
+      return { event: mapEvent(event) };
+    },
+  });
+
+// ============================================================================
+// Respond to Event Tool (RSVP)
+// ============================================================================
+
+export const createRespondToEventTool = (env: Env) =>
+  createPrivateTool({
+    id: "respond_to_event",
+    description:
+      "Respond to an event invitation (accept, decline, or tentative). Updates your RSVP status for the event.",
+    inputSchema: z.object({
+      calendarId: z
+        .string()
+        .optional()
+        .describe("Calendar ID (default: 'primary')"),
+      eventId: z.string().describe("Event ID to respond to"),
+      response: z
+        .enum(["accepted", "declined", "tentative"])
+        .describe("Your response to the event invitation"),
+      sendUpdates: z
+        .enum(["all", "externalOnly", "none"])
+        .optional()
+        .describe("Who should receive email notifications about the response"),
+    }),
+    outputSchema: z.object({
+      event: EventSchema.describe("Updated event with your response"),
+      previousStatus: z
+        .string()
+        .optional()
+        .describe("Your previous response status"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GoogleCalendarClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const calendarId = context.calendarId || PRIMARY_CALENDAR;
+
+      // Get the current event to find our attendee entry
+      const currentEvent = await client.getEvent(calendarId, context.eventId);
+
+      const selfAttendee = currentEvent.attendees?.find((a) => a.self);
+      const previousStatus = selfAttendee?.responseStatus;
+
+      // Update the attendees list with our new response
+      const updatedAttendees = currentEvent.attendees?.map((a) =>
+        a.self
+          ? {
+              ...a,
+              responseStatus: context.response as
+                | "accepted"
+                | "declined"
+                | "tentative",
+            }
+          : a,
+      );
+
+      await client.updateEvent({
+        calendarId,
+        eventId: context.eventId,
+        attendees: updatedAttendees?.map((a) => ({
+          email: a.email,
+          displayName: a.displayName,
+          optional: a.optional,
+        })),
+        sendUpdates: context.sendUpdates,
+      });
+
+      // Re-fetch to get the updated responseStatus
+      const updatedEvent = await client.getEvent(calendarId, context.eventId);
+
+      publishEventUpdated(env, updatedEvent, calendarId);
+
       return {
-        event: {
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          location: event.location,
-          start: event.start,
-          end: event.end,
-          status: event.status,
-          htmlLink: event.htmlLink,
-          created: event.created,
-          updated: event.updated,
-          creator: event.creator,
-          organizer: event.organizer,
-          attendees: event.attendees?.map((attendee) => ({
-            email: attendee.email,
-            displayName: attendee.displayName,
-            optional: attendee.optional,
-            responseStatus: attendee.responseStatus,
-          })),
-          hangoutLink: event.hangoutLink,
-          colorId: event.colorId,
-          visibility: event.visibility,
-        },
+        event: mapEvent(updatedEvent),
+        previousStatus,
+      };
+    },
+  });
+
+// ============================================================================
+// List Event Instances Tool
+// ============================================================================
+
+export const createListEventInstancesTool = (env: Env) =>
+  createPrivateTool({
+    id: "list_event_instances",
+    description:
+      "List individual instances of a recurring event. Useful for seeing when a weekly meeting occurs, modifying specific instances, etc.",
+    inputSchema: z.object({
+      calendarId: z
+        .string()
+        .optional()
+        .describe("Calendar ID (default: 'primary')"),
+      eventId: z
+        .string()
+        .describe("ID of the recurring event to list instances for"),
+      timeMin: z
+        .string()
+        .optional()
+        .describe("Start of time range (RFC3339 format)"),
+      timeMax: z
+        .string()
+        .optional()
+        .describe("End of time range (RFC3339 format)"),
+      maxResults: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(2500)
+        .optional()
+        .describe("Maximum number of instances to return (default: 50)"),
+      pageToken: z.string().optional().describe("Token for fetching next page"),
+    }),
+    outputSchema: z.object({
+      instances: z.array(EventSchema).describe("List of event instances"),
+      nextPageToken: z.string().optional().describe("Token for next page"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GoogleCalendarClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const response = await client.listEventInstances({
+        calendarId: context.calendarId || PRIMARY_CALENDAR,
+        eventId: context.eventId,
+        timeMin: context.timeMin,
+        timeMax: context.timeMax,
+        maxResults: context.maxResults,
+        pageToken: context.pageToken,
+      });
+
+      return {
+        instances: response.items.map(mapEvent),
+        nextPageToken: response.nextPageToken,
       };
     },
   });
@@ -731,5 +858,7 @@ export const eventTools = [
   createUpdateEventTool,
   createDeleteEventTool,
   createQuickAddEventTool,
+  createRespondToEventTool,
+  createListEventInstancesTool,
   createCheckUpcomingEventsTool,
 ];

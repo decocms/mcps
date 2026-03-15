@@ -186,6 +186,7 @@ export interface CreateEventInput {
   location?: string;
   start: EventDateTime;
   end: EventDateTime;
+  recurrence?: string[];
   attendees?: Array<{
     email: string;
     displayName?: string;
@@ -195,8 +196,10 @@ export interface CreateEventInput {
     useDefault: boolean;
     overrides?: Reminder[];
   };
+  conferenceData?: ConferenceData;
   colorId?: string;
   visibility?: "default" | "public" | "private" | "confidential";
+  transparency?: "opaque" | "transparent";
   guestsCanSeeOtherGuests?: boolean;
   sendUpdates?: "all" | "externalOnly" | "none";
   conferenceDataVersion?: 0 | 1;
@@ -224,4 +227,30 @@ export interface CreateCalendarInput {
   description?: string;
   location?: string;
   timeZone?: string;
+}
+
+export interface ListEventInstancesInput {
+  calendarId?: string;
+  eventId: string;
+  timeMin?: string;
+  timeMax?: string;
+  maxResults?: number;
+  pageToken?: string;
+}
+
+export interface WatchRequest {
+  id: string;
+  type: "web_hook";
+  address: string;
+  params?: {
+    ttl?: string;
+  };
+}
+
+export interface WatchResponse {
+  kind: "api#channel";
+  id: string;
+  resourceId: string;
+  resourceUri: string;
+  expiration: string;
 }

@@ -18,8 +18,11 @@ import type {
   EventsListResponse,
   FreeBusyRequest,
   FreeBusyResponse,
+  ListEventInstancesInput,
   ListEventsInput,
   UpdateEventInput,
+  WatchRequest,
+  WatchResponse,
 } from "./types.ts";
 
 export interface GoogleCalendarClientConfig {
@@ -229,6 +232,52 @@ export class GoogleCalendarClient {
     return this.request<FreeBusyResponse>(ENDPOINTS.FREEBUSY, {
       method: "POST",
       body: JSON.stringify(request),
+    });
+  }
+
+  // ==================== Event Instances Methods ====================
+
+  /**
+   * List instances of a recurring event
+   */
+  async listEventInstances(
+    input: ListEventInstancesInput,
+  ): Promise<EventsListResponse> {
+    const calendarId = input.calendarId || PRIMARY_CALENDAR;
+    const url = new URL(ENDPOINTS.INSTANCES(calendarId, input.eventId));
+
+    if (input.timeMin) url.searchParams.set("timeMin", input.timeMin);
+    if (input.timeMax) url.searchParams.set("timeMax", input.timeMax);
+    if (input.maxResults)
+      url.searchParams.set("maxResults", String(input.maxResults));
+    if (input.pageToken) url.searchParams.set("pageToken", input.pageToken);
+
+    return this.request<EventsListResponse>(url.toString());
+  }
+
+  // ==================== Watch Methods ====================
+
+  /**
+   * Set up push notifications for calendar changes
+   */
+  async watchCalendar(
+    calendarId: string,
+    request: WatchRequest,
+  ): Promise<WatchResponse> {
+    const url = ENDPOINTS.WATCH(calendarId || PRIMARY_CALENDAR);
+    return this.request<WatchResponse>(url, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Stop receiving push notifications for a channel
+   */
+  async stopWatch(channelId: string, resourceId: string): Promise<void> {
+    await this.request<void>(ENDPOINTS.STOP_CHANNEL, {
+      method: "POST",
+      body: JSON.stringify({ id: channelId, resourceId }),
     });
   }
 
