@@ -484,9 +484,15 @@ async function handleDefaultAgent(
       responseContent = await generateResponseWithStreaming(
         llmMessages,
         async (text, isComplete) => {
-          // Add cursor indicator while streaming
-          const displayText = isComplete ? text : text + " ▌";
-          await updateThinkingMessage(thinkingMsg!, displayText, authorMention);
+          if (isComplete) {
+            await updateThinkingMessage(thinkingMsg!, text, authorMention);
+          } else if (text === "") {
+            // Tool is being called - replace stale thinking text with processing indicator
+            await updateThinkingMessage(thinkingMsg!, "🔧 Processando...", authorMention);
+          } else {
+            // Streaming text with cursor indicator
+            await updateThinkingMessage(thinkingMsg!, text + " ▌", authorMention);
+          }
         },
       );
     } else {
