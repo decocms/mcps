@@ -799,6 +799,7 @@ export const createGetChannelMessagesTool = (env: Env) =>
 
       // Pre-format for display so the LLM doesn't need to reformat
       const formatted = mapped
+        .slice()
         .reverse()
         .map((m, i) => {
           const date = new Date(m.timestamp);
