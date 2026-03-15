@@ -9,6 +9,19 @@ import z from "zod";
 import type { Env } from "../../types/env.ts";
 import { discordAPI, discordAPIBatch, encodeEmoji } from "./api.ts";
 
+/**
+ * Validate that a required string parameter was provided.
+ * The MCP SDK doesn't always enforce Zod schemas at runtime,
+ * so the LLM may omit required fields — catch that early.
+ */
+function requireString(value: unknown, name: string): asserts value is string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(
+      `Missing required parameter: ${name}. Check the current context for the correct value.`,
+    );
+  }
+}
+
 // ============================================================================
 // Send Message
 // ============================================================================
@@ -22,7 +35,9 @@ export const createSendMessageTool = (env: Env) =>
       .object({
         channel_id: z
           .string()
-          .describe("The channel ID to send the message to"),
+          .describe(
+            "The channel ID to send the message to (use channel_id from Current Context)",
+          ),
         content: z
           .string()
           .optional()
@@ -70,6 +85,7 @@ export const createSendMessageTool = (env: Env) =>
         reply_to?: string;
         tts?: boolean;
       };
+      requireString(input.channel_id, "channel_id");
 
       const body: Record<string, unknown> = {};
       if (input.content) body.content = input.content;
@@ -109,7 +125,9 @@ export const createEditMessageTool = (env: Env) =>
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID to edit"),
         content: z.string().optional().describe("The new message content"),
         embeds: z
@@ -132,6 +150,7 @@ export const createEditMessageTool = (env: Env) =>
         content?: string;
         embeds?: unknown[];
       };
+      requireString(input.channel_id, "channel_id");
 
       const body: Record<string, unknown> = {};
       if (input.content !== undefined) body.content = input.content;
@@ -166,7 +185,9 @@ export const createDeleteMessageTool = (env: Env) =>
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z
           .string()
           .optional()
@@ -200,6 +221,7 @@ export const createDeleteMessageTool = (env: Env) =>
         message_ids?: string[];
         reason?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       // Build list of IDs to delete
       const idsToDelete: string[] = [];
@@ -284,7 +306,9 @@ export const createBulkDeleteMessagesTool = (env: Env) =>
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_ids: z
           .array(z.string())
           .min(2)
@@ -311,6 +335,7 @@ export const createBulkDeleteMessagesTool = (env: Env) =>
         message_ids: string[];
         reason?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       if (input.message_ids.length < 2) {
         throw new Error(
@@ -379,7 +404,9 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
     annotations: { destructiveHint: true, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         limit: z
           .number()
           .min(1)
@@ -434,6 +461,7 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
         before_id?: string;
         reason?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       console.log(
         `🧹 [Purge] Starting purge in channel ${input.channel_id}, limit: ${input.limit}`,
@@ -675,7 +703,9 @@ export const createGetMessageTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID"),
       })
       .strict(),
@@ -697,6 +727,7 @@ export const createGetMessageTool = (env: Env) =>
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { channel_id: string; message_id: string };
+      requireString(input.channel_id, "channel_id");
 
       const result = await discordAPI<{
         id: string;
@@ -724,7 +755,9 @@ export const createGetChannelMessagesTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         limit: z
           .number()
           .min(1)
@@ -774,6 +807,7 @@ export const createGetChannelMessagesTool = (env: Env) =>
         after?: string;
         around?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       const params = new URLSearchParams();
       params.set("limit", String(input.limit));
@@ -830,7 +864,9 @@ export const createPinMessageTool = (env: Env) =>
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID to pin"),
         reason: z
           .string()
@@ -845,6 +881,7 @@ export const createPinMessageTool = (env: Env) =>
         message_id: string;
         reason?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       await discordAPI(
         env,
@@ -863,7 +900,9 @@ export const createUnpinMessageTool = (env: Env) =>
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID to unpin"),
         reason: z
           .string()
@@ -878,6 +917,7 @@ export const createUnpinMessageTool = (env: Env) =>
         message_id: string;
         reason?: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       await discordAPI(
         env,
@@ -896,7 +936,9 @@ export const createGetPinnedMessagesTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
       })
       .strict(),
     outputSchema: z
@@ -914,6 +956,7 @@ export const createGetPinnedMessagesTool = (env: Env) =>
       .strict(),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { channel_id: string };
+      requireString(input.channel_id, "channel_id");
 
       const messages = await discordAPI<
         Array<{
@@ -947,7 +990,9 @@ export const createAddReactionTool = (env: Env) =>
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID"),
         emoji: z
           .string()
@@ -963,6 +1008,7 @@ export const createAddReactionTool = (env: Env) =>
         message_id: string;
         emoji: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       await discordAPI(
         env,
@@ -981,7 +1027,9 @@ export const createRemoveReactionTool = (env: Env) =>
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID"),
         emoji: z.string().describe("The emoji to remove"),
       })
@@ -993,6 +1041,7 @@ export const createRemoveReactionTool = (env: Env) =>
         message_id: string;
         emoji: string;
       };
+      requireString(input.channel_id, "channel_id");
 
       await discordAPI(
         env,
@@ -1011,7 +1060,9 @@ export const createGetReactionsTool = (env: Env) =>
     annotations: { readOnlyHint: true },
     inputSchema: z
       .object({
-        channel_id: z.string().describe("The channel ID"),
+        channel_id: z
+          .string()
+          .describe("The channel ID (use channel_id from Current Context)"),
         message_id: z.string().describe("The message ID"),
         emoji: z.string().describe("The emoji"),
         limit: z
@@ -1041,6 +1092,7 @@ export const createGetReactionsTool = (env: Env) =>
         emoji: string;
         limit: number;
       };
+      requireString(input.channel_id, "channel_id");
 
       const users = await discordAPI<
         Array<{ id: string; username: string; bot?: boolean }>
