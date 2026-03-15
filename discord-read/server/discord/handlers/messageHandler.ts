@@ -350,11 +350,37 @@ async function handleDefaultAgent(
 
   // Check if streaming is enabled
   const useStreaming = isStreamingEnabled() && isLLMConfigured();
+  const authorMention = `<@${message.author.id}>`;
 
   // Send thinking message for streaming mode
   let thinkingMsg: Message | null = null;
+  let thinkingAnimation: { stop: () => void } | null = null;
   if (useStreaming) {
     thinkingMsg = await sendThinkingMessage(message);
+    if (thinkingMsg) {
+      // Start thinking animation (matches Slack's pattern)
+      const frames = [
+        "🤔 Pensando",
+        "🤔 Pensando.",
+        "🤔 Pensando..",
+        "🤔 Pensando...",
+      ];
+      let frame = 0;
+      let stopped = false;
+      const timer = setInterval(() => {
+        if (stopped) return;
+        frame = (frame + 1) % frames.length;
+        updateThinkingMessage(thinkingMsg!, frames[frame], authorMention).catch(
+          () => {},
+        );
+      }, 800);
+      thinkingAnimation = {
+        stop() {
+          stopped = true;
+          clearInterval(timer);
+        },
+      };
+    }
   }
 
   // If no thinking message (streaming disabled or failed), use typing indicator
@@ -481,35 +507,17 @@ async function handleDefaultAgent(
     llmMessages.push(userMessage);
 
     let responseContent: string;
-    const authorMention = `<@${message.author.id}>`;
 
     // Use streaming if we have a thinking message, otherwise use regular generation
     if (thinkingMsg && useStreaming) {
-      // Streaming mode: update message in real-time
-      const toolProcessingMessage =
-        env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
-          ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processando...";
-
+      // Streaming mode: only update on completion (matches Slack's pattern)
+      // Animation keeps running until isComplete arrives
       responseContent = await generateResponseWithStreaming(
         llmMessages,
         async (text, isComplete) => {
-          if (isComplete) {
-            await updateThinkingMessage(thinkingMsg!, text, authorMention);
-          } else if (text === "") {
-            // Tool is being called - replace stale thinking text with processing indicator
-            await updateThinkingMessage(
-              thinkingMsg!,
-              toolProcessingMessage,
-              authorMention,
-            );
-          } else {
-            // Streaming text with cursor indicator
-            await updateThinkingMessage(
-              thinkingMsg!,
-              text + " ▌",
-              authorMention,
-            );
-          }
+          if (!isComplete) return;
+          thinkingAnimation?.stop();
+          await updateThinkingMessage(thinkingMsg!, text, authorMention);
         },
       );
     } else {
@@ -642,7 +650,8 @@ async function handleDefaultAgent(
       await safeReply(message, errorResponse);
     }
   } finally {
-    // Always stop the typing indicator
+    // Always stop indicators
+    thinkingAnimation?.stop();
     if (typingInterval) {
       clearInterval(typingInterval);
     }
