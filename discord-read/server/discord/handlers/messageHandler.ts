@@ -481,6 +481,10 @@ async function handleDefaultAgent(
     // Use streaming if we have a thinking message, otherwise use regular generation
     if (thinkingMsg && useStreaming) {
       // Streaming mode: update message in real-time
+      const toolProcessingMessage =
+        env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG?.TOOL_PROCESSING_MESSAGE ??
+        "🔧 Processing...";
+
       responseContent = await generateResponseWithStreaming(
         llmMessages,
         async (text, isComplete) => {
@@ -488,7 +492,7 @@ async function handleDefaultAgent(
             await updateThinkingMessage(thinkingMsg!, text, authorMention);
           } else if (text === "") {
             // Tool is being called - replace stale thinking text with processing indicator
-            await updateThinkingMessage(thinkingMsg!, "🔧 Processando...", authorMention);
+            await updateThinkingMessage(thinkingMsg!, toolProcessingMessage, authorMention);
           } else {
             // Streaming text with cursor indicator
             await updateThinkingMessage(thinkingMsg!, text + " ▌", authorMention);

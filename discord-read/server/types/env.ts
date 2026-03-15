@@ -142,6 +142,12 @@ export const StateSchema = z.object({
         .describe(
           "Stream responses in real-time (message updates as LLM generates). Disable for a single final response.",
         ),
+      TOOL_PROCESSING_MESSAGE: z
+        .string()
+        .default("🔧 Processing...")
+        .describe(
+          "Message shown while a tool is being executed (e.g. '🔧 Processando...', '🔧 Processing...')",
+        ),
     })
     .optional()
     .describe("How the bot responds to messages"),
