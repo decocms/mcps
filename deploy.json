@@ -402,5 +402,14 @@
       "whisper/**",
       "shared/**"
     ]
+  },
+  "multi-channel-inbox": {
+    "site": "multi-channel-inbox",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "multi-channel-inbox/**",
+      "shared/**"
+    ]
   }
 }
