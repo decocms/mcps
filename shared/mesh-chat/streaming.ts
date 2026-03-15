@@ -99,7 +99,11 @@ export async function processStreamWithCallback(
   body: ReadableStream<Uint8Array>,
   onStream: StreamCallback,
 ): Promise<string> {
-  const reader = body.pipeThrough(new TextDecoderStream()).getReader();
+  const reader = body
+    .pipeThrough(
+      new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>,
+    )
+    .getReader();
 
   let buffer = "";
   const state = {
