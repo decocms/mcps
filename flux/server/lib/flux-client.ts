@@ -61,6 +61,11 @@ async function getResult(
     },
   );
 
+  // BFL API returns 404 for tasks not yet indexed — parse body as normal response
+  if (response.status === 404) {
+    return (await response.json()) as GetResultResponse;
+  }
+
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`FLUX polling error: ${response.status} - ${error}`);
