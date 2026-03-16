@@ -7,11 +7,8 @@
  */
 import { veoTools } from "./veo.ts";
 
-// Convert veoTools object to array of tool functions
-const veoToolsArray = Object.values(veoTools);
-
 // Export all tools from all domains
-export const tools = [...veoToolsArray];
+export const tools = [...veoTools];
 
 // Re-export domain-specific tools for direct access if needed
 export { veoTools } from "./veo.ts";
