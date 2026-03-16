@@ -50,7 +50,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       "OBJECT_STORAGE::PUT_PRESIGNED_URL",
     ],
   },
-  tools,
+  tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
 if (runtime.fetch) {
