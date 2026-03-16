@@ -224,6 +224,7 @@ const createGetGeneratedVideoTool = (env: Env) =>
         metadata: {
           operationName,
         },
+        fileName: operationName.replaceAll("/", "_"),
       });
 
       return {
