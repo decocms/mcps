@@ -411,5 +411,14 @@
       "multi-channel-inbox/**",
       "shared/**"
     ]
+  },
+  "veo": {
+    "site": "veo",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "veo/**",
+      "shared/**"
+    ]
   }
 }
