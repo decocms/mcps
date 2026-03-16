@@ -11,6 +11,7 @@ const PKG_NAME_OVERRIDES = {
   vibemcp: "mcp-studio",
   "github-mcp": "github",
   openrouter: "@decocms/openrouter",
+  airtable: "@decocms/airtable",
   "blog-generator": "blog-post-generator",
 };
 
