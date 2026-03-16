@@ -420,5 +420,14 @@
       "veo/**",
       "shared/**"
     ]
+  },
+  "vwo": {
+    "site": "vwo",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "vwo/**",
+      "shared/**"
+    ]
   }
 }
