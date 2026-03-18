@@ -2,12 +2,13 @@
  * GitHub Webhook HTTP Handler
  *
  * Receives GitHub App webhook events, verifies signatures,
- * and routes them to the correct connection.
+ * and publishes them to the Event Bus.
  */
 
+import { publishEvent } from "./lib/event-bus.ts";
 import { getConnectionForInstallation } from "./lib/installation-map.ts";
-import { verifyGitHubWebhook } from "./lib/webhook.ts";
 import { hasMatchingTrigger } from "./lib/trigger-store.ts";
+import { verifyGitHubWebhook } from "./lib/webhook.ts";
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
@@ -48,6 +49,18 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
   console.log(
     `[Webhook] ${fullEventType} | subject=${subject} | connection=${connectionId} | sender=${payload.sender?.login}`,
   );
+
+  // Publish to Event Bus
+  try {
+    await publishEvent({
+      type: fullEventType,
+      subject,
+      data: payload as Record<string, unknown>,
+    });
+  } catch (error) {
+    console.error("[Webhook] Failed to publish to Event Bus:", error);
+    return Response.json({ error: "Failed to publish event" }, { status: 502 });
+  }
 
   if (
     hasMatchingTrigger(
