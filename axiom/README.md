@@ -1,0 +1,72 @@
+```
+
+                  ███╗   ███╗ ██████╗██████╗
+                  ████╗ ████║██╔════╝██╔══██╗
+                  ██╔████╔██║██║     ██████╔╝
+                  ██║╚██╔╝██║██║     ██╔═══╝
+                  ██║ ╚═╝ ██║╚██████╗██║
+                  ╚═╝     ╚═╝ ╚═════╝╚═╝
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Model Context Protocol Server ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Axiom, Inc.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+# axiom-mcp
+The Axiom MCP Server connects AI assistants to your Axiom observability data using the Model Context Protocol (MCP). This repository contains:
+
+- A Cloudflare Workers app that hosts the MCP server (`apps/mcp`).
+- A TypeScript package with core MCP utilities and tools (`packages/mcp`).
+
+For installation, setup, supported tools, authentication, and client-specific instructions (Claude, Cursor, VS Code, etc.), please see the official documentation:
+
+https://axiom.co/docs/console/intelligence/mcp-server#axiom-mcp-server
+
+Issues and contributions are welcome.
+  - CSV formatting for tabular data instead of verbose JSON
+  - Automatic `maxBinAutoGroups` for time-series aggregations
+  - Intelligent result shaping that prioritizes important fields
+  - Adaptive truncation based on data volume
+
+## Runtime URL Parameters
+
+When connecting to the hosted server endpoints (`/sse` or `/mcp`), you can pass runtime tuning parameters via query string:
+
+- `max-age`: Integer. Caps total table cells rendered by tools. Example: `?max-age=500`.
+- `with-otel`: Boolean (`1`/`true`). Enables OpenTelemetry tool family if your org has OTel integrations. Example: `?with-otel=1`.
+
+Example connection URL (MCP Inspector):
+
+```
+http://localhost:8788/sse?org-id=<ORG_ID>&max-age=500&with-otel=1
+```
+
+
+## Troubleshooting
+
+### Connection Issues
+
+Remote MCP connections are still early. If you experience issues:
+1. Try restarting your client
+2. Disable and re-enable the Axiom MCP server
+3. Check your authentication credentials
+4. Try clearing and re-authenticating your client
+
+### Authentication Errors
+
+- **OAuth**: Ensure you're logged into Axiom in your browser
+
+OR
+- **Personal Token**: Verify your token starts with `xapt-` and hasn't expired
+- **Organization ID**: Must match the organization that issued the token
+
+## Support
+
+- [Documentation](https://axiom.co/docs)
+- [GitHub Issues](https://github.com/axiomhq/mcp/issues)
+- [Community Discord](https://axiom.co/discord)
+
+## License
+
+MIT License.

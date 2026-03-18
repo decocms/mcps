@@ -1,0 +1,20 @@
+{
+  "scopeName": "axiom",
+  "name": "axiom-mcp",
+  "friendlyName": "Axiom",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.axiom.co/sse"
+  },
+  "description": "List datasets, schemas, run APL queries, and use prompts for exploration, anomalies, and monitoring.",
+  "icon": "https://github.com/axiomhq.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Monitoring", "Analytics"],
+    "official": true,
+    "tags": ["axiom", "apl", "datasets", "queries", "anomaly-detection", "monitoring", "observability"],
+    "short_description": "List datasets, run APL queries, and explore anomalies and monitoring data",
+    "mesh_description": "Provides access to the Axiom observability platform. It enables users to list datasets and schemas, run APL queries, and use prompts for exploration, anomaly detection, and monitoring. Axiom is a cloud-native observability platform for logs, traces, and metrics. Perfect for DevOps and SRE teams who want AI-powered log analysis and infrastructure monitoring."
+  }
+}

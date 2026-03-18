@@ -1,0 +1,20 @@
+{
+  "scopeName": "blockscout",
+  "name": "blockscout-mcp",
+  "friendlyName": "Blockscout",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.blockscout.com/mcp"
+  },
+  "description": "MCP server for Blockscout - blockchain explorer with on-chain data access.",
+  "icon": "https://github.com/blockscout.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Infrastructure", "Monitoring"],
+    "official": true,
+    "tags": ["blockscout", "blockchain", "explorer", "ethereum", "monitoring", "on-chain-data"],
+    "short_description": "Blockchain explorer with on-chain data access and monitoring",
+    "mesh_description": "Provides an MCP server for Blockscout, a blockchain explorer. It enables users to interact with and query on-chain data including balances, transactions, smart contracts, and token transfers. Blockscout supports multiple EVM-compatible chains and provides comprehensive blockchain analytics. Perfect for developers and analysts working with blockchain data who need AI-powered on-chain intelligence."
+  }
+}

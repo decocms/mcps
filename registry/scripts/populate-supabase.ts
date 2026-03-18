@@ -105,7 +105,7 @@ CREATE POLICY "Allow service role full access" ON mcp_servers
 // ═══════════════════════════════════════════════════════════════
 
 const REGISTRY_URL = "https://registry.modelcontextprotocol.io/v0.1/servers";
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 15000;
 
 // ═══════════════════════════════════════════════════════════════
 // Database Setup
@@ -206,11 +206,7 @@ interface McpServerRow {
   published_at: string | null;
   registry_updated_at: string | null;
   is_latest: boolean;
-  friendly_name: string | null;
   short_description: string | null;
-  mesh_description: string | null;
-  tags: string[] | null;
-  categories: string[] | null;
   verified: boolean;
   unlisted: boolean;
   has_oauth: boolean;
@@ -398,11 +394,12 @@ async function fetchAllServersWithVersions(
     `📦 Need to fetch ${serversToFetch.length} servers (${allServerNames.length - serversToFetch.length} already in DB)\n`,
   );
 
-  // 3. Fetch versions with reduced concurrency and retry
-  const CONCURRENT_REQUESTS = 3; // Reduced to avoid 429
-  const BATCH_DELAY = 1000; // 1s between batches
+  // 3. Fetch versions with concurrency control and retry
+  const CONCURRENT_REQUESTS = 10;
+  const BATCH_DELAY = 300;
   const allServers: RegistryServer[] = [];
   const startFrom = resumeFrom || 0;
+  let failedServers: string[] = [];
 
   console.log(
     `📦 Fetching versions starting from server ${startFrom}/${serversToFetch.length}...\n`,
@@ -416,26 +413,49 @@ async function fetchAllServersWithVersions(
         return { name, versions, success: true };
       } catch (error) {
         console.error(`   ❌ Failed to fetch ${name}: ${error}`);
-        return { name, versions: [], success: false };
+        return { name, versions: [] as RegistryServer[], success: false };
       }
     });
 
-    const results = await Promise.all(promises);
+    // Race with a per-batch timeout to avoid hanging
+    const batchTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Batch timeout")), REQUEST_TIMEOUT * 2),
+    );
+
+    let results: Array<{
+      name: string;
+      versions: RegistryServer[];
+      success: boolean;
+    }>;
+    try {
+      results = await Promise.race([Promise.all(promises), batchTimeout]);
+    } catch {
+      console.error(`   ⏰ Batch timeout at server ${i}, skipping batch`);
+      failedServers.push(...batch);
+      continue;
+    }
 
     // Coletar versões bem-sucedidas
     const successfulResults = results.filter((r) => r.success);
+    failedServers.push(...results.filter((r) => !r.success).map((r) => r.name));
     const batchServers = successfulResults.flatMap((r) => r.versions);
     allServers.push(...batchServers);
 
     const processed = i + batch.length;
     console.log(
-      `   Processed ${processed}/${serversToFetch.length} servers (${allServers.length} total versions)`,
+      `   Processed ${processed}/${serversToFetch.length} servers (${allServers.length} total versions, ${failedServers.length} failed)`,
     );
 
     // Delay between batches to avoid rate limiting
     if (i + CONCURRENT_REQUESTS < serversToFetch.length) {
       await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
     }
+  }
+
+  if (failedServers.length > 0) {
+    console.log(
+      `\n⚠️  ${failedServers.length} servers failed, will be retried next run`,
+    );
   }
 
   console.log(`\n✅ Total server versions fetched: ${allServers.length}`);
@@ -492,11 +512,8 @@ function transformServerToRow(
     // Duplicate description in short_description (for consistency)
     short_description: server.server.description ?? null,
 
-    // To be filled later (manually or AI)
-    friendly_name: null,
-    mesh_description: null,
-    tags: null,
-    categories: null,
+    // NOTE: friendly_name, mesh_description, tags, categories are NOT set here
+    // They are managed by enrich-with-ai.ts and should not be overwritten by sync
   };
 }
 

@@ -1,0 +1,20 @@
+{
+  "scopeName": "medusa",
+  "name": "medusa-mcp",
+  "friendlyName": "Medusa",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://docs.medusajs.com/mcp"
+  },
+  "description": "Retrieve information from the Medusa documentation to assist you with your Medusa development.",
+  "icon": "https://github.com/medusajs.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Development"],
+    "official": true,
+    "tags": ["medusa", "documentation", "ecommerce", "development", "api", "headless-commerce"],
+    "short_description": "Retrieve Medusa documentation for ecommerce development assistance",
+    "mesh_description": "Provides access to Medusa documentation. It enables users to retrieve information and guidance directly from the Medusa documentation, assisting them with their Medusa development efforts. Medusa is an open-source headless commerce platform. This MCP helps developers with API references, plugin development, storefront integration, and commerce workflow implementation."
+  }
+}

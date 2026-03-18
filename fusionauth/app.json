@@ -1,0 +1,20 @@
+{
+  "scopeName": "fusionauth",
+  "name": "fusionauth-docs-mcp",
+  "friendlyName": "FusionAuth Documentation",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://ai.fusionauth.dev/mcp/docs"
+  },
+  "description": "FusionAuth Documentation MCP server - access identity and authentication documentation.",
+  "icon": "https://fusionauth.io/img/favicon.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Development", "Security"],
+    "official": true,
+    "tags": ["fusionauth", "documentation", "identity", "authentication", "security", "knowledge-base"],
+    "short_description": "Access FusionAuth identity and authentication documentation",
+    "mesh_description": "Provides access to FusionAuth documentation. Enables users to retrieve and explore documentation content for the FusionAuth identity platform. Covers authentication, authorization, user management, single sign-on, and multi-factor authentication topics. Perfect for developers integrating FusionAuth into their applications and needing quick access to implementation guides and API references."
+  }
+}

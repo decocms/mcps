@@ -1,0 +1,20 @@
+{
+  "scopeName": "newrelic",
+  "name": "newrelic-mcp",
+  "friendlyName": "New Relic",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.newrelic.com/mcp"
+  },
+  "description": "Access New Relic observability data through MCP - query metrics, logs, traces, entities, and more.",
+  "icon": "https://newrelic.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Monitoring", "Analytics"],
+    "official": true,
+    "tags": ["newrelic", "observability", "metrics", "logs", "traces", "entities", "monitoring"],
+    "short_description": "Access New Relic observability data - query metrics, logs, traces, entities, and more",
+    "mesh_description": "Provides access to New Relic observability data through MCP. Enables querying metrics, logs, traces, entities, and more. Connects to New Relic's platform, allowing users to integrate observability data into AI workflows for intelligent monitoring, anomaly detection, and performance analysis. Perfect for DevOps teams seeking AI-powered insights into application performance and infrastructure health."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "scopeName": "jotform",
+  "name": "jotform-mcp",
+  "friendlyName": "Jotform",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.jotform.com/"
+  },
+  "description": "Jotform MCP - manage forms, retrieve submissions, and automate workflows.",
+  "icon": "https://www.jotform.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Automation"],
+    "official": true,
+    "tags": ["jotform", "forms", "data", "automation", "api", "submissions"],
+    "short_description": "Manage forms, retrieve submissions, and automate form workflows",
+    "mesh_description": "Provides connectivity to Jotform, enabling interaction with forms and data. It allows users to manage forms, retrieve submissions, and automate workflows involving form data. Connects to Jotform's API for comprehensive form management, including creating forms, analyzing responses, and building automated data collection pipelines. Perfect for teams using Jotform for surveys, registrations, and data collection."
+  }
+}

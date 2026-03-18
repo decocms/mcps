@@ -7,7 +7,7 @@
     "url": "https://mcp.postman.com/mcp"
   },
   "description": "Official Postman MCP - Operate on the Postman API to manage collections, environments, requests, and API workflows programmatically.",
-  "icon": "https://www.postman.com/_ar-assets/images/favicon-1-48.png",
+  "icon": "https://github.com/postmanlabs.png",
   "unlisted": false,
   "official": true,
   "metadata": {

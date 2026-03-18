@@ -1,0 +1,20 @@
+{
+  "scopeName": "redpanda",
+  "name": "redpanda-docs-mcp",
+  "friendlyName": "Redpanda",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://docs.redpanda.com/mcp"
+  },
+  "description": "Get authoritative answers to questions about Redpanda.",
+  "icon": "https://github.com/redpanda-data.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Development", "Infrastructure"],
+    "official": true,
+    "tags": ["redpanda", "documentation", "kafka", "streaming", "data", "distributed-system"],
+    "short_description": "Get authoritative answers to questions about Redpanda",
+    "mesh_description": "Provides authoritative answers to questions about Redpanda. It enables users to quickly find relevant information about Redpanda's features, configuration, and usage. Redpanda is a Kafka-compatible streaming data platform designed for mission-critical workloads. This MCP connects to the Redpanda documentation to help developers with setup, configuration, and troubleshooting."
+  }
+}

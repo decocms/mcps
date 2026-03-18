@@ -1,0 +1,20 @@
+{
+  "scopeName": "amplitude",
+  "name": "amplitude-mcp",
+  "friendlyName": "Amplitude",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.amplitude.com/mcp"
+  },
+  "description": "Search, access, and get insights on your Amplitude data.",
+  "icon": "https://amplitude.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Analytics", "Data"],
+    "official": true,
+    "tags": ["amplitude", "analytics", "data", "insights", "search", "product-analytics"],
+    "short_description": "Search, access, and get insights on your Amplitude analytics data",
+    "mesh_description": "Provides search, access, and insights into Amplitude data. It enables users to explore and understand their Amplitude analytics data more effectively. Connect AI to your product analytics, query user behavior data, analyze funnels, and generate insights from your Amplitude workspace. Perfect for product and growth teams seeking AI-powered analytics and data-driven decision making."
+  }
+}

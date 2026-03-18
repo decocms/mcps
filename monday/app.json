@@ -1,0 +1,20 @@
+{
+  "scopeName": "monday",
+  "name": "monday-mcp",
+  "friendlyName": "monday.com",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.monday.com/mcp"
+  },
+  "description": "MCP server for monday.com integration - manage boards, items, and automations.",
+  "icon": "https://lh3.googleusercontent.com/g41etfSLQlq9RvddIM21H3awOYMW_wX0UK_FkMOvGMy_HTpwnYq4uebT3QjggKbnhYU",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Automation"],
+    "official": true,
+    "tags": ["monday.com", "project-management", "automation", "workflows", "integration", "boards"],
+    "short_description": "MCP server for monday.com - manage boards, items, and automations",
+    "mesh_description": "Connects to monday.com, enabling integration with its project management platform. It provides a bridge for interacting with monday.com boards, tasks, and automations. Manage work items, update statuses, create automations, and build custom workflows. Perfect for teams using monday.com for project management who want AI-powered assistance with task management and workflow automation."
+  }
+}

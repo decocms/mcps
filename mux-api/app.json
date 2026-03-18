@@ -1,0 +1,20 @@
+{
+  "scopeName": "mux",
+  "name": "mux-mcp",
+  "friendlyName": "Mux API",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.mux.com"
+  },
+  "description": "The official MCP Server for the Mux API - video streaming and media management.",
+  "icon": "https://mux.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Communication"],
+    "official": true,
+    "tags": ["mux", "video", "api", "streaming", "media", "encoding"],
+    "short_description": "Official MCP Server for the Mux API - video streaming and media management",
+    "mesh_description": "Provides a Model Context Protocol (MCP) server for the Mux API. It enables seamless integration with the Mux video platform, allowing users to manage and interact with their video content and streaming infrastructure. Upload, transcode, and deliver video content at scale. Monitor video quality metrics, manage live streams, and integrate video capabilities into AI workflows. Perfect for teams building video-powered applications."
+  }
+}

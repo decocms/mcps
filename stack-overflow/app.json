@@ -1,0 +1,20 @@
+{
+  "scopeName": "stackoverflow",
+  "name": "stackoverflow-mcp",
+  "friendlyName": "Stack Overflow",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.stackoverflow.com"
+  },
+  "description": "Access Stack Overflow's trusted and verified technical questions and answers.",
+  "icon": "https://cdn.sstatic.net/Sites/stackoverflow/Img/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Development", "Data"],
+    "official": true,
+    "tags": ["stack-overflow", "technical-questions", "answers", "knowledge-base", "programming", "solutions"],
+    "short_description": "Access Stack Overflow's trusted and verified technical questions and answers",
+    "mesh_description": "Provides access to Stack Overflow's trusted and verified technical questions and answers. This MCP enables users to retrieve and utilize the vast knowledge base of Stack Overflow directly within their AI workflows. Search for programming solutions, best practices, and technical guidance from the world's largest developer community. Perfect for enhancing AI-powered development tools with accurate, community-vetted programming knowledge."
+  }
+}

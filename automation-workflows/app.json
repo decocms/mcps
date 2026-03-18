@@ -1,0 +1,20 @@
+{
+  "scopeName": "make",
+  "name": "automation-workflows-mcp",
+  "friendlyName": "Automation Workflows",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.make.com"
+  },
+  "description": "Give your AI agents the tools to build, manage, and run automation workflows.",
+  "icon": "https://www.make.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Automation", "AI"],
+    "official": true,
+    "tags": ["automation", "workflows", "ai", "agents", "make", "integration"],
+    "short_description": "Build, manage, and run automation workflows with AI agents",
+    "mesh_description": "Provides tools to build, manage, and run automation workflows. Powered by Make.com, it enables AI agents to design and execute complex automation tasks across hundreds of applications. Create multi-step workflows, connect different services, and orchestrate business processes. Perfect for teams looking to automate repetitive tasks and build intelligent workflow pipelines."
+  }
+}

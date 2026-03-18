@@ -7,7 +7,7 @@
     "url": "https://mcp.exa.ai/mcp"
   },
   "description": "AI-powered semantic search engine for finding high-quality content. Search the web with natural language understanding and get relevant results instantly.",
-  "icon": "https://assets.decocache.com/decocms/3638f940-f5b8-463f-8724-f092c82d1f4c/exa.jpeg",
+  "icon": "https://github.com/exa-labs.png",
   "unlisted": false,
   "metadata": {
     "categories": ["Search"],
