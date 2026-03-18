@@ -1,0 +1,20 @@
+{
+  "scopeName": "linear",
+  "name": "linear-mcp",
+  "friendlyName": "Linear",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.linear.app/sse"
+  },
+  "description": "MCP server for Linear project management and issue tracking.",
+  "icon": "https://linear.app/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Development"],
+    "official": true,
+    "tags": ["linear", "project-management", "issue-tracking", "sse", "streamable-http"],
+    "short_description": "MCP server for Linear project management and issue tracking",
+    "mesh_description": "Provides an MCP server for Linear, a project management and issue tracking tool. Enables seamless integration with Linear's features, allowing users to manage projects, track issues, and collaborate effectively. Connects to Linear's API to support workflows like creating and updating issues, managing cycles and projects, querying backlogs, and integrating with development pipelines. Perfect for engineering teams that use Linear for agile project management and want AI-powered assistance with task management and sprint planning."
+  }
+}

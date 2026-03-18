@@ -19,7 +19,9 @@
     "enrich:ai": "bun run scripts/enrich-with-ai.ts",
     "enrich:ai:force": "bun run scripts/enrich-with-ai.ts --force",
     "enrich:ai:test": "bun run scripts/enrich-with-ai.ts --limit=3",
-    "enrich:ai:retry": "bun run scripts/enrich-with-ai.ts --limit=400"
+    "enrich:ai:retry": "bun run scripts/enrich-with-ai.ts --limit=400",
+    "publish:verified": "bun run scripts/publish-verified.ts",
+    "publish:verified:dry": "bun run scripts/publish-verified.ts --dry-run"
   },
   "dependencies": {
     "@decocms/bindings": "^1.0.4",

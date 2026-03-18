@@ -1,0 +1,20 @@
+{
+  "scopeName": "thoughtspot",
+  "name": "thoughtspot-mcp",
+  "friendlyName": "ThoughtSpot",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://agent.thoughtspot.app/mcp"
+  },
+  "description": "MCP Server for ThoughtSpot - provides OAuth authentication and tools for querying data.",
+  "icon": "https://www.thoughtspot.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Analytics"],
+    "official": true,
+    "tags": ["thoughtspot", "analytics", "data-analysis", "querying", "business-intelligence"],
+    "short_description": "Query and analyze data with ThoughtSpot's AI-powered analytics",
+    "mesh_description": "Provides OAuth authentication and tools for querying data in ThoughtSpot. It enables secure access to ThoughtSpot's AI-powered analytics platform. Query data using natural language, build interactive visualizations, and generate insights from your data warehouse. Perfect for business analysts and data teams seeking AI-powered self-service analytics."
+  }
+}

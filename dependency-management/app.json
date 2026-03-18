@@ -1,0 +1,20 @@
+{
+  "scopeName": "sonatype",
+  "name": "dependency-management-mcp",
+  "friendlyName": "Dependency Management",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.guide.sonatype.com/mcp"
+  },
+  "description": "Sonatype component intelligence: versions, security analysis, and Trust Score recommendations.",
+  "icon": "https://www.sonatype.com/hubfs/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Development", "Security"],
+    "official": true,
+    "tags": ["dependency-management", "security", "trust-score", "component-analysis", "versions", "sonatype"],
+    "short_description": "Component intelligence: versions, security analysis, and Trust Score recommendations",
+    "mesh_description": "Provides component intelligence, offering insights into versions, security analysis, and Trust Score recommendations. It enables users to make informed decisions about the dependencies used in their projects. Analyzes open-source components for known vulnerabilities, license compliance, and quality metrics. Perfect for development teams seeking to secure their software supply chain."
+  }
+}

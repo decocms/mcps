@@ -1,0 +1,20 @@
+{
+  "scopeName": "thousandeyes",
+  "name": "thousandeyes-mcp",
+  "friendlyName": "ThousandEyes",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://api.thousandeyes.com/mcp"
+  },
+  "description": "ThousandEyes MCP Server for network intelligence: outages, anomalies, alerts, events, and tests.",
+  "icon": "https://app.thousandeyes.com/static/images/logo_128x128.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Monitoring", "Analytics", "Infrastructure"],
+    "official": true,
+    "tags": ["thousandeyes", "network", "monitoring", "alerts", "events", "tests", "outages"],
+    "short_description": "Network intelligence: outages, anomalies, alerts, events, and tests",
+    "mesh_description": "Provides network intelligence by monitoring outages, anomalies, alerts, events, and tests. It enables users to gain insights into network performance and identify potential issues. The server integrates with ThousandEyes' comprehensive network monitoring platform, providing real-time visibility into internet and cloud performance. Perfect for network operations teams and SREs monitoring distributed infrastructure."
+  }
+}

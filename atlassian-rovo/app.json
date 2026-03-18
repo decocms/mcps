@@ -1,0 +1,20 @@
+{
+  "scopeName": "atlassian",
+  "name": "atlassian-rovo-mcp",
+  "friendlyName": "Atlassian Rovo",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.atlassian.com/v1/mcp"
+  },
+  "description": "Atlassian Rovo MCP Server - connect AI to Jira, Confluence, and other Atlassian products.",
+  "icon": "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Communication", "Productivity"],
+    "official": true,
+    "tags": ["atlassian", "rovo", "jira", "confluence", "collaboration", "streamable-http"],
+    "short_description": "Connect AI to Jira, Confluence, and other Atlassian products",
+    "mesh_description": "Provides an MCP server for Atlassian Rovo. This server enables integration with Atlassian's collaboration platform, allowing users to connect and interact with Jira, Confluence, and other Atlassian products through AI. Manage issues, search knowledge bases, collaborate on documents, and automate workflows across the Atlassian ecosystem. Perfect for teams deeply embedded in the Atlassian stack."
+  }
+}

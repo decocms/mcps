@@ -1,0 +1,20 @@
+{
+  "scopeName": "egnyte",
+  "name": "egnyte-mcp",
+  "friendlyName": "Egnyte",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp-server.egnyte.com/mcp"
+  },
+  "description": "Egnyte's remote MCP server for secure AI access, search, upload and file management in your account.",
+  "icon": "https://www.egnyte.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Security"],
+    "official": true,
+    "tags": ["egnyte", "file-management", "security", "ai-access", "remote-access", "secure-storage"],
+    "short_description": "Secure AI access, search, upload and file management in your Egnyte account",
+    "mesh_description": "Provides secure access to Egnyte's file management system for AI applications. Enables AI models to securely search, upload, and manage files within an Egnyte account. Connects AI workflows to Egnyte's enterprise content collaboration platform with full security controls. Perfect for organizations that need AI-powered document management while maintaining enterprise-grade security and compliance."
+  }
+}

@@ -29,15 +29,18 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Recommended models (cheap and always available)
+// Recommended models (quality + cost balance)
 const RECOMMENDED_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct", // ~$0.35/1M tokens, excellent quality
-  "meta-llama/llama-3.1-8b-instruct", // ~$0.05/1M tokens, good quality
-  "google/gemini-flash-1.5-8b", // ~$0.05/1M tokens
+  "google/gemini-2.0-flash-001", // Fast, high quality, cheap
+  "anthropic/claude-3.5-haiku", // Great quality, affordable
+  "meta-llama/llama-3.3-70b-instruct", // Good open-source option
 ];
 
 // Use default model or one specified in env
-const MODEL = process.env.OPENROUTER_MODEL || RECOMMENDED_MODELS[1]; // llama-3.1-8b by default
+const MODEL = process.env.OPENROUTER_MODEL || RECOMMENDED_MODELS[0];
+
+// Concurrency for AI enrichment
+const ENRICH_CONCURRENCY = 5;
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -54,6 +57,7 @@ interface McpServer {
   categories: string[] | null;
   repository: { url: string } | null;
   remotes: Array<{ type: string }> | null;
+  icons: Array<{ src: string; mimeType?: string; theme?: string }> | null;
   verified: boolean;
 }
 
@@ -62,6 +66,7 @@ interface EnrichedData {
   mesh_description: string;
   tags: string[];
   categories: string[];
+  icon_url: string | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -92,8 +97,8 @@ async function generateWithLLM(
             content: prompt,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 1500, // Increased to avoid truncated responses
+        temperature: 0.3,
+        max_tokens: 800,
       }),
     });
 
@@ -134,68 +139,65 @@ async function enrichMcpWithAI(
   const remotesInfo =
     server.remotes?.map((r) => `${r.type}`).join(", ") || "none";
 
-  const prompt = `You are an expert at analyzing MCP (Model Context Protocol) servers and generating metadata for them.
+  const prompt = `You generate metadata for MCP (Model Context Protocol) servers. Respond with ONLY valid JSON, nothing else.
 
-## MCP Technical Information:
-- **Full Name**: ${name}
-- **Description**: ${description}
-- **Version**: ${server.version}
-- **Repository**: ${repoUrl}
-- **Remotes**: ${remotesInfo}
-- **Has Remote Support**: ${hasRemote}
-- **Is NPM Package**: ${isNpm}
-- **Is Verified**: ${isVerified}
+Input:
+- ID: ${name}
+- Description: ${description || "(none)"}
+- Repo: ${repoUrl || "(none)"}
+- Remotes: ${remotesInfo}
 
-## Your Task:
-Generate metadata in JSON format (respond ONLY with valid JSON, no markdown blocks):
+Output this exact JSON structure:
+{"friendly_name":"...","mesh_description":"...","tags":[...],"categories":[...],"icon_url":"..."}
 
-{
-  "friendly_name": "Extract the official/brand name from the technical name",
-  "mesh_description": "Detailed markdown description (100-200 words)",
-  "tags": ["relevant", "lowercase", "tags"],
-  "categories": ["1-3", "high-level", "categories"]
-}
+Rules for each field:
 
-## IMPORTANT - Language:
-- ALL content MUST be in ENGLISH
-- If the original description is in another language (Portuguese, Spanish, Chinese, etc.), TRANSLATE it to English
-- Keep technical terms and brand names as-is
-- Use clear, professional English
-
-## Instructions:
-
-### 1. friendly_name:
-- Extract the REAL brand/company name from the technical identifier
+friendly_name — The name of the SERVICE or PRODUCT this MCP connects to. This is what users see in a marketplace.
+- The name must identify WHAT SERVICE the MCP integrates with, NOT who published it
+- The ID has the format "publisher/project". The publisher prefix (com.xxx, ai.xxx, io.github.xxx) is the AUTHOR — ignore it for naming
+- Look at the project part AND the description to determine the actual service/product
+- CRITICAL: If the description or project name mentions a well-known service (Notion, Slack, GitHub, PostgreSQL, etc.), use THAT as the name
+- For original tools that don't wrap an external service, derive the name from the project part
+- NEVER use the publisher/author name as the friendly_name
+- NEVER include "MCP Server" or "MCP" suffix
+- Keep it as short as possible — prefer 1-2 words when the brand name alone is sufficient
+- 1-4 words max, proper capitalization
 - Examples:
-  * "com.cloudflare.mcp/mcp" → "Cloudflare"
-  * "ai.exa/exa" → "Exa"
-  * "com.microsoft/microsoft-learn-mcp" → "Microsoft Learn"
-  * "io.github.user/project-name" → "Project Name"
-- Keep it short (1-3 words max)
-- Use proper capitalization
+  "ai.smithery/smithery-notion" → "Notion" (it's a Notion integration, NOT Smithery)
+  "ai.smithery/smithery-slack" → "Slack" (it integrates with Slack)
+  "com.stripe/stripe-agent-toolkit" → "Stripe Agent Toolkit"
+  "ai.exa/exa" → "Exa" (Exa IS the product, do NOT add extra words like "Code" or "Search")
+  "io.github.someuser/postgres-query" → "Postgres Query"
+  "com.microsoft/microsoft-learn-mcp" → "Microsoft Learn"
+  "io.github.user/weather-api-server" → "Weather API"
+  "dev.supabase/supabase-mcp" → "Supabase"
+  "io.github.user/github-issues-tool" → "GitHub Issues"
+  "ai.acme/jira-connector" → "Jira Connector" (NOT "Acme")
 
-### 2. mesh_description:
-- Write 100-200 words in markdown
-- Explain what this MCP does
-- Include main features and use cases
-- Be professional and informative
-- Use bullet points or sections if helpful
+mesh_description — A concise, informative description (80-150 words, plain text, NO markdown).
+- First sentence: what it does in one line
+- Then 2-3 sentences covering key features, integrations, and use cases
+- Write in third person ("Provides...", "Enables...", "Connects...")
+- MUST be in English (translate if needed)
+- Be factual — only describe what the description/name suggests, don't invent features
 
-### 3. tags:
-- 5-8 specific, relevant tags
-- All lowercase
-- Examples: "search", "database", "ai", "monitoring", "cloud", "api"
-- Focus on functionality and technology
+tags — 4-6 lowercase tags describing functionality and technology.
+- Be specific: prefer "postgresql" over "database", "github" over "code"
+- Include the primary technology/platform and the main use case
+- No generic tags like "tool", "server", "mcp"
 
-### 4. categories:
-- Pick 1-3 from this list ONLY:
-  * productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation
-- Choose the most relevant ones
+categories — 1-2 from ONLY this list: productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation
+- Pick the most relevant. When in doubt, pick fewer.
 
-## Response Format:
-- ONLY valid JSON
-- NO markdown code blocks
-- NO explanations outside the JSON`;
+icon_url — A URL for the service/product's official icon or logo.
+- If this MCP connects to a well-known service, use that service's favicon: "https://<domain>/favicon.ico"
+- For GitHub-hosted projects, use the owner's GitHub avatar: "https://github.com/<owner>.png"
+- Examples:
+  Notion MCP → "https://www.notion.so/images/favicon.ico"
+  Slack MCP → "https://slack.com/favicon.ico"
+  GitHub tool → "https://github.com/github.png"
+  "io.github.someuser/tool" → "https://github.com/someuser.png"
+- If you cannot determine a reasonable icon URL, use null`;
 
   // Retry loop - retry LLM call if it fails
   const maxAttempts = 2;
@@ -240,6 +242,7 @@ Generate metadata in JSON format (respond ONLY with valid JSON, no markdown bloc
         mesh_description: data.mesh_description,
         tags: data.tags,
         categories: data.categories,
+        icon_url: data.icon_url || null,
       };
     } catch (error) {
       if (attempt === maxAttempts) {
@@ -268,33 +271,46 @@ async function getMcpsToEnrich(
   force: boolean,
   limit?: number,
 ): Promise<McpServer[]> {
-  let query = supabase
-    .from("mcp_servers")
-    .select(
-      "name, version, description, short_description, friendly_name, mesh_description, tags, categories, repository, remotes, verified",
-    )
-    .eq("is_latest", true) // Only latest versions
-    .order("verified", { ascending: false }) // Verified first
-    .order("name");
+  const allResults: McpServer[] = [];
+  const pageSize = 1000;
+  let offset = 0;
 
-  if (!force) {
-    // Only MCPs without data
-    query = query.or(
-      "friendly_name.is.null,mesh_description.is.null,tags.is.null,categories.is.null",
-    );
+  while (true) {
+    let query = supabase
+      .from("mcp_servers")
+      .select(
+        "name, version, description, short_description, friendly_name, mesh_description, tags, categories, repository, remotes, icons, verified",
+      )
+      .eq("is_latest", true)
+      .order("verified", { ascending: false })
+      .order("name")
+      .range(offset, offset + pageSize - 1);
+
+    if (!force) {
+      query = query.or(
+        "friendly_name.is.null,mesh_description.is.null,tags.is.null,categories.is.null",
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Error fetching MCPs: ${error.message}`);
+    }
+
+    const rows = (data || []) as McpServer[];
+    allResults.push(...rows);
+
+    if (rows.length < pageSize) break; // Last page
+    offset += pageSize;
   }
 
+  // Apply limit after fetching all
   if (limit) {
-    query = query.limit(limit);
+    return allResults.slice(0, limit);
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Error fetching MCPs: ${error.message}`);
-  }
-
-  return (data || []) as McpServer[];
+  return allResults;
 }
 
 /**
@@ -302,9 +318,24 @@ async function getMcpsToEnrich(
  */
 async function updateMcp(
   supabase: SupabaseClient,
-  name: string,
+  server: McpServer,
   data: EnrichedData,
 ): Promise<number> {
+  const updatePayload: Record<string, unknown> = {
+    friendly_name: data.friendly_name,
+    mesh_description: data.mesh_description,
+    tags: data.tags,
+    categories: data.categories,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Only set icons if the server doesn't already have them and AI suggested one
+  const hasExistingIcons =
+    Array.isArray(server.icons) && server.icons.length > 0;
+  if (!hasExistingIcons && data.icon_url) {
+    updatePayload.icons = [{ src: data.icon_url }];
+  }
+
   // Update ALL versions with this name
   const {
     data: updated,
@@ -312,18 +343,12 @@ async function updateMcp(
     count,
   } = await supabase
     .from("mcp_servers")
-    .update({
-      friendly_name: data.friendly_name,
-      mesh_description: data.mesh_description,
-      tags: data.tags,
-      categories: data.categories,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("name", name) // name doesn't include version, so it gets all versions
+    .update(updatePayload)
+    .eq("name", server.name)
     .select();
 
   if (error) {
-    throw new Error(`Error updating MCP ${name}: ${error.message}`);
+    throw new Error(`Error updating MCP ${server.name}: ${error.message}`);
   }
 
   const versionsUpdated = count || updated?.length || 0;
@@ -377,44 +402,43 @@ async function main() {
       return;
     }
 
-    // 2. Process each MCP
+    // 2. Process MCPs with concurrency
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < mcps.length; i++) {
-      const mcp = mcps[i];
-      console.log(
-        `\n[${i + 1}/${mcps.length}] Processing: ${mcp.name}${mcp.verified ? " ⭐" : ""}`,
+    for (let i = 0; i < mcps.length; i += ENRICH_CONCURRENCY) {
+      const batch = mcps.slice(i, i + ENRICH_CONCURRENCY);
+
+      const results = await Promise.allSettled(
+        batch.map(async (mcp, idx) => {
+          const globalIdx = i + idx + 1;
+          console.log(
+            `\n[${globalIdx}/${mcps.length}] Processing: ${mcp.name}${mcp.verified ? " ⭐" : ""}`,
+          );
+
+          const enriched = await enrichMcpWithAI(mcp, openrouterApiKey);
+          const versionsUpdated = await updateMcp(supabase, mcp, enriched);
+
+          console.log(
+            `   ✅ [${globalIdx}] ${enriched.friendly_name} (${enriched.categories.join(", ")})`,
+          );
+
+          return { name: mcp.name, enriched, versionsUpdated };
+        }),
       );
 
-      try {
-        // Generate enriched data
-        const enriched = await enrichMcpWithAI(mcp, openrouterApiKey);
-
-        // Update database (ALL versions)
-        const versionsUpdated = await updateMcp(supabase, mcp.name, enriched);
-
-        console.log(
-          `   ✅ Updated ${versionsUpdated} version${versionsUpdated > 1 ? "s" : ""} successfully`,
-        );
-        console.log(`      Name: ${enriched.friendly_name}`);
-        console.log(
-          `      Tags: ${enriched.tags.slice(0, 3).join(", ")}${enriched.tags.length > 3 ? "..." : ""}`,
-        );
-        console.log(`      Categories: ${enriched.categories.join(", ")}`);
-
-        successCount++;
-
-        // Rate limiting - wait 2s between requests
-        if (i < mcps.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          successCount++;
+        } else {
+          errorCount++;
+          console.error(`   ❌ Error: ${result.reason}`);
         }
-      } catch (error) {
-        console.error(`   ❌ Error: ${error}`);
-        errorCount++;
+      }
 
-        // Continue with next ones
-        continue;
+      // Brief delay between batches
+      if (i + ENRICH_CONCURRENCY < mcps.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 

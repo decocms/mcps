@@ -1,0 +1,20 @@
+{
+  "scopeName": "rootly",
+  "name": "rootly-mcp",
+  "friendlyName": "Rootly",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.rootly.com/sse"
+  },
+  "description": "Incident management, on-call scheduling, and intelligent analysis powered by Rootly.",
+  "icon": "https://rootly.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Communication", "Automation"],
+    "official": true,
+    "tags": ["rootly", "incident-management", "on-call", "scheduling", "automation", "analysis"],
+    "short_description": "Incident management, on-call scheduling, and intelligent analysis powered by Rootly",
+    "mesh_description": "Provides incident management, on-call scheduling, and intelligent analysis. It enables users to streamline incident response workflows, automate on-call rotations, and gain insights into incident trends. Connects to Rootly's platform for comprehensive incident lifecycle management, from detection and alerting to post-mortem analysis. Perfect for SRE and DevOps teams managing complex incident response processes."
+  }
+}

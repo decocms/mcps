@@ -1,0 +1,20 @@
+{
+  "scopeName": "waystation",
+  "name": "postgresql-mcp",
+  "friendlyName": "PostgreSQL",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://waystation.ai/postgres/mcp"
+  },
+  "description": "Connect to your PostgreSQL database to query data and schemas.",
+  "icon": "https://www.postgresql.org/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Data", "Infrastructure"],
+    "official": true,
+    "tags": ["postgresql", "database", "query", "schema", "data", "sql"],
+    "short_description": "Connect to your PostgreSQL database to query data and schemas",
+    "mesh_description": "Connects to a PostgreSQL database, enabling users to query data and schemas. This integration provides a seamless way to interact with PostgreSQL databases directly. It supports various query operations, schema exploration, and data retrieval, making it ideal for AI-powered database management, data analysis, and automated reporting workflows."
+  }
+}

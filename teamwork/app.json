@@ -1,0 +1,20 @@
+{
+  "scopeName": "teamwork",
+  "name": "teamwork-mcp",
+  "friendlyName": "Teamwork.com",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.ai.teamwork.com"
+  },
+  "description": "The Teamwork.com official MCP server helps teams efficiently manage client projects with AI.",
+  "icon": "https://www.teamwork.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Automation"],
+    "official": true,
+    "tags": ["teamwork", "project-management", "ai", "collaboration", "client-management"],
+    "short_description": "Manage client projects efficiently with AI-powered project management",
+    "mesh_description": "The Teamwork.com official MCP server helps teams efficiently manage client projects with AI. It provides tools for project planning, task management, and team collaboration. The server integrates with Teamwork.com to streamline project workflows, automate task assignments, and provide intelligent project insights. Perfect for agencies and service teams managing multiple client projects."
+  }
+}
