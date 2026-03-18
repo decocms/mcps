@@ -5,17 +5,14 @@
  * and publishes them to the Event Bus.
  */
 
+import { publishEvent } from "./lib/event-bus.ts";
 import { getConnectionForInstallation } from "./lib/installation-map.ts";
-import { verifyGitHubWebhook } from "./lib/webhook.ts";
 import { hasMatchingTrigger } from "./lib/trigger-store.ts";
-import type { Env } from "./types/env.ts";
+import { verifyGitHubWebhook } from "./lib/webhook.ts";
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
-export async function handleGitHubWebhook(
-  req: Request,
-  env: Env,
-): Promise<Response> {
+export async function handleGitHubWebhook(req: Request): Promise<Response> {
   const rawBody = await req.text();
   const signatureHeader = req.headers.get("x-hub-signature-256");
 
@@ -54,18 +51,15 @@ export async function handleGitHubWebhook(
   );
 
   // Publish to Event Bus
-  const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
-  if (eventBus) {
-    try {
-      await eventBus.EVENT_PUBLISH({
-        type: fullEventType,
-        subject,
-        data: payload,
-      });
-      console.log(`[Webhook] Published to Event Bus: ${fullEventType}`);
-    } catch (error) {
-      console.error("[Webhook] Failed to publish to Event Bus:", error);
-    }
+  try {
+    await publishEvent({
+      type: fullEventType,
+      subject,
+      data: payload as Record<string, unknown>,
+    });
+  } catch (error) {
+    console.error("[Webhook] Failed to publish to Event Bus:", error);
+    return Response.json({ error: "Failed to publish event" }, { status: 502 });
   }
 
   if (

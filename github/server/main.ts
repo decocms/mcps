@@ -9,6 +9,7 @@ import type { Registry } from "@decocms/mcps-shared/registry";
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { exchangeCodeForToken } from "./lib/github-client.ts";
+import { setEventPublisher } from "./lib/event-bus.ts";
 import { captureInstallationMappings } from "./lib/installation-map.ts";
 import {
   handleProxiedRequest,
@@ -72,6 +73,12 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     onChange: async (env) => {
       invalidateUpstreamCache();
 
+      // Capture Event Bus reference for webhook handler
+      const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
+      if (eventBus) {
+        setEventPublisher((event) => eventBus.EVENT_PUBLISH(event));
+      }
+
       const token = env.MESH_REQUEST_CONTEXT?.authorization;
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       if (token && connectionId) {
@@ -97,7 +104,7 @@ const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {
-    return handleGitHubWebhook(req, env);
+    return handleGitHubWebhook(req);
   }
 
   // Proxy MCP resource requests to upstream
