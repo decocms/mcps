@@ -1,20 +1,58 @@
 /**
- * GitHub Events MCP Tools
+ * GitHub MCP Tools
  *
- * Exports all tools available in this MCP.
+ * All tools come from the upstream MCP server via the proxy,
+ * plus trigger tools for the Mesh automations system.
  */
 
+import { createTool } from "@decocms/runtime/tools";
+import { z } from "zod";
+import type { Env } from "../types/env.ts";
+import { createUpstreamToolsProvider } from "../lib/mcp-proxy.ts";
 import {
-  createListRepositoriesTool,
-  createListWebhooksTool,
-} from "./management.ts";
-import { createGitHubWebhookTool } from "./webhook.ts";
+  listTriggerDefinitions,
+  configureTrigger,
+} from "../lib/trigger-store.ts";
 
-/**
- * All tools for the GitHub Events MCP
- */
+const createTriggerListTool = (_env: Env) =>
+  createTool({
+    id: "TRIGGER_LIST",
+    description:
+      "List available GitHub event triggers that can be configured for automations",
+    inputSchema: z.object({}),
+    execute: async () => {
+      return { triggers: listTriggerDefinitions() };
+    },
+  });
+
+const createTriggerConfigureTool = (_env: Env) =>
+  createTool({
+    id: "TRIGGER_CONFIGURE",
+    description: "Enable or disable a GitHub event trigger for automations",
+    inputSchema: z.object({
+      type: z.string().describe("Trigger event type e.g. github.push"),
+      params: z
+        .object({
+          repo: z
+            .string()
+            .optional()
+            .describe("Repository full name e.g. owner/repo"),
+        })
+        .default({}),
+      enabled: z.boolean().describe("Whether to enable or disable the trigger"),
+    }),
+    execute: async ({ context }) => {
+      configureTrigger(
+        context.type,
+        context.params as Record<string, string>,
+        context.enabled,
+      );
+      return { success: true };
+    },
+  });
+
 export const tools = [
-  createGitHubWebhookTool,
-  createListRepositoriesTool,
-  createListWebhooksTool,
+  createUpstreamToolsProvider(),
+  createTriggerListTool,
+  createTriggerConfigureTool,
 ];

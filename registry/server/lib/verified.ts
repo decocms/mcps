@@ -35,9 +35,6 @@ export interface ServerOverride {
 }
 
 export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
-  "io.github.github/github-mcp-server": {
-    icons: [{ src: "https://github.githubassets.com/favicons/favicon.svg" }],
-  },
   "com.stripe/mcp": {
     icons: [{ src: "https://stripe.com/img/v3/home/twitter.png" }],
   },
