@@ -8,10 +8,10 @@ export const StateSchema = z.object({
     .describe(
       "Google service account JSON key (paste the full JSON content). The service account must have domain-wide delegation enabled.",
     ),
-  IMPERSONATE_EMAIL: z
-    .string()
+  IMPERSONATE_EMAILS: z
+    .array(z.string())
     .describe(
-      "Email of the Google Workspace user to impersonate (e.g. deco@deco.cx). The service account will access this user's calendar.",
+      "Emails of Google Workspace users to impersonate. Events from all users are merged and deduplicated.",
     ),
   EVENT_BUS: BindingOf("@deco/event-bus").optional(),
 });
