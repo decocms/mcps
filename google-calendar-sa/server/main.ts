@@ -27,17 +27,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       },
     },
   },
-  tools: (env: Env) => {
-    const state = env.MESH_REQUEST_CONTEXT?.state;
-    const json = state?.SERVICE_ACCOUNT_JSON;
-    const subject = state?.IMPERSONATE_EMAIL?.trim();
-
-    if (!json || !subject) {
-      return [];
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (tools as any[]).map((createTool: (env: any) => any) => {
+  // Always register tools — credentials are validated at execution time, not registration
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools: (env: Env) =>
+    (tools as any[]).map((createTool: (env: any) => any) => {
       const tool = createTool(env);
       const originalExecute = tool.execute;
 
@@ -45,7 +38,16 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         ...tool,
         // deno-lint-ignore no-explicit-any
         execute: async (args: any) => {
-          // Get (or refresh) the SA access token and inject it where getAccessToken(env) reads from
+          const state = env.MESH_REQUEST_CONTEXT?.state;
+          const json = state?.SERVICE_ACCOUNT_JSON;
+          const subject = state?.IMPERSONATE_EMAIL?.trim();
+
+          if (!json || !subject) {
+            throw new Error(
+              "Service account not configured. Please fill in SERVICE_ACCOUNT_JSON and IMPERSONATE_EMAIL in the MCP settings.",
+            );
+          }
+
           const token = await getServiceAccountAccessToken(json, subject, [
             GOOGLE_SCOPES.CALENDAR,
             GOOGLE_SCOPES.CALENDAR_EVENTS,
@@ -57,8 +59,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           return originalExecute(args);
         },
       };
-    });
-  },
+    }),
 });
 
 serve(runtime.fetch);
