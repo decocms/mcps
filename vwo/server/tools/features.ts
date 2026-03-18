@@ -38,6 +38,7 @@ export const createCreateFeatureTool = (env: Env) =>
         .describe("Feature type: TEMPORARY (default) or PERMANENT"),
       goals: z
         .array(z.object({ metricId: z.number().describe("Metric ID") }))
+        .min(1)
         .describe("At least one goal with a metric ID"),
       variables: z
         .array(

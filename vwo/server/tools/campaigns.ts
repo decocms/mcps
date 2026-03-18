@@ -109,10 +109,13 @@ export const createUpdateCampaignStatusTool = (env: Env) =>
         .string()
         .optional()
         .describe("Account ID override. Uses default if not provided."),
-      ids: z.array(z.number()).describe("Array of campaign IDs to update"),
+      ids: z
+        .array(z.number())
+        .min(1)
+        .describe("Array of campaign IDs to update"),
       status: z
-        .string()
-        .describe("New status: RUNNING, STOPPED, PAUSED, TRASHED, or RESTORED"),
+        .enum(["RUNNING", "STOPPED", "PAUSED", "TRASHED", "RESTORED"])
+        .describe("New status for the campaigns"),
     }),
     execute: async ({ context }) => {
       const client = new VWOClient(getApiToken(env));

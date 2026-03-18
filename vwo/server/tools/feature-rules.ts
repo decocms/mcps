@@ -13,8 +13,12 @@ export const createListFeatureRulesTool = (env: Env) =>
         .string()
         .optional()
         .describe("Account ID override. Uses default if not provided."),
-      environmentId: z.string().describe("Environment ID or key"),
-      featureId: z.string().describe("Feature flag ID or key"),
+      environmentId: z
+        .union([z.string(), z.number()])
+        .describe("Environment ID or key"),
+      featureId: z
+        .union([z.string(), z.number()])
+        .describe("Feature flag ID or key"),
       limit: z
         .number()
         .optional()
@@ -41,8 +45,12 @@ export const createCreateFeatureRuleTool = (env: Env) =>
         .string()
         .optional()
         .describe("Account ID override. Uses default if not provided."),
-      environmentId: z.string().describe("Environment ID or key"),
-      featureId: z.string().describe("Feature flag ID or key"),
+      environmentId: z
+        .union([z.string(), z.number()])
+        .describe("Environment ID or key"),
+      featureId: z
+        .union([z.string(), z.number()])
+        .describe("Feature flag ID or key"),
       name: z.string().describe("Rule name"),
       key: z.string().describe("Unique rule identifier"),
       type: z

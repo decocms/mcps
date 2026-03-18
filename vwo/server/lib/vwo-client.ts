@@ -223,8 +223,8 @@ export class VWOClient {
 
   async listFeatureRules(
     accountId: string,
-    environmentId: string,
-    featureId: string,
+    environmentId: string | number,
+    featureId: string | number,
     params?: { limit?: number; offset?: number },
   ): Promise<unknown> {
     const qs = this.buildQueryString(params ?? {});
@@ -235,8 +235,8 @@ export class VWOClient {
 
   async createFeatureRule(
     accountId: string,
-    environmentId: string,
-    featureId: string,
+    environmentId: string | number,
+    featureId: string | number,
     body: {
       name: string;
       key: string;

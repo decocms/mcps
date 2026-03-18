@@ -7,6 +7,7 @@ export const StateSchema = z.object({
     .describe("VWO API Token from https://app.vwo.com/#/developers/tokens"),
   accountId: z
     .string()
+    .min(1)
     .describe(
       "Default VWO Account/Workspace ID. Use 'current' for main workspace or an integer ID.",
     ),
