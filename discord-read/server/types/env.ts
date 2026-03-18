@@ -70,6 +70,13 @@ export const StateSchema = z.object({
       "Discord User ID of the bot owner. Used for admin-only commands.",
     ),
 
+  BOT_SUPER_ADMINS: z
+    .string()
+    .optional()
+    .describe(
+      "Comma-separated list of Discord User IDs with super admin permissions (bypass all role checks). Example: '607266543859925014,123456789'",
+    ),
+
   // ============================================================================
   // Config do Discord Bot
   // ============================================================================
@@ -141,6 +148,12 @@ export const StateSchema = z.object({
         .default(true)
         .describe(
           "Stream responses in real-time (message updates as LLM generates). Disable for a single final response.",
+        ),
+      TOOL_PROCESSING_MESSAGE: z
+        .string()
+        .default("🔧 Processando...")
+        .describe(
+          "Message shown while a tool is being executed (e.g. '🔧 Processando...', '🔧 Processing...')",
         ),
     })
     .optional()

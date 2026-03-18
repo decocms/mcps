@@ -13,7 +13,7 @@ import {
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv, getCurrentEnv } from "./bot-manager.ts";
+import { updateEnv, getCurrentEnv, ensureBotRunning } from "./bot-manager.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
@@ -198,6 +198,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const authorizedGuildsStr = state?.AUTHORIZED_GUILDS;
       const botOwnerId = state?.BOT_OWNER_ID;
       const commandPrefix = state?.COMMAND_PREFIX || "!";
+      const superAdminsStr = state?.BOT_SUPER_ADMINS;
 
       // Parse authorized guilds (comma-separated string to array)
       const authorizedGuilds = authorizedGuildsStr
@@ -206,6 +207,21 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             .map((g) => g.trim())
             .filter(Boolean)
         : [];
+
+      // Parse and set super admins (comma-separated string to array)
+      const superAdmins = superAdminsStr
+        ? superAdminsStr
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean)
+        : [];
+      if (superAdmins.length > 0) {
+        const { setSuperAdmins } = await import(
+          "./discord/handlers/messageHandler.ts"
+        );
+        setSuperAdmins(superAdmins);
+        console.log(`[CONFIG] Super admins: ${superAdmins.length} configured`);
+      }
 
       // If we have a connection ID, sync to config-cache (discordPublicKey is optional but needed for webhooks)
       if (connectionId && organizationId && meshUrl) {
@@ -256,17 +272,29 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
-      // NOTE: Discord client is NOT auto-initialized on config save
-      // User must manually start the bot using DISCORD_BOT_START tool
-      // This prevents issues with multiple instances and unwanted bot starts
+      // Auto-initialize Discord client when config is available
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
       if (hasAuth) {
-        if (discordInitialized && getDiscordClient()) {
+        if (discordInitialized && getDiscordClient()?.isReady()) {
           console.log("[CONFIG] ✅ Bot is running");
         } else {
-          console.log(
-            "[CONFIG] ℹ️ Bot not started. Use DISCORD_BOT_START tool to start the bot.",
-          );
+          console.log("[CONFIG] ⚡ Auto-starting Discord bot...");
+          try {
+            const started = await ensureBotRunning(env);
+            if (started) {
+              discordInitialized = true;
+              console.log("[CONFIG] ✅ Bot auto-started successfully");
+            } else {
+              console.log(
+                "[CONFIG] ⚠️ Bot auto-start failed. Use DISCORD_BOT_START tool manually.",
+              );
+            }
+          } catch (error) {
+            console.error(
+              "[CONFIG] ❌ Bot auto-start error:",
+              error instanceof Error ? error.message : String(error),
+            );
+          }
         }
       } else {
         logger.info(

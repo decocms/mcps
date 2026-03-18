@@ -67,6 +67,10 @@ async function processLines(
       state.toolCallCount++;
       state.hasActiveToolCycle = true;
       state.textContent = "";
+      // Notify callback that pre-tool text was cleared (so UI can replace stale thinking text)
+      if (onStream) {
+        await onStream("", false);
+      }
       console.log(
         `[MeshChat] Tool call #${state.toolCallCount}: ${parsed.toolName ?? "unknown"}`,
       );
@@ -95,7 +99,11 @@ export async function processStreamWithCallback(
   body: ReadableStream<Uint8Array>,
   onStream: StreamCallback,
 ): Promise<string> {
-  const reader = body.pipeThrough(new TextDecoderStream()).getReader();
+  const reader = body
+    .pipeThrough(
+      new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>,
+    )
+    .getReader();
 
   let buffer = "";
   const state = {

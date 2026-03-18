@@ -1,10 +1,12 @@
 import type { Env } from "server/main.ts";
 import { createVeoClient, VeoModels, type VeoModel } from "./utils/veo.ts";
-import { createVideoGeneratorTools } from "@decocms/mcps-shared/video-generators";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import {
-  OPERATION_MAX_WAIT_MS,
-  OPERATION_POLL_INTERVAL_MS,
-} from "../constants.ts";
+  saveVideo,
+  createGenerateVideoInputSchema,
+  createExtendVideoInputSchema,
+} from "@decocms/mcps-shared/video-generators";
+import { z } from "zod";
 
 /** Minimal interface for the resolved OBJECT_STORAGE binding */
 interface ObjectStorageBinding {
@@ -71,122 +73,196 @@ function createStorageAdapter(objectStorage: ObjectStorageBinding) {
   };
 }
 
-export const veoTools = createVideoGeneratorTools<
-  Env,
-  ReturnType<typeof createVeoClient>,
-  VeoModel
->({
-  metadata: {
-    provider: "Veo",
-    description: "Generate videos using Veo",
-    models: VeoModels.options,
-    defaultModel: "veo-3.1-generate-preview",
-  },
-  getStorage: (env) => {
-    const objectStorage = getObjectStorage(env);
-    return createStorageAdapter(objectStorage);
-  },
-  getClient: (env) => createVeoClient(env),
+// Schemas
+const generateVideoInputSchema = createGenerateVideoInputSchema(
+  VeoModels.options,
+  "veo-3.1-generate-preview",
+);
 
-  generateTool: {
-    execute: async ({ client, input }) => {
-      const modelToUse = input.model ?? "veo-3.1-generate-preview";
+const extendVideoInputSchema = createExtendVideoInputSchema(
+  VeoModels.options,
+  "veo-3.1-generate-preview",
+);
+
+const GenerateVideoOutputSchema = z.object({
+  operationName: z
+    .string()
+    .describe(
+      "Operation name to use with GET_GENERATED_VIDEO to check status and retrieve the video",
+    ),
+  status: z.string().describe("Current status of the video generation"),
+  error: z.boolean().optional().describe("Whether the request failed"),
+  finishReason: z.string().optional().describe("Error reason if failed"),
+});
+
+const GetGeneratedVideoInputSchema = z.object({
+  operationName: z
+    .string()
+    .describe("The operation name returned by GENERATE_VIDEO or EXTEND_VIDEO"),
+});
+
+const GetGeneratedVideoOutputSchema = z.object({
+  status: z
+    .enum(["processing", "completed", "failed"])
+    .describe("Current status of the video generation"),
+  operationName: z.string().describe("The operation name for reference"),
+  video: z
+    .string()
+    .optional()
+    .describe("URL of the generated video (when completed)"),
+  error: z.string().optional().describe("Error message if failed"),
+});
+
+const ExtendVideoOutputSchema = z.object({
+  operationName: z
+    .string()
+    .describe(
+      "Operation name to use with GET_GENERATED_VIDEO to check status and retrieve the video",
+    ),
+  status: z.string().describe("Current status of the video extension"),
+  error: z.boolean().optional().describe("Whether the request failed"),
+  finishReason: z.string().optional().describe("Error reason if failed"),
+});
+
+// Tool factories
+
+const createGenerateVideoTool = (env: Env) =>
+  createPrivateTool({
+    id: "GENERATE_VIDEO",
+    description:
+      "Start generating a video using Google Veo. Returns an operation name immediately. Use GET_GENERATED_VIDEO with the operation name to check status and retrieve the video once ready.",
+    inputSchema: generateVideoInputSchema,
+    outputSchema: GenerateVideoOutputSchema,
+    execute: async ({ context }) => {
+      const client = createVeoClient(env);
+
+      const modelToUse = context.model ?? "veo-3.1-generate-preview";
       const parsedModel: VeoModel = VeoModels.parse(modelToUse);
 
       const veoAspectRatio =
-        input.aspectRatio === "16:9" || input.aspectRatio === "9:16"
-          ? input.aspectRatio
+        context.aspectRatio === "16:9" || context.aspectRatio === "9:16"
+          ? context.aspectRatio
           : "16:9";
 
-      // Start video generation
-      const operation = await client.generateVideo(input.prompt, parsedModel, {
-        aspectRatio: veoAspectRatio,
-        durationSeconds: input.duration,
-        referenceImages: input.referenceImages,
-        firstFrameImageUrl: input.firstFrameUrl,
-        lastFrameImageUrl: input.lastFrameUrl,
-        personGeneration: input.personGeneration,
-        negativePrompt: input.negativePrompt,
-      });
-
-      // Poll until complete (6 minutes max, poll every 10 seconds)
-      const completed = await client.pollOperationUntilComplete(
-        operation.name,
-        OPERATION_MAX_WAIT_MS,
-        OPERATION_POLL_INTERVAL_MS,
+      const operation = await client.generateVideo(
+        context.prompt,
+        parsedModel,
+        {
+          aspectRatio: veoAspectRatio,
+          durationSeconds: context.duration,
+          referenceImages: context.referenceImages,
+          firstFrameImageUrl: context.firstFrameUrl,
+          lastFrameImageUrl: context.lastFrameUrl,
+          personGeneration: context.personGeneration,
+          negativePrompt: context.negativePrompt,
+        },
       );
 
-      // Check if completed successfully
-      if (!completed.done || !completed.response?.generateVideoResponse) {
-        return {
-          error: true,
-          finishReason: "operation_not_completed",
-        };
-      }
-
-      const generatedSamples =
-        completed.response.generateVideoResponse.generatedSamples;
-      if (!generatedSamples || generatedSamples.length === 0) {
-        return {
-          error: true,
-          finishReason: "no_video_generated",
-        };
-      }
-
-      const video = generatedSamples[0];
-      const videoStream = await client.downloadVideo(video.video.uri);
-
       return {
-        data: videoStream,
-        mimeType: video.video.mimeType || "video/mp4",
         operationName: operation.name,
+        status: "processing",
       };
     },
-  },
-  extendTool: {
-    execute: async ({ client, input }) => {
-      // Parse and validate model with default fallback
-      const modelToUse = input.model ?? "veo-3.1-generate-preview";
+  });
+
+const createGetGeneratedVideoTool = (env: Env) =>
+  createPrivateTool({
+    id: "GET_GENERATED_VIDEO",
+    description:
+      "Check the status of a video generation operation and retrieve the video URL when completed. Use the operationName returned by GENERATE_VIDEO or EXTEND_VIDEO.",
+    inputSchema: GetGeneratedVideoInputSchema,
+    outputSchema: GetGeneratedVideoOutputSchema,
+    execute: async ({ context }) => {
+      const client = createVeoClient(env);
+      const { operationName } = context;
+
+      const operation = await client.getOperationStatus(operationName);
+
+      // Still processing
+      if (!operation.done) {
+        return {
+          status: "processing" as const,
+          operationName,
+        };
+      }
+
+      // Check for API-level errors
+      if (operation.error) {
+        return {
+          status: "failed" as const,
+          operationName,
+          error: operation.error.message,
+        };
+      }
+
+      // Check for missing video response
+      const generatedSamples =
+        operation.response?.generateVideoResponse?.generatedSamples;
+      if (!generatedSamples || generatedSamples.length === 0) {
+        return {
+          status: "failed" as const,
+          operationName,
+          error: "No video was generated",
+        };
+      }
+
+      // Download video into a buffer (S3 presigned PUT requires Content-Length)
+      const video = generatedSamples[0];
+      const mimeType = video.video.mimeType || "video/mp4";
+      const videoStream = await client.downloadVideo(video.video.uri);
+      const videoBlob = new Blob(
+        [await new Response(videoStream).arrayBuffer()],
+        { type: mimeType },
+      );
+
+      const objectStorage = getObjectStorage(env);
+      const storage = createStorageAdapter(objectStorage);
+
+      const saveResult = await saveVideo(storage, {
+        videoData: videoBlob,
+        mimeType,
+        metadata: {
+          operationName,
+        },
+        fileName: operationName.replaceAll("/", "_"),
+      });
+
+      return {
+        status: "completed" as const,
+        operationName,
+        video: saveResult.url,
+      };
+    },
+  });
+
+const createExtendVideoTool = (env: Env) =>
+  createPrivateTool({
+    id: "EXTEND_VIDEO",
+    description:
+      "Start extending or remixing an existing video using Google Veo. Returns an operation name immediately. Use GET_GENERATED_VIDEO with the operation name to check status and retrieve the video once ready.",
+    inputSchema: extendVideoInputSchema,
+    outputSchema: ExtendVideoOutputSchema,
+    execute: async ({ context }) => {
+      const client = createVeoClient(env);
+
+      const modelToUse = context.model ?? "veo-3.1-generate-preview";
       const parsedModel: VeoModel = VeoModels.parse(modelToUse);
 
       const operation = await client.extendVideo(
-        input.videoId,
-        input.prompt,
+        context.videoId,
+        context.prompt,
         parsedModel,
       );
 
-      // Poll until complete (6 minutes max, poll every 10 seconds)
-      const completed = await client.pollOperationUntilComplete(
-        operation.name,
-        OPERATION_MAX_WAIT_MS,
-        OPERATION_POLL_INTERVAL_MS,
-      );
-
-      // Check if completed successfully
-      if (!completed.done || !completed.response?.generateVideoResponse) {
-        return {
-          error: true,
-          finishReason: "operation_not_completed",
-        };
-      }
-
-      const generatedSamples =
-        completed.response.generateVideoResponse.generatedSamples;
-      if (!generatedSamples || generatedSamples.length === 0) {
-        return {
-          error: true,
-          finishReason: "no_video_generated",
-        };
-      }
-
-      const video = generatedSamples[0];
-      const videoStream = await client.downloadVideo(video.video.uri);
-
       return {
-        data: videoStream,
-        mimeType: video.video.mimeType || "video/mp4",
         operationName: operation.name,
+        status: "processing",
       };
     },
-  },
-});
+  });
+
+export const veoTools = [
+  createGenerateVideoTool,
+  createGetGeneratedVideoTool,
+  createExtendVideoTool,
+];

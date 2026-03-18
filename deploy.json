@@ -1,4 +1,13 @@
 {
+  "airtable": {
+    "site": "airtable",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "airtable/**",
+      "shared/**"
+    ]
+  },
   "github": {
     "site": "github-mcp",
     "entrypoint": "./dist/server/main.js",
@@ -391,6 +400,24 @@
     "platformName": "cloudflare-workers",
     "watch": [
       "whisper/**",
+      "shared/**"
+    ]
+  },
+  "multi-channel-inbox": {
+    "site": "multi-channel-inbox",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "multi-channel-inbox/**",
+      "shared/**"
+    ]
+  },
+  "veo": {
+    "site": "veo",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "veo/**",
       "shared/**"
     ]
   }

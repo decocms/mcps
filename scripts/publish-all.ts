@@ -14,6 +14,11 @@
  *   bun scripts/publish-all.ts --max-retries 5     # max retries on 429 (default 3)
  *   bun scripts/publish-all.ts --resume            # skip MCPs that already succeeded (reads progress file)
  *   bun scripts/publish-all.ts --reset             # clear progress file and start fresh
+ *   bun scripts/publish-all.ts --url <url>         # custom publish URL (or set MESH_ADMIN_URL env var)
+ *
+ * Environment:
+ *   MESH_ADMIN_URL    - Override the publish URL
+ *   PUBLISH_API_KEY   - API key for authentication (sent as Bearer token)
  */
 
 import { readdir, readFile, stat, writeFile } from "fs/promises";
@@ -115,7 +120,11 @@ const delayMs = Number(getArg("--delay", "2000"));
 const maxRetries = Number(getArg("--max-retries", "3"));
 
 const PUBLISH_URL =
+  getArg("--url", "") ||
+  process.env.MESH_ADMIN_URL ||
   "https://studio.decocms.com/org/deco/registry/publish-request";
+
+const PUBLISH_API_KEY = process.env.PUBLISH_API_KEY ?? "";
 
 const SKIP_FOLDERS = new Set([
   "node_modules",
@@ -304,9 +313,15 @@ async function publishWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     let res: Response;
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (PUBLISH_API_KEY) {
+        headers["Authorization"] = `Bearer ${PUBLISH_API_KEY}`;
+      }
       res = await fetch(PUBLISH_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
     } catch (err) {
@@ -376,7 +391,8 @@ async function main(): Promise<void> {
     console.log("🗑️  Progresso anterior removido\n");
   }
 
-  console.log(`📦 ${folders.length} MCPs para processar\n`);
+  console.log(`📦 ${folders.length} MCPs para processar`);
+  console.log(`🌐 URL: ${PUBLISH_URL}\n`);
 
   if (dryRun) {
     console.log("⚠️  Modo --dry-run: nenhum request será enviado\n");

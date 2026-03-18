@@ -13,10 +13,15 @@ import {
 import type { Env } from "../../types/env.ts";
 import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
-// Super Admins - always have full permissions everywhere
-const SUPER_ADMINS = [
-  "607266543859925014", // Jonas (dev)
-];
+// Super Admins - configurable via BOT_SUPER_ADMINS state field
+let superAdmins: string[] = [];
+
+/**
+ * Update the super admins list (called from config onChange or bot-manager)
+ */
+export function setSuperAdmins(ids: string[]): void {
+  superAdmins = ids;
+}
 
 // Track processed messages to prevent duplicates
 const processedMessages = new Set<string>();
@@ -36,7 +41,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (was 5 minutes)
  * Check if a user is a super admin
  */
 export function isSuperAdmin(userId: string): boolean {
-  return SUPER_ADMINS.includes(userId);
+  return superAdmins.includes(userId);
 }
 
 /**
@@ -345,11 +350,37 @@ async function handleDefaultAgent(
 
   // Check if streaming is enabled
   const useStreaming = isStreamingEnabled() && isLLMConfigured();
+  const authorMention = `<@${message.author.id}>`;
 
   // Send thinking message for streaming mode
   let thinkingMsg: Message | null = null;
+  let thinkingAnimation: { stop: () => void } | null = null;
   if (useStreaming) {
     thinkingMsg = await sendThinkingMessage(message);
+    if (thinkingMsg) {
+      // Start thinking animation (matches Slack's pattern)
+      const frames = [
+        "🤔 Pensando",
+        "🤔 Pensando.",
+        "🤔 Pensando..",
+        "🤔 Pensando...",
+      ];
+      let frame = 0;
+      let stopped = false;
+      const timer = setInterval(() => {
+        if (stopped) return;
+        frame = (frame + 1) % frames.length;
+        updateThinkingMessage(thinkingMsg!, frames[frame], authorMention).catch(
+          () => {},
+        );
+      }, 800);
+      thinkingAnimation = {
+        stop() {
+          stopped = true;
+          clearInterval(timer);
+        },
+      };
+    }
   }
 
   // If no thinking message (streaming disabled or failed), use typing indicator
@@ -476,17 +507,32 @@ async function handleDefaultAgent(
     llmMessages.push(userMessage);
 
     let responseContent: string;
-    const authorMention = `<@${message.author.id}>`;
+
+    const toolProcessingMessage =
+      env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
+        ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processando...";
 
     // Use streaming if we have a thinking message, otherwise use regular generation
     if (thinkingMsg && useStreaming) {
-      // Streaming mode: update message in real-time
+      // Streaming mode: wait-for-final pattern with tool processing support
+      // Animation keeps running until isComplete or a tool call arrives
       responseContent = await generateResponseWithStreaming(
         llmMessages,
         async (text, isComplete) => {
-          // Add cursor indicator while streaming
-          const displayText = isComplete ? text : text + " ▌";
-          await updateThinkingMessage(thinkingMsg!, displayText, authorMention);
+          if (isComplete) {
+            // Final response arrived — stop animation and show it
+            thinkingAnimation?.stop();
+            await updateThinkingMessage(thinkingMsg!, text, authorMention);
+          } else if (text === "") {
+            // A tool is being called (text cleared to "") — show processing message
+            thinkingAnimation?.stop();
+            await updateThinkingMessage(
+              thinkingMsg!,
+              toolProcessingMessage,
+              authorMention,
+            );
+          }
+          // Otherwise ignore intermediate text deltas
         },
       );
     } else {
@@ -619,7 +665,8 @@ async function handleDefaultAgent(
       await safeReply(message, errorResponse);
     }
   } finally {
-    // Always stop the typing indicator
+    // Always stop indicators
+    thinkingAnimation?.stop();
     if (typingInterval) {
       clearInterval(typingInterval);
     }

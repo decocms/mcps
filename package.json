@@ -20,6 +20,7 @@
     "build": "bun run ./scripts/build-mcp.ts"
   },
   "workspaces": [
+    "airtable",
     "blog-post-generator",
     "content-scraper",
     "data-for-seo",
@@ -27,6 +28,8 @@
     "deco-llm",
     "deco-news-weekly-digest",
     "discord-read",
+    "farmrio-reorder-collection-db",
+    "flux",
     "gemini-pro-vision",
     "github",
     "github-repo-reports",
@@ -47,6 +50,7 @@
     "hyperdx",
     "mcp-studio",
     "meta-ads",
+    "multi-channel-inbox",
     "nanobanana",
     "object-storage",
     "openrouter",
@@ -66,8 +70,6 @@
     "virtual-try-on",
     "vtex",
     "vtex-docs",
-    "farmrio-reorder-collection-db",
-    "flux",
     "whatsapp",
     "whatsapp-management",
     "whisper"
