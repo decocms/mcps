@@ -31,12 +31,20 @@ GitHub Webhooks → /webhooks/github → Installation mapping → Trigger matchi
 
 ## Development
 
+### Prerequisites
+
+This MCP requires a **GitHub App** (not a plain OAuth App) because webhook routing depends on installation IDs. The GitHub App must have:
+
+- OAuth enabled ("Request user authorization during installation")
+- Webhook permissions for the desired events
+- A callback URL matching your deployment
+
 ### Environment Variables
 
 ```bash
-GITHUB_CLIENT_ID=<client-id>
-GITHUB_CLIENT_SECRET=<client-secret>
-GITHUB_WEBHOOK_SECRET=<webhook-secret>  # Required for webhook verification
+GITHUB_CLIENT_ID=<github-app-client-id>
+GITHUB_CLIENT_SECRET=<github-app-client-secret>
+GITHUB_WEBHOOK_SECRET=<webhook-secret>  # Required for webhook signature verification
 ```
 
 ### Running locally

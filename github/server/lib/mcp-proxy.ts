@@ -68,6 +68,17 @@ async function getUpstreamClient(
 type ToolsDef = Awaited<ReturnType<Client["listTools"]>>["tools"];
 const toolsCache = new Map<string, { tools: ToolsDef; timestamp: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 50;
+
+/** Evict expired entries from the tools cache */
+function evictExpiredToolsCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of toolsCache) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      toolsCache.delete(key);
+    }
+  }
+}
 
 /**
  * Convert a JSON Schema property to a Zod schema.
@@ -160,6 +171,10 @@ export function createUpstreamToolsProvider(): (
       if (cached && now - cached.timestamp < CACHE_TTL_MS) {
         tools = cached.tools;
       } else {
+        // Evict expired entries before adding new ones
+        if (toolsCache.size >= MAX_CACHE_ENTRIES) {
+          evictExpiredToolsCache();
+        }
         const result = await client.listTools();
         tools = result.tools;
         toolsCache.set(token, { tools, timestamp: now });

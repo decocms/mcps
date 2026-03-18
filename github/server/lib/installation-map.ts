@@ -36,9 +36,9 @@ export async function captureInstallationMappings(
   connectionId: string,
 ): Promise<void> {
   try {
-    // Clear old mappings for this connection before storing new ones
-    removeConnectionMappings(connectionId);
-
+    // Fetch all pages first, then swap mappings atomically
+    const allInstallations: Array<{ id: number; account: { login: string } }> =
+      [];
     let page = 1;
     const perPage = 100;
 
@@ -56,7 +56,7 @@ export async function captureInstallationMappings(
 
       if (!response.ok) {
         console.log(
-          `[Installation] Failed to fetch installations: ${response.status}`,
+          `[Installation] Failed to fetch installations (page ${page}): ${response.status}`,
         );
         return;
       }
@@ -66,15 +66,20 @@ export async function captureInstallationMappings(
         total_count: number;
       };
 
-      for (const installation of data.installations) {
-        setInstallationMapping(installation.id, connectionId);
-        console.log(
-          `[Installation] Mapped ${installation.id} (${installation.account.login}) → ${connectionId}`,
-        );
-      }
+      allInstallations.push(...data.installations);
 
       if (data.installations.length < perPage) break;
       page++;
+    }
+
+    // Only clear old mappings after all pages fetched successfully
+    removeConnectionMappings(connectionId);
+
+    for (const installation of allInstallations) {
+      setInstallationMapping(installation.id, connectionId);
+      console.log(
+        `[Installation] Mapped ${installation.id} (${installation.account.login}) → ${connectionId}`,
+      );
     }
   } catch (error) {
     console.error("[Installation] Failed to capture mappings:", error);
