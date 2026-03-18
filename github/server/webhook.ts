@@ -49,7 +49,13 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
     `[Webhook] ${fullEventType} | subject=${subject} | connection=${connectionId} | sender=${payload.sender?.login}`,
   );
 
-  if (hasMatchingTrigger(fullEventType, payload.repository?.full_name)) {
+  if (
+    hasMatchingTrigger(
+      fullEventType,
+      payload.repository?.full_name,
+      connectionId,
+    )
+  ) {
     console.log(
       `[Webhook] TRIGGER MATCHED: ${fullEventType} | connection=${connectionId} | installation=${installationId}`,
     );

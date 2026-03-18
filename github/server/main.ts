@@ -27,11 +27,18 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     authorizationServer: "https://github.com",
 
     authorizationUrl: (callbackUrl) => {
-      const url = new URL("https://github.com/login/oauth/authorize");
-      url.searchParams.set("client_id", GITHUB_CLIENT_ID);
-
       const callbackUrlObj = new URL(callbackUrl);
       const state = callbackUrlObj.searchParams.get("state");
+
+      // Remove state from redirect_uri — pass it as a separate param
+      callbackUrlObj.searchParams.delete("state");
+      const redirectUri = callbackUrlObj.toString();
+
+      const url = new URL("https://github.com/login/oauth/authorize");
+      url.searchParams.set("client_id", GITHUB_CLIENT_ID);
+      url.searchParams.set("redirect_uri", redirectUri);
+      url.searchParams.set("scope", "repo read:org read:user");
+
       if (state) {
         url.searchParams.set("state", state);
       }
@@ -39,7 +46,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       return url.toString();
     },
 
-    exchangeCode: async ({ code }) => {
+    exchangeCode: async ({ code, redirect_uri }) => {
       if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
         throw new Error(
           "GitHub OAuth credentials not configured. " +
@@ -51,9 +58,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         code,
         GITHUB_CLIENT_ID,
         GITHUB_CLIENT_SECRET,
+        redirect_uri,
       );
-
-      console.log("[GitHub OAuth] Token exchange successful");
 
       return {
         access_token: tokenResponse.access_token,

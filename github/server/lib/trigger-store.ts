@@ -20,6 +20,7 @@ interface TriggerConfig {
   type: string;
   params: Record<string, string>;
   enabled: boolean;
+  connectionId: string;
 }
 
 export const GITHUB_TRIGGER_DEFINITIONS: TriggerDefinition[] = [
@@ -157,21 +158,27 @@ export function configureTrigger(
   type: string,
   params: Record<string, string>,
   enabled: boolean,
+  connectionId: string,
 ): void {
   if (!KNOWN_TYPES.has(type)) {
     throw new Error(`Unknown trigger type: ${type}`);
   }
-  const key = `${type}::${params.repo ?? "*"}`;
+  const key = `${connectionId}::${type}::${params.repo ?? "*"}`;
   if (enabled) {
-    triggerConfigs.set(key, { type, params, enabled });
+    triggerConfigs.set(key, { type, params, enabled, connectionId });
   } else {
     triggerConfigs.delete(key);
   }
 }
 
-export function hasMatchingTrigger(eventType: string, repo?: string): boolean {
+export function hasMatchingTrigger(
+  eventType: string,
+  repo: string | undefined,
+  connectionId: string,
+): boolean {
   for (const config of triggerConfigs.values()) {
     if (!config.enabled) continue;
+    if (config.connectionId !== connectionId) continue;
     if (config.type !== eventType) continue;
     if (config.params.repo && repo && config.params.repo !== repo) continue;
     return true;

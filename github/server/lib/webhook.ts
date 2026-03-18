@@ -27,14 +27,10 @@ export async function verifyGitHubWebhook(
   | { verified: false; payload: null }
 > {
   if (!secret) {
-    console.warn(
-      "[Webhook] No webhook secret configured, skipping verification",
+    console.error(
+      "[Webhook] No webhook secret configured — rejecting request. Set GITHUB_WEBHOOK_SECRET.",
     );
-    try {
-      return { verified: true, payload: JSON.parse(rawBody) };
-    } catch {
-      return { verified: false, payload: null };
-    }
+    return { verified: false, payload: null };
   }
 
   if (!signatureHeader) {

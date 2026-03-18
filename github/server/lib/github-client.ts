@@ -12,18 +12,25 @@ export async function exchangeCodeForToken(
   code: string,
   clientId: string,
   clientSecret: string,
+  redirectUri?: string,
 ): Promise<{ access_token: string; token_type: string }> {
+  const body: Record<string, string> = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    code,
+  };
+
+  if (redirectUri) {
+    body.redirect_uri = redirectUri;
+  }
+
   const response = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

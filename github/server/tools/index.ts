@@ -41,11 +41,17 @@ const createTriggerConfigureTool = (_env: Env) =>
         .default({}),
       enabled: z.boolean().describe("Whether to enable or disable the trigger"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const connectionId = (runtimeContext?.env as unknown as Env)
+        ?.MESH_REQUEST_CONTEXT?.connectionId;
+      if (!connectionId) {
+        throw new Error("Connection ID not available");
+      }
       configureTrigger(
         context.type,
         context.params as Record<string, string>,
         context.enabled,
+        connectionId,
       );
       return { success: true };
     },

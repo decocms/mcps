@@ -36,30 +36,45 @@ export async function captureInstallationMappings(
   connectionId: string,
 ): Promise<void> {
   try {
-    const response = await fetch("https://api.github.com/user/installations", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
+    // Clear old mappings for this connection before storing new ones
+    removeConnectionMappings(connectionId);
 
-    if (!response.ok) {
-      console.log(
-        `[Installation] Failed to fetch installations: ${response.status}`,
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      const response = await fetch(
+        `https://api.github.com/user/installations?per_page=${perPage}&page=${page}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        },
       );
-      return;
-    }
 
-    const data = (await response.json()) as {
-      installations: Array<{ id: number; account: { login: string } }>;
-    };
+      if (!response.ok) {
+        console.log(
+          `[Installation] Failed to fetch installations: ${response.status}`,
+        );
+        return;
+      }
 
-    for (const installation of data.installations) {
-      setInstallationMapping(installation.id, connectionId);
-      console.log(
-        `[Installation] Mapped ${installation.id} (${installation.account.login}) → ${connectionId}`,
-      );
+      const data = (await response.json()) as {
+        installations: Array<{ id: number; account: { login: string } }>;
+        total_count: number;
+      };
+
+      for (const installation of data.installations) {
+        setInstallationMapping(installation.id, connectionId);
+        console.log(
+          `[Installation] Mapped ${installation.id} (${installation.account.login}) → ${connectionId}`,
+        );
+      }
+
+      if (data.installations.length < perPage) break;
+      page++;
     }
   } catch (error) {
     console.error("[Installation] Failed to capture mappings:", error);

@@ -64,10 +64,9 @@ async function getUpstreamClient(
   return client;
 }
 
-/** Cached upstream tool definitions */
-let cachedTools: Awaited<ReturnType<Client["listTools"]>>["tools"] | null =
-  null;
-let cacheTimestamp = 0;
+/** Cached upstream tool definitions, keyed by token */
+type ToolsDef = Awaited<ReturnType<Client["listTools"]>>["tools"];
+const toolsCache = new Map<string, { tools: ToolsDef; timestamp: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -154,16 +153,20 @@ export function createUpstreamToolsProvider(): (
     try {
       const client = await getUpstreamClient(upstreamUrl, token);
 
-      // Check cache
+      // Check cache (keyed by token to avoid leaking between users)
       const now = Date.now();
-      if (!cachedTools || now - cacheTimestamp > CACHE_TTL_MS) {
+      const cached = toolsCache.get(token);
+      let tools: ToolsDef;
+      if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+        tools = cached.tools;
+      } else {
         const result = await client.listTools();
-        cachedTools = result.tools;
-        cacheTimestamp = now;
-        console.log(`[MCP Proxy] Found ${cachedTools.length} upstream tools`);
+        tools = result.tools;
+        toolsCache.set(token, { tools, timestamp: now });
+        console.log(`[MCP Proxy] Found ${tools.length} upstream tools`);
       }
 
-      return cachedTools.map(
+      return tools.map(
         (toolDef): CreatedTool => ({
           id: toolDef.name,
           description: toolDef.description || `GitHub tool: ${toolDef.name}`,
@@ -200,8 +203,7 @@ export function createUpstreamToolsProvider(): (
  * Invalidate the upstream tools cache and disconnect client.
  */
 export function invalidateUpstreamCache(): void {
-  cachedTools = null;
-  cacheTimestamp = 0;
+  toolsCache.clear();
 
   if (cachedClient) {
     cachedClient.close().catch(() => {});
