@@ -6,9 +6,17 @@
  * the domain separation.
  */
 import { geminiTools } from "./gemini.ts";
+import { submitImageTools } from "./submit-image.ts";
+import { getImageResultTools } from "./get-image-result.ts";
 
 // Export all tools from all domains
-export const tools = [...geminiTools];
+export const tools = [
+  ...geminiTools,
+  ...submitImageTools,
+  ...getImageResultTools,
+];
 
 // Re-export domain-specific tools for direct access if needed
 export { geminiTools } from "./gemini.ts";
+export { submitImageTools } from "./submit-image.ts";
+export { getImageResultTools } from "./get-image-result.ts";
