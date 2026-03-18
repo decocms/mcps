@@ -1,7 +1,7 @@
 {
-  "name": "google-calendar",
+  "name": "google-calendar-sa",
   "version": "1.0.0",
-  "description": "Google Calendar MCP Server - Manage calendars and events",
+  "description": "Google Calendar MCP Server with Service Account authentication",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,13 +11,9 @@
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
     "check": "tsc --noEmit"
   },
-  "exports": {
-    "./tools": "./server/tools/index.ts",
-    "./types": "./server/lib/types.ts",
-    "./constants": "./server/constants.ts"
-  },
   "dependencies": {
     "@decocms/runtime": "^1.2.6",
+    "google-calendar": "workspace:*",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -30,4 +26,3 @@
     "node": ">=22.0.0"
   }
 }
-

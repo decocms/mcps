@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "google-calendar-sa",
+  "friendlyName": "Google Calendar (Service Account)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-calendar-sa.decocache.com/mcp"
+  },
+  "description": "Access Google Calendar using a service account with domain-wide delegation. See all events for any user in your Google Workspace without per-user OAuth login.",
+  "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity"],
+    "official": false,
+    "tags": ["google", "calendar", "scheduling", "events", "meetings", "productivity", "service-account"],
+    "short_description": "Access Google Calendar using a service account with domain-wide delegation.",
+    "mesh_description": "The Google Calendar Service Account MCP provides server-to-server access to Google Calendar using a Google Workspace service account with domain-wide delegation. Unlike the OAuth-based MCP, this variant requires no per-user login — it authenticates using a service account JSON key and impersonates a target user to access their calendar. Tokens are generated and refreshed automatically. Ideal for organization-wide calendar visibility, automated scheduling, and internal tools that need to read all meetings for a shared account."
+  }
+}
