@@ -171,9 +171,13 @@ export function createUpstreamToolsProvider(): (
       if (cached && now - cached.timestamp < CACHE_TTL_MS) {
         tools = cached.tools;
       } else {
-        // Evict expired entries before adding new ones
+        // Evict expired entries; if still at cap, drop oldest
+        evictExpiredToolsCache();
         if (toolsCache.size >= MAX_CACHE_ENTRIES) {
-          evictExpiredToolsCache();
+          const oldest = [...toolsCache.entries()].sort(
+            (a, b) => a[1].timestamp - b[1].timestamp,
+          )[0];
+          if (oldest) toolsCache.delete(oldest[0]);
         }
         const result = await client.listTools();
         tools = result.tools;

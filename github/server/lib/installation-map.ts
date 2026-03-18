@@ -55,10 +55,9 @@ export async function captureInstallationMappings(
       );
 
       if (!response.ok) {
-        console.log(
-          `[Installation] Failed to fetch installations (page ${page}): ${response.status}`,
+        throw new Error(
+          `Failed to fetch installations (page ${page}): ${response.status}`,
         );
-        return;
       }
 
       const data = (await response.json()) as {
