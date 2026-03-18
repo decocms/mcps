@@ -237,7 +237,7 @@ export async function handleProxiedRequest(
   const cloned = req.clone();
   let body: { jsonrpc?: string; method?: string; params?: any; id?: unknown };
   try {
-    body = await cloned.json();
+    body = (await cloned.json()) as typeof body;
   } catch {
     return null;
   }
