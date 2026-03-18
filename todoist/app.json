@@ -1,0 +1,20 @@
+{
+  "scopeName": "todoist",
+  "name": "todoist-mcp",
+  "friendlyName": "Todoist",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://ai.todoist.net/mcp"
+  },
+  "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows.",
+  "icon": "https://todoist.com/favicon.ico",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Productivity", "Automation"],
+    "official": true,
+    "tags": ["todoist", "task-management", "productivity", "workflow", "automation"],
+    "short_description": "Manage tasks, projects, and workflows with AI-powered Todoist integration",
+    "mesh_description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows. Enables the creation, management, and organization of tasks and projects within Todoist. Connects AI agents to Todoist workflows, allowing them to automate task management, set due dates, assign priorities, manage labels, and improve personal and team productivity."
+  }
+}
