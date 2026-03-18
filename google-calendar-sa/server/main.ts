@@ -41,6 +41,16 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     const json = state?.SERVICE_ACCOUNT_JSON;
     const subject = state?.IMPERSONATE_EMAIL;
 
+    console.log("[google-calendar-sa] tools() called", {
+      hasState: !!state,
+      stateKeys: state ? Object.keys(state) : [],
+      hasJson: !!json,
+      jsonType: typeof json,
+      jsonLength: typeof json === "string" ? json.length : 0,
+      hasSubject: !!subject,
+      subject,
+    });
+
     if (!json || !subject) {
       return [];
     }
