@@ -2,16 +2,20 @@
  * GitHub Webhook HTTP Handler
  *
  * Receives GitHub App webhook events, verifies signatures,
- * and routes them to the correct connection.
+ * and publishes them to the Event Bus.
  */
 
 import { getConnectionForInstallation } from "./lib/installation-map.ts";
 import { verifyGitHubWebhook } from "./lib/webhook.ts";
 import { hasMatchingTrigger } from "./lib/trigger-store.ts";
+import type { Env } from "./types/env.ts";
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
-export async function handleGitHubWebhook(req: Request): Promise<Response> {
+export async function handleGitHubWebhook(
+  req: Request,
+  env: Env,
+): Promise<Response> {
   const rawBody = await req.text();
   const signatureHeader = req.headers.get("x-hub-signature-256");
 
@@ -48,6 +52,21 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
   console.log(
     `[Webhook] ${fullEventType} | subject=${subject} | connection=${connectionId} | sender=${payload.sender?.login}`,
   );
+
+  // Publish to Event Bus
+  const eventBus = env.MESH_REQUEST_CONTEXT?.state?.EVENT_BUS;
+  if (eventBus) {
+    try {
+      await eventBus.EVENT_PUBLISH({
+        type: fullEventType,
+        subject,
+        data: payload,
+      });
+      console.log(`[Webhook] Published to Event Bus: ${fullEventType}`);
+    } catch (error) {
+      console.error("[Webhook] Failed to publish to Event Bus:", error);
+    }
+  }
 
   if (
     hasMatchingTrigger(

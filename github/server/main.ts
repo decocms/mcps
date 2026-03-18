@@ -78,6 +78,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         await captureInstallationMappings(token, connectionId);
       }
     },
+    scopes: ["EVENT_BUS::*"],
     state: StateSchema,
   },
 
@@ -96,7 +97,7 @@ const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {
-    return handleGitHubWebhook(req);
+    return handleGitHubWebhook(req, env);
   }
 
   // Proxy MCP resource requests to upstream

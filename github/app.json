@@ -1,6 +1,6 @@
 {
   "scopeName": "deco",
-  "name": "github-mcp",
+  "name": "mcp-github",
   "friendlyName": "GitHub",
   "connection": {
     "type": "HTTP",

@@ -3,14 +3,12 @@
  */
 
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { type DefaultEnv } from "@decocms/runtime";
+import { BindingOf, type DefaultEnv } from "@decocms/runtime";
 import { z } from "zod";
 
-/**
- * State schema — no user-configurable options needed.
- * The upstream URL is always https://api.githubcopilot.com/mcp/.
- */
-export const StateSchema = z.object({});
+export const StateSchema = z.object({
+  EVENT_BUS: BindingOf("@deco/event-bus"),
+});
 
 /**
  * Environment type combining Deco bindings with shared Registry
