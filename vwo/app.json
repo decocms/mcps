@@ -9,11 +9,6 @@
   "description": "Connect AI agents to VWO for A/B testing, experiment management, and optimization insights.",
   "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
   "unlisted": false,
-  "auth": {
-    "type": "token",
-    "header": "Authorization",
-    "prefix": "Bearer"
-  },
   "metadata": {
     "categories": [
       "Analytics",
