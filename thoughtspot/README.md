@@ -234,8 +234,8 @@ For API usage, you would the token endpoints with a `secret_key` to generate the
 
 ### Supported transports
 
-- SSE [https://agent.thoughtspot.app/sse]()
-- Streamed HTTP [https://agent.thoughtspot.app/mcp]()
+- SSE: https://agent.thoughtspot.app/sse
+- Streamed HTTP: https://agent.thoughtspot.app/mcp
 
 
 ## Manual client registration

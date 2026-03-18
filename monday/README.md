@@ -204,7 +204,7 @@ Add to your settings:
 }
 ```
 
-### Step 5: Test Your Integration
+### Step 4: Test Your Integration
 
 1. Ask Claude or your AI assistant a question like:
    - "What items do I have in board 123?"
@@ -294,7 +294,7 @@ Our MCP server provides a rich set of tools that give AI assistants the ability 
 
 Looking to build custom monday.com apps with AI assistance? The Apps Framework Tools provide AI agents with complete access to monday.com's app development platform, enabling you to create, manage, and deploy custom apps directly through AI assistants.
 
-**📖 [View Full Apps Framework Tools Documentation](./packages/agent-toolkit/src/core/tools/monday-apps-tools/README.md)**
+**📖 [View Full Apps Framework Tools Documentation](https://github.com/mondaycom/mcp/blob/main/packages/agent-toolkit/src/core/tools/monday-apps-tools/README.md)**
 
 ## 🔮 Dynamic API Tools (Beta)
 

@@ -23,7 +23,7 @@ For installation, setup, supported tools, authentication, and client-specific in
 
 https://axiom.co/docs/console/intelligence/mcp-server#axiom-mcp-server
 
-Issues and contributions are welcome. See AGENTS.md for contributor guidelines.
+Issues and contributions are welcome.
   - CSV formatting for tabular data instead of verbose JSON
   - Automatic `maxBinAutoGroups` for time-series aggregations
   - Intelligent result shaping that prioritizes important fields
@@ -69,4 +69,4 @@ OR
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License.

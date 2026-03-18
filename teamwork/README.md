@@ -42,7 +42,7 @@ server:
 
 Production-ready HTTP server for cloud deployments and multi-client support.
 
-**📖 [Full HTTP Server Documentation](cmd/mcp-http/README.md)**
+**📖 [Full HTTP Server Documentation](https://github.com/nicholasgriffintn/teamwork-mcpserver/blob/main/cmd/mcp-http/README.md)**
 
 Quick start:
 ```bash

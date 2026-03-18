@@ -288,7 +288,7 @@ async function getMcpsToEnrich(
 
     if (!force) {
       query = query.or(
-        "friendly_name.is.null,mesh_description.is.null,tags.is.null,categories.is.null",
+        "friendly_name.is.null,mesh_description.is.null,tags.is.null,categories.is.null,icons.is.null",
       );
     }
 

@@ -48,11 +48,16 @@ async function main() {
   );
 
   // Fetch current state of verified servers
-  const { data: current } = await supabase
+  const { data: current, error: fetchError } = await supabase
     .from("mcp_servers")
     .select("name, friendly_name, unlisted, verified, icons")
     .eq("is_latest", true)
     .in("name", VERIFIED_SERVERS);
+
+  if (fetchError) {
+    console.error(`❌ Failed to fetch verified servers: ${fetchError.message}`);
+    process.exit(1);
+  }
 
   const alreadyVisible = current?.filter((r) => !r.unlisted) || [];
   const toPublish = current?.filter((r) => r.unlisted) || [];

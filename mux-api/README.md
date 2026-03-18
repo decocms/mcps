@@ -131,7 +131,7 @@ const drmToken = await mux.jwt.signPlaybackId(id, {
 
 <mux-player
   playback-token={playbackToken}
-  thumbanil-token={thumbnailToken}
+  thumbnail-token={thumbnailToken}
   storyboard-token={storyboardToken}
   drm-token={drmToken}
   playbackId={id}

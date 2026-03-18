@@ -12,7 +12,7 @@ With the Atlassian Rovo MCP Server, you can:
 * **Create and update** issues or pages based on natural language commands.
 * **Automate repetitive work**, like generating tickets from meeting notes or specs.
 
-It's designed developers, content creators, and project teams who use IDEs or AI platforms and want to work with Atlassian data without constantly context switching.
+It's designed for developers, content creators, and project teams who use IDEs or AI platforms and want to work with Atlassian data without constantly context switching.
 
 ---
 
@@ -84,7 +84,7 @@ https://mcp.atlassian.com/v1/mcp
 3. Once authorized, the client streams contextual data and receives real-time responses from Jira, Compass, or Confluence.
 
 > [!NOTE]
-> While `/sse` as a server endpoint are supported, we recommend updating any custom clients configured to use `/sse` so they now point to `/mcp`.
+> While `/sse` server endpoints are supported, we recommend updating any custom clients configured to use `/sse` so they now point to `/mcp`.
 
 ### Permission management
 
@@ -211,4 +211,4 @@ Your feedback plays a crucial role in shaping the Atlassian Rovo MCP Server. If 
 
 MCP clients can perform actions in Jira, Confluence, and Compass with your existing permissions. Use least privilege, review high‑impact changes before confirming, and monitor audit logs for unusual activity.
 
-Learn more: MCP Clients - (Understanding the potential security risks)[https://www.atlassian.com/blog/artificial-intelligence/mcp-risk-awareness]
+Learn more: MCP Clients - [Understanding the potential security risks](https://www.atlassian.com/blog/artificial-intelligence/mcp-risk-awareness)

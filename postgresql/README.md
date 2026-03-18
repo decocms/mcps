@@ -8,7 +8,7 @@ WayStation MCP server is a universal remote MCP server that seamlessly connects 
 
 - WayStation MCP supports both Streamable HTTPS and SSE transports
 - The default endpoint is https://waystation.ai/mcp. It does transport negotiation and authorization if necessary
-- WayStation also provides preauthenticated individual endpoints like https://waystation.ai/mcp/Iddq66dIdkfARDNb3K. Any registered user can get one in their dashboard at https://waystation.ai/dashboard
+- WayStation also provides preauthenticated individual endpoints like https://waystation.ai/mcp/<user_unique_id>. Any registered user can get one in their dashboard at https://waystation.ai/dashboard
 
 ## Supported providers
 - WayStation supports the following productivity apps: [Notion](https://waystation.ai/connect/notion), [Monday](https://waystation.ai/connect/monday), [Asana](https://waystation.ai/connect/asana), [Linear](https://waystation.ai/connect/linear), [Atlassian JIRA/Confluence](https://waystation.ai/connect/atlassian), [Slack](https://waystation.ai/connect/slack), [Teams](https://waystation.ai/connect/teams), [Google Drive](https://waystation.ai/connect/gdrive) (including Docs and Sheets), [Office 365](https://waystation.ai/connect/office), [Airtable](https://waystation.ai/connect/airtable), [Miro](https://waystation.ai/connect/miro), [Intercom](https://waystation.ai/connect/intercom), [PayPal](https://waystation.ai/connect/paypal).
