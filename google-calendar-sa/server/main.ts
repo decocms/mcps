@@ -42,9 +42,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     const subject = state?.IMPERSONATE_EMAIL;
 
     if (!json || !subject) {
-      throw new Error(
-        "Service account not configured. Please fill in SERVICE_ACCOUNT_JSON and IMPERSONATE_EMAIL in the MCP settings.",
-      );
+      return [];
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
