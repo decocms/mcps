@@ -13,7 +13,7 @@ export const StateSchema = z.object({
     .describe(
       "Email of the Google Workspace user to impersonate (e.g. deco@deco.cx). The service account will access this user's calendar.",
     ),
-  EVENT_BUS: BindingOf("@deco/event-bus"),
+  EVENT_BUS: BindingOf("@deco/event-bus").optional(),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
