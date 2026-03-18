@@ -7,7 +7,7 @@
     "url": "https://mcp-server.egnyte.com/mcp"
   },
   "description": "Egnyte's remote MCP server for secure AI access, search, upload and file management in your account.",
-  "icon": "https://www.egnyte.com/favicon.ico",
+  "icon": "https://github.com/egnyte.png",
   "unlisted": false,
   "official": true,
   "metadata": {

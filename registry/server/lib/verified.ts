@@ -127,7 +127,7 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
     icons: [{ src: "https://linear.app/favicon.ico" }],
   },
   "net.todoist/mcp": {
-    icons: [{ src: "https://todoist.com/favicon.ico" }],
+    icons: [{ src: "https://github.com/Doist.png" }],
   },
 
   // Development & DevOps
@@ -147,10 +147,10 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
     icons: [{ src: "https://supabase.com/favicon/favicon-32x32.png" }],
   },
   "com.postman/postman-mcp-server": {
-    icons: [{ src: "https://www.postman.com/favicon-32x32.png" }],
+    icons: [{ src: "https://github.com/postmanlabs.png" }],
   },
   "com.sonatype/dependency-management-mcp-server": {
-    icons: [{ src: "https://www.sonatype.com/hubfs/favicon.ico" }],
+    icons: [{ src: "https://github.com/sonatype.png" }],
   },
   "com.make/mcp-server": {
     icons: [{ src: "https://www.make.com/favicon.ico" }],
@@ -158,7 +158,12 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
 
   // AI & Search
   "ai.exa/exa": {
-    icons: [{ src: "https://exa.ai/favicon.ico" }],
+    icons: [{ src: "https://github.com/exa-labs.png" }],
+  },
+
+  // Content & CMS
+  "io.sanity.www/mcp": {
+    icons: [{ src: "https://github.com/sanity-io.png" }],
   },
 
   // Commerce & Business
@@ -187,11 +192,7 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
 
   // Security
   "com.jumpcloud/jumpcloud-genai": {
-    icons: [
-      {
-        src: "https://jumpcloud.com/wp-content/uploads/2024/08/cropped-fav-icon-32x32.png",
-      },
-    ],
+    icons: [{ src: "https://github.com/TheJumpCloud.png" }],
   },
 
   // Identity
@@ -201,7 +202,7 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
 
   // Commerce
   "com.medusajs/medusa-mcp": {
-    icons: [{ src: "https://www.medusajs.com/favicon.ico" }],
+    icons: [{ src: "https://github.com/medusajs.png" }],
   },
   "com.monday/monday.com": {
     icons: [
@@ -211,13 +212,13 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
     ],
   },
   "com.egnyte/mcp-server": {
-    icons: [{ src: "https://www.egnyte.com/favicon.ico" }],
+    icons: [{ src: "https://github.com/egnyte.png" }],
   },
   "com.blockscout/mcp-server": {
     icons: [{ src: "https://github.com/blockscout.png" }],
   },
   "com.redpanda/docs-mcp": {
-    icons: [{ src: "https://redpanda.com/favicon.ico" }],
+    icons: [{ src: "https://github.com/redpanda-data.png" }],
   },
   "com.thousandeyes/mcp": {
     icons: [
@@ -237,13 +238,15 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
     icons: [{ src: "https://github.com/trunk-io.png" }],
   },
   "com.rootly/mcp-server": {
-    icons: [{ src: "https://rootly.com/favicon.ico" }],
+    icons: [{ src: "https://github.com/rootly-ai-labs.png" }],
   },
   "com.mux/mcp": {
     icons: [{ src: "https://mux.com/favicon.ico" }],
   },
   "com.stackoverflow.mcp/mcp": {
-    icons: [{ src: "https://stackoverflow.com/favicon.ico" }],
+    icons: [
+      { src: "https://cdn.sstatic.net/Sites/stackoverflow/Img/favicon.ico" },
+    ],
   },
   "com.teamwork/mcp": {
     icons: [{ src: "https://www.teamwork.com/favicon.ico" }],

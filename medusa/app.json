@@ -7,7 +7,7 @@
     "url": "https://docs.medusajs.com/mcp"
   },
   "description": "Retrieve information from the Medusa documentation to assist you with your Medusa development.",
-  "icon": "https://www.medusajs.com/favicon.ico",
+  "icon": "https://github.com/medusajs.png",
   "unlisted": false,
   "official": true,
   "metadata": {

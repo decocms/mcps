@@ -7,7 +7,7 @@
     "url": "https://mcp.rootly.com/sse"
   },
   "description": "Incident management, on-call scheduling, and intelligent analysis powered by Rootly.",
-  "icon": "https://rootly.com/favicon.ico",
+  "icon": "https://github.com/rootly-ai-labs.png",
   "unlisted": false,
   "official": true,
   "metadata": {

@@ -7,7 +7,7 @@
     "url": "https://mcp.stackoverflow.com"
   },
   "description": "Access Stack Overflow's trusted and verified technical questions and answers.",
-  "icon": "https://stackoverflow.com/favicon.ico",
+  "icon": "https://cdn.sstatic.net/Sites/stackoverflow/Img/favicon.ico",
   "unlisted": false,
   "official": true,
   "metadata": {

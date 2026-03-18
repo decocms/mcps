@@ -7,7 +7,7 @@
     "url": "https://ai.todoist.net/mcp"
   },
   "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows.",
-  "icon": "https://todoist.com/favicon.ico",
+  "icon": "https://github.com/Doist.png",
   "unlisted": false,
   "official": true,
   "metadata": {

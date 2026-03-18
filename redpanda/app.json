@@ -7,7 +7,7 @@
     "url": "https://docs.redpanda.com/mcp"
   },
   "description": "Get authoritative answers to questions about Redpanda.",
-  "icon": "https://redpanda.com/favicon.ico",
+  "icon": "https://github.com/redpanda-data.png",
   "unlisted": false,
   "official": true,
   "metadata": {

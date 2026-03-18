@@ -7,7 +7,7 @@
     "url": "https://mcp.guide.sonatype.com/mcp"
   },
   "description": "Sonatype component intelligence: versions, security analysis, and Trust Score recommendations.",
-  "icon": "https://www.sonatype.com/hubfs/favicon.ico",
+  "icon": "https://github.com/sonatype.png",
   "unlisted": false,
   "official": true,
   "metadata": {

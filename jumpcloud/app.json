@@ -7,7 +7,7 @@
     "url": "https://mcp.jumpcloud.com/v1"
   },
   "description": "An MCP server that provides an API to LLMs to manage JumpCloud resources.",
-  "icon": "https://jumpcloud.com/wp-content/uploads/2024/08/cropped-fav-icon-32x32.png",
+  "icon": "https://github.com/TheJumpCloud.png",
   "unlisted": false,
   "official": true,
   "metadata": {
