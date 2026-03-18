@@ -36,6 +36,7 @@
     "google-apps-script",
     "google-big-query",
     "google-calendar",
+    "google-calendar-sa",
     "google-docs",
     "google-drive",
     "google-forms",
