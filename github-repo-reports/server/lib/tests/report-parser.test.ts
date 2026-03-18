@@ -202,7 +202,7 @@ summary: test
   });
 
   test("accepts all valid status values", () => {
-    for (const status of ["passing", "warning", "failing", "info"]) {
+    for (const status of ["passing", "warning", "failing", "info"] as const) {
       const raw = `---
 title: Test
 status: ${status}

@@ -1,12 +1,12 @@
 {
   "scopeName": "deco",
   "name": "github-mcp",
-  "friendlyName": "GitHub Events",
+  "friendlyName": "GitHub",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-github-mcp.decocache.com/mcp"
   },
-  "description": "GitHub webhook event hub - Subscribe to repository events and publish them to the Event Bus",
+  "description": "OAuth proxy for the official GitHub MCP Server — authenticates via GitHub App OAuth and exposes 30+ tools (repos, issues, PRs, code search, and more)",
   "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
   "unlisted": false,
   "metadata": {
@@ -18,14 +18,15 @@
     "tags": [
       "github",
       "webhooks",
-      "events",
-      "ci-cd",
       "automation",
       "repositories",
       "pull-requests",
-      "issues"
+      "issues",
+      "code-review",
+      "version-control",
+      "collaboration"
     ],
-    "short_description": "GitHub webhook event hub for the MCP Mesh Event Bus",
-    "mesh_description": "The GitHub Events MCP provides a webhook event hub that connects GitHub repositories to the MCP Mesh Event Bus. Install a GitHub App into your repositories or organization, and this MCP will receive all configured webhook events (push, pull_request, issues, releases, etc.) and publish them as typed events to the Event Bus. Other MCPs can then subscribe to these events to build automated workflows, CI/CD pipelines, issue trackers, and more. Supports multi-tenant installations where each organization gets their own isolated event stream. Configure which events to subscribe to via the StateSchema, and the MCP will automatically register webhooks with GitHub when you save the configuration."
+    "short_description": "OAuth proxy for the official GitHub MCP Server — 30+ tools for repos, issues, PRs, and more",
+    "mesh_description": "OAuth proxy for the official GitHub MCP Server. Authenticates via GitHub App OAuth and exposes 30+ tools (repository management, issue tracking, pull request workflows, code search, branch management, and more). Receives GitHub webhook events and routes them to the correct connection by installation ID. Install the GitHub App, authenticate via OAuth, and get full access to the complete GitHub API toolset."
   }
 }

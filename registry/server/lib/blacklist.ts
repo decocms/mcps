@@ -65,7 +65,6 @@ export const BLACKLISTED_SERVERS: string[] = [
   "io.github.clouatre-labs/math-mcp-learning-server",
   "io.github.elankeeran/companies-house-mcp",
   "io.github.equilibrium-team/tweekit",
-  "io.github.github/github-mcp-server",
   "io.github.humanjesse/textarttools-mcp",
   "io.github.isakskogstad/oecd-mcp",
   "io.github.jfrog/jfrog-mcp-server",
