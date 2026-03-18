@@ -59,7 +59,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
-  bindings: [],
   cors: {
     origin: (origin) => {
       // Allow localhost and configured origins
@@ -79,5 +78,5 @@ serve((req: Request) => {
   if (new URL(req.url).pathname === "/_healthcheck") {
     return new Response("OK", { status: 200 });
   }
-  return runtime.fetch(req, { ...process.env } as Env, {});
+  return runtime.fetch(req, { ...process.env } as unknown as Env, {});
 });
