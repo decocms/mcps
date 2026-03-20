@@ -345,8 +345,8 @@ async function processConnectionEventAsync(
   // Each connection has its own Slack workspace credentials
   initializeSlackClient({ botToken: connectionConfig.botToken });
 
-  // Configure LLM with this connection's settings
-  if (connectionConfig.meshToken && connectionConfig.modelProviderId) {
+  // Configure LLM with this connection's settings (modelProviderId is optional)
+  if (connectionConfig.meshToken && connectionConfig.modelId) {
     configureLLM({
       meshUrl: connectionConfig.meshUrl,
       organizationId: connectionConfig.organizationId,
@@ -359,7 +359,7 @@ async function processConnectionEventAsync(
   } else {
     // Clear LLM config to prevent cross-tenant configuration leakage
     clearLLMConfig();
-    logger.warn("LLM not configured - missing meshToken or modelProviderId", {
+    logger.warn("LLM not configured - missing meshToken or modelId", {
       connectionId: connectionConfig.connectionId,
       trace_id: traceId,
     });

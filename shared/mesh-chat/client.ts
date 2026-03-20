@@ -59,7 +59,7 @@ export async function callDecopilotAPI(
   const body = {
     messages,
     models: {
-      connectionId: modelProviderId,
+      connectionId: modelProviderId ?? "",
       thinking: {
         id: modelId,
         provider: resolveProvider(modelId),

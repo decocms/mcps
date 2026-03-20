@@ -12,7 +12,7 @@ export const classifyTool = (env: Env) =>
   createTool({
     id: "inbox_classify",
     description:
-      "AI-classify a conversation's category and priority based on its messages. Requires MODEL_PROVIDER to be configured.",
+      "AI-classify a conversation's category and priority based on its messages. Requires LANGUAGE_MODEL to be configured.",
     inputSchema: z.object({
       conversation_id: z.string().describe("The conversation to classify"),
     }),
@@ -49,7 +49,7 @@ export const classifyTool = (env: Env) =>
           category: null,
           priority: null,
           message:
-            "AI classification not available. Configure MODEL_PROVIDER and LANGUAGE_MODEL.",
+            "AI classification not available. Configure LANGUAGE_MODEL in Mesh Dashboard.",
         };
       }
 
@@ -72,7 +72,7 @@ export const summarizeTool = (env: Env) =>
   createTool({
     id: "inbox_summarize",
     description:
-      "AI-summarize a conversation. Requires MODEL_PROVIDER to be configured.",
+      "AI-summarize a conversation. Requires LANGUAGE_MODEL to be configured.",
     inputSchema: z.object({
       conversation_id: z.string().describe("The conversation to summarize"),
     }),
@@ -104,7 +104,7 @@ export const summarizeTool = (env: Env) =>
         return {
           summary: null,
           message:
-            "AI summarization not available. Configure MODEL_PROVIDER and LANGUAGE_MODEL.",
+            "AI summarization not available. Configure LANGUAGE_MODEL in Mesh Dashboard.",
         };
       }
 
@@ -123,7 +123,7 @@ export const suggestReplyTool = (env: Env) =>
   createTool({
     id: "inbox_suggest_reply",
     description:
-      "AI-suggest a reply for a conversation. Requires MODEL_PROVIDER to be configured.",
+      "AI-suggest a reply for a conversation. Requires LANGUAGE_MODEL to be configured.",
     inputSchema: z.object({
       conversation_id: z
         .string()
@@ -167,7 +167,7 @@ export const suggestReplyTool = (env: Env) =>
         return {
           suggested_reply: null,
           message:
-            "AI reply suggestion not available. Configure MODEL_PROVIDER and LANGUAGE_MODEL.",
+            "AI reply suggestion not available. Configure LANGUAGE_MODEL in Mesh Dashboard.",
         };
       }
 

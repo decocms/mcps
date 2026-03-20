@@ -11,10 +11,7 @@ export const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 
-  // AI Configuration (igual ao mcp-studio)
-  MODEL_PROVIDER: BindingOf("@deco/llm").describe(
-    "AI Model Provider connection",
-  ),
+  // AI Configuration
   AGENT: BindingOf("@deco/agent").describe(
     "Agent with tools, resources and prompts",
   ),

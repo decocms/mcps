@@ -9,9 +9,6 @@ import z from "zod";
 export const StateSchema = z.object({
   // Bindings (AI connections)
   EVENT_BUS: BindingOf("@deco/event-bus").optional(),
-  MODEL_PROVIDER: BindingOf("@deco/llm")
-    .optional()
-    .describe("AI Model Provider connection"),
   AGENT: BindingOf("@deco/agent")
     .optional()
     .describe("Agent with tools, resources and prompts"),

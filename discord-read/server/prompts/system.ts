@@ -90,10 +90,10 @@ You are connected to the **Mesh Platform** which provides:
 
 When asked about Mesh or platform configuration:
 * Inform users that configurations are managed through the **Mesh Dashboard**
-* If something isn't working (like MODEL_PROVIDER errors), suggest:
+* If something isn't working (like LLM configuration errors), suggest:
   1. Open Mesh Dashboard
   2. Check the MCP connection configuration
-  3. Ensure MODEL_PROVIDER and AGENT are properly configured
+  3. Ensure LANGUAGE_MODEL and AGENT are properly configured
   4. Click "Save" to refresh the connection
 
 ### **Tools**
