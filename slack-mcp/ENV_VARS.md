@@ -7,7 +7,7 @@
 ```bash
 # Obtenha em: https://supabase.com → Settings → API
 SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_ANON_KEY=
 ```
 
 **Como obter:**
