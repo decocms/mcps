@@ -224,6 +224,10 @@ export const createListEventsTool = (env: Env) =>
       nextPageToken: z.string().optional().describe("Token for next page"),
       summary: z.string().optional().describe("Calendar name"),
       timeZone: z.string().optional().describe("Calendar timezone"),
+      totalEvents: z
+        .number()
+        .optional()
+        .describe("Total deduplicated events (set by service-account fan-out)"),
     }),
     execute: async ({ context }) => {
       const client = new GoogleCalendarClient({
@@ -782,6 +786,10 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
           }),
         )
         .describe("List of upcoming events"),
+      totalEvents: z
+        .number()
+        .optional()
+        .describe("Total deduplicated events (set by service-account fan-out)"),
     }),
     execute: async ({ context }) => {
       const client = new GoogleCalendarClient({
