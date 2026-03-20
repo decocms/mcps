@@ -1,5 +1,5 @@
 # Cache Architecture - DATABASE Binding & K8s Multi-Pod Support
-
+ 
 ## 🎯 Problem Statement
 
 ### The Challenge
