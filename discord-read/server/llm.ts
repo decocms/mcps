@@ -165,14 +165,8 @@ export async function generateResponse(
         effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
       const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
       const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
-      const modelId =
-        state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
-      const connectionId = state?.LANGUAGE_MODEL?.value?.connectionId as
-        | string
-        | undefined;
-      const agentId = state?.AGENT?.value;
 
-      if (!modelId) {
+      if (!state?.LANGUAGE_MODEL?.value) {
         throw new Error(
           "LANGUAGE_MODEL not configured.\n\n" +
             "🔧 **How to fix:**\n" +
@@ -182,6 +176,12 @@ export async function generateResponse(
             "4. Click **Save** to apply",
         );
       }
+
+      const modelId = state.LANGUAGE_MODEL.value?.id ?? DEFAULT_LANGUAGE_MODEL;
+      const connectionId = state.LANGUAGE_MODEL.value?.connectionId as
+        | string
+        | undefined;
+      const agentId = state?.AGENT?.value;
 
       config = {
         meshUrl,
