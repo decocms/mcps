@@ -56,6 +56,12 @@ export const createListCalendarsTool = (env: Env) =>
         .string()
         .optional()
         .describe("Token for fetching next page"),
+      totalCalendars: z
+        .number()
+        .optional()
+        .describe(
+          "Total deduplicated calendars (set by service-account fan-out)",
+        ),
     }),
     execute: async ({ context }) => {
       const client = new GoogleCalendarClient({
