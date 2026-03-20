@@ -167,7 +167,9 @@ export async function generateResponse(
       const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
       const modelId =
         state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
-      const connectionId = state?.LANGUAGE_MODEL?.value?.connectionId;
+      const connectionId = state?.LANGUAGE_MODEL?.value?.connectionId as
+        | string
+        | undefined;
       const agentId = state?.AGENT?.value;
 
       if (!modelId) {
@@ -190,6 +192,10 @@ export async function generateResponse(
         agentId,
       };
     }
+  }
+
+  if (!config) {
+    throw new Error("LLM not configured");
   }
 
   const text = await sharedGenerateResponse(config, toSharedMessages(messages));
