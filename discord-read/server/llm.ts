@@ -147,10 +147,10 @@ export async function generateResponse(
     } else {
       // Fallback 2: Build config from env (may have expired token)
       const storedEnv = getCurrentEnv();
-      const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER
+      const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL
         ?.value
         ? env
-        : storedEnv?.MESH_REQUEST_CONTEXT?.state?.MODEL_PROVIDER?.value
+        : storedEnv?.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL?.value
           ? storedEnv
           : env;
 
@@ -165,18 +165,18 @@ export async function generateResponse(
         effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
       const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
       const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
-      const connectionId = state?.MODEL_PROVIDER?.value;
       const modelId =
         state?.LANGUAGE_MODEL?.value?.id ?? DEFAULT_LANGUAGE_MODEL;
+      const connectionId = state?.LANGUAGE_MODEL?.value?.connectionId;
       const agentId = state?.AGENT?.value;
 
-      if (!connectionId) {
+      if (!modelId) {
         throw new Error(
-          "MODEL_PROVIDER not configured.\n\n" +
+          "LANGUAGE_MODEL not configured.\n\n" +
             "🔧 **How to fix:**\n" +
             "1. Open **Mesh Dashboard**\n" +
             "2. Go to this MCP's configuration\n" +
-            "3. Configure **MODEL_PROVIDER** (e.g., OpenRouter, OpenAI)\n" +
+            "3. Configure **LANGUAGE_MODEL**\n" +
             "4. Click **Save** to apply",
         );
       }

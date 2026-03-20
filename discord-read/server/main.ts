@@ -122,20 +122,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         organizationId,
       });
 
-      // Configure LLM if model provider is set
-      const modelProvider = state?.MODEL_PROVIDER;
+      // Configure LLM
       const agent = state?.AGENT;
       const languageModel = state?.LANGUAGE_MODEL;
 
-      // Extract values
-      const languageModelConnectionId = languageModel?.value?.connectionId;
+      // Extract values - connectionId comes from LANGUAGE_MODEL
       const modelProviderId: string | undefined =
-        (typeof modelProvider?.value === "string"
-          ? modelProvider.value
-          : undefined) ||
-        (typeof languageModelConnectionId === "string"
-          ? languageModelConnectionId
-          : undefined);
+        typeof languageModel?.value?.connectionId === "string"
+          ? languageModel.value.connectionId
+          : undefined;
       const agentId: string | undefined =
         typeof agent?.value === "string" ? agent.value : undefined;
       const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
@@ -151,8 +146,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const effectiveToken = savedConfig?.meshApiKey || token;
       const isUsingApiKey = !!savedConfig?.meshApiKey;
 
-      // Configure LLM module
-      if (modelProviderId && effectiveToken && meshUrl && organizationId) {
+      // Configure LLM module (modelProviderId is optional)
+      if (effectiveToken && meshUrl && organizationId && languageModel) {
         const { configureLLM, configureStreaming } = await import("./llm.ts");
 
         configureLLM({
@@ -306,7 +301,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
     },
-    scopes: ["EVENT_BUS::*", "CONNECTION::*", "MODEL_PROVIDER::*", "*"],
+    scopes: ["EVENT_BUS::*", "CONNECTION::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

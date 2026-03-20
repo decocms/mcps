@@ -579,8 +579,10 @@ export const createGenerateApiKeyTool = (_env: Env) =>
           string,
           unknown
         >;
-        const modelProviderId = (state?.MODEL_PROVIDER as { value?: string })
-          ?.value;
+        const languageModel = state?.LANGUAGE_MODEL as
+          | { value?: { connectionId?: string } }
+          | undefined;
+        const modelProviderId = languageModel?.value?.connectionId;
 
         // Build permissions - need access to Decopilot, model provider, and the current connection
         const permissions: Record<string, string[]> = {

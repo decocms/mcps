@@ -5,7 +5,6 @@ export const StateSchema = z.object({
   DATABASE: BindingOf("@deco/postgres"),
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
-  MODEL_PROVIDER: BindingOf("@deco/llm").optional(),
   LANGUAGE_MODEL: z
     .object({
       __type: z.literal("@deco/language-model"),

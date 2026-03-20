@@ -113,21 +113,15 @@ const onChangeHandler = async (env: Env, config: any) => {
     const signingSecret = state?.SLACK_CREDENTIALS?.SIGNING_SECRET;
 
     // Get LLM configuration (bindings)
-    // Note: MODEL_PROVIDER and AGENT may come empty, use LANGUAGE_MODEL.connectionId as fallback
-    const modelProvider = state?.MODEL_PROVIDER;
     const agent = state?.AGENT;
     const languageModel = state?.LANGUAGE_MODEL;
     const whisper = state?.WHISPER;
 
-    // Extract values with fallbacks - ensure string types
-    const languageModelConnectionId = languageModel?.value?.connectionId;
+    // Extract values - connectionId comes from LANGUAGE_MODEL
     const modelProviderId: string | undefined =
-      (typeof modelProvider?.value === "string"
-        ? modelProvider.value
-        : undefined) ||
-      (typeof languageModelConnectionId === "string"
-        ? languageModelConnectionId
-        : undefined);
+      typeof languageModel?.value?.connectionId === "string"
+        ? languageModel.value.connectionId
+        : undefined;
     const agentId: string | undefined =
       typeof agent?.value === "string" ? agent.value : undefined;
     const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
@@ -224,8 +218,8 @@ const onChangeHandler = async (env: Env, config: any) => {
       );
     }
 
-    // Configure LLM if model provider is set
-    if (modelProviderId && persistentToken) {
+    // Configure LLM if we have a token (modelProviderId is optional)
+    if (persistentToken && languageModel) {
       configureLLM({
         meshUrl,
         organizationId,
@@ -340,7 +334,7 @@ const onChangeHandler = async (env: Env, config: any) => {
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: onChangeHandler,
-    scopes: ["EVENT_BUS::*", "MODEL_PROVIDER::*", "*"],
+    scopes: ["EVENT_BUS::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

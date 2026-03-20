@@ -7,7 +7,7 @@ export interface MeshChatConfig {
   meshUrl: string;
   organizationId: string;
   token: string;
-  modelProviderId: string;
+  modelProviderId?: string;
   modelId?: string;
   agentId?: string;
   agentMode?: AgentMode;

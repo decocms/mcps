@@ -9,12 +9,7 @@ function getMeshChatConfig(env: Env): MeshChatConfig | null {
   const ctx = env.MESH_REQUEST_CONTEXT;
   const state = ctx?.state;
 
-  if (
-    !ctx ||
-    !ctx.meshUrl ||
-    !state?.MODEL_PROVIDER ||
-    !state?.LANGUAGE_MODEL
-  ) {
+  if (!ctx || !ctx.meshUrl || !state?.LANGUAGE_MODEL) {
     return null;
   }
 
