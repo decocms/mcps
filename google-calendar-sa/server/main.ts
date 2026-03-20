@@ -47,7 +47,6 @@ function mergeResults(
     return {
       ...first,
       events: deduped,
-      totalEvents: deduped.length,
     };
   }
 
@@ -63,7 +62,8 @@ function mergeResults(
         calendars.push(cal as unknown as Record<string, unknown>);
       }
     }
-    return { calendars, totalCalendars: calendars.length };
+    const first = results[0];
+    return { ...first, calendars };
   }
 
   if (toolId === "get_freebusy") {
