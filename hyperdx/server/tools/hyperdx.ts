@@ -591,8 +591,15 @@ export const createDiscoverDataTool = (_env: Env) =>
   createTool({
     id: "DISCOVER_DATA",
     description:
-      "Discover the data landscape of this HyperDX instance. Runs multiple queries to find: active services, log levels in use, top error patterns, available dashboards, key span operations, and cloud providers. Use this first when you need to understand what data exists before building queries.",
+      "Discover the data landscape of this HyperDX instance. Runs multiple parallel queries to find active services, log levels, top errors, span operations, dashboards, and extracts field patterns from existing dashboard configs. Optionally pass domain-specific hints (keywords, field names) to run targeted queries that surface how those concepts appear in the data. Returns structured data AND a generated agentPrompt text that summarizes all findings into a ready-to-use system prompt.",
     inputSchema: z.object({
+      hints: z
+        .string()
+        .optional()
+        .default("")
+        .describe(
+          "Domain-specific keywords or field names to search for. The tool will run targeted queries to find how these appear in the data. Example: 'section loader cloud.provider rendering build vtex shopify'. Separate with spaces.",
+        ),
       startTime: z
         .number()
         .optional()
@@ -631,33 +638,83 @@ export const createDiscoverDataTool = (_env: Env) =>
           }),
         )
         .describe("Top span operations by service."),
-      cloudProviders: z
-        .array(z.object({ provider: z.string(), count: z.number() }))
-        .describe("Cloud providers in use."),
       dashboards: z
         .array(
           z.object({
             id: z.string(),
             name: z.string(),
             chartCount: z.number(),
+            fieldsUsed: z.array(z.string()),
           }),
         )
-        .describe("Available dashboards."),
+        .describe("Available dashboards with the fields they query."),
+      hintResults: z
+        .array(
+          z.object({
+            hint: z.string(),
+            matchType: z.string(),
+            topValues: z.array(
+              z.object({ value: z.string(), count: z.number() }),
+            ),
+          }),
+        )
+        .describe(
+          "Results from targeted queries based on the hints you provided.",
+        ),
+      agentPrompt: z
+        .string()
+        .describe(
+          "A generated system prompt summarizing everything discovered about this HyperDX instance. Use this to bootstrap an agent that is an expert in this data.",
+        ),
     }),
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
-      const { startTime, endTime } = context;
+      const { startTime, endTime, hints } = context;
 
-      // Run all discovery queries in parallel
+      // Parse hints into individual keywords
+      const hintWords = hints
+        .split(/[\s,;]+/)
+        .map((h: string) => h.trim())
+        .filter((h: string) => h.length > 0);
+
+      // Build hint queries: for each hint, try it as a field existence check AND as a text search
+      const hintQueries = hintWords.flatMap((hint: string) => {
+        const queries: Array<{
+          hint: string;
+          matchType: string;
+          where: string;
+          groupBy: string[];
+        }> = [];
+        if (hint.includes(".") || hint.includes("_")) {
+          // Looks like a field name — query as existence check grouped by its values
+          queries.push({
+            hint,
+            matchType: `field:${hint}`,
+            where: `${hint}:*`,
+            groupBy: [hint],
+          });
+        } else {
+          // Treat as a text keyword — search in errors and group by service
+          queries.push({
+            hint,
+            matchType: `keyword:${hint}`,
+            where: `level:error "${hint}"`,
+            groupBy: ["service", "body"],
+          });
+        }
+        return queries;
+      });
+
+      // Run all core queries + hint queries in parallel
       const [
         servicesRes,
         levelsRes,
         errorsRes,
         spansRes,
-        cloudRes,
         dashboardsRes,
+        ...hintResponses
       ] = await Promise.all([
         // Services by event count
         client.queryChartSeries({
@@ -711,30 +768,34 @@ export const createDiscoverDataTool = (_env: Env) =>
             },
           ],
         }),
-        // Cloud providers
-        client.queryChartSeries({
-          startTime,
-          endTime,
-          series: [
-            {
-              dataSource: "events",
-              aggFn: "count",
-              where: "cloud.provider:*",
-              groupBy: ["cloud.provider"],
-            },
-          ],
-        }),
         // Dashboards
         client.listDashboards(),
+        // Hint queries
+        ...hintQueries.map((hq) =>
+          client
+            .queryChartSeries({
+              startTime,
+              endTime,
+              series: [
+                {
+                  dataSource: "events",
+                  aggFn: "count",
+                  where: hq.where,
+                  groupBy: hq.groupBy,
+                },
+              ],
+            })
+            .catch(() => ({ data: [] })),
+        ),
       ]);
 
       type RawItem = Record<string, unknown>;
-      const group = (item: RawItem) => (item.group as string[]) ?? [];
+      const grp = (item: RawItem) => (item.group as string[]) ?? [];
       const val = (item: RawItem) => (item["series_0.data"] as number) ?? 0;
 
       const services = (servicesRes.data ?? [])
         .map((item: RawItem) => ({
-          name: group(item)[0] ?? "",
+          name: grp(item)[0] ?? "",
           eventCount: val(item),
         }))
         .sort(
@@ -745,7 +806,7 @@ export const createDiscoverDataTool = (_env: Env) =>
 
       const levels = (levelsRes.data ?? [])
         .map((item: RawItem) => ({
-          level: group(item)[0] ?? "",
+          level: grp(item)[0] ?? "",
           count: val(item),
         }))
         .sort(
@@ -754,8 +815,8 @@ export const createDiscoverDataTool = (_env: Env) =>
 
       const topErrors = (errorsRes.data ?? [])
         .map((item: RawItem) => ({
-          service: group(item)[0] ?? "",
-          message: (group(item)[1] ?? "").slice(0, 200),
+          service: grp(item)[0] ?? "",
+          message: (grp(item)[1] ?? "").slice(0, 200),
           count: val(item),
         }))
         .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
@@ -763,35 +824,191 @@ export const createDiscoverDataTool = (_env: Env) =>
 
       const topSpanOperations = (spansRes.data ?? [])
         .map((item: RawItem) => ({
-          spanName: group(item)[0] ?? "",
-          service: group(item)[1] ?? "",
+          spanName: grp(item)[0] ?? "",
+          service: grp(item)[1] ?? "",
           count: val(item),
         }))
         .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
         .slice(0, 20);
 
-      const cloudProviders = (cloudRes.data ?? [])
-        .map((item: RawItem) => ({
-          provider: group(item)[0] ?? "",
-          count: val(item),
-        }))
-        .sort(
-          (a: { count: number }, b: { count: number }) => b.count - a.count,
-        );
+      // Extract fields used in dashboard chart queries
+      type DashboardRaw = {
+        id?: string;
+        name?: string;
+        charts?: Array<{
+          series?: Array<{
+            where?: string;
+            groupBy?: string[];
+            field?: string;
+          }>;
+        }>;
+      };
+      const dashboards = ((dashboardsRes.data ?? []) as DashboardRaw[]).map(
+        (d) => {
+          const fieldsSet = new Set<string>();
+          for (const chart of d.charts ?? []) {
+            for (const s of chart.series ?? []) {
+              if (s.field) fieldsSet.add(s.field);
+              for (const g of s.groupBy ?? []) fieldsSet.add(g);
+              // Extract field references from where clauses (field:value patterns)
+              const whereFields = (s.where ?? "").match(/[\w.]+(?=:\s*[^\s])/g);
+              if (whereFields) {
+                for (const f of whereFields) {
+                  if (!["level", "service", "AND", "OR", "NOT"].includes(f)) {
+                    fieldsSet.add(f);
+                  }
+                }
+              }
+            }
+          }
+          return {
+            id: d.id ?? "",
+            name: d.name ?? "",
+            chartCount: (d.charts ?? []).length,
+            fieldsUsed: [...fieldsSet].sort(),
+          };
+        },
+      );
 
-      const dashboards = (dashboardsRes.data ?? []).map((d: RawItem) => ({
-        id: (d.id as string) ?? "",
-        name: (d.name as string) ?? "",
-        chartCount: ((d.charts as unknown[]) ?? []).length,
-      }));
+      // Process hint results
+      type HintTopValue = { value: string; count: number };
+      const hintResults = hintQueries.map(
+        (
+          hq: { hint: string; matchType: string; groupBy: string[] },
+          i: number,
+        ) => {
+          const res = hintResponses[i] as {
+            data?: Record<string, unknown>[];
+          };
+          const items = (res.data ?? [])
+            .map((item: RawItem) => {
+              const g = grp(item);
+              return {
+                value:
+                  hq.groupBy.length > 1 ? `[${g.join("] [")}]` : (g[0] ?? ""),
+                count: val(item),
+              };
+            })
+            .sort((a: HintTopValue, b: HintTopValue) => b.count - a.count)
+            .slice(0, 10);
+          return {
+            hint: hq.hint,
+            matchType: hq.matchType,
+            topValues: items,
+          };
+        },
+      );
+
+      // Collect all unique fields from dashboards
+      const allFields = new Set<string>();
+      for (const d of dashboards) {
+        for (const f of d.fieldsUsed) allFields.add(f);
+      }
+
+      // Generate agent prompt
+      const totalEvents = services.reduce(
+        (sum: number, s: { eventCount: number }) => sum + s.eventCount,
+        0,
+      );
+      const topServicesList = services
+        .slice(0, 15)
+        .map(
+          (s: { name: string; eventCount: number }) =>
+            `  - ${s.name} (${s.eventCount.toLocaleString()} events)`,
+        )
+        .join("\n");
+      const levelsList = levels
+        .map(
+          (l: { level: string; count: number }) =>
+            `  - ${l.level}: ${l.count.toLocaleString()} (${((l.count / totalEvents) * 100).toFixed(1)}%)`,
+        )
+        .join("\n");
+      const errorsList = topErrors
+        .slice(0, 10)
+        .map(
+          (e: { service: string; message: string; count: number }) =>
+            `  - [${e.service}] ${e.message.slice(0, 120)} (${e.count}x)`,
+        )
+        .join("\n");
+      const dashboardsList = dashboards
+        .map(
+          (d: { name: string; chartCount: number; fieldsUsed: string[] }) =>
+            `  - "${d.name}" (${d.chartCount} charts) — fields: ${d.fieldsUsed.slice(0, 8).join(", ")}`,
+        )
+        .join("\n");
+      const fieldsListStr = [...allFields].sort().join(", ");
+
+      let hintSection = "";
+      const activeHints = hintResults.filter(
+        (h: { topValues: HintTopValue[] }) => h.topValues.length > 0,
+      );
+      if (activeHints.length > 0) {
+        hintSection = `\n## Domain-Specific Patterns\n\nThe following keywords/fields were found in the data:\n\n${activeHints
+          .map(
+            (h: {
+              hint: string;
+              matchType: string;
+              topValues: HintTopValue[];
+            }) =>
+              `### "${h.hint}" (${h.matchType})\n${h.topValues
+                .map(
+                  (v: HintTopValue) =>
+                    `  - ${v.value.slice(0, 150)} (${v.count}x)`,
+                )
+                .join("\n")}`,
+          )
+          .join("\n\n")}\n`;
+      }
+
+      const agentPrompt = `# HyperDX Instance — Data Landscape
+
+This was auto-generated by DISCOVER_DATA at ${new Date().toISOString()}.
+Lookback window: ${((endTime - startTime) / 3600000).toFixed(1)} hours.
+
+## Event Volume
+
+Total events in window: ${totalEvents.toLocaleString()}
+
+## Log Levels
+
+${levelsList}
+
+**Note:** If the most common level is NOT "info" or "error" (e.g., "ok"), this instance uses non-standard levels. Adjust your queries accordingly.
+
+## Active Services (top 15)
+
+${topServicesList}
+
+## Top Errors
+
+${errorsList}
+
+## Dashboards
+
+${dashboardsList}
+
+## Fields Used Across Dashboards
+
+These fields are actively used in dashboard queries and are safe to use in groupBy and where clauses:
+
+${fieldsListStr}
+${hintSection}
+## Query Tips
+
+- Use \`level:error\` to filter to actual errors (not successful spans)
+- The \`body\` field contains span names for spans and log messages for logs — filter by level first
+- Check dashboard configurations with GET_DASHBOARD for battle-tested query patterns
+- Use GET_LOG_DETAILS with \`groupBy: ["service", "level"]\` to understand a service's event distribution
+`;
 
       return {
         services,
         levels,
         topErrors,
         topSpanOperations,
-        cloudProviders,
         dashboards,
+        hintResults,
+        agentPrompt,
       };
     },
   });
