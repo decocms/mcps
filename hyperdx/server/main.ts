@@ -8,6 +8,7 @@
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
 import { tools } from "./tools/index.ts";
+import { prompts } from "./prompts.ts";
 
 /**
  * Environment type for the HyperDX MCP
@@ -16,6 +17,7 @@ export type Env = DefaultEnv;
 
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
+  prompts,
 });
 
 serve((req: Request) => {

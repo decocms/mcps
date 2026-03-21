@@ -26,15 +26,23 @@ export type Granularity =
 
 export type AggFn =
   | "avg"
+  | "avg_rate"
   | "count"
   | "count_distinct"
   | "max"
+  | "max_rate"
   | "min"
+  | "min_rate"
   | "p50"
+  | "p50_rate"
   | "p90"
+  | "p90_rate"
   | "p95"
+  | "p95_rate"
   | "p99"
-  | "sum";
+  | "p99_rate"
+  | "sum"
+  | "sum_rate";
 
 export interface Serie {
   dataSource: "events" | "metrics";
@@ -76,15 +84,23 @@ const GranularitySchema = z.enum([
 
 const AggFnSchema = z.enum([
   "avg",
+  "avg_rate",
   "count",
   "count_distinct",
   "max",
+  "max_rate",
   "min",
+  "min_rate",
   "p50",
+  "p50_rate",
   "p90",
+  "p90_rate",
   "p95",
+  "p95_rate",
   "p99",
+  "p99_rate",
   "sum",
+  "sum_rate",
 ]);
 
 const SerieSchema = z.object({
