@@ -17,7 +17,7 @@ export type Env = DefaultEnv;
 
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
-  prompts,
+  prompts: () => prompts,
 });
 
 serve((req: Request) => {
