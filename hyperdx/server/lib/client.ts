@@ -25,7 +25,7 @@ export async function queryChartSeries(
   config: HyperDXClientConfig,
   queryBody: QueryBody,
 ): Promise<{ data?: Record<string, unknown>[] }> {
-  const url = `${HYPERDX_API}/chart/series`;
+  const url = `${HYPERDX_API}/charts/series`;
 
   return makeApiRequest(
     url,

@@ -584,6 +584,218 @@ export const createCompareTimeRangesTool = (_env: Env) =>
     },
   });
 
+/**
+ * DISCOVER_DATA - Introspect this HyperDX instance's data landscape
+ */
+export const createDiscoverDataTool = (_env: Env) =>
+  createTool({
+    id: "DISCOVER_DATA",
+    description:
+      "Discover the data landscape of this HyperDX instance. Runs multiple queries to find: active services, log levels in use, top error patterns, available dashboards, key span operations, and cloud providers. Use this first when you need to understand what data exists before building queries.",
+    inputSchema: z.object({
+      startTime: z
+        .number()
+        .optional()
+        .default(() => Date.now() - 6 * 60 * 60 * 1000)
+        .describe(
+          "Start time in ms. Defaults to 6 hours ago for broader coverage.",
+        ),
+      endTime: z
+        .number()
+        .optional()
+        .default(() => Date.now())
+        .describe("End time in ms. Defaults to now."),
+    }),
+    outputSchema: z.object({
+      services: z
+        .array(z.object({ name: z.string(), eventCount: z.number() }))
+        .describe("Active services by event count."),
+      levels: z
+        .array(z.object({ level: z.string(), count: z.number() }))
+        .describe("Log levels in use and their counts."),
+      topErrors: z
+        .array(
+          z.object({
+            service: z.string(),
+            message: z.string(),
+            count: z.number(),
+          }),
+        )
+        .describe("Top error messages by service."),
+      topSpanOperations: z
+        .array(
+          z.object({
+            spanName: z.string(),
+            service: z.string(),
+            count: z.number(),
+          }),
+        )
+        .describe("Top span operations by service."),
+      cloudProviders: z
+        .array(z.object({ provider: z.string(), count: z.number() }))
+        .describe("Cloud providers in use."),
+      dashboards: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            chartCount: z.number(),
+          }),
+        )
+        .describe("Available dashboards."),
+    }),
+    execute: async ({ context, runtimeContext }) => {
+      const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
+      const client = createHyperDXClient({ apiKey });
+
+      const { startTime, endTime } = context;
+
+      // Run all discovery queries in parallel
+      const [
+        servicesRes,
+        levelsRes,
+        errorsRes,
+        spansRes,
+        cloudRes,
+        dashboardsRes,
+      ] = await Promise.all([
+        // Services by event count
+        client.queryChartSeries({
+          startTime,
+          endTime,
+          series: [
+            {
+              dataSource: "events",
+              aggFn: "count",
+              where: "",
+              groupBy: ["service"],
+            },
+          ],
+        }),
+        // Levels distribution
+        client.queryChartSeries({
+          startTime,
+          endTime,
+          series: [
+            {
+              dataSource: "events",
+              aggFn: "count",
+              where: "",
+              groupBy: ["level"],
+            },
+          ],
+        }),
+        // Top errors
+        client.queryChartSeries({
+          startTime,
+          endTime,
+          series: [
+            {
+              dataSource: "events",
+              aggFn: "count",
+              where: "level:error",
+              groupBy: ["service", "body"],
+            },
+          ],
+        }),
+        // Top span operations
+        client.queryChartSeries({
+          startTime,
+          endTime,
+          series: [
+            {
+              dataSource: "events",
+              aggFn: "count",
+              where: "duration:>0",
+              groupBy: ["span_name", "service"],
+            },
+          ],
+        }),
+        // Cloud providers
+        client.queryChartSeries({
+          startTime,
+          endTime,
+          series: [
+            {
+              dataSource: "events",
+              aggFn: "count",
+              where: "cloud.provider:*",
+              groupBy: ["cloud.provider"],
+            },
+          ],
+        }),
+        // Dashboards
+        client.listDashboards(),
+      ]);
+
+      type RawItem = Record<string, unknown>;
+      const group = (item: RawItem) => (item.group as string[]) ?? [];
+      const val = (item: RawItem) => (item["series_0.data"] as number) ?? 0;
+
+      const services = (servicesRes.data ?? [])
+        .map((item: RawItem) => ({
+          name: group(item)[0] ?? "",
+          eventCount: val(item),
+        }))
+        .sort(
+          (a: { eventCount: number }, b: { eventCount: number }) =>
+            b.eventCount - a.eventCount,
+        )
+        .slice(0, 30);
+
+      const levels = (levelsRes.data ?? [])
+        .map((item: RawItem) => ({
+          level: group(item)[0] ?? "",
+          count: val(item),
+        }))
+        .sort(
+          (a: { count: number }, b: { count: number }) => b.count - a.count,
+        );
+
+      const topErrors = (errorsRes.data ?? [])
+        .map((item: RawItem) => ({
+          service: group(item)[0] ?? "",
+          message: (group(item)[1] ?? "").slice(0, 200),
+          count: val(item),
+        }))
+        .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
+        .slice(0, 15);
+
+      const topSpanOperations = (spansRes.data ?? [])
+        .map((item: RawItem) => ({
+          spanName: group(item)[0] ?? "",
+          service: group(item)[1] ?? "",
+          count: val(item),
+        }))
+        .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
+        .slice(0, 20);
+
+      const cloudProviders = (cloudRes.data ?? [])
+        .map((item: RawItem) => ({
+          provider: group(item)[0] ?? "",
+          count: val(item),
+        }))
+        .sort(
+          (a: { count: number }, b: { count: number }) => b.count - a.count,
+        );
+
+      const dashboards = (dashboardsRes.data ?? []).map((d: RawItem) => ({
+        id: (d.id as string) ?? "",
+        name: (d.name as string) ?? "",
+        chartCount: ((d.charts as unknown[]) ?? []).length,
+      }));
+
+      return {
+        services,
+        levels,
+        topErrors,
+        topSpanOperations,
+        cloudProviders,
+        dashboards,
+      };
+    },
+  });
+
 // Export all tools as an array
 export const hyperdxTools = [
   createSearchLogsTool,
@@ -593,4 +805,5 @@ export const hyperdxTools = [
   createQueryMetricsTool,
   createGetServiceHealthTool,
   createCompareTimeRangesTool,
+  createDiscoverDataTool,
 ];

@@ -36,95 +36,94 @@ The \`where\` parameter in all tools accepts this syntax.
 
 ---
 
+## CRITICAL: Understanding the Data Model
+
+**Logs and spans are BOTH stored as "events".** When you query \`dataSource: "events"\`, you get BOTH.
+- The \`body\` field contains **log messages** for logs, but **span/operation names** (like "GET", "POST", "cache-match") for spans.
+- To search only actual log messages, filter with \`level:error\`, \`level:warn\`, etc.
+- To search spans, filter with \`duration:>0\` or look for span-specific fields like \`http.method\`.
+
+## CRITICAL: Log Levels Are Non-Standard
+
+This system uses OpenTelemetry-style levels, NOT standard syslog levels:
+- \`ok\` — Successful operation (this is the MOST COMMON level, ~70% of events)
+- \`log\` — General log output (used heavily by deco-chat-api)
+- \`info\` — Informational
+- \`warn\` — Warning
+- \`error\` — Error
+- \`debug\` — Debug
+
+**\`ok\` is NOT \`info\`!** If you search \`level:info\` you will miss most events. Use \`level:ok\` for successful spans.
+
+---
+
 ## Basic Full-Text Search
 
-Match any event containing a word:
 \`\`\`
 error
 payment failed
 \`\`\`
 
-- Search is **case-insensitive**
-- Matches by **whole word** by default: \`Error\` matches "Error here" but NOT "Errors here"
-- For partial matching, use wildcards: \`*Error*\` matches "AnyError" or "Errors"
+- Case-insensitive, whole-word match by default
+- \`Error\` matches "Error here" but NOT "Errors here"
+- Wildcards: \`*Error*\` matches "AnyError" or "Errors"
 
 ---
 
 ## Property Filters
 
-Target specific fields using \`property:value\` syntax:
 \`\`\`
 level:error
-service:api
+service:farmrio
 env:production
+process.serviceName:deco-chat
 \`\`\`
+
+### IMPORTANT: service vs process.serviceName
+Both fields exist and often have the same value, but not always. The dashboards use both:
+- \`service\` — most common, works for storefront sites
+- \`process.serviceName\` — used by deco-chat infra dashboards
 
 ### Multiple filters (AND logic by default):
 \`\`\`
-level:error service:api
-level:error service:api env:production
-\`\`\`
-
-### Quoting values with spaces:
-\`\`\`
-service:"my service"
-message:"connection refused"
+level:error service:farmrio
+level:error service:farmrio env:production
 \`\`\`
 
 ---
 
 ## Boolean Operators
 
-### AND (explicit):
 \`\`\`
 level:error AND service:api
-\`\`\`
-
-### OR:
-\`\`\`
 level:error OR level:warn
-service:api OR service:web
-\`\`\`
-
-### NOT / negation:
-\`\`\`
 level:error NOT service:internal
--service:internal
-level:error -env:staging
+level:error -service:internal
+-env:staging
 \`\`\`
 
 ---
 
 ## Range Queries
 
-Use comparison operators on numeric fields:
 \`\`\`
 duration:>1000          (spans slower than 1 second)
 duration:>=500
-duration:<100           (fast spans under 100ms)
-status_code:>=500       (HTTP 5xx errors)
-status_code:>=400 status_code:<500   (HTTP 4xx only)
+duration:<100
+http.response.status_code:>=500    (HTTP 5xx errors)
+http.response.status_code:>500     (HTTP status > 500)
 \`\`\`
 
 ---
 
 ## Existence Checks
 
-Check whether a field is present:
 \`\`\`
 trace_id:*              (has a trace ID)
-error.message:*         (has an error message)
-\`\`\`
-
----
-
-## Exact Phrase Matching
-
-Wrap in double quotes for exact phrase:
-\`\`\`
-"connection refused"
-"NullPointerException"
-"out of memory"
+tool.id:*               (has a tool ID — filters to tool call spans)
+dispatch_namespace:*    (has a dispatch namespace — filters to CF Workers apps)
+cloud.provider:*        (has cloud provider info)
+http.request.url:*      (is an HTTP request)
 \`\`\`
 
 ---
@@ -132,27 +131,30 @@ Wrap in double quotes for exact phrase:
 ## Wildcards
 
 \`\`\`
-service:api*            (starts with "api": api, api-v2, api-internal)
+service:superfrete*     (starts with "superfrete")
 *Error*                 (contains "Error" anywhere)
 service:*-prod          (ends with "-prod")
 \`\`\`
 
 ---
 
-## Common Query Patterns
+## Common Query Patterns for This Instance
 
 | Goal | Query |
 |------|-------|
 | All errors | \`level:error\` |
-| Errors in a service | \`level:error service:checkout\` |
+| Errors in a storefront | \`level:error service:farmrio\` |
+| deco-chat errors | \`level:error process.serviceName:deco-chat\` |
 | Slow spans | \`duration:>2000\` |
-| HTTP 5xx errors | \`http.status_code:>=500\` |
-| Errors excluding noise | \`level:error -service:healthcheck\` |
-| Production errors only | \`level:error env:production\` |
-| Specific error type | \`"NullPointerException" service:api\` |
-| All events from a trace | \`trace_id:abc123\` |
-| Database slow queries | \`db.system:* duration:>500\` |
-| Failed HTTP calls | \`http.status_code:>=400 service:frontend\` |
+| HTTP 5xx | \`http.response.status_code:>=500\` |
+| VTEX errors | \`level:error vtex\` |
+| VTEX 502s | \`vtex level:error 502\` |
+| Build errors | \`service:admin level:error\` |
+| Tool calls in deco-chat | \`process.serviceName:deco-chat tool.id:*\` |
+| CF Workers apps | \`dispatch_namespace:*\` |
+| Kubernetes-hosted | \`cloud.provider:kubernetes\` |
+| Cache operations | \`span_name:"cache-match"\` |
+| Exclude noise | \`level:error -service:healthcheck -"liveness probe"\` |
 `,
         },
       },
@@ -184,19 +186,47 @@ export const queryGuidePrompt = createPrompt({
           type: "text" as const,
           text: `# HyperDX MCP Tools — Query Guide
 
+## IMPORTANT: Common Pitfalls
+
+1. **body ≠ log message for spans.** The \`body\` field contains span names (e.g., "GET", "POST", "cache-match") for spans and actual messages for logs. Searching SEARCH_LOGS with \`*\` returns mostly span names, NOT log content.
+
+2. **Levels are non-standard.** The most common level is \`ok\` (successful spans), then \`log\` (deco-chat-api output), then \`info\`, \`warn\`, \`error\`, \`debug\`. Don't assume standard log levels.
+
+3. **service vs process.serviceName.** Both exist. \`service\` is the common one. Some infra tools use \`process.serviceName\`. When in doubt, try both.
+
+4. **Default time windows are short.** SEARCH_LOGS and GET_LOG_DETAILS default to 15 min. QUERY_SPANS and QUERY_METRICS default to 1 hour. For rare events, extend \`startTime\`.
+
+5. **Start with DISCOVER_DATA.** If you don't know what's in this instance, call DISCOVER_DATA first. It runs 6 parallel queries and returns services, levels, errors, spans, cloud providers, and dashboards in one call.
+
+---
+
 ## Tool Selection Guide
 
 | Task | Best Tool |
 |------|-----------|
+| **First time? What data exists?** | **DISCOVER_DATA** |
 | Find recent errors | SEARCH_LOGS |
-| Debug a specific issue with context | GET_LOG_DETAILS |
+| Debug specific issue with context | GET_LOG_DETAILS |
 | Analyze trends over time | QUERY_CHART_DATA |
 | Check request latency / traces | QUERY_SPANS |
 | Monitor infrastructure metrics | QUERY_METRICS |
 | Triage an incident for a service | GET_SERVICE_HEALTH |
-| Compare this week vs last week | COMPARE_TIME_RANGES |
+| Compare this period vs last | COMPARE_TIME_RANGES |
+| See what dashboards exist | LIST_DASHBOARDS |
+| Inspect a dashboard's queries | GET_DASHBOARD |
 | Manage alert thresholds | LIST/GET/CREATE/UPDATE/DELETE_ALERT |
-| Build or update dashboards | LIST/GET/CREATE/UPDATE/DELETE_DASHBOARD |
+
+---
+
+## DISCOVER_DATA — Start here
+
+Best for: "What data is in this HyperDX instance?"
+
+\`\`\`json
+{}
+\`\`\`
+
+Returns services, levels, top errors, top span operations, cloud providers, and dashboards — all in one call. Default lookback is 6 hours.
 
 ---
 
@@ -205,198 +235,69 @@ export const queryGuidePrompt = createPrompt({
 Best for: "What errors are happening right now?"
 
 \`\`\`json
-{
-  "query": "level:error service:api",
-  "startTime": 1700000000000,
-  "endTime": 1700003600000,
-  "limit": 50
-}
+{ "query": "level:error" }
 \`\`\`
 
-Returns distinct log messages grouped by body with occurrence counts.
-Default time window: last 15 minutes.
+**Warning:** Results are grouped by \`body\`. For spans, body = span name (e.g., "GET"). For actual error messages, always filter \`level:error\` or \`level:warn\`.
 
 ---
 
-## GET_LOG_DETAILS — Structured log exploration
+## GET_LOG_DETAILS — Structured exploration
 
-Best for: "Show me errors with their service and trace IDs"
+Best for: "Show me errors with their service, level, and other fields"
 
 \`\`\`json
 {
   "query": "level:error",
-  "groupBy": ["body", "service", "trace_id", "level"],
+  "groupBy": ["service", "body"],
   "limit": 20
 }
 \`\`\`
 
-Use custom \`groupBy\` to surface any fields you care about.
-Useful fields: \`body\`, \`service\`, \`level\`, \`env\`, \`trace_id\`, \`span_id\`, \`userEmail\`, \`host\`.
+**Pro tip:** Use \`groupBy: ["service", "level"]\` to see the level distribution per service.
 
 ---
 
-## QUERY_CHART_DATA — Full time series analysis
-
-Best for: Custom multi-series queries, trend analysis, raw API power.
-
-Single series example — error count over time:
-\`\`\`json
-{
-  "startTime": 1700000000000,
-  "endTime": 1700003600000,
-  "granularity": "5 minute",
-  "series": [{
-    "dataSource": "events",
-    "aggFn": "count",
-    "where": "level:error service:api",
-    "groupBy": []
-  }]
-}
-\`\`\`
-
-Multi-series example — errors vs warnings:
-\`\`\`json
-{
-  "series": [
-    { "dataSource": "events", "aggFn": "count", "where": "level:error", "groupBy": [] },
-    { "dataSource": "events", "aggFn": "count", "where": "level:warn", "groupBy": [] }
-  ]
-}
-\`\`\`
-
-Response shape: each item has \`ts_bucket\` (epoch ms), \`series_0.data\`, \`series_1.data\`, \`group\` (array of groupBy values).
-
----
-
-## QUERY_SPANS — Latency and trace analysis
-
-Best for: "How slow is the checkout service? Which endpoints are slowest?"
+## QUERY_SPANS — Latency & trace analysis
 
 \`\`\`json
 {
-  "query": "service:checkout",
+  "query": "service:farmrio",
   "aggFn": "p95",
-  "field": "duration",
-  "groupBy": ["span_name", "service"],
-  "granularity": "5 minute"
+  "field": "duration"
 }
 \`\`\`
 
-Aggregation functions for spans:
-- \`p50\`, \`p95\`, \`p99\` — latency percentiles
-- \`count\` — request throughput
-- \`avg\` — average duration
-- \`max\` — worst case
-
----
-
-## QUERY_METRICS — Infrastructure and app metrics
-
-Best for: CPU, memory, request rates, custom business metrics.
-
-**Important**: Always specify \`metricDataType\`:
-- \`Gauge\` — point-in-time values (CPU%, memory bytes, queue depth)
-- \`Sum\` — cumulative counters (use \`*_rate\` aggFn variants for per-second rates)
-- \`Histogram\` — distributions (use \`p50\`/\`p95\`/\`p99\` aggFns)
-
-CPU usage example:
-\`\`\`json
-{
-  "metricName": "system.cpu.utilization",
-  "metricDataType": "Gauge",
-  "aggFn": "avg",
-  "groupBy": ["host"]
-}
-\`\`\`
-
-HTTP request rate (Sum counter → use sum_rate):
-\`\`\`json
-{
-  "metricName": "http.server.request.count",
-  "metricDataType": "Sum",
-  "aggFn": "sum_rate",
-  "where": "service:api"
-}
-\`\`\`
+Default groupBy: \`["span_name", "service"]\`. Use \`duration:>0\` filter to exclude non-span events.
 
 ---
 
 ## GET_SERVICE_HEALTH — Incident triage
 
-Best for: "Is the payment service healthy right now?"
-
 \`\`\`json
-{
-  "service": "payment",
-  "granularity": "1 minute",
-  "startTime": 1700000000000,
-  "endTime": 1700003600000
-}
+{ "service": "deco-chat" }
 \`\`\`
 
-Returns 3 parallel series in each data point:
+Returns 3 series per time bucket:
 - \`series_0.data\` = error count
 - \`series_1.data\` = total request count
-- \`series_2.data\` = p95 latency in ms
+- \`series_2.data\` = p95 latency (ms)
 
 ---
 
-## COMPARE_TIME_RANGES — Regression detection
+## GET_DASHBOARD — Learn from existing queries
 
-Best for: "Did error rate increase after today's deploy?"
-
-\`\`\`json
-{
-  "query": "level:error service:api",
-  "aggFn": "count",
-  "currentStart": 1700003600000,
-  "currentEnd": 1700007200000,
-  "priorStart": 1699996400000,
-  "priorEnd": 1700000000000
-}
-\`\`\`
-
-Returns ratio = current / prior. Ratio > 1 means current period has more errors.
+The dashboards contain battle-tested queries. Use \`LIST_DASHBOARDS\` then \`GET_DASHBOARD\` to see what fields and filters the team uses. Dashboards like "platform - http", "decocms infra", and "platform - commerce" contain rich query patterns.
 
 ---
 
-## CREATE_DASHBOARD — Build monitoring dashboards
+## CREATE_DASHBOARD — Grid layout
 
-Grid layout: typically 12 units wide. Common chart sizes: 6×3 (half-width), 12×3 (full-width), 4×3 (third-width).
-
-\`\`\`json
-{
-  "name": "API Health",
-  "query": "env:production",
-  "charts": [
-    {
-      "name": "Error Rate",
-      "x": 0, "y": 0, "w": 6, "h": 3,
-      "series": [{
-        "dataSource": "events",
-        "aggFn": "count",
-        "where": "level:error",
-        "groupBy": ["service"]
-      }]
-    },
-    {
-      "name": "P95 Latency",
-      "x": 6, "y": 0, "w": 6, "h": 3,
-      "series": [{
-        "dataSource": "events",
-        "aggFn": "p95",
-        "field": "duration",
-        "where": "",
-        "groupBy": ["service"]
-      }]
-    }
-  ]
-}
-\`\`\`
+Typical width: 12 units. Common sizes: 6×2 (half-width), 12×2 (full-width), 4×2 (third-width).
 
 ---
 
-## CREATE_ALERT — Set up notifications
+## CREATE_ALERT
 
 Alert on error spike (search-based):
 \`\`\`json
@@ -406,22 +307,7 @@ Alert on error spike (search-based):
   "threshold_type": "above",
   "source": "search",
   "savedSearchId": "your-saved-search-id",
-  "channel": { "type": "slack", "channelId": "C1234567" },
-  "name": "API Error Spike"
-}
-\`\`\`
-
-Alert on chart metric (chart-based):
-\`\`\`json
-{
-  "interval": "1m",
-  "threshold": 2000,
-  "threshold_type": "above",
-  "source": "chart",
-  "dashboardId": "dash-id",
-  "chartId": "chart-id",
-  "channel": { "type": "pagerduty", "severity": "critical" },
-  "name": "P95 Latency Critical"
+  "channel": { "type": "slack", "channelId": "C1234567" }
 }
 \`\`\`
 `,
@@ -432,154 +318,119 @@ Alert on chart metric (chart-based):
 });
 
 // ============================================================================
-// HYPERDX_FIELD_REFERENCE
+// HYPERDX_SYSTEM_PROMPT — Expert agent system prompt
 // ============================================================================
 
-export const fieldReferencePrompt = createPrompt({
-  name: "HYPERDX_FIELD_REFERENCE",
-  title: "HyperDX Field Reference",
+export const systemPrompt = createPrompt({
+  name: "HYPERDX_SYSTEM_PROMPT",
+  title: "HyperDX Expert Agent System Prompt",
   description:
-    "Reference of common field names available in HyperDX logs, spans, and metrics for use in search queries and groupBy.",
+    "System prompt for an AI agent that is an expert in querying and analyzing this specific HyperDX instance. Includes data model knowledge, service taxonomy, field reference, and query patterns.",
   execute: () => ({
     messages: [
       {
         role: "user" as const,
         content: {
           type: "text" as const,
-          text: "What fields are available in HyperDX?",
+          text: "Give me a system prompt for an agent that is an expert in our HyperDX observability data.",
         },
       },
       {
         role: "assistant" as const,
         content: {
           type: "text" as const,
-          text: `# HyperDX Field Reference
+          text: `# HyperDX Observability Expert — System Prompt
 
-Fields can be used in:
-- \`where\` / search queries: \`field:value\`
-- \`groupBy\` arrays: \`["field1", "field2"]\`
-- \`field\` parameter (for numeric aggregations like avg, p95)
+You are an observability expert with deep knowledge of this HyperDX instance. You help engineers investigate incidents, analyze performance, discover error patterns, and build dashboards.
 
----
+## Data Model
 
-## Core Event Fields (logs & spans)
+This HyperDX instance monitors a **Deco.cx platform** — an edge-computing commerce platform running storefronts on Deno Deploy and Kubernetes, with a central "deco-chat" AI orchestration service on Cloudflare Workers.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| \`body\` | string | Log message / span name | \`"payment failed"\` |
-| \`level\` | string | Severity level | \`error\`, \`warn\`, \`info\`, \`debug\` |
-| \`service\` | string | Service name | \`api\`, \`checkout\`, \`web\` |
-| \`env\` | string | Environment | \`production\`, \`staging\`, \`dev\` |
-| \`host\` | string | Hostname | \`web-01.prod\` |
-| \`timestamp\` | number | Event time (ms) | \`1700000000000\` |
-| \`trace_id\` | string | Distributed trace ID | \`abc123def456\` |
-| \`span_id\` | string | Individual span ID | \`xyz789\` |
-| \`parent_span_id\` | string | Parent span ID | \`pqr456\` |
+### Event Types
+All data is queried via \`dataSource: "events"\`. Both logs and spans are stored together:
+- **Spans** have \`duration > 0\`, a \`span_name\`, and the \`body\` field contains the operation name (e.g., "GET", "POST /mcp", "cache-match")
+- **Logs** have messages in the \`body\` field and levels like \`error\`, \`warn\`, \`info\`, \`log\`
 
----
+### Log Levels (NON-STANDARD)
+- \`ok\` — Successful span completion (~70% of all events). This is NOT \`info\`.
+- \`log\` — General log output from deco-chat-api
+- \`info\` — Informational logs
+- \`warn\` — Warnings (rendering issues, deprecated calls)
+- \`error\` — Errors (rendering failures, HTTP errors, timeouts)
+- \`debug\` — Debug output (rare)
 
-## Span-specific Fields
+### Service Taxonomy
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| \`duration\` | number (ms) | Span duration in milliseconds | \`250\` |
-| \`span_name\` | string | Operation name | \`"POST /api/orders"\` |
-| \`status_code\` | string | OpenTelemetry status | \`"OK"\`, \`"ERROR"\` |
-| \`http.method\` | string | HTTP method | \`GET\`, \`POST\` |
-| \`http.route\` | string | HTTP route template | \`"/users/:id"\` |
-| \`http.url\` | string | Full request URL | |
-| \`http.status_code\` | number | HTTP response code | \`200\`, \`500\` |
-| \`http.target\` | string | HTTP request path | \`"/api/users"\` |
-| \`db.system\` | string | Database type | \`postgresql\`, \`redis\`, \`mongodb\` |
-| \`db.statement\` | string | SQL query | \`"SELECT * FROM users"\` |
-| \`db.name\` | string | Database name | \`"myapp_production"\` |
-| \`rpc.service\` | string | gRPC service name | |
-| \`rpc.method\` | string | gRPC method name | |
+**Storefront Sites** (customer commerce sites on Deno Deploy / K8s):
+\`farmrio\`, \`fila-store\`, \`technos\`, \`teciplast\`, \`als-storefront\`, \`miess-01\`, \`lebiscuit\`, \`casaevideo\`, \`oficina-reserva\`, \`lojabagaggio\`, \`lojastorra-2\`, \`osklenbr\`, \`montecarlo\`, \`granadobr\`, \`zeenow\`, \`homycasa\`, \`ffloresta\`, \`zeedog\`, \`cleanwhey\`, \`maconequiio\`, \`macoteste\`, \`lojaintegradar\`
 
----
+**Platform Services**:
+- \`deco-chat\` / \`deco-chat-api\` — The core AI chat/orchestration platform (Cloudflare Workers). Uses fields: \`tool.id\`, \`actor.name\`, \`actor.method\`, \`mcp.tool.name\`, \`workspace\`
+- \`admin\` — Build system and admin API. Uses fields: \`build.step\`, \`site\`, \`deploymentId\`
+- \`deco-ai-gateway\` — AI model proxy/gateway
 
-## Kubernetes / Infrastructure Fields
+**Cloudflare Workers Apps** (via dispatch_namespace):
+\`superfrete-atendimento-*\`, \`billing\`, \`libertas-workflows\`, \`libertas-hunting-prod\`, \`superfrete-workflows\`, \`superfrete-tracking\`, \`admin-cx\`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| \`k8s.namespace\` | string | K8s namespace |
-| \`k8s.pod.name\` | string | Pod name |
-| \`k8s.node.name\` | string | Node name |
-| \`k8s.deployment.name\` | string | Deployment name |
-| \`k8s.container.name\` | string | Container name |
-| \`cloud.provider\` | string | \`aws\`, \`gcp\`, \`azure\` |
-| \`cloud.region\` | string | Cloud region |
+### Cloud Providers
+- \`kubernetes\` — Primary hosting (most storefront traffic)
+- \`denodeploy\` — Secondary hosting (some storefronts)
 
----
+### Key Fields Reference
 
-## Common Custom / Application Fields
+**Universal fields:** \`service\`, \`process.serviceName\`, \`level\`, \`body\`, \`span_name\`, \`duration\`, \`trace_id\`, \`span_id\`
 
-These vary by application but are frequently used:
+**HTTP fields:** \`http.request.url\`, \`http.response.status_code\`, \`http.method\`, \`http.host\`, \`http.status_code\`, \`url.path\`, \`url.full\`
 
-| Field | Description |
-|-------|-------------|
-| \`userEmail\` | User email address |
-| \`userId\` | User identifier |
-| \`requestId\` | Request correlation ID |
-| \`version\` | Application version |
-| \`site\` | Site or tenant identifier |
-| \`error.type\` | Exception class name |
-| \`error.message\` | Exception message |
-| \`error.stack\` | Stack trace |
+**Infrastructure:** \`cloud.provider\`, \`service.instance.id\`, \`process.tag.cloud.provider\`, \`cf.workers_version_metadata.id\`, \`dispatch_namespace\`
 
----
+**deco-chat specific:** \`tool.id\`, \`tool.resource\`, \`tool.thread\`, \`actor.name\`, \`actor.id\`, \`actor.method\`, \`mcp.tool.name\`, \`workspace\`, \`db.sql.query\`
 
-## Metrics Field Conventions (OpenTelemetry)
+**Build system:** \`build.step\` (values: \`site_build\`, \`upload_results\`, \`UPLOAD_RESULTS\`), \`process.tag.site.name\`, \`cache_tar_size_mb\`, \`source_tar_size_mb\`
 
-Common metric names by category:
+**Commerce:** \`deco.runtime.version\`, \`deco.apps.version\`
 
-### System Metrics
-\`\`\`
-system.cpu.utilization          (Gauge)
-system.memory.utilization       (Gauge)
-system.memory.usage             (Gauge, bytes)
-system.disk.io                  (Sum)
-system.network.io               (Sum)
-\`\`\`
+**Cache:** \`cache_status\` (values: \`hit\`, \`miss\`, \`stale\`), used with \`span_name:"cache-match"\`
 
-### HTTP Server Metrics
-\`\`\`
-http.server.request.duration    (Histogram, ms)
-http.server.request.count       (Sum)
-http.server.active_requests     (Gauge)
-\`\`\`
+## Existing Dashboards (reference for query patterns)
 
-### JVM Metrics
-\`\`\`
-process.runtime.jvm.memory.usage        (Gauge)
-process.runtime.jvm.gc.duration        (Histogram)
-process.runtime.jvm.threads.count      (Gauge)
-\`\`\`
+1. **"Main Dashboard v2.0"** — Overall health: request count, error count, latency, HTTP status codes
+2. **"platform - http"** — HTTP latency (P99, AVG), status codes, error counts, cache hit rates, isolate counts
+3. **"platform - daily"** — Daily error tracking by service, VTEX timeouts, AbortErrors, build errors, liveness probes
+4. **"platform - commerce"** — VTEX/VNDA latency (P95/P99/AVG), error rates by status code (502, 429, 500)
+5. **"platform - traffic split"** — Traffic comparison between cloud providers (K8s vs Deno Deploy)
+6. **"platform - admin"** — Admin service errors by site, common error patterns
+7. **"decocms infra"** — deco-chat request counts, latency per route, tool call duration, AI agent stream latency, DB query latency, trigger usage
+8. **"decocms errors"** — deco-chat-api error tracking
+9. **"decocms apps"** — Cloudflare Workers dispatch namespace apps: logs, errors, CPU/wall time, workflow execution
+10. **"errors - runtime version"** — Errors broken down by Deco runtime and apps version
+11. **"errors - admin browser"** — Client-side admin errors by user email
+12. **"Loaders Cache"** — Cache hit/miss/stale rates, duration per status, per-service breakdown
+13. **"Superfrete"** — Superfrete service errors
+14. **"Runtime"** — Outbound HTTP request latency (P99) by destination URL
+15. **"Farm Investigation"** — FarmRio-specific: cookie issues, cache behavior
 
-### Database Metrics
-\`\`\`
-db.client.connections.usage     (Gauge)
-db.client.connections.count     (Sum)
-\`\`\`
+## Common Error Patterns
 
----
+- **"Balance alert check failed"** — deco-ai-gateway, recurring (billing/quota issue)
+- **"rendering: site/sections/..."** — Storefront rendering errors (TypeError, Invalid URL)
+- **"loader error AbortError: The signal has been aborted"** — Request timeouts in loaders
+- **"error sending request for url: *.myvtex.com/..."** — VTEX API errors (GraphQL validation, 502, 429)
+- **"HttpError 402: Unavailable Shop"** — Shopify payment-required errors
+- **"HttpError 500: Internal Server Error"** — VTEX intelligent search failures
+- **"Error executing step gathering: McpError"** — MCP tool schema validation errors (Zod)
+- **"liveness probe failed"** — K8s health check failures
 
-## Tips for groupBy
+## Query Strategy
 
-- Use \`groupBy: []\` for a single aggregated series (no breakdown)
-- Use \`groupBy: ["service"]\` to break down by service
-- Use \`groupBy: ["service", "env"]\` for multi-dimensional breakdown
-- Consistent groupBy across all series in multi-series queries
-- \`groupBy\` values appear in the response as the \`group\` array
-
----
-
-## Tips for where queries
-
-- Leave \`where: ""\` to query all events
-- Combine multiple filters: \`level:error service:api env:production\`
-- Use \`-field:value\` to exclude: \`level:error -service:healthcheck\`
-- Use \`property:*\` to filter to events that have a field: \`trace_id:*\`
+1. **Start broad, narrow down.** Use DISCOVER_DATA or \`GET_LOG_DETAILS\` with \`groupBy: ["service", "level"]\` to see the landscape.
+2. **Use dashboards as references.** Call GET_DASHBOARD on relevant dashboards to see what query patterns the team uses.
+3. **For errors, always filter \`level:error\`.** Without this, you get mostly \`ok\` spans.
+4. **For latency, use QUERY_SPANS.** Default p95 on duration grouped by span_name+service gives a great overview.
+5. **For deco-chat investigation,** use \`process.serviceName:deco-chat\` and explore \`tool.id\`, \`actor.name\`, \`db.sql.query\` fields.
+6. **For commerce/VTEX issues,** search for \`vtex level:error\` and check status codes (502 = upstream failure, 429 = rate limit, 500 = server error).
+7. **For build issues,** filter \`service:admin\` and look at \`build.step\`, \`process.tag.site.name\`.
 `,
         },
       },
@@ -587,8 +438,4 @@ db.client.connections.count     (Sum)
   }),
 });
 
-export const prompts = [
-  searchSyntaxPrompt,
-  queryGuidePrompt,
-  fieldReferencePrompt,
-];
+export const prompts = [searchSyntaxPrompt, queryGuidePrompt, systemPrompt];
