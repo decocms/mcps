@@ -251,7 +251,7 @@ export async function sendMessage(
     );
     return result;
   } catch (error) {
-    console.error("[Slack] sendMessage FAILED:", error);
+    console.error("[Slack] sendMessage  FAILED:", error);
     throw error;
   }
 }
