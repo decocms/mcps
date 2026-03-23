@@ -68,10 +68,11 @@ export const createGenerateEmbeddingsTool = (env: Env) =>
         dimensions: dimensions,
       });
 
-      const embeddingsCount = Array.isArray(result.data)
-        ? result.data.length
+      const resultAny = result as any;
+      const embeddingsCount = Array.isArray(resultAny.data)
+        ? resultAny.data.length
         : 0;
-      console.log({ embeddingsCount, model: result.model });
+      console.log({ embeddingsCount, model: resultAny.model });
 
       return {
         data: result,
