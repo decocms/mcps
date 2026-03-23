@@ -47,6 +47,9 @@ import { initializeConfigCacheCount } from "./lib/config-cache.ts";
 
 export { StateSchema };
 
+/** Hardcoded fallback model used when LANGUAGE_MODEL binding is not configured */
+const FALLBACK_MODEL_ID = "anthropic/claude-sonnet-4-5";
+
 /**
  * Fetch agent's system_prompt from Mesh API via MCP protocol
  */
@@ -219,13 +222,15 @@ const onChangeHandler = async (env: Env, config: any) => {
     }
 
     // Configure LLM if we have a token (modelProviderId is optional)
-    if (persistentToken && languageModel) {
+    // Falls back to FALLBACK_MODEL_ID when LANGUAGE_MODEL binding is not set
+    if (persistentToken) {
+      const modelId = languageModel?.value?.id ?? FALLBACK_MODEL_ID;
       configureLLM({
         meshUrl,
         organizationId,
         token: persistentToken,
         modelProviderId,
-        modelId: languageModel?.value?.id,
+        modelId,
         agentId,
         agentMode,
         systemPrompt,
@@ -265,7 +270,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       meshUrl,
       meshToken: persistentToken,
       modelProviderId,
-      modelId: languageModel?.value?.id,
+      modelId: languageModel?.value?.id ?? FALLBACK_MODEL_ID,
       agentId,
       systemPrompt,
       botToken,

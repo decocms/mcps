@@ -66,6 +66,9 @@ export function setBotUserIdForTeam(teamId: string, userId: string): void {
   botUserIdCache.set(`team:${teamId}`, userId);
 }
 
+/** Hardcoded fallback model used when LANGUAGE_MODEL binding is not configured */
+const FALLBACK_MODEL_ID = "anthropic/claude-sonnet-4-5";
+
 export const app = new Hono();
 
 /**
@@ -346,20 +349,21 @@ async function processConnectionEventAsync(
   initializeSlackClient({ botToken: connectionConfig.botToken });
 
   // Configure LLM with this connection's settings (modelProviderId is optional)
-  if (connectionConfig.meshToken && connectionConfig.modelId) {
+  // Falls back to FALLBACK_MODEL_ID when modelId is not configured
+  if (connectionConfig.meshToken) {
     configureLLM({
       meshUrl: connectionConfig.meshUrl,
       organizationId: connectionConfig.organizationId,
       token: connectionConfig.meshToken,
       modelProviderId: connectionConfig.modelProviderId,
-      modelId: connectionConfig.modelId,
+      modelId: connectionConfig.modelId ?? FALLBACK_MODEL_ID,
       agentId: connectionConfig.agentId,
       systemPrompt: connectionConfig.systemPrompt,
     });
   } else {
     // Clear LLM config to prevent cross-tenant configuration leakage
     clearLLMConfig();
-    logger.warn("LLM not configured - missing meshToken or modelId", {
+    logger.warn("LLM not configured - missing meshToken", {
       connectionId: connectionConfig.connectionId,
       trace_id: traceId,
     });
