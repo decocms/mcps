@@ -38,7 +38,6 @@ export function configureLLM(config: LLMConfig): void {
   console.log("[LLMHandler] Configured", {
     meshUrl: config.meshUrl,
     organizationId: config.organizationId,
-    modelProviderId: config.modelProviderId,
     modelId: config.modelId,
     agentId: config.agentId,
     hasToken: !!config.token,

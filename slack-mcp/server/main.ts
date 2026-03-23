@@ -117,14 +117,8 @@ const onChangeHandler = async (env: Env, config: any) => {
 
     // Get LLM configuration (bindings)
     const agent = state?.AGENT;
-    const languageModel = state?.LANGUAGE_MODEL;
     const whisper = state?.WHISPER;
 
-    // Extract values - connectionId comes from LANGUAGE_MODEL
-    const modelProviderId: string | undefined =
-      typeof languageModel?.value?.connectionId === "string"
-        ? languageModel.value.connectionId
-        : undefined;
     const agentId: string | undefined =
       typeof agent?.value === "string" ? agent.value : undefined;
     const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
@@ -224,12 +218,11 @@ const onChangeHandler = async (env: Env, config: any) => {
     // Configure LLM if we have a token (modelProviderId is optional)
     // Falls back to FALLBACK_MODEL_ID when LANGUAGE_MODEL binding is not set
     if (persistentToken) {
-      const modelId = languageModel?.value?.id ?? FALLBACK_MODEL_ID;
+      const modelId = FALLBACK_MODEL_ID;
       configureLLM({
         meshUrl,
         organizationId,
         token: persistentToken,
-        modelProviderId,
         modelId,
         agentId,
         agentMode,
@@ -269,8 +262,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       organizationId,
       meshUrl,
       meshToken: persistentToken,
-      modelProviderId,
-      modelId: languageModel?.value?.id ?? FALLBACK_MODEL_ID,
+      modelId: FALLBACK_MODEL_ID,
       agentId,
       systemPrompt,
       botToken,

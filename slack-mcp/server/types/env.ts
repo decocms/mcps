@@ -12,20 +12,6 @@ export const StateSchema = z.object({
   AGENT: BindingOf("@deco/agent")
     .optional()
     .describe("Agent with tools, resources and prompts"),
-  LANGUAGE_MODEL: z
-    .object({
-      __type: z.literal("@deco/language-model"),
-      value: z
-        .object({
-          id: z.string(),
-        })
-        .loose()
-        .describe("The language model to use for agent responses."),
-    })
-    .optional()
-    .describe(
-      "Language model for generating responses. Optional if you only want to use Slack tools without LLM.",
-    ),
     LANGUAGE_PROVIDER: z
     .object({
       __type: z.literal("@deco/llm"),
