@@ -38,7 +38,7 @@ Lookback window: 6.0 hours.
 
 ## Event Volume
 
-Total events in window: 19,583,911
+Total events in window: 20,080,255
 
 ## Log Levels
 

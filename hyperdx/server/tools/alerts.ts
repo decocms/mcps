@@ -120,50 +120,62 @@ export const createCreateAlertTool = (_env: Env) =>
     id: "CREATE_ALERT",
     description:
       "Create a new alert in HyperDX. Alerts fire when a metric crosses a threshold and notify a channel (email, Slack, PagerDuty, OpsGenie, or Slack webhook). Can be attached to a saved search or a dashboard chart.",
-    inputSchema: z.object({
-      interval: AlertIntervalSchema.describe(
-        "How often to evaluate the alert condition.",
+    inputSchema: z
+      .object({
+        interval: AlertIntervalSchema.describe(
+          "How often to evaluate the alert condition.",
+        ),
+        threshold: z
+          .number()
+          .describe("Numeric threshold value that triggers the alert."),
+        threshold_type: z
+          .enum(["above", "below"])
+          .describe("Fire when the value is 'above' or 'below' the threshold."),
+        source: z
+          .enum(["chart", "search"])
+          .describe(
+            "Alert source type. 'chart' requires dashboardId+chartId, 'search' requires savedSearchId.",
+          ),
+        channel: AlertChannelSchema.describe(
+          "Notification channel configuration.",
+        ),
+        name: z.string().optional().describe("Human-readable alert name."),
+        message: z
+          .string()
+          .optional()
+          .describe("Custom message included in the notification."),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe("Dashboard ID (required when source='chart')."),
+        chartId: z
+          .string()
+          .optional()
+          .describe(
+            "Chart ID within the dashboard (required when source='chart').",
+          ),
+        savedSearchId: z
+          .string()
+          .optional()
+          .describe("Saved search ID (required when source='search')."),
+        groupBy: z
+          .string()
+          .optional()
+          .describe(
+            "Field to group search results by before applying threshold (for source='search').",
+          ),
+      })
+      .refine(
+        (data) => {
+          if (data.source === "chart") return data.dashboardId && data.chartId;
+          if (data.source === "search") return !!data.savedSearchId;
+          return true;
+        },
+        {
+          message:
+            "source='chart' requires dashboardId and chartId. source='search' requires savedSearchId.",
+        },
       ),
-      threshold: z
-        .number()
-        .describe("Numeric threshold value that triggers the alert."),
-      threshold_type: z
-        .enum(["above", "below"])
-        .describe("Fire when the value is 'above' or 'below' the threshold."),
-      source: z
-        .enum(["chart", "search"])
-        .describe(
-          "Alert source type. 'chart' requires dashboardId+chartId, 'search' requires savedSearchId.",
-        ),
-      channel: AlertChannelSchema.describe(
-        "Notification channel configuration.",
-      ),
-      name: z.string().optional().describe("Human-readable alert name."),
-      message: z
-        .string()
-        .optional()
-        .describe("Custom message included in the notification."),
-      dashboardId: z
-        .string()
-        .optional()
-        .describe("Dashboard ID (required when source='chart')."),
-      chartId: z
-        .string()
-        .optional()
-        .describe(
-          "Chart ID within the dashboard (required when source='chart').",
-        ),
-      savedSearchId: z
-        .string()
-        .optional()
-        .describe("Saved search ID (required when source='search')."),
-      groupBy: z
-        .string()
-        .optional()
-        .describe(
-          "Field to group search results by before applying threshold (for source='search').",
-        ),
-    }),
     outputSchema: z.record(z.string(), z.unknown()),
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);

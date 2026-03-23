@@ -296,6 +296,11 @@ export const createQuerySpansTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      // Ensure we only query spans (not logs) by requiring duration:>0
+      const spanFilter = context.query
+        ? `duration:>0 ${context.query}`
+        : "duration:>0";
+
       const response = await client.queryChartSeries({
         startTime: context.startTime,
         endTime: context.endTime,
@@ -305,7 +310,7 @@ export const createQuerySpansTool = (_env: Env) =>
             dataSource: "events",
             aggFn: context.aggFn,
             field: context.field,
-            where: context.query,
+            where: spanFilter,
             groupBy: context.groupBy,
           },
         ],
@@ -544,42 +549,44 @@ export const createCompareTimeRangesTool = (_env: Env) =>
     }),
     outputSchema: z.object({
       description: z.string(),
-      data: z.array(z.record(z.string(), z.unknown())),
+      current: z
+        .array(z.record(z.string(), z.unknown()))
+        .describe("Aggregated data for the current period."),
+      prior: z
+        .array(z.record(z.string(), z.unknown()))
+        .describe("Aggregated data for the prior/baseline period."),
     }),
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
-      // Use the wider window spanning both periods
-      const startTime = Math.min(context.priorStart, context.currentStart);
-      const endTime = Math.max(context.priorEnd, context.currentEnd);
+      const seriesConfig = {
+        dataSource: "events" as const,
+        aggFn: context.aggFn,
+        field: context.field,
+        where: context.query,
+        groupBy: context.groupBy,
+      };
 
-      const response = await client.queryChartSeries({
-        startTime,
-        endTime,
-        seriesReturnType: "ratio",
-        series: [
-          {
-            dataSource: "events",
-            aggFn: context.aggFn,
-            field: context.field,
-            where: context.query,
-            groupBy: context.groupBy,
-          },
-          {
-            dataSource: "events",
-            aggFn: context.aggFn,
-            field: context.field,
-            where: context.query,
-            groupBy: context.groupBy,
-          },
-        ],
-      });
+      // Query both periods in parallel with separate time windows
+      const [currentRes, priorRes] = await Promise.all([
+        client.queryChartSeries({
+          startTime: context.currentStart,
+          endTime: context.currentEnd,
+          series: [seriesConfig],
+        }),
+        client.queryChartSeries({
+          startTime: context.priorStart,
+          endTime: context.priorEnd,
+          series: [seriesConfig],
+        }),
+      ]);
 
       return {
         description:
-          "series_0.data=current_value, series_1.data=prior_value, ratio=current/prior. Ratio >1 means current is higher than prior.",
-        data: response.data ?? [],
+          "current = current period aggregates, prior = prior/baseline period aggregates. Compare values to detect regressions.",
+        current: currentRes.data ?? [],
+        prior: priorRes.data ?? [],
       };
     },
   });
@@ -917,9 +924,9 @@ export const createDiscoverDataTool = (_env: Env) =>
         for (const f of d.fieldsUsed) allFields.add(f);
       }
 
-      // Generate agent prompt
-      const totalEvents = services.reduce(
-        (sum: number, s: { eventCount: number }) => sum + s.eventCount,
+      // Compute total from levels (not sliced, unlike services which are top 30)
+      const totalEvents = levels.reduce(
+        (sum: number, l: { count: number }) => sum + l.count,
         0,
       );
       const topServicesList = services
