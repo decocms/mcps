@@ -704,7 +704,7 @@ export async function sendThinkingMessage(
   channel: string,
   threadTs?: string,
 ): Promise<{ ts: string; channel: string } | null> {
-  const thinkingText = "🤔 Pensando...";
+  const thinkingText = "🤔 Pensando... ";
 
   try {
     const result = await sendMessage({
