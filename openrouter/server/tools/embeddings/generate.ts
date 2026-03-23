@@ -50,19 +50,18 @@ export const createGenerateEmbeddingsTool = (env: Env) =>
       const { input, model, encoding_format, dimensions } = context;
       const sdk = new OpenRouter({ apiKey: getOpenRouterApiKey(env) });
 
-      console.log({input, model, encoding_format, dimensions});
+      console.log({ input, model, encoding_format, dimensions });
       const result = await sdk.embeddings.generate({
         input: input,
-        model: model,        
+        model: model,
         encodingFormat: encoding_format,
         dimensions: dimensions,
       });
 
-  console.log({result});
-      
+      console.log({ result });
 
       return {
-      data: result
+        data: result,
       };
     },
   });

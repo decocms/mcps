@@ -73,13 +73,27 @@ export async function callDecopilotAPI(
 
   console.log(`[MeshChat] ========== callDecopilotAPI ==========`);
   console.log(`[MeshChat] URL: ${url}`);
-  console.log(`[MeshChat] Model: ${modelId}, Provider: ${resolveProvider(modelId)}, Connection: ${modelProviderId ?? "none"}`);
+  console.log(
+    `[MeshChat] Model: ${modelId}, Provider: ${resolveProvider(modelId)}, Connection: ${modelProviderId ?? "none"}`,
+  );
   console.log(`[MeshChat] Agent: id=${agentId ?? "none"}, mode=${agentMode}`);
-  console.log(`[MeshChat] Messages: ${messages.length}, timeout: ${timeoutMs}ms`);
-  console.log(`[MeshChat] Effective mesh URL: ${effectiveMeshUrl} (original: ${meshUrl})`);
+  console.log(
+    `[MeshChat] Messages: ${messages.length}, timeout: ${timeoutMs}ms`,
+  );
+  console.log(
+    `[MeshChat] Effective mesh URL: ${effectiveMeshUrl} (original: ${meshUrl})`,
+  );
   messages.forEach((m, i) => {
-    const partsDesc = m.parts.map(p => p.type === "text" ? `text(${(p as any).text?.length ?? 0})` : `file(${(p as any).filename ?? "?"})`).join(", ");
-    console.log(`[MeshChat]   Message[${i}]: role=${m.role}, parts=[${partsDesc}]`);
+    const partsDesc = m.parts
+      .map((p) =>
+        p.type === "text"
+          ? `text(${(p as any).text?.length ?? 0})`
+          : `file(${(p as any).filename ?? "?"})`,
+      )
+      .join(", ");
+    console.log(
+      `[MeshChat]   Message[${i}]: role=${m.role}, parts=[${partsDesc}]`,
+    );
   });
 
   const controller = new AbortController();
@@ -99,12 +113,18 @@ export async function callDecopilotAPI(
       signal: controller.signal,
     });
 
-    console.log(`[MeshChat] Decopilot API response: status=${response.status}, ok=${response.ok}, time=${Date.now() - fetchStartTime}ms`);
-    console.log(`[MeshChat] Response headers: content-type=${response.headers.get("content-type")}`);
+    console.log(
+      `[MeshChat] Decopilot API response: status=${response.status}, ok=${response.ok}, time=${Date.now() - fetchStartTime}ms`,
+    );
+    console.log(
+      `[MeshChat] Response headers: content-type=${response.headers.get("content-type")}`,
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[MeshChat] Decopilot API FAILED: status=${response.status}, body=${errorText.substring(0, 500)}`);
+      console.error(
+        `[MeshChat] Decopilot API FAILED: status=${response.status}, body=${errorText.substring(0, 500)}`,
+      );
       throw new Error(
         `Decopilot API call failed (${response.status}): ${errorText}`,
       );

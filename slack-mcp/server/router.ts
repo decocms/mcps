@@ -347,14 +347,30 @@ async function processConnectionEventAsync(
     return;
   }
 
-  console.log(`[Router] [${traceId}] ========== START processConnectionEventAsync ==========`);
-  console.log(`[Router] [${traceId}] Event type: ${payload.event.type}, subtype: ${payload.event.subtype ?? "none"}`);
-  console.log(`[Router] [${traceId}] Channel: ${payload.event.channel}, User: ${payload.event.user}, TS: ${payload.event.ts}`);
-  console.log(`[Router] [${traceId}] Thread TS: ${payload.event.thread_ts ?? "none"}`);
-  console.log(`[Router] [${traceId}] Text: ${(payload.event.text ?? "").substring(0, 200)}`);
-  console.log(`[Router] [${traceId}] Connection: ${connectionConfig.connectionId}, Team: ${connectionConfig.teamId}`);
-  console.log(`[Router] [${traceId}] Has files: ${!!payload.event.files}, File count: ${payload.event.files?.length ?? 0}`);
-  console.log(`[Router] [${traceId}] Bot user ID from config: ${connectionConfig.botUserId ?? "not set"}`);
+  console.log(
+    `[Router] [${traceId}] ========== START processConnectionEventAsync ==========`,
+  );
+  console.log(
+    `[Router] [${traceId}] Event type: ${payload.event.type}, subtype: ${payload.event.subtype ?? "none"}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Channel: ${payload.event.channel}, User: ${payload.event.user}, TS: ${payload.event.ts}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Thread TS: ${payload.event.thread_ts ?? "none"}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Text: ${(payload.event.text ?? "").substring(0, 200)}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Connection: ${connectionConfig.connectionId}, Team: ${connectionConfig.teamId}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Has files: ${!!payload.event.files}, File count: ${payload.event.files?.length ?? 0}`,
+  );
+  console.log(
+    `[Router] [${traceId}] Bot user ID from config: ${connectionConfig.botUserId ?? "not set"}`,
+  );
 
   // IMPORTANT: Initialize Slack client with this connection's token
   // Each connection has its own Slack workspace credentials
@@ -364,8 +380,12 @@ async function processConnectionEventAsync(
   // Falls back to FALLBACK_MODEL_ID when modelId is not configured
   if (connectionConfig.meshToken) {
     const modelId = connectionConfig.modelId ?? FALLBACK_MODEL_ID;
-    console.log(`[Router] [${traceId}] Configuring LLM: model=${modelId}, agentId=${connectionConfig.agentId ?? "none"}, meshUrl=${connectionConfig.meshUrl}`);
-    console.log(`[Router] [${traceId}] Has system prompt: ${!!connectionConfig.systemPrompt}, prompt length: ${connectionConfig.systemPrompt?.length ?? 0}`);
+    console.log(
+      `[Router] [${traceId}] Configuring LLM: model=${modelId}, agentId=${connectionConfig.agentId ?? "none"}, meshUrl=${connectionConfig.meshUrl}`,
+    );
+    console.log(
+      `[Router] [${traceId}] Has system prompt: ${!!connectionConfig.systemPrompt}, prompt length: ${connectionConfig.systemPrompt?.length ?? 0}`,
+    );
     configureLLM({
       meshUrl: connectionConfig.meshUrl,
       organizationId: connectionConfig.organizationId,
@@ -378,7 +398,9 @@ async function processConnectionEventAsync(
   } else {
     // Clear LLM config to prevent cross-tenant configuration leakage
     clearLLMConfig();
-    console.log(`[Router] [${traceId}] LLM NOT configured - missing meshToken for connection ${connectionConfig.connectionId}`);
+    console.log(
+      `[Router] [${traceId}] LLM NOT configured - missing meshToken for connection ${connectionConfig.connectionId}`,
+    );
     logger.warn("LLM not configured - missing meshToken", {
       connectionId: connectionConfig.connectionId,
       trace_id: traceId,
@@ -391,7 +413,9 @@ async function processConnectionEventAsync(
   const enableStreaming = showOnlyFinal
     ? false
     : (connectionConfig.responseConfig?.enableStreaming ?? true);
-  console.log(`[Router] [${traceId}] Response config: showOnlyFinal=${showOnlyFinal}, streaming=${enableStreaming}, showThinking=${connectionConfig.responseConfig?.showThinkingMessage ?? "default(true)"}`);
+  console.log(
+    `[Router] [${traceId}] Response config: showOnlyFinal=${showOnlyFinal}, streaming=${enableStreaming}, showThinking=${connectionConfig.responseConfig?.showThinkingMessage ?? "default(true)"}`,
+  );
   configureStreaming(enableStreaming);
 
   const event = payload.event;
@@ -409,7 +433,9 @@ async function processConnectionEventAsync(
     if (botUserId) {
       cleanText = removeBotMention(cleanText, botUserId);
     }
-    console.log(`[Router] [${traceId}] Event is app_mention, will process. Clean text: "${cleanText.substring(0, 100)}"`);
+    console.log(
+      `[Router] [${traceId}] Event is app_mention, will process. Clean text: "${cleanText.substring(0, 100)}"`,
+    );
   } else if (eventType === "message") {
     const isDM = event.channel?.startsWith("D");
     if (isDM) {
@@ -418,13 +444,19 @@ async function processConnectionEventAsync(
     } else if (botUserId && isBotMentioned(event.text ?? "", botUserId)) {
       shouldProcess = true;
       cleanText = removeBotMention(event.text ?? "", botUserId);
-      console.log(`[Router] [${traceId}] Event is channel message with bot mention, will process`);
+      console.log(
+        `[Router] [${traceId}] Event is channel message with bot mention, will process`,
+      );
     } else {
-      console.log(`[Router] [${traceId}] Event is channel message without bot mention, checking if should skip. botUserId=${botUserId}, text contains mention: ${botUserId ? (event.text ?? "").includes(`<@${botUserId}>`) : "N/A"}`);
+      console.log(
+        `[Router] [${traceId}] Event is channel message without bot mention, checking if should skip. botUserId=${botUserId}, text contains mention: ${botUserId ? (event.text ?? "").includes(`<@${botUserId}>`) : "N/A"}`,
+      );
     }
   } else {
     shouldProcess = true;
-    console.log(`[Router] [${traceId}] Event type ${eventType} will be processed`);
+    console.log(
+      `[Router] [${traceId}] Event type ${eventType} will be processed`,
+    );
   }
 
   if (shouldProcess) {
@@ -454,10 +486,16 @@ async function processConnectionEventAsync(
       },
       teamConfig,
     );
-    console.log(`[Router] [${traceId}] ========== END processConnectionEventAsync (success) ==========`);
+    console.log(
+      `[Router] [${traceId}] ========== END processConnectionEventAsync (success) ==========`,
+    );
   } else {
-    console.log(`[Router] [${traceId}] Event NOT processed (shouldProcess=false)`);
-    console.log(`[Router] [${traceId}] ========== END processConnectionEventAsync (skipped) ==========`);
+    console.log(
+      `[Router] [${traceId}] Event NOT processed (shouldProcess=false)`,
+    );
+    console.log(
+      `[Router] [${traceId}] ========== END processConnectionEventAsync (skipped) ==========`,
+    );
   }
 }
 

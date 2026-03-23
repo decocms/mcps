@@ -106,7 +106,9 @@ export async function generateResponse(
 ): Promise<string> {
   const apiMessages = messagesToPrompt(messages, config.systemPrompt);
 
-  console.log("[MeshChat] ========== generateResponse (non-streaming) ==========");
+  console.log(
+    "[MeshChat] ========== generateResponse (non-streaming) ==========",
+  );
   console.log("[MeshChat] Generating response", {
     messageCount: apiMessages.length,
     modelId: config.modelId,
@@ -115,10 +117,10 @@ export async function generateResponse(
     meshUrl: config.meshUrl,
   });
 
-  console.log({config, apiMessages});
+  console.log({ config, apiMessages });
   const startTime = Date.now();
   const response = await callDecopilotAPI(config, apiMessages);
-  console.log({response});
+  console.log({ response });
 
   if (!response.body) {
     console.error("[MeshChat] No response body from Decopilot API!");
@@ -128,7 +130,9 @@ export async function generateResponse(
   console.log(`[MeshChat] Collecting stream text...`);
   const text = await collectFullStreamText(response.body);
 
-  console.log(`[MeshChat] Response fully collected in ${Date.now() - startTime}ms (${text.length} chars)`);
+  console.log(
+    `[MeshChat] Response fully collected in ${Date.now() - startTime}ms (${text.length} chars)`,
+  );
   console.log(`[MeshChat] Response preview: "${text.substring(0, 300)}"`);
 
   return text || "Desculpe, não consegui gerar uma resposta.";
@@ -161,13 +165,17 @@ export async function generateResponseWithStreaming(
   const response = await callDecopilotAPI(config, apiMessages);
 
   if (!response.body) {
-    console.error("[MeshChat] No response body from Decopilot API (streaming)!");
+    console.error(
+      "[MeshChat] No response body from Decopilot API (streaming)!",
+    );
     throw new Error("No response body from Decopilot API");
   }
 
   console.log(`[MeshChat] Starting stream processing...`);
   const result = await processStreamWithCallback(response.body, onStream);
-  console.log(`[MeshChat] Streaming completed in ${Date.now() - startTime}ms (${result.length} chars)`);
+  console.log(
+    `[MeshChat] Streaming completed in ${Date.now() - startTime}ms (${result.length} chars)`,
+  );
 
   return result;
 }
