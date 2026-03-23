@@ -14,7 +14,7 @@ export const StateSchema = z.object({
     .describe("Agent with tools, resources and prompts"),
   LANGUAGE_MODEL: z
     .object({
-      __type: z.literal("@deco/language-model"),
+      __type: z.literal("@deco/llm"),
       value: z
         .object({
           id: z.string(),
