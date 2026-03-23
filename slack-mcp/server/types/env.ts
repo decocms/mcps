@@ -12,7 +12,7 @@ export const StateSchema = z.object({
   AGENT: BindingOf("@deco/agent")
     .optional()
     .describe("Agent with tools, resources and prompts"),
-    LANGUAGE_PROVIDER: z
+    MODEL_PROVIDER: z
     .object({
       __type: z.literal("@deco/llm"),
       value: z
