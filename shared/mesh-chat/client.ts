@@ -61,6 +61,8 @@ export async function callDecopilotAPI(
     models: {
       credentialId: "aik_tWm2aK8twh6ST3B86jvmA",
       thinking: {
+        id: "anthropic/claude-sonnet-4",
+        title: "Sonnet 4",
         provider: resolveProvider(modelId),
       },
     },
@@ -71,7 +73,7 @@ export async function callDecopilotAPI(
     toolApprovalLevel: "yolo" as const,
   };
 
-  console.log(`[MeshChat] ========== callDecopilotAPI ==========`);
+  console.log(`[MeshChat]  ========== callDecopilotAPI ==========`);
   console.log(`[MeshChat] URL: ${url}`);
   console.log(
     `[MeshChat] Model: ${modelId}, Provider: ${resolveProvider(modelId)}, Connection: ${modelProviderId ?? "none"}`,
