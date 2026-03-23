@@ -112,7 +112,9 @@ export async function generateResponse(
     hasAgent: !!config.agentId,
   });
 
+  console.log({config, apiMessages});
   const response = await callDecopilotAPI(config, apiMessages);
+  console.log({response});
 
   if (!response.body) {
     throw new Error("No response body from Decopilot API");
