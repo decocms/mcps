@@ -470,12 +470,24 @@ export async function handleSlackEvent(
 ): Promise<void> {
   const { type, payload } = context;
 
-  console.log(`[EventHandler] Processing: ${type}`, {
-    channel: payload.channel,
-    user: payload.user,
-    ts: payload.ts,
-    teamId: teamConfig.teamId,
-  });
+  console.log(`[EventHandler] ========== handleSlackEvent ==========`);
+  console.log(`[EventHandler] Event type: ${type}`);
+  console.log(
+    `[EventHandler] Channel: ${payload.channel}, User: ${payload.user}, TS: ${payload.ts}`,
+  );
+  console.log(
+    `[EventHandler] Thread TS: ${payload.thread_ts ?? "none"}, Team: ${teamConfig.teamId}`,
+  );
+  console.log(`[EventHandler] Text length: ${(payload.text ?? "").length}`);
+  console.log(
+    `[EventHandler] Has files: ${!!(payload as any).files}, Channel type: ${(payload as any).channel_type ?? "unknown"}`,
+  );
+  console.log(
+    `[EventHandler] Bot user ID (global): ${globalBotUserId ?? "not set"}, Bot user ID (team): ${teamConfig.botUserId ?? "not set"}`,
+  );
+  console.log(
+    `[EventHandler] Response config: showOnlyFinal=${teamConfig.responseConfig?.showOnlyFinalResponse ?? false}, streaming=${teamConfig.responseConfig?.enableStreaming ?? "default"}, thinking=${teamConfig.responseConfig?.showThinkingMessage ?? "default"}`,
+  );
 
   switch (type) {
     case "app_mention":
@@ -506,7 +518,13 @@ async function handleAppMention(
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
   const { channel, user, text, ts, thread_ts, files } = event;
-  console.log(`[EventHandler] App mention from ${user} in ${channel}`);
+  console.log(`[EventHandler] ========== handleAppMention ==========`);
+  console.log(
+    `[EventHandler] From user: ${user}, Channel: ${channel}, TS: ${ts}`,
+  );
+  console.log(`[EventHandler] Thread TS: ${thread_ts ?? "new thread"}`);
+  console.log(`[EventHandler] Text length: ${text.length}`);
+  console.log(`[EventHandler] Files attached: ${files?.length ?? 0}`);
 
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
@@ -581,6 +599,9 @@ async function handleAppMention(
   }
 
   // Build messages for LLM
+  console.log(
+    `[EventHandler] Building LLM messages for app_mention. Full text length: ${fullText.length}, media count: ${mediaForLLM.length}`,
+  );
   const messages = await buildLLMMessages(
     channel,
     fullText,
@@ -589,6 +610,14 @@ async function handleAppMention(
     mediaForLLM,
     true, // Clean bot mention
   );
+  console.log(
+    `[EventHandler] LLM messages built: ${messages.length} messages total`,
+  );
+  messages.forEach((msg, i) => {
+    console.log(
+      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
+    );
+  });
 
   // Check if LLM is configured
   if (!isLLMConfigured()) {
@@ -604,13 +633,24 @@ async function handleAppMention(
   }
 
   // Call LLM
+  console.log(
+    `[EventHandler] Calling LLM for app_mention. Channel: ${channel}, replyTo: ${replyTo}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
+  );
+  const llmStartTime = Date.now();
   try {
     await handleLLMCall(messages, {
       channel,
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
     });
+    console.log(
+      `[EventHandler] LLM call completed for app_mention in ${Date.now() - llmStartTime}ms`,
+    );
   } catch (error) {
+    console.error(
+      `[EventHandler] LLM call FAILED for app_mention after ${Date.now() - llmStartTime}ms:`,
+      error,
+    );
     logger.error("App mention LLM error", {
       channel,
       userId: user,
@@ -630,21 +670,43 @@ async function handleMessage(
   const isDM = channel_type === "im" || channel?.startsWith("D");
   const botUserId = globalBotUserId ?? teamConfig.botUserId;
 
+  console.log(`[EventHandler] ========== handleMessage ==========`);
+  console.log(
+    `[EventHandler] From user: ${user}, Channel: ${channel}, TS: ${ts}`,
+  );
+  console.log(
+    `[EventHandler] isDM: ${isDM}, channel_type: ${channel_type ?? "unknown"}, thread_ts: ${thread_ts ?? "none"}`,
+  );
+  console.log(`[EventHandler] Text length: ${(text ?? "").length}`);
+  console.log(
+    `[EventHandler] Files: ${files?.length ?? 0}, botUserId: ${botUserId ?? "not set"}`,
+  );
+
   // Skip messages with bot mention in channels (handled by app_mention)
   if (!isDM && botUserId && text?.includes(`<@${botUserId}>`)) {
-    console.log("[EventHandler] Skipping - will be handled by app_mention");
+    console.log(
+      "[EventHandler] Skipping message - will be handled by app_mention event instead",
+    );
     return;
   }
 
   // For threads, check if bot participated
   if (thread_ts && !isDM) {
+    console.log(
+      `[EventHandler] Checking bot participation in thread ${thread_ts}...`,
+    );
     const botParticipated = await botParticipatedInThread(
       channel,
       thread_ts,
       botUserId ?? null,
     );
+    console.log(
+      `[EventHandler] Bot participated in thread: ${botParticipated}`,
+    );
     if (!botParticipated) {
-      console.log(`[EventHandler] Ignoring thread reply - bot not in thread`);
+      console.log(
+        `[EventHandler] Ignoring thread reply - bot not in thread ${thread_ts}`,
+      );
       return;
     }
   }
@@ -704,6 +766,9 @@ async function handleMessage(
   };
 
   if (isDM) {
+    console.log(
+      `[EventHandler] Routing to handleDirectMessage. Text length: ${fullText.length}, media: ${mediaForLLM.length}`,
+    );
     await handleDirectMessage(
       channel,
       user,
@@ -714,6 +779,9 @@ async function handleMessage(
       teamConfig,
     );
   } else if (thread_ts) {
+    console.log(
+      `[EventHandler] Routing to handleThreadReply. Thread: ${thread_ts}, text length: ${fullText.length}, media: ${mediaForLLM.length}`,
+    );
     await handleThreadReply(
       channel,
       user,
@@ -745,7 +813,12 @@ async function handleDirectMessage(
   meshConfig: MeshConfig,
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
-  console.log(`[EventHandler] DM from ${user}`);
+  console.log(`[EventHandler] ========== handleDirectMessage ==========`);
+  console.log(
+    `[EventHandler] DM from user: ${user}, Channel: ${channel}, TS: ${ts}`,
+  );
+  console.log(`[EventHandler] Text length: ${text.length}`);
+  console.log(`[EventHandler] Media count: ${media.length}`);
 
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
@@ -753,6 +826,7 @@ async function handleDirectMessage(
 
   // Add eyes reaction immediately for quick feedback (unless in silent mode)
   if (!showOnlyFinal) {
+    console.log(`[EventHandler] Adding eyes reaction to ${ts}`);
     await addReaction(channel, ts, "eyes");
   }
 
@@ -760,14 +834,25 @@ async function handleDirectMessage(
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+  console.log(`[EventHandler] Sending thinking message: ${showThinking}`);
   const thinkingMsg = showThinking ? await sendThinkingMessage(channel) : null;
+  console.log(
+    `[EventHandler] Thinking message TS: ${thinkingMsg?.ts ?? "not sent"}`,
+  );
 
   // Remove eyes reaction when we start processing (unless in silent mode)
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
+  console.log(`[EventHandler] Building LLM messages for DM...`);
   const messages = await buildLLMMessages(channel, text, ts, undefined, media);
+  console.log(`[EventHandler] LLM messages built: ${messages.length} messages`);
+  messages.forEach((msg, i) => {
+    console.log(
+      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
+    );
+  });
 
   if (!isLLMConfigured()) {
     const warningMsg =
@@ -787,12 +872,23 @@ async function handleDirectMessage(
     return;
   }
 
+  console.log(
+    `[EventHandler] Calling LLM for DM. Channel: ${channel}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
+  );
+  const dmLlmStartTime = Date.now();
   try {
     await handleLLMCall(messages, {
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
     });
+    console.log(
+      `[EventHandler] LLM call completed for DM in ${Date.now() - dmLlmStartTime}ms`,
+    );
   } catch (error) {
+    console.error(
+      `[EventHandler] LLM call FAILED for DM after ${Date.now() - dmLlmStartTime}ms:`,
+      error,
+    );
     logger.error("Direct message LLM error", {
       channel,
       userId: user,
@@ -822,7 +918,12 @@ async function handleThreadReply(
   meshConfig: MeshConfig,
   teamConfig: SlackTeamConfig,
 ): Promise<void> {
-  console.log(`[EventHandler] Thread reply from ${user}`);
+  console.log(`[EventHandler] ========== handleThreadReply ==========`);
+  console.log(
+    `[EventHandler] Thread reply from user: ${user}, Channel: ${channel}, TS: ${ts}, ThreadTS: ${threadTs}`,
+  );
+  console.log(`[EventHandler] Text length: ${text.length}`);
+  console.log(`[EventHandler] Media count: ${media.length}`);
 
   // Check if we're in "show only final response" mode
   const showOnlyFinal =
@@ -830,6 +931,7 @@ async function handleThreadReply(
 
   // Add eyes reaction immediately for quick feedback (unless in silent mode)
   if (!showOnlyFinal) {
+    console.log(`[EventHandler] Adding eyes reaction to ${ts}`);
     await addReaction(channel, ts, "eyes");
   }
 
@@ -837,16 +939,29 @@ async function handleThreadReply(
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+  console.log(
+    `[EventHandler] Sending thinking message in thread ${threadTs}: ${showThinking}`,
+  );
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, threadTs)
     : null;
+  console.log(
+    `[EventHandler] Thinking message TS: ${thinkingMsg?.ts ?? "not sent"}`,
+  );
 
   // Remove eyes reaction when we start processing (unless in silent mode)
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
+  console.log(`[EventHandler] Building LLM messages for thread reply...`);
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
+  console.log(`[EventHandler] LLM messages built: ${messages.length} messages`);
+  messages.forEach((msg, i) => {
+    console.log(
+      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
+    );
+  });
 
   if (!isLLMConfigured()) {
     const warningMsg =
@@ -866,13 +981,24 @@ async function handleThreadReply(
     return;
   }
 
+  console.log(
+    `[EventHandler] Calling LLM for thread reply. Channel: ${channel}, threadTs: ${threadTs}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
+  );
+  const threadLlmStartTime = Date.now();
   try {
     await handleLLMCall(messages, {
       channel,
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
     });
+    console.log(
+      `[EventHandler] LLM call completed for thread reply in ${Date.now() - threadLlmStartTime}ms`,
+    );
   } catch (error) {
+    console.error(
+      `[EventHandler] LLM call FAILED for thread reply after ${Date.now() - threadLlmStartTime}ms:`,
+      error,
+    );
     logger.error("Thread reply LLM error", {
       channel,
       userId: user,

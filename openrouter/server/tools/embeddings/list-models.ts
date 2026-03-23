@@ -6,12 +6,13 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
-import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import type { Env } from "../../main.ts";
-  import { createCollectionBindings } from "@decocms/bindings/collections";
+import { createCollectionBindings } from "@decocms/bindings/collections";
 import { OpenRouter } from "@openrouter/sdk";
 
-  const EMBEDDING_MODELS_BINDING = createCollectionBindings("EMBEDDING_MODELS", z.object({
+const EMBEDDING_MODELS_BINDING = createCollectionBindings(
+  "EMBEDDING_MODELS",
+  z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
@@ -20,14 +21,18 @@ import { OpenRouter } from "@openrouter/sdk";
       prompt: z.string(),
       completion: z.string(),
     }),
-  }), { readOnly: true });
+  }),
+  { readOnly: true },
+);
 
 const LIST_BINDING = EMBEDDING_MODELS_BINDING.find(
   (b) => b.name === "COLLECTION_EMBEDDING_MODELS_LIST",
 );
 
 if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
-  throw new Error("COLLECTION_EMBEDDING_MODELS_LIST binding not found or missing schemas");
+  throw new Error(
+    "COLLECTION_EMBEDDING_MODELS_LIST binding not found or missing schemas",
+  );
 }
 
 export const createListEmbeddingModelsTool = (env: Env) =>
@@ -39,11 +44,10 @@ export const createListEmbeddingModelsTool = (env: Env) =>
       "Use this to discover which embedding models are available before generating embeddings." +
       "Prefer to use a search",
     inputSchema: LIST_BINDING.inputSchema,
-outputSchema: z.object({
-  items: z.unknown(),
-}),
+    outputSchema: z.object({
+      items: z.unknown(),
+    }),
     execute: async () => {
-
       const sdk = new OpenRouter({ apiKey: getOpenRouterApiKey(env) });
       const models = (await sdk.embeddings.listModels()).data;
 

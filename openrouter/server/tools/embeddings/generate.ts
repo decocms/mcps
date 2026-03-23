@@ -50,19 +50,32 @@ export const createGenerateEmbeddingsTool = (env: Env) =>
       const { input, model, encoding_format, dimensions } = context;
       const sdk = new OpenRouter({ apiKey: getOpenRouterApiKey(env) });
 
-      console.log({input, model, encoding_format, dimensions});
+      const inputCount = Array.isArray(input) ? input.length : 1;
+      const inputLength = Array.isArray(input)
+        ? input.reduce((sum: number, s: string) => sum + s.length, 0)
+        : input.length;
+      console.log({
+        inputCount,
+        inputLength,
+        model,
+        encoding_format,
+        dimensions,
+      });
       const result = await sdk.embeddings.generate({
         input: input,
-        model: model,        
+        model: model,
         encodingFormat: encoding_format,
         dimensions: dimensions,
       });
 
-  console.log({result});
-      
+      const resultAny = result as any;
+      const embeddingsCount = Array.isArray(resultAny.data)
+        ? resultAny.data.length
+        : 0;
+      console.log({ embeddingsCount, model: resultAny.model });
 
       return {
-      data: result
+        data: result,
       };
     },
   });

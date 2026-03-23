@@ -138,10 +138,20 @@ export function shouldIgnoreEvent(
   const event = payload.event;
 
   // Ignore bot messages
-  if (event.bot_id) return true;
+  if (event.bot_id) {
+    console.log(
+      `[Webhook] Ignoring event: bot_id=${event.bot_id}, type=${event.type}, user=${event.user}`,
+    );
+    return true;
+  }
 
   // Ignore messages from ourselves
-  if (botUserId && event.user === botUserId) return true;
+  if (botUserId && event.user === botUserId) {
+    console.log(
+      `[Webhook] Ignoring event: message from ourselves (botUserId=${botUserId})`,
+    );
+    return true;
+  }
 
   // Ignore message subtypes that aren't actual user messages
   const ignoredSubtypes = [
@@ -165,9 +175,15 @@ export function shouldIgnoreEvent(
   ];
 
   if (event.subtype && ignoredSubtypes.includes(event.subtype)) {
+    console.log(
+      `[Webhook] Ignoring event: subtype=${event.subtype}, type=${event.type}`,
+    );
     return true;
   }
 
+  console.log(
+    `[Webhook] Event NOT ignored: type=${event.type}, subtype=${event.subtype ?? "none"}, user=${event.user}, bot_id=${event.bot_id ?? "none"}`,
+  );
   return false;
 }
 
