@@ -73,37 +73,10 @@ export async function callDecopilotAPI(
     toolApprovalLevel: "yolo" as const,
   };
 
-  console.log(`[MeshChat]  ========== callDecopilotAPI ==========`);
-  console.log(`[MeshChat] URL: ${url}`);
-  console.log(
-    `[MeshChat] Model: ${modelId}, Provider: ${resolveProvider(modelId)}, Connection: ${modelProviderId ?? "none"}`,
-  );
-  console.log(`[MeshChat] Agent: id=${agentId ?? "none"}, mode=${agentMode}`);
-  console.log(
-    `[MeshChat] Messages: ${messages.length}, timeout: ${timeoutMs}ms`,
-  );
-  console.log(
-    `[MeshChat] Effective mesh URL: ${effectiveMeshUrl} (original: ${meshUrl})`,
-  );
-  messages.forEach((m, i) => {
-    const partsDesc = m.parts
-      .map((p) =>
-        p.type === "text"
-          ? `text(${(p as any).text?.length ?? 0})`
-          : `file(${(p as any).filename ?? "?"})`,
-      )
-      .join(", ");
-    console.log(
-      `[MeshChat]   Message[${i}]: role=${m.role}, parts=[${partsDesc}]`,
-    );
-  });
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  const fetchStartTime = Date.now();
   try {
-    console.log(`[MeshChat] Sending request to Decopilot API...`);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -115,18 +88,8 @@ export async function callDecopilotAPI(
       signal: controller.signal,
     });
 
-    console.log(
-      `[MeshChat] Decopilot API response: status=${response.status}, ok=${response.ok}, time=${Date.now() - fetchStartTime}ms`,
-    );
-    console.log(
-      `[MeshChat] Response headers: content-type=${response.headers.get("content-type")}`,
-    );
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
-        `[MeshChat] Decopilot API FAILED: status=${response.status}, body length=${errorText.length}`,
-      );
       throw new Error(
         `Decopilot API call failed (${response.status}): ${errorText}`,
       );
