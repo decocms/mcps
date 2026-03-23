@@ -70,7 +70,7 @@ export async function callDecopilotAPI(
       id: agentId ?? "",
     },
     stream: true,
-    toolApprovalLevel: "yolo" as const,
+    toolApprovalLevel: "auto" as const,
   };
 
   console.log(`[MeshChat]  ========== callDecopilotAPI ==========`);
