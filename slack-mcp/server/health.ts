@@ -49,7 +49,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
       kvStoreSize: getKvStoreSize(),
       configCacheSize: cacheSize,
     },
-    note: "Database uses @deco/postgres binding, configs cached for webhooks",
+    note: "Database uses @deco/postgres binding,  configs cached for webhooks",
     actions:
       cacheSize === 0
         ? {

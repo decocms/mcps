@@ -59,15 +59,13 @@ export async function callDecopilotAPI(
   const body = {
     messages,
     models: {
-      connectionId: modelProviderId ?? "",
+      credentialId: "aik_tWm2aK8twh6ST3B86jvmA",
       thinking: {
-        id: modelId,
         provider: resolveProvider(modelId),
       },
     },
     agent: {
       id: agentId ?? "",
-      mode: agentMode,
     },
     stream: true,
     toolApprovalLevel: "yolo" as const,
