@@ -71,7 +71,6 @@ export async function generateLLMResponse(
     console.log(
       `[LLM] Response received in ${Date.now() - startTime}ms. Length: ${result.length} chars`,
     );
-    console.log(`[LLM] Response preview: "${result.substring(0, 300)}"`);
     return result;
   } catch (error) {
     console.error(
@@ -117,9 +116,6 @@ export async function generateLLMResponseWithStreaming(
         if (isComplete) {
           console.log(
             `[LLM] Streaming complete. Total chunks: ${chunkCount}, final length: ${text.length} chars, time: ${Date.now() - startTime}ms`,
-          );
-          console.log(
-            `[LLM] Streaming response preview: "${text.substring(0, 300)}"`,
           );
         }
         onStream(text, isComplete);

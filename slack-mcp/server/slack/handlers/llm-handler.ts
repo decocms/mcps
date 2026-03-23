@@ -161,10 +161,6 @@ export async function callLLMWithStreaming(
         console.log(
           `[LLMHandler] Streaming complete. Response length: ${text.length} chars, time: ${Date.now() - streamStartTime}ms`,
         );
-        console.log(
-          `[LLMHandler] Response preview: "${text.substring(0, 200)}"`,
-        );
-
         const formattedText = formatForSlack(text);
         console.log(
           `[LLMHandler] Formatted text length: ${formattedText.length}, using blocks: ${useBlocks && text.length > 500}`,
@@ -216,7 +212,6 @@ export async function callLLMWithoutStreaming(
   console.log(
     `[LLMHandler] Non-streaming LLM response received in ${Date.now() - nonStreamStartTime}ms. Length: ${response.length} chars`,
   );
-  console.log(`[LLMHandler] Response preview: "${response.substring(0, 200)}"`);
   const formattedResponse = formatForSlack(response);
   console.log(
     `[LLMHandler] Formatted response length: ${formattedResponse.length}`,

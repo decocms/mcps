@@ -234,10 +234,6 @@ export async function sendMessage(
   console.log(
     `[Slack] sendMessage: channel=${options.channel}, threadTs=${options.threadTs ?? "none"}, text length=${options.text?.length ?? 0}, has blocks=${!!options.blocks}`,
   );
-  console.log(
-    `[Slack] sendMessage text preview: "${(options.text ?? "").substring(0, 150)}"`,
-  );
-
   try {
     const startTime = Date.now();
     const result = await webClient.chat.postMessage({

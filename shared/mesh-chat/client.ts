@@ -123,7 +123,7 @@ export async function callDecopilotAPI(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(
-        `[MeshChat] Decopilot API FAILED: status=${response.status}, body=${errorText.substring(0, 500)}`,
+        `[MeshChat] Decopilot API FAILED: status=${response.status}, body length=${errorText.length}`,
       );
       throw new Error(
         `Decopilot API call failed (${response.status}): ${errorText}`,

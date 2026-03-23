@@ -117,10 +117,8 @@ export async function generateResponse(
     meshUrl: config.meshUrl,
   });
 
-  console.log({ config, apiMessages });
   const startTime = Date.now();
   const response = await callDecopilotAPI(config, apiMessages);
-  console.log({ response });
 
   if (!response.body) {
     console.error("[MeshChat] No response body from Decopilot API!");
@@ -133,8 +131,6 @@ export async function generateResponse(
   console.log(
     `[MeshChat] Response fully collected in ${Date.now() - startTime}ms (${text.length} chars)`,
   );
-  console.log(`[MeshChat] Response preview: "${text.substring(0, 300)}"`);
-
   return text || "Desculpe, não consegui gerar uma resposta.";
 }
 

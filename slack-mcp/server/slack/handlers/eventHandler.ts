@@ -478,9 +478,7 @@ export async function handleSlackEvent(
   console.log(
     `[EventHandler] Thread TS: ${payload.thread_ts ?? "none"}, Team: ${teamConfig.teamId}`,
   );
-  console.log(
-    `[EventHandler] Text preview: "${(payload.text ?? "").substring(0, 150)}"`,
-  );
+  console.log(`[EventHandler] Text length: ${(payload.text ?? "").length}`);
   console.log(
     `[EventHandler] Has files: ${!!(payload as any).files}, Channel type: ${(payload as any).channel_type ?? "unknown"}`,
   );
@@ -525,7 +523,7 @@ async function handleAppMention(
     `[EventHandler] From user: ${user}, Channel: ${channel}, TS: ${ts}`,
   );
   console.log(`[EventHandler] Thread TS: ${thread_ts ?? "new thread"}`);
-  console.log(`[EventHandler] Full text: "${text}"`);
+  console.log(`[EventHandler] Text length: ${text.length}`);
   console.log(`[EventHandler] Files attached: ${files?.length ?? 0}`);
 
   // Check if we're in "show only final response" mode
@@ -617,7 +615,7 @@ async function handleAppMention(
   );
   messages.forEach((msg, i) => {
     console.log(
-      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}, content preview="${msg.content.substring(0, 100)}"`,
+      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
     );
   });
 
@@ -679,7 +677,7 @@ async function handleMessage(
   console.log(
     `[EventHandler] isDM: ${isDM}, channel_type: ${channel_type ?? "unknown"}, thread_ts: ${thread_ts ?? "none"}`,
   );
-  console.log(`[EventHandler] Text: "${(text ?? "").substring(0, 200)}"`);
+  console.log(`[EventHandler] Text length: ${(text ?? "").length}`);
   console.log(
     `[EventHandler] Files: ${files?.length ?? 0}, botUserId: ${botUserId ?? "not set"}`,
   );
@@ -819,7 +817,7 @@ async function handleDirectMessage(
   console.log(
     `[EventHandler] DM from user: ${user}, Channel: ${channel}, TS: ${ts}`,
   );
-  console.log(`[EventHandler] Text: "${text.substring(0, 200)}"`);
+  console.log(`[EventHandler] Text length: ${text.length}`);
   console.log(`[EventHandler] Media count: ${media.length}`);
 
   // Check if we're in "show only final response" mode
@@ -924,7 +922,7 @@ async function handleThreadReply(
   console.log(
     `[EventHandler] Thread reply from user: ${user}, Channel: ${channel}, TS: ${ts}, ThreadTS: ${threadTs}`,
   );
-  console.log(`[EventHandler] Text: "${text.substring(0, 200)}"`);
+  console.log(`[EventHandler] Text length: ${text.length}`);
   console.log(`[EventHandler] Media count: ${media.length}`);
 
   // Check if we're in "show only final response" mode

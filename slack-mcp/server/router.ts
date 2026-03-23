@@ -360,7 +360,7 @@ async function processConnectionEventAsync(
     `[Router] [${traceId}] Thread TS: ${payload.event.thread_ts ?? "none"}`,
   );
   console.log(
-    `[Router] [${traceId}] Text: ${(payload.event.text ?? "").substring(0, 200)}`,
+    `[Router] [${traceId}] Text length: ${(payload.event.text ?? "").length}`,
   );
   console.log(
     `[Router] [${traceId}] Connection: ${connectionConfig.connectionId}, Team: ${connectionConfig.teamId}`,
@@ -434,7 +434,7 @@ async function processConnectionEventAsync(
       cleanText = removeBotMention(cleanText, botUserId);
     }
     console.log(
-      `[Router] [${traceId}] Event is app_mention, will process. Clean text: "${cleanText.substring(0, 100)}"`,
+      `[Router] [${traceId}] Event is app_mention, will process. Clean text length: ${cleanText.length}`,
     );
   } else if (eventType === "message") {
     const isDM = event.channel?.startsWith("D");

@@ -165,7 +165,7 @@ export async function buildContextMessages(
   );
   roleMessages.forEach((msg, i) => {
     console.log(
-      `[ContextBuilder]   [${i}] ${msg.role}: "${msg.content.substring(0, 80)}${msg.content.length > 80 ? "..." : ""}"`,
+      `[ContextBuilder]   [${i}] ${msg.role}: content length=${msg.content.length}`,
     );
   });
 
