@@ -134,13 +134,19 @@ export async function callLLMWithStreaming(
 
   const { channel, thinkingMessageTs, useBlocks = true } = options;
 
+  console.log(`[LLMHandler] ========== callLLMWithStreaming ==========`);
+  console.log(`[LLMHandler] Channel: ${channel}, thinkingTs: ${thinkingMessageTs ?? "none"}`);
+
   if (!thinkingMessageTs) {
+    console.log(`[LLMHandler] No thinking message, falling back to non-streaming`);
     return callLLMWithoutStreaming(messages, options);
   }
 
   const animation = startThinkingAnimation(channel, thinkingMessageTs);
 
   try {
+    console.log(`[LLMHandler] Starting streaming LLM call...`);
+    const streamStartTime = Date.now();
     const response = await generateLLMResponseWithStreaming(
       messages,
       globalLLMConfig,
@@ -148,19 +154,24 @@ export async function callLLMWithStreaming(
         if (!isComplete) return;
 
         animation.stop();
+        console.log(`[LLMHandler] Streaming complete. Response length: ${text.length} chars, time: ${Date.now() - streamStartTime}ms`);
+        console.log(`[LLMHandler] Response preview: "${text.substring(0, 200)}"`);
 
         const formattedText = formatForSlack(text);
+        console.log(`[LLMHandler] Formatted text length: ${formattedText.length}, using blocks: ${useBlocks && text.length > 500}`);
         const blocks =
           useBlocks && text.length > 500
             ? buildResponseBlocks(text, { addFeedbackButtons: false })
             : undefined;
 
+        console.log(`[LLMHandler] Updating thinking message ${thinkingMessageTs} with final response`);
         await updateThinkingMessage(
           channel,
           thinkingMessageTs,
           formattedText,
           blocks,
         );
+        console.log(`[LLMHandler] Thinking message updated successfully`);
       },
     );
 
@@ -183,24 +194,37 @@ export async function callLLMWithoutStreaming(
 
   const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
 
+  console.log(`[LLMHandler] ========== callLLMWithoutStreaming ==========`);
+  console.log(`[LLMHandler] Channel: ${channel}, replyTo: ${replyTo ?? "none"}, thinkingTs: ${thinkingMessageTs ?? "none"}`);
+  const nonStreamStartTime = Date.now();
+  console.log(`[LLMHandler] Starting non-streaming LLM call...`);
   const response = await generateLLMResponse(messages, globalLLMConfig);
+  console.log(`[LLMHandler] Non-streaming LLM response received in ${Date.now() - nonStreamStartTime}ms. Length: ${response.length} chars`);
+  console.log(`[LLMHandler] Response preview: "${response.substring(0, 200)}"`);
   const formattedResponse = formatForSlack(response);
+  console.log(`[LLMHandler] Formatted response length: ${formattedResponse.length}`);
   const blocks =
     useBlocks && response.length > 500
       ? buildResponseBlocks(response, { addFeedbackButtons: false })
       : undefined;
 
   if (thinkingMessageTs) {
+    console.log(`[LLMHandler] Updating thinking message ${thinkingMessageTs} with response`);
     await updateThinkingMessage(
       channel,
       thinkingMessageTs,
       formattedResponse,
       blocks,
     );
+    console.log(`[LLMHandler] Thinking message updated`);
   } else if (replyTo) {
+    console.log(`[LLMHandler] Replying in thread ${replyTo}`);
     await replyInThread(channel, replyTo, formattedResponse, blocks);
+    console.log(`[LLMHandler] Thread reply sent`);
   } else {
+    console.log(`[LLMHandler] Sending message to channel ${channel}`);
     await sendMessage({ channel, text: formattedResponse, blocks });
+    console.log(`[LLMHandler] Message sent`);
   }
 
   return response;
@@ -216,15 +240,24 @@ export async function handleLLMCall(
 ): Promise<void> {
   const { channel, replyTo, thinkingMessageTs } = options;
 
+  console.log(`[LLMHandler] ========== handleLLMCall ==========`);
+  console.log(`[LLMHandler] Channel: ${channel}, replyTo: ${replyTo ?? "none"}, thinkingTs: ${thinkingMessageTs ?? "none"}`);
+  console.log(`[LLMHandler] Messages count: ${messages.length}, streaming enabled: ${streamingEnabled}`);
+  console.log(`[LLMHandler] LLM config: model=${globalLLMConfig?.modelId ?? "NOT SET"}, agentId=${globalLLMConfig?.agentId ?? "none"}, meshUrl=${globalLLMConfig?.meshUrl ?? "NOT SET"}`);
+  console.log(`[LLMHandler] Has system prompt: ${!!globalLLMConfig?.systemPrompt}`);
+
   try {
     // Use streaming only if enabled AND we have a thinking message to update
     const useStreaming = streamingEnabled && !!thinkingMessageTs;
+    console.log(`[LLMHandler] Using streaming: ${useStreaming} (streamingEnabled=${streamingEnabled}, hasThinkingMsg=${!!thinkingMessageTs})`);
 
+    const startTime = Date.now();
     if (useStreaming) {
       await callLLMWithStreaming(messages, options);
     } else {
       await callLLMWithoutStreaming(messages, options);
     }
+    console.log(`[LLMHandler] LLM call completed successfully in ${Date.now() - startTime}ms`);
   } catch (error) {
     logger.error("LLM response failed", {
       channel,

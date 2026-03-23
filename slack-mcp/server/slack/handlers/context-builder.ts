@@ -104,28 +104,40 @@ export async function buildContextMessages(
   currentTs: string,
   limit: number = contextConfig.maxMessagesToFetch,
 ): Promise<ContextMessage[]> {
+  console.log(`[ContextBuilder] ========== buildContextMessages ==========`);
+  console.log(`[ContextBuilder] Channel: ${channel}, threadTs: ${threadTs ?? "none"}, currentTs: ${currentTs}, limit: ${limit}`);
+  console.log(`[ContextBuilder] Config: maxFetch=${contextConfig.maxMessagesToFetch}, maxBeforeSummary=${contextConfig.maxMessagesBeforeSummary}, recentToKeep=${contextConfig.recentMessagesToKeep}`);
+  console.log(`[ContextBuilder] Bot user ID: ${globalBotUserId ?? "not set"}`);
+
   const messages: ContextMessage[] = [];
 
   // Fetch messages from Slack
   let allMessages: Array<{ user?: string; text: string; ts: string }> = [];
 
+  const fetchStartTime = Date.now();
   if (threadTs) {
+    console.log(`[ContextBuilder] Fetching thread replies for ${threadTs}...`);
     const threadMessages = await getThreadReplies(
       channel,
       threadTs,
       contextConfig.maxMessagesToFetch,
     );
+    console.log(`[ContextBuilder] Thread replies fetched: ${threadMessages.length} raw messages in ${Date.now() - fetchStartTime}ms`);
     allMessages = threadMessages
       .filter((msg) => msg.ts !== currentTs && msg.text)
       .sort((a, b) => Number.parseFloat(a.ts) - Number.parseFloat(b.ts));
+    console.log(`[ContextBuilder] After filtering: ${allMessages.length} messages (excluded currentTs=${currentTs})`);
   } else {
+    console.log(`[ContextBuilder] Fetching channel history...`);
     const channelMessages = await getChannelHistory(channel, {
       limit: contextConfig.maxMessagesToFetch,
       latest: currentTs,
     });
+    console.log(`[ContextBuilder] Channel history fetched: ${channelMessages.length} raw messages in ${Date.now() - fetchStartTime}ms`);
     allMessages = channelMessages
       .filter((msg) => msg.ts !== currentTs && msg.text)
       .sort((a, b) => Number.parseFloat(a.ts) - Number.parseFloat(b.ts));
+    console.log(`[ContextBuilder] After filtering: ${allMessages.length} messages`);
   }
 
   // Convert to role-based messages
@@ -135,6 +147,11 @@ export async function buildContextMessages(
       | "assistant",
     content: msg.text,
   }));
+
+  console.log(`[ContextBuilder] Role messages: ${roleMessages.length} (user: ${roleMessages.filter(m => m.role === "user").length}, assistant: ${roleMessages.filter(m => m.role === "assistant").length})`);
+  roleMessages.forEach((msg, i) => {
+    console.log(`[ContextBuilder]   [${i}] ${msg.role}: "${msg.content.substring(0, 80)}${msg.content.length > 80 ? "..." : ""}"`);
+  });
 
   // Check if we need to summarize
   if (roleMessages.length > contextConfig.maxMessagesBeforeSummary) {
@@ -154,8 +171,10 @@ export async function buildContextMessages(
     );
   } else {
     messages.push(...roleMessages.slice(-limit));
+    console.log(`[ContextBuilder] Using ${messages.length} messages (no summary needed)`);
   }
 
+  console.log(`[ContextBuilder] Final context: ${messages.length} messages`);
   return messages;
 }
 

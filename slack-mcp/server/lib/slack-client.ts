@@ -227,11 +227,15 @@ export async function sendMessage(
   options: SendMessageOptions,
 ): Promise<ChatPostMessageResponse | null> {
   if (!webClient) {
-    console.error("[Slack] Client not initialized");
+    console.error("[Slack] Client not initialized - cannot send message");
     return null;
   }
 
+  console.log(`[Slack] sendMessage: channel=${options.channel}, threadTs=${options.threadTs ?? "none"}, text length=${options.text?.length ?? 0}, has blocks=${!!options.blocks}`);
+  console.log(`[Slack] sendMessage text preview: "${(options.text ?? "").substring(0, 150)}"`);
+
   try {
+    const startTime = Date.now();
     const result = await webClient.chat.postMessage({
       channel: options.channel,
       text: options.text,
@@ -242,9 +246,10 @@ export async function sendMessage(
       mrkdwn: options.mrkdwn ?? true,
     });
 
+    console.log(`[Slack] sendMessage SUCCESS in ${Date.now() - startTime}ms. Response TS: ${result.ts}, OK: ${result.ok}`);
     return result;
   } catch (error) {
-    console.error("[Slack] Failed to send message:", error);
+    console.error("[Slack] sendMessage FAILED:", error);
     throw error;
   }
 }
@@ -277,16 +282,20 @@ export async function updateMessage(
 ): Promise<boolean> {
   if (!webClient) return false;
 
+  console.log(`[Slack] updateMessage: channel=${channel}, ts=${ts}, text length=${text.length}, has blocks=${!!blocks}`);
+
   try {
+    const startTime = Date.now();
     await webClient.chat.update({
       channel,
       ts,
       text,
       blocks,
     });
+    console.log(`[Slack] updateMessage SUCCESS in ${Date.now() - startTime}ms`);
     return true;
   } catch (error) {
-    console.error("[Slack] Failed to update message:", error);
+    console.error("[Slack] updateMessage FAILED:", error);
     return false;
   }
 }
@@ -326,7 +335,10 @@ export async function getChannelHistory(
 ): Promise<SlackMessage[]> {
   if (!webClient) return [];
 
+  console.log(`[Slack] getChannelHistory: channel=${channel}, limit=${options.limit ?? 100}, latest=${options.latest ?? "none"}`);
+
   try {
+    const startTime = Date.now();
     const result = await webClient.conversations.history({
       channel,
       limit: options.limit ?? 100,
@@ -335,9 +347,11 @@ export async function getChannelHistory(
       inclusive: options.inclusive,
     });
 
-    return (result.messages as SlackMessage[]) ?? [];
+    const messages = (result.messages as SlackMessage[]) ?? [];
+    console.log(`[Slack] getChannelHistory: ${messages.length} messages fetched in ${Date.now() - startTime}ms`);
+    return messages;
   } catch (error) {
-    console.error("[Slack] Failed to get channel history:", error);
+    console.error("[Slack] getChannelHistory FAILED:", error);
     return [];
   }
 }
@@ -352,16 +366,21 @@ export async function getThreadReplies(
 ): Promise<SlackMessage[]> {
   if (!webClient) return [];
 
+  console.log(`[Slack] getThreadReplies: channel=${channel}, threadTs=${threadTs}, limit=${limit}`);
+
   try {
+    const startTime = Date.now();
     const result = await webClient.conversations.replies({
       channel,
       ts: threadTs,
       limit,
     });
 
-    return (result.messages as SlackMessage[]) ?? [];
+    const messages = (result.messages as SlackMessage[]) ?? [];
+    console.log(`[Slack] getThreadReplies: ${messages.length} messages fetched in ${Date.now() - startTime}ms`);
+    return messages;
   } catch (error) {
-    console.error("[Slack] Failed to get thread replies:", error);
+    console.error("[Slack] getThreadReplies FAILED:", error);
     return [];
   }
 }

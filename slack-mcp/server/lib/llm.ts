@@ -49,7 +49,24 @@ export async function generateLLMResponse(
   messages: Message[],
   config: MeshChatConfig,
 ): Promise<string> {
-  return generateResponse(config, toSharedMessages(messages));
+  console.log(`[LLM] ========== generateLLMResponse (non-streaming) ==========`);
+  console.log(`[LLM] Config: meshUrl=${config.meshUrl}, model=${config.modelId}, agentId=${config.agentId ?? "none"}, org=${config.organizationId}`);
+  console.log(`[LLM] Messages: ${messages.length} total`);
+  messages.forEach((m, i) => {
+    console.log(`[LLM]   [${i}] role=${m.role}, content length=${m.content.length}, images=${m.images?.length ?? 0}`);
+  });
+  console.log(`[LLM] Has system prompt: ${!!config.systemPrompt}, system prompt length: ${config.systemPrompt?.length ?? 0}`);
+
+  const startTime = Date.now();
+  try {
+    const result = await generateResponse(config, toSharedMessages(messages));
+    console.log(`[LLM] Response received in ${Date.now() - startTime}ms. Length: ${result.length} chars`);
+    console.log(`[LLM] Response preview: "${result.substring(0, 300)}"`);
+    return result;
+  } catch (error) {
+    console.error(`[LLM] generateLLMResponse FAILED after ${Date.now() - startTime}ms:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -62,9 +79,33 @@ export async function generateLLMResponseWithStreaming(
   config: MeshChatConfig,
   onStream: StreamCallback,
 ): Promise<string> {
-  return generateResponseWithStreaming(
-    config,
-    toSharedMessages(messages),
-    onStream,
-  );
+  console.log(`[LLM] ========== generateLLMResponseWithStreaming ==========`);
+  console.log(`[LLM] Config: meshUrl=${config.meshUrl}, model=${config.modelId}, agentId=${config.agentId ?? "none"}, org=${config.organizationId}`);
+  console.log(`[LLM] Messages: ${messages.length} total`);
+  messages.forEach((m, i) => {
+    console.log(`[LLM]   [${i}] role=${m.role}, content length=${m.content.length}, images=${m.images?.length ?? 0}`);
+  });
+  console.log(`[LLM] Has system prompt: ${!!config.systemPrompt}, system prompt length: ${config.systemPrompt?.length ?? 0}`);
+
+  const startTime = Date.now();
+  let chunkCount = 0;
+  try {
+    const result = await generateResponseWithStreaming(
+      config,
+      toSharedMessages(messages),
+      (text, isComplete) => {
+        chunkCount++;
+        if (isComplete) {
+          console.log(`[LLM] Streaming complete. Total chunks: ${chunkCount}, final length: ${text.length} chars, time: ${Date.now() - startTime}ms`);
+          console.log(`[LLM] Streaming response preview: "${text.substring(0, 300)}"`);
+        }
+        onStream(text, isComplete);
+      },
+    );
+    console.log(`[LLM] generateLLMResponseWithStreaming finished in ${Date.now() - startTime}ms`);
+    return result;
+  } catch (error) {
+    console.error(`[LLM] generateLLMResponseWithStreaming FAILED after ${Date.now() - startTime}ms (chunks received: ${chunkCount}):`, error);
+    throw error;
+  }
 }
