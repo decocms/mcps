@@ -112,7 +112,7 @@ export async function generateLLMResponseWithStreaming(
     const result = await generateResponseWithStreaming(
       config,
       toSharedMessages(messages),
-      (text, isComplete) => {
+      async (text, isComplete) => {
         chunkCount++;
         if (isComplete) {
           console.log(

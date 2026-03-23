@@ -6,7 +6,6 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
-import { OpenRouterClient } from "../../lib/openrouter-client.ts";
 import type { Env } from "../../main.ts";
 import { createCollectionBindings } from "@decocms/bindings/collections";
 import { OpenRouter } from "@openrouter/sdk";

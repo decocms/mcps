@@ -482,7 +482,7 @@ export async function handleSlackEvent(
     `[EventHandler] Text preview: "${(payload.text ?? "").substring(0, 150)}"`,
   );
   console.log(
-    `[EventHandler] Has files: ${!!payload.files}, Channel type: ${payload.channel_type ?? "unknown"}`,
+    `[EventHandler] Has files: ${!!(payload as any).files}, Channel type: ${(payload as any).channel_type ?? "unknown"}`,
   );
   console.log(
     `[EventHandler] Bot user ID (global): ${globalBotUserId ?? "not set"}, Bot user ID (team): ${teamConfig.botUserId ?? "not set"}`,

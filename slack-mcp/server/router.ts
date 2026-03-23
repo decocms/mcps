@@ -366,7 +366,7 @@ async function processConnectionEventAsync(
     `[Router] [${traceId}] Connection: ${connectionConfig.connectionId}, Team: ${connectionConfig.teamId}`,
   );
   console.log(
-    `[Router] [${traceId}] Has files: ${!!payload.event.files}, File count: ${payload.event.files?.length ?? 0}`,
+    `[Router] [${traceId}] Has files: ${!!(payload.event as any).files}, File count: ${(payload.event as any).files?.length ?? 0}`,
   );
   console.log(
     `[Router] [${traceId}] Bot user ID from config: ${connectionConfig.botUserId ?? "not set"}`,
