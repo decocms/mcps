@@ -5,16 +5,7 @@
  * for the Mesh automations system.
  */
 
-export interface TriggerDefinition {
-  type: string;
-  description: string;
-  params: {
-    name: string;
-    type: string;
-    description: string;
-    required: boolean;
-  }[];
-}
+import type { TriggerDefinition } from "@decocms/bindings/trigger";
 
 interface TriggerConfig {
   type: string;
@@ -23,128 +14,62 @@ interface TriggerConfig {
   connectionId: string;
 }
 
-export const GITHUB_TRIGGER_DEFINITIONS: TriggerDefinition[] = [
+const REPO_PARAM_SCHEMA: TriggerDefinition["paramsSchema"] = {
+  repo: { type: "string", description: "Repository full name e.g. owner/repo" },
+};
+
+export const GITHUB_TRIGGER_DEFINITIONS = [
   {
     type: "github.push",
     description: "Code pushed to a branch",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.pull_request.opened",
     description: "Pull request opened",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.pull_request.closed",
     description: "Pull request closed or merged",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.pull_request.review_requested",
     description: "Review requested on a PR",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.issues.opened",
     description: "Issue opened",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.issues.closed",
     description: "Issue closed",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.issue_comment.created",
     description: "Comment on issue or PR",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.pull_request_review.submitted",
     description: "PR review submitted",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.release.published",
     description: "Release published",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
   {
     type: "github.workflow_run.completed",
     description: "Actions workflow completed",
-    params: [
-      {
-        name: "repo",
-        type: "string",
-        description: "Repository full name e.g. owner/repo",
-        required: false,
-      },
-    ],
+    paramsSchema: REPO_PARAM_SCHEMA,
   },
-];
+] satisfies TriggerDefinition[];
 
 const triggerConfigs = new Map<string, TriggerConfig>();
 
