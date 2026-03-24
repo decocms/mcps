@@ -50,6 +50,8 @@ const createTriggerConfigureTool = (_env: Env) =>
         context.params,
         context.enabled,
         connectionId,
+        context.callbackUrl,
+        context.callbackToken,
       );
       return { success: true };
     },

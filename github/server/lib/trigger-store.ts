@@ -1,8 +1,7 @@
 /**
  * Trigger Store
  *
- * In-memory trigger configuration storage and static trigger definitions
- * for the Mesh automations system.
+ * Manages trigger configurations and callback credentials for GitHub webhook events.
  */
 
 import type { TriggerDefinition } from "@decocms/bindings/trigger";
@@ -12,6 +11,11 @@ interface TriggerConfig {
   params: Record<string, string>;
   enabled: boolean;
   connectionId: string;
+}
+
+interface CallbackCredentials {
+  callbackUrl: string;
+  callbackToken: string;
 }
 
 const REPO_PARAM_SCHEMA: TriggerDefinition["paramsSchema"] = {
@@ -72,6 +76,7 @@ export const GITHUB_TRIGGER_DEFINITIONS = [
 ] satisfies TriggerDefinition[];
 
 const triggerConfigs = new Map<string, TriggerConfig>();
+const callbackCredentials = new Map<string, CallbackCredentials>();
 
 const KNOWN_TYPES = new Set(GITHUB_TRIGGER_DEFINITIONS.map((d) => d.type));
 
@@ -84,6 +89,8 @@ export function configureTrigger(
   params: Record<string, string>,
   enabled: boolean,
   connectionId: string,
+  callbackUrl?: string,
+  callbackToken?: string,
 ): void {
   if (!KNOWN_TYPES.has(type)) {
     throw new Error(`Unknown trigger type: ${type}`);
@@ -91,8 +98,21 @@ export function configureTrigger(
   const key = `${connectionId}::${type}::${params.repo ?? "*"}`;
   if (enabled) {
     triggerConfigs.set(key, { type, params, enabled, connectionId });
+
+    // Store callback credentials if provided
+    if (callbackUrl && callbackToken) {
+      callbackCredentials.set(connectionId, { callbackUrl, callbackToken });
+    }
   } else {
     triggerConfigs.delete(key);
+
+    // Clean up callback credentials if no more triggers for this connection
+    const hasOtherTriggers = [...triggerConfigs.values()].some(
+      (t) => t.connectionId === connectionId,
+    );
+    if (!hasOtherTriggers) {
+      callbackCredentials.delete(connectionId);
+    }
   }
 }
 
@@ -109,4 +129,10 @@ export function hasMatchingTrigger(
     return true;
   }
   return false;
+}
+
+export function getCallbackCredentials(
+  connectionId: string,
+): CallbackCredentials | undefined {
+  return callbackCredentials.get(connectionId);
 }
