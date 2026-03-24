@@ -517,7 +517,7 @@ export const createCompareTimeRangesTool = (_env: Env) =>
   createTool({
     id: "COMPARE_TIME_RANGES",
     description:
-      "Compare a metric between the current period and a prior period using ratio analysis. Returns the ratio of current/prior so you can detect regressions or improvements. A ratio >1 means the current period is higher.",
+      "Compare a metric between the current period and a prior period. Queries both periods in parallel and returns the raw aggregates for each, plus a computed summary with the ratio (current/prior). A ratio >1 means the current period is higher — useful for detecting regressions or improvements.",
     inputSchema: z.object({
       query: z
         .string()
@@ -555,6 +555,19 @@ export const createCompareTimeRangesTool = (_env: Env) =>
       prior: z
         .array(z.record(z.string(), z.unknown()))
         .describe("Aggregated data for the prior/baseline period."),
+      summary: z
+        .array(
+          z.object({
+            group: z.array(z.string()),
+            currentValue: z.number(),
+            priorValue: z.number(),
+            ratio: z.number().nullable(),
+            change: z.string(),
+          }),
+        )
+        .describe(
+          "Computed comparison: ratio = current/prior. >1 means increase, <1 means decrease. null if prior is 0.",
+        ),
     }),
     execute: async ({ context, runtimeContext }) => {
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
@@ -582,11 +595,52 @@ export const createCompareTimeRangesTool = (_env: Env) =>
         }),
       ]);
 
+      const currentData = currentRes.data ?? [];
+      const priorData = priorRes.data ?? [];
+
+      // Build summary by matching groups across periods
+      type RawItem = Record<string, unknown>;
+      const groupKey = (item: RawItem) =>
+        JSON.stringify((item.group as string[]) ?? []);
+      const val = (item: RawItem) => (item["series_0.data"] as number) ?? 0;
+
+      const priorMap = new Map<string, number>();
+      for (const item of priorData) {
+        // Aggregate across time buckets for the same group
+        const key = groupKey(item);
+        priorMap.set(key, (priorMap.get(key) ?? 0) + val(item));
+      }
+
+      const currentMap = new Map<string, number>();
+      for (const item of currentData) {
+        const key = groupKey(item);
+        currentMap.set(key, (currentMap.get(key) ?? 0) + val(item));
+      }
+
+      const allGroups = new Set([...currentMap.keys(), ...priorMap.keys()]);
+      const summary = [...allGroups].map((key) => {
+        const currentValue = currentMap.get(key) ?? 0;
+        const priorValue = priorMap.get(key) ?? 0;
+        const ratio = priorValue > 0 ? currentValue / priorValue : null;
+        const pctChange =
+          ratio !== null
+            ? `${((ratio - 1) * 100).toFixed(1)}%`
+            : "N/A (no prior data)";
+        return {
+          group: JSON.parse(key) as string[],
+          currentValue,
+          priorValue,
+          ratio: ratio !== null ? Math.round(ratio * 1000) / 1000 : null,
+          change: pctChange,
+        };
+      });
+
       return {
         description:
-          "current = current period aggregates, prior = prior/baseline period aggregates. Compare values to detect regressions.",
-        current: currentRes.data ?? [],
-        prior: priorRes.data ?? [],
+          "current/prior = raw time-series data for each period. summary = computed ratio per group (ratio >1 = increase, <1 = decrease).",
+        current: currentData,
+        prior: priorData,
+        summary,
       };
     },
   });
