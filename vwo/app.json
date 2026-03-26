@@ -1,0 +1,28 @@
+{
+  "scopeName": "deco",
+  "name": "vwo",
+  "friendlyName": "VWO (Visual Website Optimizer)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-vwo.decocache.com/mcp"
+  },
+  "description": "Connect AI agents to VWO for A/B testing, experiment management, and optimization insights.",
+  "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": [
+      "Analytics",
+      "Marketing"
+    ],
+    "official": false,
+    "tags": [
+      "vwo",
+      "ab-testing",
+      "experiments",
+      "feature-flags",
+      "optimization"
+    ],
+    "short_description": "VWO A/B testing, experiments, and feature flag management.",
+    "mesh_description": "The VWO MCP provides AI agents with access to VWO's REST API for managing A/B testing campaigns, feature flags, and optimization experiments. **Key Features** - List and inspect campaigns with detailed variation data. - Track goals and conversion metrics per campaign. - Manage feature flags with environment-specific rules. - Access metric reports for experiment analysis. - View workspaces, users, websites, and drafts. **Authentication** - Uses a VWO API token generated at https://app.vwo.com/#/developers/tokens. Perfect for teams automating experiment analysis and collecting A/B testing insights."
+  }
+}
