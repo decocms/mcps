@@ -7,7 +7,7 @@
 
 import { getConnectionForInstallation } from "./lib/installation-map.ts";
 import { verifyGitHubWebhook } from "./lib/webhook.ts";
-import { hasMatchingTrigger } from "./lib/trigger-store.ts";
+import { triggers } from "./lib/trigger-store.ts";
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
@@ -27,13 +27,11 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
 
   const installationId = payload.installation?.id;
   if (!installationId) {
-    console.log("[Webhook] No installation.id in payload, skipping");
     return Response.json({ ok: true, skipped: "no_installation_id" });
   }
 
   const connectionId = getConnectionForInstallation(installationId);
   if (!connectionId) {
-    console.log(`[Webhook] No mapping for installation ${installationId}`);
     return Response.json({ ok: true, skipped: "no_mapping" });
   }
 
@@ -45,21 +43,19 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
   const subject =
     payload.repository?.full_name || payload.organization?.login || "unknown";
 
-  console.log(
-    `[Webhook] ${fullEventType} | subject=${subject} | connection=${connectionId} | sender=${payload.sender?.login}`,
+  // Notify Mesh — the SDK handles credential lookup and delivery
+  triggers.notify(
+    connectionId,
+    fullEventType as Parameters<typeof triggers.notify>[1],
+    {
+      event: fullEventType,
+      subject,
+      sender: payload.sender?.login,
+      repository: payload.repository?.full_name,
+      action: payload.action,
+      payload,
+    },
   );
-
-  if (
-    hasMatchingTrigger(
-      fullEventType,
-      payload.repository?.full_name,
-      connectionId,
-    )
-  ) {
-    console.log(
-      `[Webhook] TRIGGER MATCHED: ${fullEventType} | connection=${connectionId} | installation=${installationId}`,
-    );
-  }
 
   return Response.json({ ok: true, event: fullEventType, subject });
 }
