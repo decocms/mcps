@@ -1,0 +1,33 @@
+{
+  "scopeName": "browserless",
+  "name": "browserless",
+  "friendlyName": "Browserless",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://mcp.browserless.io/mcp"
+  },
+  "description": "Scrape websites, execute browser automation, search the web, and export pages using Browserless cloud headless browsers.",
+  "icon": "https://www.browserless.io/favicon.svg",
+  "unlisted": false,
+  "official": true,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["Web Scraping", "Automation"],
+    "official": true,
+    "tags": [
+      "browserless",
+      "headless-browser",
+      "web-scraping",
+      "puppeteer",
+      "browser-automation",
+      "data-extraction",
+      "search"
+    ],
+    "short_description": "Scrape websites, run browser automation, and search the web with cloud headless browsers.",
+    "mesh_description": "The Browserless MCP provides cloud-hosted headless browser capabilities for AI agents. It includes tools for intelligent web scraping with cascading strategies (HTTP fetch, proxy, headless browser, CAPTCHA solving), executing custom Puppeteer JavaScript in the cloud, retrieving files downloaded by Chrome, exporting webpages in native formats with optional ZIP bundling, web searches via SearXNG with optional result scraping, and discovering and cataloging all URLs on a website. Supports multiple output formats and regional endpoints. Authentication via API token in the Authorization header."
+  }
+}
