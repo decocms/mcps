@@ -91,8 +91,7 @@ export const triggers = createTriggers({
     },
     {
       type: "github.workflow_run.completed",
-      description:
-        "Triggered when a GitHub Actions workflow run completes",
+      description: "Triggered when a GitHub Actions workflow run completes",
       params: z.object({
         repo: z
           .string()
