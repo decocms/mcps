@@ -8,4 +8,4 @@
 import { createUpstreamToolsProvider } from "../lib/mcp-proxy.ts";
 import { triggers } from "../lib/trigger-store.ts";
 
-export const tools = [createUpstreamToolsProvider(), ...triggers.tools()];
+export const tools = [createUpstreamToolsProvider(), () => triggers.tools()];

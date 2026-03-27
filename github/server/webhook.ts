@@ -44,14 +44,18 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
     payload.repository?.full_name || payload.organization?.login || "unknown";
 
   // Notify Mesh — the SDK handles credential lookup and delivery
-  triggers.notify(connectionId, fullEventType, {
-    event: fullEventType,
-    subject,
-    sender: payload.sender?.login,
-    repository: payload.repository?.full_name,
-    action: payload.action,
-    payload,
-  });
+  triggers.notify(
+    connectionId,
+    fullEventType as Parameters<typeof triggers.notify>[1],
+    {
+      event: fullEventType,
+      subject,
+      sender: payload.sender?.login,
+      repository: payload.repository?.full_name,
+      action: payload.action,
+      payload,
+    },
+  );
 
   return Response.json({ ok: true, event: fullEventType, subject });
 }
