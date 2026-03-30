@@ -205,6 +205,91 @@ export class GmailClient {
   }
 
   /**
+   * Get multiple messages in a single HTTP request using Gmail Batch API.
+   * Supports up to 100 messages per batch (Gmail API limit).
+   */
+  async getMessagesBatch(ids: string[], format?: string): Promise<Message[]> {
+    if (ids.length === 0) return [];
+    if (ids.length === 1)
+      return [await this.getMessage({ id: ids[0], format })];
+
+    const boundary = `batch_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const parts = ids.map((id, i) => {
+      const url = new URL(ENDPOINTS.MESSAGE(id));
+      if (format) url.searchParams.set("format", format);
+      // Extract path + query from full URL
+      const pathAndQuery = url.pathname + url.search;
+      return [
+        `--${boundary}`,
+        `Content-Type: application/http`,
+        `Content-ID: <item${i}>`,
+        ``,
+        `GET ${pathAndQuery}`,
+        ``,
+      ].join("\r\n");
+    });
+
+    const body = parts.join("\r\n") + `\r\n--${boundary}--`;
+
+    const response = await fetch("https://www.googleapis.com/batch/gmail/v1", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": `multipart/mixed; boundary=${boundary}`,
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gmail Batch API error: ${response.status} - ${error}`);
+    }
+
+    const responseText = await response.text();
+    return this.parseBatchResponse(responseText);
+  }
+
+  /**
+   * Parse a multipart/mixed batch response into individual Message objects.
+   */
+  private parseBatchResponse(responseText: string): Message[] {
+    const messages: Message[] = [];
+
+    // Extract boundary from the response (first line)
+    const firstLine =
+      responseText.split("\r\n")[0] || responseText.split("\n")[0];
+    const responseBoundary = firstLine.trim();
+
+    if (!responseBoundary.startsWith("--")) {
+      throw new Error("Invalid batch response: could not find boundary");
+    }
+
+    // Split by boundary
+    const parts = responseText.split(responseBoundary).filter((part) => {
+      const trimmed = part.trim();
+      return trimmed && trimmed !== "--";
+    });
+
+    for (const part of parts) {
+      // Find the JSON body within each part (after the HTTP status line and headers)
+      const jsonMatch = part.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Skip error responses
+          if (parsed.id) {
+            messages.push(parsed as Message);
+          }
+        } catch {
+          // Skip unparseable parts
+        }
+      }
+    }
+
+    return messages;
+  }
+
+  /**
    * Send a new message
    */
   async sendMessage(input: SendMessageInput): Promise<Message> {
