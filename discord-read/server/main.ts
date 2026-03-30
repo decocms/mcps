@@ -122,66 +122,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         organizationId,
       });
 
-      // Configure LLM
-      const agent = state?.AGENT;
-      const languageModel = state?.LANGUAGE_MODEL;
-
-      // Extract values - connectionId comes from LANGUAGE_MODEL
-      const modelProviderId: string | undefined =
-        typeof languageModel?.value?.connectionId === "string"
-          ? languageModel.value.connectionId
-          : undefined;
-      const agentId: string | undefined =
-        typeof agent?.value === "string" ? agent.value : undefined;
-      const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
-      const modelId = languageModel?.value?.id;
-
-      // Get existing config to check for persistent API key
-      const currentConnectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      const savedConfig = currentConnectionId
-        ? await getDiscordConfig(currentConnectionId)
-        : null;
-
-      // Use API key if available (never expires), otherwise use session token (expires in 5 min)
-      const effectiveToken = savedConfig?.meshApiKey || token;
-      const isUsingApiKey = !!savedConfig?.meshApiKey;
-
-      // Configure LLM module (modelProviderId is optional)
-      if (effectiveToken && meshUrl && organizationId && languageModel) {
-        const { configureLLM, configureStreaming } = await import("./llm.ts");
-
-        configureLLM({
-          meshUrl,
-          organizationId,
-          token: effectiveToken,
-          modelProviderId,
-          modelId,
-          agentId,
-          agentMode,
-        });
-
-        console.log(
-          `[CONFIG] LLM token: ${isUsingApiKey ? "🔑 API Key (persistent)" : "⏱️ Session token (expires in 5 min)"}`,
-        );
-
-        if (!isUsingApiKey) {
-          console.warn(
-            "[CONFIG] ⚠️ Using session token which expires in 5 min. Generate an API key using DISCORD_GENERATE_API_KEY tool for persistent LLM access.",
-          );
-        }
-
-        // Configure streaming (default: enabled)
-        const enableStreaming =
-          state?.RESPONSE_CONFIG?.ENABLE_STREAMING ?? true;
-        configureStreaming(enableStreaming);
-
-        console.log("[CONFIG] LLM configured:", {
-          modelProviderId,
-          modelId,
-          agentId: agentId || "not set",
-          streaming: enableStreaming,
-        });
-      }
+      // Agent binding is resolved automatically by the runtime via AgentOf()
+      // No manual LLM configuration needed — env.MESH_REQUEST_CONTEXT.state.AGENT
+      // provides a .STREAM() method directly.
+      console.log("[CONFIG] Agent binding configured via AgentOf()");
 
       // ======================================================================
       // Sync StateSchema fields to config-cache for webhook endpoint
@@ -246,9 +190,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           authorizedGuilds,
           ownerId: botOwnerId,
           commandPrefix,
-          modelProviderId,
-          modelId,
-          agentId,
           updatedAt: new Date().toISOString(),
         };
 

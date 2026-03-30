@@ -93,7 +93,7 @@ When asked about Mesh or platform configuration:
 * If something isn't working (like LLM configuration errors), suggest:
   1. Open Mesh Dashboard
   2. Check the MCP connection configuration
-  3. Ensure LANGUAGE_MODEL and AGENT are properly configured
+  3. Ensure AGENT binding is properly configured
   4. Click "Save" to refresh the connection
 
 ### **Tools**

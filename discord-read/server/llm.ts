@@ -1,22 +1,16 @@
 /**
- * LLM Module - AI Model Integration for Discord MCP
+ * LLM Module - AI Agent Integration for Discord MCP
  *
- * Thin wrapper around @decocms/mcps-shared/mesh-chat that maintains the
- * existing public API while delegating all API calls to the shared module.
+ * Uses the official AgentOf() binding from @decocms/runtime.
+ * The agent binding resolves to a client with a STREAM() method
+ * that returns an async iterable of UIMessage objects.
  */
 
 import type { Env } from "./types/env.ts";
 import {
-  generateResponse as sharedGenerateResponse,
-  generateResponseWithStreaming as sharedGenerateResponseWithStreaming,
   transcribeAudio as sharedTranscribeAudio,
-  type ChatMessage,
-  type MeshChatConfig,
-  type StreamCallback,
   type WhisperConfig,
 } from "@decocms/mcps-shared/mesh-chat";
-
-const DEFAULT_LANGUAGE_MODEL = "anthropic/claude-sonnet-4-20250514";
 
 // ============================================================================
 // Types
@@ -49,189 +43,109 @@ export interface DiscordContext {
   userName: string;
 }
 
-export type { MeshChatConfig as LLMConfig, StreamCallback };
-
 // ============================================================================
-// Global State
+// Agent Binding
 // ============================================================================
 
-let globalLLMConfig: MeshChatConfig | null = null;
-let streamingEnabled = true;
-let globalWhisperConfig: WhisperConfig | null = null;
-
-export function configureLLM(config: MeshChatConfig): void {
-  globalLLMConfig = config;
-  console.log("[LLM] Configured", {
-    meshUrl: config.meshUrl,
-    organizationId: config.organizationId,
-    modelProviderId: config.modelProviderId,
-    modelId: config.modelId,
-    agentId: config.agentId,
-    hasToken: !!config.token,
-    hasSystemPrompt: !!config.systemPrompt,
-  });
+/** Resolved agent client shape after binding resolution */
+interface AgentClient {
+  STREAM: (params: {
+    messages: Array<{
+      role: string;
+      parts: Array<Record<string, unknown>>;
+    }>;
+    thread_id?: string;
+  }) => Promise<
+    AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>
+  >;
 }
 
-export function clearLLMConfig(): void {
-  globalLLMConfig = null;
-  console.log("[LLM] Config cleared");
+function getAgent(env: Env): AgentClient | null {
+  const agent = (env.MESH_REQUEST_CONTEXT?.state as Record<string, unknown>)
+    ?.AGENT;
+  if (agent && typeof (agent as AgentClient).STREAM === "function") {
+    return agent as AgentClient;
+  }
+  return null;
 }
 
-export function configureStreaming(enabled: boolean): void {
-  streamingEnabled = enabled;
-  console.log("[LLM] Streaming:", enabled ? "enabled" : "disabled");
+/**
+ * Check if the agent binding is available and configured.
+ */
+export function isAgentAvailable(env: Env): boolean {
+  return getAgent(env) !== null;
 }
 
-export function isStreamingEnabled(): boolean {
-  return streamingEnabled;
-}
-
-export function isLLMConfigured(): boolean {
-  return globalLLMConfig !== null;
-}
-
-export function getLLMConfig(): MeshChatConfig | null {
-  return globalLLMConfig;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function toSharedMessages(messages: DiscordChatMessage[]): ChatMessage[] {
+/**
+ * Convert DiscordChatMessage[] to the message format expected by STREAM API.
+ */
+function toUIMessages(messages: DiscordChatMessage[]) {
   return messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-    media: m.images?.map((img) => ({
-      type: img.type,
-      data: img.data,
-      mimeType: img.mimeType,
-      name: img.name,
-    })),
+    role: m.role as "system" | "user" | "assistant",
+    parts: [
+      { type: "text" as const, text: m.content },
+      ...(m.images
+        ?.filter((img) => img.type === "image")
+        .map((img) => ({
+          type: "file" as const,
+          url: `data:${img.mimeType};base64,${img.data}`,
+          filename: img.name ?? "image",
+          mediaType: img.mimeType,
+        })) ?? []),
+    ],
   }));
 }
 
-// ============================================================================
-// Main Functions
-// ============================================================================
-
 /**
- * Generate a response using the Mesh API.
- * Falls back to stored config or env-derived config if global config is not set.
+ * Stream an agent response using the AgentOf() STREAM binding.
+ * Returns an async iterable of messages with parts.
  */
-export async function generateResponse(
+export async function streamAgentResponse(
   env: Env,
   messages: DiscordChatMessage[],
-  _options?: { discordContext?: DiscordContext },
-): Promise<GenerateResponse> {
-  let config = globalLLMConfig;
-
-  if (!config) {
-    // Fallback 1: Try stored config (persistent, doesn't depend on env)
-    const { getStoredConfig, getCurrentEnv } = await import("./bot-manager.ts");
-    const storedConfig = getStoredConfig();
-
-    if (storedConfig) {
-      console.log("[LLM] Using stored config fallback", {
-        isApiKey: storedConfig.isApiKey,
-        hasToken: !!storedConfig.persistentToken,
-      });
-      config = {
-        meshUrl: storedConfig.meshUrl,
-        organizationId: storedConfig.organizationId,
-        token: storedConfig.persistentToken,
-        modelProviderId: storedConfig.modelProviderId ?? "",
-        modelId: storedConfig.modelId,
-        agentId: storedConfig.agentId,
-      };
-    } else {
-      // Fallback 2: Build config from env (may have expired token)
-      const storedEnv = getCurrentEnv();
-      const effectiveEnv = env.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL
-        ?.value
-        ? env
-        : storedEnv?.MESH_REQUEST_CONTEXT?.state?.LANGUAGE_MODEL?.value
-          ? storedEnv
-          : env;
-
-      const organizationId = effectiveEnv.MESH_REQUEST_CONTEXT?.organizationId;
-      if (!organizationId) {
-        throw new Error(
-          "No organizationId found. Please open Mesh Dashboard and click 'Save' on this MCP to refresh the connection.",
-        );
-      }
-
-      const meshUrl =
-        effectiveEnv.MESH_REQUEST_CONTEXT?.meshUrl ?? effectiveEnv.MESH_URL;
-      const token = effectiveEnv.MESH_REQUEST_CONTEXT?.token;
-      const state = effectiveEnv.MESH_REQUEST_CONTEXT?.state;
-
-      if (!state?.LANGUAGE_MODEL?.value) {
-        throw new Error(
-          "LANGUAGE_MODEL not configured.\n\n" +
-            "🔧 **How to fix:**\n" +
-            "1. Open **Mesh Dashboard**\n" +
-            "2. Go to this MCP's configuration\n" +
-            "3. Configure **LANGUAGE_MODEL**\n" +
-            "4. Click **Save** to apply",
-        );
-      }
-
-      const modelId = state.LANGUAGE_MODEL.value?.id ?? DEFAULT_LANGUAGE_MODEL;
-      const connectionId = state.LANGUAGE_MODEL.value?.connectionId as
-        | string
-        | undefined;
-      const agentId = state?.AGENT?.value;
-
-      config = {
-        meshUrl,
-        organizationId,
-        token,
-        modelProviderId: connectionId,
-        modelId,
-        agentId,
-      };
-    }
+  threadId?: string,
+) {
+  const agent = getAgent(env);
+  if (!agent) {
+    throw new Error(
+      "Agent not configured.\n\n" +
+        "🔧 **How to fix:**\n" +
+        "1. Open **Mesh Dashboard**\n" +
+        "2. Go to this MCP's configuration\n" +
+        "3. Configure **AGENT** binding\n" +
+        "4. Click **Save** to apply",
+    );
   }
 
-  if (!config) {
-    throw new Error("LLM not configured");
-  }
-
-  const text = await sharedGenerateResponse(config, toSharedMessages(messages));
-
-  return {
-    content: text,
-    model: config.modelId ?? DEFAULT_LANGUAGE_MODEL,
-    usedFallback: false,
-  };
+  return agent.STREAM({
+    messages: toUIMessages(messages),
+    ...(threadId ? { thread_id: threadId } : {}),
+  });
 }
 
 /**
- * Generate a response with real-time streaming callback.
- * Uses the global config if no config is explicitly provided.
+ * Collect full text from an agent stream.
+ * Convenience helper for non-streaming mode.
  */
-export async function generateResponseWithStreaming(
-  messages: DiscordChatMessage[],
-  onStream: StreamCallback,
-  config?: MeshChatConfig,
+export async function collectStreamText(
+  stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
 ): Promise<string> {
-  const effectiveConfig = config ?? globalLLMConfig;
-
-  if (!effectiveConfig) {
-    throw new Error("LLM not configured");
+  let text = "";
+  for await (const message of stream) {
+    for (const part of message.parts) {
+      if (part.type === "text" && part.text) {
+        text += part.text;
+      }
+    }
   }
-
-  return sharedGenerateResponseWithStreaming(
-    effectiveConfig,
-    toSharedMessages(messages),
-    onStream,
-  );
+  return text;
 }
 
 // ============================================================================
-// Whisper Integration
+// Whisper Integration (unchanged)
 // ============================================================================
+
+let globalWhisperConfig: WhisperConfig | null = null;
 
 export function configureWhisper(config: WhisperConfig): void {
   globalWhisperConfig = config;

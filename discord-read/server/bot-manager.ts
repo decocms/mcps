@@ -18,34 +18,6 @@ let _botInitialized = false;
 // Store the latest env globally for access in event handlers
 let _currentEnv: Env | null = null;
 
-// Store essential config that doesn't depend on env (for fallback)
-interface StoredConfig {
-  meshUrl: string;
-  organizationId: string;
-  persistentToken: string; // API key (preferred) or session token
-  isApiKey: boolean; // true if persistentToken is an API key (never expires)
-  modelProviderId?: string;
-  modelId?: string;
-  agentId?: string;
-  whisperConnectionId?: string;
-}
-let _storedConfig: StoredConfig | null = null;
-
-/**
- * Store essential config for fallback when env is not available
- */
-export function storeEssentialConfig(config: StoredConfig): void {
-  _storedConfig = config;
-  console.log("[BotManager] Essential config stored for fallback");
-}
-
-/**
- * Get stored essential config
- */
-export function getStoredConfig(): StoredConfig | null {
-  return _storedConfig;
-}
-
 /**
  * Update the stored environment (called when new requests come in)
  */

@@ -50,12 +50,6 @@ export const createSaveConfigTool = (env: Env) =>
           .string()
           .default("!")
           .describe("Command prefix for bot commands"),
-        modelProviderId: z
-          .string()
-          .optional()
-          .describe("Model provider connection ID for AI responses"),
-        modelId: z.string().optional().describe("Model ID to use"),
-        agentId: z.string().optional().describe("Agent ID to use"),
         systemPrompt: z
           .string()
           .optional()
@@ -84,9 +78,6 @@ export const createSaveConfigTool = (env: Env) =>
         authorizedGuilds,
         ownerId,
         commandPrefix,
-        modelProviderId,
-        modelId,
-        agentId,
         systemPrompt,
         meshApiKey,
       } = context as {
@@ -95,9 +86,6 @@ export const createSaveConfigTool = (env: Env) =>
         authorizedGuilds?: string[];
         ownerId?: string;
         commandPrefix?: string;
-        modelProviderId?: string;
-        modelId?: string;
-        agentId?: string;
         systemPrompt?: string;
         meshApiKey?: string;
       };
@@ -132,9 +120,6 @@ export const createSaveConfigTool = (env: Env) =>
         authorizedGuilds: authorizedGuilds || [],
         ownerId,
         commandPrefix: commandPrefix || "!",
-        modelProviderId,
-        modelId,
-        agentId,
         systemPrompt,
       };
 
@@ -181,12 +166,6 @@ export const createUpdateConfigTool = (env: Env) =>
           .string()
           .optional()
           .describe("Update custom system prompt for AI agent"),
-        modelProviderId: z
-          .string()
-          .optional()
-          .describe("Update model provider connection ID"),
-        modelId: z.string().optional().describe("Update model ID to use"),
-        agentId: z.string().optional().describe("Update agent ID to use"),
         commandPrefix: z
           .string()
           .optional()
@@ -210,23 +189,13 @@ export const createUpdateConfigTool = (env: Env) =>
       .strict(),
     execute: async (params: any) => {
       const { context, env } = params;
-      const {
-        systemPrompt,
-        modelProviderId,
-        modelId,
-        agentId,
-        commandPrefix,
-        authorizedGuilds,
-        ownerId,
-      } = context as {
-        systemPrompt?: string;
-        modelProviderId?: string;
-        modelId?: string;
-        agentId?: string;
-        commandPrefix?: string;
-        authorizedGuilds?: string[];
-        ownerId?: string;
-      };
+      const { systemPrompt, commandPrefix, authorizedGuilds, ownerId } =
+        context as {
+          systemPrompt?: string;
+          commandPrefix?: string;
+          authorizedGuilds?: string[];
+          ownerId?: string;
+        };
 
       // Check if Supabase is configured
       if (!isSupabaseConfigured()) {
@@ -259,18 +228,6 @@ export const createUpdateConfigTool = (env: Env) =>
         if (systemPrompt !== undefined) {
           updates.systemPrompt = systemPrompt;
           updatedFields.push("systemPrompt");
-        }
-        if (modelProviderId !== undefined) {
-          updates.modelProviderId = modelProviderId;
-          updatedFields.push("modelProviderId");
-        }
-        if (modelId !== undefined) {
-          updates.modelId = modelId;
-          updatedFields.push("modelId");
-        }
-        if (agentId !== undefined) {
-          updates.agentId = agentId;
-          updatedFields.push("agentId");
         }
         if (commandPrefix !== undefined) {
           updates.commandPrefix = commandPrefix;
@@ -336,9 +293,6 @@ export const createLoadConfigTool = (env: Env) =>
             authorizedGuilds: z.array(z.string()).optional(),
             ownerId: z.string().optional(),
             commandPrefix: z.string(),
-            modelProviderId: z.string().optional(),
-            modelId: z.string().optional(),
-            agentId: z.string().optional(),
             systemPrompt: z.string().optional(),
             configuredAt: z.string().optional(),
             updatedAt: z.string().optional(),
@@ -384,9 +338,6 @@ export const createLoadConfigTool = (env: Env) =>
             authorizedGuilds: config.authorizedGuilds,
             ownerId: config.ownerId,
             commandPrefix: config.commandPrefix || "!",
-            modelProviderId: config.modelProviderId,
-            modelId: config.modelId,
-            agentId: config.agentId,
             systemPrompt: config.systemPrompt,
             configuredAt: config.configuredAt,
             updatedAt: config.updatedAt,
@@ -575,24 +526,10 @@ export const createGenerateApiKeyTool = (_env: Env) =>
         // Uses the MCP JSONRPC protocol format at /mcp/self
         const createApiKeyUrl = `${meshUrl}/mcp/self`;
 
-        const state = env?.MESH_REQUEST_CONTEXT?.state as Record<
-          string,
-          unknown
-        >;
-        const languageModel = state?.LANGUAGE_MODEL as
-          | { value?: { connectionId?: string } }
-          | undefined;
-        const modelProviderId = languageModel?.value?.connectionId;
-
-        // Build permissions - need access to Decopilot, model provider, and the current connection
+        // Build permissions - need access to Decopilot and the current connection
         const permissions: Record<string, string[]> = {
           self: ["*"], // All management tools
         };
-
-        // Add connection-specific permissions if model provider is configured
-        if (modelProviderId) {
-          permissions[modelProviderId] = ["*"];
-        }
 
         // Add current connection permissions
         if (connectionId) {
