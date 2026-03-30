@@ -39,12 +39,10 @@ export class GmailClient {
     this.accessToken = config.accessToken;
   }
 
-  private async request<T>(
-    url: string,
-    options: RequestInit = {},
-    retries = 3,
-  ): Promise<T> {
-    for (let attempt = 0; attempt <= retries; attempt++) {
+  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const maxRetries = 3;
+
+    for (let attempt = 0; ; attempt++) {
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -54,7 +52,7 @@ export class GmailClient {
         },
       });
 
-      if (response.status === 429 && attempt < retries) {
+      if (response.status === 429 && attempt < maxRetries) {
         const delay = Math.min(1000 * 2 ** attempt, 8000);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -65,15 +63,12 @@ export class GmailClient {
         throw new Error(`Gmail API error: ${response.status} - ${error}`);
       }
 
-      // Handle 204 No Content
       if (response.status === 204) {
         return {} as T;
       }
 
       return response.json() as Promise<T>;
     }
-
-    throw new Error("Gmail API error: max retries exceeded");
   }
 
   // ==================== Message Helpers ====================
