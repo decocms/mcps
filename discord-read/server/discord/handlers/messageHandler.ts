@@ -334,12 +334,7 @@ async function handleDefaultAgent(
 
   // Import modules
   const [
-    {
-      generateResponse,
-      generateResponseWithStreaming,
-      isLLMConfigured,
-      isStreamingEnabled,
-    },
+    { streamAgentResponse, isAgentAvailable, collectStreamText },
     { getSystemPrompt },
     { sendThinkingMessage, updateThinkingMessage, splitMessage },
   ] = await Promise.all([
@@ -349,7 +344,10 @@ async function handleDefaultAgent(
   ]);
 
   // Check if streaming is enabled
-  const useStreaming = isStreamingEnabled() && isLLMConfigured();
+  const streamingEnabled =
+    env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG?.ENABLE_STREAMING !==
+    false;
+  const useStreaming = streamingEnabled && isAgentAvailable(env);
   const authorMention = `<@${message.author.id}>`;
 
   // Send thinking message for streaming mode
@@ -508,45 +506,24 @@ async function handleDefaultAgent(
 
     let responseContent: string;
 
-    const toolProcessingMessage =
-      env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG
-        ?.TOOL_PROCESSING_MESSAGE ?? "🔧 Processando...";
+    // Use AgentOf STREAM for both streaming and non-streaming modes
+    const threadId = `discord-${message.channel.id}`;
+    const stream = await streamAgentResponse(env, llmMessages, threadId);
 
-    // Use streaming if we have a thinking message, otherwise use regular generation
     if (thinkingMsg && useStreaming) {
-      // Streaming mode: wait-for-final pattern with tool processing support
-      // Animation keeps running until isComplete or a tool call arrives
-      responseContent = await generateResponseWithStreaming(
-        llmMessages,
-        async (text, isComplete) => {
-          if (isComplete) {
-            // Final response arrived — stop animation and show it
-            thinkingAnimation?.stop();
-            await updateThinkingMessage(thinkingMsg!, text, authorMention);
-          } else if (text === "") {
-            // A tool is being called (text cleared to "") — show processing message
-            thinkingAnimation?.stop();
-            await updateThinkingMessage(
-              thinkingMsg!,
-              toolProcessingMessage,
-              authorMention,
-            );
-          }
-          // Otherwise ignore intermediate text deltas
-        },
+      // Streaming mode: consume async iterable, update thinking message at the end
+      responseContent = await collectStreamText(stream);
+      thinkingAnimation?.stop();
+      await updateThinkingMessage(
+        thinkingMsg,
+        responseContent || "Desculpe, não consegui gerar uma resposta.",
+        authorMention,
       );
     } else {
-      // Non-streaming mode: wait for full response
-      const response = await generateResponse(env, llmMessages, {
-        discordContext: {
-          guildId: message.guild?.id || "DM",
-          channelId: message.channel.id,
-          userId: message.author.id,
-          userName: message.author.username,
-        },
-      });
+      // Non-streaming mode: collect all text
       responseContent =
-        response.content || "Desculpe, não consegui gerar uma resposta.";
+        (await collectStreamText(stream)) ||
+        "Desculpe, não consegui gerar uma resposta.";
     }
 
     const durationMs = Date.now() - startTime;

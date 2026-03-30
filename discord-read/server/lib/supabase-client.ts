@@ -16,9 +16,6 @@ export interface DiscordConnectionRow {
   mesh_url: string;
   mesh_token: string | null; // Session token (expires)
   mesh_api_key: string | null; // Persistent API key (never expires) - PREFERRED
-  model_provider_id: string | null;
-  model_id: string | null;
-  agent_id: string | null;
   system_prompt: string | null;
   bot_token: string;
   discord_public_key: string | null; // Discord application public key (for webhook verification)
@@ -89,9 +86,6 @@ export async function saveConnectionConfig(config: {
   meshUrl: string;
   meshToken?: string;
   meshApiKey?: string; // Persistent API key (preferred over meshToken)
-  modelProviderId?: string;
-  modelId?: string;
-  agentId?: string;
   systemPrompt?: string;
   botToken: string;
   discordPublicKey?: string; // Discord application public key (for webhook verification)
@@ -113,9 +107,6 @@ export async function saveConnectionConfig(config: {
     mesh_url: config.meshUrl,
     mesh_token: config.meshToken || null,
     mesh_api_key: config.meshApiKey || null,
-    model_provider_id: config.modelProviderId || null,
-    model_id: config.modelId || null,
-    agent_id: config.agentId || null,
     system_prompt: config.systemPrompt || null,
     bot_token: config.botToken,
     discord_public_key: config.discordPublicKey || null,

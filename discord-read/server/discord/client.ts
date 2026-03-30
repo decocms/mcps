@@ -175,10 +175,7 @@ async function doInitialize(env: Env): Promise<Client> {
     `[Discord] Looking for saved config for connection: ${connectionId}`,
   );
 
-  const { getDiscordConfig, getEffectiveMeshToken } = await import(
-    "../lib/config-cache.ts"
-  );
-  const { storeEssentialConfig } = await import("../bot-manager.ts");
+  const { getDiscordConfig } = await import("../lib/config-cache.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
   if (!savedConfig?.botToken) {
@@ -194,27 +191,6 @@ async function doInitialize(env: Env): Promise<Client> {
   console.log(
     `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
   );
-
-  // Store essential config for LLM fallback (uses API key if available)
-  const effectiveToken = getEffectiveMeshToken(savedConfig);
-  const isUsingApiKey = !!savedConfig.meshApiKey;
-  console.log(
-    `[Discord] 🔑 Auth mode: ${isUsingApiKey ? "API Key (never expires)" : "Session token (may expire)"}`,
-  );
-  if (effectiveToken && savedConfig.organizationId && savedConfig.meshUrl) {
-    storeEssentialConfig({
-      meshUrl: savedConfig.meshUrl,
-      organizationId: savedConfig.organizationId,
-      persistentToken: effectiveToken,
-      isApiKey: isUsingApiKey,
-      modelProviderId: savedConfig.modelProviderId,
-      modelId: savedConfig.modelId,
-      agentId: savedConfig.agentId,
-    });
-    console.log(
-      `[Discord] 🔑 Stored essential config (using ${savedConfig.meshApiKey ? "API Key" : "session token"})`,
-    );
-  }
 
   // Create client with required intents
   client = new Client({

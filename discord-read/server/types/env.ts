@@ -3,7 +3,7 @@
  */
 
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { AgentOf, BindingOf, type DefaultEnv } from "@decocms/runtime";
 import z from "zod";
 
 export const StateSchema = z.object({
@@ -11,30 +11,8 @@ export const StateSchema = z.object({
   EVENT_BUS: BindingOf("@deco/event-bus"),
   CONNECTION: BindingOf("@deco/connection"),
 
-  // AI Configuration
-  AGENT: BindingOf("@deco/agent").describe(
-    "Agent with tools, resources and prompts",
-  ),
-  LANGUAGE_MODEL: z
-    .object({
-      __type: z.literal("@deco/language-model"),
-      value: z
-        .object({
-          id: z.string(),
-        })
-        .loose()
-        .describe("The language model to use for agent responses."),
-    })
-    .required(),
-
-  // Agent Mode Configuration
-  AGENT_MODE: z
-    .enum(["passthrough", "smart_tool_selection", "code_execution"])
-    .default("smart_tool_selection")
-    .optional()
-    .describe(
-      "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
-    ),
+  // AI Configuration — AgentOf() resolves to a client with .STREAM()
+  AGENT: AgentOf(),
 
   // ============================================================================
   // Discord Webhook Configuration (required for /interactions endpoint)
