@@ -208,7 +208,10 @@ export class GmailClient {
    * Get multiple messages in a single HTTP request using Gmail Batch API.
    * Supports up to 100 messages per batch (Gmail API limit).
    */
-  async getMessagesBatch(ids: string[], format?: string): Promise<Message[]> {
+  async getMessagesBatch(
+    ids: string[],
+    format?: "minimal" | "full" | "raw" | "metadata",
+  ): Promise<Message[]> {
     if (ids.length === 0) return [];
     if (ids.length === 1)
       return [await this.getMessage({ id: ids[0], format })];
