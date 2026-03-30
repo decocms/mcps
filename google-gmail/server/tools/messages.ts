@@ -53,9 +53,9 @@ export const createListMessagesTool = (env: Env) =>
         .number()
         .int()
         .min(1)
-        .max(100)
+        .max(50)
         .optional()
-        .describe("Maximum number of emails to return (default: 20, max: 100)"),
+        .describe("Maximum number of emails to return (default: 20, max: 50)"),
       pageToken: z.string().optional().describe("Token for pagination"),
       q: z
         .string()
@@ -270,9 +270,9 @@ Search Examples:
         .number()
         .int()
         .min(1)
-        .max(100)
+        .max(50)
         .optional()
-        .describe("Maximum results (default: 20, max: 100)"),
+        .describe("Maximum results (default: 20, max: 50)"),
       pageToken: z.string().optional().describe("Token for pagination"),
     }),
     outputSchema: z.object({
