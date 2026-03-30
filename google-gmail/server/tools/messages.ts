@@ -106,27 +106,25 @@ export const createListMessagesTool = (env: Env) =>
         includeSpamTrash: context.includeSpamTrash,
       });
 
-      // Fetch details for each message to get subject, from, to
+      // Fetch details for all messages in a single batch request
       const messageRefs = result.messages || [];
-      const emails = await Promise.all(
-        messageRefs.map(async (m) => {
-          const full = await client.getMessage({
-            id: m.id,
-            format: "metadata",
-          });
-          const parsed = client.parseMessage(full);
-          return {
-            id: parsed.id,
-            threadId: parsed.threadId,
-            subject: parsed.subject || "(No subject)",
-            from: parsed.from || "Unknown sender",
-            to: parsed.to || "",
-            date: parsed.date || "",
-            snippet: parsed.snippet || "",
-            isUnread: parsed.labelIds?.includes("UNREAD") || false,
-          };
-        }),
+      const fullMessages = await client.getMessagesBatch(
+        messageRefs.map((m) => m.id),
+        "metadata",
       );
+      const emails = fullMessages.map((full) => {
+        const parsed = client.parseMessage(full);
+        return {
+          id: parsed.id,
+          threadId: parsed.threadId,
+          subject: parsed.subject || "(No subject)",
+          from: parsed.from || "Unknown sender",
+          to: parsed.to || "",
+          date: parsed.date || "",
+          snippet: parsed.snippet || "",
+          isUnread: parsed.labelIds?.includes("UNREAD") || false,
+        };
+      });
 
       return {
         emails,
@@ -296,14 +294,13 @@ Search Examples:
         pageToken: context.pageToken,
       });
 
-      // Then fetch full details for each message (handle empty results)
+      // Fetch full details for all messages in a single batch request
       const messageRefs = listResult.messages || [];
-      const emails = await Promise.all(
-        messageRefs.map(async (m) => {
-          const full = await client.getMessage({ id: m.id, format: "full" });
-          return client.parseMessage(full);
-        }),
+      const fullMessages = await client.getMessagesBatch(
+        messageRefs.map((m) => m.id),
+        "full",
       );
+      const emails = fullMessages.map((full) => client.parseMessage(full));
 
       return {
         emails,
