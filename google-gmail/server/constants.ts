@@ -17,6 +17,8 @@ export const ENDPOINTS = {
     `${GMAIL_API_BASE}/messages/${encodeURIComponent(messageId)}/untrash`,
   MESSAGE_MODIFY: (messageId: string) =>
     `${GMAIL_API_BASE}/messages/${encodeURIComponent(messageId)}/modify`,
+  MESSAGES_BATCH_MODIFY: `${GMAIL_API_BASE}/messages/batchModify`,
+  MESSAGES_BATCH_DELETE: `${GMAIL_API_BASE}/messages/batchDelete`,
 
   // Threads
   THREADS: `${GMAIL_API_BASE}/threads`,
