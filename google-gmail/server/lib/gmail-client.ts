@@ -39,27 +39,41 @@ export class GmailClient {
     this.accessToken = config.accessToken;
   }
 
-  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
+  private async request<T>(
+    url: string,
+    options: RequestInit = {},
+    retries = 3,
+  ): Promise<T> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Gmail API error: ${response.status} - ${error}`);
+      if (response.status === 429 && attempt < retries) {
+        const delay = Math.min(1000 * 2 ** attempt, 8000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Gmail API error: ${response.status} - ${error}`);
+      }
+
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return {} as T;
+      }
+
+      return response.json() as Promise<T>;
     }
 
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    return response.json() as Promise<T>;
+    throw new Error("Gmail API error: max retries exceeded");
   }
 
   // ==================== Message Helpers ====================
@@ -343,6 +357,35 @@ export class GmailClient {
     return this.request<Message>(ENDPOINTS.MESSAGE_MODIFY(input.id), {
       method: "POST",
       body: JSON.stringify({
+        addLabelIds: input.addLabelIds || [],
+        removeLabelIds: input.removeLabelIds || [],
+      }),
+    });
+  }
+
+  /**
+   * Modify labels on multiple messages in a single API call.
+   * Uses Gmail's batchModify endpoint (up to 1000 messages).
+   */
+  async batchModifyMessages(input: {
+    ids: string[];
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  }): Promise<void> {
+    if (input.ids.length === 0) return;
+    if (input.ids.length === 1) {
+      await this.modifyMessage({
+        id: input.ids[0],
+        addLabelIds: input.addLabelIds,
+        removeLabelIds: input.removeLabelIds,
+      });
+      return;
+    }
+
+    await this.request<void>(ENDPOINTS.MESSAGES_BATCH_MODIFY, {
+      method: "POST",
+      body: JSON.stringify({
+        ids: input.ids,
         addLabelIds: input.addLabelIds || [],
         removeLabelIds: input.removeLabelIds || [],
       }),

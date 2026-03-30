@@ -452,6 +452,64 @@ export const createModifyMessageTool = (env: Env) =>
   });
 
 // ============================================================================
+// Batch Update Email Labels Tool
+// ============================================================================
+
+export const createBatchModifyMessagesTool = (env: Env) =>
+  createPrivateTool({
+    id: "gmail_batch_update_email_labels",
+    description: `Add or remove labels from multiple emails at once in a single API call. Much more efficient than updating one email at a time. Use this to:
+- Mark multiple emails as read: remove 'UNREAD' label
+- Mark multiple emails as unread: add 'UNREAD' label
+- Star multiple emails: add 'STARRED' label
+- Archive multiple emails: remove 'INBOX' label
+- Mark multiple emails as important: add 'IMPORTANT' label
+
+Supports up to 1000 email IDs per call.`,
+    inputSchema: z.object({
+      ids: z
+        .array(z.string())
+        .min(1)
+        .max(1000)
+        .describe(
+          "Array of email IDs to modify (from gmail_list_emails or gmail_search_emails)",
+        ),
+      addLabelIds: z
+        .array(z.string())
+        .optional()
+        .describe("Labels to add (e.g., ['STARRED', 'IMPORTANT', 'UNREAD'])"),
+      removeLabelIds: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Labels to remove (e.g., ['UNREAD'] to mark as read, ['INBOX'] to archive)",
+        ),
+    }),
+    outputSchema: z.object({
+      success: z.boolean().describe("Whether the labels were updated"),
+      count: z.number().describe("Number of emails modified"),
+      message: z.string().describe("Confirmation message"),
+    }),
+    execute: async ({ context }) => {
+      const client = new GmailClient({
+        accessToken: getAccessToken(env),
+      });
+
+      await client.batchModifyMessages({
+        ids: context.ids,
+        addLabelIds: context.addLabelIds,
+        removeLabelIds: context.removeLabelIds,
+      });
+
+      return {
+        success: true,
+        count: context.ids.length,
+        message: `Successfully updated labels on ${context.ids.length} emails`,
+      };
+    },
+  });
+
+// ============================================================================
 // Export all message tools
 // ============================================================================
 
@@ -464,4 +522,5 @@ export const messageTools = [
   createUntrashMessageTool,
   createDeleteMessageTool,
   createModifyMessageTool,
+  createBatchModifyMessagesTool,
 ];
