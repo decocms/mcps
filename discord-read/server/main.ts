@@ -50,38 +50,6 @@ const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
 let autoRestartInterval: ReturnType<typeof setInterval> | null = null;
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
-  events: {
-    handlers: {
-      SELF: {
-        events: ["discord.*"],
-        handler: async ({ events }) => {
-          try {
-            for (const event of events) {
-              console.log(`[SELF] Event: ${event.type}`);
-            }
-            return { success: true };
-          } catch (error) {
-            console.error(`[SELF] Error:`, error);
-            return { success: false };
-          }
-        },
-      },
-      EVENT_BUS: {
-        handler: async ({ events }) => {
-          try {
-            for (const event of events) {
-              console.log(`[EVENT_BUS] Event: ${event.type}`);
-            }
-            return { success: true };
-          } catch (error) {
-            console.error(`[EVENT_BUS] Error:`, error);
-            return { success: false };
-          }
-        },
-        events: ["discord.*"],
-      },
-    },
-  },
   configuration: {
     onChange: async (env) => {
       const traceId = HyperDXLogger.generateTraceId();
@@ -242,7 +210,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
     },
-    scopes: ["EVENT_BUS::*", "CONNECTION::*", "*"],
+    scopes: ["CONNECTION::*", "*"],
     state: StateSchema,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -13,6 +13,7 @@ import { configTools } from "./config.ts";
 import { botTools } from "./bot.ts";
 import { databaseTools } from "./database.ts";
 import { slashCommandTools } from "./slash-commands.ts";
+import { triggers } from "../lib/trigger-store.ts";
 
 // Wrap each tool factory to update env on every call
 function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
@@ -36,4 +37,5 @@ export const tools: ToolCollection<Env> = [
   ...wrappedDatabaseTools,
   ...wrappedDiscordTools,
   ...wrappedSlashCommandTools,
+  () => triggers.tools(),
 ];

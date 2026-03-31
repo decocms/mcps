@@ -332,10 +332,8 @@ function registerEventHandlers(client: Client, env: Env): void {
           console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
         );
 
-      // Publish message.created event to EVENT_BUS (async, don't await)
-      publishMessageCreated(currentEnv, message).catch((err) =>
-        console.error("[Event] Publish failed:", err?.message ?? err),
-      );
+      // Publish message.created event via triggers
+      publishMessageCreated(currentEnv, message);
 
       // Check for command - accept both prefix and bot mention
       if (message.author.bot) return;
@@ -454,9 +452,7 @@ function registerEventHandlers(client: Client, env: Env): void {
             currentEnv,
             reaction as MessageReaction,
             user as User,
-          ).catch(() => {
-            /* ignore */
-          });
+          );
         }
       } catch (error) {
         console.error("[Discord] Error handling reaction add:", error);
@@ -486,9 +482,7 @@ function registerEventHandlers(client: Client, env: Env): void {
             currentEnv,
             reaction as MessageReaction,
             user as User,
-          ).catch(() => {
-            /* ignore */
-          });
+          );
         }
       } catch (error) {
         console.error("[Discord] Error handling reaction remove:", error);
@@ -527,9 +521,7 @@ function registerEventHandlers(client: Client, env: Env): void {
       await handleMessageDelete(message);
       // Publish event (only if not partial)
       if (!message.partial) {
-        publishMessageDeleted(currentEnv, message as Message).catch(() => {
-          /* ignore */
-        });
+        publishMessageDeleted(currentEnv, message as Message);
       }
     } catch (error) {
       console.error("[Discord] Error handling message delete:", error);
@@ -561,9 +553,7 @@ function registerEventHandlers(client: Client, env: Env): void {
           currentEnv,
           oldMessage as Message,
           newMessage as Message,
-        ).catch(() => {
-          /* ignore */
-        });
+        );
       }
     } catch (error) {
       console.error("[Discord] Error handling message update:", error);
@@ -606,9 +596,7 @@ function registerEventHandlers(client: Client, env: Env): void {
     try {
       await handleMemberJoin(member);
       // Publish event
-      publishMemberJoined(currentEnv, member).catch((err) =>
-        console.error("[Event] Publish failed:", err?.message ?? err),
-      );
+      publishMemberJoined(currentEnv, member);
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
     }
@@ -621,9 +609,7 @@ function registerEventHandlers(client: Client, env: Env): void {
       await handleMemberLeave(member);
       // Publish event (only if not partial)
       if (!member.partial) {
-        publishMemberLeft(currentEnv, member as GuildMember).catch(() => {
-          /* ignore */
-        });
+        publishMemberLeft(currentEnv, member as GuildMember);
       }
     } catch (error) {
       console.error("[Discord] Error handling member leave:", error);
@@ -643,28 +629,14 @@ function registerEventHandlers(client: Client, env: Env): void {
       // Roles added
       newRoles.forEach((role) => {
         if (!oldRoles.has(role.id)) {
-          publishMemberRoleAdded(
-            currentEnv,
-            newMember,
-            role.id,
-            role.name,
-          ).catch(() => {
-            /* ignore */
-          });
+          publishMemberRoleAdded(currentEnv, newMember, role.id, role.name);
         }
       });
 
       // Roles removed
       oldRoles.forEach((role) => {
         if (!newRoles.has(role.id)) {
-          publishMemberRoleRemoved(
-            currentEnv,
-            newMember,
-            role.id,
-            role.name,
-          ).catch(() => {
-            /* ignore */
-          });
+          publishMemberRoleRemoved(currentEnv, newMember, role.id, role.name);
         }
       });
     } catch (error) {
