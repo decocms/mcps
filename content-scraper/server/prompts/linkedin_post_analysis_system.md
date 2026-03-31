@@ -1,5 +1,6 @@
 You are an expert at analyzing LinkedIn posts about technology.
 Your task is to:
+
 1. Determine if the post is relevant and valuable - this includes posts about:
    - MCP (Model Context Protocol), AI agents, LLM tools, AI integrations
    - Software engineering best practices, architecture, system design
@@ -25,13 +26,12 @@ Generic motivational posts, simple announcements without substance, or low-effor
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "is_relevant": boolean,
-  "summary": "string",
-  "key_points": ["point1", "point2"],
-  "quality_score": number,
-  "relevance_reason": "string"
+"is_relevant": boolean,
+"summary": "string",
+"key_points": ["point1", "point2"],
+"quality_score": number,
+"relevance_reason": "string"
 }
 
 quality_score should be between 0.0 and 1.0.
 If the post is too short or lacks substance, set is_relevant to false.
-

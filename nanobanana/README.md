@@ -1,4 +1,4 @@
-# Nano Banana MCP 
+# Nano Banana MCP
 
 ## Description
 
@@ -51,11 +51,11 @@ bun run check
 
 The MCP requires the following configuration:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `NANOBANANA_CONTRACT` | Binding | Contract binding for authorization and billing |
-| `FILE_SYSTEM` | Binding | File system binding for storing generated images |
-| `NANOBANANA_API_KEY` | string | OpenRouter API key for accessing Gemini models |
+| Field                 | Type    | Description                                      |
+| --------------------- | ------- | ------------------------------------------------ |
+| `NANOBANANA_CONTRACT` | Binding | Contract binding for authorization and billing   |
+| `FILE_SYSTEM`         | Binding | File system binding for storing generated images |
+| `NANOBANANA_API_KEY`  | string  | OpenRouter API key for accessing Gemini models   |
 
 ## Tools
 
@@ -65,21 +65,21 @@ Generate an image using Gemini models via OpenRouter.
 
 **Input:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | ✅ | Text description of the image to generate |
-| `baseImageUrl` | string | ❌ | URL of an existing image for image-to-image generation (single image) |
-| `baseImageUrls` | string[] | ❌ | Array of image URLs for multi-image generation (e.g., virtual try-on). Takes precedence over `baseImageUrl` |
-| `aspectRatio` | enum | ❌ | Output aspect ratio (1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9) |
-| `model` | enum | ❌ | Model to use (gemini-2.0-flash-exp, gemini-2.5-pro-image-preview, gemini-2.5-pro-exp-03-25, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview) |
+| Parameter       | Type     | Required | Description                                                                                                                                             |
+| --------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`        | string   | ✅       | Text description of the image to generate                                                                                                               |
+| `baseImageUrl`  | string   | ❌       | URL of an existing image for image-to-image generation (single image)                                                                                   |
+| `baseImageUrls` | string[] | ❌       | Array of image URLs for multi-image generation (e.g., virtual try-on). Takes precedence over `baseImageUrl`                                             |
+| `aspectRatio`   | enum     | ❌       | Output aspect ratio (1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9)                                                                               |
+| `model`         | enum     | ❌       | Model to use (gemini-2.0-flash-exp, gemini-2.5-pro-image-preview, gemini-2.5-pro-exp-03-25, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview) |
 
 **Output:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `image` | string | URL of the generated image |
-| `error` | boolean | Whether the request failed |
-| `finishReason` | string | Native finish reason from the model |
+| Field          | Type    | Description                         |
+| -------------- | ------- | ----------------------------------- |
+| `image`        | string  | URL of the generated image          |
+| `error`        | boolean | Whether the request failed          |
+| `finishReason` | string  | Native finish reason from the model |
 
 ### Examples
 
@@ -87,7 +87,7 @@ Generate an image using Gemini models via OpenRouter.
 
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
-  prompt: "An orange cat sitting on a blue chair, cartoon style"
+  prompt: "An orange cat sitting on a blue chair, cartoon style",
 });
 ```
 
@@ -96,7 +96,7 @@ const result = await client.callTool("GENERATE_IMAGE", {
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "Mountain landscape at sunset",
-  aspectRatio: "16:9"
+  aspectRatio: "16:9",
 });
 ```
 
@@ -105,7 +105,7 @@ const result = await client.callTool("GENERATE_IMAGE", {
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "Add snow on the mountains",
-  baseImageUrl: "https://example.com/landscape.jpg"
+  baseImageUrl: "https://example.com/landscape.jpg",
 });
 ```
 
@@ -115,10 +115,10 @@ const result = await client.callTool("GENERATE_IMAGE", {
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "Virtual try-on: person wearing the garment from the second image",
   baseImageUrls: [
-    "https://example.com/person.jpg",      // First image: person photo
-    "https://example.com/t-shirt.jpg"      // Second image: garment
+    "https://example.com/person.jpg", // First image: person photo
+    "https://example.com/t-shirt.jpg", // Second image: garment
   ],
-  aspectRatio: "3:4"
+  aspectRatio: "3:4",
 });
 ```
 
@@ -127,7 +127,7 @@ const result = await client.callTool("GENERATE_IMAGE", {
 ```typescript
 const result = await client.callTool("GENERATE_IMAGE", {
   prompt: "A futuristic city",
-  model: "gemini-2.5-pro-exp-03-25"
+  model: "gemini-2.5-pro-exp-03-25",
 });
 ```
 
@@ -153,13 +153,13 @@ nanobanana/
 
 ## Supported Models
 
-| Model | Description |
-|-------|-------------|
-| `gemini-2.0-flash-exp` | Gemini 2.0 Flash experimental with image generation |
-| `gemini-2.5-pro-image-preview` | Gemini 2.5 Pro optimized for image generation |
-| `gemini-3-pro-image-preview` | Gemini 3 Pro with advanced image generation |
-| `gemini-3.1-flash-image-preview` | **Gemini 3.1 Flash for image generation (default)** ✅ |
-| `gemini-2.5-pro-exp-03-25` | Gemini 2.5 Pro experimental with enhanced image quality |
+| Model                            | Description                                             |
+| -------------------------------- | ------------------------------------------------------- |
+| `gemini-2.0-flash-exp`           | Gemini 2.0 Flash experimental with image generation     |
+| `gemini-2.5-pro-image-preview`   | Gemini 2.5 Pro optimized for image generation           |
+| `gemini-3-pro-image-preview`     | Gemini 3 Pro with advanced image generation             |
+| `gemini-3.1-flash-image-preview` | **Gemini 3.1 Flash for image generation (default)** ✅  |
+| `gemini-2.5-pro-exp-03-25`       | Gemini 2.5 Pro experimental with enhanced image quality |
 
 ## Technologies
 

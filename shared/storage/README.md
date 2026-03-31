@@ -5,6 +5,7 @@ Unified storage module for all MCPs. Provides a consistent interface for working
 ## 🚀 Quick Start
 
 **Don't want to read everything? Start here:**
+
 - 📖 **[Quick Start - 3 steps to save images](./QUICKSTART.md)**
 - 📖 **[All available providers (Supabase, R2, S3...)](./PROVIDERS.md)**
 - 📖 **[Complete Supabase guide](./SUPABASE_GUIDE.md)**
@@ -192,16 +193,16 @@ export const createUploadTool = (env: Env) =>
     execute: async ({ context }) => {
       // Auto-detect storage (FILE_SYSTEM or S3)
       const storage = createStorageFromEnv(env);
-      
+
       // Generate upload URL
       const writeUrl = await storage.getWriteUrl(context.path, {
         expiresIn: 60,
       });
-      
+
       // Upload
       const buffer = Buffer.from(context.content, "base64");
       await fetch(writeUrl, { method: "PUT", body: buffer });
-      
+
       // Return read URL
       const readUrl = await storage.getReadUrl(context.path, 3600);
       return { url: readUrl };
@@ -257,11 +258,7 @@ console.log(metadata.contentLength); // 12345
 await storage.deleteObject("/image.png");
 
 // Delete multiple (batch)
-const result = await storage.deleteObjects([
-  "/image1.png",
-  "/image2.png",
-  "/image3.png",
-]);
+const result = await storage.deleteObjects(["/image1.png", "/image2.png", "/image3.png"]);
 console.log(result.deleted); // ["image1.png", "image2.png", "image3.png"]
 console.log(result.errors); // []
 ```
@@ -345,6 +342,7 @@ const storage = new S3StorageAdapter(config);
 ## 📦 Dependencies
 
 Optional (only if using S3):
+
 ```bash
 npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
@@ -357,4 +355,3 @@ When adding new adapters:
 2. Add tests
 3. Document in README
 4. Add factory helper if appropriate
-

@@ -1,8 +1,8 @@
 {
   "name": "google-docs",
   "version": "1.0.0",
-  "description": "Google Docs MCP Server - Create and edit documents",
   "private": true,
+  "description": "Google Docs MCP Server - Create and edit documents",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

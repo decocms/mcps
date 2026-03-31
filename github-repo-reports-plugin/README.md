@@ -76,20 +76,20 @@ Run `npm audit fix` to apply automatic patches.
 
 ### Supported section types
 
-| Type | Description |
-|---|---|
-| `metrics` | Key-value indicators with optional status, units, and deltas |
-| `table` | Tabular data with column headers |
-| `markdown` | Free-form GFM content |
+| Type       | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `metrics`  | Key-value indicators with optional status, units, and deltas |
+| `table`    | Tabular data with column headers                             |
+| `markdown` | Free-form GFM content                                        |
 
 ### Status values
 
-| Status | When to use |
-|---|---|
-| `passing` | Everything within acceptable thresholds |
-| `warning` | Metrics degraded or approaching thresholds |
+| Status    | When to use                                 |
+| --------- | ------------------------------------------- |
+| `passing` | Everything within acceptable thresholds     |
+| `warning` | Metrics degraded or approaching thresholds  |
 | `failing` | Critical issues needing immediate attention |
-| `info` | Informational, no pass/fail judgment |
+| `info`    | Informational, no pass/fail judgment        |
 
 ### Categories
 

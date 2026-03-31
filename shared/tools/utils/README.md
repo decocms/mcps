@@ -17,6 +17,7 @@ Funções auxiliares para fazer requisições a APIs externas:
 - `downloadWithAuth(url, authHeaders, apiName)` - Download com autenticação
 
 **Exemplos:**
+
 ```typescript
 import { makeApiRequest } from "@decocms/mcps-shared/tools/utils/api-client";
 
@@ -25,10 +26,10 @@ const data = await makeApiRequest(
   "https://api.example.com/endpoint",
   {
     method: "POST",
-    headers: { "Authorization": `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ prompt: "test" }),
   },
-  "Example API"
+  "Example API",
 );
 
 // Text response
@@ -36,7 +37,7 @@ const text = await makeApiRequest<string>(
   "https://api.example.com/text-endpoint",
   { method: "GET" },
   "Example API",
-  "text"
+  "text",
 );
 
 // Blob response
@@ -44,7 +45,7 @@ const blob = await makeApiRequest<Blob>(
   "https://api.example.com/file",
   { method: "GET" },
   "Example API",
-  "blob"
+  "blob",
 );
 ```
 
@@ -59,11 +60,13 @@ Middlewares reutilizáveis para wrapping de funções assíncronas com retry, lo
 Adiciona retry automático com exponential backoff.
 
 **Características:**
+
 - Não faz retry de erros de validação (ZodError)
 - Não faz retry de erros 4xx (400, 401, 403, 404)
 - Backoff exponencial: 2s, 4s, 8s...
 
 **Exemplo:**
+
 ```typescript
 import { withRetry } from "@decocms/mcps-shared/tools/utils/middleware";
 
@@ -79,10 +82,12 @@ const result = await resilientOperation();
 Adiciona logging de performance e erros.
 
 **Opções:**
+
 - `title` - Título para os logs
 - `startMessage` - Mensagem customizada de início (opcional)
 
 **Exemplo:**
+
 ```typescript
 import { withLogging } from "@decocms/mcps-shared/tools/utils/middleware";
 
@@ -103,6 +108,7 @@ const loggedOperation = withLogging({
 Adiciona timeout para prevenir operações muito longas.
 
 **Exemplo:**
+
 ```typescript
 import { withTimeout } from "@decocms/mcps-shared/tools/utils/middleware";
 
@@ -118,6 +124,7 @@ const timedOperation = withTimeout(30000)(async () => {
 Compõe múltiplos middlewares em sequência.
 
 **Exemplo:**
+
 ```typescript
 import {
   applyMiddlewares,
@@ -128,11 +135,7 @@ import {
 
 const robustOperation = applyMiddlewares({
   fn: async () => await apiCall(),
-  middlewares: [
-    withLogging({ title: "API Call" }),
-    withRetry(3),
-    withTimeout(60000),
-  ],
+  middlewares: [withLogging({ title: "API Call" }), withRetry(3), withTimeout(60000)],
 });
 
 const result = await robustOperation();
@@ -151,10 +154,8 @@ interface ContractClause {
 }
 
 interface Contract {
-  CONTRACT_AUTHORIZE: (input: {
-    clauses: ContractClause[];
-  }) => Promise<{ transactionId: string }>;
-  
+  CONTRACT_AUTHORIZE: (input: { clauses: ContractClause[] }) => Promise<{ transactionId: string }>;
+
   CONTRACT_SETTLE: (input: {
     transactionId: string;
     clauses: ContractClause[];
@@ -249,11 +250,7 @@ const operation = withRetry(3)(async () => {
 ```typescript
 const operation = applyMiddlewares({
   fn: async () => await apiCall(),
-  middlewares: [
-    withLogging({ title: "My Operation" }),
-    withRetry(3),
-    withTimeout(30000),
-  ],
+  middlewares: [withLogging({ title: "My Operation" }), withRetry(3), withTimeout(30000)],
 });
 ```
 
@@ -267,13 +264,13 @@ const doExecute = async () => {
 
   try {
     const result = await operation();
-    
+
     await contract.CONTRACT_SETTLE({
       transactionId,
       clauses: [{ clauseId: "operation:run", amount: 1 }],
       vendorId: env.DECO_CHAT_WORKSPACE,
     });
-    
+
     return result;
   } catch (error) {
     // Handle error
@@ -283,11 +280,7 @@ const doExecute = async () => {
 
 const withMiddlewares = applyMiddlewares({
   fn: doExecute,
-  middlewares: [
-    withLogging({ title: "Paid Operation" }),
-    withRetry(3),
-    withTimeout(60000),
-  ],
+  middlewares: [withLogging({ title: "Paid Operation" }), withRetry(3), withTimeout(60000)],
 });
 ```
 
@@ -315,4 +308,3 @@ const result = await flaky(); // "success" after 3 attempts
 - [Middleware](./middleware.ts)
 - [Video Generators](../../video-generators/README.md)
 - [Image Analyzers](../../image-analyzers/README.md)
-

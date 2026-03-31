@@ -29,13 +29,13 @@ const tools = createVideoGeneratorTools({
   execute: async ({ env, input }) => {
     // Start video generation (returns operation)
     const operation = await startVideoGeneration(env, input);
-    
+
     // Wait for completion
     const completed = await pollOperation(env, operation.name);
-    
+
     // Download as stream (memory efficient - no blob in RAM!)
     const videoStream = await downloadVideoAsStream(env, completed.videoUri);
-    
+
     return {
       data: videoStream, // ✅ ReadableStream - streams directly to storage
       mimeType: "video/mp4",
@@ -53,7 +53,7 @@ const tools = createVideoGeneratorTools({
 });
 
 // Use the tools
-const [generateVideo] = tools.map(tool => tool(env));
+const [generateVideo] = tools.map((tool) => tool(env));
 ```
 
 ## Input Schema
@@ -109,6 +109,7 @@ Support varies by model. Common options:
 - **8 seconds** - Full length (default, most models)
 
 > **Note:** Each model has specific duration capabilities. For example:
+>
 > - Veo 3.x models: 4, 6, 8 seconds
 > - Veo 2.x models: 5, 6, 7, 8 seconds
 
@@ -116,15 +117,15 @@ Support varies by model. Common options:
 
 Different models support different features. Here's a comparison:
 
-| Model | Reference Images | Last Frame | Audio | Durations |
-|-------|-----------------|------------|-------|-----------|
-| `veo-3.1-generate-preview` | ✅ | ✅ | ✅ | 4, 6, 8s |
-| `veo-3.1-fast-generate-preview` | ❌ | ✅ | ✅ | 4, 6, 8s |
-| `veo-3.0-generate-001` | ❌ | ❌ | ✅ | 4, 6, 8s |
-| `veo-3.0-fast-generate-001` | ❌ | ❌ | ✅ | 4, 6, 8s |
-| `veo-3.0-generate-exp` | ❌ | ✅ | ✅ | 4, 6, 8s |
-| `veo-2.0-generate-001` | ❌ | ✅ | ❌ | 5, 6, 7, 8s |
-| `veo-2.0-generate-exp` | ✅ | ✅ | ❌ | 5, 6, 7, 8s |
+| Model                           | Reference Images | Last Frame | Audio | Durations   |
+| ------------------------------- | ---------------- | ---------- | ----- | ----------- |
+| `veo-3.1-generate-preview`      | ✅               | ✅         | ✅    | 4, 6, 8s    |
+| `veo-3.1-fast-generate-preview` | ❌               | ✅         | ✅    | 4, 6, 8s    |
+| `veo-3.0-generate-001`          | ❌               | ❌         | ✅    | 4, 6, 8s    |
+| `veo-3.0-fast-generate-001`     | ❌               | ❌         | ✅    | 4, 6, 8s    |
+| `veo-3.0-generate-exp`          | ❌               | ✅         | ✅    | 4, 6, 8s    |
+| `veo-2.0-generate-001`          | ❌               | ✅         | ❌    | 5, 6, 7, 8s |
+| `veo-2.0-generate-exp`          | ✅               | ✅         | ❌    | 5, 6, 7, 8s |
 
 > **Note:** When using reference images with Veo, duration is automatically set to 8 seconds.
 
@@ -163,16 +164,16 @@ The `saveVideo` function saves the generated video to the configured storage:
 
 ```typescript
 await saveVideo(storage, {
-  videoData: blob,              // Blob or ArrayBuffer
+  videoData: blob, // Blob or ArrayBuffer
   mimeType: "video/mp4",
   metadata: {
     prompt: "...",
     operationName: "...",
   },
-  directory: "/videos",         // Target directory
-  readExpiresIn: 3600,          // Read URL expiration time
-  writeExpiresIn: 300,          // Write URL expiration time
-  fileName: "custom-name",      // File name (optional)
+  directory: "/videos", // Target directory
+  readExpiresIn: 3600, // Read URL expiration time
+  writeExpiresIn: 300, // Write URL expiration time
+  fileName: "custom-name", // File name (optional)
 });
 ```
 
@@ -191,7 +192,7 @@ getContract: (env) => ({
     clauseId: "video_generation",
     amount: 100, // Cost in credits
   },
-})
+});
 ```
 
 ## Long-Running Operations
@@ -205,30 +206,30 @@ Video generation often takes several minutes. The framework handles this with po
 ```typescript
 execute: async ({ env, input }) => {
   const client = createVeoClient(env);
-  
+
   // Start operation (returns immediately with operation name)
   const operation = await client.generateVideo(input.prompt, "veo-3.1-generate-preview", {
     aspectRatio: input.aspectRatio,
     durationSeconds: input.duration,
   });
-  
+
   // Wait for completion (with automatic polling)
   const completed = await client.pollOperationUntilComplete(
     operation.name,
     360000, // 6 minutes max
-    10000,  // poll every 10 seconds
+    10000, // poll every 10 seconds
   );
-  
+
   // Stream video (no blob in memory!)
   const video = completed.response.generateVideoResponse.generatedSamples[0];
   const videoStream = await client.downloadVideo(video.video.uri);
-  
+
   return {
     data: videoStream, // ✅ Streams directly to storage
     mimeType: video.video.mimeType || "video/mp4",
     operationName: operation.name,
   };
-}
+};
 ```
 
 ## Timeouts
@@ -258,30 +259,24 @@ const tools = createVideoGeneratorTools({
 
     // Veo only supports 16:9 and 9:16, default to 16:9 for other ratios
     const veoAspectRatio =
-      input.aspectRatio === "16:9" || input.aspectRatio === "9:16"
-        ? input.aspectRatio
-        : "16:9";
+      input.aspectRatio === "16:9" || input.aspectRatio === "9:16" ? input.aspectRatio : "16:9";
 
     // Start video generation
-    const operation = await client.generateVideo(
-      input.prompt,
-      "veo-3.1-generate-preview",
-      {
-        aspectRatio: veoAspectRatio,
-        durationSeconds: input.duration,
-        referenceImages: input.referenceImages,
-        firstFrameImageUrl: input.firstFrameUrl,
-        lastFrameImageUrl: input.lastFrameUrl,
-        personGeneration: input.personGeneration,
-        negativePrompt: input.negativePrompt,
-      },
-    );
+    const operation = await client.generateVideo(input.prompt, "veo-3.1-generate-preview", {
+      aspectRatio: veoAspectRatio,
+      durationSeconds: input.duration,
+      referenceImages: input.referenceImages,
+      firstFrameImageUrl: input.firstFrameUrl,
+      lastFrameImageUrl: input.lastFrameUrl,
+      personGeneration: input.personGeneration,
+      negativePrompt: input.negativePrompt,
+    });
 
     // Poll until complete (6 minutes max, poll every 10 seconds)
     const completed = await client.pollOperationUntilComplete(
       operation.name,
       360000, // 6 minutes
-      10000,  // poll every 10 seconds
+      10000, // poll every 10 seconds
     );
 
     // Check if completed successfully
@@ -292,8 +287,7 @@ const tools = createVideoGeneratorTools({
       };
     }
 
-    const generatedSamples =
-      completed.response.generateVideoResponse.generatedSamples;
+    const generatedSamples = completed.response.generateVideoResponse.generatedSamples;
     if (!generatedSamples || generatedSamples.length === 0) {
       return {
         error: true,
@@ -339,15 +333,16 @@ const tools = createVideoGeneratorTools({
 execute: async ({ env, input }) => {
   // Download video as stream (this is the recommended approach!)
   const videoStream = await downloadVideoAsStream(url);
-  
+
   return {
-    data: videoStream,  // ✅ ReadableStream - streams directly to storage
+    data: videoStream, // ✅ ReadableStream - streams directly to storage
     mimeType: "video/mp4",
   };
-}
+};
 ```
 
 **Why streaming is the default:**
+
 - ✅ **Any size**: Handle 100MB, 500MB, 1GB+ videos without issues
 - ✅ **Constant memory**: ~5-10MB usage regardless of video size
 - ✅ **Faster**: No intermediate buffering or loading into RAM
@@ -365,4 +360,3 @@ execute: async ({ env, input }) => {
 - 👤 **Person generation**: Control whether people appear in videos
 - 🚫 **Negative prompts**: Fine-tune output by specifying what to avoid
 - 🌊 **Stream-based processing**: Default behavior for handling videos of any size
-

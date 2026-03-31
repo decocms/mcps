@@ -25,6 +25,7 @@ The MCP expects a database with the following tables:
 ### 2. Install the MCP
 
 When installing, configure:
+
 - `database.apiUrl`: Database API URL
 - `database.token`: Authentication token
 
@@ -35,6 +36,7 @@ When installing, configure:
 Lists content already scraped and saved in the database.
 
 **Input:**
+
 ```json
 {
   "table": "all",
@@ -45,12 +47,14 @@ Lists content already scraped and saved in the database.
 ```
 
 **Parameters:**
+
 - `table`: Which source to query - `"all"`, `"contents"`, `"reddit"`, `"linkedin"`, or `"twitter"`
 - `startIndex`: Start index (default: 1)
 - `endIndex`: End index (default: 100)
 - `onlyThisWeek`: If `true`, returns only this week's content
 
 **Output:**
+
 ```json
 {
   "success": true,
@@ -79,11 +83,13 @@ Lists content already scraped and saved in the database.
 Returns the Weekly Report Publishing skill documentation. This skill teaches how to publish weekly digest reports to the `deco_weekly_report` database table.
 
 **Input:**
+
 ```json
 {}
 ```
 
 **Output:**
+
 ```json
 {
   "success": true,
@@ -98,11 +104,13 @@ Returns the Weekly Report Publishing skill documentation. This skill teaches how
 Lists all available skills/documentation that can be retrieved.
 
 **Input:**
+
 ```json
 {}
 ```
 
 **Output:**
+
 ```json
 {
   "success": true,

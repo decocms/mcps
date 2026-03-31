@@ -1,18 +1,18 @@
 {
-	"scopeName": "deco",
-	"name": "multi-channel-inbox",
-	"friendlyName": "Multi Channel Inbox",
-	"description": "Unified support inbox for Slack, Discord and Gmail",
-	"icon": "https://assets.decocache.com/decocms/9c93cffc-7e66-4761-8124-31a70ddd4463/Gemini_Generated_Image_4tz2a94tz2a94tz2.png",
-	"connection": {
-		"type": "HTTP",
-		"url": "https://sites-multi-channel-inbox.decocache.com/api/mcp"
-	},
-	"unlisted": true,
-	"metadata": {
-		"categories": [],
-		"official": false,
-		"tags": ["template", "mcp-app"],
-		"short_description": "Unified support inbox for Slack, Discord and Gmail"
-	}
+  "scopeName": "deco",
+  "name": "multi-channel-inbox",
+  "friendlyName": "Multi Channel Inbox",
+  "description": "Unified support inbox for Slack, Discord and Gmail",
+  "icon": "https://assets.decocache.com/decocms/9c93cffc-7e66-4761-8124-31a70ddd4463/Gemini_Generated_Image_4tz2a94tz2a94tz2.png",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-multi-channel-inbox.decocache.com/api/mcp"
+  },
+  "unlisted": true,
+  "metadata": {
+    "categories": [],
+    "official": false,
+    "tags": ["template", "mcp-app"],
+    "short_description": "Unified support inbox for Slack, Discord and Gmail"
+  }
 }

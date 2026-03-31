@@ -1,8 +1,8 @@
 {
   "name": "perplexity",
   "version": "1.0.0",
-  "description": "Perplexity AI MCP Server - Web-backed AI answers and conversations",
   "private": true,
+  "description": "Perplexity AI MCP Server - Web-backed AI answers and conversations",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

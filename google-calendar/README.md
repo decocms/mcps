@@ -5,12 +5,14 @@ MCP Server for Google Calendar integration. Manage calendars, events and check a
 ## Features
 
 ### Calendar Management
+
 - **list_calendars** - List all user's calendars
 - **get_calendar** - Get details of a specific calendar
 - **create_calendar** - Create a new secondary calendar
 - **delete_calendar** - Delete a calendar
 
 ### Event Management
+
 - **list_events** - List events with date filters and search
 - **get_event** - Get details of an event
 - **create_event** - Create event with attendees and reminders
@@ -19,9 +21,11 @@ MCP Server for Google Calendar integration. Manage calendars, events and check a
 - **quick_add_event** - Create event using natural language
 
 ### Availability
+
 - **get_freebusy** - Check busy/free time slots
 
 ### Advanced Operations
+
 - **move_event** - Move an event between calendars
 - **find_available_slots** - Find free time slots across multiple calendars
 - **duplicate_event** - Create a copy of an existing event
@@ -104,10 +108,7 @@ bun run build
       "dateTime": "2024-01-15T15:00:00-03:00",
       "timeZone": "America/Sao_Paulo"
     },
-    "attendees": [
-      { "email": "john@company.com" },
-      { "email": "mary@company.com" }
-    ],
+    "attendees": [{ "email": "john@company.com" }, { "email": "mary@company.com" }],
     "guestsCanSeeOtherGuests": false,
     "sendUpdates": "all"
   }

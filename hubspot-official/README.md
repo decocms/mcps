@@ -40,5 +40,4 @@ https://app.hubspot.com/mcp/v1/http
 
 ---
 
-*This MCP requires an active HubSpot account and API key.*
-
+_This MCP requires an active HubSpot account and API key._

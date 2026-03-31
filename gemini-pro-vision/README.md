@@ -7,15 +7,18 @@ MCP (Model Context Protocol) for image analysis using Google Gemini Pro Vision.
 This MCP offers three main tools for image analysis:
 
 ### 1. `analyze_image` - Image Analysis
+
 Analyzes an image and answers questions about it.
 
 **Use cases:**
+
 - Describe image content
 - Identify objects, people, places
 - Answer questions about the image
 - Context and emotion analysis
 
 **Example:**
+
 ```json
 {
   "imageUrl": "https://example.com/image.jpg",
@@ -25,36 +28,39 @@ Analyzes an image and answers questions about it.
 ```
 
 ### 2. `compare_images` - Image Comparison
+
 Compares multiple images and identifies differences or similarities.
 
 **Use cases:**
+
 - Identify changes between design versions
 - Compare similar products
 - Verify visual consistency
 - Detect subtle differences
 
 **Example:**
+
 ```json
 {
-  "imageUrls": [
-    "https://example.com/before.jpg",
-    "https://example.com/after.jpg"
-  ],
+  "imageUrls": ["https://example.com/before.jpg", "https://example.com/after.jpg"],
   "prompt": "What are the main differences between these images?",
   "model": "gemini-2.5-flash"
 }
 ```
 
 ### 3. `extract_text_from_image` - OCR (Text Extraction)
+
 Extracts all visible text from an image.
 
 **Use cases:**
+
 - Digitize documents
 - Read signs and notices
 - Extract text from screenshots
 - Process receipts and invoices
 
 **Example:**
+
 ```json
 {
   "imageUrl": "https://example.com/document.jpg",
@@ -68,6 +74,7 @@ Extracts all visible text from an image.
 ### For End Users
 
 Just install the MCP from the Deco marketplace and authorize the usage. You'll be charged per operation:
+
 - **$0.05** per image analysis
 - **$0.10** per image comparison
 - **$0.03** per OCR operation
@@ -133,21 +140,25 @@ bun run deploy
 ## 📝 Prompt Examples
 
 ### General Analysis
+
 - "Describe this image in detail"
 - "What objects do you see in this image?"
 - "What is the context of this photo?"
 
 ### Specific Analysis
+
 - "Identify all people in this image"
 - "What brand is this product?"
 - "Does this image contain any text?"
 
 ### OCR
+
 - "Extract all text from this image"
 - "Read the content of this document"
 - "Transcribe the visible text"
 
 ### Comparison
+
 - "What are the differences between these images?"
 - "Do these two photos show the same person?"
 - "How has the design changed between versions?"
@@ -163,6 +174,7 @@ bun run deploy
 ## 📚 API Documentation
 
 For more details about the Gemini Vision API, see:
+
 - [Official Gemini documentation](https://ai.google.dev/gemini-api/docs/vision)
 - [Vision prompting guide](https://ai.google.dev/gemini-api/docs/vision#prompting-with-images)
 
@@ -178,4 +190,3 @@ This MCP is part of the Deco CMS MCPs monorepo. To contribute:
 ## 📄 License
 
 Maintained by the Deco CMS team.
-

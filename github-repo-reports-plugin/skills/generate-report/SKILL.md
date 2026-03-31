@@ -39,16 +39,16 @@ after the structured sections declared in frontmatter.
 
 ## Frontmatter fields
 
-| Field | Required | Type | Description |
-|---|---|---|---|
-| `title` | **Yes** | `string` | Human-readable report title. |
-| `category` | **Yes** | `string` | Category for filtering (e.g., `performance`, `security`, `quality`). See category list below. |
-| `status` | **Yes** | `"passing" \| "warning" \| "failing" \| "info"` | Overall health outcome. |
-| `summary` | **Yes** | `string` | One-line summary of findings. Keep it concise — this is shown in list views. |
-| `updatedAt` | **Yes** | `string` | ISO 8601 timestamp of when the report was generated (`YYYY-MM-DDTHH:mm:ssZ`). |
-| `source` | Optional | `string` | Name of the agent or service that generated this report (e.g., `lighthouse`, `security-scanner`). |
-| `tags` | Optional | `string[]` | Free-form tags for filtering (e.g., `[homepage, mobile, ci]`). |
-| `sections` | Optional | `ReportSection[]` | Structured content sections (metrics, tables, markdown). See section types below. |
+| Field       | Required | Type                                            | Description                                                                                       |
+| ----------- | -------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `title`     | **Yes**  | `string`                                        | Human-readable report title.                                                                      |
+| `category`  | **Yes**  | `string`                                        | Category for filtering (e.g., `performance`, `security`, `quality`). See category list below.     |
+| `status`    | **Yes**  | `"passing" \| "warning" \| "failing" \| "info"` | Overall health outcome.                                                                           |
+| `summary`   | **Yes**  | `string`                                        | One-line summary of findings. Keep it concise — this is shown in list views.                      |
+| `updatedAt` | **Yes**  | `string`                                        | ISO 8601 timestamp of when the report was generated (`YYYY-MM-DDTHH:mm:ssZ`).                     |
+| `source`    | Optional | `string`                                        | Name of the agent or service that generated this report (e.g., `lighthouse`, `security-scanner`). |
+| `tags`      | Optional | `string[]`                                      | Free-form tags for filtering (e.g., `[homepage, mobile, ci]`).                                    |
+| `sections`  | Optional | `ReportSection[]`                               | Structured content sections (metrics, tables, markdown). See section types below.                 |
 
 Always provide `title`, `category`, `status`, `summary`, and `updatedAt`. Do not leave them empty or omit them.
 
@@ -111,13 +111,13 @@ sections:
 
 Each metric item:
 
-| Field | Required | Type | Description |
-|---|---|---|---|
-| `label` | **Yes** | `string` | Metric name (e.g., "LCP", "Coverage"). |
-| `value` | **Yes** | `number \| string` | Current value. |
-| `unit` | Optional | `string` | Unit of measurement (e.g., "s", "ms", "%", "score"). |
-| `previousValue` | Optional | `number \| string` | Previous value for delta comparison. |
-| `status` | Optional | `"passing" \| "warning" \| "failing" \| "info"` | Status of this individual metric. |
+| Field           | Required | Type                                            | Description                                          |
+| --------------- | -------- | ----------------------------------------------- | ---------------------------------------------------- |
+| `label`         | **Yes**  | `string`                                        | Metric name (e.g., "LCP", "Coverage").               |
+| `value`         | **Yes**  | `number \| string`                              | Current value.                                       |
+| `unit`          | Optional | `string`                                        | Unit of measurement (e.g., "s", "ms", "%", "score"). |
+| `previousValue` | Optional | `number \| string`                              | Previous value for delta comparison.                 |
+| `status`        | Optional | `"passing" \| "warning" \| "failing" \| "info"` | Status of this individual metric.                    |
 
 ### Table section
 
@@ -135,24 +135,24 @@ sections:
 
 ## Status reference
 
-| Status | When to use |
-|---|---|
-| `passing` | Everything is within acceptable thresholds. |
+| Status    | When to use                                          |
+| --------- | ---------------------------------------------------- |
+| `passing` | Everything is within acceptable thresholds.          |
 | `warning` | Some metrics are degraded or approaching thresholds. |
-| `failing` | Critical issues that need immediate attention. |
-| `info` | Informational report with no pass/fail judgment. |
+| `failing` | Critical issues that need immediate attention.       |
+| `info`    | Informational report with no pass/fail judgment.     |
 
 ## Category conventions
 
-| Category | Use case |
-|---|---|
-| `performance` | Web vitals, bundle size, load times. |
-| `security` | Vulnerability scans, dependency audits. |
-| `accessibility` | WCAG compliance, axe-core results. |
-| `seo` | Meta tags, structured data, crawlability. |
-| `quality` | Code quality, test coverage, lint results. |
-| `uptime` | Health checks, availability monitoring. |
-| `compliance` | License audits, policy checks. |
+| Category        | Use case                                   |
+| --------------- | ------------------------------------------ |
+| `performance`   | Web vitals, bundle size, load times.       |
+| `security`      | Vulnerability scans, dependency audits.    |
+| `accessibility` | WCAG compliance, axe-core results.         |
+| `seo`           | Meta tags, structured data, crawlability.  |
+| `quality`       | Code quality, test coverage, lint results. |
+| `uptime`        | Health checks, availability monitoring.    |
+| `compliance`    | License audits, policy checks.             |
 
 ## Git workflow
 

@@ -22,4 +22,3 @@ Cloudflare API token (optional for some endpoints, required for advanced feature
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://radar.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/radar/
-

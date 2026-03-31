@@ -1,8 +1,8 @@
 {
   "name": "google-meet",
   "version": "1.0.0",
-  "description": "Google Meet MCP Server - Create and manage meetings",
   "private": true,
+  "description": "Google Meet MCP Server - Create and manage meetings",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

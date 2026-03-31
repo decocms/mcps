@@ -1,8 +1,8 @@
 {
   "name": "datajud",
   "version": "1.0.0",
-  "description": "MCP server for Datajud Public API integration",
   "private": true,
+  "description": "MCP server for Datajud Public API integration",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

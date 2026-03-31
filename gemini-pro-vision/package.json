@@ -1,8 +1,8 @@
 {
   "name": "gemini-pro-vision",
   "version": "1.0.0",
-  "description": "MCP server for image analysis using Gemini Pro Vision",
   "private": true,
+  "description": "MCP server for image analysis using Gemini Pro Vision",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

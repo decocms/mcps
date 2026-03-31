@@ -39,5 +39,4 @@ https://mapstools.googleapis.com/mcp
 
 ---
 
-*This MCP requires an active Google Maps Platform API key.*
-
+_This MCP requires an active Google Maps Platform API key._

@@ -6,46 +6,46 @@ MCP Server para integração com a API do Google Apps Script. Permite gerenciar 
 
 ### 🗂️ Projects (5 ferramentas)
 
-| Ferramenta | Descrição |
-|------------|-----------|
-| `create_project` | Cria um novo projeto Apps Script vazio |
-| `get_project` | Obtém metadados de um projeto (título, criador, timestamps) |
-| `get_project_content` | Obtém o conteúdo do projeto (arquivos e código fonte) |
-| `update_project_content` | Atualiza os arquivos do projeto |
-| `get_project_metrics` | Obtém métricas de uso (usuários ativos, execuções, falhas) |
+| Ferramenta               | Descrição                                                   |
+| ------------------------ | ----------------------------------------------------------- |
+| `create_project`         | Cria um novo projeto Apps Script vazio                      |
+| `get_project`            | Obtém metadados de um projeto (título, criador, timestamps) |
+| `get_project_content`    | Obtém o conteúdo do projeto (arquivos e código fonte)       |
+| `update_project_content` | Atualiza os arquivos do projeto                             |
+| `get_project_metrics`    | Obtém métricas de uso (usuários ativos, execuções, falhas)  |
 
 ### ⚡ Scripts - Execução (2 ferramentas)
 
-| Ferramenta | Descrição |
-|------------|-----------|
-| `run_script` | Executa uma função do script (requer deployment como API executable) |
+| Ferramenta            | Descrição                                                                 |
+| --------------------- | ------------------------------------------------------------------------- |
+| `run_script`          | Executa uma função do script (requer deployment como API executable)      |
 | `run_script_dev_mode` | Executa em modo desenvolvimento (usa código mais recente, só para owners) |
 
 ### 📦 Versions (3 ferramentas)
 
-| Ferramenta | Descrição |
-|------------|-----------|
+| Ferramenta       | Descrição                                     |
+| ---------------- | --------------------------------------------- |
 | `create_version` | Cria uma nova versão imutável do código atual |
-| `get_version` | Obtém detalhes de uma versão específica |
-| `list_versions` | Lista todas as versões de um projeto |
+| `get_version`    | Obtém detalhes de uma versão específica       |
+| `list_versions`  | Lista todas as versões de um projeto          |
 
 ### 🚀 Deployments (5 ferramentas)
 
-| Ferramenta | Descrição |
-|------------|-----------|
+| Ferramenta          | Descrição                                               |
+| ------------------- | ------------------------------------------------------- |
 | `create_deployment` | Cria um deployment (web app, API executable, ou add-on) |
-| `get_deployment` | Obtém detalhes de um deployment específico |
-| `list_deployments` | Lista todos os deployments de um projeto |
-| `update_deployment` | Atualiza um deployment existente |
-| `delete_deployment` | Remove um deployment |
+| `get_deployment`    | Obtém detalhes de um deployment específico              |
+| `list_deployments`  | Lista todos os deployments de um projeto                |
+| `update_deployment` | Atualiza um deployment existente                        |
+| `delete_deployment` | Remove um deployment                                    |
 
 ### 📊 Processes - Monitoramento (3 ferramentas)
 
-| Ferramenta | Descrição |
-|------------|-----------|
-| `list_user_processes` | Lista execuções do usuário em todos os scripts |
-| `list_script_processes` | Lista execuções de um script específico |
-| `get_running_processes` | Obtém processos em execução no momento |
+| Ferramenta              | Descrição                                      |
+| ----------------------- | ---------------------------------------------- |
+| `list_user_processes`   | Lista execuções do usuário em todos os scripts |
+| `list_script_processes` | Lista execuções de um script específico        |
+| `get_running_processes` | Obtém processos em execução no momento         |
 
 ## Autenticação
 
@@ -80,17 +80,17 @@ function myFunction() {
   Logger.log('Hello World!');
   return 'Success';
 }
-      `
+      `,
     },
     {
       name: "appsscript",
       type: "JSON",
       source: JSON.stringify({
         timeZone: "America/Sao_Paulo",
-        exceptionLogging: "STACKDRIVER"
-      })
-    }
-  ]
+        exceptionLogging: "STACKDRIVER",
+      }),
+    },
+  ],
 });
 ```
 
@@ -100,14 +100,14 @@ function myFunction() {
 // 1. Criar versão
 const version = await create_version({
   scriptId: "SCRIPT_ID",
-  description: "v1.0 - Release inicial"
+  description: "v1.0 - Release inicial",
 });
 
 // 2. Criar deployment
 const deployment = await create_deployment({
   scriptId: "SCRIPT_ID",
   versionNumber: version.versionNumber,
-  description: "Produção"
+  description: "Produção",
 });
 ```
 
@@ -118,7 +118,7 @@ const deployment = await create_deployment({
 const result = await run_script({
   scriptId: "SCRIPT_ID",
   functionName: "myFunction",
-  parameters: ["arg1", "arg2"]
+  parameters: ["arg1", "arg2"],
 });
 
 console.log(result.result);
@@ -134,39 +134,39 @@ console.log(`${running.runningCount} processos em execução`);
 // Listar processos de um script específico
 const processes = await list_script_processes({
   scriptId: "SCRIPT_ID",
-  statuses: ["COMPLETED", "FAILED"]
+  statuses: ["COMPLETED", "FAILED"],
 });
 ```
 
 ## Tipos de Arquivo
 
-| Tipo | Extensão | Descrição |
-|------|----------|-----------|
-| `SERVER_JS` | `.gs` | Código Google Apps Script (JavaScript) |
-| `HTML` | `.html` | Arquivos HTML para interfaces |
-| `JSON` | `.json` | Manifesto do projeto (`appsscript.json`) |
+| Tipo        | Extensão | Descrição                                |
+| ----------- | -------- | ---------------------------------------- |
+| `SERVER_JS` | `.gs`    | Código Google Apps Script (JavaScript)   |
+| `HTML`      | `.html`  | Arquivos HTML para interfaces            |
+| `JSON`      | `.json`  | Manifesto do projeto (`appsscript.json`) |
 
 ## Status de Processo
 
-| Status | Descrição |
-|--------|-----------|
-| `RUNNING` | Em execução |
+| Status      | Descrição             |
+| ----------- | --------------------- |
+| `RUNNING`   | Em execução           |
 | `COMPLETED` | Concluído com sucesso |
-| `FAILED` | Falhou com erro |
-| `TIMED_OUT` | Excedeu tempo limite |
-| `CANCELED` | Cancelado |
-| `PAUSED` | Pausado |
+| `FAILED`    | Falhou com erro       |
+| `TIMED_OUT` | Excedeu tempo limite  |
+| `CANCELED`  | Cancelado             |
+| `PAUSED`    | Pausado               |
 
 ## Tipos de Processo
 
-| Tipo | Descrição |
-|------|-----------|
-| `WEBAPP` | Execução de web app |
-| `EXECUTION_API` | Execução via API |
-| `TIME_DRIVEN` | Trigger baseado em tempo |
-| `TRIGGER` | Trigger de evento |
-| `ADD_ON` | Execução de add-on |
-| `EDITOR` | Execução do editor |
+| Tipo            | Descrição                |
+| --------------- | ------------------------ |
+| `WEBAPP`        | Execução de web app      |
+| `EXECUTION_API` | Execução via API         |
+| `TIME_DRIVEN`   | Trigger baseado em tempo |
+| `TRIGGER`       | Trigger de evento        |
+| `ADD_ON`        | Execução de add-on       |
+| `EDITOR`        | Execução do editor       |
 
 ## Limitações da API
 
@@ -180,6 +180,3 @@ const processes = await list_script_processes({
 - [Google Apps Script API Reference](https://developers.google.com/apps-script/api/reference/rest)
 - [Quotas e Limites](https://developers.google.com/apps-script/guides/services/quotas)
 - [Executar Scripts via API](https://developers.google.com/apps-script/api/how-tos/execute)
-
-
-

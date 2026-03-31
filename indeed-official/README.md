@@ -39,5 +39,4 @@ https://mcp.indeed.com/claude/mcp
 
 ---
 
-*This MCP provides access to Indeed's job search and recruitment platform.*
-
+_This MCP provides access to Indeed's job search and recruitment platform._

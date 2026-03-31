@@ -53,11 +53,13 @@ CREATE INDEX idx_slack_connections_updated_at ON slack_connections(updated_at);
 2. Copie os dois valores:
 
 **Project URL:**
+
 ```
 https://xxxxxxxxxxxxx.supabase.co
 ```
 
 **anon/public key:**
+
 ```
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN...
 ```
@@ -88,6 +90,7 @@ bun run dev
 ```
 
 **Deve ver:**
+
 ```
 [Supabase] ✅ Client initialized successfully
 [Storage] Using Supabase for config persistence (multi-pod ready)
@@ -99,6 +102,7 @@ bun run dev
 ## ✅ Pronto!
 
 Agora o Slack MCP vai salvar todas as configurações no Supabase automaticamente. Funciona em:
+
 - ✅ Local com `deco link`
 - ✅ Deploy produção
 - ✅ Múltiplos pods no Kubernetes
@@ -116,6 +120,7 @@ Agora o Slack MCP vai salvar todas as configurações no Supabase automaticament
 ## 💰 Custo
 
 **$0/mês** - Supabase Free Tier:
+
 - 500MB storage
 - 500MB bandwidth/mês
 - Unlimited API requests
@@ -126,13 +131,16 @@ Agora o Slack MCP vai salvar todas as configurações no Supabase automaticament
 ## 🆘 Problemas?
 
 ### Erro: "Failed to initialize client"
+
 - Verifique se SUPABASE_URL e SUPABASE_ANON_KEY estão corretos
 - Teste no browser: abra SUPABASE_URL (deve abrir página do Supabase)
 
 ### Erro: "relation slack_connections does not exist"
+
 - Execute o SQL do passo 2 novamente no SQL Editor
 
 ### Configs não aparecem
+
 - Verifique logs: `[Supabase] 💾 Saved connection config`
 - Abra Table Editor e veja se tem dados
 
@@ -143,4 +151,3 @@ Agora o Slack MCP vai salvar todas as configurações no Supabase automaticament
 - Dashboard: https://supabase.com/dashboard
 - Docs: https://supabase.com/docs
 - Status: https://status.supabase.com
-

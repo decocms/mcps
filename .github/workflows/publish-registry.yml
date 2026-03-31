@@ -7,9 +7,9 @@ on:
         description: 'MCPs to publish (comma-separated, e.g. "discord-read,slack-mcp"). Leave empty to detect from changes.'
         required: false
         type: string
-        default: ''
+        default: ""
       dry_run:
-        description: 'Dry run (preview payloads without publishing)'
+        description: "Dry run (preview payloads without publishing)"
         required: false
         type: boolean
         default: false

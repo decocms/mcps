@@ -1,8 +1,8 @@
 {
   "name": "google-calendar-sa",
   "version": "1.0.0",
-  "description": "Google Calendar MCP Server with Service Account authentication",
   "private": true,
+  "description": "Google Calendar MCP Server with Service Account authentication",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

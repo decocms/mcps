@@ -1,8 +1,8 @@
 {
   "name": "readonly-sql",
   "version": "1.0.0",
-  "description": "Minimal read-only SQL MCP server for query handling",
   "private": true,
+  "description": "Minimal read-only SQL MCP server for query handling",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

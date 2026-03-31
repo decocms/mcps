@@ -1,8 +1,8 @@
 {
   "name": "flux",
   "version": "1.0.0",
-  "description": "FLUX Image Generation MCP Server - Generate images with Black Forest Labs FLUX API",
   "private": true,
+  "description": "FLUX Image Generation MCP Server - Generate images with Black Forest Labs FLUX API",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

@@ -22,6 +22,7 @@ Working directory: `/Users/jonasjesus/conductor/workspaces/mcps/san-antonio` (or
 ### Type 1: Official Server (app.json only)
 
 The MCP runs on an external server (Cloudflare, Grain, GitHub, etc.). We only provide:
+
 - `app.json` — connection URL, auth, metadata
 - `README.md` — optional
 
@@ -32,6 +33,7 @@ No `package.json`, no `deploy.json` entry, no workspace entry in root `package.j
 ### Type 2: Custom Server (deco HTTP)
 
 We build and host the server. Files:
+
 ```
 <mcp-name>/
   app.json          # registry metadata + connection URL
@@ -67,7 +69,9 @@ const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
-if (runtime.fetch) { serve(runtime.fetch); }
+if (runtime.fetch) {
+  serve(runtime.fetch);
+}
 ```
 
 ### `shared/deco.gen.ts`
@@ -205,12 +209,12 @@ When an official HTTP server exists (e.g., `https://api.example.com/mcp`):
 
 ## Key Packages
 
-| Package | Purpose |
-|---------|---------|
-| `@decocms/runtime` | `withRuntime`, `createPrivateTool` |
-| `@decocms/mcps-shared` | `serve` utility |
-| `zod` | Input schema validation |
-| `undici` | Proxy-aware fetch, SSE streaming |
+| Package                | Purpose                            |
+| ---------------------- | ---------------------------------- |
+| `@decocms/runtime`     | `withRuntime`, `createPrivateTool` |
+| `@decocms/mcps-shared` | `serve` utility                    |
+| `zod`                  | Input schema validation            |
+| `undici`               | Proxy-aware fetch, SSE streaming   |
 
 ## Common Patterns
 

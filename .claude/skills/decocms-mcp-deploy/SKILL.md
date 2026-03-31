@@ -38,12 +38,12 @@ MCPs pointing to external servers (Cloudflare official, Grain, Apify, etc.). No 
 
 ## Workflow Summary
 
-| Workflow | Trigger | What it does |
-|----------|---------|--------------|
-| `checks.yml` | push/PR | fmt, lint, typecheck changed MCPs |
-| `publish-registry.yml` | push to main, manual | Publish app.json MCPs to Mesh registry |
-| `deploy.yml` | push to main, manual | Build + `deco deploy` for CF Worker MCPs |
-| `publish-jsr.yml` | push to main (shared/ or openrouter/) | Publish packages to JSR |
+| Workflow               | Trigger                               | What it does                             |
+| ---------------------- | ------------------------------------- | ---------------------------------------- |
+| `checks.yml`           | push/PR                               | fmt, lint, typecheck changed MCPs        |
+| `publish-registry.yml` | push to main, manual                  | Publish app.json MCPs to Mesh registry   |
+| `deploy.yml`           | push to main, manual                  | Build + `deco deploy` for CF Worker MCPs |
+| `publish-jsr.yml`      | push to main (shared/ or openrouter/) | Publish packages to JSR                  |
 
 No `deploy-preview.yml` — preview deploys on PRs were removed.
 
@@ -54,6 +54,7 @@ No `deploy-preview.yml` — preview deploys on PRs were removed.
 ### `detect-changed-mcps.ts`
 
 Detects which MCPs have changed based on:
+
 1. MCPs in `deploy.json` with `watch` patterns matching changed files
 2. Registry-only MCPs (have `app.json` but NOT in `deploy.json`) — detected if any file in their dir changed
 
@@ -95,15 +96,18 @@ All have `wrangler.toml` in their directory.
 ## Adding a New MCP to the Pipeline
 
 ### Custom server (kubernetes-bun)
+
 1. Add to `deploy.json` with `platformName: kubernetes-bun`
 2. Add `app.json` — `publish-registry.yml` handles it automatically
 
 ### CF Worker MCP
+
 1. Add to `deploy.json` with `platformName: cloudflare-workers`
 2. Ensure `wrangler.toml` exists in the MCP dir
 3. Optionally add `app.json` for registry metadata
 
 ### Official server (app.json only)
+
 1. Just create `app.json` — no `deploy.json` entry needed
 2. `publish-registry.yml` auto-detects it as a registry-only MCP
 
@@ -131,8 +135,8 @@ mcps: "perplexity,slack-mcp"
 
 ## Secrets Required
 
-| Secret | Used by |
-|--------|---------|
-| `DECO_DEPLOY_TOKEN` | deploy.yml (deco deploy CLI) |
-| `PUBLISH_API_KEY` | publish-registry.yml |
+| Secret                    | Used by                                    |
+| ------------------------- | ------------------------------------------ |
+| `DECO_DEPLOY_TOKEN`       | deploy.yml (deco deploy CLI)               |
+| `PUBLISH_API_KEY`         | publish-registry.yml                       |
 | `OPENAI_API_KEY` + others | deploy.yml (env vars passed to CF Workers) |

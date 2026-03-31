@@ -21,4 +21,3 @@ Requires a Cloudflare API token with container management permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/workers/
-

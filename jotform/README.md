@@ -24,8 +24,8 @@ Ask your AI assistant to:
 
 ## Compatibility
 
-| Product | Deployment type | Support status |
-|---------|----------------|----------------|
+| Product | Deployment type         | Support status                                 |
+| ------- | ----------------------- | ---------------------------------------------- |
 | Jotform | Cloud (hosted endpoint) | ✅ Fully supported via https://mcp.jotform.com |
 
 ## Quick Start Guide
@@ -172,10 +172,10 @@ Access control is managed via OAuth scopes. Only explicitly granted scopes are a
 
 Rate limits (same per-user as the Jotform REST API):
 
-| Plan | Requests per minute |
-|------|---------------------|
-| Free | 60 |
-| Enterprise | 600 |
+| Plan       | Requests per minute |
+| ---------- | ------------------- |
+| Free       | 60                  |
+| Enterprise | 600                 |
 
 If limits are exceeded, the server returns HTTP 429 with a Retry-After header.
 

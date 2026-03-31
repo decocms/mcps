@@ -7,7 +7,7 @@ on:
         description: 'MCPs to deploy (comma-separated, e.g. "discord-read,slack-mcp"). Leave empty to detect from changes.'
         required: false
         type: string
-        default: ''
+        default: ""
   push:
     branches:
       - main

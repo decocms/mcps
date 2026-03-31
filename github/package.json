@@ -1,8 +1,8 @@
 {
   "name": "github",
   "version": "1.0.0",
-  "description": "GitHub MCP - OAuth proxy for the official GitHub MCP Server",
   "private": true,
+  "description": "GitHub MCP - OAuth proxy for the official GitHub MCP Server",
   "type": "module",
   "scripts": {
     "dev": "bun run --env-file=server/.env --hot server/main.ts",

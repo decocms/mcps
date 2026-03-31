@@ -1,20 +1,20 @@
 {
   "name": "google-calendar",
   "version": "1.0.0",
-  "description": "Google Calendar MCP Server - Manage calendars and events",
   "private": true,
+  "description": "Google Calendar MCP Server - Manage calendars and events",
   "type": "module",
+  "exports": {
+    "./tools": "./server/tools/index.ts",
+    "./types": "./server/lib/types.ts",
+    "./constants": "./server/constants.ts"
+  },
   "scripts": {
     "dev": "bun run --hot server/main.ts",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
     "check": "tsc --noEmit"
-  },
-  "exports": {
-    "./tools": "./server/tools/index.ts",
-    "./types": "./server/lib/types.ts",
-    "./constants": "./server/constants.ts"
   },
   "dependencies": {
     "@decocms/runtime": "^1.2.6",
@@ -30,4 +30,3 @@
     "node": ">=22.0.0"
   }
 }
-

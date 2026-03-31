@@ -60,18 +60,11 @@
                   "description": "Event payload"
                 }
               },
-              "required": [
-                "specversion",
-                "id",
-                "source",
-                "type"
-              ]
+              "required": ["specversion", "id", "source", "type"]
             }
           }
         },
-        "required": [
-          "events"
-        ]
+        "required": ["events"]
       },
       "outputSchema": {
         "type": "object",
@@ -114,9 +107,7 @@
                   "description": "Re-deliver this event after this many ms"
                 }
               },
-              "required": [
-                "success"
-              ]
+              "required": ["success"]
             }
           }
         }

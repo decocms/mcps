@@ -1,8 +1,8 @@
 {
   "name": "veo",
   "version": "1.0.0",
-  "description": "Veo 3 MCP",
   "private": true,
+  "description": "Veo 3 MCP",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

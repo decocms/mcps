@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */
@@ -22,11 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     /* Types */
-    "types": [
-      "@types/node"
-    ]
+    "types": ["@types/node"]
   },
-  "include": [
-    "server"
-  ]
+  "include": ["server"]
 }

@@ -1,5 +1,5 @@
-# Slack MCP            
-  
+# Slack MCP
+
 MCP para integração com Slack, incluindo bot inteligente com gerenciamento de threads, comandos de AI agent e suporte a webhooks.
 
 ## Features
@@ -64,6 +64,7 @@ https://mesh.deco.cx/webhooks/{connectionId}
 ```
 
 Esta URL:
+
 - ✅ Responde automaticamente ao challenge de verificação do Slack
 - ✅ Verifica assinaturas usando seu `SIGNING_SECRET`
 - ✅ Publica eventos no Event Bus para processamento pelo MCP
@@ -71,18 +72,19 @@ Esta URL:
 
 ## Campos de Configuração
 
-| Campo | Obrigatório | Descrição |
-|-------|-------------|-----------|
-| BOT_TOKEN | ✅ | Token do bot (xoxb-...) |
-| SIGNING_SECRET | ✅ | Signing Secret para verificar webhooks |
-| LOG_CHANNEL_ID | ❌ | Canal para logs do bot |
-| THREAD_TIMEOUT_MIN | ❌ | Timeout de inatividade em minutos (padrão: 10) |
-| ALLOWED_CHANNELS | ❌ | IDs de canais permitidos (separados por vírgula) |
-| ENABLE_STREAMING | ❌ | Habilitar respostas em streaming (padrão: true) |
+| Campo              | Obrigatório | Descrição                                        |
+| ------------------ | ----------- | ------------------------------------------------ |
+| BOT_TOKEN          | ✅          | Token do bot (xoxb-...)                          |
+| SIGNING_SECRET     | ✅          | Signing Secret para verificar webhooks           |
+| LOG_CHANNEL_ID     | ❌          | Canal para logs do bot                           |
+| THREAD_TIMEOUT_MIN | ❌          | Timeout de inatividade em minutos (padrão: 10)   |
+| ALLOWED_CHANNELS   | ❌          | IDs de canais permitidos (separados por vírgula) |
+| ENABLE_STREAMING   | ❌          | Habilitar respostas em streaming (padrão: true)  |
 
 ## Tools Disponíveis
 
 ### Mensagens
+
 - `SLACK_SEND_MESSAGE` - Enviar mensagem para canal ou thread
 - `SLACK_REPLY_IN_THREAD` - Responder em uma thread
 - `SLACK_EDIT_MESSAGE` - Editar mensagem existente
@@ -92,12 +94,14 @@ Esta URL:
 - `SLACK_SEARCH_MESSAGES` - Buscar mensagens
 
 ### Canais
+
 - `SLACK_LIST_CHANNELS` - Listar canais do workspace
 - `SLACK_GET_CHANNEL_INFO` - Informações de um canal
 - `SLACK_JOIN_CHANNEL` - Entrar em um canal
 - `SLACK_GET_CHANNEL_MEMBERS` - Listar membros de um canal
 
 ### Usuários e Reactions
+
 - `SLACK_GET_USER_INFO` - Informações de um usuário
 - `SLACK_LIST_USERS` - Listar usuários do workspace
 - `SLACK_GET_BOT_INFO` - Informações do bot
@@ -105,6 +109,7 @@ Esta URL:
 - `SLACK_REMOVE_REACTION` - Remover reaction
 
 ### Setup e Debug
+
 - `SLACK_GET_BOT_STATUS` - Status do bot
 - `SLACK_GET_THREAD_INFO` - Info de thread lógica
 - `SLACK_RESET_THREAD` - Resetar contexto de thread
@@ -115,11 +120,13 @@ Esta URL:
 O MCP resolve o problema comum de mistura de contextos em bots do Slack:
 
 ### Problema Anterior
+
 - Cada canal era tratado como uma thread lógica
 - Múltiplas @mentions no mesmo canal misturavam contextos
 - Era necessário criar novos canais para "resetar" o bot
 
 ### Solução Implementada
+
 - Cada `@mention` ao bot cria uma **nova thread lógica**
 - O identificador da thread usa `message.ts` (timestamp da mensagem), não o `channel_id`
 - Respostas na mesma thread do Slack mantêm o contexto compartilhado
@@ -159,6 +166,7 @@ Este MCP usa o **Mesh Universal Webhook Proxy** para receber eventos:
 ```
 
 **Benefícios:**
+
 - Cada organização tem sua própria URL
 - O MCP não precisa expor endpoints HTTP
 - Verificação de assinatura centralizada no Mesh
@@ -179,4 +187,3 @@ O deploy é automático via GitHub Actions quando há push para `main`.
 ```bash
 bun run scripts/deploy.ts slack-mcp
 ```
-

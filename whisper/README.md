@@ -113,7 +113,7 @@ Transcribes an audio file to text.
 
 ```typescript
 const result = await transcribeAudio({
-  audioUrl: "https://example.com/audio.mp3"
+  audioUrl: "https://example.com/audio.mp3",
 });
 
 console.log(result.text);
@@ -124,7 +124,7 @@ console.log(result.text);
 ```typescript
 const result = await transcribeAudio({
   audioUrl: "https://example.com/audio-pt.mp3",
-  language: "pt"
+  language: "pt",
 });
 ```
 
@@ -133,16 +133,16 @@ const result = await transcribeAudio({
 ```typescript
 const result = await transcribeAudio({
   audioUrl: "https://example.com/audio.mp3",
-  timestampGranularities: ["word", "segment"]
+  timestampGranularities: ["word", "segment"],
 });
 
 // Access word-level timestamps
-result.words?.forEach(word => {
+result.words?.forEach((word) => {
   console.log(`${word.word} (${word.start}s - ${word.end}s)`);
 });
 
 // Access segment-level timestamps
-result.segments?.forEach(segment => {
+result.segments?.forEach((segment) => {
   console.log(`${segment.text} (${segment.start}s - ${segment.end}s)`);
 });
 ```
@@ -153,7 +153,7 @@ result.segments?.forEach(segment => {
 const result = await transcribeAudio({
   audioUrl: "https://example.com/technical-talk.mp3",
   prompt: "This is a technical presentation about machine learning and AI.",
-  language: "en"
+  language: "en",
 });
 ```
 
@@ -222,6 +222,7 @@ shared/ (shared code)
 ### Error: "Cannot find module '@decocms/mcps-shared/audio-transcribers'"
 
 Run:
+
 ```bash
 bun install
 ```
@@ -229,6 +230,7 @@ bun install
 ### Error: "OPENAI_API_KEY is not set"
 
 Configure the environment variable:
+
 ```bash
 export OPENAI_API_KEY=your_key_here
 ```
@@ -268,4 +270,3 @@ bun run configure
 ## License
 
 MIT
-

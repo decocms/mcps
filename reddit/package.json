@@ -1,8 +1,8 @@
 {
   "name": "reddit",
   "version": "1.0.0",
-  "description": "MCP server for Reddit - search subreddits and browse posts",
   "private": true,
+  "description": "MCP server for Reddit - search subreddits and browse posts",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",
@@ -32,5 +32,3 @@
     "node": ">=22.0.0"
   }
 }
-
-

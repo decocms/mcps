@@ -32,6 +32,7 @@ Reutilizable middlewares for wrapping async operations:
 - `applyMiddlewares(options)` - Compose multiple middlewares
 
 **Usage:**
+
 ```typescript
 import {
   withRetry,
@@ -42,15 +43,12 @@ import {
 
 const robustOperation = applyMiddlewares({
   fn: async () => await apiCall(),
-  middlewares: [
-    withLogging({ title: "My Operation" }),
-    withRetry(3),
-    withTimeout(60000),
-  ],
+  middlewares: [withLogging({ title: "My Operation" }), withRetry(3), withTimeout(60000)],
 });
 ```
 
 **Re-exported by:**
+
 - `@decocms/mcps-shared/video-generators`
 - `@decocms/mcps-shared/image-generators`
 - `@decocms/mcps-shared/image-analyzers`
@@ -87,13 +85,12 @@ export const createUploadFileTool = (env: Env) =>
     outputSchema: fileUploadOutputSchema,
     execute: async ({ input }) => {
       return await withFileOperationErrorHandling(async () => {
-      
         const { file } = await createFileFromInput(input);
-        
+
         const formData = createFormDataWithFile(file);
-        
+
         const result = await apiClient.uploadFile(formData);
-        
+
         return createFileUploadSuccess({
           id: result.id,
           name: result.name,
@@ -109,12 +106,14 @@ export const createUploadFileTool = (env: Env) =>
 ##### File Upload
 
 **Input:**
+
 - `fileUrl` (string, optional) - URL of the file to upload
 - `fileContent` (string, optional) - Direct file content (text)
 - `fileName` (string, optional) - Name of the file with extension
 - `metadata` (record, optional) - Metadata to attach to the file
 
 **Output:**
+
 - `success` (boolean) - Whether the operation succeeded
 - `file` (object, nullable) - File information (id, name, status, created_on, updated_on, metadata)
 - `message` (string, optional) - Success or error message
@@ -122,19 +121,23 @@ export const createUploadFileTool = (env: Env) =>
 ##### File Delete
 
 **Input:**
+
 - `fileId` (string, required) - ID of the file to delete
 
 **Output:**
+
 - `success` (boolean) - Whether the operation succeeded
 - `message` (string, optional) - Success or error message
 
 ##### File Get
 
 **Input:**
+
 - `fileId` (string, required) - ID of the file to retrieve
 - `includeUrl` (boolean, optional) - Whether to include signed URL
 
 **Output:**
+
 - `success` (boolean) - Whether the operation succeeded
 - `file` (object, nullable) - File information with optional signed_url, percent_done, error_message
 - `message` (string, optional) - Success or error message
@@ -142,11 +145,13 @@ export const createUploadFileTool = (env: Env) =>
 ##### File List
 
 **Input:**
+
 - `filter` (string, optional) - Optional filter for files (usually JSON)
 - `limit` (number, optional) - Maximum number of files to return
 - `offset` (number, optional) - Number of files to skip
 
 **Output:**
+
 - `success` (boolean) - Whether the operation succeeded
 - `files` (array) - Array of file information objects
 - `total` (number, optional) - Total count of files
@@ -161,7 +166,7 @@ Creates a File object from either a file URL or file content.
 ```typescript
 const { file, contentType } = await createFileFromInput({
   fileUrl: "https://example.com/file.pdf",
-  fileName: "document.pdf"
+  fileName: "document.pdf",
 });
 ```
 
@@ -172,7 +177,7 @@ Creates a FormData object ready for multipart upload.
 ```typescript
 const formData = createFormDataWithFile(file, "file", {
   userId: "123",
-  category: "documents"
+  category: "documents",
 });
 ```
 
@@ -181,13 +186,10 @@ const formData = createFormDataWithFile(file, "file", {
 Wraps operations with standardized error handling.
 
 ```typescript
-return await withFileOperationErrorHandling(
-  async () => {
-    // Your file operation
-    return result;
-  },
-  "Failed to process file"
-);
+return await withFileOperationErrorHandling(async () => {
+  // Your file operation
+  return result;
+}, "Failed to process file");
 ```
 
 ##### `createFileUploadSuccess(file, message?)`
@@ -195,11 +197,14 @@ return await withFileOperationErrorHandling(
 Creates a standardized success response for uploads.
 
 ```typescript
-return createFileUploadSuccess({
-  id: "file-123",
-  name: "document.pdf",
-  status: "uploaded",
-}, "File uploaded successfully");
+return createFileUploadSuccess(
+  {
+    id: "file-123",
+    name: "document.pdf",
+    status: "uploaded",
+  },
+  "File uploaded successfully",
+);
 ```
 
 ##### `createFileDeleteSuccess(message?)`
@@ -243,7 +248,7 @@ Builds URL query parameters for file listing.
 const query = buildFileListQueryParams({
   filter: '{"type": "pdf"}',
   limit: 10,
-  offset: 20
+  offset: 20,
 });
 // Returns: "?filter=%7B%22type%22%3A%22pdf%22%7D&limit=10&offset=20"
 ```
@@ -274,18 +279,18 @@ import {
 export const generateImage = (env: Env) => {
   const executeGeneration = async (
     input: GenerateImageInput,
-    env: Env
+    env: Env,
   ): Promise<GenerateImageOutput> => {
     // Call your provider's API
     const response = await callProviderAPI(input.prompt, input.aspectRatio);
-    
+
     // Save the image
     const { url } = await saveImageToFileSystem(env, {
       imageData: response.imageData,
       mimeType: "image/png",
       metadata: { prompt: input.prompt },
     });
-    
+
     return { image: url };
   };
 
@@ -306,11 +311,13 @@ export const generateImage = (env: Env) => {
 All image generators follow the same contract:
 
 **Input:**
+
 - `prompt` (string, required) - Description of the image to be generated
 - `baseImageUrl` (string, optional) - URL of a base image for image-to-image
 - `aspectRatio` (enum, optional) - Aspect ratio: "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"
 
 **Output:**
+
 - `image` (string, optional) - URL of the generated image
 - `error` (boolean, optional) - Whether there was an error in generation
 - `finishReason` (string, optional) - Reason for completion (success, content filter, etc)
@@ -346,6 +353,7 @@ const timedGeneration = withTimeout(executeGeneration, 60000); // 60 seconds
 Adds contract authorization and settlement for billing, plus **automatically includes retry and logging**.
 
 Options:
+
 - `clauseId` (required) - Contract clause ID
 - `contract` (required) - Contract property name in environment
 - `provider` (optional) - Provider name for logs (default: "Provider")
@@ -395,7 +403,7 @@ const robustExecute = withTimeout(
     provider: "Gemini",
     maxRetries: 3,
   }),
-  60000
+  60000,
 );
 ```
 
@@ -418,14 +426,14 @@ const generateImage = (env: Env) => {
   // Core generation logic
   const executeGeneration = async (
     input: GenerateImageInput,
-    env: Env
+    env: Env,
   ): Promise<GenerateImageOutput> => {
     // Call Gemini API
     const client = createGeminiClient(env);
     const response = await client.generateImage(
       input.prompt,
       input.baseImageUrl || undefined,
-      input.aspectRatio
+      input.aspectRatio,
     );
 
     const candidate = response.candidates[0];
@@ -502,10 +510,10 @@ const generateImage = (env: Env) => {
     // Only implement DALL-E specific call
     const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${env.OPENAI_API_KEY}` },
+      headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
       body: JSON.stringify({ prompt: input.prompt }),
     });
-    
+
     const data = await response.json();
     return { image: data.data[0].url };
   };

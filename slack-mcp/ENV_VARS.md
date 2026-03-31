@@ -11,6 +11,7 @@ SUPABASE_ANON_KEY=
 ```
 
 **Como obter:**
+
 1. Supabase Dashboard → Settings → API
 2. Copie "Project URL" → `SUPABASE_URL`
 3. Copie "anon public" key → `SUPABASE_ANON_KEY`
@@ -105,11 +106,11 @@ spec:
   template:
     spec:
       containers:
-      - name: slack-mcp
-        image: slack-mcp:latest
-        envFrom:
-        - secretRef:
-            name: slack-mcp-env
+        - name: slack-mcp
+          image: slack-mcp:latest
+          envFrom:
+            - secretRef:
+                name: slack-mcp-env
 ```
 
 ---
@@ -143,4 +144,3 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 Tudo mais é opcional!
-

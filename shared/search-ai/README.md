@@ -112,10 +112,14 @@ export const mySearchTools = createSearchAITools({
     provider: "My Search AI",
   },
   getClient: (env) => new MySearchAIClient({ apiKey: env.state.API_KEY }),
-  maxRetries: 5,           // Default: 3
-  timeoutMs: 120_000,      // Default: 60000 (1 minute)
-  askTool: { /* ... */ },
-  chatTool: { /* ... */ },
+  maxRetries: 5, // Default: 3
+  timeoutMs: 120_000, // Default: 60000 (1 minute)
+  askTool: {
+    /* ... */
+  },
+  chatTool: {
+    /* ... */
+  },
 });
 ```
 
@@ -272,6 +276,7 @@ if (result.error) {
 ```
 
 **Success Output:**
+
 - `error?: false` - Explicit discriminator (optional, defaults to undefined)
 - `answer: string` - The AI-generated answer
 - `model?: string` - Model used
@@ -279,6 +284,7 @@ if (result.error) {
 - Plus optional `sources`, `related_questions`, `images`
 
 **Error Output:**
+
 - `error: true` - Explicit discriminator (required)
 - `message?: string` - Error message
 - `finish_reason?: string` - Reason for failure
@@ -294,4 +300,3 @@ if (result.error) {
 ## License
 
 MIT
-

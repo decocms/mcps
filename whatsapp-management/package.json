@@ -1,8 +1,8 @@
 {
   "name": "whatsapp-management",
   "version": "1.0.0",
-  "description": "WhatsApp Business Management MCP",
   "private": true,
+  "description": "WhatsApp Business Management MCP",
   "type": "module",
   "scripts": {
     "dev": "PORT=8003 bun run --hot server/main.ts",

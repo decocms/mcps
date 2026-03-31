@@ -22,15 +22,9 @@
   "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
   "unlisted": true,
   "metadata": {
-    "categories": [
-      "Productivity"
-    ],
+    "categories": ["Productivity"],
     "official": false,
-    "tags": [
-      "postgres",
-      "private",
-      "farmrio"
-    ],
+    "tags": ["postgres", "private", "farmrio"],
     "short_description": "Private hosted PostgreSQL MCP for Farm Rio collection reorder reports",
     "mesh_description": "**Private Access** - Requires MCP_ACCESS_TOKEN configured in the connection state. **Hosted Database** - Uses internal managed PostgreSQL via deploy secret. **Collections & Reports** - Provides CRUD tools for collections and ranked report datasets."
   }

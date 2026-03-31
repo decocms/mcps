@@ -5,21 +5,25 @@ MCP Server for Google Tag Manager integration. Manage accounts, containers, work
 ## Features
 
 ### Account Management
+
 - **list_accounts** - List all accessible GTM accounts
 - **get_account** - Get details of a specific account
 
 ### Container Management
+
 - **list_containers** - List containers in an account
 - **get_container** - Get details of a specific container
 - **create_container** - Create a new container
 - **delete_container** - Delete a container
 
 ### Workspace Management
+
 - **list_workspaces** - List workspaces in a container
 - **get_workspace** - Get details of a specific workspace
 - **create_workspace** - Create a new workspace
 
 ### Tag Management
+
 - **list_tags** - List tags in a workspace
 - **get_tag** - Get details of a specific tag
 - **create_tag** - Create a new tag
@@ -27,6 +31,7 @@ MCP Server for Google Tag Manager integration. Manage accounts, containers, work
 - **delete_tag** - Delete a tag
 
 ### Trigger Management
+
 - **list_triggers** - List triggers in a workspace
 - **get_trigger** - Get details of a specific trigger
 - **create_trigger** - Create a new trigger
@@ -34,6 +39,7 @@ MCP Server for Google Tag Manager integration. Manage accounts, containers, work
 - **delete_trigger** - Delete a trigger
 
 ### Variable Management
+
 - **list_variables** - List variables in a workspace
 - **get_variable** - Get details of a specific variable
 - **create_variable** - Create a new variable
@@ -457,4 +463,3 @@ The MCP will throw errors for:
 ## License
 
 MIT
-

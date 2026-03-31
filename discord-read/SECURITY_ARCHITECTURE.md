@@ -11,6 +11,7 @@ O Discord MCP implementa uma arquitetura de segurança em camadas para proteger 
 **Usado por:** Tools MCP expostas para o agente de IA
 
 **Características:**
+
 - ✅ RLS (Row Level Security) **HABILITADO**
 - ✅ Acesso READ/WRITE a tabelas operacionais
 - ❌ **BLOQUEADO** para `discord_connections` (sem RLS policies)
@@ -18,7 +19,7 @@ O Discord MCP implementa uma arquitetura de segurança em camadas para proteger 
 **Tabelas Acessíveis:**
 
 | Tabela                     | READ | INSERT | UPDATE | DELETE |
-|----------------------------|------|--------|--------|--------|
+| -------------------------- | ---- | ------ | ------ | ------ |
 | `discord_message`          | ✅   | ✅     | ✅     | ❌     |
 | `guilds`                   | ✅   | ✅     | ✅     | ❌     |
 | `discord_channel`          | ✅   | ✅     | ✅     | ❌     |
@@ -29,6 +30,7 @@ O Discord MCP implementa uma arquitetura de segurança em camadas para proteger 
 | `discord_audit_log`        | ❌   | ✅     | ❌     | ❌     |
 
 **Variável de Ambiente:**
+
 ```bash
 export SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -38,6 +40,7 @@ export SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 **Usado por:** Código interno do MCP (funções em `supabase-client.ts`)
 
 **Características:**
+
 - ✅ **Bypassa RLS** (Row Level Security desabilitado)
 - ✅ Acesso completo a **TODAS** as tabelas
 - ✅ Acesso exclusivo a `discord_connections`
@@ -45,12 +48,13 @@ export SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 **Tabelas Acessíveis:**
 
-| Tabela                | Acesso         | Uso                                    |
-|-----------------------|----------------|----------------------------------------|
-| `discord_connections` | ✅ **Completo** | Tokens, credenciais, configurações    |
-| Todas as outras       | ✅ Completo     | Fallback para operações internas      |
+| Tabela                | Acesso          | Uso                                |
+| --------------------- | --------------- | ---------------------------------- |
+| `discord_connections` | ✅ **Completo** | Tokens, credenciais, configurações |
+| Todas as outras       | ✅ Completo     | Fallback para operações internas   |
 
 **Variável de Ambiente:**
+
 ```bash
 export SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -60,12 +64,14 @@ export SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### Por que proteger?
 
 A tabela `discord_connections` contém:
+
 - `bot_token` - Token do bot Discord (acesso completo ao bot)
 - `mesh_token` - Token de autenticação do Mesh
 - `organization_id` - Identificador da organização
 - Outras configurações sensíveis
 
 **Se um agente de IA tivesse acesso direto:**
+
 - ❌ Poderia ler tokens de outros bots
 - ❌ Poderia modificar configurações de segurança
 - ❌ Poderia comprometer outras organizações
@@ -78,7 +84,7 @@ A tabela `discord_connections` contém:
 
 ```sql
 -- ❌ Isso vai falhar (sem policies)
-SELECT * FROM discord_connections; 
+SELECT * FROM discord_connections;
 -- Error: new row violates row-level security policy
 ```
 
@@ -87,9 +93,7 @@ SELECT * FROM discord_connections;
 ```typescript
 // ✅ Isso funciona (service client bypassa RLS)
 const client = getSupabaseServiceClient();
-const { data } = await client
-  .from('discord_connections')
-  .select('*');
+const { data } = await client.from("discord_connections").select("*");
 ```
 
 ## 📋 Implementação no Código
@@ -101,7 +105,7 @@ const { data } = await client
 export function getSupabaseClient(): SupabaseClient | null {
   return createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY // ⚠️  RLS habilitado
+    process.env.SUPABASE_ANON_KEY, // ⚠️  RLS habilitado
   );
 }
 
@@ -109,17 +113,14 @@ export function getSupabaseClient(): SupabaseClient | null {
 export function getSupabaseServiceClient(): SupabaseClient | null {
   return createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY // ✅ Bypassa RLS
+    process.env.SUPABASE_SERVICE_ROLE_KEY, // ✅ Bypassa RLS
   );
 }
 
 // ✅ Acessa discord_connections com SERVICE client
 export async function loadConnectionConfig(connectionId: string) {
   const client = getSupabaseServiceClient(); // ← SERVICE_ROLE
-  return await client
-    .from('discord_connections')
-    .select('*')
-    .eq('connection_id', connectionId);
+  return await client.from("discord_connections").select("*").eq("connection_id", connectionId);
 }
 ```
 
@@ -132,16 +133,12 @@ export const createDatabaseRunSQLTool = (env: Env) =>
     execute: async ({ context }) => {
       // ✅ Usa ANON client (RLS habilitado)
       const client = getSupabaseClient(); // ← ANON KEY
-      
+
       // ❌ Não pode acessar discord_connections
-      const { data } = await client
-        .from('discord_connections')
-        .select('*'); // Error: insufficient privilege
-      
+      const { data } = await client.from("discord_connections").select("*"); // Error: insufficient privilege
+
       // ✅ Pode acessar outras tabelas
-      const { data } = await client
-        .from('discord_message')
-        .select('*'); // OK!
+      const { data } = await client.from("discord_message").select("*"); // OK!
     },
   });
 ```
@@ -252,20 +249,16 @@ export SUPABASE_URL=https://seu-projeto.supabase.co
 ```typescript
 // Teste 1: Tool não consegue acessar discord_connections
 const client = getSupabaseClient(); // ANON
-const { data, error } = await client
-  .from('discord_connections')
-  .select('*');
+const { data, error } = await client.from("discord_connections").select("*");
 
-console.log(error); 
+console.log(error);
 // ❌ Error: new row violates row-level security policy
 
 // Teste 2: Código interno consegue
 const serviceClient = getSupabaseServiceClient(); // SERVICE_ROLE
-const { data, error } = await serviceClient
-  .from('discord_connections')
-  .select('*');
+const { data, error } = await serviceClient.from("discord_connections").select("*");
 
-console.log(data); 
+console.log(data);
 // ✅ [{ connection_id: '...', bot_token: '...' }]
 ```
 
@@ -286,4 +279,3 @@ console.log(data);
 - `server/lib/supabase-client.ts` - Implementação dos clientes
 - `server/tools/database.ts` - Tools de acesso ao banco
 - `README.md` - Documentação geral
-

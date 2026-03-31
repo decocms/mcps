@@ -11,6 +11,7 @@ This shows how to use `DISCOVER_DATA` with domain-specific hints to map a HyperD
 ```
 
 **What the hints do:**
+
 - `section`, `loader`, `rendering`, `vtex`, `shopify` — text keywords searched in `level:error` logs, grouped by `[service, body]`
 - `cloud.provider`, `build.step`, `dispatch_namespace` — field names (contain `.` or `_`) queried as existence checks, grouped by field values
 
@@ -42,51 +43,51 @@ Total events in window: 20,080,255
 
 ## Log Levels
 
-  - ok: 14,097,710 (72.0%)
-  - log: 4,484,028 (22.9%)
-  - info: 956,661 (4.9%)
-  - warn: 412,639 (2.1%)
-  - error: 97,716 (0.5%)
-  - debug: 31,501 (0.2%)
+- ok: 14,097,710 (72.0%)
+- log: 4,484,028 (22.9%)
+- info: 956,661 (4.9%)
+- warn: 412,639 (2.1%)
+- error: 97,716 (0.5%)
+- debug: 31,501 (0.2%)
 
 **Note:** If the most common level is NOT "info" or "error" (e.g., "ok"), this instance uses non-standard levels. Adjust your queries accordingly.
 
 ## Active Services (top 15)
 
-  - fila-store (9,102,966 events)
-  - deco-chat-api (4,652,226 events)
-  - technos (3,164,504 events)
-  - deco-chat (720,547 events)
-  - farmrio (550,767 events)
-  - teciplast (340,178 events)
-  - oficina-reserva (197,021 events)
-  - als-storefront (173,420 events)
-  - lebiscuit (100,233 events)
-  - casaevideo (96,789 events)
-  - miess-01 (84,473 events)
-  - lojastorra-2 (72,225 events)
-  - osklenbr (65,460 events)
-  - lojabagaggio (57,753 events)
-  - montecarlo (42,741 events)
+- fila-store (9,102,966 events)
+- deco-chat-api (4,652,226 events)
+- technos (3,164,504 events)
+- deco-chat (720,547 events)
+- farmrio (550,767 events)
+- teciplast (340,178 events)
+- oficina-reserva (197,021 events)
+- als-storefront (173,420 events)
+- lebiscuit (100,233 events)
+- casaevideo (96,789 events)
+- miess-01 (84,473 events)
+- lojastorra-2 (72,225 events)
+- osklenbr (65,460 events)
+- lojabagaggio (57,753 events)
+- montecarlo (42,741 events)
 
 ## Top Errors
 
-  - [deco-ai-gateway] Balance alert check failed (8091x)
-  - [cleanwhey] loader error AbortError: The signal has been aborted (3292x)
-  - [lojaintegradar] rendering: site/sections/TcoCalculator.tsx at https://landing.lojaintegrada.com.br/... (3074x)
-  - [farmrio] rendering: site/sections/FarmETC/ListingPage/EtcSearchFeatures.tsx ... (2109x)
-  - [maconequiio] rendering: commerce/sections/Seo/SeoPLP.tsx HttpError 402: Unavailable Shop (1809x)
-  - [lebiscuit] error sending request for url: lebiscuit.myvtex.com GraphQL validation failed (1353x)
+- [deco-ai-gateway] Balance alert check failed (8091x)
+- [cleanwhey] loader error AbortError: The signal has been aborted (3292x)
+- [lojaintegradar] rendering: site/sections/TcoCalculator.tsx at https://landing.lojaintegrada.com.br/... (3074x)
+- [farmrio] rendering: site/sections/FarmETC/ListingPage/EtcSearchFeatures.tsx ... (2109x)
+- [maconequiio] rendering: commerce/sections/Seo/SeoPLP.tsx HttpError 402: Unavailable Shop (1809x)
+- [lebiscuit] error sending request for url: lebiscuit.myvtex.com GraphQL validation failed (1353x)
 
 ## Dashboards
 
-  - "platform - traffic split" (5 charts) — fields: duration, http.response.status_code, process.tag.cloud.provider
-  - "platform - http" (23 charts) — fields: cache_hit, cloud.provider, duration, http.host, http.request.url, ...
-  - "platform - daily" (21 charts) — fields: build.step, cache_tar_size_mb, cloud.provider, process.tag.site.name, ...
-  - "platform - commerce" (10 charts) — fields: duration, service
-  - "decocms infra" (24 charts) — fields: actor.id, actor.method, db.sql.query, tool.id, mcp.tool.name, ...
-  - "Loaders Cache" (10 charts) — fields: cache_status, duration, service, span_name
-  - ... and 9 more
+- "platform - traffic split" (5 charts) — fields: duration, http.response.status_code, process.tag.cloud.provider
+- "platform - http" (23 charts) — fields: cache_hit, cloud.provider, duration, http.host, http.request.url, ...
+- "platform - daily" (21 charts) — fields: build.step, cache_tar_size_mb, cloud.provider, process.tag.site.name, ...
+- "platform - commerce" (10 charts) — fields: duration, service
+- "decocms infra" (24 charts) — fields: actor.id, actor.method, db.sql.query, tool.id, mcp.tool.name, ...
+- "Loaders Cache" (10 charts) — fields: cache_status, duration, service, span_name
+- ... and 9 more
 
 ## Fields Used Across Dashboards
 
@@ -95,38 +96,45 @@ HttpError, actor.id, actor.method, actor.name, build.step, cache_status, cache_t
 ## Domain-Specific Patterns
 
 ### "section" (keyword:section)
-  - [lojaintegradar] rendering: site/sections/TcoCalculator.tsx ... (3074x)
-  - [farmrio] rendering: site/sections/FarmETC/... (2109x)
-  - [docthos] rendering: site/sections/SEO/SeoPDPV2Custom.tsx ... (577x)
+
+- [lojaintegradar] rendering: site/sections/TcoCalculator.tsx ... (3074x)
+- [farmrio] rendering: site/sections/FarmETC/... (2109x)
+- [docthos] rendering: site/sections/SEO/SeoPDPV2Custom.tsx ... (577x)
 
 ### "loader" (keyword:loader)
-  - [cleanwhey] loader error AbortError: The signal has been aborted (3292x)
-  - [maconequiio] rendering: commerce/sections/Seo/SeoPLP.tsx HttpError 402 (1809x)
-  - [ladeira] loader error AbortError: The request has been cancelled (840x)
+
+- [cleanwhey] loader error AbortError: The signal has been aborted (3292x)
+- [maconequiio] rendering: commerce/sections/Seo/SeoPLP.tsx HttpError 402 (1809x)
+- [ladeira] loader error AbortError: The request has been cancelled (840x)
 
 ### "cloud.provider" (field:cloud.provider)
-  - kubernetes (352,248x)
-  - denodeploy (31,697x)
-  - deno_deploy (42x)
-  - localhost (2x)
+
+- kubernetes (352,248x)
+- denodeploy (31,697x)
+- deno_deploy (42x)
+- localhost (2x)
 
 ### "vtex" (keyword:vtex)
-  - [macoteste] sections/Content/SeoPLP.tsx HttpError 400 (1273x)
-  - [ffloresta] vtex/loaders/intelligentSearch/productListingPage.ts Dangling reference (1261x)
-  - [miess-01] HttpError 429: Too Many Requests (270x)
+
+- [macoteste] sections/Content/SeoPLP.tsx HttpError 400 (1273x)
+- [ffloresta] vtex/loaders/intelligentSearch/productListingPage.ts Dangling reference (1261x)
+- [miess-01] HttpError 429: Too Many Requests (270x)
 
 ### "shopify" (keyword:shopify)
-  - [maconequiio] HttpError 402: Unavailable Shop (1809x)
-  - [renzi-co] HttpError 402: Unavailable Shop (20x)
-  - [zeedog-shopify] Cannot read properties of undefined (reading 'athena') (14x)
+
+- [maconequiio] HttpError 402: Unavailable Shop (1809x)
+- [renzi-co] HttpError 402: Unavailable Shop (20x)
+- [zeedog-shopify] Cannot read properties of undefined (reading 'athena') (14x)
 
 ### "build.step" (field:build.step)
-  - BUILD (3x)
-  - SITE_BUILD (3x)
-  - UPLOAD_RESULTS (3x)
+
+- BUILD (3x)
+- SITE_BUILD (3x)
+- UPLOAD_RESULTS (3x)
 
 ### "dispatch_namespace" (field:dispatch_namespace)
-  - deco-chat-prod (15,353x)
+
+- deco-chat-prod (15,353x)
 
 ## Query Tips
 

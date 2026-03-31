@@ -1,8 +1,8 @@
 {
   "name": "blog-post-generator",
   "version": "1.0.0",
-  "description": "Blog post generator MCP using n8n workflow automation",
   "private": true,
+  "description": "Blog post generator MCP using n8n workflow automation",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
@@ -26,4 +26,3 @@
     "node": ">=22.0.0"
   }
 }
-

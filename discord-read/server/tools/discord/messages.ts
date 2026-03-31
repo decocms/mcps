@@ -241,7 +241,10 @@ export const createDeleteMessageTool = (env: Env) =>
         await discordAPI(
           env,
           `/channels/${input.channel_id}/messages/${idsToDelete[0]}`,
-          { method: "DELETE", reason: input.reason },
+          {
+            method: "DELETE",
+            reason: input.reason,
+          },
         );
         return { success: true, deleted_count: 1, failed_count: 0 };
       }
@@ -258,7 +261,10 @@ export const createDeleteMessageTool = (env: Env) =>
           await discordAPI(
             env,
             `/channels/${input.channel_id}/messages/${messageId}`,
-            { method: "DELETE", reason: input.reason },
+            {
+              method: "DELETE",
+              reason: input.reason,
+            },
           );
           return messageId;
         },
@@ -603,7 +609,10 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
                   await discordAPI(
                     env,
                     `/channels/${input.channel_id}/messages/${id}`,
-                    { method: "DELETE", reason: input.reason },
+                    {
+                      method: "DELETE",
+                      reason: input.reason,
+                    },
                   );
                   individualDeleted++;
                   await new Promise((r) => setTimeout(r, 200));
@@ -621,7 +630,10 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
               await discordAPI(
                 env,
                 `/channels/${input.channel_id}/messages/${chunk[0]}`,
-                { method: "DELETE", reason: input.reason },
+                {
+                  method: "DELETE",
+                  reason: input.reason,
+                },
               );
               individualDeleted++;
             } catch {
@@ -635,7 +647,10 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
           await discordAPI(
             env,
             `/channels/${input.channel_id}/messages/${recentMessages[0].id}`,
-            { method: "DELETE", reason: input.reason },
+            {
+              method: "DELETE",
+              reason: input.reason,
+            },
           );
           individualDeleted++;
         } catch {
@@ -656,7 +671,10 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
             await discordAPI(
               env,
               `/channels/${input.channel_id}/messages/${msg.id}`,
-              { method: "DELETE", reason: input.reason },
+              {
+                method: "DELETE",
+                reason: input.reason,
+              },
             );
             return msg.id;
           },
@@ -886,7 +904,10 @@ export const createPinMessageTool = (env: Env) =>
       await discordAPI(
         env,
         `/channels/${input.channel_id}/pins/${input.message_id}`,
-        { method: "PUT", reason: input.reason },
+        {
+          method: "PUT",
+          reason: input.reason,
+        },
       );
 
       return { success: true };
@@ -922,7 +943,10 @@ export const createUnpinMessageTool = (env: Env) =>
       await discordAPI(
         env,
         `/channels/${input.channel_id}/pins/${input.message_id}`,
-        { method: "DELETE", reason: input.reason },
+        {
+          method: "DELETE",
+          reason: input.reason,
+        },
       );
 
       return { success: true };

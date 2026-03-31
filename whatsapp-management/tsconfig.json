@@ -27,14 +27,11 @@
     "baseUrl": ".",
     "paths": {
       "shared/*": ["./shared/*"],
-      "server/*": ["./server/*"],
+      "server/*": ["./server/*"]
     },
 
     /* Types */
     "types": ["node"]
   },
-  "include": [
-    "server",
-    "shared"
-  ]
+  "include": ["server", "shared"]
 }
