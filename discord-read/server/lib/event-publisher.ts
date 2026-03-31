@@ -149,29 +149,6 @@ export function publishMemberLeft(env: Env, member: GuildMember): void {
 }
 
 /**
- * Publish a discord.member.banned event
- */
-export function publishMemberBanned(
-  env: Env,
-  guildId: string,
-  userId: string,
-  reason?: string,
-): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.banned", {
-    event: "discord.member.banned",
-    subject: userId,
-    user_id: userId,
-    guild_id: guildId,
-    reason: reason || "No reason provided",
-    banned_at: new Date().toISOString(),
-  });
-  console.log(`[Triggers] Notified discord.member.banned: ${userId}`);
-}
-
-/**
  * Publish a discord.member.role.added event
  */
 export function publishMemberRoleAdded(
