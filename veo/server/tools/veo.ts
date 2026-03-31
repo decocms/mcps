@@ -212,7 +212,9 @@ const createGetGeneratedVideoTool = (env: Env) =>
       const videoStream = await client.downloadVideo(video.video.uri);
       const videoBlob = new Blob(
         [await new Response(videoStream).arrayBuffer()],
-        { type: mimeType },
+        {
+          type: mimeType,
+        },
       );
 
       const objectStorage = getObjectStorage(env);

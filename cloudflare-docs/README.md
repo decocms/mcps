@@ -39,5 +39,4 @@ https://docs.mcp.cloudflare.com/sse
 
 ---
 
-*This MCP provides public access to Cloudflare documentation.*
-
+_This MCP provides public access to Cloudflare documentation._

@@ -1,8 +1,8 @@
 {
   "name": "farmrio-reorder-collection-db",
   "version": "1.0.0",
-  "description": "PostgreSQL database for Farm Rio collection reorder reports",
   "private": true,
+  "description": "PostgreSQL database for Farm Rio collection reorder reports",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

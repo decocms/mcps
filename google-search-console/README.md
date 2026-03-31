@@ -1,25 +1,29 @@
-# Google Search Console MCP 
+# Google Search Console MCP
 
 MCP Server for Google Search Console integration. Access search analytics, manage sitemaps, inspect URLs, and monitor site performance using the Google Search Console API.
 
 ## Features
 
 ### Search Analytics
+
 - **query_search_analytics** - Query search analytics data (clicks, impressions, CTR, position) with filters by date, query, page, country, device, and search type
 
 ### Sites Management
+
 - **list_sites** - List all sites in Google Search Console
 - **get_site** - Get information about a specific site
 - **add_site** - Add a new site to Google Search Console
 - **remove_site** - Remove a site from Google Search Console
 
 ### Sitemaps Management
+
 - **list_sitemaps** - List all sitemaps for a site
 - **get_sitemap** - Get information about a specific sitemap
 - **submit_sitemap** - Submit a sitemap to Google Search Console
 - **delete_sitemap** - Delete a sitemap from Google Search Console
 
 ### URL Inspection
+
 - **inspect_url** - Inspect a URL's Google index status, including indexing state, mobile usability, AMP status, and rich results
 
 ## Setup

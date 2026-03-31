@@ -1,24 +1,8 @@
 {
   "name": "@decocms/mcps",
   "version": "1.0.0",
-  "description": "First-party MCPs maintained by the decocms team.",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "5.9.3",
-    "oxfmt": "^0.9.0",
-    "oxlint": "^1.26.0"
-  },
-  "scripts": {
-    "new": "bun scripts/new.ts",
-    "fmt": "oxfmt",
-    "lint": "oxlint",
-    "check": "bun run ./scripts/check.ts",
-    "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
-    "prepare": "sh scripts/setup-hooks.sh",
-    "build": "bun run ./scripts/build-mcp.ts"
-  },
+  "description": "First-party MCPs maintained by the decocms team.",
   "workspaces": [
     "airtable",
     "blog-post-generator",
@@ -75,9 +59,25 @@
     "whatsapp-management",
     "whisper"
   ],
+  "type": "module",
+  "scripts": {
+    "new": "bun scripts/new.ts",
+    "fmt": "oxfmt",
+    "lint": "oxlint",
+    "check": "bun run ./scripts/check.ts",
+    "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
+    "prepare": "sh scripts/setup-hooks.sh",
+    "build": "bun run ./scripts/build-mcp.ts"
+  },
   "dependencies": {
     "@decocms/runtime": "^1.2.10",
     "@types/node": "^24.10.0",
     "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "oxfmt": "^0.9.0",
+    "oxlint": "^1.26.0",
+    "typescript": "5.9.3"
   }
 }

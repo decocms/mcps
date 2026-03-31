@@ -1,8 +1,8 @@
 {
   "name": "registry",
   "version": "1.0.0",
-  "description": "MCP Registry Server",
   "private": true,
+  "description": "MCP Registry Server",
   "type": "module",
   "scripts": {
     "dev": "bun run server/main.ts",

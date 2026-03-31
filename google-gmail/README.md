@@ -1,10 +1,11 @@
-# Gmail MCP 
+# Gmail MCP
 
 MCP Server for Gmail API integration. Read, send, search, and manage emails using the Gmail API with OAuth authentication.
 
 ## Features
 
 ### Message Management
+
 - **list_messages** - List messages with filters and pagination
 - **get_message** - Get full message details (headers, body, attachments)
 - **send_message** - Send new emails with HTML support
@@ -15,6 +16,7 @@ MCP Server for Gmail API integration. Read, send, search, and manage emails usin
 - **modify_message** - Add/remove labels (mark as read, star, etc.)
 
 ### Thread Management
+
 - **list_threads** - List email conversations
 - **get_thread** - Get entire conversation with all messages
 - **trash_thread** - Move entire conversation to trash
@@ -23,6 +25,7 @@ MCP Server for Gmail API integration. Read, send, search, and manage emails usin
 - **delete_thread** - Permanently delete entire conversation
 
 ### Label Management
+
 - **list_labels** - List all labels (system + custom)
 - **get_label** - Get label details and counts
 - **create_label** - Create custom label with colors
@@ -30,6 +33,7 @@ MCP Server for Gmail API integration. Read, send, search, and manage emails usin
 - **delete_label** - Delete custom label
 
 ### Draft Management
+
 - **list_drafts** - List saved drafts
 - **get_draft** - Get draft content
 - **create_draft** - Create new draft
@@ -212,25 +216,25 @@ Then send it:
 
 The `q` parameter in search supports Gmail's powerful query syntax:
 
-| Query | Description |
-|-------|-------------|
-| `is:unread` | Unread messages |
-| `is:read` | Read messages |
-| `is:starred` | Starred messages |
-| `is:important` | Important messages |
-| `from:user@email.com` | From specific sender |
-| `to:user@email.com` | To specific recipient |
-| `subject:keyword` | Subject contains keyword |
-| `has:attachment` | Has attachments |
-| `filename:pdf` | Has PDF attachments |
-| `after:2024/01/01` | After date |
-| `before:2024/12/31` | Before date |
-| `older_than:7d` | Older than 7 days |
-| `newer_than:2d` | Newer than 2 days |
-| `label:work` | Has label 'work' |
-| `in:inbox` | In inbox |
-| `in:sent` | In sent folder |
-| `in:trash` | In trash |
+| Query                 | Description              |
+| --------------------- | ------------------------ |
+| `is:unread`           | Unread messages          |
+| `is:read`             | Read messages            |
+| `is:starred`          | Starred messages         |
+| `is:important`        | Important messages       |
+| `from:user@email.com` | From specific sender     |
+| `to:user@email.com`   | To specific recipient    |
+| `subject:keyword`     | Subject contains keyword |
+| `has:attachment`      | Has attachments          |
+| `filename:pdf`        | Has PDF attachments      |
+| `after:2024/01/01`    | After date               |
+| `before:2024/12/31`   | Before date              |
+| `older_than:7d`       | Older than 7 days        |
+| `newer_than:2d`       | Newer than 2 days        |
+| `label:work`          | Has label 'work'         |
+| `in:inbox`            | In inbox                 |
+| `in:sent`             | In sent folder           |
+| `in:trash`            | In trash                 |
 
 Combine queries: `from:john subject:meeting is:unread`
 
@@ -272,22 +276,21 @@ This MCP requests the following scopes:
 
 Common system labels you can use:
 
-| Label | Description |
-|-------|-------------|
-| `INBOX` | Inbox |
-| `SENT` | Sent messages |
-| `DRAFT` | Drafts |
-| `SPAM` | Spam |
-| `TRASH` | Trash |
-| `UNREAD` | Unread messages |
-| `STARRED` | Starred |
-| `IMPORTANT` | Important |
-| `CATEGORY_PERSONAL` | Personal category |
-| `CATEGORY_SOCIAL` | Social category |
+| Label                 | Description         |
+| --------------------- | ------------------- |
+| `INBOX`               | Inbox               |
+| `SENT`                | Sent messages       |
+| `DRAFT`               | Drafts              |
+| `SPAM`                | Spam                |
+| `TRASH`               | Trash               |
+| `UNREAD`              | Unread messages     |
+| `STARRED`             | Starred             |
+| `IMPORTANT`           | Important           |
+| `CATEGORY_PERSONAL`   | Personal category   |
+| `CATEGORY_SOCIAL`     | Social category     |
 | `CATEGORY_PROMOTIONS` | Promotions category |
-| `CATEGORY_UPDATES` | Updates category |
+| `CATEGORY_UPDATES`    | Updates category    |
 
 ## License
 
 MIT
-

@@ -23,4 +23,3 @@ Requires a Cloudflare API token with Audit Logs read permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/fundamentals/account-and-billing/account-security/review-audit-logs/
-

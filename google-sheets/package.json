@@ -1,8 +1,8 @@
 {
   "name": "google-sheets",
   "version": "1.0.0",
-  "description": "Google Sheets MCP Server - Read, write and manage spreadsheets",
   "private": true,
+  "description": "Google Sheets MCP Server - Read, write and manage spreadsheets",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

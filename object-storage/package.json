@@ -1,8 +1,8 @@
 {
   "name": "object-storage",
   "version": "1.0.0",
-  "description": "S3-compatible object storage MCP",
   "private": true,
+  "description": "S3-compatible object storage MCP",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

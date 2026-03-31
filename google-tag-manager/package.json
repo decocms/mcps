@@ -1,8 +1,8 @@
 {
   "name": "google-tag-manager",
   "version": "1.0.0",
-  "description": "Google Tag Manager MCP Server - Manage accounts, containers, workspaces, tags, triggers and variables",
   "private": true,
+  "description": "Google Tag Manager MCP Server - Manage accounts, containers, workspaces, tags, triggers and variables",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
@@ -25,4 +25,3 @@
     "node": ">=22.0.0"
   }
 }
-

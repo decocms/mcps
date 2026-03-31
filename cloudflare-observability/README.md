@@ -39,5 +39,4 @@ https://observability.mcp.cloudflare.com/sse
 
 ---
 
-*This MCP requires an active Cloudflare account to function.*
-
+_This MCP requires an active Cloudflare account to function._

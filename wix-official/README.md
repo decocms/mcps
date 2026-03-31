@@ -39,5 +39,4 @@ https://mcp.wix.com/sse
 
 ---
 
-*This MCP requires an active Wix account to function.*
-
+_This MCP requires an active Wix account to function._

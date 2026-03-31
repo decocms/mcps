@@ -46,6 +46,7 @@ After creating your MCP:
    - See `.cursor/rules/app-json-schema.mdc` for complete schema
 
 4. **Test locally**
+
    ```bash
    bun run dev
    ```
@@ -63,6 +64,7 @@ After creating your MCP:
 ## Examples
 
 Check these MCPs for reference:
+
 - **Simple**: `perplexity/` - API-only MCP
 - **Google OAuth**: `google-calendar/` - OAuth + API
 - **Complex Config**: `slack-mcp/` - Organized StateSchema
@@ -74,4 +76,3 @@ Check these MCPs for reference:
 - [StateSchema Patterns](.cursor/rules/mcp-creation.mdc#stateschema-organization-pattern)
 - [Bindings Guide](.cursor/rules/bindings.mdc)
 - [app.json Schema](.cursor/rules/app-json-schema.mdc)
-

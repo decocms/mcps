@@ -39,5 +39,4 @@ https://mcp.exa.ai/mcp
 
 ---
 
-*This MCP requires an active Exa API key to function.*
-
+_This MCP requires an active Exa API key to function._

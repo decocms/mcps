@@ -35,7 +35,7 @@ export const whisperTools = createAudioTranscriberTools<Env>({
     // Your transcription logic here
     const client = createWhisperClient(env);
     const response = await client.transcribeAudio(input.audioUrl);
-    
+
     return {
       text: response.text,
       language: response.language,
@@ -84,15 +84,19 @@ export const whisperTools = createAudioTranscriberTools<Env>({
 ## Features
 
 ### Automatic Retry
+
 Failed transcriptions are automatically retried up to 3 times with exponential backoff.
 
 ### Timeout Protection
+
 Transcriptions that take longer than 5 minutes are automatically cancelled.
 
 ### Contract-Based Billing
+
 Integrates with Deco's contract system for usage tracking and billing.
 
 ### Structured Logging
+
 All operations are logged with timestamps and context for debugging.
 
 ## Supported Providers
@@ -128,14 +132,15 @@ The module provides standardized error handling:
 ## Configuration
 
 ### Timeouts
+
 - Default: 5 minutes
 - Configurable in `base.ts`: `MAX_TRANSCRIPTION_TIMEOUT_MS`
 
 ### Retries
+
 - Default: 3 attempts
 - Configurable in `base.ts`: `MAX_TRANSCRIPTION_RETRIES`
 
 ## License
 
 MIT
-

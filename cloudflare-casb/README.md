@@ -27,4 +27,3 @@ Requires a Cloudflare API token with CASB permissions and connected SaaS applica
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com/zero-trust/products/casb/
 - **Documentation**: https://developers.cloudflare.com/cloudflare-one/applications/scan-apps/
-

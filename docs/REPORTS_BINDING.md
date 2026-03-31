@@ -6,8 +6,8 @@ A connection is detected as reports-compatible when it exposes all **required** 
 
 This repository contains one implementation:
 
-| MCP | Backend | Auth |
-|---|---|---|
+| MCP                    | Backend                                                     | Auth                    |
+| ---------------------- | ----------------------------------------------------------- | ----------------------- |
 | `github-repo-reports/` | Markdown files with YAML frontmatter in a GitHub repository | GitHub App OAuth (PKCE) |
 
 ---
@@ -16,15 +16,15 @@ This repository contains one implementation:
 
 ### Required
 
-| Tool | Purpose |
-|---|---|
+| Tool           | Purpose                                      |
+| -------------- | -------------------------------------------- |
 | `REPORTS_LIST` | List available reports with optional filters |
-| `REPORTS_GET` | Get a single report with full content |
+| `REPORTS_GET`  | Get a single report with full content        |
 
 ### Optional
 
-| Tool | Purpose |
-|---|---|
+| Tool                    | Purpose                                                                   |
+| ----------------------- | ------------------------------------------------------------------------- |
 | `REPORTS_UPDATE_STATUS` | Update the lifecycle status of a report (`unread` / `read` / `dismissed`) |
 
 Optional tools may be omitted. Consumers will skip the corresponding functionality when they are absent.
@@ -53,10 +53,10 @@ Workflow state:
 "unread" | "read" | "dismissed"
 ```
 
-| Value | Meaning |
-|---|---|
-| `unread` | New report, not yet viewed. |
-| `read` | Report has been viewed. |
+| Value       | Meaning                                    |
+| ----------- | ------------------------------------------ |
+| `unread`    | New report, not yet viewed.                |
+| `read`      | Report has been viewed.                    |
 | `dismissed` | Report has been archived / marked as done. |
 
 #### MetricItem
@@ -74,6 +74,7 @@ Workflow state:
 #### ReportSection (discriminated union on `type`)
 
 **Markdown section**
+
 ```json
 {
   "type": "markdown",
@@ -82,6 +83,7 @@ Workflow state:
 ```
 
 **Metrics section**
+
 ```json
 {
   "type": "metrics",
@@ -91,6 +93,7 @@ Workflow state:
 ```
 
 **Table section**
+
 ```json
 {
   "type": "table",
@@ -141,6 +144,7 @@ Lists available reports with optional filtering.
 - **Output**: `{ reports: ReportSummary[] }`
 
 Notes:
+
 - Return all reports when no filters are provided.
 - Reports with `lifecycleStatus: "dismissed"` are considered archived; everything else is active. Reports with `lifecycleStatus: "unread"` (or no `lifecycleStatus`) are new.
 - Order reports by `updatedAt` descending (most recent first) unless the server has a more meaningful ordering.
@@ -153,6 +157,7 @@ Retrieves a single report by ID with full sections.
 - **Output**: The full `Report` object (see schema above).
 
 Notes:
+
 - Return an MCP error (`isError: true`) if the report ID is not found.
 - Sections are rendered in array order — put the most important information first.
 
@@ -164,6 +169,7 @@ Updates the lifecycle status of a report.
 - **Output**: `{ success: boolean, message?: string }`
 
 Notes:
+
 - Consumers call this automatically when a report is opened (sets `"read"`).
 - `"dismissed"` archives the report. Restoring from dismissed sets `"read"`.
 - If not implemented, lifecycle tracking is unavailable but the binding remains usable as a read-only viewer.
@@ -173,6 +179,7 @@ Notes:
 ## Binding Detection
 
 A connection is considered reports-compatible when it exposes at minimum:
+
 - `REPORTS_LIST`
 - `REPORTS_GET`
 
@@ -184,15 +191,15 @@ Detection checks tool name presence (exact string match). No schema validation i
 
 Categories are free-form strings. Common conventions:
 
-| Category | Use case |
-|---|---|
-| `performance` | Web vitals, bundle size, load times |
-| `security` | Vulnerability scans, dependency audits |
-| `accessibility` | WCAG compliance, axe-core results |
-| `seo` | Meta tags, structured data, crawlability |
-| `quality` | Code quality, test coverage, lint results |
-| `uptime` | Health checks, availability monitoring |
-| `compliance` | License audits, policy checks |
+| Category        | Use case                                  |
+| --------------- | ----------------------------------------- |
+| `performance`   | Web vitals, bundle size, load times       |
+| `security`      | Vulnerability scans, dependency audits    |
+| `accessibility` | WCAG compliance, axe-core results         |
+| `seo`           | Meta tags, structured data, crawlability  |
+| `quality`       | Code quality, test coverage, lint results |
+| `uptime`        | Health checks, availability monitoring    |
+| `compliance`    | License audits, policy checks             |
 
 ---
 

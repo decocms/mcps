@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Query network path and performance data from ThousandEyes agents
 - Monitor internet outages, BGP changes, and routing anomalies
 - Analyze end-user experience and application delivery metrics

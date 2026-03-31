@@ -13,7 +13,14 @@
   "metadata": {
     "categories": ["Development", "Monitoring"],
     "official": true,
-    "tags": ["trunk", "flaky-tests", "test-analysis", "root-cause-analysis", "code-quality", "development"],
+    "tags": [
+      "trunk",
+      "flaky-tests",
+      "test-analysis",
+      "root-cause-analysis",
+      "code-quality",
+      "development"
+    ],
     "short_description": "Flaky test detection, root cause analysis, and fix suggestions for development teams",
     "mesh_description": "Provides flaky test detection, root cause analysis, and fix suggestions for development teams. Trunk MCP helps engineering teams identify and resolve unreliable tests, reducing CI/CD pipeline failures and improving code quality. It analyzes test patterns, identifies flakiness root causes, and suggests targeted fixes. Perfect for teams dealing with intermittent test failures and seeking to improve their testing infrastructure."
   }

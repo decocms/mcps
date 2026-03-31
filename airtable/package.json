@@ -1,8 +1,8 @@
 {
   "name": "@decocms/airtable",
   "version": "1.0.0",
-  "description": "Airtable MCP for database operations",
   "private": true,
+  "description": "Airtable MCP for database operations",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

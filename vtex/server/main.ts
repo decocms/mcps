@@ -21,4 +21,10 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-serve(runtime.fetch);
+serve((req, ...args) => {
+  // Fast path for K8s readiness/liveness probes hitting GET /
+  if (req.method === "GET" && new URL(req.url).pathname === "/") {
+    return new Response("OK", { status: 200 });
+  }
+  return runtime.fetch(req, ...args);
+});

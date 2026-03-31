@@ -1,8 +1,8 @@
 {
   "name": "meta-ads",
   "version": "1.0.0",
-  "description": "Meta Ads Analytics - Performance analysis for Meta/Facebook advertising campaigns",
   "private": true,
+  "description": "Meta Ads Analytics - Performance analysis for Meta/Facebook advertising campaigns",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

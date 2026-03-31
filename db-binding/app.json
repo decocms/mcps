@@ -27,9 +27,7 @@
             "description": "The parameters to pass to the SQL query"
           }
         },
-        "required": [
-          "sql"
-        ]
+        "required": ["sql"]
       },
       "outputSchema": {
         "type": "object",

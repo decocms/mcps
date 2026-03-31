@@ -1,10 +1,11 @@
-# Google Drive MCP 
- 
+# Google Drive MCP
+
 MCP Server for Google Drive API. Manage files, folders, and permissions.
 
 ## Features
 
 ### File Operations
+
 - **list_files** - List files with query filtering
 - **get_file** - Get file metadata
 - **create_file** - Create new files (empty)
@@ -14,10 +15,12 @@ MCP Server for Google Drive API. Manage files, folders, and permissions.
 - **search_files** - Search with Drive query syntax
 
 ### Folder Operations
+
 - **create_folder** - Create new folders
 - **list_folder_contents** - List folder contents
 
 ### Permissions & Sharing
+
 - **list_permissions** - List file permissions
 - **create_permission** - Share with users/groups
 - **delete_permission** - Remove sharing
@@ -104,16 +107,15 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 
 ## Drive Query Syntax
 
-| Query | Description |
-|-------|-------------|
-| `name contains 'report'` | Files with 'report' in name |
-| `mimeType='application/pdf'` | PDF files |
-| `'folderId' in parents` | Files in folder |
-| `trashed=true` | Trashed files |
-| `starred=true` | Starred files |
-| `fullText contains 'budget'` | Content search |
+| Query                        | Description                 |
+| ---------------------------- | --------------------------- |
+| `name contains 'report'`     | Files with 'report' in name |
+| `mimeType='application/pdf'` | PDF files                   |
+| `'folderId' in parents`      | Files in folder             |
+| `trashed=true`               | Trashed files               |
+| `starred=true`               | Starred files               |
+| `fullText contains 'budget'` | Content search              |
 
 ## License
 
 MIT
-

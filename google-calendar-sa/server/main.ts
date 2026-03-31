@@ -81,7 +81,10 @@ function mergeResults(
     const slotArrays = results.map(
       (r) =>
         ((r as { availableSlots?: { start: string; end: string }[] })
-          .availableSlots ?? []) as { start: string; end: string }[],
+          .availableSlots ?? []) as {
+          start: string;
+          end: string;
+        }[],
     );
     if (slotArrays.length === 0) return { availableSlots: [], totalFound: 0 };
 

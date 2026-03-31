@@ -36,6 +36,7 @@ await client.from("guilds").select("*").eq("id", guildId);
 ### 2. Obter Credenciais
 
 No dashboard do Supabase:
+
 - Settings > API
 - Copie a `URL` e a `anon public` key
 
@@ -230,6 +231,7 @@ CREATE INDEX IF NOT EXISTS idx_discord_channel_context_enabled ON discord_channe
 ## 🔄 Status da Migração
 
 ### ✅ Concluído
+
 - [x] Cliente Supabase criado (`server/lib/supabase-client.ts`)
 - [x] Dependência `@supabase/supabase-js` adicionada
 - [x] Binding `DATABASE` removido do `app.json`
@@ -272,7 +274,7 @@ await DISCORD_SAVE_CONFIG({
   commandPrefix: "!",
   modelProviderId: "openai-connection-id",
   modelId: "gpt-4",
-  systemPrompt: "You are a helpful Discord bot..."
+  systemPrompt: "You are a helpful Discord bot...",
 });
 
 // 2. Carregar configuração (próximas vezes)
@@ -283,6 +285,7 @@ const config = await DISCORD_LOAD_CONFIG({});
 ```
 
 ### ⚠️ Pendente
+
 - [ ] Integrar configuração salva com bot-manager
 - [ ] Auto-carregar configuração na inicialização
 - [ ] Validar guilds autorizados antes de responder comandos
@@ -316,11 +319,7 @@ $$;
 await runSQL("SELECT * FROM guilds WHERE id = ?", [guildId]);
 
 // Use:
-const { data } = await client
-  .from("guilds")
-  .select("*")
-  .eq("id", guildId)
-  .single();
+const { data } = await client.from("guilds").select("*").eq("id", guildId).single();
 ```
 
 ## 🚀 Deploy
@@ -342,4 +341,3 @@ curl $SUPABASE_URL/rest/v1/ \
 ```
 
 Deve retornar informações sobre as tabelas disponíveis.
-

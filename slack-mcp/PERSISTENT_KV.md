@@ -12,6 +12,7 @@ O servidor MCP do Slack estava perdendo as configurações após reiniciar, caus
 ### Causa Raiz
 
 O KV store original usava **memória volátil** (`Map<string, KVEntry>`), perdendo todos os dados quando:
+
 - ✅ Servidor reinicia (Ctrl+C)
 - ✅ Hot reload (`--hot` flag)
 - ✅ Crash ou erro no código
@@ -35,6 +36,7 @@ Substituímos o KV store em memória por um **KV store persistente** que salva o
 #### 1. KV Store com Persistência (`server/lib/kv.ts`)
 
 **Antes:**
+
 ```typescript
 class KVStore {
   private store = new Map<string, KVEntry<unknown>>();
@@ -43,6 +45,7 @@ class KVStore {
 ```
 
 **Depois:**
+
 ```typescript
 class KVStore {
   private store = new Map<string, KVEntry<unknown>>();
@@ -167,6 +170,7 @@ const data = await kv.get("key");
 ### Backup
 
 O arquivo `./data/slack-kv.json` pode ser:
+
 - ✅ Copiado para backup
 - ✅ Versionado (sem dados sensíveis)
 - ✅ Migrado entre ambientes
@@ -174,11 +178,13 @@ O arquivo `./data/slack-kv.json` pode ser:
 ## 🔒 Segurança
 
 ⚠️ **IMPORTANTE**: O arquivo `./data/slack-kv.json` contém:
+
 - 🔐 Tokens do Slack (bot tokens)
 - 🔐 Signing secrets
 - 🔐 Tokens de API do Mesh
 
 **Proteções:**
+
 - ✅ `.gitignore` configurado para ignorar `data/`
 - ✅ Permissões de arquivo devem ser restritas em produção
 - ⚠️ Considere criptografar em produção (futuro)
@@ -186,6 +192,7 @@ O arquivo `./data/slack-kv.json` pode ser:
 ## 📊 Logs
 
 ### Inicialização
+
 ```
 [KV] 🚀 Initializing persistent KV store: ./data/slack-kv.json
 [KV] 📂 Loaded 3 entries from disk
@@ -193,12 +200,14 @@ O arquivo `./data/slack-kv.json` pode ser:
 ```
 
 ### Operações
+
 ```
 [KV] 💾 Saved 3 entries to disk
 [KV] 🧹 Cleaned up 2 expired entries
 ```
 
 ### Shutdown
+
 ```
 [KV] 💾 Flushing to disk before shutdown...
 ```
@@ -218,11 +227,11 @@ O arquivo `./data/slack-kv.json` pode ser:
 // shared/storage/adapters/redis.ts
 export class RedisKVAdapter implements KVStore {
   constructor(private client: Redis) {}
-  
+
   async get<T>(key: string): Promise<T | null> {
     return await this.client.get(key);
   }
-  
+
   async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
     await this.client.set(key, value, { ex: ttlMs ? ttlMs / 1000 : undefined });
   }
@@ -232,6 +241,7 @@ export class RedisKVAdapter implements KVStore {
 ## ✅ Resultado
 
 Agora o Slack MCP sobrevive a:
+
 - ✅ Reinícios (Ctrl+C + restart)
 - ✅ Hot reloads (`--hot`)
 - ✅ Crashes
@@ -239,5 +249,3 @@ Agora o Slack MCP sobrevive a:
 - ✅ Server restarts
 
 **E o melhor:** as configurações são **persistidas automaticamente** sem intervenção manual! 🎉
-
-

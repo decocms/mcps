@@ -21,4 +21,3 @@ https://go.postman.co/settings/me/api-keys
 - **GitHub**: https://github.com/postmanlabs/postman-mcp-server
 - **Website**: https://www.postman.com
 - **Documentation**: https://learning.postman.com/docs/developer/intro-api/
-

@@ -12,7 +12,16 @@
   "metadata": {
     "categories": ["Communication"],
     "official": true,
-    "tags": ["whatsapp", "messaging", "business", "meta", "chat", "automation", "webhook", "communication"],
+    "tags": [
+      "whatsapp",
+      "messaging",
+      "business",
+      "meta",
+      "chat",
+      "automation",
+      "webhook",
+      "communication"
+    ],
     "short_description": "Talk to your Mesh Agents via WhatsApp"
   }
 }

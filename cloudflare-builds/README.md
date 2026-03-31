@@ -20,4 +20,3 @@ Requires a Cloudflare API token with Pages permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://pages.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/pages/
-

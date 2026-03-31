@@ -113,11 +113,13 @@ All tools require authentication and use the configured state settings.
 List objects in the bucket with pagination support.
 
 **Input:**
+
 - `prefix` (optional string) - Filter objects by prefix (e.g., "folder/" for folder contents)
 - `maxKeys` (optional number) - Maximum number of keys to return (default: 1000)
 - `continuationToken` (optional string) - Token for pagination from previous response
 
 **Output:**
+
 - `objects` (array) - Array of objects with `key`, `size`, `lastModified`, `etag`
 - `nextContinuationToken` (optional string) - Token for fetching next page
 - `isTruncated` (boolean) - Whether there are more results available
@@ -127,9 +129,11 @@ List objects in the bucket with pagination support.
 Get metadata for an object without downloading it (HEAD operation).
 
 **Input:**
+
 - `key` (string) - Object key/path to get metadata for
 
 **Output:**
+
 - `contentType` (optional string) - MIME type of the object
 - `contentLength` (number) - Size of the object in bytes
 - `lastModified` (string) - Last modified timestamp
@@ -141,10 +145,12 @@ Get metadata for an object without downloading it (HEAD operation).
 Generate a presigned URL for downloading an object.
 
 **Input:**
+
 - `key` (string) - Object key/path to generate URL for
 - `expiresIn` (optional number) - URL expiration time in seconds
 
 **Output:**
+
 - `url` (string) - Presigned URL for downloading the object
 - `expiresIn` (number) - Expiration time in seconds that was used
 
@@ -153,11 +159,13 @@ Generate a presigned URL for downloading an object.
 Generate a presigned URL for uploading an object.
 
 **Input:**
+
 - `key` (string) - Object key/path for the upload
 - `expiresIn` (optional number) - URL expiration time in seconds
 - `contentType` (optional string) - MIME type for the object being uploaded
 
 **Output:**
+
 - `url` (string) - Presigned URL for uploading the object
 - `expiresIn` (number) - Expiration time in seconds that was used
 
@@ -166,9 +174,11 @@ Generate a presigned URL for uploading an object.
 Delete a single object from the bucket.
 
 **Input:**
+
 - `key` (string) - Object key/path to delete
 
 **Output:**
+
 - `success` (boolean) - Whether the deletion was successful
 - `key` (string) - The key that was deleted
 
@@ -177,9 +187,11 @@ Delete a single object from the bucket.
 Delete multiple objects in a single batch operation (max 1000 objects).
 
 **Input:**
+
 - `keys` (array of strings) - Array of object keys/paths to delete (max 1000)
 
 **Output:**
+
 - `deleted` (array of strings) - Array of successfully deleted keys
 - `errors` (array) - Array of errors for failed deletions with `key` and `message`
 

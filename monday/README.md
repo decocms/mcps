@@ -127,9 +127,7 @@ To interact with monday.com's API, you'll need an API token:
   "mcpServers": {
     "monday-api-mcp": {
       "command": "npx",
-      "args": [
-        "@mondaydotcomorg/monday-api-mcp@latest"
-      ],
+      "args": ["@mondaydotcomorg/monday-api-mcp@latest"],
       "env": {
         "MONDAY_TOKEN": "your_monday_api_token"
       }
@@ -193,9 +191,7 @@ Add to your settings:
   "mcpServers": {
     "monday-api-mcp": {
       "command": "npx",
-      "args": [
-        "@mondaydotcomorg/monday-api-mcp@latest"
-      ],
+      "args": ["@mondaydotcomorg/monday-api-mcp@latest"],
       "env": {
         "MONDAY_TOKEN": "your_monday_api_token"
       }
@@ -273,22 +269,22 @@ For OAuth authentication and workspace controls, install the Monday MCP app from
 
 Our MCP server provides a rich set of tools that give AI assistants the ability to interact with monday.com:
 
-| Category | Tool | Description |
-|----------|------|-------------|
-| **Item Operations** | create_item | Create a new item in a monday.com board with specified column values |
-| | delete_item | Delete an item from a board permanently |
-| | get_board_items_by_name | Search for items by board ID and term/name |
-| | create_update | Add an update/comment to a specific item |
-| | change_item_column_values | Modify the column values of an existing item |
-| | move_item_to_group | Move an item to a different group within the same board |
-| **Board Operations** | create_board | Create a new monday.com board with specified columns |
-| | get_board_schema | Retrieve the structure of columns and groups for a board |
-| | create_group | Create a new group in a monday.com board |
-| | create_column | Add a new column to an existing board |
-| | delete_column | Remove a column from a board |
-| **Account Operations** | list_users_and_teams | Retrieve user or team's details by id, name or by searching the account |
-| **WorkForms Operations** | create_form | Create a new monday.com form |
-| | get_form | Get a form by its token |
+| Category                 | Tool                      | Description                                                             |
+| ------------------------ | ------------------------- | ----------------------------------------------------------------------- |
+| **Item Operations**      | create_item               | Create a new item in a monday.com board with specified column values    |
+|                          | delete_item               | Delete an item from a board permanently                                 |
+|                          | get_board_items_by_name   | Search for items by board ID and term/name                              |
+|                          | create_update             | Add an update/comment to a specific item                                |
+|                          | change_item_column_values | Modify the column values of an existing item                            |
+|                          | move_item_to_group        | Move an item to a different group within the same board                 |
+| **Board Operations**     | create_board              | Create a new monday.com board with specified columns                    |
+|                          | get_board_schema          | Retrieve the structure of columns and groups for a board                |
+|                          | create_group              | Create a new group in a monday.com board                                |
+|                          | create_column             | Add a new column to an existing board                                   |
+|                          | delete_column             | Remove a column from a board                                            |
+| **Account Operations**   | list_users_and_teams      | Retrieve user or team's details by id, name or by searching the account |
+| **WorkForms Operations** | create_form               | Create a new monday.com form                                            |
+|                          | get_form                  | Get a form by its token                                                 |
 
 ## 🎨 monday.com Apps Framework Tools
 
@@ -310,11 +306,11 @@ Dynamic API Tools provide AI agents with complete, adaptable access to monday.co
 
 ### Key Dynamic API Tools
 
-| Tool | Description |
-|------|-------------|
-| all_monday_api | Generate and execute any GraphQL query or mutation dynamically |
+| Tool               | Description                                                          |
+| ------------------ | -------------------------------------------------------------------- |
+| all_monday_api     | Generate and execute any GraphQL query or mutation dynamically       |
 | get_graphql_schema | Fetch monday.com's GraphQL schema to understand available operations |
-| get_type_details | Retrieve detailed information about specific GraphQL types |
+| get_type_details   | Retrieve detailed information about specific GraphQL types           |
 
 ### Unlocked Possibilities
 
@@ -345,13 +341,13 @@ When 'only' mode is enabled, the server will provide just the Dynamic API Tools,
 
 ## 🖥️ MCP Server Configuration
 
-| Argument | Flags | Description | Required | Default |
-|----------|-------|-------------|----------|---------|
-| monday.com API Token | `--token`, `-t` | monday.com API token | Yes | - |
-| API Version | `--version`, `-v` | monday.com API version | No | `current` |
-| Mode | `--mode`, `-m` | Tool mode: `default` for standard platform tools, `apps` for Apps Framework tools | No | `default` |
-| Read Only Mode | `--read-only`, `-ro` | Enable read-only mode | No | `false` |
-| Dynamic API Tools | `--enable-dynamic-api-tools`, `-edat` | Enable dynamic API tools | No | `false` |
+| Argument             | Flags                                 | Description                                                                       | Required | Default   |
+| -------------------- | ------------------------------------- | --------------------------------------------------------------------------------- | -------- | --------- |
+| monday.com API Token | `--token`, `-t`                       | monday.com API token                                                              | Yes      | -         |
+| API Version          | `--version`, `-v`                     | monday.com API version                                                            | No       | `current` |
+| Mode                 | `--mode`, `-m`                        | Tool mode: `default` for standard platform tools, `apps` for Apps Framework tools | No       | `default` |
+| Read Only Mode       | `--read-only`, `-ro`                  | Enable read-only mode                                                             | No       | `false`   |
+| Dynamic API Tools    | `--enable-dynamic-api-tools`, `-edat` | Enable dynamic API tools                                                          | No       | `false`   |
 
 ## 🔐 Authentication & Security
 

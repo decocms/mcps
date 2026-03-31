@@ -1,8 +1,8 @@
 {
   "name": "deco-llm",
   "version": "1.0.0",
-  "description": "Deco LLM App Connection for LLM uses.",
   "private": true,
+  "description": "Deco LLM App Connection for LLM uses.",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

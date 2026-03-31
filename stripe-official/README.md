@@ -25,4 +25,3 @@ https://dashboard.stripe.com/apikeys
 - **GitHub**: https://github.com/stripe/agent-toolkit
 - **Website**: https://stripe.com
 - **Documentation**: https://stripe.com/docs/api
-

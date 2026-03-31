@@ -124,4 +124,3 @@ npm run deploy
 ## Licença
 
 MIT
-

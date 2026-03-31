@@ -33,14 +33,15 @@ Arquivos (imagens e áudio) são baixados do Slack e convertidos para base64:
 const downloaded = await downloadSlackFile(file.url_private, file.mimetype);
 
 return {
-  type: isAudio ? "audio" : "image",  // Detecta automaticamente
-  data: downloaded.data,              // Base64
-  mimeType: downloaded.mimeType,      // audio/mp4, image/png, etc.
-  name: file.name,                    // Nome original do arquivo
+  type: isAudio ? "audio" : "image", // Detecta automaticamente
+  data: downloaded.data, // Base64
+  mimeType: downloaded.mimeType, // audio/mp4, image/png, etc.
+  name: file.name, // Nome original do arquivo
 };
 ```
 
 **Tipos de arquivo suportados:**
+
 - **Imagens**: `image/png`, `image/jpeg`, `image/gif`, `image/webp`
 - **Áudio**: `audio/mp4`, `audio/mpeg`, `audio/ogg`, `audio/webm`, `audio/wav`
 - **Documentos**: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX)
@@ -55,7 +56,7 @@ Para **PDF** e **DOCX**, o texto é extraído automaticamente usando bibliotecas
 import * as pdfParse from "pdf-parse";
 
 const data = await pdfParse(buffer);
-return data.text;  // Texto extraído do PDF
+return data.text; // Texto extraído do PDF
 ```
 
 ```typescript
@@ -63,10 +64,11 @@ return data.text;  // Texto extraído do PDF
 import mammoth from "mammoth";
 
 const result = await mammoth.extractRawText({ buffer });
-return result.value;  // Texto extraído do DOCX
+return result.value; // Texto extraído do DOCX
 ```
 
 **Limitações:**
+
 - ✅ **Texto puro** extraído com sucesso
 - ✅ Máximo **500KB** de texto após extração
 - ❌ **Imagens** dentro do PDF/DOCX não são processadas
@@ -74,6 +76,7 @@ return result.value;  // Texto extraído do DOCX
 - ⚠️ Arquivos muito grandes (>1.5MB) podem ser truncados
 
 **Logs esperados:**
+
 ```bash
 [Slack] 📄 Extracting text from PDF: documento.pdf
 [Slack] 📄 Downloaded text file: documento.pdf (application/pdf, 12345 chars)
@@ -97,6 +100,7 @@ return text;
 ```
 
 **Formatos suportados:**
+
 - `text/plain` → `.txt`, `.log`, `.env`
 - `application/json` → `.json`
 - `text/csv` → `.csv`
@@ -104,20 +108,22 @@ return text;
 - Código-fonte: `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rb`, `.go`, `.java`, `.c`, `.cpp`, `.rs`, `.sh`, etc.
 
 **Como são enviados ao LLM:**
+
 ```typescript
 // lib/llm.ts - messagesToPrompt()
 if (msg.textFiles && msg.textFiles.length > 0) {
   for (const file of msg.textFiles) {
-    parts.push({ 
-      type: "text", 
-      text: `\n\n[File: ${file.name}]\n\`\`\`${file.language}\n${file.content}\n\`\`\`` 
+    parts.push({
+      type: "text",
+      text: `\n\n[File: ${file.name}]\n\`\`\`${file.language}\n${file.content}\n\`\`\``,
     });
   }
 }
 ```
 
 **Exemplo de prompt gerado:**
-```
+
+````
 Analise este arquivo JSON
 
 [File: config.json]
@@ -126,8 +132,9 @@ Analise este arquivo JSON
   "version": "1.0.0",
   "settings": {...}
 }
-```
-```
+````
+
+````
 
 ### 3. Construção do Prompt
 
@@ -141,7 +148,7 @@ const prompt = [
     role: "user",
     parts: [
       { type: "text", text: "O que tem nesta imagem?" },
-      { 
+      {
         type: "file",
         url: "data:image/png;base64,iVBORw0KGgo...",
         filename: "image",
@@ -150,7 +157,7 @@ const prompt = [
     ]
   }
 ];
-```
+````
 
 ## Formato de Mensagens
 
@@ -160,10 +167,10 @@ Cada mensagem segue o formato `UIMessage` do Vercel AI SDK:
 
 ```typescript
 interface UIMessage {
-  id: string;                    // ID único obrigatório
+  id: string; // ID único obrigatório
   role: "user" | "assistant" | "system";
-  parts: UIMessagePart[];        // Array de partes (texto, arquivos, etc.)
-  metadata?: unknown;            // Metadados opcionais
+  parts: UIMessagePart[]; // Array de partes (texto, arquivos, etc.)
+  metadata?: unknown; // Metadados opcionais
 }
 ```
 
@@ -189,7 +196,8 @@ interface UIMessage {
 }
 ```
 
-**IMPORTANTE:** 
+**IMPORTANTE:**
+
 - O `type` deve ser `"file"` (não `"image"` ou `"data-url"`)
 - O `url` deve ser um data URI completo com o prefixo `data:${mimeType};base64,`
 - Inclua `filename` e `mediaType` obrigatoriamente
@@ -211,20 +219,23 @@ O bot usa a binding do **OpenAI Whisper** para transcrever áudios e enviar **ap
 7. ✅ LLM recebe APENAS o texto (não recebe áudio)
 
 **Formatos suportados pelo Whisper:**
+
 - `audio/flac`, `audio/m4a`, `audio/mp3`, `audio/mp4`
 - `audio/mpeg`, `audio/mpga`, `audio/oga`, `audio/ogg`
 - `audio/wav`, `audio/webm`
 
 **Configuração:**
+
 ```typescript
 // No Mesh Admin, adicionar binding:
-WHISPER: "@deco/whisper"
+WHISPER: "@deco/whisper";
 
 // Opcional: Definir URL pública do servidor
-SERVER_PUBLIC_URL: "https://localhost-xxx.deco.host"
+SERVER_PUBLIC_URL: "https://localhost-xxx.deco.host";
 ```
 
 **Vantagens:**
+
 - ✅ Transcrição rápida e precisa (57+ idiomas)
 - ✅ Funciona mesmo que Slack não gere transcrição
 - ✅ LLM pode processar o texto normalmente
@@ -232,6 +243,7 @@ SERVER_PUBLIC_URL: "https://localhost-xxx.deco.host"
 - ✅ Áudio é automaticamente limpo após 10 minutos
 
 **Logs esperados:**
+
 ```bash
 [EventHandler] Audio file for transcription: {
   name: "audio_message.m4a",
@@ -244,11 +256,12 @@ SERVER_PUBLIC_URL: "https://localhost-xxx.deco.host"
 
 **Sem Whisper:**
 Se a binding não estiver configurada e o usuário enviar áudio, o bot responderá com:
+
 ```
-🎤 Áudio detectado! Para processar arquivos de áudio, é necessário 
+🎤 Áudio detectado! Para processar arquivos de áudio, é necessário
 ativar a integração Whisper no Mesh.
 
-Entre em contato com o administrador para configurar o Whisper 
+Entre em contato com o administrador para configurar o Whisper
 e habilitar transcrição automática de áudios.
 ```
 
@@ -308,9 +321,7 @@ A API Decopilot retorna eventos Server-Sent Events (SSE):
 
 ```typescript
 // lib/llm.ts - generateLLMResponseWithStreaming()
-const reader = response.body
-  .pipeThrough(new TextDecoderStream())
-  .getReader();
+const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 
 let buffer = "";
 let textContent = "";
@@ -318,14 +329,14 @@ let textContent = "";
 while (!finished) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   buffer += value;
   const lines = buffer.split("\n");
   buffer = lines.pop() ?? "";
-  
+
   for (const line of lines) {
     const parsed = parseStreamLine(line);
-    
+
     if (parsed?.type === "text-delta") {
       textContent += parsed.delta;
       await onStream(textContent, false);
@@ -359,13 +370,7 @@ O contexto mantém as últimas mensagens da conversa:
 
 ```typescript
 // slack/utils/contextBuilder.ts
-const messages = await buildLLMMessages(
-  channel,
-  text,
-  ts,
-  threadTs,
-  images
-);
+const messages = await buildLLMMessages(channel, text, ts, threadTs, images);
 ```
 
 ### Formato do Contexto
@@ -375,23 +380,23 @@ const messages = await buildLLMMessages(
   {
     id: "msg_xxx",
     role: "user",
-    parts: [{ type: "text", text: "<previous_conversation>..." }]
+    parts: [{ type: "text", text: "<previous_conversation>..." }],
   },
   // ... mensagens anteriores
   {
     id: "msg_xxx",
     role: "user",
-    parts: [{ type: "text", text: "<end_previous_conversation>" }]
+    parts: [{ type: "text", text: "<end_previous_conversation>" }],
   },
   {
     id: "msg_xxx",
     role: "user",
     parts: [
       { type: "text", text: "<current_request>Pergunta atual</current_request>" },
-      { type: "file", url: "data:image/...", filename: "image", mediaType: "image/png" }
-    ]
-  }
-]
+      { type: "file", url: "data:image/...", filename: "image", mediaType: "image/png" },
+    ],
+  },
+];
 ```
 
 ## Configuração
@@ -413,10 +418,7 @@ const messages = await buildLLMMessages(
 
 ```typescript
 // main.ts
-configureLLM(
-  config.modelId || DEFAULT_LANGUAGE_MODEL,
-  config.systemPrompt
-);
+configureLLM(config.modelId || DEFAULT_LANGUAGE_MODEL, config.systemPrompt);
 ```
 
 ## Troubleshooting
@@ -453,8 +455,9 @@ configureLLM(
 **Causa:** Header `Accept` faltando.
 
 **Solução:** Adicione o header:
+
 ```typescript
-Accept: "application/json, text/event-stream"
+Accept: "application/json, text/event-stream";
 ```
 
 ### Problema: Erro de validação "expected string, received undefined" no campo "id"
@@ -462,6 +465,7 @@ Accept: "application/json, text/event-stream"
 **Causa:** Mensagens sem campo `id`.
 
 **Solução:** Gere IDs únicos para cada mensagem:
+
 ```typescript
 const generateMessageId = () => {
   const timestamp = Date.now();
@@ -480,50 +484,45 @@ const generateMessageId = () => {
 
 ```typescript
 // Enviar mensagem com imagem para LLM
-const response = await fetch(
-  `${meshUrl}/api/${organizationId}/decopilot/stream`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-      "Accept": "application/json, text/event-stream"
+const response = await fetch(`${meshUrl}/api/${organizationId}/decopilot/stream`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json, text/event-stream",
+  },
+  body: JSON.stringify({
+    messages: [
+      {
+        id: "msg_1234567890_abc123",
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text: "Analise esta imagem",
+          },
+          {
+            type: "file",
+            url: "data:image/png;base64,iVBORw0KGgo...",
+            filename: "screenshot.png",
+            mediaType: "image/png",
+          },
+        ],
+      },
+    ],
+    model: {
+      id: "anthropic/claude-sonnet-4.5",
+      connectionId: "conn_xxx",
     },
-    body: JSON.stringify({
-      messages: [
-        {
-          id: "msg_1234567890_abc123",
-          role: "user",
-          parts: [
-            { 
-              type: "text", 
-              text: "Analise esta imagem" 
-            },
-            {
-              type: "file",
-              url: "data:image/png;base64,iVBORw0KGgo...",
-              filename: "screenshot.png",
-              mediaType: "image/png"
-            }
-          ]
-        }
-      ],
-      model: {
-        id: "anthropic/claude-sonnet-4.5",
-        connectionId: "conn_xxx"
-      },
-      agent: {
-        id: "vir_xxx"
-      },
-      stream: true
-    })
-  }
-);
+    agent: {
+      id: "vir_xxx",
+    },
+    stream: true,
+  }),
+});
 
 // Processar stream
-const reader = response.body
-  .pipeThrough(new TextDecoderStream())
-  .getReader();
+const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 
 let textContent = "";
 let buffer = "";
@@ -531,15 +530,15 @@ let buffer = "";
 while (true) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   buffer += value;
   const lines = buffer.split("\n");
   buffer = lines.pop() ?? "";
-  
+
   for (const line of lines) {
     if (line.startsWith("data: ")) {
       const data = JSON.parse(line.slice(6));
-      
+
       if (data.type === "text-delta") {
         textContent += data.delta;
         console.log(textContent);
@@ -563,9 +562,6 @@ console.log("[LLM] Calling Decopilot API:", {
   hasAgent: !!agentId,
   stream: true,
   messageCount: messages.length,
-  hasImages: messages.some(m => 
-    m.parts.some(p => p.type === "file")
-  )
+  hasImages: messages.some((m) => m.parts.some((p) => p.type === "file")),
 });
 ```
-

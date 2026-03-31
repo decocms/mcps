@@ -26,4 +26,3 @@ https://supabase.com/dashboard/account/tokens
 - **Website**: https://supabase.com
 - **Documentation**: https://supabase.com/docs
 - **MCP Page**: https://supabase.com/mcp
-

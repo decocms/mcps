@@ -54,6 +54,7 @@ Migrar do KV Store local (arquivo JSON) para PostgreSQL para suportar **deployme
 ### 1. Migration SQL (`migrations/001-slack-connections.ts`)
 
 Criada tabela `slack_connections` com:
+
 - **Primary Key**: `connection_id`
 - **Índices**: `team_id`, `organization_id`, `updated_at`
 - **Campos**: Todos os dados de configuração (tokens, model IDs, etc.)
@@ -80,6 +81,7 @@ CREATE TABLE slack_connections (
 ### 2. Database Factory (`server/database/index.ts`)
 
 Adaptado do Mesh, suporta:
+
 - **SQLite** (desenvolvimento local) - `sqlite://./data/slack.db`
 - **PostgreSQL** (produção K8s) - `postgresql://...`
 
@@ -88,11 +90,11 @@ Auto-detecção pelo `DATABASE_URL`:
 ```typescript
 export function createDatabase(databaseUrl?: string): SlackDatabase {
   const config = parseDatabaseUrl(databaseUrl);
-  
+
   if (config.type === "postgres") {
     return createPostgresDatabase(config);
   }
-  
+
   return createSqliteDatabase(config);
 }
 ```
@@ -121,6 +123,7 @@ setCache(connectionId, config);
 ```
 
 **Performance:**
+
 - Cache hit: **~0.1ms** (memória)
 - Cache miss: **~2-10ms** (PostgreSQL)
 - 99% dos requests são cache hits
@@ -195,38 +198,38 @@ kind: Deployment
 metadata:
   name: slack-mcp
 spec:
-  replicas: 3  # ✅ Múltiplos pods funcionam!
+  replicas: 3 # ✅ Múltiplos pods funcionam!
   template:
     spec:
       containers:
-      - name: slack-mcp
-        image: slack-mcp:latest
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: slack-mcp-secrets
-              key: database-url
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3003
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3003
+        - name: slack-mcp
+          image: slack-mcp:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: slack-mcp-secrets
+                  key: database-url
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
 ```
 
 ## 📊 Performance
 
-| Métrica | KV Local | PostgreSQL + Cache | Diferença |
-|---------|----------|-------------------|-----------|
-| **Read (cache hit)** | 0.1ms | 0.1ms | Igual |
-| **Read (cache miss)** | 0.1ms | 2-10ms | +1-9ms |
-| **Write** | 1-5ms (debounce) | 5-20ms | +4-15ms |
-| **Multi-pod K8s** | ❌ QUEBRA | ✅ Funciona | Crítico |
-| **Restart recovery** | ✅ Sim (disk) | ✅ Sim (DB) | Igual |
-| **Cache hit rate** | N/A | 99% | Excelente |
+| Métrica               | KV Local         | PostgreSQL + Cache | Diferença |
+| --------------------- | ---------------- | ------------------ | --------- |
+| **Read (cache hit)**  | 0.1ms            | 0.1ms              | Igual     |
+| **Read (cache miss)** | 0.1ms            | 2-10ms             | +1-9ms    |
+| **Write**             | 1-5ms (debounce) | 5-20ms             | +4-15ms   |
+| **Multi-pod K8s**     | ❌ QUEBRA        | ✅ Funciona        | Crítico   |
+| **Restart recovery**  | ✅ Sim (disk)    | ✅ Sim (DB)        | Igual     |
+| **Cache hit rate**    | N/A              | 99%                | Excelente |
 
 ## 🔧 Troubleshooting
 
@@ -318,6 +321,7 @@ PORT=3003 DATABASE_URL=postgresql://localhost:5432/slack bun run dev
 ## 📚 Arquivos Modificados/Criados
 
 ### Novos Arquivos
+
 - `migrations/001-slack-connections.ts` - Migration SQL
 - `migrations/index.ts` - Migration registry
 - `server/database/index.ts` - Database factory
@@ -325,6 +329,7 @@ PORT=3003 DATABASE_URL=postgresql://localhost:5432/slack bun run dev
 - `POSTGRESQL_MIGRATION.md` - Este documento
 
 ### Modificados
+
 - `server/lib/data.ts` - PostgreSQL adapter com cache
 - `server/types/env.ts` - DATABASE obrigatório
 - `server/health.ts` - Health check para PostgreSQL
@@ -332,6 +337,7 @@ PORT=3003 DATABASE_URL=postgresql://localhost:5432/slack bun run dev
 - `package.json` - Dependências (kysely, pg)
 
 ### Mantidos (Sem Mudanças)
+
 - `server/lib/kv.ts` - Ainda usado para threads temporárias
 - `server/router.ts` - Rotas inalteradas
 - `server/slack/handlers/` - Handlers inalterados
@@ -349,8 +355,8 @@ Agora o Slack MCP funciona em **Kubernetes multi-pod**! 🚀
 ---
 
 **Próximos Passos Opcionais:**
+
 - [ ] Redis/Valkey para cache distribuído (eliminar TTL de 30s)
 - [ ] Connection pooling otimizado para PostgreSQL
 - [ ] Backup automático do banco de dados
 - [ ] Métricas Prometheus para cache hit rate
-

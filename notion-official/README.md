@@ -21,4 +21,3 @@ https://www.notion.so/my-integrations
 - **GitHub**: https://github.com/makenotion/notion-next
 - **Website**: https://www.notion.so
 - **Documentation**: https://developers.notion.com/
-

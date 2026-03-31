@@ -39,5 +39,4 @@ https://bigquery.googleapis.com/mcp
 
 ---
 
-*This MCP requires an active Google Cloud account with BigQuery enabled.*
-
+_This MCP requires an active Google Cloud account with BigQuery enabled._

@@ -57,16 +57,18 @@
 - [Why Browserless?](#-why-browserless)
 - [Licensing](#-licensing)
 
-
 ## 🚀 Get Started in Seconds!
 
 Get up and running in three simple steps:
 
 ### Step 1: Run the Docker image
+
 ```bash
 docker run -p 3000:3000 ghcr.io/browserless/chromium
 ```
+
 ### Step 2: Open the docs in your browser
+
 Visit http://localhost:3000/docs
 
 **✅ Success!** Your browser service is live at `ws://localhost:3000`
@@ -77,14 +79,14 @@ Visit http://localhost:3000/docs
 <summary><b>📘 Puppeteer Example</b></summary>
 
 ```js
-import puppeteer from 'puppeteer-core';
+import puppeteer from "puppeteer-core";
 
 const browser = await puppeteer.connect({
-  browserWSEndpoint: 'ws://localhost:3000',
+  browserWSEndpoint: "ws://localhost:3000",
 });
 
 const page = await browser.newPage();
-await page.goto('https://example.com');
+await page.goto("https://example.com");
 console.log(await page.title());
 await browser.close();
 ```
@@ -95,29 +97,27 @@ await browser.close();
 <summary><b>🎭 Playwright Example</b></summary>
 
 ```js
-import pw from 'playwright-core';
+import pw from "playwright-core";
 
-const browser = await pw.firefox.connect(
-  'ws://localhost:3000/firefox/playwright'
-);
+const browser = await pw.firefox.connect("ws://localhost:3000/firefox/playwright");
 
 const page = await browser.newPage();
-await page.goto('https://example.com');
+await page.goto("https://example.com");
 console.log(await page.title());
 await browser.close();
 ```
 
- **Note:** Use `ghcr.io/browserless/firefox` or `ghcr.io/browserless/multi` for Firefox/Webkit support.
+**Note:** Use `ghcr.io/browserless/firefox` or `ghcr.io/browserless/multi` for Firefox/Webkit support.
 
 </details>
 
 </br>
 
 ### Output:
+
 ```
 Example Domain
 ```
-
 
 ## ✨ Features
 
@@ -200,9 +200,7 @@ Custom Enterprise infrastructure across major cloud providers.
 </tr>
 </table>
 
-
 > **Want to dive deeper?** Check out this [detailed guide](./LEARN_MORE.md) for advanced stuff including Docker configuration, hosting providers, SDK extensions, and more.
-
 
 ## 💡 Why Browserless?
 

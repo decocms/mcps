@@ -17,6 +17,3 @@
     "mesh_description": "The Google Apps Script MCP provides comprehensive integration with Google Apps Script API, enabling full programmatic control over script projects. This MCP allows AI agents to create and manage Apps Script projects, read and update script files, execute functions remotely, manage versions and deployments, and monitor script executions. It supports advanced features including deployment configuration, version control, and execution logging. Perfect for automating Google Workspace workflows, building custom integrations, and managing script-based applications. Ideal for users who need to programmatically manage Apps Script projects or execute automation scripts. Provides secure OAuth-based authentication."
   }
 }
-
-
-

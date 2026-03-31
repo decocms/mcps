@@ -38,5 +38,4 @@ https://api.grain.com/_/mcp
 
 ---
 
-*This MCP requires an active Grain account to function.*
-
+_This MCP requires an active Grain account to function._

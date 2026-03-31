@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Create, update, and complete tasks in Todoist
 - Manage projects, labels, and priorities
 - Automate task management workflows with AI

@@ -1,20 +1,23 @@
-# Google Slides MCP 
+# Google Slides MCP
 
 MCP Server for Google Slides API. Create and edit presentations programmatically.
 
 ## Features
 
 ### Presentation Management
+
 - **create_presentation** - Create a new presentation
 - **get_presentation** - Get presentation details and slides
 
 ### Slide Operations
+
 - **add_slide** - Add slides with different layouts
 - **delete_slide** - Delete a slide
 - **duplicate_slide** - Copy an existing slide
 - **move_slide** - Reorder slides
 
 ### Elements
+
 - **insert_text** - Add text boxes
 - **insert_image** - Add images from URL
 - **insert_shape** - Add shapes (rectangle, ellipse, arrow, etc.)
@@ -98,16 +101,16 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 
 ## Slide Layouts
 
-| Layout | Description |
-|--------|-------------|
-| `BLANK` | Empty slide |
-| `TITLE` | Title slide |
-| `TITLE_AND_BODY` | Title with content area |
-| `TITLE_AND_TWO_COLUMNS` | Two-column layout |
-| `SECTION_HEADER` | Section divider |
-| `TITLE_ONLY` | Title without body |
-| `CAPTION_ONLY` | Caption slide |
-| `BIG_NUMBER` | Large number display |
+| Layout                  | Description             |
+| ----------------------- | ----------------------- |
+| `BLANK`                 | Empty slide             |
+| `TITLE`                 | Title slide             |
+| `TITLE_AND_BODY`        | Title with content area |
+| `TITLE_AND_TWO_COLUMNS` | Two-column layout       |
+| `SECTION_HEADER`        | Section divider         |
+| `TITLE_ONLY`            | Title without body      |
+| `CAPTION_ONLY`          | Caption slide           |
+| `BIG_NUMBER`            | Large number display    |
 
 ## Shape Types
 
@@ -122,4 +125,3 @@ Standard slide size: **720 x 540 points** (10" x 7.5")
 ## License
 
 MIT
-

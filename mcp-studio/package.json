@@ -1,8 +1,8 @@
 {
   "name": "mcp-studio",
   "version": "1.0.0",
-  "description": "Template for MCP with Vite + React view",
   "private": true,
+  "description": "Template for MCP with Vite + React view",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
@@ -28,9 +28,9 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
     "deco-cli": "^0.28.0",
-    "typescript": "^5.7.2",
-    "@decocms/mcps-shared": "1.0.0"
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=22.0.0"

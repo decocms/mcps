@@ -34,10 +34,5 @@
     /* Types */
     "types": ["@cloudflare/workers-types"]
   },
-  "include": [
-    "server",
-    "shared",
-    "vite.config.ts"
-  ]
+  "include": ["server", "shared", "vite.config.ts"]
 }
-

@@ -1,8 +1,8 @@
 {
   "name": "google-slides",
   "version": "1.0.0",
-  "description": "Google Slides MCP Server - Create and edit presentations",
   "private": true,
+  "description": "Google Slides MCP Server - Create and edit presentations",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

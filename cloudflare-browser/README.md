@@ -21,4 +21,3 @@ Requires a Cloudflare API token with Workers Browser Rendering permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/browser-rendering/
-

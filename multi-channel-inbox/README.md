@@ -1,4 +1,4 @@
-# Multi Channel Inbox 
+# Multi Channel Inbox
 
 Unified support inbox that aggregates messages from Slack, Discord and Gmail into a single interface with conversation tracking, AI classification and cross-platform replies.
 
@@ -38,23 +38,25 @@ The `inbox_resolve_conversation` tool marks a conversation as resolved and, for 
 
 ## Bindings (Mesh configuration)
 
-| Binding | Type | Description |
-|---|---|---|
-| `DATABASE` | `@deco/postgres` | PostgreSQL database for conversations and messages |
-| `EVENT_BUS` | `@deco/event-bus` | Receives `slack.message.*` and `discord.message.created` events |
-| `CONNECTION` | `@deco/connection` | Mesh connections to Slack, Discord and Gmail MCPs |
-| `MODEL_PROVIDER` | `@deco/llm` | (Optional) LLM for AI classification, summarization and reply suggestions |
-| `LANGUAGE_MODEL` | Language model | (Optional) Specific model to use for AI features |
-| `GMAIL_POLL_INTERVAL_MINUTES` | number | (Optional) Gmail poll interval in minutes (default: 3) |
+| Binding                       | Type               | Description                                                               |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------------- |
+| `DATABASE`                    | `@deco/postgres`   | PostgreSQL database for conversations and messages                        |
+| `EVENT_BUS`                   | `@deco/event-bus`  | Receives `slack.message.*` and `discord.message.created` events           |
+| `CONNECTION`                  | `@deco/connection` | Mesh connections to Slack, Discord and Gmail MCPs                         |
+| `MODEL_PROVIDER`              | `@deco/llm`        | (Optional) LLM for AI classification, summarization and reply suggestions |
+| `LANGUAGE_MODEL`              | Language model     | (Optional) Specific model to use for AI features                          |
+| `GMAIL_POLL_INTERVAL_MINUTES` | number             | (Optional) Gmail poll interval in minutes (default: 3)                    |
 
 ## MCP Tools
 
 ### Source Management
+
 - `inbox_add_source` — Add a Slack channel, Discord channel or Gmail label to monitor
 - `inbox_list_sources` — List all configured sources
 - `inbox_remove_source` — Disable a source (soft delete)
 
 ### Conversations
+
 - `inbox_list_conversations` — List with filters (status, priority, source type, search) and pagination
 - `inbox_get_conversation` — Get conversation detail with all messages
 - `inbox_update_conversation` — Update status, priority, assignee, category, tags
@@ -62,10 +64,12 @@ The `inbox_resolve_conversation` tool marks a conversation as resolved and, for 
 - `inbox_stats` — Counts by source, status and priority
 
 ### Actions
+
 - `inbox_reply` — Reply through the original platform via Mesh
 - `inbox_resolve_conversation` — Mark as resolved + apply forum tags (Discord)
 
 ### AI (requires MODEL_PROVIDER)
+
 - `inbox_classify` — Auto-classify category and priority
 - `inbox_summarize` — Summarize conversation
 - `inbox_suggest_reply` — Generate reply suggestion
@@ -105,16 +109,16 @@ bun run dev
 
 This starts the API server on port 3001 with hot reload and the Vite web build in watch mode.
 
-| Command | Description |
-|---|---|
-| `bun run dev` | API server + web build (watch mode) |
-| `bun run dev:api` | API server only (port 3001) |
-| `bun run dev:web` | Web build only (watch mode) |
-| `bun run build` | Production build (web + server) |
-| `bun run check` | TypeScript type check |
-| `bun run ci:check` | Biome lint + format (CI) |
-| `bun run fmt` | Auto-format with Biome |
-| `bun test` | Run tests |
+| Command            | Description                         |
+| ------------------ | ----------------------------------- |
+| `bun run dev`      | API server + web build (watch mode) |
+| `bun run dev:api`  | API server only (port 3001)         |
+| `bun run dev:web`  | Web build only (watch mode)         |
+| `bun run build`    | Production build (web + server)     |
+| `bun run check`    | TypeScript type check               |
+| `bun run ci:check` | Biome lint + format (CI)            |
+| `bun run fmt`      | Auto-format with Biome              |
+| `bun test`         | Run tests                           |
 
 The MCP endpoint is exposed at `http://localhost:3001/api/mcp` (SSE transport).
 

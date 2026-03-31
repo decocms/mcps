@@ -1,4 +1,4 @@
-# Perplexity AI MCP  
+# Perplexity AI MCP
 
 ## Project Description
 
@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Ask questions in natural language and receive web-grounded answers
 - Conduct multi-turn conversations with message history context
 - Customize search parameters (domains, recency, context)
@@ -38,27 +39,32 @@ This MCP server allows client applications to:
 ### Local Installation
 
 1. Clone the repository and enter the Perplexity directory:
+
 ```bash
 git clone https://github.com/deco-cx/mcps.git
 cd mcps/perplexity
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
 
 3. Configure the necessary environment variables:
+
 ```bash
 bun run configure
 ```
 
 4. Generate TypeScript types:
+
 ```bash
 bun run gen
 ```
 
 5. Start the development server:
+
 ```bash
 bun run dev
 ```
@@ -105,8 +111,8 @@ const result = await client.callTool("chat_with_perplexity", {
   messages: [
     { role: "user", content: "What is artificial intelligence?" },
     { role: "assistant", content: "AI is the simulation of processes..." },
-    { role: "user", content: "What are the main applications?" }
-  ]
+    { role: "user", content: "What are the main applications?" },
+  ],
 });
 ```
 
@@ -118,7 +124,7 @@ const result = await client.callTool("ask_perplexity", {
   search_recency_filter: "day",
   search_domain_filter: ["techcrunch.com", "theverge.com"],
   search_context_size: "maximum",
-  model: "sonar-pro"
+  model: "sonar-pro",
 });
 ```
 
@@ -128,7 +134,7 @@ const result = await client.callTool("ask_perplexity", {
 const result = await client.callTool("ask_perplexity", {
   prompt: "Explain the Pythagorean theorem and how to prove it",
   model: "sonar-reasoning-pro",
-  temperature: 0.1
+  temperature: 0.1,
 });
 ```
 
@@ -137,7 +143,7 @@ const result = await client.callTool("ask_perplexity", {
 ```typescript
 try {
   const result = await client.callTool("ask_perplexity", {
-    prompt: "My question..."
+    prompt: "My question...",
   });
   console.log(result.answer);
 } catch (error) {
@@ -169,17 +175,23 @@ perplexity/
 The project uses the following Cloudflare Workers bindings:
 
 #### `PERPLEXITY_API_KEY`
+
 Perplexity AI API key:
+
 - Get your key at: https://www.perplexity.ai/settings/api
 - Configure during integration installation
 
 #### `DEFAULT_MODEL`
+
 Default model to use (optional):
+
 - Options: `sonar`, `sonar-pro`, `sonar-deep-research`, `sonar-reasoning-pro`, `sonar-reasoning`
 - Default: `sonar`
 
 #### `PERPLEXITY_CONTRACT`
+
 Authorization and pay-per-use system:
+
 - `CONTRACT_AUTHORIZE`: Authorizes a transaction before the query
 - `CONTRACT_SETTLE`: Settles the transaction after the query
 - **Configured clauses:**
@@ -187,7 +199,9 @@ Authorization and pay-per-use system:
   - `perplexity:chat`: $0.02 per chat message
 
 #### `FILE_SYSTEM`
+
 File storage system:
+
 - `FS_READ`: Reads files from the file system
 - `FS_WRITE`: Writes files to the file system
 
@@ -231,9 +245,11 @@ const StateSchema = BaseStateSchema.extend({
 ### Available MCP Tools
 
 #### `ask_perplexity`
+
 Asks a simple question to Perplexity AI.
 
 **Parameters:**
+
 - `prompt` (string, required): The question or prompt
 - `model` (string, optional): Model to use (default: "sonar")
 - `max_tokens` (number, optional): Maximum tokens in the response
@@ -246,9 +262,11 @@ Asks a simple question to Perplexity AI.
 - `search_context_size` (string, optional): Amount of context ("low", "medium", "high", "maximum")
 
 #### `chat_with_perplexity`
+
 Maintains a multi-turn conversation with Perplexity AI.
 
 **Parameters:**
+
 - `messages` (Message[], required): Array of conversation messages
   - Each message: `{ role: "system" | "user" | "assistant", content: string }`
 - All other parameters from `ask_perplexity` are also available
@@ -264,6 +282,7 @@ Maintains a multi-turn conversation with Perplexity AI.
 ### Input/Output Format
 
 #### Input (`ask_perplexity`)
+
 ```typescript
 {
   prompt: string;
@@ -275,16 +294,20 @@ Maintains a multi-turn conversation with Perplexity AI.
 ```
 
 #### Output
+
 ```typescript
 {
-  content: [{
-    type: "text",
-    text: string // Stringified JSON with answer, usage, etc
-  }]
+  content: [
+    {
+      type: "text",
+      text: string, // Stringified JSON with answer, usage, etc
+    },
+  ];
 }
 ```
 
 JSON format:
+
 ```typescript
 {
   answer: string;              // Generated answer

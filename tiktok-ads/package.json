@@ -1,8 +1,8 @@
 {
   "name": "tiktok-ads",
   "version": "1.0.0",
-  "description": "TikTok Ads MCP Server - Manage campaigns, ad groups, ads and reports",
   "private": true,
+  "description": "TikTok Ads MCP Server - Manage campaigns, ad groups, ads and reports",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

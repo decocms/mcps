@@ -35,11 +35,5 @@
     /* Types */
     "types": ["vite/client", "@cloudflare/workers-types"]
   },
-  "include": [
-    "view",
-    "server",
-    "shared",
-    "vite.config.ts"
-  ]
+  "include": ["view", "server", "shared", "vite.config.ts"]
 }
-

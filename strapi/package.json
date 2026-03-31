@@ -1,8 +1,8 @@
 {
   "name": "strapi",
   "version": "1.0.0",
-  "description": "Strapi CMS MCP Server - Content management and API integration",
   "private": true,
+  "description": "Strapi CMS MCP Server - Content management and API integration",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

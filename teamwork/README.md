@@ -45,6 +45,7 @@ Production-ready HTTP server for cloud deployments and multi-client support.
 **📖 [Full HTTP Server Documentation](https://github.com/nicholasgriffintn/teamwork-mcpserver/blob/main/cmd/mcp-http/README.md)**
 
 Quick start:
+
 ```bash
 TW_MCP_SERVER_ADDRESS=:8080 go run cmd/mcp-http/main.go
 ```
@@ -56,6 +57,7 @@ Direct STDIO interface for desktop applications and development environments.
 **📖 [Full STDIO Server Documentation](cmd/mcp-stdio/README.md)**
 
 Quick start:
+
 ```bash
 TW_MCP_BEARER_TOKEN=your-token go run cmd/mcp-stdio/main.go
 ```
@@ -67,6 +69,7 @@ Command-line tool for testing and debugging MCP server functionality.
 **📖 [Full HTTP CLI Documentation](cmd/mcp-http-cli/README.md)**
 
 Quick start:
+
 ```bash
 go run cmd/mcp-http-cli/main.go -mcp-url=https://mcp.example.com list-tools
 ```
@@ -79,6 +82,7 @@ go run cmd/mcp-http-cli/main.go -mcp-url=https://mcp.example.com list-tools
 ## 🧪 Development & Testing
 
 ### Running Tests
+
 ```bash
 # Run all tests
 go test ./...
@@ -88,6 +92,7 @@ go test ./internal/twprojects/
 ```
 
 ### MCP Inspector
+
 For debugging purposes, use the [MCP Inspector tool](https://github.com/modelcontextprotocol/inspector):
 
 ```bash

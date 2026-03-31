@@ -22,4 +22,3 @@ Requires a Cloudflare API token with AI and Vectorize permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com
 - **Documentation**: https://developers.cloudflare.com/vectorize/
-

@@ -1,8 +1,8 @@
 {
   "name": "replicate",
   "version": "1.0.0",
-  "description": "MCP to interact with the Replicate API",
   "private": true,
+  "description": "MCP to interact with the Replicate API",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

@@ -5,11 +5,13 @@
 **JumpCloud MCP** is a Model Context Protocol (MCP) server that gives AI assistants access to JumpCloud's directory and identity management platform for managing users, devices, and access policies.
 
 ### Purpose
+
 - Query and manage users, groups, and devices across your JumpCloud directory
 - Automate identity lifecycle tasks such as provisioning and deprovisioning
 - Inspect and enforce access policies, SSO applications, and MFA settings
 
 ### Key Features
+
 - 👤 Manage users and user groups in your directory
 - 💻 Query and manage enrolled devices and system inventory
 - 🔐 Configure SSO applications and access permissions

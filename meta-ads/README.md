@@ -1,4 +1,4 @@
-# Meta Ads MCP  
+# Meta Ads MCP
 
 Complete MCP for managing and analyzing Meta/Facebook Ads campaigns.
 
@@ -17,60 +17,68 @@ This MCP provides comprehensive tools to **create, manage, and analyze** your Me
 ## Available Tools
 
 ### Accounts - User Token Tools (3 tools)
-| Tool | Description |
-|------|-------------|
-| `META_ADS_GET_USER_INFO` | Get authenticated user information (User Token only) |
-| `META_ADS_GET_USER_AD_ACCOUNTS` | List accessible ad accounts (User Token only) |
-| `META_ADS_GET_USER_ACCOUNT_PAGES` | Pages associated with the user (User Token only) |
+
+| Tool                              | Description                                          |
+| --------------------------------- | ---------------------------------------------------- |
+| `META_ADS_GET_USER_INFO`          | Get authenticated user information (User Token only) |
+| `META_ADS_GET_USER_AD_ACCOUNTS`   | List accessible ad accounts (User Token only)        |
+| `META_ADS_GET_USER_ACCOUNT_PAGES` | Pages associated with the user (User Token only)     |
 
 ### Accounts - Page Token Tools (3 tools)
-| Tool | Description |
-|------|-------------|
-| `META_ADS_GET_PAGE_INFO` | Get current page information (Page Token only) |
-| `META_ADS_GET_PAGE_AD_ACCOUNTS` | List ad accounts associated with the page (Page Token only) |
-| `META_ADS_GET_PAGE_ACCOUNT_PAGES` | Get current page details (Page Token only) |
+
+| Tool                              | Description                                                 |
+| --------------------------------- | ----------------------------------------------------------- |
+| `META_ADS_GET_PAGE_INFO`          | Get current page information (Page Token only)              |
+| `META_ADS_GET_PAGE_AD_ACCOUNTS`   | List ad accounts associated with the page (Page Token only) |
+| `META_ADS_GET_PAGE_ACCOUNT_PAGES` | Get current page details (Page Token only)                  |
 
 ### Accounts - Universal Tools (1 tool)
-| Tool | Description |
-|------|-------------|
+
+| Tool                        | Description                                                                |
+| --------------------------- | -------------------------------------------------------------------------- |
 | `META_ADS_GET_ACCOUNT_INFO` | Account details (currency, timezone, status) - works with both token types |
 
 ### Campaigns (5 tools)
-| Tool | Description |
-|------|-------------|
-| `META_ADS_GET_CAMPAIGNS` | List campaigns with status filter |
-| `META_ADS_GET_CAMPAIGN_DETAILS` | Details of a specific campaign |
-| `META_ADS_CREATE_CAMPAIGN` | Create a new campaign with objective, budget, and schedule |
-| `META_ADS_UPDATE_CAMPAIGN` | Update/pause/activate a campaign |
-| `META_ADS_DELETE_CAMPAIGN` | Delete a campaign |
+
+| Tool                            | Description                                                |
+| ------------------------------- | ---------------------------------------------------------- |
+| `META_ADS_GET_CAMPAIGNS`        | List campaigns with status filter                          |
+| `META_ADS_GET_CAMPAIGN_DETAILS` | Details of a specific campaign                             |
+| `META_ADS_CREATE_CAMPAIGN`      | Create a new campaign with objective, budget, and schedule |
+| `META_ADS_UPDATE_CAMPAIGN`      | Update/pause/activate a campaign                           |
+| `META_ADS_DELETE_CAMPAIGN`      | Delete a campaign                                          |
 
 ### Ad Sets (5 tools)
-| Tool | Description |
-|------|-------------|
-| `META_ADS_GET_ADSETS` | List ad sets with campaign filter |
-| `META_ADS_GET_ADSET_DETAILS` | Ad set details (targeting, budget) |
-| `META_ADS_CREATE_ADSET` | Create ad set with targeting, budget, and optimization |
-| `META_ADS_UPDATE_ADSET` | Update/pause/activate an ad set |
-| `META_ADS_DELETE_ADSET` | Delete an ad set |
+
+| Tool                         | Description                                            |
+| ---------------------------- | ------------------------------------------------------ |
+| `META_ADS_GET_ADSETS`        | List ad sets with campaign filter                      |
+| `META_ADS_GET_ADSET_DETAILS` | Ad set details (targeting, budget)                     |
+| `META_ADS_CREATE_ADSET`      | Create ad set with targeting, budget, and optimization |
+| `META_ADS_UPDATE_ADSET`      | Update/pause/activate an ad set                        |
+| `META_ADS_DELETE_ADSET`      | Delete an ad set                                       |
 
 ### Ads (5 tools)
-| Tool | Description |
-|------|-------------|
-| `META_ADS_GET_ADS` | List ads with ad set filter |
-| `META_ADS_GET_AD_DETAILS` | Ad details |
-| `META_ADS_GET_AD_CREATIVES` | Get creative details for an ad |
-| `META_ADS_CREATE_AD` | Create a new ad with a creative |
-| `META_ADS_UPDATE_AD` | Update/pause/activate an ad |
-| `META_ADS_DELETE_AD` | Delete an ad |
+
+| Tool                        | Description                     |
+| --------------------------- | ------------------------------- |
+| `META_ADS_GET_ADS`          | List ads with ad set filter     |
+| `META_ADS_GET_AD_DETAILS`   | Ad details                      |
+| `META_ADS_GET_AD_CREATIVES` | Get creative details for an ad  |
+| `META_ADS_CREATE_AD`        | Create a new ad with a creative |
+| `META_ADS_UPDATE_AD`        | Update/pause/activate an ad     |
+| `META_ADS_DELETE_AD`        | Delete an ad                    |
 
 ### Creatives (1 tool)
-| Tool | Description |
-|------|-------------|
+
+| Tool                          | Description                                                          |
+| ----------------------------- | -------------------------------------------------------------------- |
 | `META_ADS_CREATE_AD_CREATIVE` | Create a creative with text and CTA (use existing posts or link ads) |
 
 ### Insights (1 tool)
-| Tool | Description |
-|------|-------------|
+
+| Tool                    | Description                         |
+| ----------------------- | ----------------------------------- |
 | `META_ADS_GET_INSIGHTS` | Performance metrics with breakdowns |
 
 ## Insights Metrics
@@ -91,17 +99,18 @@ This MCP uses an Access Token for authentication with the Meta Graph API.
 
 When installing the MCP, you'll need to provide:
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `META_APP_ID` | Yes | Your Meta App ID from [developers.facebook.com/apps](https://developers.facebook.com/apps/) |
-| `META_APP_SECRET` | Yes | Your Meta App Secret from App Settings > Basic |
-| `META_ACCESS_TOKEN` | Yes | Access Token from Graph API Explorer |
+| Field               | Required | Description                                                                                 |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `META_APP_ID`       | Yes      | Your Meta App ID from [developers.facebook.com/apps](https://developers.facebook.com/apps/) |
+| `META_APP_SECRET`   | Yes      | Your Meta App Secret from App Settings > Basic                                              |
+| `META_ACCESS_TOKEN` | Yes      | Access Token from Graph API Explorer                                                        |
 
 ### Automatic Token Exchange 🔄
 
 **The MCP automatically exchanges short-lived tokens for long-lived tokens!**
 
 When you provide your App ID and App Secret:
+
 1. Short-lived tokens (~1 hour) are automatically exchanged for long-lived tokens (~60 days)
 2. The exchange happens transparently on first API call
 3. Long-lived tokens are cached for the session
@@ -111,12 +120,14 @@ This means you can paste a fresh token from Graph API Explorer and it will be au
 ### How to Get Your Credentials
 
 #### Step 1: Get App ID and App Secret
+
 1. Go to [Meta for Developers](https://developers.facebook.com/apps/)
 2. Create a new app or select an existing one
 3. Go to **Settings > Basic**
 4. Copy your **App ID** and **App Secret**
 
 #### Step 2: Get Access Token
+
 1. Go to [Graph API Explorer](https://developers.facebook.com/tools/explorer/)
 2. Select your App from the dropdown
 3. Click "Generate Access Token"
@@ -135,19 +146,21 @@ When generating your token, grant these permissions:
 ### Token Types Supported
 
 **Two types of tokens are supported:**
+
 - **User Access Token**: Access all ad accounts and pages for a user
 - **Page Access Token**: Access ad accounts and data for a specific page
 
 Use the appropriate tools:
+
 - **User Token**: Use `META_ADS_GET_USER_*` tools
 - **Page Token**: Use `META_ADS_GET_PAGE_*` tools
 - **Both**: Universal tools like `META_ADS_GET_INSIGHTS` work with either token type
 
 ### Token Duration
 
-| Token Type | Duration |
-|------------|----------|
-| Short-lived (from Graph Explorer) | ~1 hour |
+| Token Type                            | Duration |
+| ------------------------------------- | -------- |
+| Short-lived (from Graph Explorer)     | ~1 hour  |
 | Long-lived (after automatic exchange) | ~60 days |
 
 > ⚠️ **Important**: Long-lived tokens expire after ~60 days. You'll need to generate a new token and update the configuration when this happens.
@@ -193,30 +206,30 @@ To create a full campaign from scratch, follow this flow:
 
 ### Campaign Objectives
 
-| Objective | Use Case |
-|-----------|----------|
-| `OUTCOME_TRAFFIC` | Drive website visits |
-| `OUTCOME_ENGAGEMENT` | Get likes, comments, shares |
-| `OUTCOME_LEADS` | Collect leads via forms |
-| `OUTCOME_SALES` | Drive purchases/conversions |
-| `OUTCOME_AWARENESS` | Reach and brand awareness |
-| `OUTCOME_APP_PROMOTION` | App installs |
+| Objective               | Use Case                    |
+| ----------------------- | --------------------------- |
+| `OUTCOME_TRAFFIC`       | Drive website visits        |
+| `OUTCOME_ENGAGEMENT`    | Get likes, comments, shares |
+| `OUTCOME_LEADS`         | Collect leads via forms     |
+| `OUTCOME_SALES`         | Drive purchases/conversions |
+| `OUTCOME_AWARENESS`     | Reach and brand awareness   |
+| `OUTCOME_APP_PROMOTION` | App installs                |
 
 ## Usage Examples
 
 ### Reading Data
 
 ```
-1. "List my ad accounts" 
+1. "List my ad accounts"
    -> META_ADS_GET_USER_AD_ACCOUNTS
 
-2. "Show active campaigns for account act_123" 
+2. "Show active campaigns for account act_123"
    -> META_ADS_GET_CAMPAIGNS(account_id: "act_123", status_filter: "ACTIVE")
 
 3. "How is campaign X performing in the last 7 days?"
    -> META_ADS_GET_INSIGHTS(object_id: "campaign_id", date_preset: "last_7d")
 
-4. "Compare results by age and gender" 
+4. "Compare results by age and gender"
    -> META_ADS_GET_INSIGHTS(object_id: "campaign_id", breakdowns: ["age", "gender"])
 
 5. "Which ads have the best CTR?"

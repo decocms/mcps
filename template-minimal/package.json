@@ -1,8 +1,8 @@
 {
   "name": "mcp-template-minimal",
   "version": "1.0.0",
-  "description": "Minimal template for MCP server",
   "private": true,
+  "description": "Minimal template for MCP server",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

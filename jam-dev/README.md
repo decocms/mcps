@@ -39,5 +39,4 @@ https://mcp.jam.dev/mcp
 
 ---
 
-*This MCP requires an active Jam account to function.*
-
+_This MCP requires an active Jam account to function._

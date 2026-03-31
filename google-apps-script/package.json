@@ -1,8 +1,8 @@
 {
   "name": "google-apps-script",
   "version": "1.0.0",
-  "description": "Google Apps Script MCP Server - Manage and execute Apps Script projects",
   "private": true,
+  "description": "Google Apps Script MCP Server - Manage and execute Apps Script projects",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

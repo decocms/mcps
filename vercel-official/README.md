@@ -39,5 +39,4 @@ https://mcp.vercel.com/
 
 ---
 
-*This MCP requires an active Vercel account to function.*
-
+_This MCP requires an active Vercel account to function._

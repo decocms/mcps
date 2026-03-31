@@ -77,24 +77,24 @@ You can use any JWT-compatible library, but we've included some light helpers in
 // Signing token secret: process.env.MUX_PRIVATE_KEY
 
 // Most simple request, defaults to type video and is valid for 7 days.
-const token = mux.jwt.signPlaybackId('some-playback-id');
+const token = mux.jwt.signPlaybackId("some-playback-id");
 // https://stream.mux.com/some-playback-id.m3u8?token=${token}
 
 // If you wanted to sign a thumbnail
 const thumbParams = { time: 14, width: 100 };
-const thumbToken = mux.jwt.signPlaybackId('some-playback-id', {
-  type: 'thumbnail',
+const thumbToken = mux.jwt.signPlaybackId("some-playback-id", {
+  type: "thumbnail",
   params: thumbParams,
 });
 // https://image.mux.com/some-playback-id/thumbnail.jpg?token=${token}
 
 // If you wanted to sign a gif
-const gifToken = mux.jwt.signPlaybackId('some-playback-id', { type: 'gif' });
+const gifToken = mux.jwt.signPlaybackId("some-playback-id", { type: "gif" });
 // https://image.mux.com/some-playback-id/animated.gif?token=${token}
 
 // Here's an example for a storyboard
-const storyboardToken = mux.jwt.signPlaybackId('some-playback-id', {
-  type: 'storyboard',
+const storyboardToken = mux.jwt.signPlaybackId("some-playback-id", {
+  type: "storyboard",
 });
 
 // https://image.mux.com/some-playback-id/storyboard.jpg?token=${token}
@@ -102,15 +102,17 @@ const storyboardToken = mux.jwt.signPlaybackId('some-playback-id', {
 // You can also use `signViewerCounts` to get a token
 // used for requests to the Mux Engagement Counts API
 // https://docs.mux.com/guides/see-how-many-people-are-watching
-const statsToken = mux.jwt.signViewerCounts('some-live-stream-id', {
-  type: 'live_stream',
+const statsToken = mux.jwt.signViewerCounts("some-live-stream-id", {
+  type: "live_stream",
 });
 
 // https://stats.mux.com/counts?token={statsToken}
 ```
 
 ### Signing multiple JWTs at once
+
 In cases you need multiple tokens, like when using Mux Player, things can get unwieldy pretty quickly. For example,
+
 ```tsx
 const playbackToken = await mux.jwt.signPlaybackId(id, {
   expiration: "1d",
@@ -139,6 +141,7 @@ const drmToken = await mux.jwt.signPlaybackId(id, {
 ```
 
 To simplify this use-case, you can provide multiple types to `signPlaybackId` to recieve multiple tokens. These tokens are provided in a format that Mux Player can take as props:
+
 ```tsx
 // { "playback-token", "thumbnail-token", "storyboard-token", "drm-token" }
 const tokens = await mux.jwt.signPlaybackId(id, {
@@ -153,11 +156,12 @@ const tokens = await mux.jwt.signPlaybackId(id, {
 ```
 
 If you would like to provide params to a single token (e.g., if you would like to have a thumbnail `time`), you can provide `[type, typeParams]` instead of `type`:
+
 ```tsx
 const tokens = await mux.jwt.signPlaybackId(id, {
   expiration: "1d",
-  type: ["playback", ["thumbnail", { time: 2 }], "storyboard", "drm_license"]
-})
+  type: ["playback", ["thumbnail", { time: 2 }], "storyboard", "drm_license"],
+});
 ```
 
 ## Parsing Webhook payloads
@@ -243,10 +247,10 @@ mux.webhooks.verifySignature(body, headers, secret);
 Note that when passing in the payload (body) you want to pass in the raw un-parsed request body, not the parsed JSON. Here's an example if you are using express.
 
 ```js
-const Mux = require('@mux/mux-node');
+const Mux = require("@mux/mux-node");
 const mux = new Mux();
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 
 /**
  * You'll need to make sure this is externally accessible.  ngrok (https://ngrok.com/)
@@ -256,11 +260,11 @@ const bodyParser = require('body-parser');
 const webhookSecret = process.env.WEBHOOK_SECRET;
 const app = express();
 
-app.post('/webhooks', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+app.post("/webhooks", bodyParser.raw({ type: "application/json" }), async (req, res) => {
   try {
     // will raise an exception if the signature is invalid
     const isValidSignature = mux.webhooks.verifySignature(req.body, req.headers, webhookSecret);
-    console.log('Success:', isValidSignature);
+    console.log("Success:", isValidSignature);
     // convert the raw req.body to JSON, which is originally Buffer (raw)
     const jsonFormattedBody = JSON.parse(req.body);
     // await doSomething();
@@ -272,7 +276,7 @@ app.post('/webhooks', bodyParser.raw({ type: 'application/json' }), async (req, 
 });
 
 app.listen(3000, () => {
-  console.log('Example app listening on port 3000!');
+  console.log("Example app listening on port 3000!");
 });
 ```
 
@@ -425,9 +429,9 @@ To make requests to undocumented endpoints, you can use `client.get`, `client.po
 Options on the client, such as retries, will be respected when making these requests.
 
 ```ts
-await client.post('/some/path', {
-  body: { some_prop: 'foo' },
-  query: { some_query_arg: 'bar' },
+await client.post("/some/path", {
+  body: { some_prop: "foo" },
+  query: { some_query_arg: "bar" },
 });
 ```
 
@@ -439,10 +443,10 @@ send will be sent as-is.
 
 ```ts
 client.foo.create({
-  foo: 'my_param',
+  foo: "my_param",
   bar: 12,
   // @ts-expect-error baz is not yet public
-  baz: 'undocumented option',
+  baz: "undocumented option",
 });
 ```
 
@@ -469,8 +473,8 @@ add the following import before your first import `from "Mux"`:
 ```ts
 // Tell TypeScript and the package to use the global web fetch instead of node-fetch.
 // Note, despite the name, this does not add any polyfills, but expects them to be provided if needed.
-import '@mux/mux-node/shims/web';
-import Mux from '@mux/mux-node';
+import "@mux/mux-node/shims/web";
+import Mux from "@mux/mux-node";
 ```
 
 To do the inverse, add `import "@mux/mux-node/shims/node"` (which does import polyfills).
@@ -482,14 +486,14 @@ You may also provide a custom `fetch` function when instantiating the client,
 which can be used to inspect or alter the `Request` or `Response` before/after each request:
 
 ```ts
-import { fetch } from 'undici'; // as one example
-import Mux from '@mux/mux-node';
+import { fetch } from "undici"; // as one example
+import Mux from "@mux/mux-node";
 
 const client = new Mux({
   fetch: async (url: RequestInfo, init?: RequestInit): Promise<Response> => {
-    console.log('About to make a request', url, init);
+    console.log("About to make a request", url, init);
     const response = await fetch(url, init);
-    console.log('Got response', response);
+    console.log("Got response", response);
     return response;
   },
 });

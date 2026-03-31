@@ -111,7 +111,9 @@ export class OpenRouterClient {
    */
   async getGeneration(generationId: string): Promise<GenerationInfo> {
     const response: GetGenerationResponse =
-      await this.sdk.generations.getGeneration({ id: generationId });
+      await this.sdk.generations.getGeneration({
+        id: generationId,
+      });
 
     return this.toGenerationInfo(response.data);
   }

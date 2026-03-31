@@ -1,5 +1,5 @@
-# VTEX Docs MCP    
-  
+# VTEX Docs MCP
+
 RAG-based MCP for searching VTEX documentation using hybrid search (semantic + full-text).
 
 ## Features
@@ -55,12 +55,14 @@ bun run deploy
 Hybrid search (semantic + full-text) for documentation chunks.
 
 **Input:**
+
 - `query` (string): Search query in natural language
 - `language` (optional): "en" or "pt-br"
 - `limit` (optional): Number of results (1-20, default: 8)
 - `semanticWeight` (optional): Weight for semantic vs full-text search (0-1, default: 0.3)
 
 **Output:**
+
 - `results`: Array of matching documents with:
   - `content`: The chunk content
   - `title`: Document title

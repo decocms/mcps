@@ -1,8 +1,8 @@
 {
   "name": "google-drive",
   "version": "1.0.0",
-  "description": "Google Drive MCP Server - Manage files, folders and permissions",
   "private": true,
+  "description": "Google Drive MCP Server - Manage files, folders and permissions",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

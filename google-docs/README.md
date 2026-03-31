@@ -1,26 +1,30 @@
-# Google Docs MCP 
+# Google Docs MCP
 
 MCP Server for Google Docs API. Create and edit documents programmatically.
 
 ## Features
 
 ### Document Management
+
 - **create_document** - Create a new document
 - **get_document** - Get document content and metadata
 
 ### Content Operations
+
 - **insert_text** - Insert text at position
 - **delete_content** - Delete text range
 - **replace_text** - Find and replace all
 - **append_text** - Append to end
 
 ### Formatting
+
 - **format_text** - Apply bold, italic, underline, font size
 - **insert_heading** - Insert heading (H1-H6)
 - **insert_list** - Create bullet/numbered lists
 - **remove_list** - Remove list formatting
 
 ### Elements
+
 - **insert_table** - Insert tables
 - **insert_image** - Insert images from URL
 - **insert_page_break** - Insert page breaks
@@ -118,4 +122,3 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 ## License
 
 MIT
-

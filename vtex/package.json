@@ -1,8 +1,8 @@
 {
   "name": "vtex",
   "version": "1.0.0",
-  "description": "MCP for VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory",
   "private": true,
+  "description": "MCP for VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
