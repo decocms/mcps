@@ -167,7 +167,10 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
 
       return {
         access_token: data.access_token,
-        refresh_token: data.refresh_token,
+        // Google typically does NOT return a new refresh_token on refresh.
+        // Echo back the original so the runtime always has one to return
+        // to the client, preventing token loss after the first refresh.
+        refresh_token: data.refresh_token ?? refreshToken,
         token_type: data.token_type || "Bearer",
         expires_in: data.expires_in,
         scope: data.scope,
