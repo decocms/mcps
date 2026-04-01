@@ -2,7 +2,7 @@
 
 ## 🎯 Variáveis Necessárias
 
-### Supabase (Recomendado)
+### Supabase (Recomendado) 
 
 ```bash
 # Obtenha em: https://supabase.com → Settings → API
