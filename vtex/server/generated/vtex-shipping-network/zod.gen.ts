@@ -8,15 +8,9 @@ import * as z from 'zod';
  * Account information.
  */
 export const zAccount = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Inserted name.'
-    }),
-    accountName: z.string().register(z.globalRegistry, {
-        description: 'Name of the VTEX Account dispatching the package.'
-    }),
-    isOperating: z.boolean().register(z.globalRegistry, {
-        description: 'Whether the store is operating or not.'
-    }),
+    name: z.string(),
+    accountName: z.string(),
+    isOperating: z.boolean(),
     defaultUrl: z.union([
         z.string(),
         z.null()
@@ -25,19 +19,13 @@ export const zAccount = z.object({
         z.string(),
         z.null()
     ]),
-    country: z.string().register(z.globalRegistry, {
-        description: 'Country where the VTEX store, dispatching the package, is located.'
-    }),
+    country: z.string(),
     complement: z.union([
         z.string(),
         z.null()
     ]),
-    companyName: z.string().register(z.globalRegistry, {
-        description: 'Name of the VTEX store responsible for the package.'
-    }),
-    cnpj: z.string().register(z.globalRegistry, {
-        description: 'CNPJ code of the VTEX store responsible for the package.'
-    }),
+    companyName: z.string(),
+    cnpj: z.string(),
     city: z.union([
         z.string(),
         z.null()
@@ -62,11 +50,7 @@ export const zAccount = z.object({
         z.string(),
         z.null()
     ]),
-    tradingName: z.string().register(z.globalRegistry, {
-        description: 'Trading name of the VTEX store responsible for the package.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Account information.'
+    tradingName: z.string()
 });
 
 /**
@@ -75,14 +59,8 @@ export const zAccount = z.object({
  * Recipient's country.
  */
 export const zCountry = z.object({
-    code: z.string().register(z.globalRegistry, {
-        description: 'Country\'s three-digit identifying code, from the recipient\'s address.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Country\'s name, from the recipient\'s address.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Recipient\'s country.'
+    code: z.string(),
+    name: z.string()
 });
 
 /**
@@ -91,14 +69,8 @@ export const zCountry = z.object({
  * Recipient's address state's information.
  */
 export const zSubregion1 = z.object({
-    code: z.string().register(z.globalRegistry, {
-        description: 'State\'s code, from the recipient\'s address.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'State\'s name, from the recipient\'s address.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Recipient\'s address state\'s information.'
+    code: z.string(),
+    name: z.string()
 });
 
 /**
@@ -107,14 +79,8 @@ export const zSubregion1 = z.object({
  * Recipient's address city's information.
  */
 export const zSubregion2 = z.object({
-    code: z.string().register(z.globalRegistry, {
-        description: 'City\'s code, from the recipient\'s address.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'City\'s name, from the recipient\'s address.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Recipient\'s address city\'s information.'
+    code: z.string(),
+    name: z.string()
 });
 
 /**
@@ -123,14 +89,8 @@ export const zSubregion2 = z.object({
  * Recipient's address neighborhood's information.
  */
 export const zSubregion3 = z.object({
-    code: z.string().register(z.globalRegistry, {
-        description: 'Neighborhood\'s code, from the recipient\'s address.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Neighborhood\'s name, from the recipient\'s address.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Recipient\'s address neighborhood\'s information.'
+    code: z.string(),
+    name: z.string()
 });
 
 /**
@@ -140,12 +100,8 @@ export const zSubregion3 = z.object({
  */
 export const zLocation = z.union([
     z.object({
-        lat: z.number().register(z.globalRegistry, {
-            description: 'Latitude number of the address\' geolocation coordinates.'
-        }),
-        lng: z.number().register(z.globalRegistry, {
-            description: 'Longitude number of the address\' geolocation coordinates.'
-        })
+        lat: z.number(),
+        lng: z.number()
     }),
     z.null()
 ]);
@@ -164,19 +120,13 @@ export const zAddress = z.object({
     subregion1: zSubregion1,
     subregion2: zSubregion2,
     subregion3: zSubregion3,
-    street: z.string().register(z.globalRegistry, {
-        description: 'Recipient\'s address.'
-    }),
-    number: z.string().register(z.globalRegistry, {
-        description: 'Number of the recipient\'s address.'
-    }),
+    street: z.string(),
+    number: z.string(),
     complement: z.union([
         z.string(),
         z.null()
     ]),
     location: zLocation
-}).register(z.globalRegistry, {
-    description: 'Address of the VTEX account responsible for sending the package.'
 });
 
 /**
@@ -185,9 +135,7 @@ export const zAddress = z.object({
  * User's logged account in the VTEX store.
  */
 export const zSender = z.object({
-    cnpj: z.string().register(z.globalRegistry, {
-        description: 'CNPJ code of the VTEX account responsible for sending the package.'
-    }),
+    cnpj: z.string(),
     fantasyName: z.union([
         z.string(),
         z.null()
@@ -200,9 +148,7 @@ export const zSender = z.object({
         z.string(),
         z.null()
     ]),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Name of the VTEX account responsible for sending the package.'
-    }),
+    name: z.string(),
     address: zAddress,
     email: z.union([
         z.string(),
@@ -212,8 +158,6 @@ export const zSender = z.object({
         z.string(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'User\'s logged account in the VTEX store.'
 });
 
 /**
@@ -222,31 +166,17 @@ export const zSender = z.object({
  * Carrier responsible for delivering the dispatched order.
  */
 export const zCarrier = z.object({
-    cnpj: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s CNPJ.'
-    }),
-    fantasyName: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s fantasy name.'
-    }),
-    stateRegistration: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s state registration number.'
-    }),
-    id: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s company name.'
-    }),
+    cnpj: z.string(),
+    fantasyName: z.string(),
+    stateRegistration: z.string(),
+    id: z.string(),
+    name: z.string(),
     address: zAddress,
-    email: z.string().register(z.globalRegistry, {
-        description: 'Carrier\'s email address.'
-    }),
+    email: z.string(),
     phone: z.union([
         z.string(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Carrier responsible for delivering the dispatched order.'
 });
 
 /**
@@ -255,18 +185,10 @@ export const zCarrier = z.object({
  * Information about the dispatched order.
  */
 export const zDispatchOrder = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'ID of the dispatched order.'
-    }),
-    packageIds: z.array(z.string().register(z.globalRegistry, {
-        description: 'Identification codes of the packages.'
-    })).register(z.globalRegistry, {
-        description: 'Array with package IDs.'
-    }),
+    id: z.string(),
+    packageIds: z.array(z.string()),
     sender: zSender,
     carrier: zCarrier
-}).register(z.globalRegistry, {
-    description: 'Information about the dispatched order.'
 });
 
 /**
@@ -276,12 +198,8 @@ export const zDispatchOrder = z.object({
  */
 export const zNotifyCarrierwithAppRequest = z.object({
     account: zAccount,
-    email: z.string().register(z.globalRegistry, {
-        description: 'Fill in this field if you wish to send the generated file for an email besides the ones already involved in the operation, like the carrier and VTEX account\'s email.'
-    }),
+    email: z.string(),
     dispatchOrder: zDispatchOrder
-}).register(z.globalRegistry, {
-    description: 'Object containing email, account, and dispatched order information.'
 });
 
 /**
@@ -290,49 +208,27 @@ export const zNotifyCarrierwithAppRequest = z.object({
  * Shipping's tracking information.
  */
 export const zTrackingEventsRequest = z.object({
-    trackingNumber: z.string().register(z.globalRegistry, {
-        description: 'Shipping\'s tracking identification code.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Shipping\'s tracking information.'
+    trackingNumber: z.string()
 });
 
 export const zNotifyCarrierwithAppData = z.object({
     body: zNotifyCarrierwithAppRequest,
     path: z.object({
-        app_name: z.string().register(z.globalRegistry, {
-            description: 'Name of the app developed by the carrier\'s integration.'
-        }).default('{{app name}}'),
-        app_version: z.string().register(z.globalRegistry, {
-            description: 'Version of the app developed by the carrier\'s integration.'
-        }).default('{{version}}'),
-        account: z.string().register(z.globalRegistry, {
-            description: 'VTEX account dispatching the package.'
-        }).default('VTEX Store example'),
-        workspace: z.string().register(z.globalRegistry, {
-            description: 'Workspace used in VTEX IO. '
-        }).default('master')
+        app_name: z.string().default('{{app name}}'),
+        app_version: z.string().default('{{version}}'),
+        account: z.string().default('VTEX Store example'),
+        workspace: z.string().default('master')
     }),
     query: z.optional(z.never())
 });
 
 export const zTrackingEventsData = z.object({
-    body: z.array(zTrackingEventsRequest).register(z.globalRegistry, {
-        description: 'Array containing tracking information.'
-    }),
+    body: z.array(zTrackingEventsRequest),
     path: z.object({
-        app_name: z.string().register(z.globalRegistry, {
-            description: 'Name of the app developed by the carrier\'s integration.'
-        }).default('{{app name}}'),
-        app_version: z.string().register(z.globalRegistry, {
-            description: 'Version of the app developed by the carrier\'s integration.'
-        }).default('{{version}}'),
-        account: z.string().register(z.globalRegistry, {
-            description: 'VTEX account dispatching the package.'
-        }).default('VTEX Store example'),
-        workspace: z.string().register(z.globalRegistry, {
-            description: 'Workspace used in VTEX IO. '
-        }).default('master')
+        app_name: z.string().default('{{app name}}'),
+        app_version: z.string().default('{{version}}'),
+        account: z.string().default('VTEX Store example'),
+        workspace: z.string().default('master')
     }),
     query: z.optional(z.never())
 });

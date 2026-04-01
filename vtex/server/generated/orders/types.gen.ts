@@ -4739,7 +4739,7 @@ export type Replace = {
              */
             id: string;
             /**
-             * Unique ID of the item being modified. This field is mandatory when modifying an order that contains items with the same `id`.
+             * Unique ID of the item being modified. We recommend always using this field to avoid modification errors for items with the same `id`.
              */
             uniqueId?: string;
             /**
@@ -4801,7 +4801,7 @@ export type Replace = {
              */
             id: string;
             /**
-             * Unique ID of the item being modified. This field is mandatory when modifying an order that contains items with the same `id`.
+             * Unique ID of the item being modified. We recommend always using this field to avoid modification errors for items with the same `id`.
              */
             uniqueId?: string;
             /**

@@ -25,7 +25,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * > ⚠️ When creating contracts you must send each field according to the specifications provided. Otherwise, the Checkout module will not be able to autofill data during the shopping flow, which can block the purchase. Learn more about [SmartCheckout - Customer information automatic fill-in](https://help.vtex.com/en/tutorial/smartcheckout-preenchimento-automatico-de-dados-do-cliente--2Nuu3xAFzdhIzJIldAdtan#).
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * Authentication requires the `VtexIdclientAutCookie` header.
  *
@@ -64,7 +64,7 @@ export const createContract = <ThrowOnError extends boolean = false>(options: Op
  *
  * This endpoint allows you to delete a specific contract from the data entity `CL`.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -94,7 +94,7 @@ export const deleteApiDataentitiesClDocumentsByContractId = <ThrowOnError extend
  *
  * This endpoint retrieves information related to a given contract, by its unique identifier. Use the `_fields=_all` query parameter to return all fields.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -128,7 +128,7 @@ export const getApiDataentitiesClDocumentsByContractId = <ThrowOnError extends b
  *
  * > ⚠️ When updating contracts you must send each field according to the specifications provided. Otherwise, the Checkout module will not be able to autofill data during the shopping flow, which can block the purchase. Learn more about [SmartCheckout - Customer information automatic fill-in](https://help.vtex.com/en/tutorial/smartcheckout-preenchimento-automatico-de-dados-do-cliente--2Nuu3xAFzdhIzJIldAdtan#).
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *

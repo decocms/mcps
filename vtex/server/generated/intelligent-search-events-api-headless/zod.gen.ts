@@ -3,34 +3,24 @@
 import * as z from 'zod';
 
 export const zUserIdentification = z.object({
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    })
+    anonymous: z.string(),
+    session: z.string()
 });
 
 /**
  * SessionPing
  *
- * Sends an ACK to the API to renew the session server-side. It should be sent every 1 minute.
+ * Sends an ACK to the API to renew the session server-side. It should be sent every 1 minute. This event is essential to keep the session active and to determine if a session is ongoing or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event, and events registered for closed sessions are automatically disregarded.
  */
 export const zSessionPing = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    }),
-    agent: z.string().register(z.globalRegistry, {
-        description: 'Identifies whether the request came from a mobile or desktop application. It\'s used as a filter in the search report.'
-    }).default('desktop')
-}).register(z.globalRegistry, {
-    description: 'Sends an ACK to the API to renew the session server-side. It should be sent every 1 minute.'
+    session: z.string(),
+    anonymous: z.string(),
+    type: z.string(),
+    agent: z.string(),
+    device: z.optional(z.enum(['mobile', 'desktop'])),
+    ab: z.optional(z.string()),
+    vtexSession: z.optional(z.string()),
+    vtexMac: z.optional(z.string())
 });
 
 /**
@@ -39,32 +29,20 @@ export const zSessionPing = z.object({
  * Sends an event every time a shopper clicks on a product from a search page.
  */
 export const zClick = z.object({
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    }),
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the clicked product.'
-    }),
-    position: z.int().register(z.globalRegistry, {
-        description: 'Position of the clicked product on the search results page.'
-    }),
-    url: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL that identifies from which page the event occurred.'
-    })),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Query used in the search.'
-    }),
-    agent: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifies whether the request came from a mobile or desktop application. It\'s used as a filter in the search report.'
-    })).default('desktop'),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends an event every time a shopper clicks on a product from a search page.'
+    type: z.string(),
+    product: z.string(),
+    position: z.int(),
+    page: z.optional(z.string()),
+    clickType: z.optional(z.string()),
+    url: z.optional(z.string()),
+    text: z.string(),
+    agent: z.optional(z.string()),
+    device: z.optional(z.enum(['mobile', 'desktop'])),
+    ab: z.optional(z.string()),
+    vtexSession: z.optional(z.string()),
+    vtexMac: z.optional(z.string()),
+    anonymous: z.string(),
+    session: z.string()
 });
 
 /**
@@ -73,35 +51,33 @@ export const zClick = z.object({
  * Sends a query event every time the shopper makes a full-text search.
  */
 export const zQuery = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    url: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL that identifies from which page the event occurred.'
-    })),
-    agent: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifies whether the request came from a mobile or desktop application. It\'s used as a filter in the search report.'
-    })).default('desktop'),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    }),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Query used in the search.'
-    }),
-    misspelled: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates whether the query has a typo (`true`) or not (`false`).'
-    }),
-    match: z.number().register(z.globalRegistry, {
-        description: 'Amount of products retrieved by the search.'
-    }),
-    operator: z.string().register(z.globalRegistry, {
-        description: 'Identifies the type of operator used on the search. The possible values are: `and`, `or`. Find more details in [this Elastic Search guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends a query event every time the shopper makes a full-text search.'
+    session: z.string(),
+    anonymous: z.string(),
+    url: z.optional(z.string()),
+    agent: z.optional(z.string()),
+    device: z.optional(z.enum(['mobile', 'desktop'])),
+    ab: z.optional(z.string()),
+    vtexSession: z.optional(z.string()),
+    vtexMac: z.optional(z.string()),
+    type: z.string(),
+    text: z.string(),
+    misspelled: z.optional(z.union([
+        z.boolean(),
+        z.null()
+    ])),
+    match: z.optional(z.number()),
+    products: z.optional(z.union([
+        z.array(z.string()),
+        z.array(z.object({
+            id: z.string(),
+            local: z.number(),
+            global: z.number()
+        }))
+    ])),
+    page: z.optional(z.number()),
+    count: z.optional(z.number()),
+    locale: z.optional(z.string()),
+    operator: z.enum(['and', 'or'])
 });
 
 /**
@@ -110,32 +86,20 @@ export const zQuery = z.object({
  * Sends an event every time a shopper clicks on a product from an autocomplete search.
  */
 export const zAutocompleteClick = z.object({
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    }),
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the clicked product.'
-    }),
-    position: z.int().register(z.globalRegistry, {
-        description: 'Position of the clicked product on the search results page.'
-    }),
-    url: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL that identifies from which page the event occurred.'
-    })),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Query used in the search.'
-    }),
-    agent: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifies whether the request came from a mobile or desktop application. It\'s used as a filter in the search report.'
-    })).default('desktop'),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends an event every time a shopper clicks on a product from an autocomplete search.'
+    type: z.string(),
+    product: z.string(),
+    position: z.int(),
+    page: z.optional(z.string()),
+    clickType: z.optional(z.string()),
+    url: z.optional(z.string()),
+    text: z.string(),
+    agent: z.optional(z.string()),
+    device: z.optional(z.enum(['mobile', 'desktop'])),
+    ab: z.optional(z.string()),
+    vtexSession: z.optional(z.string()),
+    vtexMac: z.optional(z.string()),
+    anonymous: z.string(),
+    session: z.string()
 });
 
 /**
@@ -144,49 +108,41 @@ export const zAutocompleteClick = z.object({
  * Sends a query event every time the shopper makes an autocomplete search.
  */
 export const zAutocompleteQuery = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    url: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL that identifies from which page the event occurred.'
-    })),
-    agent: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifies whether the request came from a mobile or desktop application. It\'s used as a filter in the search report.'
-    })).default('desktop'),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    }),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Query used in the search.'
-    }),
-    misspelled: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates whether the query has a typo (`true`) or not (`false`).'
-    }),
-    match: z.number().register(z.globalRegistry, {
-        description: 'Amount of products retrieved by the search.'
-    }),
-    operator: z.enum(['and', 'or']).register(z.globalRegistry, {
-        description: 'Identifies the type of operator used on the search. The possible values are: `and`, `or`. Find more details in [this Elastic Search guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends a query event every time the shopper makes an autocomplete search.'
+    session: z.string(),
+    anonymous: z.string(),
+    url: z.optional(z.string()),
+    agent: z.optional(z.string()),
+    device: z.optional(z.enum(['mobile', 'desktop'])),
+    ab: z.optional(z.string()),
+    vtexSession: z.optional(z.string()),
+    vtexMac: z.optional(z.string()),
+    type: z.string(),
+    text: z.string(),
+    misspelled: z.optional(z.union([
+        z.boolean(),
+        z.null()
+    ])),
+    match: z.optional(z.number()),
+    products: z.optional(z.union([
+        z.array(z.string()),
+        z.array(z.object({
+            id: z.string(),
+            local: z.number(),
+            global: z.number()
+        }))
+    ])),
+    page: z.optional(z.number()),
+    count: z.optional(z.number()),
+    locale: z.optional(z.string()),
+    operator: z.enum(['and', 'or'])
 });
 
 /**
  * Product information.
  */
 export const zCartProduct = z.object({
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the product.'
-    }),
-    quantity: z.number().register(z.globalRegistry, {
-        description: 'Quantity of the product.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Product information.'
+    product: z.string(),
+    quantity: z.number().gte(1)
 });
 
 /**
@@ -195,20 +151,10 @@ export const zCartProduct = z.object({
  * Sends an event every time the shopper enters the cart page. Each interaction should include all products inside the shopping cart at that time. In case a product is removed, sent the updated card.
  */
 export const zPageCart = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    products: z.array(zCartProduct).register(z.globalRegistry, {
-        description: 'Array of objects containing products. If the event type is `page.cart`, the array contains all the products in the cart, with their ID and quantity.  Each interaction should include all products inside the shopping cart at that time. In case a product is removed, sent the updated card. If there are no products in the cart (page.`empty_cart`), the array is empty. If the event type is `page.confirmation`, the array contains all the products that were purchased, with their ID, price and quantity.'
-    }),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends an event every time the shopper enters the cart page. Each interaction should include all products inside the shopping cart at that time. In case a product is removed, sent the updated card.'
+    session: z.string(),
+    anonymous: z.string(),
+    products: z.array(zCartProduct),
+    type: z.string()
 });
 
 /**
@@ -217,37 +163,19 @@ export const zPageCart = z.object({
  * Sends an event if there are no products in the shopping cart at that time.
  */
 export const zPageEmptyCart = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    products: z.array(zCartProduct).register(z.globalRegistry, {
-        description: 'Array of objects containing products. If the event type is `page.cart`, the array contains all the products in the cart, with their ID and quantity.  Each interaction should include all products inside the shopping cart at that time. In case a product is removed, sent the updated card. If there are no products in the cart (page.`empty_cart`), the array is empty. If the event type is `page.confirmation`, the array contains all the products that were purchased, with their ID, price and quantity.'
-    }),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends an event if there are no products in the shopping cart at that time.'
+    session: z.string(),
+    anonymous: z.string(),
+    products: z.array(zCartProduct),
+    type: z.string()
 });
 
 /**
  * Product information.
  */
 export const zOrderProduct = z.object({
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the product.'
-    }),
-    price: z.number().register(z.globalRegistry, {
-        description: 'Price of the product.'
-    }),
-    quantity: z.number().register(z.globalRegistry, {
-        description: 'Quantity of the product.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Product information.'
+    product: z.string(),
+    price: z.optional(z.number()),
+    quantity: z.number().gte(1)
 });
 
 /**
@@ -256,38 +184,24 @@ export const zOrderProduct = z.object({
  * Sends a confirmation informing the products that were bought.
  */
 export const zPageConfirmation = z.object({
-    session: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.'
-    }),
-    anonymous: z.string().register(z.globalRegistry, {
-        description: 'Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.'
-    }),
-    products: z.array(zOrderProduct).register(z.globalRegistry, {
-        description: 'Array of objects containing products. If the event type is `page.cart`, the array contains all the products in the cart, with their ID and quantity.  Each interaction should include all products inside the shopping cart at that time. In case a product is removed, sent the updated card. If there are no products in the cart (page.`empty_cart`), the array is empty. If the event type is `page.confirmation`, the array contains all the products that were purchased, with their ID, price and quantity.'
-    }),
-    order: z.string().register(z.globalRegistry, {
-        description: 'Order ID.'
-    }),
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of event, which can be one of the following: `page.cart`, `page.empty_cart`, `search.query`, `page.confirmation`, `session.ping`, `search.click`, `search.autocomplete.query`, or `search.autocomplete.click`.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Sends a confirmation informing the products that were bought.'
+    session: z.string(),
+    anonymous: z.string(),
+    products: z.array(zOrderProduct),
+    order: z.string(),
+    type: z.string()
 });
 
 export const zPostEventData = z.object({
     body: z.optional(z.union([
         zSessionPing,
-        zPageConfirmation,
-        zClick,
         zQuery,
+        zClick,
+        zPageConfirmation,
         zAutocompleteQuery,
         zAutocompleteClick
     ])),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account. Used as part of the URL.'
-        })
+        accountName: z.string()
     }),
     query: z.optional(z.never())
 });

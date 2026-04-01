@@ -10,78 +10,48 @@ export const zSimulationItemResult = z.object({
         z.string(),
         z.null()
     ])),
-    quantity: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Quantity of units for the given SKU.'
-    })),
+    quantity: z.optional(z.int()),
     unitPrice: z.optional(z.union([
         z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
         z.null()
     ])),
-    status: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Subscription cycle status in the simulation.'
-    })),
+    status: z.optional(z.string()),
     price: z.optional(z.union([
         z.int(),
         z.null()
     ])),
-    sellingPrice: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Selling price in cents.'
-    })),
+    sellingPrice: z.optional(z.int()),
     manualPrice: z.optional(z.union([
         z.number(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Simulation information about an item.'
 });
 
 /**
  * Subscription [plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) object.
  */
 export const zStorePlan = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Subscription plan ID.'
-    })),
+    id: z.optional(z.string()),
     frequencies: z.optional(z.array(z.object({
         periodicity: z.optional(z.enum([
             'DAILY',
             'WEEKLY',
             'MONTHLY',
             'YEARLY'
-        ]).register(z.globalRegistry, {
-            description: 'Repurchase frequency requested by the customer, defines the subscriptions recurrence period.'
-        })),
-        interval: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Time interval configured between subscription orders, which depends on the periodicity. For a `DAILY` periodicity, the value will be days, for `MONTHLY` it will be months, and so on.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Information about the plan periodicity and interval.'
-    })).register(z.globalRegistry, {
-        description: 'Array of the plan frequencies.'
-    })),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the plan is active (`true`) or not (`false`).'
-    })),
-    importInProgress: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if a SKU importing process is in progress (`true`) or not (`false`).'
-    })),
-    attachmentId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Plan attachment ID.'
-    })),
-    isValid: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the plan is valid (`true`) or not (`false`).'
-    })),
+        ])),
+        interval: z.optional(z.int())
+    }))),
+    isActive: z.optional(z.boolean()),
+    importInProgress: z.optional(z.boolean()),
+    attachmentId: z.optional(z.int()),
+    isValid: z.optional(z.boolean()),
     validationMessages: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Validation message.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
     validity: z.optional(z.union([
         z.object({
-            begin: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Subscription plan beginning date and time in [UTC time format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-            })),
+            begin: z.optional(z.iso.datetime()),
             end: z.optional(z.union([
                 z.iso.datetime(),
                 z.null()
@@ -89,28 +59,16 @@ export const zStorePlan = z.object({
         }),
         z.null()
     ])),
-    purchaseDays: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Time reference in which subscription orders will be created. It will depend on the cycle periodicity, for `WEEKLY` subscriptions, for example, the purchase day could be `Sunday`. For `MONTHLY`, would be `7`, as in the 7th day of the month. When the subscription periodicity is `DAILY`, this field corresponds to `Not_Applicable`.'
-    })).register(z.globalRegistry, {
-        description: 'Time reference in which subscription orders will be created.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Subscription [plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) object.'
+    purchaseDays: z.optional(z.array(z.string()))
 });
 
 /**
  * Subscription report information.
  */
 export const zReportResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Report document ID.'
-    })),
-    finished: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the report is finished (`true`) or not (`false`).'
-    })),
-    recordsProcessed: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Number of records processed at the moment.'
-    })),
+    id: z.optional(z.string()),
+    finished: z.optional(z.boolean()),
+    recordsProcessed: z.optional(z.int()),
     recordsSum: z.optional(z.union([
         z.int(),
         z.null()
@@ -131,26 +89,18 @@ export const zReportResponse = z.object({
         z.int(),
         z.null()
     ])),
-    percentageProcessed: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Report processing percentage.'
-    })),
+    percentageProcessed: z.optional(z.number()),
     enqueueDate: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    email: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Email of the user that receives the report.'
-    })),
-    canceled: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the report is canceled (`true`) or not (`false`).'
-    })),
+    email: z.optional(z.string()),
+    canceled: z.optional(z.boolean()),
     outputType: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    zipped: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the report file is zipped (`true`) or not (`false`).'
-    })),
+    zipped: z.optional(z.boolean()),
     linkToDownload: z.optional(z.union([
         z.string(),
         z.null()
@@ -159,11 +109,7 @@ export const zReportResponse = z.object({
         z.string(),
         z.null()
     ])),
-    statusMessage: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Report status message.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Subscription report information.'
+    statusMessage: z.optional(z.string())
 });
 
 /**
@@ -180,46 +126,26 @@ export const zPlanResponse = z.object({
             'WEEKLY',
             'MONTHLY',
             'YEARLY'
-        ]).register(z.globalRegistry, {
-            description: 'Plan repurchase frequency, defines the subscription recurrence.'
-        }),
-        interval: z.int().register(z.globalRegistry, {
-            description: 'Time interval configured between subscription orders, which depends on the periodicity. For a `DAILY` periodicity, the value will be days, for `MONTHLY` it will be months, and so on.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Subscription plan frequency.'
+        ]),
+        interval: z.int()
     }),
     validity: z.object({
-        begin: z.string().register(z.globalRegistry, {
-            description: 'Subscription plan beginning date and time in [UTC time format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-        }),
+        begin: z.string(),
         end: z.optional(z.union([
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Information about the period during which the subscription plan will be valid.'
     }),
-    purchaseDay: z.string().register(z.globalRegistry, {
-        description: 'Time reference in which subscription orders will be created. It will depend on the cycle periodicity, for `WEEKLY` subscriptions, for example, the purchase day could be `Sunday`. For `MONTHLY`, would be `7`, as in the 7th day of the month. When the subscription periodicity is `DAILY`, this field corresponds to `Not_Applicable`.'
-    })
-}).register(z.globalRegistry, {
-    description: '[Subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) object.'
+    purchaseDay: z.string()
 });
 
 /**
  * Object with information about the subscription cycle.
  */
 export const zSubscriptionCycleResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Cycle ID. When the `cycleCount` value is `1`, the `id` value will be the same as the `subscriptionId` value.'
-    })),
-    subscriptionId: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-    })),
-    workflowId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Code that identifies the subscription in the [order flow](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196).'
-    })),
+    id: z.optional(z.string()),
+    subscriptionId: z.optional(z.string()),
+    workflowId: z.optional(z.string()),
     status: z.optional(z.enum([
         'TRIGGERED',
         'IN_PROCESS',
@@ -233,27 +159,13 @@ export const zSubscriptionCycleResponse = z.object({
         'SUCCESS_WITH_PARTIAL_ORDER',
         'RE_TRIGGERED',
         'SCHEDULE_UPDATED'
-    ]).register(z.globalRegistry, {
-        description: 'Subscription cycle execution status. The possible values are:\r\n- `TRIGGERED`: Execution has been triggered. \r\n- `IN_PROCESS`: Execution is being processed by the system.\r\n- `FAILURE`: An internal error occurred during the subscription execution.\r\n- `SUCCESS`: Successful cycle processing.\r\n- `EXPIRED`: The subscription was not renewed, and the period for which it was valid has ended.\r\n- `ORDER_ERROR`: Cycle was not executed due to an error in order placement.\r\n- `PAYMENT_ERROR`: Cycle was not executed due to an error in the payment.\r\n- `SKIPED`: A subscription cycle execution was skipped, and the subscription will be executed in the next cycle.\r\n- `SUCCESS_WITH_NO_ORDER`: Cycle was executed successfully, and the linked order has no items.\r\n- `SUCCESS_WITH_PARTIAL_ORDER`: Cycle was executed successfully, and has a linked partial order.\r\n- `RE_TRIGGERED`: Execution retry was triggered manually.\r\n- `SCHEDULE_UPDATED`: The next subscription cycle execution date has been updated.'
-    })),
-    customerEmail: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Customer email.'
-    })),
-    customerId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Customer ID.'
-    })),
-    date: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Current date and time in [UTC time format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-    })),
-    lastUpdate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Subscription cycle last update date and time in [UTC time format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-    })),
-    cycleCount: z.optional(z.int().register(z.globalRegistry, {
-        description: 'The cycle determines the position of an order counting from when the shopper subscribed. The original order that creates the subscription corresponds to cycle count `0`, the first subscription order corresponds to `1`, the second corresponds to `2`, and so on.'
-    })),
-    isInRetry: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the cycle execution is in retry (`true`), or not (`false`).'
-    })),
+    ])),
+    customerEmail: z.optional(z.string()),
+    customerId: z.optional(z.string()),
+    date: z.optional(z.iso.datetime()),
+    lastUpdate: z.optional(z.iso.datetime()),
+    cycleCount: z.optional(z.int()),
+    isInRetry: z.optional(z.boolean()),
     message: z.optional(z.union([
         z.string(),
         z.null()
@@ -264,21 +176,13 @@ export const zSubscriptionCycleResponse = z.object({
     ])),
     plan: z.optional(zPlanResponse),
     orderInfo: z.optional(z.object({
-        orderId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Order ID.'
-        })),
-        orderGroup: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Order group ID.'
-        })),
+        orderId: z.optional(z.string()),
+        orderGroup: z.optional(z.string()),
         paymentURL: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        value: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).register(z.globalRegistry, {
-            description: 'Order value in cents.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Subscription order information.'
+        value: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }))
     })),
     context: z.optional(z.object({
         items: z.optional(z.union([
@@ -301,9 +205,7 @@ export const zSubscriptionCycleResponse = z.object({
                     'CANCELED',
                     'EXPIRED',
                     'MISSING'
-                ]).register(z.globalRegistry, {
-                    description: 'Subscription status.'
-                })),
+                ])),
                 isSkipped: z.optional(z.union([
                     z.boolean(),
                     z.null()
@@ -312,8 +214,6 @@ export const zSubscriptionCycleResponse = z.object({
                     z.int(),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Subscription item information.'
             })),
             z.null()
         ])),
@@ -345,30 +245,20 @@ export const zSubscriptionCycleResponse = z.object({
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Subscription cycle context.'
     })),
     simulationItems: z.optional(z.union([
         z.array(zSimulationItemResult),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Object with information about the subscription cycle.'
 });
 
 /**
  * Information about a given subscription.
  */
 export const zSubscriptionGroupResponse = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-    }),
-    customerId: z.string().register(z.globalRegistry, {
-        description: 'Customer ID.'
-    }),
-    customerEmail: z.string().register(z.globalRegistry, {
-        description: 'Customer email.'
-    }),
+    id: z.string(),
+    customerId: z.string(),
+    customerEmail: z.string(),
     title: z.optional(z.union([
         z.string(),
         z.null()
@@ -379,29 +269,17 @@ export const zSubscriptionGroupResponse = z.object({
         'CANCELED',
         'EXPIRED',
         'MISSING'
-    ]).register(z.globalRegistry, {
-        description: 'Subscription status.'
-    }),
-    isSkipped: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the customer asked to skip the next subscription order (`true`), or not (`false`).'
-    }),
-    nextPurchaseDate: z.string().register(z.globalRegistry, {
-        description: 'Next purchase date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-    }),
+    ]),
+    isSkipped: z.boolean(),
+    nextPurchaseDate: z.string(),
     lastPurchaseDate: z.optional(z.union([
         z.string(),
         z.null()
     ])),
     plan: zPlanResponse,
     shippingAddress: z.object({
-        addressId: z.string().register(z.globalRegistry, {
-            description: 'Shipping address ID or [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID, according to the shipping address type.'
-        }),
-        addressType: z.enum(['residential', 'pickup']).register(z.globalRegistry, {
-            description: 'Type of the address. The possible values are `residential`, when the customer gives an address for delivery, or `pickup`, when the customer picks the order at a pickup point.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Information about the subscription shipping address.'
+        addressId: z.string(),
+        addressType: z.enum(['residential', 'pickup'])
     }),
     purchaseSettings: z.object({
         paymentMethod: z.object({
@@ -409,80 +287,38 @@ export const zSubscriptionGroupResponse = z.object({
                 z.string(),
                 z.null()
             ])),
-            paymentSystem: z.string().register(z.globalRegistry, {
-                description: 'Payment system ID.'
-            }),
-            installments: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Number of installments.'
-            })),
-            paymentSystemName: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Payment system name.'
-            })),
-            paymentSystemGroup: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Payment system group.'
-            }))
-        }).register(z.globalRegistry, {
-            description: '[Payment method](https://help.vtex.com/en/tutorial/difference-between-payment-methods-and-payment-conditions--3azJenhGFyUy2gsocms42Q) information.'
+            paymentSystem: z.string(),
+            installments: z.optional(z.int()),
+            paymentSystemName: z.optional(z.string()),
+            paymentSystemGroup: z.optional(z.string())
         }),
-        currencyCode: z.string().register(z.globalRegistry, {
-            description: 'Currency code in [ISO 4217](https://www.iban.com/currency-codes) format.'
-        }),
-        selectedSla: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Selected Service Level Agreement (SLA).'
-        })),
-        salesChannel: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) associated with the purchase.'
-        })),
-        seller: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Seller name. When the store acts both as marketplace and seller, this field corresponds to `1`, because every VTEX store is its own seller 1.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Object with purchase information.'
+        currencyCode: z.string(),
+        selectedSla: z.optional(z.string()),
+        salesChannel: z.optional(z.string()),
+        seller: z.optional(z.string())
     }),
-    cycleCount: z.int().register(z.globalRegistry, {
-        description: 'The cycle determines the position of an order counting from when the customer subscribed. The original order that creates the subscription corresponds to cycle count `0`, the first subscription order corresponds to `1`, the second corresponds to `2`, and so on.'
-    }),
-    createdAt: z.string().register(z.globalRegistry, {
-        description: 'Subscription creation date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-    }),
+    cycleCount: z.int(),
+    createdAt: z.string(),
     lastUpdate: z.union([
         z.string(),
         z.null()
     ]),
     items: z.array(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Subscription item ID.'
-        }),
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Quantity of units.'
-        }),
-        isSkipped: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the customer asked to skip the item in the next subscription order (`true`), or not (`false`).'
-        }),
+        id: z.string(),
+        skuId: z.string(),
+        quantity: z.int(),
+        isSkipped: z.boolean(),
         status: z.enum([
             'ACTIVE',
             'PAUSED',
             'CANCELED',
             'EXPIRED',
             'MISSING'
-        ]).register(z.globalRegistry, {
-            description: 'Subscription status.'
-        }),
-        originalOrderId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Subscription original order ID.'
-        })),
-        cycleCount: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The cycle determines the position of an order counting from when the customer subscribed. The original order that creates the subscription corresponds to cycle count `0`, the first subscription order corresponds to `1`, the second corresponds to `2`, and so on.'
-        })),
-        priceAtSubscriptionDate: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Price at subscription date.'
-        })),
-        manualPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: '[Manual price](https://help.vtex.com/en/tutorial/change-the-price-of-an-item-in-the-shopping-cart--7Cd37aCAmtL1qmoZJJvjNf).'
-        })),
+        ]),
+        originalOrderId: z.optional(z.string()),
+        cycleCount: z.optional(z.int()),
+        priceAtSubscriptionDate: z.optional(z.number()),
+        manualPrice: z.optional(z.number()),
         attachments: z.optional(z.union([
             z.array(z.object({
                 name: z.optional(z.union([
@@ -490,21 +326,13 @@ export const zSubscriptionGroupResponse = z.object({
                     z.null()
                 ])),
                 content: z.optional(z.union([
-                    z.record(z.string(), z.string().register(z.globalRegistry, {
-                        description: 'Custom field information.'
-                    })),
+                    z.record(z.string(), z.string()),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Information about a given attachment.'
             })),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Information about a given subscription item.'
-    })).register(z.globalRegistry, {
-        description: 'Information about subscription items.'
-    }),
+    })),
     lastCycleId: z.optional(z.union([
         z.string(),
         z.null()
@@ -521,31 +349,21 @@ export const zSubscriptionGroupResponse = z.object({
         }),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Information about a given subscription.'
 });
 
 /**
  * [Subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) object.
  */
 export const zPlanRequest = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Subscription plan ID.'
-    }),
+    id: z.string(),
     frequency: z.object({
         periodicity: z.enum([
             'DAILY',
             'WEEKLY',
             'MONTHLY',
             'YEARLY'
-        ]).register(z.globalRegistry, {
-            description: 'Plan repurchase frequency, defines the subscription recurrence.'
-        }),
-        interval: z.int().register(z.globalRegistry, {
-            description: 'Time interval configured between subscription orders, which depends on the periodicity. For a `DAILY` periodicity, the value will be measured in days, for `MONTHLY` it will be measured in months, and so on.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Subscription plan frequency.'
+        ]),
+        interval: z.int()
     }),
     validity: z.optional(z.object({
         begin: z.optional(z.union([
@@ -556,29 +374,19 @@ export const zPlanRequest = z.object({
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Information about the period during which the subscription plan will be valid.'
     })),
     purchaseDay: z.optional(z.union([
         z.string(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: '[Subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) object.'
 });
 
 /**
  * Information about the subscription shipping address.
  */
 export const zShippingAddressRequest = z.object({
-    addressId: z.string().register(z.globalRegistry, {
-        description: 'Shipping address ID or [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID, according to the shipping address type.'
-    }),
-    addressType: z.enum(['residential', 'pickup']).register(z.globalRegistry, {
-        description: 'Type of the address. The possible values are `residential`, when the customer gives an address for delivery, or `pickup`, when the customer picks the order at a pickup point.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Information about the subscription shipping address.'
+    addressId: z.string(),
+    addressType: z.enum(['residential', 'pickup'])
 });
 
 /**
@@ -586,12 +394,8 @@ export const zShippingAddressRequest = z.object({
  */
 export const zPurchaseSettingsRequest = z.object({
     paymentMethod: z.object({
-        paymentAccountId: z.string().register(z.globalRegistry, {
-            description: 'ID of the payment account. You can find the ID using the endpoint [Get client profile by email](https://developers.vtex.com/docs/api-reference/checkout-api#get-/api/checkout/pub/profiles), in `availableAccounts.[].accountId`.'
-        }),
-        paymentSystem: z.string().register(z.globalRegistry, {
-            description: 'Payment system ID.'
-        }),
+        paymentAccountId: z.string(),
+        paymentSystem: z.string(),
         installments: z.optional(z.union([
             z.int(),
             z.null()
@@ -604,32 +408,18 @@ export const zPurchaseSettingsRequest = z.object({
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Object with [payment method](https://help.vtex.com/en/tutorial/difference-between-payment-methods-and-payment-conditions--3azJenhGFyUy2gsocms42Q) information.'
     }),
-    currencyCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Currency code in [ISO 4217](https://www.iban.com/currency-codes) format.'
-    })),
-    selectedSla: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Selected Service Level Agreement (SLA).'
-    })),
-    salesChannel: z.string().register(z.globalRegistry, {
-        description: 'Sales channel (or [trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) applied to the subscription. You can associate only one sales channel to each subscription. The default value is the main sales channel, which corresponds to `1`.'
-    }),
-    seller: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Seller name. When the store acts both as marketplace and seller, this field corresponds to `1`, because every VTEX store is its own seller 1.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with purchase settings information.'
+    currencyCode: z.optional(z.string()),
+    selectedSla: z.optional(z.string()),
+    salesChannel: z.string(),
+    seller: z.optional(z.string())
 });
 
 /**
  * Object with subscription information.
  */
 export const zSubscriptionGroupRequest = z.object({
-    customerEmail: z.string().register(z.globalRegistry, {
-        description: 'Customer email.'
-    }),
+    customerEmail: z.string(),
     title: z.optional(z.union([
         z.string(),
         z.null()
@@ -640,12 +430,8 @@ export const zSubscriptionGroupRequest = z.object({
         'CANCELED',
         'EXPIRED',
         'MISSING'
-    ]).register(z.globalRegistry, {
-        description: 'Subscription status.'
-    })),
-    nextPurchaseDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Subscription next purchase date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-    })),
+    ])),
+    nextPurchaseDate: z.optional(z.string()),
     catalogAttachment: z.optional(z.union([
         z.string(),
         z.null()
@@ -654,37 +440,17 @@ export const zSubscriptionGroupRequest = z.object({
     shippingAddress: zShippingAddressRequest,
     purchaseSettings: zPurchaseSettingsRequest,
     items: z.array(z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Quantity of units.'
-        }),
+        skuId: z.string(),
+        quantity: z.int(),
         manualPrice: z.optional(z.union([
             z.number(),
             z.null()
         ])),
         attachments: z.optional(z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'Attachment name.'
-            }),
-            content: z.record(z.string(), z.string().register(z.globalRegistry, {
-                description: 'Custom field information.'
-            })).register(z.globalRegistry, {
-                description: 'Custom field for attachment content.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Information about a given attachment.'
-        })).register(z.globalRegistry, {
-            description: 'Information about subscription [attachments](https://help.vtex.com/en/tutorial/what-is-an-attachment--aGICk0RVbqKg6GYmQcWUm).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Information about a given item.'
-    })).register(z.globalRegistry, {
-        description: 'List with subscription items information.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with subscription information.'
+            name: z.string(),
+            content: z.record(z.string(), z.string())
+        })))
+    }))
 });
 
 /**
@@ -695,21 +461,13 @@ export const zPriceTag = z.object({
         z.string(),
         z.null()
     ])),
-    valueAsInt: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).register(z.globalRegistry, {
-        description: 'Price tag value.'
-    })),
-    rawValue: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Price tag raw value.'
-    })),
-    isPercentual: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the price tag is applied as a percentage (`true`), or not (`false`).'
-    })),
+    valueAsInt: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })),
+    rawValue: z.optional(z.number()),
+    isPercentual: z.optional(z.boolean()),
     identifier: z.optional(z.union([
         z.string(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Information about a given price tag.'
 });
 
 /**
@@ -726,9 +484,7 @@ export const zSimulateResponseVo = z.object({
                 z.string(),
                 z.null()
             ])),
-            quantity: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Quantity of units.'
-            })),
+            quantity: z.optional(z.int()),
             price: z.optional(z.union([
                 z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
                 z.null()
@@ -741,12 +497,8 @@ export const zSimulateResponseVo = z.object({
                 z.number(),
                 z.null()
             ])),
-            unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Item unit multiplier.'
-            })),
-            measurementUnit: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Item measurement unit.'
-            })),
+            unitMultiplier: z.optional(z.number()),
+            measurementUnit: z.optional(z.string()),
             attachments: z.optional(z.union([
                 z.array(z.object({
                     name: z.optional(z.union([
@@ -754,13 +506,9 @@ export const zSimulateResponseVo = z.object({
                         z.null()
                     ])),
                     content: z.optional(z.union([
-                        z.record(z.string(), z.string().register(z.globalRegistry, {
-                            description: 'Custom field information.'
-                        })),
+                        z.record(z.string(), z.string()),
                         z.null()
                     ]))
-                }).register(z.globalRegistry, {
-                    description: 'Information about a given attachment.'
                 })),
                 z.null()
             ])),
@@ -768,32 +516,20 @@ export const zSimulateResponseVo = z.object({
                 z.string(),
                 z.null()
             ])),
-            isGift: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines it the item is a gift (`true`), or not (`false`).'
-            })),
+            isGift: z.optional(z.boolean()),
             priceTags: z.optional(z.union([
                 z.array(zPriceTag),
                 z.null()
             ]))
-        }).register(z.globalRegistry, {
-            description: 'Simulation information about a given item.'
-        })).register(z.globalRegistry, {
-            description: 'Simulation items information.'
-        })),
+        }))),
         logisticsInfo: z.optional(z.array(z.object({
-            itemIndex: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Each item in the subscription order is identified by an index. The position starts at `0`, followed by `1`, `2`, and so on.'
-            })),
-            quantity: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Quantity of units.'
-            })),
+            itemIndex: z.optional(z.int()),
+            quantity: z.optional(z.int()),
             selectedSla: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            selectedDeliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
-                description: 'Shipping type (shipping method) selected by the customer, like delivery or [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
-            })),
+            selectedDeliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
             lockTTL: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -827,12 +563,8 @@ export const zSimulateResponseVo = z.object({
                     z.string(),
                     z.null()
                 ])),
-                deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
-                    description: 'Defines if the delivery channel is `delivery` or `pickup-in-point`.'
-                })),
-                price: z.optional(z.int().register(z.globalRegistry, {
-                    description: 'Item shipping price in cents. This value does not account for the order total shipping price.'
-                })),
+                deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
+                price: z.optional(z.int()),
                 shippingEstimate: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -855,8 +587,6 @@ export const zSimulateResponseVo = z.object({
                             z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
                             z.null()
                         ]))
-                    }).register(z.globalRegistry, {
-                        description: 'Information about a given delivery window.'
                     })),
                     z.null()
                 ])),
@@ -874,21 +604,11 @@ export const zSimulateResponseVo = z.object({
                             z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
                             z.null()
                         ]))
-                    }).register(z.globalRegistry, {
-                        description: 'Information about an available delivery window.'
                     })),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Subscription order SLA details.'
-            })).register(z.globalRegistry, {
-                description: 'Service Level Agreement (SLA) of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) considered for the simulation.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Logistics details.'
-        })).register(z.globalRegistry, {
-            description: 'Simulation logistics information.'
-        })),
+            })))
+        }))),
         paymentData: z.optional(z.union([
             z.object({
                 payments: z.optional(z.union([
@@ -948,8 +668,6 @@ export const zSimulateResponseVo = z.object({
                                         z.string(),
                                         z.null()
                                     ]))
-                                }).register(z.globalRegistry, {
-                                    description: 'Information about a given payment parameter.'
                                 })),
                                 z.null()
                             ])),
@@ -1082,8 +800,6 @@ export const zSimulateResponseVo = z.object({
                     ])),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Selectable gift information.'
             })),
             z.null()
         ])),
@@ -1093,67 +809,29 @@ export const zSimulateResponseVo = z.object({
                 'Discounts',
                 'Shipping',
                 'Tax'
-            ]).register(z.globalRegistry, {
-                description: 'Code that identifies if the information is about items, discounts, shipping or taxes.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Total count name.'
-            })),
-            valueAsInt: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).register(z.globalRegistry, {
-                description: 'Total count value in cents.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Details about a given total count.'
-        })).register(z.globalRegistry, {
-            description: 'Information about simulation total counts.'
-        })),
-        totalsBySimulationItems: z.optional(z.array(zSimulationItemResult).register(z.globalRegistry, {
-            description: 'Information about simulation totals regarding items.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Object with subscription order simulation details.'
+            ])),
+            name: z.optional(z.string()),
+            valueAsInt: z.optional(z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }))
+        }))),
+        totalsBySimulationItems: z.optional(z.array(zSimulationItemResult))
     })),
     shippingEstimate: z.optional(z.object({
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'ID of the shipping type (shipping method) of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
-        })),
-        estimate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Total shipping estimate time in days. Three business days is represented as `3bd`, for example.'
-        })),
-        estimateDeliveryDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Estimate delivery date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-        })),
-        nextPurchaseDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Next purchase date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-        })),
-        matched: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the shipping estimate is matched (`true`), or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Subscription order shipping estimate information.'
+        name: z.optional(z.string()),
+        estimate: z.optional(z.string()),
+        estimateDeliveryDate: z.optional(z.string()),
+        nextPurchaseDate: z.optional(z.string()),
+        matched: z.optional(z.boolean())
     })),
-    totalsBySimulationItems: z.optional(z.array(zSimulationItemResult).register(z.globalRegistry, {
-        description: 'Information about simulation totals regarding items.'
-    })),
+    totalsBySimulationItems: z.optional(z.array(zSimulationItemResult)),
     totals: z.optional(z.array(z.object({
         id: z.optional(z.enum([
             'Items',
             'Discounts',
             'Shipping',
             'Tax'
-        ]).register(z.globalRegistry, {
-            description: 'Code that identifies if the information is about items, discounts, shipping or taxes.'
-        })),
-        value: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Total count value.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Total cost per shipping or items.'
-    })).register(z.globalRegistry, {
-        description: 'Information about total counts.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Subscription order simulation response.'
+        ])),
+        value: z.optional(z.number())
+    })))
 });
 
 /**
@@ -1165,81 +843,41 @@ export const zSettings = z.object({
         'CHEAPEST',
         'CUSTOMER_CHOICE',
         'STORE_CHOICE'
-    ]).register(z.globalRegistry, {
-        description: 'Service Level Agreement (SLA) option, which is the shipping method. The possible values are:\r\n- `NONE`: The platform automatically chooses the smallest cost for shipping method at the time of the subscription cycle generation.\r\n- `CHEAPEST`: Smallest cost for shipping method at the time of cycle generation.\r\n- `CUSTOMER_CHOICE`: The customer can select the desired shipping method at checkout for every new subscription order.\r\n- `STORE_CHOICE`: The store sets the preferred shipping method. This is configured in the `defaultSla` field.'
-    }),
+    ]),
     defaultSla: z.union([
         z.string(),
         z.null()
     ]),
-    isUsingV3: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if the store uses the updated Subscriptions V3 (`true`) or a previous version (`false`).'
-    }),
-    onMigrationProcess: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if the store is in the process of migrating to Subscriptions V3 (`true`) or not (`false`).'
-    }),
-    executionHourInUtc: z.int().register(z.globalRegistry, {
-        description: 'Indicates the time future subscription orders will be generated.'
-    }),
-    workflowVersion: z.string().register(z.globalRegistry, {
-        description: 'Workflow version.'
-    }),
-    deliveryChannels: z.array(z.enum(['delivery', 'pickupInPoint']).register(z.globalRegistry, {
-        description: 'Type of delivery channel. The values that are possible are: `pickupInPoint` for [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) and `delivery` for regular delivery.'
-    })).register(z.globalRegistry, {
-        description: 'Array containing delivery channels.'
-    }),
-    randomIdGeneration: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if subscription order IDs are randomly generated (`true`) or not (`false`).'
-    }),
-    isMultipleInstallmentsEnabledOnCreation: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the store allows multiple installments when a subscription is created (`true`) or not (`false`).'
-    }),
-    isMultipleInstallmentsEnabledOnUpdate: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the store allows multiple installments when the subscription is updated (`true`) or not (`false`).'
-    }),
+    isUsingV3: z.boolean(),
+    onMigrationProcess: z.boolean(),
+    executionHourInUtc: z.int(),
+    workflowVersion: z.string(),
+    deliveryChannels: z.array(z.enum(['delivery', 'pickupInPoint'])),
+    randomIdGeneration: z.boolean(),
+    isMultipleInstallmentsEnabledOnCreation: z.boolean(),
+    isMultipleInstallmentsEnabledOnUpdate: z.boolean(),
     attachmentPreferences: z.optional(z.object({
-        enableAttachments: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the store [keeps attachments from original orders](https://developers.vtex.com/docs/guides/how-to-keep-attachments-from-original-orders-in-subscriptions) and subscription orders incorporate them (`true`) or if these attachments are disconsidered (`false`). By default, this field is set as `false`.'
-        })),
-        splitSameSkuWithDifferentAttachments: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the [same SKUs that contain different attachments](https://developers.vtex.com/docs/guides/how-to-keep-attachments-from-original-orders-in-subscriptions) in the original order are split (`true`) or not (`false`). By default, this field is set as `false`. It can only be set as `true` if the `enableAttachments` field is also set as `true`.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Store settings on how to process original orders with SKUs that contain [attachments](https://help.vtex.com/en/tutorial/what-is-an-attachment--aGICk0RVbqKg6GYmQcWUm).'
+        enableAttachments: z.optional(z.boolean()),
+        splitSameSkuWithDifferentAttachments: z.optional(z.boolean())
     })),
     orderCustomDataAppId: z.union([
         z.string(),
         z.null()
     ]),
-    postponeExpiration: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the expiration of subscriptions can be postponed (`true`) or not (`false`).'
-    }),
-    manualPriceAllowed: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the [manual price](https://help.vtex.com/en/tutorial/change-the-price-of-an-item-in-the-shopping-cart--7Cd37aCAmtL1qmoZJJvjNf) configuration is enabled for subscriptions items (`true`), or not (`false`). This is valid for all existing subscriptions, provided that there is a manual price configured and that the `isUsingV3` field is set as `true`.'
-    }),
-    useItemPriceFromOriginalOrder: z.boolean().register(z.globalRegistry, {
-        description: 'When set to `true`, this property enables using the manual price for each item from the original subscription order. This is only valid for new subscriptions created from the moment this configuration is enabled. For this to work, it is mandatory that the `manualPriceAllowed` and `isUsingV3` properties are set to `true`.'
-    })
-}).register(z.globalRegistry, {
-    description: 'VTEX account subscriptions settings.'
+    postponeExpiration: z.boolean(),
+    manualPriceAllowed: z.boolean(),
+    useItemPriceFromOriginalOrder: z.boolean()
 });
 
 export const zGetApiRnsPubCyclesByCycleIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        cycleId: z.string().register(z.globalRegistry, {
-            description: 'ID from the desired cycle.'
-        })
+        cycleId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1267,20 +905,12 @@ export const zGetApiRnsPubCyclesData = z.object({
             z.string(),
             z.null()
         ])),
-        page: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Page used for pagination'
-        })).default(1),
-        size: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Page size used for pagination'
-        })).default(15)
+        page: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).default(1),
+        size: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).default(15)
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1294,12 +924,8 @@ export const zPostApiRnsPubCyclesByCycleIdRetryData = z.object({
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1315,38 +941,24 @@ export const zGetApiRnsPvtPlansData = z.object({
             z.string(),
             z.null()
         ])),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page used for pagination.'
-        })),
-        size: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Desired number of [subscription plans](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) in the response.'
-        }))
+        page: z.optional(z.int()),
+        size: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiRnsPvtPlansByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'ID from the [subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR).'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1355,90 +967,56 @@ export const zGetApiRnsPvtReportsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiRnsPvtReportsByReportNameDocumentsByDocumentIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reportName: z.string().register(z.globalRegistry, {
-            description: 'Name of the report type, which must be previously created for your store using the [Generate report](https://developers.vtex.com/docs/api-reference/subscriptions-api-v3#post-/api/rns/pvt/reports/-reportName-/documents) endpoint. The possible values are:\r\n- `subscriptionsWithStatus`\r\n- `subscriptionsScheduledBetweenDate`\r\n- `subscriptionsUpdatedBetweenDate`\r\n- `subscriptionsCreatedBetweenDate`\r\n- `executionsBetweenDate`'
-        }),
-        documentId: z.string().register(z.globalRegistry, {
-            description: 'Report document ID. You get this value after you create a report template for your store using the [Generate report](https://developers.vtex.com/docs/api-reference/subscriptions-api-v3#post-/api/rns/pvt/reports/-reportName-/documents) endpoint.'
-        })
+        reportName: z.string(),
+        documentId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiRnsPvtReportsByReportNameDocumentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reportName: z.string().register(z.globalRegistry, {
-            description: 'Name of the type of report you wish to generate. The following values are accepted:\r\n- `subscriptionsWithStatus`\r\n- `subscriptionsScheduledBetweenDate`\r\n- `subscriptionsUpdatedBetweenDate`\r\n- `subscriptionsCreatedBetweenDate`\r\n- `executionsBetweenDate`'
-        })
+        reportName: z.string()
     }),
     query: z.optional(z.object({
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The report will be sent to the email in this field. When no email is provided, the report is sent to the email of the user making the request.'
-        })),
-        status: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Subscription cycle execution status. This field is required only for the `subscriptionsWithStatus` report type, and the possible values are:\r\n- `TRIGGERED`: Execution has been triggered.\r\n- `IN_PROCESS`: Execution is being processed by the system.\r\n- `FAILURE`: An internal error occurred during the subscription execution.\r\n- `SUCCESS`: Successful cycle processing.\r\n- `EXPIRED`: The subscription was not renewed, and the period for which it was valid has ended.\r\n- `ORDER_ERROR`: Cycle was not executed due to an error in order placement.\r\n- `PAYMENT_ERROR`: Cycle was not executed due to an error in the payment.\r\n- `SKIPED`: A subscription cycle execution was skipped, and the subscription will be executed in the next cycle.\r\n- `SUCCESS_WITH_NO_ORDER`: Cycle was executed successfully, and the linked order has no items.\r\n- `SUCCESS_WITH_PARTIAL_ORDER`: Cycle was executed successfully, and has a linked partial order.\r\n- `RE_TRIGGERED`: Execution retry was triggered manually.\r\n- `SCHEDULE_UPDATED`: The next subscription cycle execution date has been updated.'
-        })),
-        beginDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Beginning date in the format `YYYY-MM-DD`. This field is required for all report types, except for the `subscriptionsWithStatus` type.'
-        })),
-        endDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Ending date in the format `YYYY-MM-DD`. This field is required for all report types, except for the `subscriptionsWithStatus` type.'
-        }))
+        email: z.optional(z.string()),
+        status: z.optional(z.string()),
+        beginDate: z.optional(z.string()),
+        endDate: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiRnsPubSubscriptionsByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPatchApiRnsPubSubscriptionsByIdData = z.object({
     body: z.optional(z.object({
-        customerEmail: z.string().register(z.globalRegistry, {
-            description: 'Customer email.'
-        }),
+        customerEmail: z.string(),
         title: z.optional(z.union([
             z.string(),
             z.null()
@@ -1449,32 +1027,20 @@ export const zPatchApiRnsPubSubscriptionsByIdData = z.object({
             'CANCELED',
             'EXPIRED',
             'MISSING'
-        ]).register(z.globalRegistry, {
-            description: 'Status to which you wish to update the subscription.'
-        })),
-        nextPurchaseDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Date and time you wish to update the next purchase. The format is [ISO 8601 time zone offset](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
-        })),
-        isSkipped: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the customer asked to skip the next subscription order (`true`), or not (`false`).'
-        })),
+        ])),
+        nextPurchaseDate: z.optional(z.string()),
+        isSkipped: z.optional(z.boolean()),
         plan: z.optional(zPlanRequest),
         shippingAddress: z.optional(zShippingAddressRequest),
         purchaseSettings: z.optional(zPurchaseSettingsRequest)
     })),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1482,41 +1048,19 @@ export const zGetApiRnsPubSubscriptionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        customerEmail: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Email of a customer that subscrived to your store.'
-        })),
-        status: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Subscription status. The acceptable values are:\r\n- ACTIVE\r\n- PAUSED\r\n- CANCELED\r\n- EXPIRED\r\n- MISSING'
-        })),
-        addressId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Subscription shipping address ID.'
-        })),
-        paymentId: z.optional(z.string().register(z.globalRegistry, {
-            description: '[Payment method](https://help.vtex.com/en/tutorial/difference-between-payment-methods-and-payment-conditions--3azJenhGFyUy2gsocms42Q) ID. It corresponds to the `paymentAccountId` field.'
-        })),
-        planId: z.optional(z.string().register(z.globalRegistry, {
-            description: '[Subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR) ID.'
-        })),
-        nextPurchaseDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Subscription next purchase date in the format `YYYY-MM-DD`.'
-        })),
-        originalOrderId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Order ID of when the customer subscribed.'
-        })),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of the starting page of the response. When no value is sent, it starts in page `1`.'
-        })),
-        size: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Determines the number of subscriptions in the response. The maximum is equal to the default value, which is `15`.'
-        }))
+        customerEmail: z.optional(z.string()),
+        status: z.optional(z.string()),
+        addressId: z.optional(z.string()),
+        paymentId: z.optional(z.string()),
+        planId: z.optional(z.string()),
+        nextPurchaseDate: z.optional(z.string()),
+        originalOrderId: z.optional(z.string()),
+        page: z.optional(z.int()),
+        size: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1525,33 +1069,21 @@ export const zPostApiRnsPubSubscriptionsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiRnsPubSubscriptionsByIdItemsByItemIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        }),
-        itemId: z.string().register(z.globalRegistry, {
-            description: 'Subscription item ID of the SKU being removed from the subscription.'
-        })
+        id: z.string(),
+        itemId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1563,83 +1095,53 @@ export const zPatchApiRnsPubSubscriptionsByIdItemsByItemIdData = z.object({
             'CANCELED',
             'EXPIRED',
             'MISSING'
-        ]).register(z.globalRegistry, {
-            description: 'Subscription status.'
-        })),
+        ])),
         isSkipped: z.optional(z.union([
             z.boolean(),
             z.null()
         ])),
-        quantity: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Quantity of units being purchased via subscription.'
-        })),
-        manualPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'You can edit or configure a [manual price](https://help.vtex.com/en/tutorial/change-the-price-of-an-item-in-the-shopping-cart--7Cd37aCAmtL1qmoZJJvjNf) for the item, if you wish.'
-        }))
+        quantity: z.optional(z.int()),
+        manualPrice: z.optional(z.number())
     })),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        }),
-        itemId: z.string().register(z.globalRegistry, {
-            description: 'ID of the subscription item being edited.'
-        })
+        id: z.string(),
+        itemId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiRnsPubSubscriptionsByIdItemsData = z.object({
     body: z.optional(z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'ID of the SKU being added to the subscription.'
-        }),
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Quantity of units being purchased in each subscription order.'
-        }),
+        skuId: z.string(),
+        quantity: z.int(),
         manualPrice: z.optional(z.union([
             z.number(),
             z.null()
         ]))
     })),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiRnsPubSubscriptionsByIdSimulateData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1648,30 +1150,20 @@ export const zPostApiRnsPubSubscriptionsSimulateData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiRnsPubSubscriptionsBySubscriptionIdConversationMessageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subscriptionId: z.string().register(z.globalRegistry, {
-            description: '[Subscription](https://help.vtex.com/en/tutorial/how-subscriptions-work--frequentlyAskedQuestions_4453) ID.'
-        }).default('123456789abc')
+        subscriptionId: z.string().default('123456789abc')
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -1680,12 +1172,8 @@ export const zGetSettingsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1696,71 +1184,35 @@ export const zEditSettingsData = z.object({
             'CHEAPEST',
             'CUSTOMER_CHOICE',
             'STORE_CHOICE'
-        ]).register(z.globalRegistry, {
-            description: 'Service Level Agreement (SLA) option, which is the shipping method. The possible values are:\r\n- `NONE`: The platform automatically chooses the smallest cost for shipping method at the time of the subscription cycle generation. The `defaultSla` field must remain `null`.\r\n- `CHEAPEST`: Smallest cost for shipping method at the time of cycle generation. The `defaultSla` field must remain `null`.\r\n- `CUSTOMER_CHOICE`: The customer can select the desired shipping method at checkout for every new subscription order. The `defaultSla` field must remain `null`.\r\n- `STORE_CHOICE`: The store sets the preferred shipping method. This is configured in the `defaultSla` field.'
-        }),
+        ]),
         defaultSla: z.union([
             z.string(),
             z.null()
         ]),
-        isUsingV3: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if the store uses the updated Subscriptions V3 (`true`) or a previous version (`false`).'
-        }),
-        onMigrationProcess: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether or not the account is in the migration process to Subscriptions V3.'
-        }),
-        executionHourInUtc: z.int().register(z.globalRegistry, {
-            description: 'Indicates the time future subscription orders will be generated.'
-        }),
-        workflowVersion: z.string().register(z.globalRegistry, {
-            description: 'Workflow version.'
-        }),
-        deliveryChannels: z.array(z.enum(['delivery', 'pickupInPoint']).register(z.globalRegistry, {
-            description: 'Type of delivery channel. The values that are possible are: `pickupInPoint` for [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) and `delivery` for regular delivery.'
-        })).register(z.globalRegistry, {
-            description: 'Array containing delivery channels.'
-        }),
-        randomIdGeneration: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if subscription order IDs will be randomly generated (`true`) or not (`false`).'
-        }),
-        isMultipleInstallmentsEnabledOnCreation: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the store allows multiple installments when a subscription is created (`true`) or not (`false`).'
-        }),
-        isMultipleInstallmentsEnabledOnUpdate: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the store allows multiple installments when the subscription is updated (`true`) or not (`false`).'
-        }),
+        isUsingV3: z.boolean(),
+        onMigrationProcess: z.boolean(),
+        executionHourInUtc: z.int(),
+        workflowVersion: z.string(),
+        deliveryChannels: z.array(z.enum(['delivery', 'pickupInPoint'])),
+        randomIdGeneration: z.boolean(),
+        isMultipleInstallmentsEnabledOnCreation: z.boolean(),
+        isMultipleInstallmentsEnabledOnUpdate: z.boolean(),
         attachmentPreferences: z.optional(z.object({
-            enableAttachments: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the store [keeps attachments from original orders](https://developers.vtex.com/docs/guides/how-to-keep-attachments-from-original-orders-in-subscriptions) and subscription orders incorporate them (`true`) or if these attachments are disconsidered (`false`). By default, this field is set as `false`.'
-            })),
-            splitSameSkuWithDifferentAttachments: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the [same SKUs that contain different attachments](https://developers.vtex.com/docs/guides/how-to-keep-attachments-from-original-orders-in-subscriptions) in the original order are split (`true`) or not (`false`). By default, this field is set as `false`. It can only be set as `true` if the `enableAttachments` field is also set as `true`.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Store settings on how to process original orders with SKUs that contain [attachments](https://help.vtex.com/en/tutorial/what-is-an-attachment--aGICk0RVbqKg6GYmQcWUm).'
+            enableAttachments: z.optional(z.boolean()),
+            splitSameSkuWithDifferentAttachments: z.optional(z.boolean())
         })),
         orderCustomDataAppId: z.union([
             z.string(),
             z.null()
         ]),
-        postponeExpiration: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the expiration of subscriptions can be postponed (`true`) or not (`false`).'
-        }),
-        manualPriceAllowed: z.boolean().register(z.globalRegistry, {
-            description: 'When set to `true`, this property enables [manual price](https://help.vtex.com/en/tutorial/change-the-price-of-an-item-in-the-shopping-cart--7Cd37aCAmtL1qmoZJJvjNf) configuration in subscription items. This is valid for all existing subscriptions, provided that there is a manual price configured and that the `isUsingV3` field is set as `true`.'
-        }),
-        useItemPriceFromOriginalOrder: z.boolean().register(z.globalRegistry, {
-            description: 'When set to `true`, this property enables using the manual price for each item from the original subscription order. This is only valid for new subscriptions created from the moment this configuration is enabled. For this to work, it is mandatory that the `manualPriceAllowed` and `isUsingV3` properties are set to `true`.'
-        })
+        postponeExpiration: z.boolean(),
+        manualPriceAllowed: z.boolean(),
+        useItemPriceFromOriginalOrder: z.boolean()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

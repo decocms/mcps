@@ -6,171 +6,81 @@ import * as z from 'zod';
  * Custom fields information.
  */
 export const zSuccess = z.object({
-    cardholderDocument: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Indicates the requirement of cardholder document in card transactions. The field has three possible values: `required`, `optional`, or `unused`.'
-    })),
-    allowAntifraudOnGiftCard: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Indicates whether the anti-fraud provider can process payment transactions made using [gift cards](https://developers.vtex.com/docs/guides/gift-card-integration-guide).'
-    })),
+    cardholderDocument: z.optional(z.string()),
+    allowAntifraudOnGiftCard: z.optional(z.boolean()),
     customFields: z.array(z.object({
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Custom field name.'
-        })),
+        name: z.optional(z.string()),
         type: z.optional(z.enum([
             'text',
             'password',
             'select'
-        ]).register(z.globalRegistry, {
-            description: 'Custom field type. Sensitive or security data should be defined as `password`.'
-        })),
+        ])),
         options: z.optional(z.array(z.object({
-            text: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Custom field description.'
-            })),
-            value: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Custom field value.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Custom field information.'
-        })).register(z.globalRegistry, {
-            description: 'In case of `select` type, the possible params are `text` and `value`.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Custom fields information.'
-    })).register(z.globalRegistry, {
-        description: 'Describes the customized fields supported by the connector.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Custom fields information.'
+            text: z.optional(z.string()),
+            value: z.optional(z.string())
+        })))
+    }))
 });
 
 /**
  * Address information.
  */
 export const zAddress = z.object({
-    country: z.string().register(z.globalRegistry, {
-        description: 'Buyer address country.'
-    }),
-    street: z.string().register(z.globalRegistry, {
-        description: 'Buyer address street.'
-    }),
-    number: z.string().register(z.globalRegistry, {
-        description: 'Buyer address number.'
-    }),
-    complement: z.string().register(z.globalRegistry, {
-        description: 'Buyer address complement.'
-    }),
-    neighborhood: z.string().register(z.globalRegistry, {
-        description: 'Buyer address neighborhood.'
-    }),
-    postalCode: z.string().register(z.globalRegistry, {
-        description: 'Buyer address postal code.'
-    }),
-    city: z.string().register(z.globalRegistry, {
-        description: 'Buyer address city.'
-    }),
-    state: z.string().register(z.globalRegistry, {
-        description: 'Buyer address state.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Address information.'
+    country: z.string(),
+    street: z.string(),
+    number: z.string(),
+    complement: z.string(),
+    neighborhood: z.string(),
+    postalCode: z.string(),
+    city: z.string(),
+    state: z.string()
 });
 
 /**
  * Buyer information.
  */
 export const zBuyer = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX buyer ID. The unique identifier of the buyer.'
-    }),
-    firstName: z.string().register(z.globalRegistry, {
-        description: 'First name of the buyer.'
-    }),
-    lastName: z.string().register(z.globalRegistry, {
-        description: 'Last name of the buyer.'
-    }),
-    document: z.string().register(z.globalRegistry, {
-        description: 'Document number of the buyer.'
-    }),
-    documentType: z.string().register(z.globalRegistry, {
-        description: 'Type of document of the buyer, which depends on their country.'
-    }),
-    email: z.string().register(z.globalRegistry, {
-        description: 'Email of the buyer.'
-    }),
-    phone: z.string().register(z.globalRegistry, {
-        description: 'Phone number of the buyer.'
-    }),
+    id: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    document: z.string(),
+    documentType: z.string(),
+    email: z.string(),
+    phone: z.string(),
     address: zAddress
-}).register(z.globalRegistry, {
-    description: 'Buyer information.'
 });
 
 /**
  * Shipping information.
  */
 export const zShipping = z.object({
-    value: z.number().register(z.globalRegistry, {
-        description: 'Shipping value with two decimal places.'
-    }),
-    estimatedDate: z.string().register(z.globalRegistry, {
-        description: 'Estimated shipping date ISO 8601.'
-    }),
+    value: z.number(),
+    estimatedDate: z.string(),
     address: zAddress
-}).register(z.globalRegistry, {
-    description: 'Shipping information.'
 });
 
 /**
  * Item information.
  */
 export const zItem = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Product name.'
-    }),
-    price: z.number().register(z.globalRegistry, {
-        description: 'Item price.'
-    }),
-    quantity: z.int().register(z.globalRegistry, {
-        description: 'Quantity of this item in the cart.'
-    }),
-    deliveryType: z.string().register(z.globalRegistry, {
-        description: 'Type of delivery configured by the store.'
-    }),
-    deliverySlaInMinutes: z.int().register(z.globalRegistry, {
-        description: 'Each item can have a separate shipping SLA in minutes.'
-    }),
-    categoryId: z.string().register(z.globalRegistry, {
-        description: 'Category ID for the item. Configured by each store.'
-    }),
-    categoryName: z.string().register(z.globalRegistry, {
-        description: 'Category name for the Item. Configured by each store.'
-    }),
-    discount: z.number().register(z.globalRegistry, {
-        description: 'Discount applied on item(s) two decimal places.'
-    }),
-    sellerId: z.string().register(z.globalRegistry, {
-        description: 'Discount applied on item(s), with two decimal places separated by `.`.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Item information.'
+    id: z.string(),
+    name: z.string(),
+    price: z.number(),
+    quantity: z.int(),
+    deliveryType: z.string(),
+    deliverySlaInMinutes: z.int(),
+    categoryId: z.string(),
+    categoryName: z.string(),
+    discount: z.number(),
+    sellerId: z.string()
 });
 
 /**
  * ListRegistry information.
  */
 export const zListRegistry = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'List name defined by the store.'
-    }),
-    deliveryToOwner: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the order will be delivered to list creator (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'ListRegistry information.'
+    name: z.string(),
+    deliveryToOwner: z.boolean()
 });
 
 /**
@@ -179,343 +89,183 @@ export const zListRegistry = z.object({
 export const zMiniCart = z.object({
     buyer: zBuyer,
     shipping: zShipping,
-    items: z.array(zItem).register(z.globalRegistry, {
-        description: 'Items information.'
-    }),
-    taxValue: z.number().register(z.globalRegistry, {
-        description: 'Total tax value.'
-    }),
+    items: z.array(zItem),
+    taxValue: z.number(),
     listRegistry: zListRegistry
-}).register(z.globalRegistry, {
-    description: 'Minicart information.'
 });
 
 /**
  * Details information.
  */
 export const zDetails = z.object({
-    bin: z.string().register(z.globalRegistry, {
-        description: 'Abbreviation for \'Bank Identification Number\', which is a code that identifies the institution responsible for issuing the credit card.'
-    }),
-    lastDigits: z.string().register(z.globalRegistry, {
-        description: 'Credit card identifier number last digits.'
-    }),
-    holder: z.string().register(z.globalRegistry, {
-        description: 'Credit card owner.'
-    }),
+    bin: z.string(),
+    lastDigits: z.string(),
+    holder: z.string(),
     address: zAddress
-}).register(z.globalRegistry, {
-    description: 'Details information.'
 });
 
 /**
  * Payment information.
  */
 export const zPayment = z.array(z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Payment ID unique identifier in VTEX.'
-    }),
-    method: z.string().register(z.globalRegistry, {
-        description: 'Payment method used for the buyer.'
-    }),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Payment name used for the buyer. This name could be the brand card or the VTEX payment method.'
-    })),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Payment value, with two decimal places separated by `.`.'
-    }),
-    currencyIso4217: z.string().register(z.globalRegistry, {
-        description: 'Currency used in each payment in the transaction, in ISO 4217 format.'
-    }),
-    installments: z.int().register(z.globalRegistry, {
-        description: 'Number of installments.'
-    }),
+    id: z.string(),
+    method: z.string(),
+    name: z.optional(z.string()),
+    value: z.number(),
+    currencyIso4217: z.string(),
+    installments: z.int(),
     details: z.optional(zDetails)
-}).register(z.globalRegistry, {
-    description: 'Payment information.'
-})).register(z.globalRegistry, {
-    description: 'Payment information.'
-});
+}));
 
 /**
  * Anti-fraud data information.
  */
 export const zSendAntifraudDataRequest = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX transaction ID. The ID of the transaction related with this payment.'
-    }),
-    reference: z.string().register(z.globalRegistry, {
-        description: 'VTEX order reference key. The key of the order (from VTEX Orders system) related with this payment.'
-    }),
-    value: z.int().register(z.globalRegistry, {
-        description: 'VTEX transaction order value.'
-    }),
-    ip: z.string().register(z.globalRegistry, {
-        description: 'Original IP address from browser.'
-    }),
-    store: z.string().register(z.globalRegistry, {
-        description: 'Store name. This is the same name used to access the store Admin via URL.'
-    }),
-    deviceFingerprint: z.string().register(z.globalRegistry, {
-        description: 'Device fingerprint generated by the provider. This is generated by using Google Tag Manager that the provider implements. This field is optional, is sent only if received.'
-    }),
+    id: z.string(),
+    reference: z.string(),
+    value: z.int(),
+    ip: z.string(),
+    store: z.string(),
+    deviceFingerprint: z.string(),
     miniCart: zMiniCart,
     payments: zPayment,
-    hook: z.string().register(z.globalRegistry, {
-        description: 'URL to be called when the payment status changes. For more information, see [Authorization and Callback URL](https://developers.vtex.com/docs/guides/payments-integration-purchase-flows#authorization).'
-    }),
-    transactionStartDate: z.string().register(z.globalRegistry, {
-        description: 'Date and time when the transaction started, in ISO 8601 format. Note: The letter \'Z\', normally applicable in the ISO 8601 format, is not forwarded in this request. Example of field information sent in this endpoint: `2025-06-15T18:08:23`.'
-    }),
+    hook: z.string(),
+    transactionStartDate: z.string(),
     merchantSettings: z.optional(z.array(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Custom field name.'
-        }),
-        value: z.string().register(z.globalRegistry, {
-            description: 'Custom field name.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Items information.'
-    })).register(z.globalRegistry, {
-        description: 'Custom fields (for the given Provider) which the Merchant must fill. Each element of this array is a key-value pair.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Anti-fraud data information.'
+        name: z.string(),
+        value: z.string()
+    })))
 });
 
 /**
  * Responses information.
  */
 export const zResponses = z.object({
-    foo: z.string().register(z.globalRegistry, {
-        description: 'Any foo information.'
-    }),
-    custom: z.string().register(z.globalRegistry, {
-        description: 'Any custom value.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Responses information.'
+    foo: z.string(),
+    custom: z.string()
 });
 
 /**
  * Anti-fraud data.
  */
 export const zSendAntifraudData = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX transaction ID. The ID of this transaction must be in the response.'
-    }),
-    tid: z.string().register(z.globalRegistry, {
-        description: 'Provider transaction ID. The ID of this transaction must be in the response. The anti-fraud provider must generate a unique transaction ID.'
-    }),
-    code: z.string().register(z.globalRegistry, {
-        description: 'Error code returned from provider. It will be logged in transaction interactions log.'
-    }),
-    message: z.string().register(z.globalRegistry, {
-        description: 'Error message returned from provider. It will be logged in transaction interactions log.'
-    }),
-    status: z.enum(['approved', 'denied']).register(z.globalRegistry, {
-        description: 'Pre-analysis status from provider. Must be `approved` or `denied`.'
-    }),
-    score: z.number().register(z.globalRegistry, {
-        description: 'Value of the risk score. The maximum value is `100.00`, which means total fraud.'
-    }),
-    analysisType: z.string().register(z.globalRegistry, {
-        description: 'Pre-analysis type. Must be `automatic`.'
-    }),
+    id: z.string(),
+    tid: z.string(),
+    code: z.string(),
+    message: z.string(),
+    status: z.enum(['approved', 'denied']),
+    score: z.number(),
+    analysisType: z.string(),
     responses: zResponses
-}).register(z.globalRegistry, {
-    description: 'Anti-fraud data.'
 });
 
 /**
  * Anti-fraud transaction data.
  */
 export const zUpdateAntifraudTransactionsoptionalRequest = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX transaction ID. The ID of the transaction related with this payment.'
-    }),
-    reference: z.string().register(z.globalRegistry, {
-        description: 'VTEX order reference key. The key of the order (from VTEX Orders system) related with this payment.'
-    }),
-    value: z.int().register(z.globalRegistry, {
-        description: 'VTEX transaction order value.'
-    }),
-    ip: z.string().register(z.globalRegistry, {
-        description: 'The original IP address from the browser.'
-    }),
-    store: z.string().register(z.globalRegistry, {
-        description: 'VTEX has a main name for the store. This unique name is often used in URL to access VTEX configurations.'
-    }),
-    deviceFingerprint: z.string().register(z.globalRegistry, {
-        description: 'Device fingerprint generated by the provider. This is generated by using Google Tag Manager that the provider implements.'
-    }),
+    id: z.string(),
+    reference: z.string(),
+    value: z.int(),
+    ip: z.string(),
+    store: z.string(),
+    deviceFingerprint: z.string(),
     miniCart: zMiniCart,
-    payments: z.array(zPayment).register(z.globalRegistry, {
-        description: 'Payments information.'
-    }),
-    hook: z.string().register(z.globalRegistry, {
-        description: 'URL to be called when the payment status changes. For more information, see [Authorization and Callback URL](https://developers.vtex.com/docs/guides/payments-integration-purchase-flows#authorization).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Anti-fraud transaction data.'
+    payments: z.array(zPayment),
+    hook: z.string()
 });
 
 /**
  * Anti-fraud transaction data.
  */
 export const zApproveAntifraudAnalysisResponse = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX transaction ID. The ID of this transaction must be in the response.'
-    }),
-    status: z.string().register(z.globalRegistry, {
-        description: 'Transaction status from provider. Must be one of the values: `approved`, `denied` or `undefined`.'
-    }),
-    fraudRiskPercentage: z.number().register(z.globalRegistry, {
-        description: 'Fraud risk percentage.'
-    }),
-    analysisType: z.string().register(z.globalRegistry, {
-        description: 'Analysis type. Valid values are `automatic` or `manual`.'
-    }),
+    id: z.string(),
+    status: z.string(),
+    fraudRiskPercentage: z.number(),
+    analysisType: z.string(),
     responses: z.union([
         z.string(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Anti-fraud transaction data.'
 });
 
 /**
  * Anti-fraud status information.
  */
 export const zGetAntifraudStatus = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'VTEX transaction ID. The ID of this transaction must be in the response.'
-    }),
-    tid: z.string().register(z.globalRegistry, {
-        description: 'Provider transaction ID. The ID of this transaction must be in the response. The anti-fraud provider must generate a unique transaction ID.'
-    }),
-    status: z.string().register(z.globalRegistry, {
-        description: 'Transaction status from provider. Must be one of the values: `approved`, `denied` or `undefined`.'
-    }),
-    fraudRiskPercentage: z.number().register(z.globalRegistry, {
-        description: 'Fraud risk percentage.'
-    }),
-    analysisType: z.string().register(z.globalRegistry, {
-        description: 'Analysis type. Valid values are `automatic` or `manual`.'
-    }),
+    id: z.string(),
+    tid: z.string(),
+    status: z.string(),
+    fraudRiskPercentage: z.number(),
+    analysisType: z.string(),
     responses: zResponses
-}).register(z.globalRegistry, {
-    description: 'Anti-fraud status information.'
 });
 
 /**
  * Payment methods information.
  */
 export const zGetPaymentMethodsSupported = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Payment method name.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Payment methods information.'
+    name: z.string()
 });
 
 /**
  * Token information.
  */
 export const z1RetrieveTokenRequest = z.object({
-    applicationId: z.string().register(z.globalRegistry, {
-        description: 'This value is always identified as `vtex`.'
-    }),
-    returnUrl: z.string().register(z.globalRegistry, {
-        description: 'VTEX website URL. You will redirect the user after they complete login on the payment provider\'s website. The URL should contain a query string parameter called `authorizationCode` which will be passed empty and which you must fill in before returning to the user.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Token information.'
+    applicationId: z.string(),
+    returnUrl: z.string()
 });
 
 /**
  * Token information.
  */
 export const z1RetrieveToken = z.object({
-    applicationId: z.string().register(z.globalRegistry, {
-        description: 'This value is always identified as `vtex`.'
-    }),
-    token: z.string().register(z.globalRegistry, {
-        description: 'Payment Provider Token. Used to identify the context after you receive the redirected user to your site.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Token information.'
+    applicationId: z.string(),
+    token: z.string()
 });
 
 /**
  * Credentials information.
  */
 export const z3GetCredentials = z.object({
-    applicationId: z.string().register(z.globalRegistry, {
-        description: 'This value is always identified as `vtex`.'
-    }),
-    appKey: z.string().register(z.globalRegistry, {
-        description: 'It will be used in all API requests as X-VTEX-API-AppKey.'
-    }),
-    appToken: z.string().register(z.globalRegistry, {
-        description: 'It will be used in all API requests as X-VTEX-API-AppToken.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Credentials information.'
+    applicationId: z.string(),
+    appKey: z.string(),
+    appToken: z.string()
 });
 
 /**
  * Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).
  */
-export const zXProviderApiAppKey = z.string().register(z.globalRegistry, {
-    description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-});
+export const zXProviderApiAppKey = z.string();
 
 /**
  * Unique token created by the provider and configured on the provider configuration page (Admin VTEX).
  */
-export const zXProviderApiAppToken = z.string().register(z.globalRegistry, {
-    description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-});
+export const zXProviderApiAppToken = z.string();
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * VTEX transaction ID. This parameter is the same `id` sent in the request body of the [Send Anti-fraud Data endpoint](https://developers.vtex.com/docs/api-reference/antifraud-provider-protocol#post-/transactions).
  */
-export const zTransactionsId = z.string().register(z.globalRegistry, {
-    description: 'VTEX transaction ID. This parameter is the same `id` sent in the request body of the [Send Anti-fraud Data endpoint](https://developers.vtex.com/docs/api-reference/antifraud-provider-protocol#post-/transactions).'
-});
+export const zTransactionsId = z.string();
 
 export const zSendAntifraudPreAnalysisDataData = z.object({
     body: zSendAntifraudDataRequest,
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -524,42 +274,24 @@ export const zSendAntifraudDataData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zUpdateAntifraudTransactionsOptionalData = z.object({
     body: zUpdateAntifraudTransactionsoptionalRequest,
     path: z.object({
-        'transactions.Id': z.string().register(z.globalRegistry, {
-            description: 'VTEX transaction ID. This parameter is the same `id` sent in the request body of the [Send Anti-fraud Data endpoint](https://developers.vtex.com/docs/api-reference/antifraud-provider-protocol#post-/transactions).'
-        })
+        'transactions.Id': z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -568,60 +300,36 @@ export const zManifestData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetAntifraudStatusData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        'transactions.Id': z.string().register(z.globalRegistry, {
-            description: 'VTEX transaction ID. This parameter is the same `id` sent in the request body of the [Send Anti-fraud Data endpoint](https://developers.vtex.com/docs/api-reference/antifraud-provider-protocol#post-/transactions).'
-        })
+        'transactions.Id': z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zStopAntifraudAnalysisOptionalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        'transactions.Id': z.string().register(z.globalRegistry, {
-            description: 'VTEX transaction ID. This parameter is the same `id` sent in the request body of the [Send Anti-fraud Data endpoint](https://developers.vtex.com/docs/api-reference/antifraud-provider-protocol#post-/transactions).'
-        })
+        'transactions.Id': z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -630,18 +338,10 @@ export const zRetrieveTokenData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -649,26 +349,14 @@ export const zRedirectData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        token: z.string().register(z.globalRegistry, {
-            description: 'Token information.'
-        }),
-        applicationId: z.string().register(z.globalRegistry, {
-            description: 'VTEX application identifier.'
-        })
+        token: z.string(),
+        applicationId: z.string()
     }),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string(),
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -676,17 +364,11 @@ export const zReturntoVtexData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        providerAuthorizationCode: z.string().register(z.globalRegistry, {
-            description: 'Provider authorization code information.'
-        })
+        providerAuthorizationCode: z.string()
     }),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string()
     })
 });
 
@@ -694,19 +376,11 @@ export const zGetCredentialsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        authorizationCode: z.string().register(z.globalRegistry, {
-            description: 'Code generate by affiliation that will be used to identify the merchant authorization.'
-        }),
-        applicationId: z.string().register(z.globalRegistry, {
-            description: 'VTEX application identifier.'
-        })
+        authorizationCode: z.string(),
+        applicationId: z.string()
     }),
     headers: z.object({
-        'X-PROVIDER-API-AppKey': z.string().register(z.globalRegistry, {
-            description: 'Unique identifier created by the provider and configured on the provider configuration page (Admin VTEX).'
-        }),
-        'X-PROVIDER-API-AppToken': z.string().register(z.globalRegistry, {
-            description: 'Unique token created by the provider and configured on the provider configuration page (Admin VTEX).'
-        })
+        'X-PROVIDER-API-AppKey': z.string(),
+        'X-PROVIDER-API-AppToken': z.string()
     })
 });

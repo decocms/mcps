@@ -5,73 +5,45 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zGetApiEdgeCertificatesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutApiEdgeCertificatesData = z.object({
     body: z.optional(z.object({
-        hosts: z.array(z.string().register(z.globalRegistry, {
-            description: 'Host name.'
-        })).register(z.globalRegistry, {
-            description: 'List of hosts.'
-        }),
-        certificate: z.string().register(z.globalRegistry, {
-            description: 'Base64 encoded SSL certificate.'
-        }),
-        privateKey: z.string().register(z.globalRegistry, {
-            description: 'Base64 encoded SSL  certificate private key.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Request body with SSL certificate information.'
+        hosts: z.array(z.string()),
+        certificate: z.string(),
+        privateKey: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiEdgeCertificatesByCertificateIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        certificateId: z.string().register(z.globalRegistry, {
-            description: 'SSL certificate unique identifier.'
-        })
+        certificateId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

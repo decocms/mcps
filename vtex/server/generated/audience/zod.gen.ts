@@ -6,119 +6,75 @@ import * as z from 'zod';
  * Object containing the error message.
  */
 export const zResponseError = z.object({
-    error: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object containing the error message.'
+    error: z.optional(z.string())
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * Name of your VTEX account.
  */
-export const zAn = z.string().register(z.globalRegistry, {
-    description: 'Name of your VTEX account.'
-});
+export const zAn = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * ID that represents an audience.
  */
-export const zAudienceId = z.string().register(z.globalRegistry, {
-    description: 'ID that represents an audience.'
-});
+export const zAudienceId = z.string();
 
 export const zPostApiAudienceManagerPvtAudienceData = z.object({
     body: z.optional(z.object({
-        email: z.string().register(z.globalRegistry, {
-            description: 'Shopper\'s email.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Object containing information about the shopper\'s email.'
+        email: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        an: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name of your VTEX account.'
-        }))
+        an: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiPriceTableMapperPvtMappingByAudienceIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        audienceId: z.string().register(z.globalRegistry, {
-            description: 'ID that represents an audience.'
-        })
+        audienceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiPriceTableMapperPvtMappingByAudienceIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        audienceId: z.string().register(z.globalRegistry, {
-            description: 'ID that represents an audience.'
-        })
+        audienceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutApiPriceTableMapperPvtMappingByAudienceIdData = z.object({
-    body: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Price table ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array of price table Ids.'
-    })),
+    body: z.optional(z.array(z.string())),
     path: z.object({
-        audienceId: z.string().register(z.globalRegistry, {
-            description: 'ID that represents an audience.'
-        })
+        audienceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

@@ -6,138 +6,76 @@ import * as z from 'zod';
  * Expired token error response.
  */
 export const z403Expiredtoken = z.object({
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error code.'
-    })),
-    reason: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Reason for the error.'
-    })),
-    requestId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Request ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Expired token error response.'
+    message: z.optional(z.string()),
+    code: z.optional(z.string()),
+    reason: z.optional(z.string()),
+    requestId: z.optional(z.string())
 });
 
 /**
  * Forbidden error response.
  */
 export const z403Forbidden = z.object({
-    type: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Type of the error.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error code.'
-    })),
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    })),
-    date: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time when the error occurred.'
-    })),
-    requestId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Request ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Forbidden error response.'
+    type: z.optional(z.string()),
+    code: z.optional(z.string()),
+    message: z.optional(z.string()),
+    date: z.optional(z.string()),
+    requestId: z.optional(z.string())
 });
 
 /**
  * Not Found error response.
  */
 export const z404Notfound = z.object({
-    type: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Type of the error.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error code.'
-    })),
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    })),
-    date: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time when the error occurred.'
-    })),
-    requestId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Request ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Not Found error response.'
+    type: z.optional(z.string()),
+    code: z.optional(z.string()),
+    message: z.optional(z.string()),
+    date: z.optional(z.string()),
+    requestId: z.optional(z.string())
 });
 
 /**
  * Bad request error response.
  */
 export const z400Badrequest = z.object({
-    type: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Type of the error.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error code.'
-    })),
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    })),
-    date: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time when the error occurred.'
-    })),
-    requestId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Request ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Bad request error response.'
+    type: z.optional(z.string()),
+    code: z.optional(z.string()),
+    message: z.optional(z.string()),
+    date: z.optional(z.string()),
+    requestId: z.optional(z.string())
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zPostTokenData = z.object({
     body: z.optional(z.object({
-        apiKey: z.string().register(z.globalRegistry, {
-            description: 'The `API KEY` generated in **VTEX Admin > Shipping > Pick and Pack > Settings > Integration > API Key**.'
-        })
+        apiKey: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetOrdersByOrderIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string().register(z.globalRegistry, {
-            description: 'Order ID.'
-        })
+        orderId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -148,28 +86,14 @@ export const zPatchOrdersByOrderIdTrackingData = z.object({
             z.null()
         ])),
         events: z.optional(z.array(z.object({
-            city: z.string().register(z.globalRegistry, {
-                description: 'City where the event occurred.'
-            }),
-            state: z.string().register(z.globalRegistry, {
-                description: 'State where the event occurred.'
-            }),
-            description: z.string().register(z.globalRegistry, {
-                description: 'Event description.'
-            }),
-            date: z.string().register(z.globalRegistry, {
-                description: 'Date and time when the event occurred.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Event details.'
-        })).register(z.globalRegistry, {
-            description: 'List of events that occurred during the delivery process.'
-        }))
+            city: z.string(),
+            state: z.string(),
+            description: z.string(),
+            date: z.string()
+        })))
     })),
     path: z.object({
-        orderId: z.string().register(z.globalRegistry, {
-            description: 'Order ID.'
-        })
+        orderId: z.string()
     }),
     query: z.optional(z.never())
 });
@@ -177,9 +101,7 @@ export const zPatchOrdersByOrderIdTrackingData = z.object({
 export const zGetWorksheetsByWorksheetIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        worksheetId: z.string().register(z.globalRegistry, {
-            description: 'Worksheet ID.'
-        })
+        worksheetId: z.string()
     }),
     query: z.optional(z.never())
 });
@@ -188,18 +110,14 @@ export const zGetWorksheetsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        orderId: z.string().register(z.globalRegistry, {
-            description: 'Order ID.'
-        })
+        orderId: z.string()
     })
 });
 
 export const zGetFacilitiesByFacilityIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        facilityId: z.string().register(z.globalRegistry, {
-            description: 'Facility ID.'
-        })
+        facilityId: z.string()
     }),
     query: z.optional(z.never())
 });
@@ -207,15 +125,11 @@ export const zGetFacilitiesByFacilityIdData = z.object({
 export const zGetShipmentsByShipmentIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        shipmentId: z.number().register(z.globalRegistry, {
-            description: 'Shipment ID. Its value depends on the `X-PNP-FilterMethod` header. Use internal UUID when using `BY_INTERNAL_ID` filter or carrier tracking number when using `BY_EXTERNAL_ID` filter.'
-        })
+        shipmentId: z.number()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'X-PNP-FilterMethod': z.string().register(z.globalRegistry, {
-            description: 'Determines how the `shipmentId` will be interpreted. Its values can be `BY_INTERNAL_ID` or `BY_EXTERNAL_ID`.'
-        })
+        'X-PNP-FilterMethod': z.string()
     })
 });
 
@@ -223,8 +137,6 @@ export const zGetShipmentsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        orderId: z.string().register(z.globalRegistry, {
-            description: 'Order ID.'
-        })
+        orderId: z.string()
     })
 });

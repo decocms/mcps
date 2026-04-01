@@ -5,36 +5,22 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-}).default('application/json');
+export const zContentType = z.string().default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-}).default('application/json');
+export const zAccept = z.string().default('application/json');
 
 export const zPutDeliveryPromisesExternalSellersBySellerIdProductsData = z.object({
     body: z.object({
-        itemId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the binding of the seller with the SKU.'
-        }),
-        productId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The product unique identifier.'
-        })),
-        availability: z.int().register(z.globalRegistry, {
-            description: 'Total available items.'
-        }),
+        itemId: z.string(),
+        productId: z.optional(z.string()),
+        availability: z.int(),
         promises: z.array(z.object({
-            availability: z.int().register(z.globalRegistry, {
-                description: 'Available items for this delivery promise.'
-            }),
-            deliveryChannel: z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
-                description: 'Delivery channel type.'
-            }),
-            deliveryZoneIds: z.optional(z.array(z.enum([
+            availability: z.int(),
+            deliveryChannel: z.enum(['delivery', 'pickup-in-point']),
+            deliveryZoneIds: z.array(z.enum([
                 'BRA_COUNTRY',
                 'BRA_REGION_NORTE',
                 'BRA_REGION_CENTRO_OESTE',
@@ -105,64 +91,95 @@ export const zPutDeliveryPromisesExternalSellersBySellerIdProductsData = z.objec
                 'BRA_SUBSTATE_SC_INTERIOR',
                 'BRA_SUBSTATE_RS_CAPITAL',
                 'BRA_SUBSTATE_RS_REG_METROPOLITANA',
-                'BRA_SUBSTATE_RS_INTERIOR'
-            ]).register(z.globalRegistry, {
-                description: 'Delivery zone unique identifier.'
-            })).register(z.globalRegistry, {
-                description: 'List of delivery zones where the item is available.'
-            })),
+                'BRA_SUBSTATE_RS_INTERIOR',
+                'USA_COUNTRY',
+                'USA_DIVISION_NEW_ENGLAND',
+                'USA_STATE_CT',
+                'USA_STATE_ME',
+                'USA_STATE_MA',
+                'USA_STATE_NH',
+                'USA_STATE_RI',
+                'USA_STATE_VT',
+                'USA_DIVISION_MIDDLE_ATLANTIC',
+                'USA_STATE_NJ',
+                'USA_STATE_NY',
+                'USA_STATE_PA',
+                'USA_DIVISION_EAST_NORTH_CENTRAL',
+                'USA_STATE_IL',
+                'USA_STATE_IN',
+                'USA_STATE_MI',
+                'USA_STATE_OH',
+                'USA_STATE_WI',
+                'USA_DIVISION_WEST_NORTH_CENTRAL',
+                'USA_STATE_IA',
+                'USA_STATE_KS',
+                'USA_STATE_MN',
+                'USA_STATE_MO',
+                'USA_STATE_NE',
+                'USA_STATE_ND',
+                'USA_STATE_SD',
+                'USA_DIVISION_SOUTH_ATLANTIC',
+                'USA_STATE_DE',
+                'USA_STATE_FL',
+                'USA_STATE_GA',
+                'USA_STATE_MD',
+                'USA_STATE_NC',
+                'USA_STATE_SC',
+                'USA_STATE_VA',
+                'USA_STATE_WV',
+                'USA_STATE_DC',
+                'USA_DIVISION_EAST_SOUTH_CENTRAL',
+                'USA_STATE_AL',
+                'USA_STATE_KY',
+                'USA_STATE_MS',
+                'USA_STATE_TN',
+                'USA_DIVISION_WEST_SOUTH_CENTRAL',
+                'USA_STATE_AR',
+                'USA_STATE_LA',
+                'USA_STATE_OK',
+                'USA_STATE_TX',
+                'USA_DIVISION_MOUNTAIN',
+                'USA_STATE_AZ',
+                'USA_STATE_CO',
+                'USA_STATE_ID',
+                'USA_STATE_MT',
+                'USA_STATE_NV',
+                'USA_STATE_NM',
+                'USA_STATE_UT',
+                'USA_STATE_WY',
+                'USA_DIVISION_PACIFIC',
+                'USA_STATE_AK',
+                'USA_STATE_CA',
+                'USA_STATE_HI',
+                'USA_STATE_OR',
+                'USA_STATE_WA'
+            ])).min(1),
             deliveryInfo: z.optional(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Unique identifier of the delivery method.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Display name of the delivery method.'
-                })),
-                deliveryTime: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Estimated delivery time in `dd.hh:mm:ss` format. For example, `2.02:00:00` represents an estimated delivery time of two days and two hours.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Delivery method details.'
+                id: z.optional(z.string()),
+                name: z.optional(z.string()),
+                deliveryTime: z.optional(z.string())
             }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery promise details.'
-        })).register(z.globalRegistry, {
-            description: 'List of delivery promises.'
-        })
+        }))
     }),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'The seller\'s ID registered in the marketplace.'
-        })
+        sellerId: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'The account name receiving the notification.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData = z.object({
     body: z.object({
-        availability: z.int().register(z.globalRegistry, {
-            description: 'Total available units for the item across all promises.'
-        }),
+        availability: z.int(),
         promises: z.array(z.object({
-            availability: z.int().register(z.globalRegistry, {
-                description: 'Units allocated to this specific promise.'
-            }),
-            deliveryChannel: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Delivery channel name.'
-            })),
-            deliveryZoneIds: z.optional(z.array(z.enum([
+            availability: z.int(),
+            deliveryChannel: z.optional(z.string()),
+            deliveryZoneIds: z.array(z.enum([
                 'BRA_COUNTRY',
                 'BRA_REGION_NORTE',
                 'BRA_REGION_CENTRO_OESTE',
@@ -233,47 +250,82 @@ export const zPatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData = 
                 'BRA_SUBSTATE_SC_INTERIOR',
                 'BRA_SUBSTATE_RS_CAPITAL',
                 'BRA_SUBSTATE_RS_REG_METROPOLITANA',
-                'BRA_SUBSTATE_RS_INTERIOR'
-            ]).register(z.globalRegistry, {
-                description: 'Delivery zone identifier.'
-            })).register(z.globalRegistry, {
-                description: 'List of delivery zone identifiers applicable to this promise.'
-            })),
-            id: z.string().register(z.globalRegistry, {
-                description: 'Unique promise identifier within this item/seller context.'
-            }),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Display name for the promise.'
-            })),
-            deliveryTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Time for delivery in the format `d.HH:mm:ss`.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery promise definition.'
-        })).min(1).register(z.globalRegistry, {
-            description: 'List of delivery promises to set or update.'
-        }),
-        timestamp: z.iso.datetime().register(z.globalRegistry, {
-            description: 'Timestamp when this update was generated (ISO 8601).'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Delivery promises update payload.'
+                'BRA_SUBSTATE_RS_INTERIOR',
+                'USA_COUNTRY',
+                'USA_DIVISION_NEW_ENGLAND',
+                'USA_STATE_CT',
+                'USA_STATE_ME',
+                'USA_STATE_MA',
+                'USA_STATE_NH',
+                'USA_STATE_RI',
+                'USA_STATE_VT',
+                'USA_DIVISION_MIDDLE_ATLANTIC',
+                'USA_STATE_NJ',
+                'USA_STATE_NY',
+                'USA_STATE_PA',
+                'USA_DIVISION_EAST_NORTH_CENTRAL',
+                'USA_STATE_IL',
+                'USA_STATE_IN',
+                'USA_STATE_MI',
+                'USA_STATE_OH',
+                'USA_STATE_WI',
+                'USA_DIVISION_WEST_NORTH_CENTRAL',
+                'USA_STATE_IA',
+                'USA_STATE_KS',
+                'USA_STATE_MN',
+                'USA_STATE_MO',
+                'USA_STATE_NE',
+                'USA_STATE_ND',
+                'USA_STATE_SD',
+                'USA_DIVISION_SOUTH_ATLANTIC',
+                'USA_STATE_DE',
+                'USA_STATE_FL',
+                'USA_STATE_GA',
+                'USA_STATE_MD',
+                'USA_STATE_NC',
+                'USA_STATE_SC',
+                'USA_STATE_VA',
+                'USA_STATE_WV',
+                'USA_STATE_DC',
+                'USA_DIVISION_EAST_SOUTH_CENTRAL',
+                'USA_STATE_AL',
+                'USA_STATE_KY',
+                'USA_STATE_MS',
+                'USA_STATE_TN',
+                'USA_DIVISION_WEST_SOUTH_CENTRAL',
+                'USA_STATE_AR',
+                'USA_STATE_LA',
+                'USA_STATE_OK',
+                'USA_STATE_TX',
+                'USA_DIVISION_MOUNTAIN',
+                'USA_STATE_AZ',
+                'USA_STATE_CO',
+                'USA_STATE_ID',
+                'USA_STATE_MT',
+                'USA_STATE_NV',
+                'USA_STATE_NM',
+                'USA_STATE_UT',
+                'USA_STATE_WY',
+                'USA_DIVISION_PACIFIC',
+                'USA_STATE_AK',
+                'USA_STATE_CA',
+                'USA_STATE_HI',
+                'USA_STATE_OR',
+                'USA_STATE_WA'
+            ])).min(1),
+            id: z.string(),
+            name: z.optional(z.string()),
+            deliveryTime: z.optional(z.string())
+        })).min(1),
+        timestamp: z.iso.datetime()
     }),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'External seller identifier.'
-        }),
-        itemId: z.string().register(z.globalRegistry, {
-            description: 'Item identifier.'
-        })
+        sellerId: z.string(),
+        itemId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

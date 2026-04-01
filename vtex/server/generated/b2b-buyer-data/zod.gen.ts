@@ -6,345 +6,155 @@ import * as z from 'zod';
  * Schema response containing the buyer entity schema definition with properties, required fields, and indexed fields configuration.
  */
 export const zBuyerSchemaResponse = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Schema name.'
-    }),
+    name: z.string(),
     schema: z.object({
-        title: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Schema title.'
-        })),
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Schema type.'
-        })),
+        title: z.optional(z.string()),
+        type: z.optional(z.string()),
         properties: z.optional(z.object({
             userId: z.optional(z.object({
-                type: z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the buyer ID field.'
-                }),
-                format: z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected format for the buyer ID field.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Buyer identifier definition.'
+                type: z.string(),
+                format: z.string()
             })),
             email: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the email field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Email field definition.'
+                type: z.optional(z.string())
             })),
             firstName: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the first name field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Buyer\'s first name definition.'
+                type: z.optional(z.string())
             })),
             lastName: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the last name field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Buyer\'s last name definition.'
+                type: z.optional(z.string())
             })),
             document: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the document number field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Buyer\'s document number (e.g., CPF) definition.'
+                type: z.optional(z.string())
             })),
             documentType: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the document type field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Type of document (e.g., `cpf`) definition.'
+                type: z.optional(z.string())
             })),
             phone: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the phone number field.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Buyer\'s phone number definition.'
+                type: z.optional(z.string())
             })),
             cards: z.optional(z.object({
-                type: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Indicates the expected data type for the cards field.'
-                })),
+                type: z.optional(z.string()),
                 items: z.optional(z.object({
-                    type: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Indicates the expected data type for the card ID field.'
-                    })),
+                    type: z.optional(z.string()),
                     properties: z.optional(z.object({
                         cardId: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the card ID field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Unique identifier of the saved card definition.'
+                            type: z.optional(z.string())
                         })),
                         paymentSystem: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the payment system field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Payment system definition.'
+                            type: z.optional(z.string())
                         })),
                         paymentSystemName: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the payment system name field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Payment system name definition.'
+                            type: z.optional(z.string())
                         })),
                         cardNumber: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the card number field.'
-                            })),
-                            pattern: z.optional(z.string().regex(/^[\*]{12}[0-9]{4}$/).register(z.globalRegistry, {
-                                description: 'Indicates the expected pattern for the card number field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Card number definition.'
+                            type: z.optional(z.string()),
+                            pattern: z.optional(z.string().regex(/^[\*]{12}[0-9]{4}$/))
                         })),
                         bin: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the bin field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Bin definition.'
+                            type: z.optional(z.string())
                         })),
                         expirationDate: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the expiration date field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Expiration date definition.'
+                            type: z.optional(z.string())
                         })),
                         useCvvForAuthorization: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the use CVV for authorization field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Indicates the expected data type for the use CVV for authorization field.'
+                            type: z.optional(z.string())
                         })),
                         cardLabel: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the card label field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: 'Card label definition.'
+                            type: z.optional(z.string())
                         })),
                         isCardToken: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the `isCardToken` field.'
-                            }))
-                        }).register(z.globalRegistry, {
-                            description: '`isCardToken` definition.'
+                            type: z.optional(z.string())
                         })),
                         availableAddresses: z.optional(z.object({
-                            type: z.optional(z.string().register(z.globalRegistry, {
-                                description: 'Indicates the expected data type for the available addresses field.'
-                            })),
+                            type: z.optional(z.string()),
                             items: z.optional(z.object({
-                                type: z.optional(z.string().register(z.globalRegistry, {
-                                    description: 'Indicates the expected data type for the address identifier field.'
-                                }))
-                            }).register(z.globalRegistry, {
-                                description: 'Address identifier.'
+                                type: z.optional(z.string())
                             }))
-                        }).register(z.globalRegistry, {
-                            description: 'Indicates the expected data type for the available addresses field.'
                         }))
-                    }).register(z.globalRegistry, {
-                        description: 'Credit card information.'
                     })),
-                    additionalProperties: z.optional(z.boolean().register(z.globalRegistry, {
-                        description: 'When `true`, allows clients to send and persist custom fields beyond the defined schema. This enables storing extra fields like `phone2`, `marketingOptIn`, or any buyer-specific data.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Credit card information.'
+                    additionalProperties: z.optional(z.boolean())
                 }))
-            }).register(z.globalRegistry, {
-                description: 'Saved credit cards information. This field is used by the checkout module.'
             }))
-        }).register(z.globalRegistry, {
-            description: 'Schema properties definition.'
         })),
-        additionalProperties: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When `true`, allows clients to send and persist custom fields beyond the defined schema. This enables storing extra fields like `phone2`, `marketingOptIn`, or any buyer-specific data.'
-        })),
-        requiredField: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Name of a required property field.'
-        })).register(z.globalRegistry, {
-            description: 'List of required properties.'
-        })),
-        'v-indexed': z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Name of an indexed property field.'
-        })).register(z.globalRegistry, {
-            description: 'List of indexed properties.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Buyer schema definition containing properties, required fields, and indexed fields.'
+        additionalProperties: z.optional(z.boolean()),
+        requiredField: z.optional(z.array(z.string())),
+        'v-indexed': z.optional(z.array(z.string()))
     })
-}).register(z.globalRegistry, {
-    description: 'Schema response containing the buyer entity schema definition with properties, required fields, and indexed fields configuration.'
 });
 
 /**
  * Buyer document creation request. Supports additional properties beyond the defined schema.
  */
 export const zBuyerDocumentRequest = z.object({
-    userId: z.uuid().register(z.globalRegistry, {
-        description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).'
-    }),
-    email: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s email.'
-    })),
-    firstName: z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s first name.'
-    }),
-    lastName: z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s last name.'
-    }),
-    document: z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s document number (e.g., CPF number).'
-    }),
-    documentType: z.string().register(z.globalRegistry, {
-        description: 'Type of the document provided (e.g., `cpf`).'
-    }),
-    phone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s phone number.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Buyer document creation request. Supports additional properties beyond the defined schema.'
+    userId: z.uuid(),
+    email: z.optional(z.string()),
+    firstName: z.string(),
+    lastName: z.string(),
+    document: z.string(),
+    documentType: z.string(),
+    phone: z.optional(z.string())
 });
 
 /**
  * Buyer document. May include additional properties beyond the standard schema if they were previously stored.
  */
 export const zBuyerDocument = z.object({
-    userId: z.optional(z.uuid().register(z.globalRegistry, {
-        description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).'
-    })),
-    email: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s email.'
-    })),
-    firstName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s first name.'
-    })),
-    lastName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s last name.'
-    })),
-    document: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s document number (e.g., CPF number).'
-    })),
-    documentType: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Type of the document provided (e.g., `cpf`).'
-    })),
-    phone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Buyer\'s phone number.'
-    })),
+    userId: z.optional(z.uuid()),
+    email: z.optional(z.string()),
+    firstName: z.optional(z.string()),
+    lastName: z.optional(z.string()),
+    document: z.optional(z.string()),
+    documentType: z.optional(z.string()),
+    phone: z.optional(z.string()),
     cards: z.optional(z.array(z.object({
-        cardId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the saved card.'
-        })),
-        paymentSystem: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code representing the payment system (e.g., `2` for Visa).'
-        })),
-        paymentSystemName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name of the payment system (e.g., `Visa`).'
-        })),
-        cardNumber: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Masked credit card number.'
-        })),
-        bin: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Bank Identification Number - the first digits of the card.'
-        })),
-        expirationDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Expiry date of the card in `MM/YYYY` format.'
-        })),
-        useCvvForAuthorization: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if CVV is required for authorization.'
-        })),
-        cardLabel: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Label or nickname for the card.'
-        })),
-        isCardToken: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether the card data is tokenized.'
-        })),
-        availableAddresses: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Address identifier.'
-        })).register(z.globalRegistry, {
-            description: 'Array of address IDs the card is associated with.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Credit card information.'
-    })).register(z.globalRegistry, {
-        description: 'List of cards associated with the buyer. This field is used by the checkout module.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Buyer document. May include additional properties beyond the standard schema if they were previously stored.'
+        cardId: z.optional(z.string()),
+        paymentSystem: z.optional(z.string()),
+        paymentSystemName: z.optional(z.string()),
+        cardNumber: z.optional(z.string()),
+        bin: z.optional(z.string()),
+        expirationDate: z.optional(z.string()),
+        useCvvForAuthorization: z.optional(z.boolean()),
+        cardLabel: z.optional(z.string()),
+        isCardToken: z.optional(z.boolean()),
+        availableAddresses: z.optional(z.array(z.string()))
+    })))
 });
 
 /**
  * Response object returned when a document is successfully created.
  */
 export const zCreateBuyerDocumentResponse = z.object({
-    Id: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the document, prefixed with the entity name (`buyer`).'
-    }),
-    Href: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL to access the document. May be empty if not applicable.'
-    })),
-    DocumentId: z.string().register(z.globalRegistry, {
-        description: 'Same as `Id`, used internally to identify the document.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Response object returned when a document is successfully created.'
+    Id: z.string(),
+    Href: z.optional(z.string()),
+    DocumentId: z.string()
 });
 
 /**
  * Response body object.
  */
 export const zBuyerDocumentResponse = z.object({
-    Id: z.string().register(z.globalRegistry, {
-        description: 'ID of the document that was created or updated.'
-    }),
-    Href: z.string().register(z.globalRegistry, {
-        description: 'Document reference URL.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Response body object.'
+    Id: z.string(),
+    Href: z.string()
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zGetApiDataentitiesShopperSchemasV1Data = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -352,68 +162,46 @@ export const zPostApiDataentitiesShopperDocumentsData = z.object({
     body: zBuyerDocumentRequest,
     path: z.optional(z.never()),
     query: z.object({
-        _schema: z.string().register(z.globalRegistry, {
-            description: 'Schema name. The value must be `v1`.'
-        })
+        _schema: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiDataentitiesShopperDocumentsByBuyerIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        buyerId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).'
-        })
+        buyerId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiDataentitiesShopperDocumentsByBuyerIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        buyerId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).'
-        })
+        buyerId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPatchApiDataentitiesShopperDocumentsByBuyerIdData = z.object({
     body: zBuyerDocumentRequest,
     path: z.object({
-        buyerId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).'
-        })
+        buyerId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
@@ -421,19 +209,11 @@ export const zGetApiDataentitiesShopperSearchData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        _where: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users). Use the `userId={{userId}}` value.'
-        })),
-        _schema: z.enum(['v1']).register(z.globalRegistry, {
-            description: 'Schema name. The value must be `v1`.'
-        })
+        _where: z.optional(z.string()),
+        _schema: z.enum(['v1'])
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

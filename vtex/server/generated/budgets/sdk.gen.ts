@@ -23,6 +23,8 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Retrieves the list of transactions (statement) for a specific budget within the VTEX Budgets API.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -47,6 +49,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdStatements = <ThrowO
  * Get allocation statements
  *
  * Retrieves the list of transactions (statement) for a specific allocation within a VTEX budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -73,6 +77,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  *
  * Creates a new transaction which subtracts funds from the specified budget allocation.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -97,6 +103,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAlloca
  * Refund transaction
  *
  * Refunds a specific transaction from a budget allocation by creating a new **`CREDIT`** statement item, which adds funds back to the specified budget allocation.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -123,6 +131,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAlloca
  *
  * Retrieves a specific transaction from a budget allocation in the VTEX Budgets API.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -147,6 +157,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  * List reservations
  *
  * Retrieves a list of reservations under a specific allocation in a VTEX budget, optionally filtered by status.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -173,6 +185,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  *
  * Creates a temporary reservation under a specific allocation in a VTEX budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -197,6 +211,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAlloca
  * Delete reservation
  *
  * Cancels a reservation under a specific allocation in a VTEX budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -223,6 +239,8 @@ export const deleteApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllo
  *
  * Retrieves a reservation under a specific allocation in a VTEX budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -247,6 +265,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  * Confirm reservation
  *
  * Confirms a reservation under a specific allocation in a VTEX budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -273,6 +293,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAlloca
  *
  * Retrieves the allocations for a specific budget, with optional filtering by entity type.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -297,6 +319,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocations = <Throw
  * Create allocation
  *
  * Creates a new allocation within a specific VTEX budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -323,6 +347,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocations = <Thro
  *
  * Creates one or more budget allocations in batch under a specific VTEX budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -347,6 +373,8 @@ export const postApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsBatch = 
  * Delete allocation
  *
  * Deletes a specific allocation from a budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * > Allocations are not definitively deleted, they are maintained for the sake of record keeping. When looking at statements you will be able to see transaction history for deleted allocations.
  *
@@ -375,6 +403,8 @@ export const deleteApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllo
  *
  * Retrieves a specific allocation within a VTEX budget by its ID.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -399,6 +429,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  * Update allocation
  *
  * Updates an existing budget allocation within a specific VTEX budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -425,6 +457,8 @@ export const putApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  *
  * Updates the linked entity of a specific allocation within a budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -449,6 +483,8 @@ export const putApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  * Change allocation status
  *
  * Updates the status of a specific allocation within a budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -475,6 +511,8 @@ export const putApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  *
  * Updates the usage of a specific allocation within a budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -499,6 +537,8 @@ export const putApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocat
  * Query allocations
  *
  * Queries budget allocations by context and linked entities.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -525,6 +565,8 @@ export const postApiBudgetsByContextTypeByContextIdAllocationsQuery = <ThrowOnEr
  *
  * Retrieves a paginated list of budgets filtered by context and amount range.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -549,6 +591,8 @@ export const getApiBudgetsByContextTypeByContextId = <ThrowOnError extends boole
  * Create budget
  *
  * Creates a new budget with optional allocations and cycle configuration.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -575,6 +619,8 @@ export const postApiBudgetsByContextTypeByContextId = <ThrowOnError extends bool
  *
  * Deletes a specific budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -600,6 +646,8 @@ export const deleteApiBudgetsByContextTypeByContextIdByBudgetId = <ThrowOnError 
  *
  * Retrieves the details of a specific budget.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -624,6 +672,8 @@ export const getApiBudgetsByContextTypeByContextIdByBudgetId = <ThrowOnError ext
  * Update budget
  *
  * Updates an existing budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * > ⚠️ Note that you can't update the fields `contextType` and `contextId`. You must send the original values, as they are used to validate the request.
  *
@@ -651,6 +701,8 @@ export const putApiBudgetsByContextTypeByContextIdByBudgetId = <ThrowOnError ext
  * Update budget status
  *
  * Updates the status of a specific budget.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *

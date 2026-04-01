@@ -5,9 +5,7 @@ import * as z from 'zod';
 export const zCreateDkimData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        EmailProvider: z.string().register(z.globalRegistry, {
-            description: 'Email address for the sender that was set up in VTEX mail servers.'
-        })
+        EmailProvider: z.string()
     }),
     query: z.optional(z.never())
 });

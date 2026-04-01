@@ -120,13 +120,18 @@ export type ApiKey = string;
 export type PostApiAuthenticatorStorefrontUsersData = {
     body?: {
         /**
-         * Unique login key (username) for the user. Case-insensitive string (3-70 characters, accepts special characters and whitespace) used for login.
+         * Array of authentication identifiers for the user. You can provide one or more identifiers of different types (username, email, phoneNumber).
          */
-        identifier: string;
-        /**
-         * Type of identifier. Only `username` is supported.
-         */
-        identifierType: 'username';
+        identifiers: Array<{
+            /**
+             * Type of authentication identifier. Accepted values are `username`, `email`, or `phoneNumber`. Note that phone numbers can be used for authentication but are not yet supported for password recovery.
+             */
+            type: 'username' | 'email' | 'phoneNumber';
+            /**
+             * The actual identifier value. For `username`: case-insensitive string (3-70 characters, accepts special characters and whitespace). For `email`: valid email address format. For `phoneNumber`: valid phone number format.
+             */
+            value: string;
+        }>;
     };
     headers: {
         /**
@@ -139,36 +144,42 @@ export type PostApiAuthenticatorStorefrontUsersData = {
         Accept: string;
     };
     path?: never;
-    query?: {
-        /**
-         * Defines whether the storefront user should recover their password via an external service (`true`) or define a new password on first login (`false`, default).
-         */
-        isLegacyPassword?: boolean;
-    };
+    query?: never;
     url: '/api/authenticator/storefront/users';
 };
 
 export type PostApiAuthenticatorStorefrontUsersErrors = {
     /**
-     * Bad Request - Invalid request or identifier type.
+     * Bad Request
+     *
+     * Invalid request format, missing required fields, or unsupported identifier type.
      */
     400: {
+        /**
+         * Error message describing what went wrong.
+         */
         error?: string;
     };
     /**
-     * Unauthorized - Invalid access token.
+     * Unauthorized
+     *
+     * Invalid or missing authentication credentials.
      */
     401: unknown;
     /**
-     * Forbidden - Insufficient permissions.
+     * Forbidden
+     *
+     * Insufficient permissions to create users.
      */
     403: unknown;
     /**
-     * Conflict - User already exists.
+     * Conflict
+     *
+     * One or more of the provided identifiers already exist for another user.
      */
     409: {
         /**
-         * Error message.
+         * Error message indicating which identifier already exists.
          */
         error?: string;
     };
@@ -178,6 +189,8 @@ export type PostApiAuthenticatorStorefrontUsersError = PostApiAuthenticatorStore
 
 export type PostApiAuthenticatorStorefrontUsersResponses = {
     /**
+     * Created
+     *
      * User created successfully.
      */
     201: {
@@ -185,6 +198,10 @@ export type PostApiAuthenticatorStorefrontUsersResponses = {
          * Unique user identifier (GUID).
          */
         userId?: string;
+        /**
+         * Primary identifier used for the user (typically the first one provided in the request).
+         */
+        identifier?: string;
     };
 };
 
@@ -214,7 +231,9 @@ export type GetApiVtexidPvtUserInfoData = {
 
 export type GetApiVtexidPvtUserInfoErrors = {
     /**
-     * Unauthorized - Not authenticated.
+     * Unauthorized
+     *
+     * Not authenticated.
      */
     401: unknown;
 };
@@ -334,7 +353,7 @@ export type PostApiVtexidAudienceWebstoreProviderOauthExchangeData = {
 
 export type PostApiVtexidAudienceWebstoreProviderOauthExchangeResponses = {
     /**
-     * 200 - OK
+     * OK
      */
     200: {
         /**
@@ -519,15 +538,21 @@ export type PatchApiVtexidApikeyByApiKeyApitokenRenewData = {
 
 export type PatchApiVtexidApikeyByApiKeyApitokenRenewErrors = {
     /**
-     * Invalid API key or API key not owned by tenant
+     * Bad Request
+     *
+     * Invalid API key or API key not owned by tenant.
      */
     400: unknown;
     /**
-     * Conflict - Already has a renewed token pending
+     * Conflict
+     *
+     * Already has a renewed token pending.
      */
     409: unknown;
     /**
-     * Unknown server error
+     * Internal Server Error
+     *
+     * Unknown server error.
      */
     500: unknown;
 };
@@ -580,15 +605,21 @@ export type PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalData = {
 
 export type PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalErrors = {
     /**
-     * Invalid API key or API key not owned by tenant
+     * Bad Request
+     *
+     * Invalid API key or API key not owned by tenant.
      */
     400: unknown;
     /**
-     * No renewed API token was found
+     * Not Found
+     *
+     * No renewed API token was found.
      */
     404: unknown;
     /**
-     * Unknown server error
+     * Internal Server Error
+     *
+     * Unknown server error.
      */
     500: unknown;
 };
@@ -639,7 +670,9 @@ export type GetApiVtexidPvtUserIdData = {
 
 export type GetApiVtexidPvtUserIdErrors = {
     /**
-     * Unauthorized. Invalid or missing VtexIdclientAutCookie.
+     * Unauthorized
+     *
+     * Invalid or missing VtexIdclientAutCookie.
      */
     401: unknown;
 };
@@ -762,7 +795,7 @@ export type PostApiVtexidPubAuthenticationAccesskeySendData = {
 
 export type PostApiVtexidPubAuthenticationAccesskeySendErrors = {
     /**
-     * Bad request
+     * Bad Request
      */
     400: {
         /**
@@ -809,7 +842,7 @@ export type PostApiVtexidPubAuthenticationAccesskeyValidateData = {
 
 export type PostApiVtexidPubAuthenticationAccesskeyValidateErrors = {
     /**
-     * Bad request
+     * Bad Request
      */
     400: ValidateSessionResponse;
 };

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAutocompleteSuggestionsData, GetAutocompleteSuggestionsResponses, GetBannersByFacetsData, GetBannersByFacetsResponses, GetCorrectionSearchData, GetCorrectionSearchResponses, GetFacetsByFacetsData, GetFacetsByFacetsResponses, GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyData, GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponses, GetProductSearchByFacetsData, GetProductSearchByFacetsErrors, GetProductSearchByFacetsResponses, GetSearchSuggestionsData, GetSearchSuggestionsResponses, GetTopSearchesData, GetTopSearchesResponses } from './types.gen';
+import type { GetAutocompleteSuggestionsData, GetAutocompleteSuggestionsResponses, GetBannersByFacetsData, GetBannersByFacetsResponses, GetCorrectionSearchData, GetCorrectionSearchResponses, GetFacetsByFacetsData, GetFacetsByFacetsResponses, GetPickupPointAvailabilityByFacetsData, GetPickupPointAvailabilityByFacetsResponses, GetProductSearchByFacetsData, GetProductSearchByFacetsErrors, GetProductSearchByFacetsResponses, GetSearchSuggestionsData, GetSearchSuggestionsResponses, GetTopSearchesData, GetTopSearchesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -84,6 +84,8 @@ export const getSearchSuggestions = <ThrowOnError extends boolean = false>(optio
  *
  * Lists the active products for a given query.
  *
+ * >⚠️ **Required facet:** Only the `trade-policy` facet is required in the path. All other facets (such as `productClusterIds`, `category`, `color`, etc.) are optional filters that can be used to narrow down the search results. When no additional facets are provided, all products for the trade policy will be returned.
+ *
  * >⚠️ When possible, use the store's production domain in the URL (for example, `https://apiexamples.com/api/io/_v/api/intelligent-search`) for a better performance. This is particularly important for headless integrations. In case it's not possible to use the store's production URL, prefer using `https://{accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search`.
  *
  * ## Permissions
@@ -110,7 +112,9 @@ export const getFacetsByFacets = <ThrowOnError extends boolean = false>(options:
 /**
  * Get pickup point availability for Delivery Promise
  *
- * Retrieves the list of available pickup points with their IDs, distances, addresses, and business hours. This endpoint returns pickup points based on product availability (product cluster/collection), sorted by distance from the provided coordinates.
+ * Retrieves the list of available pickup points with their IDs, distances, addresses, and business hours. This endpoint returns pickup points sorted by distance from the provided coordinates.
+ *
+ * >⚠️ **Required facet:** Only the `tradePolicy` (trade policy/sales channel) facet is required. All product filters, including `productClusterIds`, are optional and can be provided as query parameters to narrow down the results. When no product filters are provided, all available pickup points for the trade policy will be returned.
  *
  * >ℹ️ This endpoint is designed for use in [Delivery Promise for headless stores](https://developers.vtex.com/docs/guides/delivery-promise-for-headless-stores) implementations. It provides the complete list of pickup points required as a mandatory dependency for the [Delivery Promise feature](https://help.vtex.com/en/docs/tutorials/delivery-promise-beta). The system displays all available pickup points within the 50 km radius configured in Checkout when customers select pickup in the header or a specific pickup point.
  *
@@ -123,4 +127,4 @@ export const getFacetsByFacets = <ThrowOnError extends boolean = false>(options:
  *
  * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
  */
-export const getPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicy = <ThrowOnError extends boolean = false>(options: Options<GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyData, ThrowOnError>) => (options.client ?? client).get<GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponses, unknown, ThrowOnError>({ url: '/pickup-point-availability/productClusterIds/{productClusterIds}/trade-policy/{tradePolicy}', ...options });
+export const getPickupPointAvailabilityByFacets = <ThrowOnError extends boolean = false>(options: Options<GetPickupPointAvailabilityByFacetsData, ThrowOnError>) => (options.client ?? client).get<GetPickupPointAvailabilityByFacetsResponses, unknown, ThrowOnError>({ url: '/pickup-point-availability/{facets}', ...options });

@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Creates a new Storefront user profile in the Profile System with personal data and addresses.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -52,7 +52,7 @@ export const postApiProfileSystemPvtProfiles = <ThrowOnError extends boolean = f
  *
  * Saves a new card token to the Card Token Vault.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -75,7 +75,7 @@ export const postApiCardTokenVaultTokens = <ThrowOnError extends boolean = false
  *
  * Adds items to the orderForm.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -98,7 +98,7 @@ export const postApiCheckoutPubOrderFormByOrderFormIdItems = <ThrowOnError exten
  *
  * Attaches client profile data to the orderForm.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -121,7 +121,7 @@ export const postApiCheckoutPubOrderFormByOrderFormIdAttachmentsClientProfileDat
  *
  * Initiates the authentication process for a user.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -142,7 +142,7 @@ export const postApiVtexidPubAuthenticationStartlogin = <ThrowOnError extends bo
  *
  * Validates user credentials and returns authentication cookies.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -164,7 +164,7 @@ export const postApiVtexidPubAuthenticationClassicValidate = <ThrowOnError exten
  *
  * Attaches payment information to the orderForm.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -193,7 +193,7 @@ export const postApiCheckoutPubOrderFormByOrderFormIdAttachmentsPaymentData = <T
  *
  * Processes the order and creates a transaction.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -216,7 +216,7 @@ export const postApiCheckoutPubOrderFormByOrderFormIdTransaction = <ThrowOnError
  *
  * Retrieves detailed information about a specific transaction.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -239,7 +239,7 @@ export const getApiPvtTransactionsByTransactionId = <ThrowOnError extends boolea
  *
  * Retrieves a list of payments associated with a transaction.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -262,7 +262,7 @@ export const getApiPvtTransactionsByTransactionIdPayments = <ThrowOnError extend
  *
  * Retrieves card information by account ID.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -285,7 +285,7 @@ export const getApiPvtAccountsByAccountId = <ThrowOnError extends boolean = fals
  *
  * Retrieves the list of cards associated with a profile.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *
@@ -308,7 +308,7 @@ export const getApiProfileSystemPvtProfilesByProfileIdVcsCheckout = <ThrowOnErro
  *
  * Deletes personal data for a specific profile.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ This endpoint must use the `accountAuthCookie` value generated from the [Validate client login](https://developers.vtex.com/docs/api-reference/checkout-custom-card-payment-api#post-/api/vtexid/pub/authentication/classic/validate) endpoint.
  *

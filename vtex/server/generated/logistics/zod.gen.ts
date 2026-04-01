@@ -6,137 +6,55 @@ import * as z from 'zod';
  * Pickup point information.
  */
 export const zPickupPoint = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Pickup point name displayed to customers at checkout.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Pickup point description displayed to customers at checkout.'
-    })),
-    instructions: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Instructions for customers when collecting their package.'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    description: z.optional(z.string()),
+    instructions: z.optional(z.string()),
     formatted_address: z.optional(z.union([
         z.string(),
         z.null()
     ])),
     address: z.optional(z.object({
-        postalCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address postal code.'
-        })),
+        postalCode: z.optional(z.string()),
         country: z.optional(z.object({
-            acronym: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Three-digit country code of the pickup point address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Country name of the pickup point address.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Information about the pickup point address country.'
+            acronym: z.optional(z.string()),
+            name: z.optional(z.string())
         })),
-        city: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address city.'
-        })),
-        state: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address state.'
-        })),
-        neighborhood: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address neighborhood.'
-        })),
-        street: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address street.'
-        })),
-        number: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address number.'
-        })),
-        complement: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pickup point address complement.'
-        })),
-        reference: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reference point to help the customer find the pickup point.'
-        })),
+        city: z.optional(z.string()),
+        state: z.optional(z.string()),
+        neighborhood: z.optional(z.string()),
+        street: z.optional(z.string()),
+        number: z.optional(z.string()),
+        complement: z.optional(z.string()),
+        reference: z.optional(z.string()),
         location: z.optional(z.object({
-            latitude: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Latitude coordinate.'
-            })),
-            longitude: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Longitude coordinate.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Pickup point address geolocation coordinates.'
+            latitude: z.optional(z.number()),
+            longitude: z.optional(z.number())
         }))
-    }).register(z.globalRegistry, {
-        description: 'Pickup point address information.'
     })),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the pickup point is active (`true`) or inactive (`false`).'
-    })),
-    distance: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Pickup point configured distance.'
-    })),
-    seller: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Seller that corresponds to the pickup point.'
-    })),
-    _sort: z.optional(z.array(z.number().register(z.globalRegistry, {
-        description: 'Pickup point sort information.'
-    })).register(z.globalRegistry, {
-        description: 'Sort array.'
-    })),
+    isActive: z.optional(z.boolean()),
+    distance: z.optional(z.number()),
+    seller: z.optional(z.string()),
+    _sort: z.optional(z.array(z.number())),
     businessHours: z.optional(z.array(z.object({
-        dayOfWeek: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Day of the week identification, as in `1` = Monday, `2` = Tuesday, `3` = Wednesday, `4` = Thursday, and `5` = Friday.'
-        })),
-        openingTime: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Opening time in `HH:MM:SS` format.'
-        })),
-        closingTime: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Closing time in `HH:MM:SS` format.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Business hours configurations from Monday to Friday.'
-    })).register(z.globalRegistry, {
-        description: 'Pickup point business hours configurations.'
-    })),
-    tagsLabel: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Pickup point tag label.'
-    })).register(z.globalRegistry, {
-        description: 'Tags that identify a group of pickup points.'
-    })),
+        dayOfWeek: z.optional(z.int()),
+        openingTime: z.optional(z.string()),
+        closingTime: z.optional(z.string())
+    }))),
+    tagsLabel: z.optional(z.array(z.string())),
     pickupHolidays: z.optional(z.array(z.object({
-        date: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Holiday date and time, in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`.'
-        })),
-        hourBegin: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Holiday beginning time in `HH:MM` format.'
-        })),
-        hourEnd: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Holiday ending time in `HH:MM` format.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Holiday information.'
-    })).register(z.globalRegistry, {
-        description: '[Holidays](https://help.vtex.com/en/tutorial/registering-holidays--2ItOthSEAoyAmcwsuiO6Yk) configured for the pickup point.'
-    })),
-    isThirdPartyPickup: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the pickup point is third-party (`true`) or not (`false`).'
-    })),
-    accountOwnerName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Account owner name.'
-    })),
-    accountOwnerId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Account owner ID.'
-    })),
-    parentAccountName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Parent account name.'
-    })),
+        date: z.optional(z.string()),
+        hourBegin: z.optional(z.string()),
+        hourEnd: z.optional(z.string())
+    }))),
+    isThirdPartyPickup: z.optional(z.boolean()),
+    accountOwnerName: z.optional(z.string()),
+    accountOwnerId: z.optional(z.string()),
+    parentAccountName: z.optional(z.string()),
     originalId: z.optional(z.union([
         z.string(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Pickup point information.'
 });
 
 /**
@@ -158,34 +76,16 @@ export const zListDocksById = z.object({
         ])),
         address: z.optional(z.union([
             z.object({
-                postalCode: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address postal code.'
-                })),
+                postalCode: z.optional(z.string()),
                 country: z.optional(z.object({
-                    acronym: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Three-digit country code of the pickup point address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-                    })),
-                    name: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Country name of the pickup point address.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Information about the pickup point address country.'
+                    acronym: z.optional(z.string()),
+                    name: z.optional(z.string())
                 })),
-                city: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address city.'
-                })),
-                state: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address state.'
-                })),
-                neighborhood: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address neighborhood.'
-                })),
-                street: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address street.'
-                })),
-                number: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point address number.'
-                })),
+                city: z.optional(z.string()),
+                state: z.optional(z.string()),
+                neighborhood: z.optional(z.string()),
+                street: z.optional(z.string()),
+                number: z.optional(z.string()),
                 complement: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -195,14 +95,8 @@ export const zListDocksById = z.object({
                     z.null()
                 ])),
                 location: z.optional(z.object({
-                    latitude: z.optional(z.number().register(z.globalRegistry, {
-                        description: 'Latitude coordinate.'
-                    })),
-                    longitude: z.optional(z.number().register(z.globalRegistry, {
-                        description: 'Longitude coordinate.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Pickup point address geolocation coordinates.'
+                    latitude: z.optional(z.number()),
+                    longitude: z.optional(z.number())
                 }))
             }),
             z.null()
@@ -231,75 +125,37 @@ export const zListDocksById = z.object({
             z.string(),
             z.null()
         ])),
-        isThirdPartyPickup: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the pickup was third party (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Information about a loading dock that was transformed into a [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
+        isThirdPartyPickup: z.optional(z.boolean())
     })),
     storeId: z.optional(z.union([
         z.string(),
         z.null()
     ])),
     pickupInStoreInfo: z.optional(z.object({
-        isActice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the physical store is a pickup point (`true`) or not (`false`).'
-        })),
+        isActice: z.optional(z.boolean()),
         additionalInfo: z.optional(z.union([
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Information about the physical store as a pickup point.'
     })),
     deliveryFromStoreInfo: z.optional(z.object({
-        isActice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the settings for delivery from physical stores are active (`true`) or inactive (`false`).'
-        })),
-        deliveryRadius: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Delivery radius.'
-        })),
-        deliveryFee: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Delivery fee.'
-        })),
-        deliveryTime: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Delivery time in the format `DD.HH:MM:SS`.'
-        })),
-        maximumWeight: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Delivery maximum weight.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Settings for delivery from a physical store.'
+        isActice: z.optional(z.boolean()),
+        deliveryRadius: z.optional(z.number()),
+        deliveryFee: z.optional(z.number()),
+        deliveryTime: z.optional(z.string()),
+        maximumWeight: z.optional(z.number())
     })),
     address: z.optional(z.object({
-        postalCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address postal code.'
-        })),
+        postalCode: z.optional(z.string()),
         country: z.optional(z.object({
-            acronym: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Three-digit country code of the loading dock address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Country name of the loading dock address.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Information about the loading dock address country.'
+            acronym: z.optional(z.string()),
+            name: z.optional(z.string())
         })),
-        city: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address city.'
-        })),
-        state: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address state.'
-        })),
-        neighborhood: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address neighborhood.'
-        })),
-        street: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address street.'
-        })),
-        number: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Loading dock address number.'
-        })),
+        city: z.optional(z.string()),
+        state: z.optional(z.string()),
+        neighborhood: z.optional(z.string()),
+        street: z.optional(z.string()),
+        number: z.optional(z.string()),
         complement: z.optional(z.union([
             z.string(),
             z.null()
@@ -309,282 +165,124 @@ export const zListDocksById = z.object({
             z.null()
         ])),
         location: z.optional(z.object({
-            latitude: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Latitude coordinate.'
-            })),
-            longitude: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Longitude coordinate.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Loading dock address geolocation coordinates.'
+            latitude: z.optional(z.number()),
+            longitude: z.optional(z.number())
         }))
-    }).register(z.globalRegistry, {
-        description: 'Loading dock address.'
     })),
     location: z.optional(z.union([
         z.object({
-            zipCode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Loading dock address postal code.'
-            })),
-            country: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Three-digit country code of the loading dock address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-            })),
+            zipCode: z.optional(z.string()),
+            country: z.optional(z.string()),
             inStore: z.optional(z.object({
-                IsCheckedIn: z.optional(z.boolean().register(z.globalRegistry, {
-                    description: 'Defines if orders can be placed via [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc) (`true`) or not (`false`).'
-                })),
+                IsCheckedIn: z.optional(z.boolean()),
                 StoreId: z.optional(z.union([
                     z.string(),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Information related to orders made via [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc).'
             }))
         }),
         z.null()
     ])),
     shippingRatesProviders: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Shipping rates.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
     deliveryAgreementsIds: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Delivery agreements IDs.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Loading dock name.'
-    })),
-    priority: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Value from `0` to `10` used as a tie-breaking rule for loading dock selecting. The greater the priority, the greater the possibility of the loading dock being chosen in [shipping calculation](https://help.vtex.com/en/tutorial/how-shipping-calculation-works--tutorials_116). When no priority was set, it corresponds to `0`.'
-    })),
-    dockTimeFake: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) processing time in the format `D.HH:MM:SS`. When not configured, it returns `00:00:00`.'
-    })),
-    timeFakeOverhead: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Time frame used to choose a loading dock when there is more than one loading dock with the same processing time. The lower the value entered in this field, the greater the possibility of the loading dock being chosen. \r\n>ℹ️ This field is not considered when calculating the delivery time.'
-    })),
-    salesChannels: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Sales channel ID.'
-    })).register(z.globalRegistry, {
-        description: 'Sales channels ([trade policies](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) associated with the loading dock.'
-    })),
-    salesChannel: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Main sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) associated with the loading dock.'
-    })),
-    freightTableIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Freight table ID.'
-    })).register(z.globalRegistry, {
-        description: 'List with freight table IDs associated with the loading dock.'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    priority: z.optional(z.int()),
+    dockTimeFake: z.optional(z.string()),
+    timeFakeOverhead: z.optional(z.string()),
+    salesChannels: z.optional(z.array(z.string())),
+    salesChannel: z.optional(z.string()),
+    freightTableIds: z.optional(z.array(z.string())),
     wmsEndPoint: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the loading dock is active (`true`) or inactive (`false`).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Loading dock information.'
+    isActive: z.optional(z.boolean())
 });
 
 /**
  * Information about the [capacity reservation](https://help.vtex.com/en/tutorial/managing-delivery-capacity--2y217FQZCjD0I1n62yxVcz) of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).
  */
 export const zDeliveryCapacity = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Capacity reservation ID generated by the request.'
-    })),
-    resourceId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Combined string `carrier@{capacityType}@{shippingPolicyId}` used in the request.'
-    })),
-    startDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Starting date and time of the period considered for the request, in the format `YYYY-MM-DDTHH:MM:SSZ`. The time zone is set according to the store account.'
-    })),
-    endDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Ending date and time of the period considered for the request, in the format `YYYY-MM-DDTHH:MM:SSZ`. The time zone is set according to the store account.'
-    })),
-    ownMaxCapacity: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Delivery capacity available, which is the total capacity minus the reserved orders or items, according to the capacity type set.'
-    })),
-    resourceMaxCapacity: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Maximum delivery capacity of orders or items.'
-    })),
-    reservedValue: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Orders or items reserved from the delivery capacity.'
-    })),
+    id: z.optional(z.string()),
+    resourceId: z.optional(z.string()),
+    startDate: z.optional(z.string()),
+    endDate: z.optional(z.string()),
+    ownMaxCapacity: z.optional(z.number()),
+    resourceMaxCapacity: z.optional(z.number()),
+    reservedValue: z.optional(z.number()),
     reservations: z.optional(z.array(z.object({
-        id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reservation ID.'
-        })),
-        value: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Reservation number of items or orders, according to the capacity type set.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Reservation details.'
-    })).register(z.globalRegistry, {
-        description: 'List of [reservations](https://help.vtex.com/en/tutorial/how-does-reservation-work--tutorials_92).'
-    })),
+        id: z.optional(z.string()),
+        value: z.optional(z.number())
+    }))),
     log: z.optional(z.array(z.object({
-        when: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Delivery capacity alteration date and time, in the format `YYYY-MM-DDTHH:MM:SSZ`. The time zone is set according to the store account.'
-        })),
-        who: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Who altered the delivery capacity.'
-        })),
-        why: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reason for the alteration.'
-        })),
-        what: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Situation of the corresponding [delivery window](https://help.vtex.com/en/tutorial/scheduled-delivery--22g3HAVCGLFiU7xugShOBi#delivery-window), which can be `Blocked` or `Unblocked`.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Log information.'
-    })).register(z.globalRegistry, {
-        description: 'System processing information.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Information about the [capacity reservation](https://help.vtex.com/en/tutorial/managing-delivery-capacity--2y217FQZCjD0I1n62yxVcz) of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+        when: z.optional(z.string()),
+        who: z.optional(z.string()),
+        why: z.optional(z.string()),
+        what: z.optional(z.string())
+    })))
 });
 
 /**
  * Details about a given shipping policy.
  */
 export const zShippingPolicy = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) ID.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) name.'
-    })),
-    shippingMethod: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Type of shipping available for this shipping policy (carrier). Options are shown on [shipping simulation](https://help.vtex.com/en/tutorial/shipping-simulation--tutorials_144).'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    shippingMethod: z.optional(z.string()),
     weekendAndHolidays: z.optional(z.object({
-        saturday: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if shipping on Saturdays is valid (`true`) or not (`false`).'
-        })),
-        sunday: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if shipping on Sundays is valid (`true`) or not (`false`).'
-        })),
-        holiday: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if shipping on holidays is valid (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'If the shipping policy includes deliveries on weekends and holidays.'
+        saturday: z.optional(z.boolean()),
+        sunday: z.optional(z.boolean()),
+        holiday: z.optional(z.boolean())
     })),
     maxDimension: z.optional(z.object({
-        largestMeasure: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Largest measure acceptable of the package.'
-        })),
-        maxMeasureSum: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Limit for the sum of all maximum measures of the package.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Object containing attributes of maximum dimension permitted by the shipping policy (carrier).'
+        largestMeasure: z.optional(z.number()),
+        maxMeasureSum: z.optional(z.number())
     })),
-    numberOfItemsPerShipment: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Determines the number of items allowed per shipment.'
-    })),
-    minimumValueAceptable: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Minimum value accepted by the carrier for delivering.'
-    })),
-    maximumValueAceptable: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Maximum value accepted by the carrier for delivering.'
-    })),
-    additionalTime: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Additional time configured in `HH:MM:SS` format.'
-    })),
+    numberOfItemsPerShipment: z.optional(z.int()),
+    minimumValueAceptable: z.optional(z.number()),
+    maximumValueAceptable: z.optional(z.number()),
+    additionalTime: z.optional(z.string()),
     additionalPrice: z.optional(z.object({
-        method: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Additional price method.'
-        })),
-        value: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Payment value.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Additional price object.'
+        method: z.optional(z.int()),
+        value: z.optional(z.number())
     })),
     deliveryScheduleSettings: z.optional(z.object({
-        useDeliverySchedule: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the scheduled delivery configuration is active (`true`) or not (`false`).'
-        })),
-        maxRangeDelivery: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Range of days available within a delivery window, for the customer to choose the scheduled delivery. For example, if the configured `maxRangeDelivery` is equal `7`, and the customer buys something on a Tuesday, the options for scheduled delivery will be shown until the following Tuesday (7 days from the purchase day). If no options are available within the `maxRangeDelivery` set, the shipping policy will not be shown on the checkout.'
-        })),
+        useDeliverySchedule: z.optional(z.boolean()),
+        maxRangeDelivery: z.optional(z.number()),
         dayOfWeekForDelivery: z.optional(z.array(z.object({
-            dayOfWeek: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Day of the week, from `0` (Sunday) to `6` (Saturday).'
-            })),
+            dayOfWeek: z.optional(z.int()),
             deliveryRanges: z.optional(z.array(z.object({
-                startTime: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Start time for day of the week in `hh:mm:ss` format.'
-                })),
-                endTime: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'End time for day of the week in `hh:mm:ss` format.'
-                })),
-                listPrice: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'List price for day of the week.'
-                })),
+                startTime: z.optional(z.string()),
+                endTime: z.optional(z.string()),
+                listPrice: z.optional(z.number()),
                 deliveryCapacity: z.optional(z.union([
                     z.array(z.object({
-                        capacityType: z.optional(z.string().register(z.globalRegistry, {
-                            description: 'Defines how the delivery capacity is measured for this reservation window, by maximum number of orders (`ORDERS_QUANTITY`) or items (`SKUS_QUANTITY`).'
-                        })),
-                        maxValue: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Maximum number of orders or SKUs that the store is capable of fulfilling.'
-                        }))
-                    }).register(z.globalRegistry, {
-                        description: 'Object with the maximum delivery capacity for a reservation window.'
+                        capacityType: z.optional(z.string()),
+                        maxValue: z.optional(z.number())
                     })),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Reservation window for scheduled delivery object.'
-            })).register(z.globalRegistry, {
-                description: 'Reservation window for scheduled delivery.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Selected days for delivery objects.'
-        })).register(z.globalRegistry, {
-            description: 'Selected days for delivery, from `0` (Sunday) to `6` (Saturday).'
-        })),
+            })))
+        }))),
         dayOfWeekBlockeds: z.optional(z.union([
-            z.array(z.string().register(z.globalRegistry, {
-                description: 'Date and time of the blocked day in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss`.'
-            })),
+            z.array(z.string()),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: '[Scheduled delivery](https://help.vtex.com/en/tutorial/scheduled-delivery--22g3HAVCGLFiU7xugShOBi) settings.'
     })),
     carrierSchedule: z.optional(z.array(z.object({
-        dayOfWeek: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Day of the week from `0` (Sunday) to `6` (Saturday).'
-        })),
-        timeLimit: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Time limit in `HH:MM:SS` format.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Carrier schedule for configuring the shipping policy object.'
-    })).register(z.globalRegistry, {
-        description: 'Schedule sent by the carrier to configure the shipping policy.'
-    })),
+        dayOfWeek: z.optional(z.int()),
+        timeLimit: z.optional(z.string())
+    }))),
     cubicWeightSettings: z.optional(z.object({
-        volumetricFactor: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Factor that will be used on the cubic weight calculation, usually given by the carrier.'
-        })),
-        minimunAcceptableVolumetricWeight: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Packages\' minimum acceptable [volumetric weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Settings for the cubic weight of a package, which accounts for the [package\'s volume](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128), and not only weight.'
+        volumetricFactor: z.optional(z.number()),
+        minimunAcceptableVolumetricWeight: z.optional(z.number())
     })),
     modalSettings: z.optional(z.object({
         modals: z.optional(z.array(z.enum([
@@ -598,25 +296,13 @@ export const zShippingPolicy = z.object({
             'TIRES',
             'WHITE_GOODS',
             'FIREARMS'
-        ]).register(z.globalRegistry, {
-            description: 'Modal values assigned to the special freight.'
-        })).register(z.globalRegistry, {
-            description: 'Type of special freight.'
-        })),
-        useOnlyItemsWithDefinedModal: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When set as `true`, the modal\'s configurations will apply only for items with a defined modal, when `false`, the modal configuration will not be set.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Configurations for the [modal](https://help.vtex.com/en/tutorial/how-does-the-modal-work--tutorials_125), which is the attachement of a specific product to a carrier specialized in delivering that type of product.'
+        ]))),
+        useOnlyItemsWithDefinedModal: z.optional(z.boolean())
     })),
     businessHourSettings: z.optional(z.object({
         carrierBusinessHours: z.optional(z.array(z.object({
-            openingTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Opening time in `HH:MM:SS` format.'
-            })),
-            closingTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Closing time in `HH:MM:SS` format.'
-            })),
+            openingTime: z.optional(z.string()),
+            closingTime: z.optional(z.string()),
             dayOfWeek: z.optional(z.union([
                 z.literal(0),
                 z.literal(1),
@@ -625,43 +311,17 @@ export const zShippingPolicy = z.object({
                 z.literal(4),
                 z.literal(5),
                 z.literal(6)
-            ]).register(z.globalRegistry, {
-                description: 'Day of the week from `0` (Sunday) to `6` (Saturday).'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Business hours configurations for a single day of the week.'
-        })).register(z.globalRegistry, {
-            description: 'Business hours configurations array for the days of the week.'
-        })),
-        isOpenOutsideBusinessHours: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if deliveries outside business hours are allowed (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Business hours configurations.'
+            ]))
+        }))),
+        isOpenOutsideBusinessHours: z.optional(z.boolean())
     })),
     pickupPointsSettings: z.optional(z.object({
-        pickupPointIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Pickup point ID.'
-        })).register(z.globalRegistry, {
-            description: 'Pickup point IDs configured for the shipping policy.'
-        })),
-        pickupPointTags: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Tag identification.'
-        })).register(z.globalRegistry, {
-            description: 'Pickup points tags configured for the shipping policy.'
-        })),
-        sellers: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Sellers IDS.'
-        })).register(z.globalRegistry, {
-            description: 'Sellers associated with [pickup points](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) related to the shipping policy.'
-        }))
-    }).register(z.globalRegistry, {
-        description: '[Pickup points](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) configurations of the shipping policy.'
+        pickupPointIds: z.optional(z.array(z.string())),
+        pickupPointTags: z.optional(z.array(z.string())),
+        sellers: z.optional(z.array(z.string()))
     })),
     processingStatus: z.optional(z.object({
-        status: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Shipping policy processing status code.'
-        })),
+        status: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
         errorMessage: z.optional(z.union([
             z.string(),
             z.null()
@@ -670,154 +330,82 @@ export const zShippingPolicy = z.object({
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Shipping policy processing status.'
     })),
-    deliveryChannel: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines if the shipping type is `delivery` or `pickup`.'
-    })),
-    calculationType: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Shipping policy calculation type.'
-    })),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the shipping policy is active (`true`) or not (`false`).'
-    })),
+    deliveryChannel: z.optional(z.string()),
+    calculationType: z.optional(z.int()),
+    isActive: z.optional(z.boolean()),
     lastIndexedAt: z.optional(z.union([
         z.string(),
         z.null()
     ])),
     shippingHoursSettings: z.optional(z.object({
         shippingHours: z.optional(z.array(z.object({
-            dayOfWeek: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Day of the week from `0` (Sunday) to `6` (Saturday).'
-            })),
-            openingTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Opening time in `hh:mm:ss` format.'
-            })),
-            closingTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Closing time in `hh:mm:ss` format.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with details on shipping hours settings.'
-        })).register(z.globalRegistry, {
-            description: 'Shipping hours settings array.'
-        })),
-        acceptOrdersOutsideShippingHours: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the configuration that allows accepting orders outside shipping hours is active (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipping hours settings configurations.'
+            dayOfWeek: z.optional(z.int()),
+            openingTime: z.optional(z.string()),
+            closingTime: z.optional(z.string())
+        }))),
+        acceptOrdersOutsideShippingHours: z.optional(z.boolean())
     })),
     carrierInfo: z.optional(z.object({
-        carrierAccountName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'VTEX store account name related to the shipping policy.'
-        })),
+        carrierAccountName: z.optional(z.string()),
         deliveryAgreementId: z.optional(z.union([
             z.string(),
             z.null()
         ])),
         linkedDocks: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Loading dock ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Loading dock name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Loading dock object.'
-        })).register(z.globalRegistry, {
-            description: 'Shipping policy [loading docks](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) valid for the carrier.'
-        })),
-        readyToUse: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if shipping configurations related to the carrier make them ready for shipping (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: '[Carrier](https://help.vtex.com/en/tutorial/carriers-on-vtex--7u9duMD5UQa2QQwukAWMcE) information.'
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        readyToUse: z.optional(z.boolean())
     }))
-}).register(z.globalRegistry, {
-    description: 'Details about a given shipping policy.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zDeleteApiLogisticsPvtShippingPoliciesByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'ID of the shipping policy.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zGetApiLogisticsPvtShippingPoliciesByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutApiLogisticsPvtShippingPoliciesByIdData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: '[Shipping policy]((https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) name.'
-        }),
-        shippingMethod: z.string().register(z.globalRegistry, {
-            description: 'Type of shipping available for this shipping policy (carrier). Options are shown on [shipping simulation](https://help.vtex.com/en/tutorial/shipping-simulation--tutorials_144).'
-        }),
-        deliveryOnWeekends: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the delivery on weekends configuration is active (`true`) or not (`false`).'
-        }),
+        name: z.string(),
+        shippingMethod: z.string(),
+        deliveryOnWeekends: z.boolean(),
         maxDimension: z.object({
-            largestMeasure: z.number().register(z.globalRegistry, {
-                description: 'Largest measure acceptable of the package.'
-            }),
-            maxMeasureSum: z.number().register(z.globalRegistry, {
-                description: 'Sum of all maximum measures of the package.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Object containing attributes of maximum dimension permitted by the shipping policy (carrier).'
+            largestMeasure: z.number(),
+            maxMeasureSum: z.number()
         }),
         cubicWeightSettings: z.optional(z.object({
-            volumetricFactor: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Factor that will be used on the cubic weight calculation, usually given by the carrier.'
-            })),
-            minimunAcceptableVolumetricWeight: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Packages\' minimum acceptable [volumetric weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Settings for the cubic weight of a package, which accounts for the [package\'s volume](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128), and not only weight.'
+            volumetricFactor: z.optional(z.number()),
+            minimunAcceptableVolumetricWeight: z.optional(z.number())
         })),
         modalSettings: z.optional(z.object({
             modals: z.optional(z.array(z.enum([
@@ -831,27 +419,13 @@ export const zPutApiLogisticsPvtShippingPoliciesByIdData = z.object({
                 'TIRES',
                 'WHITE_GOODS',
                 'FIREARMS'
-            ]).register(z.globalRegistry, {
-                description: 'Modal values assigned to the special freight.'
-            })).register(z.globalRegistry, {
-                description: 'Type of special freight.'
-            })),
-            useOnlyItemsWithDefinedModal: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'When set as `true`, the modal\'s configurations will apply only for items with a defined modal, when `false`, the modal configuration will not be set.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Configurations for the [modal](https://help.vtex.com/en/tutorial/how-does-the-modal-work--tutorials_125), which is the attachement of a specific product to a carrier specialized in delivering that type of product.'
+            ]))),
+            useOnlyItemsWithDefinedModal: z.optional(z.boolean())
         })),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the shipping policy is active (`true`) or inactive (`false`).'
-        }),
+        isActive: z.boolean(),
         deliveryScheduleSettings: z.optional(z.object({
-            useDeliverySchedule: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the scheduled delivery configuration is active (`true`) or inactive (`false`).'
-            }),
-            maxRangeDelivery: z.number().register(z.globalRegistry, {
-                description: 'Range of days available within a delivery window, for the customer to choose the scheduled delivery. For example, if the configured maxRangeDelivery is equal 7, and the customer buys something on a Tuesday, the options for scheduled delivery will be shown until the following Tuesday (7 days from the purchase day). If no options are available within the maxRangeDelivery set, this shipping policy won\'t be shown on the checkout.'
-            }),
+            useDeliverySchedule: z.boolean(),
+            maxRangeDelivery: z.number(),
             dayOfWeekForDelivery: z.array(z.object({
                 dayOfWeek: z.union([
                     z.literal(0),
@@ -861,58 +435,26 @@ export const zPutApiLogisticsPvtShippingPoliciesByIdData = z.object({
                     z.literal(4),
                     z.literal(5),
                     z.literal(6)
-                ]).register(z.globalRegistry, {
-                    description: 'Day of the week, from `0` (Sunday) to `6` (Saturday).'
-                }),
+                ]),
                 deliveryRanges: z.array(z.object({
-                    startTime: z.string().register(z.globalRegistry, {
-                        description: 'Start time for day of the week.'
-                    }),
-                    endTime: z.string().register(z.globalRegistry, {
-                        description: 'End time for day of the week.'
-                    }),
-                    listPrice: z.number().register(z.globalRegistry, {
-                        description: 'List price for day of the week.'
-                    }),
+                    startTime: z.string(),
+                    endTime: z.string(),
+                    listPrice: z.number(),
                     deliveryCapacity: z.optional(z.array(z.object({
-                        capacityType: z.string().register(z.globalRegistry, {
-                            description: 'Defines how the delivery capacity is measured for this reservation window, by maximum number of orders (`"ORDERS_QUANTITY"`) or SKUs (`"SKUS_QUANTITY"`).'
-                        }),
-                        maxValue: z.number().register(z.globalRegistry, {
-                            description: 'Maximum number of orders or SKUs that the store is capable of fulfilling.'
-                        })
-                    }).register(z.globalRegistry, {
-                        description: 'Delivery capacity object.'
-                    })).register(z.globalRegistry, {
-                        description: 'Sets maximum delivery capacity for a given reservation window for scheduled delivery.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Delivery ranges object.'
-                })).register(z.globalRegistry, {
-                    description: 'Reservation windows for scheduled delivery.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Configuration for delivery for a single day of the week.'
-            })).register(z.globalRegistry, {
-                description: 'Select the chosen days of the week for delivery, from `0` (sunday) to `6` (saturday). Make sure to add the available hours, as shown in the example.'
-            })
-        }).register(z.globalRegistry, {
-            description: '[Scheduled delivery](https://help.vtex.com/en/tutorial/scheduled-delivery--22g3HAVCGLFiU7xugShOBi) settings.'
+                        capacityType: z.string(),
+                        maxValue: z.number()
+                    })))
+                }))
+            }))
         }))
     })),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Shipping policy ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
@@ -920,133 +462,55 @@ export const zGetApiLogisticsPvtShippingPoliciesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of the starting page of the response. When no value is sent, it starts in page `1`.'
-        })),
-        perPage: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Desired number of items per page, to retrieve information from your shipping policies.'
-        }))
+        page: z.optional(z.int()),
+        perPage: z.optional(z.int())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zPostApiLogisticsPvtShippingPoliciesData = z.object({
     body: z.optional(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'ID of the shipping policy.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the shipping policy.'
-        }),
-        shippingMethod: z.string().register(z.globalRegistry, {
-            description: 'Type of shipping available for this shipping policy (carrier). Options shown on freight simulation.'
-        }),
+        id: z.string(),
+        name: z.string(),
+        shippingMethod: z.string(),
         weekendAndHolidays: z.object({
-            saturday: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the shipping policy allows deliveries on Saturdays (`true`), or not (`false`).'
-            }),
-            sunday: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the shipping policy allows deliveries on Sundays (`true`), or not (`false`).'
-            }),
-            holiday: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the shipping policy allows deliveries on holidays (`true`), or not (`false`).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'If the shipping policy includes deliveries on weekends and holidays.'
+            saturday: z.boolean(),
+            sunday: z.boolean(),
+            holiday: z.boolean()
         }),
         maxDimension: z.object({
-            largestMeasure: z.number().register(z.globalRegistry, {
-                description: 'Largest measure of the package.'
-            }),
-            maxMeasureSum: z.number().register(z.globalRegistry, {
-                description: 'Sum of all maximum measures of the package.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Object containing attributes of maximum dimension permitted by the shipping policy (carrier).'
+            largestMeasure: z.number(),
+            maxMeasureSum: z.number()
         }),
-        numberOfItemsPerShipment: z.int().register(z.globalRegistry, {
-            description: 'Capacity of your store\'s logistics of shipment, determines number of items permitted per shipment.'
-        }),
-        minimumValueAceptable: z.number().register(z.globalRegistry, {
-            description: 'Minimum value accepted by the carrier, to realize the shipping.'
-        }),
-        maximumValueAceptable: z.number().register(z.globalRegistry, {
-            description: 'Maximum value accepted by the carrier, to realize the shipping.'
-        }),
+        numberOfItemsPerShipment: z.int(),
+        minimumValueAceptable: z.number(),
+        maximumValueAceptable: z.number(),
         deliveryScheduleSettings: z.object({
-            useDeliverySchedule: z.boolean().register(z.globalRegistry, {
-                description: 'Select the Scheduled Delivery configuration.'
-            }),
-            maxRangeDelivery: z.number().register(z.globalRegistry, {
-                description: 'Range of days available within a delivery window, for the customer to choose the scheduled delivery. For example, if the configured maxRangeDelivery is equal 7, and the customer buys something on a Tuesday, the options for scheduled delivery will be shown until the following Tuesday (7 days from the purchase day). If no options are available within the maxRangeDelivery set, this shipping policy won\'t be shown on the checkout.'
-            }),
+            useDeliverySchedule: z.boolean(),
+            maxRangeDelivery: z.number(),
             dayOfWeekForDelivery: z.array(z.object({
-                dayOfWeek: z.int().register(z.globalRegistry, {
-                    description: 'Day of the week, from `0` (sunday) to `6` (saturday).'
-                }),
+                dayOfWeek: z.int(),
                 deliveryRanges: z.array(z.object({
-                    startTime: z.string().register(z.globalRegistry, {
-                        description: 'Start time for day of the week.'
-                    }),
-                    endTime: z.string().register(z.globalRegistry, {
-                        description: 'End time for day of the week.'
-                    }),
-                    listPrice: z.number().register(z.globalRegistry, {
-                        description: 'List price for day of the week.'
-                    }),
+                    startTime: z.string(),
+                    endTime: z.string(),
+                    listPrice: z.number(),
                     deliveryCapacity: z.optional(z.array(z.object({
-                        capacityType: z.string().register(z.globalRegistry, {
-                            description: 'Defines how the delivery capacity is measured for this reservation window, by maximum number of orders (`"ORDERS_QUANTITY"`) or SKUs (`"SKUS_QUANTITY"`).'
-                        }),
-                        maxValue: z.number().register(z.globalRegistry, {
-                            description: 'Maximum number of orders or SKUs that the store is capable of fulfilling.'
-                        })
-                    }).register(z.globalRegistry, {
-                        description: 'Delivery capacity object.'
-                    })).register(z.globalRegistry, {
-                        description: 'Sets maximum delivery capacity for a given reservation window for scheduled delivery.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Delivery ranges object.'
-                })).register(z.globalRegistry, {
-                    description: 'Reservation windows for scheduled delivery.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Day of the week for delivery object.'
-            })).register(z.globalRegistry, {
-                description: 'Select the chosen days for delivery. Values for each day of the week are: `0` = Sunday, `1` = Monday, `2` = Tuesday, `3` = Wednesday, `4` = Thursday, `5` = Friday, `6` = Saturday. Make sure to add the available hours for the chosen days, following the example.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Settings for the Scheduled Delivery feature.'
+                        capacityType: z.string(),
+                        maxValue: z.number()
+                    })))
+                }))
+            }))
         }),
         carrierSchedule: z.optional(z.array(z.object({
-            dayOfWeek: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Day of the week, from `0` (sunday) to `6` (saturday).'
-            })),
-            timeLimit: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Time limit.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Carrier schedule object.'
-        })).register(z.globalRegistry, {
-            description: 'Schedule sent by the carrier to configure the shipping policy.'
-        })),
+            dayOfWeek: z.optional(z.int()),
+            timeLimit: z.optional(z.string())
+        }))),
         cubicWeightSettings: z.object({
-            volumetricFactor: z.number().register(z.globalRegistry, {
-                description: 'Factor that will be used on the cubic weight calculation.'
-            }),
-            minimunAcceptableVolumetricWeight: z.number().register(z.globalRegistry, {
-                description: 'Packages\' minimum acceptable [volumetric weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Measure including the [package\'s volume](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128), and not only weight.'
+            volumetricFactor: z.number(),
+            minimunAcceptableVolumetricWeight: z.number()
         }),
         modalSettings: z.object({
             modals: z.array(z.enum([
@@ -1060,210 +524,106 @@ export const zPostApiLogisticsPvtShippingPoliciesData = z.object({
                 'TIRES',
                 'WHITE_GOODS',
                 'FIREARMS'
-            ]).register(z.globalRegistry, {
-                description: 'Modal values assigned to the special freight.'
-            })).register(z.globalRegistry, {
-                description: 'Type of special freight.'
-            }),
-            useOnlyItemsWithDefinedModal: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the modal\'s configurations will apply only for items with a defined modal (`true`) or not (`false`).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Configurations for the [modal](https://help.vtex.com/en/tutorial/how-does-the-modal-work--tutorials_125), which is the attachement of a specific product to a carrier specialized in delivering that type of product.'
+            ])),
+            useOnlyItemsWithDefinedModal: z.boolean()
         }),
         businessHourSettings: z.object({
             carrierBusinessHours: z.array(z.object({
-                openingTime: z.string().register(z.globalRegistry, {
-                    description: 'Opening time.'
-                }),
-                closingTime: z.string().register(z.globalRegistry, {
-                    description: 'Closing time.'
-                }),
-                dayOfWeek: z.int().register(z.globalRegistry, {
-                    description: 'Day of the week, from `0` (Sunday) to `6` (Saturday).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Carrier business hours configurations for a day of the week.'
-            })).register(z.globalRegistry, {
-                description: 'Carrier business hours configurations for the week.'
-            }),
-            isOpenOutsideBusinessHours: z.boolean().register(z.globalRegistry, {
-                description: 'Select whether the shipping policy allows deliveries outside business hours (`true`) or not (`false`).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Business hours configurations.'
+                openingTime: z.string(),
+                closingTime: z.string(),
+                dayOfWeek: z.int()
+            })),
+            isOpenOutsideBusinessHours: z.boolean()
         }),
         pickupPointsSettings: z.union([
             z.object({
-                pickupPointIds: z.array(z.string().register(z.globalRegistry, {
-                    description: 'Pickup point IDs.'
-                })).register(z.globalRegistry, {
-                    description: 'Insert the IDs for pickup points previously configured in your store.'
-                }),
-                pickupPointTags: z.array(z.string().register(z.globalRegistry, {
-                    description: 'Tag IDs.'
-                })).register(z.globalRegistry, {
-                    description: 'Insert the tags for pickup points previously configured in your store.'
-                }),
-                sellers: z.array(z.string().register(z.globalRegistry, {
-                    description: 'Seller names.'
-                })).register(z.globalRegistry, {
-                    description: 'Sellers that will be associated with the [pickup points](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) of the shipping policy being created.'
-                })
+                pickupPointIds: z.array(z.string()),
+                pickupPointTags: z.array(z.string()),
+                sellers: z.array(z.string())
             }),
             z.null()
         ]),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the shipping policy is active (`true`) or not (`false`).'
-        })
+        isActive: z.boolean()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zCreateUpdateFreightValuesData = z.object({
     body: z.optional(z.array(z.object({
-        absoluteMoneyCost: z.string().register(z.globalRegistry, {
-            description: 'Fixed shipping cost to be charged in a decimal number.'
-        }),
-        country: z.string().register(z.globalRegistry, {
-            description: 'Three letter ISO code for the country where the delivery will take place.'
-        }),
-        maxVolume: z.int().register(z.globalRegistry, {
-            description: 'Maximum volume that can be transported by the carrier in cm³.'
-        }),
-        operationType: z.int().register(z.globalRegistry, {
-            description: 'Indicates desired action for the object. Possible values are `1` (Insert), `2` (Update) or `3`(Delete).'
-        }),
-        pricePercent: z.int().register(z.globalRegistry, {
-            description: '[Price-based additional shipping charge](https://help.vtex.com/en/tutorial/additional-shipping-costs--2vqGwMn0LabkOHY6zSHYNV), calculated based on the total price of the order, in decimal number. You must fill in this field with a percentage value. For example, for an additional charge of 10%, fill in the table with 10.'
-        }),
-        pricePercentByWeight: z.int().register(z.globalRegistry, {
-            description: '[Weight-based additional shipping charge](https://help.vtex.com/en/tutorial/additional-shipping-costs--2vqGwMn0LabkOHY6zSHYNV), calculated based on the total weight of the order.'
-        }),
-        timeCost: z.string().register(z.globalRegistry, {
-            description: 'Delivery time frame informed by the carrier, in the format `DD.HH:MM:SS`.'
-        }),
-        weightEnd: z.int().register(z.globalRegistry, {
-            description: 'Maximum weight allowed.'
-        }),
-        weightStart: z.int().register(z.globalRegistry, {
-            description: 'Minimum weight allowed.'
-        }),
-        zipCodeEnd: z.string().register(z.globalRegistry, {
-            description: 'End of postal code interval.'
-        }),
-        zipCodeStart: z.string().register(z.globalRegistry, {
-            description: 'Start of postal code interval.'
-        }),
-        polygon: z.string().register(z.globalRegistry, {
-            description: 'Polygon ID, according to the [geolocation](https://help.vtex.com/en/tutorial/registering-geolocation/) feature.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Freight interval object.'
-    })).register(z.globalRegistry, {
-        description: 'Array of objects, each containing information on a specific freight interval.'
-    })),
+        absoluteMoneyCost: z.string(),
+        country: z.string(),
+        maxVolume: z.int(),
+        operationType: z.int(),
+        pricePercent: z.int(),
+        pricePercentByWeight: z.int(),
+        timeCost: z.string(),
+        weightEnd: z.int(),
+        weightStart: z.int(),
+        zipCodeEnd: z.string(),
+        zipCodeStart: z.string(),
+        polygon: z.string()
+    }))),
     path: z.object({
-        carrierId: z.string().register(z.globalRegistry, {
-            description: 'Carrier ID.'
-        })
+        carrierId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zFreightValuesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        carrierId: z.string().register(z.globalRegistry, {
-            description: 'Carrier ID.'
-        }),
-        cep: z.string().register(z.globalRegistry, {
-            description: 'Postal code of the area in which you wish to retrieve freight values for a given carrier, according to your [shipping rate template](https://help.vtex.com/en/tutorial/shipping-rate-template--tutorials_127) configurations.'
-        })
+        carrierId: z.string(),
+        cep: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zRetrieveBlockedDeliveryWindowsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        carrierId: z.string().register(z.globalRegistry, {
-            description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) ID (carrier ID).'
-        })
+        carrierId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zAddBlockedDeliveryWindowsData = z.object({
-    body: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Delivery window block starting date and time in the format `YYYY-MM-DDTHH:MM:SS`. The time zone is set according to the store account. Requests with incorrect values will be disconsidered by the system (for example, a date in the past), regardless of a successful response.'
-    })),
+    body: z.optional(z.string()),
     path: z.object({
-        carrierId: z.string().register(z.globalRegistry, {
-            description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) ID (carrier ID).'
-        })
+        carrierId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zRemoveBlockedDeliveryWindowsData = z.object({
-    body: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time of the delivery window block being removed, in the format `YYYY-MM-DDTHH:MM:SS`. The time zone is set according to the store account.'
-    })),
+    body: z.optional(z.string()),
     path: z.object({
-        carrierId: z.string().register(z.globalRegistry, {
-            description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) ID (carrier ID).'
-        })
+        carrierId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1272,173 +632,93 @@ export const zAllDocksData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateUpdateDockData = z.object({
     body: z.optional(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Loading dock name.'
-        }),
-        priority: z.int().register(z.globalRegistry, {
-            description: 'Value used as a tie-breaking rule when selecting a loading dock.'
-        }),
-        dockTimeFake: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) processing time in the format `D.HH:MM:SS`. When not configured, it returns `00:00:00`.'
-        }),
-        timeFakeOverhead: z.string().register(z.globalRegistry, {
-            description: 'Time frame used to choose a loading dock when there is more than one loading dock with the same processing time. The lower the value entered in this field, the greater the possibility of the loading dock being chosen. \r\n>ℹ️ This field is not considered when calculating the delivery time.'
-        }),
-        salesChannels: z.array(z.string().register(z.globalRegistry, {
-            description: 'Sales channel (trade policy) numbers.'
-        })).register(z.globalRegistry, {
-            description: 'Sales channels ([trade policies](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) to associate with the loading dock.'
-        }),
-        salesChannel: z.string().register(z.globalRegistry, {
-            description: 'Main sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) to associate with the loading dock.'
-        }),
-        freightTableIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'Freight table IDs.'
-        })).register(z.globalRegistry, {
-            description: 'List with freight table IDs.'
-        }),
+        id: z.string(),
+        name: z.string(),
+        priority: z.int(),
+        dockTimeFake: z.string(),
+        timeFakeOverhead: z.string(),
+        salesChannels: z.array(z.string()),
+        salesChannel: z.string(),
+        freightTableIds: z.array(z.string()),
         wmsEndPoint: z.union([
             z.string(),
             z.null()
         ]),
         address: z.object({
-            postalCode: z.string().register(z.globalRegistry, {
-                description: 'Dock address postal code.'
-            }),
+            postalCode: z.string(),
             country: z.object({
-                acronym: z.string().register(z.globalRegistry, {
-                    description: 'Three letter ISO code for the dock address country.'
-                }),
-                name: z.string().register(z.globalRegistry, {
-                    description: 'Dock address country name.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Dock address country object.'
+                acronym: z.string(),
+                name: z.string()
             }),
-            city: z.string().register(z.globalRegistry, {
-                description: 'Dock address city.'
-            }),
-            state: z.string().register(z.globalRegistry, {
-                description: 'Dock address state.'
-            }),
-            neighborhood: z.string().register(z.globalRegistry, {
-                description: 'Dock address neighborhood.'
-            }),
-            street: z.string().register(z.globalRegistry, {
-                description: 'Dock address street.'
-            }),
-            number: z.string().register(z.globalRegistry, {
-                description: 'Dock address number.'
-            }),
-            complement: z.string().register(z.globalRegistry, {
-                description: 'Dock address complement.'
-            }),
-            coordinates: z.array(z.array(z.number().register(z.globalRegistry, {
-                description: 'Longitude or latitude.'
-            })).register(z.globalRegistry, {
-                description: 'Geolocation coordinates, first longitude then latitude.'
-            })).register(z.globalRegistry, {
-                description: 'Dock address geolocation coordinates.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Dock address object.'
+            city: z.string(),
+            state: z.string(),
+            neighborhood: z.string(),
+            street: z.string(),
+            number: z.string(),
+            complement: z.string(),
+            coordinates: z.array(z.array(z.number()))
         })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDockData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        })
+        dockId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDockByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        })
+        dockId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zActivateDockData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        })
+        dockId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeactivateDockData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        })
+        dockId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1447,474 +727,278 @@ export const zAllWarehousesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateUpdateWarehouseData = z.object({
     body: z.optional(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Warehouse ID.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Warehouse name.'
-        }),
+        id: z.string(),
+        name: z.string(),
         warehouseDocks: z.array(z.object({
-            dockId: z.string().register(z.globalRegistry, {
-                description: 'Loading dock ID.'
-            }),
-            name: z.string().register(z.globalRegistry, {
-                description: 'Loading dock name.'
-            }),
-            time: z.string().register(z.globalRegistry, {
-                description: 'Loading dock processing time in the format `D.HH:MM:SS`. When it was not configured, it returns `00:00:00`.'
-            }),
-            cost: z.string().register(z.globalRegistry, {
-                description: 'Extra charges added to the shipping rate when **Additional shipping costs** are configured.'
-            }),
-            translateDays: z.string().register(z.globalRegistry, {
-                description: 'Translate days.'
-            }),
-            costToDisplay: z.string().register(z.globalRegistry, {
-                description: 'Cost to display.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Loading dock details.'
-        })).register(z.globalRegistry, {
-            description: 'List of [loading docks](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) to associate with the warehouse.'
-        }),
-        priority: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Optional configuration of the warehouse priority. When no priority was set, it corresponds to `0`.'
+            dockId: z.string(),
+            name: z.string(),
+            time: z.string(),
+            cost: z.string(),
+            translateDays: z.string(),
+            costToDisplay: z.string()
         })),
-        isActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the warehous is active (`true`) or not (`false`).'
-        }))
-    }).register(z.globalRegistry, {
-        description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) to be created or updated.'
+        priority: z.optional(z.int()),
+        isActive: z.optional(z.boolean())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zRemoveWarehouseData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        })
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zWarehouseByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        })
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zActivateWarehouseData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        })
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeactivateWarehouseData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        })
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zInventoryBySkuData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'Every SKU has a unique identifier called SKU ID.'
-        })
+        skuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zInventoryperwarehouseData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU unique identifier.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'Warehouse ID is the unique identifier of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
-        })
+        skuId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zUpdateInventoryBySkuandWarehouseData = z.object({
     body: z.optional(z.object({
-        quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Quantity of SKU units you wish to update the [inventory](https://help.vtex.com/tutorial/inventory-management--tutorials_139) in the given [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb). Note that:\r\n\r\n- Sending it as `null` sets the quantity to `0`.\r\n\r\n- Not sending it sets the quantity to `0`.\r\n\r\n- Sending `unlimitedQuantity` as `true` overrules the `quantity`.'
-        }),
-        unlimitedQuantity: z.boolean().register(z.globalRegistry, {
-            description: 'When set as `true`, you make the SKU from the given warehouse permanently available for sales. No matter how many units are sold, the default quantity of `1000000` units does not decrease, and the store never runs out of stock. When set as `false`, every sold unit will decrease your inventory quantity. Note that:\r\n\r\n- Sending this field as `null` sets the value to `false`.\r\n\r\n- Not sending this field sets the value to `false`.\r\n\r\n- Sending this field as `true` overrules the `quantity` field.'
-        }),
-        dateUtcOnBalanceSystem: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Defines the date and time of the warehouse when the SKU was updated. This can be useful for liberating handling order [reservations](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92), for example. The format is [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`. \r\nWhen the value is `null` or empty, the default will be the date and time of the request being made.'
-        })),
-        leadTime: z.string().register(z.globalRegistry, {
-            description: 'Defines the [lead time](https://help.vtex.com/en/tutorial/lead-time-shipping-time-at-sku-level--16yv5Mkj6bTyWR1hCN2f4B), which is an optional time configuration you can make for a SKU in a warehouse. It can be handling time, fabrication or how long it takes for the item to be available to be shipped to customers.\r\n\r\nThe lead time is a part of the total shipping time and will be considered for shipping date calculation.\r\n\r\nThe format is `dd.hh:mm:ss` (days.hours:minutes:seconds). Note that:\r\n\r\n- Sending this field as `null` sets the value to `0`.\r\n\r\n- Not sending this field sets the value to `0`.'
-        })
+        quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        unlimitedQuantity: z.boolean(),
+        dateUtcOnBalanceSystem: z.optional(z.string()),
+        leadTime: z.string()
     })),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU you wish to update.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) of the SKU you wish to update.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityData = z.object({
     body: z.optional(z.object({
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Number of items you wish to update in your [inventory](https://help.vtex.com/en/tutorial/inventory-management--tutorials_139) for a SKU from a given warehouse. \r\n\r\nNote that sending the field `unlimitedQuantity` as `true` overrules the `quantity`.'
-        }),
-        unlimitedQuantity: z.boolean().register(z.globalRegistry, {
-            description: 'When set as `false`, every sold unit decreases the item\'s available quantity. When set as `true`, the SKU from the warehouse is always available for sale. No matter how many units are sold, the SKU available quantity never decreases, and the SKU is never out of stock. \r\n\r\nNote that sending this field as `true` overrules the `quantity`.'
-        }),
-        dateUtcOnBalanceSystem: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Defines the date and time of the warehouse when the SKU was updated. This can be useful for liberating handling order [reservations](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92), for example. \r\n\r\nThe format is [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`. When the value is `null` or empty, the default will be the date and time of the when the request being made.'
-        }))
+        quantity: z.int(),
+        unlimitedQuantity: z.boolean(),
+        dateUtcOnBalanceSystem: z.optional(z.string())
     })),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU you wish to update.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) of the SKU you wish to update.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeData = z.object({
     body: z.optional(z.object({
-        leadTime: z.string().register(z.globalRegistry, {
-            description: 'Defines the [lead time](https://help.vtex.com/en/tutorial/lead-time-shipping-time-at-sku-level--16yv5Mkj6bTyWR1hCN2f4B), a configuration for shipping time at SKU level. You can set a shipping period for a warehouse SKU, and this time will be added to the order\'s total shipping time. Note that: \r\n\r\n- The format is `DD.HH:MM:SS`, or `DD`. The endpoint allows configuring hours and minutes, but the UI only shows days. \r\n\r\n- If you mistake hours for days, the system will accept the value as days. For example, sending `78:00:00` updates the lead time to 78 days. \r\n\r\n- Sending an empty field or a value in an incorrect format will result in a `400 Bad Request`.'
-        })
+        leadTime: z.string()
     })),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU you wish to update.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) of the SKU you wish to update.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zInventoryperdockData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU unique identifier.'
-        }),
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        })
+        skuId: z.string(),
+        dockId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zInventoryperdockandwarehouseData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU unique identifier.'
-        }),
-        dockId: z.string().register(z.globalRegistry, {
-            description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        })
+        skuId: z.string(),
+        dockId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetinventorywithdispatchedreservationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.string().register(z.globalRegistry, {
-            description: 'SKU unique identifier called SKU ID. This field is an equivalent to `skuId`.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'Warehouse ID is the unique identifier of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
-        })
+        itemId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSupplyLotsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'ID of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) where the SKU is located.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        Accept: z.string(),
+        'Content-Type': z.string()
     })
 });
 
 export const zSaveSupplyLotData = z.object({
     body: z.optional(z.object({
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Supply lot quantity for a SKU from a [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
-        }),
-        dateOfSupplyUtc: z.string().register(z.globalRegistry, {
-            description: 'Date and time of when the SKU from the warehouse will have quantity and availability for sales again. The format is [ISO 8601 time zone offset](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`. Since it is a prevision, this field must be a future date.'
-        }),
-        keepSellingAfterExpiration: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the SKU from the warehouse should be available for sales after running _out-of-stock_ (`true`), or not (`false`).'
-        }))
+        quantity: z.int(),
+        dateOfSupplyUtc: z.string(),
+        keepSellingAfterExpiration: z.optional(z.boolean())
     })),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID being scheduled for availability for sales.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'ID of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) where the SKU will arrive.'
-        }),
-        supplyLotId: z.string().register(z.globalRegistry, {
-            description: 'ID of the supply lot of the SKU availability scheduling.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string(),
+        supplyLotId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zTransferSupplyLotData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'ID of the SKU.'
-        }),
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: 'ID of the [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) where the SKU is located.'
-        }),
-        supplyLotId: z.string().register(z.globalRegistry, {
-            description: 'ID of the supply lot in which the SKU is currently located and from where it will be transfered.'
-        })
+        skuId: z.string(),
+        warehouseId: z.string(),
+        supplyLotId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zHolidayData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        holidayId: z.string().register(z.globalRegistry, {
-            description: '[Holiday](https://help.vtex.com/en/tutorial/registering-holidays--2ItOthSEAoyAmcwsuiO6Yk) ID.'
-        })
+        holidayId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zHolidayByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        holidayId: z.string().register(z.globalRegistry, {
-            description: '[Holiday](https://help.vtex.com/en/tutorial/registering-holidays--2ItOthSEAoyAmcwsuiO6Yk) ID.'
-        })
+        holidayId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateUpdateHolidayData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: '[Holiday](https://help.vtex.com/en/tutorial/registering-holidays--2ItOthSEAoyAmcwsuiO6Yk) ID.'
-        }),
-        startDate: z.string().register(z.globalRegistry, {
-            description: 'Holiday starting date, in the format `YYYY-MM-DD`.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Holiday information.'
+        name: z.string(),
+        startDate: z.string()
     })),
     path: z.object({
-        holidayId: z.string().register(z.globalRegistry, {
-            description: '[Holiday](https://help.vtex.com/en/tutorial/registering-holidays--2ItOthSEAoyAmcwsuiO6Yk) ID.'
-        })
+        holidayId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
@@ -1923,44 +1007,28 @@ export const zAllHolidaysData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateReservationData = z.object({
     body: z.optional(z.object({
-        salesChannel: z.string().register(z.globalRegistry, {
-            description: 'Sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) valid for the reservation.'
-        }),
+        salesChannel: z.string(),
         lockId: z.union([
             z.string(),
             z.null()
         ]),
-        autorizationExpirationTTL: z.string().register(z.globalRegistry, {
-            description: 'Duration before expiring the reservation, in the format `DD.HH:MM:SS`.'
-        }),
+        autorizationExpirationTTL: z.string(),
         deliveryItemOptions: z.array(z.object({
             item: z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'SKU ID.'
-                }),
-                quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                    description: 'Quantity of items.'
-                }),
+                id: z.string(),
+                quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
                 kitItem: z.array(z.union([
                     z.string(),
                     z.null()
-                ])).register(z.globalRegistry, {
-                    description: '[Kit](https://help.vtex.com/en/tutorial/what-is-a-kit--5ov5s3eHM4AqAAgqWwoc28) items information, when applicable.'
-                }),
-                price: z.number().register(z.globalRegistry, {
-                    description: 'Item price.'
-                }),
+                ])),
+                price: z.number(),
                 modal: z.optional(z.enum([
                     'CHEMICALS',
                     'ELECTRONICS',
@@ -1972,71 +1040,29 @@ export const zCreateReservationData = z.object({
                     'TIRES',
                     'WHITE_GOODS',
                     'FIREARMS'
-                ]).register(z.globalRegistry, {
-                    description: 'Type of [modal](https://help.vtex.com/en/tutorial/how-the-modal-works--tutorials_125), a special freight.'
-                })),
-                additionalHandlingTime: z.string().register(z.globalRegistry, {
-                    description: 'Additional handling time in the format `DD.HH:MM:SS`.'
-                }),
+                ])),
+                additionalHandlingTime: z.string(),
                 dimension: z.object({
-                    weight: z.number().register(z.globalRegistry, {
-                        description: 'Item weight.'
-                    }),
-                    height: z.number().register(z.globalRegistry, {
-                        description: 'Item height.'
-                    }),
-                    width: z.number().register(z.globalRegistry, {
-                        description: 'Item width.'
-                    }),
-                    length: z.number().register(z.globalRegistry, {
-                        description: 'Item length.'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'Item dimensions.'
+                    weight: z.number(),
+                    height: z.number(),
+                    width: z.number(),
+                    length: z.number()
                 })
-            }).register(z.globalRegistry, {
-                description: 'Reserved item object.'
             }),
-            slaType: z.string().register(z.globalRegistry, {
-                description: 'SLA (Service Level Agreement) type.'
-            }),
-            slaTypeName: z.string().register(z.globalRegistry, {
-                description: 'SLA name.'
-            }),
-            listPrice: z.number().register(z.globalRegistry, {
-                description: 'List price.'
-            }),
-            promotionalPrice: z.number().register(z.globalRegistry, {
-                description: 'Promotion price.'
-            }),
-            transitTime: z.string().register(z.globalRegistry, {
-                description: 'Transit time in the format `DD.HH:MM:SS`.'
-            }),
-            dockTime: z.string().register(z.globalRegistry, {
-                description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) processing time in the format `D.HH:MM:SS`. When it was not configured, it returns `00:00:00`.'
-            }),
-            timeToDockPlusDockTime: z.string().register(z.globalRegistry, {
-                description: 'Time spent in loading dock plus `dockTime` in the format `D.HH:MM:SS`.'
-            }),
-            aditionalTimeBlockedDays: z.string().register(z.globalRegistry, {
-                description: 'Additional time blocked in the format `DD.HH:MM:SS`.'
-            }),
-            totalTime: z.string().register(z.globalRegistry, {
-                description: 'SLA total time in the format `DD.HH:MM:SS`.'
-            }),
+            slaType: z.string(),
+            slaTypeName: z.string(),
+            listPrice: z.number(),
+            promotionalPrice: z.number(),
+            transitTime: z.string(),
+            dockTime: z.string(),
+            timeToDockPlusDockTime: z.string(),
+            aditionalTimeBlockedDays: z.string(),
+            totalTime: z.string(),
             deliveryWindows: z.union([
                 z.array(z.object({
-                    startDateUtc: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Delivery window starting date and time, in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`.'
-                    })),
-                    endDateUtc: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Delivery window ending date and time, in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ss.ssZ`.'
-                    })),
-                    listPrice: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'List price.'
-                    }))
-                }).register(z.globalRegistry, {
-                    description: 'Delivery window details.'
+                    startDateUtc: z.optional(z.string()),
+                    endDateUtc: z.optional(z.string()),
+                    listPrice: z.optional(z.string())
                 })),
                 z.null()
             ]),
@@ -2044,152 +1070,94 @@ export const zCreateReservationData = z.object({
                 z.string(),
                 z.null()
             ]),
-            dockId: z.string().register(z.globalRegistry, {
-                description: 'Loading dock ID.'
-            }),
+            dockId: z.string(),
             location: z.object({
-                zipCode: z.string().register(z.globalRegistry, {
-                    description: 'Shipping address postal code.'
-                }),
-                country: z.string().register(z.globalRegistry, {
-                    description: 'Three-digit country code of the shipping address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-                }),
+                zipCode: z.string(),
+                country: z.string(),
                 inStore: z.object({
-                    IsCheckedIn: z.boolean().register(z.globalRegistry, {
-                        description: 'This field is set as `true` when the order was placed via [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc) and `false` when it was not.'
-                    }),
+                    IsCheckedIn: z.boolean(),
                     StoreId: z.union([
                         z.string(),
                         z.null()
                     ])
-                }).register(z.globalRegistry, {
-                    description: 'Information related to [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc).'
                 })
-            }).register(z.globalRegistry, {
-                description: 'Shipping location details.'
             })
-        }).register(z.globalRegistry, {
-            description: 'Reserved items information.'
-        })).register(z.globalRegistry, {
-            description: 'Array with information about reserved items.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Reservation sales channel information.'
+        }))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zReservationByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reservationId: z.string().register(z.globalRegistry, {
-            description: '[Reservation](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92) ID.'
-        })
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zConfirmReservationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reservationId: z.string().register(z.globalRegistry, {
-            description: '[Reservation](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92) ID.'
-        })
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zAcknowledgmentReservationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reservationId: z.string().register(z.globalRegistry, {
-            description: '[Reservation](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92) ID.'
-        })
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCancelReservationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reservationId: z.string().register(z.globalRegistry, {
-            description: '[Reservation](https://help.vtex.com/en/tutorial/how-the-reservation-works--tutorials_92) ID.'
-        })
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zReservationbyWarehouseandSkuData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        warehouseId: z.string().register(z.globalRegistry, {
-            description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
-        }),
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        warehouseId: z.string(),
+        skuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCalculateSlaData = z.object({
     body: z.optional(z.array(z.object({
         items: z.array(z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'SKU ID.'
-            }),
-            quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                description: 'SKU quantity.'
-            }),
+            id: z.string(),
+            quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
             price: z.optional(z.union([
                 z.number(),
                 z.null()
@@ -2205,76 +1173,36 @@ export const zCalculateSlaData = z.object({
                 'TIRES',
                 'WHITE_GOODS',
                 'FIREARMS'
-            ]).register(z.globalRegistry, {
-                description: '[Modal](https://help.vtex.com/en/tutorial/how-the-modal-works--tutorials_125) is a special freight.'
-            })),
-            additionalHandlingTime: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Additional handling time in the format `DD.HH:MM:SS`.'
-            })),
+            ])),
+            additionalHandlingTime: z.optional(z.string()),
             dimension: z.object({
-                weight: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'Item weight.'
-                })),
-                height: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'Item height.'
-                })),
-                width: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'Item width.'
-                })),
-                length: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'Item length.'
-                })),
-                maxSumDimension: z.optional(z.number().register(z.globalRegistry, {
-                    description: 'Maximum sum of dimensions.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Item dimensions.'
+                weight: z.optional(z.number()),
+                height: z.optional(z.number()),
+                width: z.optional(z.number()),
+                length: z.optional(z.number()),
+                maxSumDimension: z.optional(z.number())
             }),
             kitItem: z.optional(z.union([
                 z.array(z.object({
-                    id: z.string().register(z.globalRegistry, {
-                        description: 'Kit SKU ID.'
-                    }),
+                    id: z.string(),
                     groupItemId: z.optional(z.union([
                         z.string(),
                         z.null()
                     ])),
                     kitItem: z.optional(z.union([
-                        z.array(z.string().register(z.globalRegistry, {
-                            description: 'Kit items\' IDs.'
-                        })),
+                        z.array(z.string()),
                         z.null()
                     ])),
-                    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                        description: 'Kit SKU quantity.'
-                    }),
-                    price: z.optional(z.number().register(z.globalRegistry, {
-                        description: 'Kit SKU price.'
-                    })),
-                    additionalHandlingTime: z.optional(z.string().register(z.globalRegistry, {
-                        description: 'Kit item additional handling time in the format `DD.HH:MM:SS`.'
-                    })),
+                    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+                    price: z.optional(z.number()),
+                    additionalHandlingTime: z.optional(z.string()),
                     dimension: z.object({
-                        weight: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Kit item weight.'
-                        })),
-                        height: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Kit item height.'
-                        })),
-                        width: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Kit item width.'
-                        })),
-                        length: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Kit item length.'
-                        })),
-                        maxSumDimension: z.optional(z.number().register(z.globalRegistry, {
-                            description: 'Maximum sum of dimensions.'
-                        }))
-                    }).register(z.globalRegistry, {
-                        description: 'Kit item dimensions.'
+                        weight: z.optional(z.number()),
+                        height: z.optional(z.number()),
+                        width: z.optional(z.number()),
+                        length: z.optional(z.number()),
+                        maxSumDimension: z.optional(z.number())
                     })
-                }).register(z.globalRegistry, {
-                    description: 'Kit item object.'
                 })),
                 z.null()
             ])),
@@ -2286,56 +1214,30 @@ export const zCalculateSlaData = z.object({
                 z.string(),
                 z.null()
             ]))
-        }).register(z.globalRegistry, {
-            description: 'Item\'s information.'
-        })).register(z.globalRegistry, {
-            description: 'Items\' shipping conditions to calculate the Service Level Agreement (SLA).'
-        }),
+        })),
         location: z.object({
-            zipCode: z.string().register(z.globalRegistry, {
-                description: 'Shipping adress postal code.'
-            }),
-            country: z.string().register(z.globalRegistry, {
-                description: 'Three-digit country code of the shipping address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-            }),
-            point: z.optional(z.array(z.number().register(z.globalRegistry, {
-                description: 'Longitude or latitude.'
-            })).register(z.globalRegistry, {
-                description: 'Shipping address coordinates, first longitude then latitude.'
-            })),
+            zipCode: z.string(),
+            country: z.string(),
+            point: z.optional(z.array(z.number())),
             inStore: z.optional(z.object({
-                IsCheckedIn: z.optional(z.boolean().register(z.globalRegistry, {
-                    description: 'This field is set as `true` when the order is placed via [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc) and `false` when it is not.'
-                })),
+                IsCheckedIn: z.optional(z.boolean()),
                 StoreId: z.optional(z.union([
                     z.string(),
                     z.null()
                 ]))
-            }).register(z.globalRegistry, {
-                description: 'Information related to [VTEX Sales App](https://help.vtex.com/en/tracks/instore-getting-started-and-setting-up--zav76TFEZlAjnyBVL5tRc).'
             }))
-        }).register(z.globalRegistry, {
-            description: 'Shipping location information.'
         }),
-        salesChannel: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) valid for the SLA calculation.'
-        })),
+        salesChannel: z.optional(z.string()),
         deliveryChannel: z.optional(z.union([
             z.string(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Shipping conditions to calculate the Service Level Agreement (SLA).'
     }))),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2344,119 +1246,61 @@ export const zListAllPickupPpointsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        pickupPointId: z.string().register(z.globalRegistry, {
-            description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID.'
-        })
+        pickupPointId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        pickupPointId: z.string().register(z.globalRegistry, {
-            description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID.'
-        })
+        pickupPointId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateUpdatePickupPointData = z.object({
     body: z.optional(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID. Cannot contain spaces.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Pickup point name displayed to customers at checkout.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'Pickup point description.'
-        }),
-        instructions: z.string().register(z.globalRegistry, {
-            description: 'Pickup point instructions.'
-        }),
-        formatted_address: z.string().register(z.globalRegistry, {
-            description: 'Formatted address.'
-        }),
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        instructions: z.string(),
+        formatted_address: z.string(),
         address: z.object({
-            postalCode: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address postal code.'
-            }),
+            postalCode: z.string(),
             country: z.object({
-                acronym: z.string().register(z.globalRegistry, {
-                    description: 'Three-digit country code of the pickup point address, in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
-                }),
-                name: z.string().register(z.globalRegistry, {
-                    description: 'Country name of the pickup point address.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Information about the pickup point address country.'
+                acronym: z.string(),
+                name: z.string()
             }),
-            city: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address city.'
-            }),
-            state: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address state.'
-            }),
-            neighborhood: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address neighborhood.'
-            }),
-            street: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address street.'
-            }),
-            number: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address number.'
-            }),
-            complement: z.string().register(z.globalRegistry, {
-                description: 'Pickup point address complement.'
-            }),
-            reference: z.string().register(z.globalRegistry, {
-                description: 'Reference point to help the customer find the pickup point.'
-            }),
+            city: z.string(),
+            state: z.string(),
+            neighborhood: z.string(),
+            street: z.string(),
+            number: z.string(),
+            complement: z.string(),
+            reference: z.string(),
             location: z.object({
-                latitude: z.number().register(z.globalRegistry, {
-                    description: 'Latitude coordinate.'
-                }),
-                longitude: z.number().register(z.globalRegistry, {
-                    description: 'Longitude coordinate.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Pickup point address geolocation coordinates.'
+                latitude: z.number(),
+                longitude: z.number()
             })
-        }).register(z.globalRegistry, {
-            description: 'Pickup point address information.'
         }),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the pickup point is active (`true`) or inactive (`false`).'
-        }),
+        isActive: z.boolean(),
         businessHours: z.array(z.object({
             dayOfWeek: z.union([
                 z.literal(1),
@@ -2464,42 +1308,20 @@ export const zCreateUpdatePickupPointData = z.object({
                 z.literal(3),
                 z.literal(4),
                 z.literal(5)
-            ]).register(z.globalRegistry, {
-                description: 'Day of the week identification, as in `1` = Monday, `2` = Tuesday, `3` = Wednesday, `4` = Thursday, and `5` = Friday.'
-            }),
-            openingTime: z.string().register(z.globalRegistry, {
-                description: 'Opening time in `HH:MM:SS` format.'
-            }),
-            closingTime: z.string().register(z.globalRegistry, {
-                description: 'Closing time in `HH:MM:SS` format.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Business hours configurations from Monday to Friday.'
-        })).register(z.globalRegistry, {
-            description: 'Pickup point business hours configurations.'
-        }),
-        tagsLabel: z.array(z.string().register(z.globalRegistry, {
-            description: 'Pickup point tag label.'
-        })).register(z.globalRegistry, {
-            description: 'Tags that identify a group of pickup points.'
-        }),
-        isThirdPartyPickup: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the pickup point is third-party (`true`) or not (`false`).'
-        }))
+            ]),
+            openingTime: z.string(),
+            closingTime: z.string()
+        })),
+        tagsLabel: z.array(z.string()),
+        isThirdPartyPickup: z.optional(z.boolean())
     })),
     path: z.object({
-        pickupPointId: z.string().register(z.globalRegistry, {
-            description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID. Cannot contain spaces.'
-        })
+        pickupPointId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2507,23 +1329,13 @@ export const zGetpagedData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of the page of the response. When not informed, the default page returned is `1`, but you can use this parameter to retrieve a specific page. The response is limited to 100 pages.'
-        })),
-        pageSize: z.optional(z.int().lte(100).register(z.globalRegistry, {
-            description: 'Number of [pickup points](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) per page.'
-        })),
-        keyword: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Search pickup points by using a keyword.'
-        }))
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int().lte(100)),
+        keyword: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2531,144 +1343,82 @@ export const zPagedPolygonsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of the page of the response.'
-        })),
-        perPage: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of [polygons](https://help.vtex.com/en/tutorial/registering-geolocation--tutorials_138) per page.'
-        }))
+        page: z.optional(z.int()),
+        perPage: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateUpdatePolygonData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the [polygon](https://help.vtex.com/en/tutorial/registering-geolocation--tutorials_138) being created or updated.'
-        }),
+        name: z.string(),
         geoShape: z.object({
-            coordinates: z.array(z.array(z.array(z.number().register(z.globalRegistry, {
-                description: 'Longitude or latitude.'
-            })).register(z.globalRegistry, {
-                description: 'Polygon geolocation coordinates, first longitude then latitude.'
-            })).register(z.globalRegistry, {
-                description: 'Polygon geolocation coordinates. The first and the last pair of coordinates must be equal.'
-            })).register(z.globalRegistry, {
-                description: 'List of geolocation coordinates that make part of the polygon.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Polygon geolocation coordinates.'
+            coordinates: z.array(z.array(z.array(z.number())))
         })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeletePolygonData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        polygonName: z.string().register(z.globalRegistry, {
-            description: '[Polygon](https://help.vtex.com/en/tutorial/registering-geolocation--tutorials_138) ID (same as the polygon name).'
-        })
+        polygonName: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPolygonbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        polygonName: z.string().register(z.globalRegistry, {
-            description: '[Polygon](https://help.vtex.com/en/tutorial/registering-geolocation--tutorials_138) ID (same as the polygon name).'
-        })
+        polygonName: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        capacityType: z.string().register(z.globalRegistry, {
-            description: 'Defines how the [delivery capacity](https://help.vtex.com/en/tutorial/managing-delivery-capacity--2y217FQZCjD0I1n62yxVcz) is set in the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140), which can be by maximum number of orders (`orders_quantity`) or items (`skus_quantity`).'
-        }),
-        shippingPolicyId: z.string().register(z.globalRegistry, {
-            description: 'ID of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) being searched for capacity reservation.'
-        })
+        capacityType: z.string(),
+        shippingPolicyId: z.string()
     }),
     query: z.object({
-        rangeStart: z.string().register(z.globalRegistry, {
-            description: 'Starting date range in the format `YYYY-MM-DD`.'
-        }),
-        rangeEnd: z.string().register(z.globalRegistry, {
-            description: 'Ending date range in the format `YYYY-MM-DD`.'
-        })
+        rangeStart: z.string(),
+        rangeEnd: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string()
     })
 });
 
 export const zGetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesByWindowDayFbyWindowStartTimeTbyWindowEndTimeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        capacityType: z.string().register(z.globalRegistry, {
-            description: 'Defines how the [delivery capacity](https://help.vtex.com/en/tutorial/managing-delivery-capacity--2y217FQZCjD0I1n62yxVcz) is set in the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140), which can be by maximum number of orders (`orders_quantity`) or items (`skus_quantity`).'
-        }),
-        shippingPolicyId: z.string().register(z.globalRegistry, {
-            description: 'ID of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) being searched for capacity reservation.'
-        }),
-        windowDay: z.string().register(z.globalRegistry, {
-            description: 'Date of the [scheduled delivery window](https://help.vtex.com/en/tutorial/scheduled-delivery--22g3HAVCGLFiU7xugShOBi) being consulted for reservations. The format is `YYYY-MM-DD`.'
-        }),
-        windowStartTime: z.string().register(z.globalRegistry, {
-            description: 'Starting time of the scheduled delivery window being consulted for reservations. The format is `HHMM`.'
-        }),
-        windowEndTime: z.string().register(z.globalRegistry, {
-            description: 'Ending time of the scheduled delivery window being consulted for reservations. The format is `HHMM`.'
-        })
+        capacityType: z.string(),
+        shippingPolicyId: z.string(),
+        windowDay: z.string(),
+        windowStartTime: z.string(),
+        windowEndTime: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string()
     })
 });

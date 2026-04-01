@@ -6,286 +6,104 @@ import * as z from 'zod';
  * Array with information about a promotion.
  */
 export const zGetPromotions = z.array(z.object({
-    idCalculatorConfiguration: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Promotion ID.'
-    })),
-    lastModifiedUtc: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time when the promotion was last modified (UTC).'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Promotion Name.'
-    })),
-    beginDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Promotion Begin Date (UTC).'
-    })),
-    endDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Promotion End Date (UTC).'
-    })),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true` the promotion is activated. If set as `false` the promotion is deactivated.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Promotion internal description.'
-    })),
-    type: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the type of promotion.'
-    })),
-    utmSource: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmSource code.'
-    })),
-    utmCampain: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmCampaign code.'
-    })),
-    utmiCampaign: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmiCampaign code.'
-    })),
-    status: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Status of the promotion.'
-    })),
-    percentualTax: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Percentual tax applied.'
-    })),
-    isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true` the Promotion is archived. If set as `false` the Promotion is not archived.'
-    })),
-    hasMaxPricePerItem: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if there is a maximum price per item.'
-    })),
-    isTax: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if it is a tax.'
-    })),
-    campaigns: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Campaign Audience.'
-    })).register(z.globalRegistry, {
-        description: 'Campaign Audiences that activate this promotion.'
-    })),
-    activateGiftsMultiplier: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true`, it activates gifts Multiplier.'
-    })),
+    idCalculatorConfiguration: z.optional(z.string()),
+    lastModifiedUtc: z.optional(z.string()),
+    name: z.optional(z.string()),
+    beginDate: z.optional(z.string()),
+    endDate: z.optional(z.string()),
+    isActive: z.optional(z.boolean()),
+    description: z.optional(z.string()),
+    type: z.optional(z.string()),
+    utmSource: z.optional(z.string()),
+    utmCampain: z.optional(z.string()),
+    utmiCampaign: z.optional(z.string()),
+    status: z.optional(z.string()),
+    percentualTax: z.optional(z.number()),
+    isArchived: z.optional(z.boolean()),
+    hasMaxPricePerItem: z.optional(z.boolean()),
+    isTax: z.optional(z.boolean()),
+    campaigns: z.optional(z.array(z.string())),
+    activateGiftsMultiplier: z.optional(z.boolean()),
     scope: z.optional(z.object({
-        allCatalog: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Determines if the promotion applies to all products in the Catalog (`true`) or not (`false`).'
-        })),
-        skus: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of SKUs which activate or deactivate the promotion.'
-        })),
-        skusAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any SKU present on the `skus` field. If set to `false`, SKUs present on that field will make this promotion not to be applied.'
-        })),
-        products: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of products which activate or deactivate the promotion.'
-        })),
-        productsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any product present on the `products` field. If set to `false`, products present on that field will make this promotion not to be applied.'
-        })),
-        collections: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of collections which activate or deactivate the promotion.'
-        })),
-        collectionsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any collection present on the `collections` field. If set to `false`, collections present on that field will make this promotion not to be applied.'
-        })),
-        categories: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of categories which activate or deactivate the promotion.'
-        })),
-        categoriesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any category present on the `categories` field. If set to `false`, categories present on that field will make this promotion not to be applied.'
-        })),
-        brands: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of brands which activate or deactivate the promotion.'
-        })),
-        brandsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any brand present on the `brands` field. If set to `false`, brands present on that field will make this promotion not to be applied.'
-        })),
-        sellers: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of sellers which activate or deactivate the promotion.'
-        })),
-        sellersAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any seller present on the `sellers` field. If set to `false`, sellers present on that field will make this promotion not to be applied.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Scope of the promotion.'
+        allCatalog: z.optional(z.boolean()),
+        skus: z.optional(z.number()),
+        skusAreInclusive: z.optional(z.boolean()),
+        products: z.optional(z.number()),
+        productsAreInclusive: z.optional(z.boolean()),
+        collections: z.optional(z.number()),
+        collectionsAreInclusive: z.optional(z.boolean()),
+        categories: z.optional(z.number()),
+        categoriesAreInclusive: z.optional(z.boolean()),
+        brands: z.optional(z.number()),
+        brandsAreInclusive: z.optional(z.boolean()),
+        sellers: z.optional(z.number()),
+        sellersAreInclusive: z.optional(z.boolean())
     })),
-    maxUsage: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Defines how many times the promotion can be used.'
-    })),
-    idsSalesChannel: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Trade policy ID.'
-    })).register(z.globalRegistry, {
-        description: 'List of Trade Policies that activate this promotion.'
-    })),
-    areSalesChannelIdsExclusive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set to `false`, this promotion will be applied to any trade policies present on the `idsSalesChannel` field. If set to `true`, trade policies present on that field will make this promotion not to be applied.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with information about a promotion.'
-})).register(z.globalRegistry, {
-    description: 'Array with information about a promotion.'
-});
+    maxUsage: z.optional(z.number()),
+    idsSalesChannel: z.optional(z.array(z.string())),
+    areSalesChannelIdsExclusive: z.optional(z.boolean())
+}));
 
 /**
  * Array with taxes.
  */
 export const zGetTaxes = z.array(z.object({
-    idCalculatorConfiguration: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tax ID.'
-    })),
-    lastModifiedUtc: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date and time when the tax was last modified (UTC).'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tax name.'
-    })),
-    beginDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tax start date (UTC).'
-    })),
-    endDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tax end date (UTC).'
-    })),
-    isActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true` the tax is activated. If set as `false` the tax is deactivated.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tax internal description.'
-    })),
-    type: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the type of tax.'
-    })),
-    utmSource: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmSource code.'
-    })),
-    utmCampain: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmCampaign code.'
-    })),
-    utmiCampaign: z.optional(z.string().register(z.globalRegistry, {
-        description: 'utmiCampaign code.'
-    })),
-    status: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Status of the tax.'
-    })),
-    percentualTax: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Percentual tax applied.'
-    })),
-    isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true` the tax is archived. If set as `false` the tax is not archived.'
-    })),
-    hasMaxPricePerItem: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if there is a maximum price per item.'
-    })),
-    isTax: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if it is a tax.'
-    })),
-    campaigns: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Campaign.'
-    })).register(z.globalRegistry, {
-        description: 'Campaign Audiences that activate this promotion.'
-    })),
-    activateGiftsMultiplier: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set as `true`, it activates gifts Multiplier.'
-    })),
+    idCalculatorConfiguration: z.optional(z.string()),
+    lastModifiedUtc: z.optional(z.string()),
+    name: z.optional(z.string()),
+    beginDate: z.optional(z.string()),
+    endDate: z.optional(z.string()),
+    isActive: z.optional(z.boolean()),
+    description: z.optional(z.string()),
+    type: z.optional(z.string()),
+    utmSource: z.optional(z.string()),
+    utmCampain: z.optional(z.string()),
+    utmiCampaign: z.optional(z.string()),
+    status: z.optional(z.string()),
+    percentualTax: z.optional(z.number()),
+    isArchived: z.optional(z.boolean()),
+    hasMaxPricePerItem: z.optional(z.boolean()),
+    isTax: z.optional(z.boolean()),
+    campaigns: z.optional(z.array(z.string())),
+    activateGiftsMultiplier: z.optional(z.boolean()),
     scope: z.optional(z.object({
-        allCatalog: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Determines if the tax applies to all products in the Catalog (`true`) or not (`false`).'
-        })),
-        skus: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of SKUs which activate or deactivate the tax.'
-        })),
-        skusAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any SKU present on the `skus` field. If set to `false`, SKUs present on that field will make this tax not to be applied.'
-        })),
-        products: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of products which activate or deactivate the tax.'
-        })),
-        productsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any product present on the `products` field. If set to `false`, products present on that field will make this tax not to be applied.'
-        })),
-        collections: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of collections which activate or deactivate the tax.'
-        })),
-        collectionsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any collection present on the `collections` field. If set to `false`, collections present on that field will make this tax not to be applied.'
-        })),
-        categories: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of categories which activate or deactivate the tax.'
-        })),
-        categoriesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any category present on the `categories` field. If set to `false`, categories present on that field will make this tax not to be applied.'
-        })),
-        brands: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of brands which activate or deactivate the tax.'
-        })),
-        brandsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any brand present on the `brands` field. If set to `false`, brands present on that field will make this tax not to be applied.'
-        })),
-        sellers: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Quantity of sellers which activate or deactivate the tax.'
-        })),
-        sellersAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this tax will be applied to any seller present on the `sellers` field. If set to `false`, sellers present on that field will make this tax not to be applied.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Scope of the tax.'
+        allCatalog: z.optional(z.boolean()),
+        skus: z.optional(z.number()),
+        skusAreInclusive: z.optional(z.boolean()),
+        products: z.optional(z.number()),
+        productsAreInclusive: z.optional(z.boolean()),
+        collections: z.optional(z.number()),
+        collectionsAreInclusive: z.optional(z.boolean()),
+        categories: z.optional(z.number()),
+        categoriesAreInclusive: z.optional(z.boolean()),
+        brands: z.optional(z.number()),
+        brandsAreInclusive: z.optional(z.boolean()),
+        sellers: z.optional(z.number()),
+        sellersAreInclusive: z.optional(z.boolean())
     })),
-    maxUsage: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Defines how many times the tax can be used.'
-    })),
-    idsSalesChannel: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Trade policy ID.'
-    })).register(z.globalRegistry, {
-        description: 'List of Trade Policies that activate this tax.'
-    })),
-    areSalesChannelIdsExclusive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'If set to `false`, this tax will be applied to any trade policies present on the `idsSalesChannel` field. If set to `true`, trade policies present on that field will make this tax not to be applied.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with information about a tax.'
-})).register(z.globalRegistry, {
-    description: 'Array with taxes.'
-});
+    maxUsage: z.optional(z.number()),
+    idsSalesChannel: z.optional(z.array(z.string())),
+    areSalesChannelIdsExclusive: z.optional(z.boolean())
+}));
 
 export const zCreateMultipleCouponsData = z.object({
     body: z.optional(z.array(z.object({
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Quantity of coupons created. The value must be a minimum of `1` and at maximum `1000`. If the amount is `1`, the coupon code will be the value of the `couponCode` parameter. If the value is greater than `1`, the coupon code will receive a random suffix.'
-        }),
+        quantity: z.int(),
         couponConfiguration: z.object({
-            utmSource: z.string().register(z.globalRegistry, {
-                description: 'utmSource code.'
-            }),
-            utmCampaign: z.string().register(z.globalRegistry, {
-                description: 'utmCampaign code.'
-            }),
-            couponCode: z.string().register(z.globalRegistry, {
-                description: 'Coupon code.'
-            }),
-            isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the coupon is archived (`true`) or not (`false`).'
-            })),
-            maxItemsPerClient: z.int().register(z.globalRegistry, {
-                description: 'Maximum items per client that the coupon can be applied.'
-            }),
-            expirationIntervalPerUse: z.string().register(z.globalRegistry, {
-                description: 'Coupon expiration interval per use.'
-            }),
-            maxUsage: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Amount of times the coupon can be used.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object that contains all coupon configuration.'
+            utmSource: z.string(),
+            utmCampaign: z.string(),
+            couponCode: z.string(),
+            isArchived: z.optional(z.boolean()),
+            maxItemsPerClient: z.int(),
+            expirationIntervalPerUse: z.string(),
+            maxUsage: z.optional(z.int())
         })
-    }).register(z.globalRegistry, {
-        description: 'Object containing information about the coupons.'
-    })).register(z.globalRegistry, {
-        description: 'List of coupons.'
-    })),
+    }))),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -294,172 +112,104 @@ export const zGetallData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Indicate the media type of the resource.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateOrUpdateCouponData = z.object({
     body: z.optional(z.object({
-        utmSource: z.string().register(z.globalRegistry, {
-            description: 'UTM source code.'
-        }),
-        utmCampaign: z.optional(z.string().register(z.globalRegistry, {
-            description: 'UTM campaign code.'
-        })),
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon code.'
-        }),
-        isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the coupon is archived (`true`) or not (`false`).'
-        })),
-        maxItemsPerClient: z.int().register(z.globalRegistry, {
-            description: 'Maximum items per client that the coupon can be applied.'
-        }),
-        expirationIntervalPerUse: z.string().register(z.globalRegistry, {
-            description: 'Coupon expiration interval per use.'
-        }),
-        maxUsage: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Amount of times the coupon can be used.'
-        }))
+        utmSource: z.string(),
+        utmCampaign: z.optional(z.string()),
+        couponCode: z.string(),
+        isArchived: z.optional(z.boolean()),
+        maxItemsPerClient: z.int(),
+        expirationIntervalPerUse: z.string(),
+        maxUsage: z.optional(z.int())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetbycouponcodeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon Code'
-        })
+        couponCode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetarchivedbycouponcodeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon Code'
-        })
+        couponCode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zArchivebycouponcodeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon Code'
-        })
+        couponCode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zMassiveGenerationData = z.object({
     body: z.object({
-        utmSource: z.string().register(z.globalRegistry, {
-            description: 'UTM source code.'
-        }),
-        utmCampaign: z.string().register(z.globalRegistry, {
-            description: 'UTM campaign code.'
-        }),
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon code.'
-        }),
-        maxItemsPerClient: z.int().register(z.globalRegistry, {
-            description: 'Maximum number of items a coupon can be applied to per client.'
-        }),
-        expirationIntervalPerUse: z.string().register(z.globalRegistry, {
-            description: 'Coupon expiration interval per use.'
-        })
+        utmSource: z.string(),
+        utmCampaign: z.string(),
+        couponCode: z.string(),
+        maxItemsPerClient: z.int(),
+        expirationIntervalPerUse: z.string()
     }),
     path: z.optional(z.never()),
     query: z.object({
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Number of coupons to create, which can be from `1` to `1000`. For a single coupon (`1`), the code will be the `couponCode` value. For multiple coupons (more than `1`), codes will be the `couponCode` value with a random suffix.'
-        })
+        quantity: z.int()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetusageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon Code'
-        })
+        couponCode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zUnarchivebycouponcodeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string().register(z.globalRegistry, {
-            description: 'Coupon Code'
-        })
+        couponCode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -468,12 +218,8 @@ export const zGetAllBenefitsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -481,17 +227,11 @@ export const zSearchPromotionData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        byName: z.string().register(z.globalRegistry, {
-            description: 'Search term used to find a promotion by name.'
-        })
+        byName: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -500,546 +240,194 @@ export const zGetAllTaxesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetCalculatorConfigurationByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        idCalculatorConfiguration: z.string().register(z.globalRegistry, {
-            description: 'Promotion ID or tax ID.'
-        })
+        idCalculatorConfiguration: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zOptSellerInOrOutOfPromotionData = z.object({
     body: z.object({
-        sellerIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'Seller ID.'
-        })).register(z.globalRegistry, {
-            description: 'List of seller IDs that opted in or out to the promotion.'
-        }),
-        operation: z.enum(['OptIn', 'OptOut']).register(z.globalRegistry, {
-            description: 'Operation to perform: `OptIn` or `OptOut`.'
-        })
+        sellerIds: z.array(z.string()),
+        operation: z.enum(['OptIn', 'OptOut'])
     }),
     path: z.object({
-        promotionId: z.string().register(z.globalRegistry, {
-            description: 'The ID of the promotion.'
-        })
+        promotionId: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'The VTEX account name that owns the promotion.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'if-Match': z.string().register(z.globalRegistry, {
-            description: 'Must match the current `lastModified` value of the promotion.'
-        })
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json'),
+        'if-Match': z.string()
     })
 });
 
 export const zCreateOrUpdateCalculatorConfigurationData = z.object({
     body: z.object({
-        idCalculatorConfiguration: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Promotion ID or tax ID.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Promotion name or tax name.'
-        })),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Internal description of the promotion or tax.'
-        })),
-        beginDateUtc: z.string().register(z.globalRegistry, {
-            description: 'Promotion or tax Begin Date (UTC).'
-        }),
-        endDateUtc: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Promotion or tax End Date (UTC).'
-        })),
-        lastModified: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Date when the promotion or tax was last modified.'
-        })),
-        daysAgoOfPurchases: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of days that are considered to add the purchase history.'
-        })),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'If set as `true` the promotion or tax is activated. If set as `false` the promotion or tax is deactivated.'
-        }),
-        isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set as `true` the promotion or tax is archived. If set as `false` the promotion or tax is not archived.'
-        })),
-        isFeatured: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Insert a flag with the promotion name used in the product\'s window display and page.'
-        })),
-        disableDeal: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether a deal is disabled (`true`) or not (`false`).'
-        })),
-        activeDaysOfWeek: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Day of the week that the promotion or tax will be valid.'
-        })).register(z.globalRegistry, {
-            description: 'Defines which days of the week the promotion or tax will applied.'
-        })),
-        offset: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Time offset from UTC in seconds.'
-        })),
-        activateGiftsMultiplier: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set as `true`, it activates gifts Multiplier.'
-        })),
-        newOffset: z.optional(z.number().register(z.globalRegistry, {
-            description: 'New time offset from UTC in seconds.'
-        })),
-        maxPricesPerItems: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Max price.'
-        })).register(z.globalRegistry, {
-            description: 'List of max price per items.'
-        })),
-        cumulative: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if a promotion or tax can accumulate with another one. (`true`) or not (`false`).'
-        })),
-        discountType: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The type of discount that will apply to the promotion.'
-        })),
-        nominalShippingDiscountValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Exact discount to be applied for the shipping value.'
-        })),
-        absoluteShippingDiscountValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum shipping value.'
-        })),
-        nominalDiscountValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Exact discount to be applied for the total purchase value.'
-        })),
-        nominalDiscountType: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Controls the behavior of the `NominalDiscount` effect. This field only accepts two string values:\n\n -`item`: applies the intended nominal discount on every item present on the cart. \n\n -`cart`: keeps the behavior as it currently is: the whole order/cart receives a nominal discount that is distributed among the items.'
-        })),
-        maximumUnitPriceDiscount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The maximum price for each item of the purchase will be the price set up.'
-        })),
-        percentualDiscountValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Percentage discount to be applied for total purchase value.'
-        })),
-        rebatePercentualDiscountValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Percentual Shipping Discount Value.'
-        })),
-        percentualShippingDiscountValue: z.number().register(z.globalRegistry, {
-            description: 'Percentage discount to be applied for shipping value.'
-        }),
-        percentualTax: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Percentual tax over purchase total value.'
-        })),
-        shippingPercentualTax: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Shipping Percentual tax over purchase total value.'
-        })),
-        percentualDiscountValueList1: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Valid discounts for the SKUs in `listSku1BuyTogether`, discount list used for Buy Together Promotions.'
-        })),
-        percentualDiscountValueList2: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Equivalent to `percentualDiscountValueList1`.'
-        })),
+        idCalculatorConfiguration: z.optional(z.string()),
+        name: z.optional(z.string()),
+        description: z.optional(z.string()),
+        beginDateUtc: z.string(),
+        endDateUtc: z.optional(z.string()),
+        lastModified: z.optional(z.string()),
+        daysAgoOfPurchases: z.optional(z.int()),
+        isActive: z.boolean(),
+        isArchived: z.optional(z.boolean()),
+        isFeatured: z.optional(z.boolean()),
+        disableDeal: z.optional(z.boolean()),
+        activeDaysOfWeek: z.optional(z.array(z.string())),
+        offset: z.optional(z.int()),
+        activateGiftsMultiplier: z.optional(z.boolean()),
+        newOffset: z.optional(z.number()),
+        maxPricesPerItems: z.optional(z.array(z.string())),
+        cumulative: z.optional(z.boolean()),
+        discountType: z.optional(z.string()),
+        nominalShippingDiscountValue: z.optional(z.number()),
+        absoluteShippingDiscountValue: z.optional(z.number()),
+        nominalDiscountValue: z.optional(z.number()),
+        nominalDiscountType: z.optional(z.string()),
+        maximumUnitPriceDiscount: z.optional(z.number()),
+        percentualDiscountValue: z.optional(z.number()),
+        rebatePercentualDiscountValue: z.optional(z.number()),
+        percentualShippingDiscountValue: z.number(),
+        percentualTax: z.optional(z.number()),
+        shippingPercentualTax: z.optional(z.number()),
+        percentualDiscountValueList1: z.optional(z.number()),
+        percentualDiscountValueList2: z.optional(z.number()),
         skusGift: z.optional(z.object({
-            quantitySelectable: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Quantity of SKU Gifts.'
-            })),
-            gifts: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'SKU gift ID.'
-            })).register(z.globalRegistry, {
-                description: 'Array with SKU Gifts IDs.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'SKU Gift Object. Total discount on the product value set as a gift.'
+            quantitySelectable: z.optional(z.int()),
+            gifts: z.optional(z.array(z.string()))
         })),
-        nominalRewardValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Nominal value for rewards program.'
-        })),
-        percentualRewardValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Percentage value for rewards program.'
-        })),
-        orderStatusRewardValue: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Order status reward value.'
-        })),
-        maxNumberOfAffectedItems: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The maximum number of affected items for a promotion.'
-        })),
+        nominalRewardValue: z.optional(z.number()),
+        percentualRewardValue: z.optional(z.number()),
+        orderStatusRewardValue: z.optional(z.string()),
+        maxNumberOfAffectedItems: z.optional(z.int()),
         maxNumberOfAffectedItemsGroupKey: z.optional(z.enum([
             'perProductId',
             'perCart',
             'perSku'
-        ]).register(z.globalRegistry, {
-            description: 'Defines the maximum number of affected items by group key for a promotion. Possible values: \r\n- `perProductId`: Maximum items per product\r\n- `perCart`: Maximum items per cart\r\n- `perSku`: Maximum items per SKU'
-        })),
-        applyToAllShippings: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Promotion or tax will be applied to all kind of shipping.'
-        })),
-        nominalTax: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Nominal tax.'
-        })),
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Origin of the promotion or tax, `marketplace` or `Fulfillment`.  Read [Difference between orders with marketplace and fulfillment sources](https://help.vtex.com/en/tutorial/what-are-orders-with-marketplace-source-and-orders-with-fulfillment-source--6eVYrmUAwMOeKICU2KuG06) for more information.'
-        }),
-        idSeller: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Seller Name.'
-        })),
-        idSellerIsInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any seller present on the `idSeller` field. If set to `false`, sellers present on that field will make this promotion or tax not to be applied.'
-        })),
-        idsSalesChannel: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Trade policy ID.'
-        })).register(z.globalRegistry, {
-            description: 'List of Trade Policies that activate this promotion or tax.'
-        })),
-        areSalesChannelIdsExclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `false`, this promotion or tax will be applied to any trade policies present on the `idsSalesChannel` field. If set to `true`, trade policies present on that field will make this promotion or tax not to be applied.'
-        })),
-        marketingTags: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Promotion or tax Marketing tag.'
-        })).register(z.globalRegistry, {
-            description: 'Promotion or tax Marketing tags.'
-        })),
-        marketingTagsAreNotInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `false`, this promotion or tax will be applied to any marketing tag present on the `marketingTags` field. If set to `true`, marketing tags present on that field will make this promotion or tax not to be applied.'
-        })),
+        ])),
+        applyToAllShippings: z.optional(z.boolean()),
+        nominalTax: z.optional(z.number()),
+        origin: z.string(),
+        idSeller: z.optional(z.string()),
+        idSellerIsInclusive: z.optional(z.boolean()),
+        idsSalesChannel: z.optional(z.array(z.string())),
+        areSalesChannelIdsExclusive: z.optional(z.boolean()),
+        marketingTags: z.optional(z.array(z.string())),
+        marketingTagsAreNotInclusive: z.optional(z.boolean()),
         paymentsMethods: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Payment Method ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Payment Method Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the Payment Method.'
-        })).register(z.globalRegistry, {
-            description: 'Array composed by all the Payments Methods that activate this promotion or tax.'
-        })),
-        stores: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Store.'
-        })).register(z.globalRegistry, {
-            description: 'List of stores.'
-        })),
-        campaigns: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Campaign audience.'
-        })).register(z.globalRegistry, {
-            description: 'Campaign Audiences that activate this promotion.'
-        })),
-        conditionsIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Condition ID.'
-        })).register(z.globalRegistry, {
-            description: 'Array with conditions IDs.'
-        })),
-        storesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion will be applied to any store present on the `stores` field. If set to `false`, stores present on that field will make this promotion not to be applied.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        stores: z.optional(z.array(z.string())),
+        campaigns: z.optional(z.array(z.string())),
+        conditionsIds: z.optional(z.array(z.string())),
+        storesAreInclusive: z.optional(z.boolean()),
         categories: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Category ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Category Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the category.'
-        })).register(z.globalRegistry, {
-            description: 'Object composed by the categories that will activate or deactivate the promotion or tax.'
-        })),
-        categoriesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any category present on the `categories` field. If set to `false`, categories present on that field will make this promotion or tax not to be applied.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        categoriesAreInclusive: z.optional(z.boolean()),
         brands: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Brand ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Brand Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the brand.'
-        })).register(z.globalRegistry, {
-            description: 'Object composed by the brands that will activate or deactivate the promotion or tax.'
-        })),
-        brandsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any brand present on the `brands` field. If set to `false`, brands present on that field will make this promotion or tax not to be applied.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        brandsAreInclusive: z.optional(z.boolean()),
         products: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the product.'
-        })).register(z.globalRegistry, {
-            description: 'Object composed by the products that will activate or deactivate the promotion or tax.'
-        })),
-        productsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any product present on the `products` field. If set to `false`, products present on that field will make this promotion or tax not to be applied.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        productsAreInclusive: z.optional(z.boolean()),
         skus: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the SKU.'
-        })).register(z.globalRegistry, {
-            description: 'Object composed by the SKUs that will activate or deactivate the promotion or tax.'
-        })),
-        skusAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any SKU present on the `skus` field. If set to `false`, SKUs present on that field will make this promotion or tax not to be applied.'
-        })),
-        utmSource: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Coupon utmSource code.'
-        })),
-        utmCampaign: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Coupon utmCampaign code.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        skusAreInclusive: z.optional(z.boolean()),
+        utmSource: z.optional(z.string()),
+        utmCampaign: z.optional(z.string()),
         collections1BuyTogether: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'ID of the collection to be added to the first list of the **Buy Together** promotion.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Name of the collection to be added to the first list of the **Buy Together** promotion.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object containing the ID and Name of the collection to be added to the first list of the **Buy Together** promotion.'
-        })).register(z.globalRegistry, {
-            description: 'Collections that will generate the promotion, type **Buy Together**, **More for less**, **Progressive Discount** or **Buy One Get One**.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
         collections2BuyTogether: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'ID of the collection to be added to the first list of the **Buy Together** promotion.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Name of the collection to be added to the first list of the **Buy Together** promotion.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object containing the ID and Name of the collection to be added to the first list of the **Buy Together** promotion.'
-        })).register(z.globalRegistry, {
-            description: 'Collections that will generate the promotion, type **Buy Together**, **More for less**, **Progressive Discount**, **Buy One Get One**.'
-        })),
-        minimumQuantityBuyTogether: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Minimum quantity for **Buy Together** promotion.'
-        })),
-        quantityToAffectBuyTogether: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Quantity to affect **Buy Together** promotion.'
-        })),
-        enableBuyTogetherPerSku: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Enable **Buy Together** per SKU.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        minimumQuantityBuyTogether: z.optional(z.int()),
+        quantityToAffectBuyTogether: z.optional(z.int()),
+        enableBuyTogetherPerSku: z.optional(z.boolean()),
         listSku1BuyTogether: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'ID of the SKU to be added to the first list of the **Buy Together** promotion.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Name of the SKU to be added to the first list of the **Buy Together** promotion.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object containing the ID and Name of the SKU to be added to the first list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-        })).register(z.globalRegistry, {
-            description: 'Array of objects, each containing ID and Name of an SKU to be added in the first list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
         listSku2BuyTogether: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'ID of the SKU to be added to the second list of the **Buy Together** promotion.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Name of the SKU to be added to the second list of the **Buy Together** promotion.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object containing the ID and Name of the SKU to be added to the second list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-        })).register(z.globalRegistry, {
-            description: 'Array of objects, each containing ID and Name of an SKU to be added to the second list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-        })),
-        coupon: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Coupon.'
-        })).register(z.globalRegistry, {
-            description: 'List of coupons.'
-        })),
-        totalValueFloor: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Minimum chart value to activate the promotion or tax.'
-        })),
-        totalValueCeling: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum chart value to activate the promotion or tax.'
-        })),
-        totalValueIncludeAllItems: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Total vale including all items.'
-        })),
-        totalValueMode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Defines if products that already are receiving a promotion will be considered on the chart total value. There are three options available: `IncludeMatchedItems`, `ExcludeMatchedItems`, `AllItems`.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        coupon: z.optional(z.array(z.string())),
+        totalValueFloor: z.optional(z.number()),
+        totalValueCeling: z.optional(z.number()),
+        totalValueIncludeAllItems: z.optional(z.boolean()),
+        totalValueMode: z.optional(z.string()),
         collections: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Collection ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Collection Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the collection.'
-        })).register(z.globalRegistry, {
-            description: 'Object composed by the collections that will activate or deactivate the promotion or tax.'
-        })),
-        collectionsIsInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set to `true`, this promotion or tax will be applied to any collection present on the `collections` field. If set to `false`, collections present on that field will make this promotion or tax not to be applied.'
-        })),
-        restrictionsBins: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Card\'s BIN.'
-        })).register(z.globalRegistry, {
-            description: 'The discount will be granted if the card\'s BIN is given.'
-        })),
-        cardIssuers: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Card issuer.'
-        })).register(z.globalRegistry, {
-            description: 'List of card issuers.'
-        })),
-        totalValuePurchase: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Total value a client must have in past orders to activate the promotion or tax.'
-        })),
-        slasIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Shipping method.'
-        })).register(z.globalRegistry, {
-            description: 'The discount will be granted if the shipping method is the same as the one given.'
-        })),
-        isSlaSelected: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Applies selected discount only when one of the defined shipping method is selected by the customer.'
-        })),
-        isFirstBuy: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Applies the discount only if it\'s a first buy.'
-        })),
-        firstBuyIsProfileOptimistic: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Applies the discount even if the user is not logged.'
-        })),
-        compareListPriceAndPrice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If the **List Price** and **Price** are the same.'
-        })),
-        isDifferentListPriceAndPrice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Applies the promotion or tax only if the list price and price is different.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        collectionsIsInclusive: z.optional(z.boolean()),
+        restrictionsBins: z.optional(z.array(z.string())),
+        cardIssuers: z.optional(z.array(z.string())),
+        totalValuePurchase: z.optional(z.number()),
+        slasIds: z.optional(z.array(z.string())),
+        isSlaSelected: z.optional(z.boolean()),
+        isFirstBuy: z.optional(z.boolean()),
+        firstBuyIsProfileOptimistic: z.optional(z.boolean()),
+        compareListPriceAndPrice: z.optional(z.boolean()),
+        isDifferentListPriceAndPrice: z.optional(z.boolean()),
         zipCodeRanges: z.optional(z.array(z.object({
-            zipCodeFrom: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Initial Zip Code.'
-            })),
-            zipCodeTo: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Final Zip Code.'
-            })),
-            inclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the zip code range is included in the promotion.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the Zip Code.'
-        })).register(z.globalRegistry, {
-            description: 'Range of the zip code that applies the promotion.'
-        })),
-        itemMaxPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum price of the item.'
-        })),
-        itemMinPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Minimum price of the item.'
-        })),
-        installment: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Installment.'
-        })),
-        isMinMaxInstallments: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Set if the promotion or tax will be applied considering a minimum and maximum values for installments.'
-        })),
-        minInstallment: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Minimum value for installment.'
-        })),
-        maxInstallment: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Maximum value for installment.'
-        })),
-        merchants: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Merchant.'
-        })).register(z.globalRegistry, {
-            description: 'List of merchants.'
-        })),
-        clusterExpressions: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Cluster expression.'
-        })).register(z.globalRegistry, {
-            description: 'Criteria to select a customer cluster. Each item in this array should follow the format of an equality function (`{propertyname}={value}`) or the format of a contains function (`{propertyname} contains {value}`). In both options, `{propertyname}` must be replaced with the name of the field in the data entity, and `{value}` must be replaced with the value determined in Master Data. Find more information about these criteria in [Filling in the Customer cluster field](https://help.vtex.com/tutorial/creating-promotion-for-a-customer-cluster--tutorials_342#filling-in-the-customer-cluster-field).'
-        })),
-        paymentsRules: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Payment rule.'
-        })).register(z.globalRegistry, {
-            description: 'List of payment rules.'
-        })),
-        giftListTypes: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Gift List Type.'
-        })).register(z.globalRegistry, {
-            description: 'Gifts List Type.'
-        })),
-        productsSpecifications: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Product specification.'
-        })).register(z.globalRegistry, {
-            description: 'List of product specifications.'
-        })),
+            zipCodeFrom: z.optional(z.string()),
+            zipCodeTo: z.optional(z.string()),
+            inclusive: z.optional(z.boolean())
+        }))),
+        itemMaxPrice: z.optional(z.number()),
+        itemMinPrice: z.optional(z.number()),
+        installment: z.optional(z.int()),
+        isMinMaxInstallments: z.optional(z.boolean()),
+        minInstallment: z.optional(z.int()),
+        maxInstallment: z.optional(z.int()),
+        merchants: z.optional(z.array(z.string())),
+        clusterExpressions: z.optional(z.array(z.string())),
+        paymentsRules: z.optional(z.array(z.string())),
+        giftListTypes: z.optional(z.array(z.string())),
+        productsSpecifications: z.optional(z.array(z.string())),
         affiliates: z.optional(z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Affiliate ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Affiliate Name.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information of the affiliate.'
-        })).register(z.globalRegistry, {
-            description: 'Marketplace order identifier. The discount will apply to selected affiliates.'
-        })),
-        maxUsage: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Defines how many times the promotion or tax can be used.'
-        })),
-        maxUsagePerClient: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Defines if the promotion can be used multiple times per client.'
-        })),
-        shouldDistributeDiscountAmongMatchedItems: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Should distribute discount among matched items.'
-        })),
-        multipleUsePerClient: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the promotion can be used multiple times per client.'
-        })),
-        accumulateWithManualPrice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Allows the promotion to apply to products whose prices have been manually added by a call-center operator.'
-        })),
-        type: z.string().register(z.globalRegistry, {
-            description: 'Defines what is the type of the promotion or indicates if it is a tax. Possible values: `regular` ([Regular Promotion](https://help.vtex.com/tutorial/regular-promotion--tutorials_327)), `combo` ([Buy Together](https://help.vtex.com/en/tutorial/buy-together--tutorials_323)), `forThePriceOf` ([More for Less](https://help.vtex.com/en/tutorial/creating-a-more-for-less-promotion--tutorials_325)), `progressive` ([Progressive Discount](https://help.vtex.com/en/tutorial/progressive-discount--tutorials_324)), `buyAndWin` ([Buy One Get One](https://help.vtex.com/en/tutorial/buy-one-get-one--tutorials_322)), `maxPricePerItem` (Deprecated), `campaign` ([Campaign Promotion](https://help.vtex.com/en/tutorial/campaign-promotion--1ChYXhK2AQGuS6wAqS8Ume)), `tax` (Tax), `multipleEffects` (Multiple Effects).'
-        }),
-        useNewProgressiveAlgorithm: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Use new progressive algorithm.'
-        })),
-        percentualDiscountValueList: z.optional(z.array(z.number().register(z.globalRegistry, {
-            description: 'Percentual discount value.'
-        })).register(z.globalRegistry, {
-            description: 'Percentual discount value list.'
-        })),
+            id: z.optional(z.string()),
+            name: z.optional(z.string())
+        }))),
+        maxUsage: z.optional(z.int()),
+        maxUsagePerClient: z.optional(z.int()),
+        shouldDistributeDiscountAmongMatchedItems: z.optional(z.boolean()),
+        multipleUsePerClient: z.optional(z.boolean()),
+        accumulateWithManualPrice: z.optional(z.boolean()),
+        type: z.string(),
+        useNewProgressiveAlgorithm: z.optional(z.boolean()),
+        percentualDiscountValueList: z.optional(z.array(z.number())),
         optIn: z.optional(z.union([
             z.object({
-                sellers: z.optional(z.array(z.string().register(z.globalRegistry, {
-                    description: 'Seller ID.'
-                })).register(z.globalRegistry, {
-                    description: 'List of seller IDs that opted in to the promotion.'
-                }))
+                sellers: z.optional(z.array(z.string()))
             }),
             z.null()
         ]))
@@ -1047,126 +435,68 @@ export const zCreateOrUpdateCalculatorConfigurationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateMultipleSkuPromotionData = z.object({
-    body: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The file must contain the SKU ID and the percentage of the discount. The first line must have the headers `sku` and `effect`. The next lines must be the SKU ID and the percentage, without any spaces. For decimal values, use `.` as in `10.5`. This should be sent as a raw text on the request body.'
-    })),
+    body: z.optional(z.string()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'X-VTEX-calculator-name': z.string().register(z.globalRegistry, {
-            description: 'Promotion Name.'
-        }),
-        'X-VTEX-cumulative': z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the Promotion is cumulative with other promotions.'
-        })),
-        'X-VTEX-cluster-operator': z.optional(z.string().register(z.globalRegistry, {
-            description: 'This header allows implementing the Promotion in multiples client clusters. You can set the value as `all` - the Promotion will be valid to all the clusters - or `any` - the Promotion will be valid to any of the clusters.'
-        })),
-        'X-VTEX-cluster-expression': z.optional(z.string().register(z.globalRegistry, {
-            description: 'Cluster that will be included in the Promotion. To add multiple clusters, create a header for each one of them.'
-        })),
-        'X-VTEX-start-date': z.string().register(z.globalRegistry, {
-            description: 'Promotion start date.'
-        }),
-        'X-VTEX-end-date': z.string().register(z.globalRegistry, {
-            description: 'Promotion end date.'
-        }),
-        'X-VTEX-accumulate-with-manual-prices': z.boolean().register(z.globalRegistry, {
-            description: 'Condition that will accumulate the Promotion with manual prices or not.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string().default('application/json'),
+        'X-VTEX-calculator-name': z.string(),
+        'X-VTEX-cumulative': z.optional(z.boolean()),
+        'X-VTEX-cluster-operator': z.optional(z.string()),
+        'X-VTEX-cluster-expression': z.optional(z.string()),
+        'X-VTEX-start-date': z.string(),
+        'X-VTEX-end-date': z.string(),
+        'X-VTEX-accumulate-with-manual-prices': z.boolean()
     })
 });
 
 export const zUpdateMultipleSkuPromotionData = z.object({
-    body: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The file must contain the SKU ID and the percentage of the discount. The first line must have the headers `sku` and `effect`. The next lines must be the SKU ID and the percentage, without any spaces. For decimal values, use `.` as in `10.5`. This should be sent as a raw text on the request body.'
-    })),
+    body: z.optional(z.string()),
     path: z.object({
-        promotionId: z.string().register(z.globalRegistry, {
-            description: 'Promotion unique identifier.'
-        })
+        promotionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'X-VTEX-calculator-name': z.string().register(z.globalRegistry, {
-            description: 'Promotion Name.'
-        }),
-        'X-VTEX-cumulative': z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the Promotion is cumulative with other promotions.'
-        })),
-        'X-VTEX-cluster-operator': z.optional(z.string().register(z.globalRegistry, {
-            description: 'This header allows implementing the Promotion in multiples client clusters. You can set the value as `all` - the Promotion will be valid to all the clusters - or `any` - the Promotion will be valid to any of the clusters.'
-        })),
-        'X-VTEX-cluster-expression': z.optional(z.string().register(z.globalRegistry, {
-            description: 'Cluster that will be included in the Promotion. To add multiple clusters, create a header for each one of them.'
-        })),
-        'X-VTEX-start-date': z.string().register(z.globalRegistry, {
-            description: 'Promotion start date.'
-        }),
-        'X-VTEX-end-date': z.string().register(z.globalRegistry, {
-            description: 'Promotion end date.'
-        }),
-        'X-VTEX-accumulate-with-manual-prices': z.boolean().register(z.globalRegistry, {
-            description: 'Condition that will accumulate the Promotion with manual prices or not.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string().default('application/json'),
+        'X-VTEX-calculator-name': z.string(),
+        'X-VTEX-cumulative': z.optional(z.boolean()),
+        'X-VTEX-cluster-operator': z.optional(z.string()),
+        'X-VTEX-cluster-expression': z.optional(z.string()),
+        'X-VTEX-start-date': z.string(),
+        'X-VTEX-end-date': z.string(),
+        'X-VTEX-accumulate-with-manual-prices': z.boolean()
     })
 });
 
 export const zArchivePromotionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        idCalculatorConfiguration: z.string().register(z.globalRegistry, {
-            description: 'Promotion ID or tax ID.'
-        })
+        idCalculatorConfiguration: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zUnarchivePromotionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        idCalculatorConfiguration: z.string().register(z.globalRegistry, {
-            description: 'Promotion ID or tax ID.'
-        })
+        idCalculatorConfiguration: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1175,12 +505,8 @@ export const zGetArchivedPromotionsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1189,291 +515,149 @@ export const zGetArchivedTaxesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeletebyskuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        skuId: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPricebyskuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        skuId: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetallpagedData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        page: z.string().register(z.globalRegistry, {
-            description: 'Page number for pagination.'
-        }),
-        pageSize: z.string().register(z.globalRegistry, {
-            description: 'Size of each page for pagination.'
-        })
+        page: z.string(),
+        pageSize: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPricebycontextData = z.object({
     body: z.object({
-        id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Price ID.'
-        }),
-        itemId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Item ID.'
-        }),
-        salesChannel: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Sales channel.'
-        }),
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'Seller ID.'
-        }),
-        validFrom: z.string().register(z.globalRegistry, {
-            description: 'Valid from.'
-        }),
-        validTo: z.string().register(z.globalRegistry, {
-            description: 'Valid to.'
-        })
+        id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        itemId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        salesChannel: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        sellerId: z.string(),
+        validFrom: z.string(),
+        validTo: z.string()
     }),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPricebyskuIdandtradePolicyData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        tradePolicy: z.string().register(z.globalRegistry, {
-            description: 'Trade policy name.'
-        })
+        skuId: z.string(),
+        tradePolicy: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zSavepriceData = z.object({
     body: z.array(z.object({
-        itemId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Item ID.'
-        }),
-        salesChannel: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Sales channel.'
-        }),
-        sellerId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Seller ID.'
-        }),
-        price: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Price.'
-        }),
-        listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'List price.'
-        }),
-        validFrom: z.string().register(z.globalRegistry, {
-            description: 'Valid from.'
-        }),
-        validTo: z.string().register(z.globalRegistry, {
-            description: 'Valid to.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Object containing information about the prices.'
-    })).register(z.globalRegistry, {
-        description: 'List of prices.'
-    }),
+        itemId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        salesChannel: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        sellerId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        price: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        validFrom: z.string(),
+        validTo: z.string()
+    })),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX account name.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCalculatediscountsandtaxesBundlesData = z.object({
     body: z.object({
-        isShoppingCart: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether the item is a shopping cart.'
-        }),
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Origin.'
-        }),
-        salesChannel: z.string().register(z.globalRegistry, {
-            description: 'Sales channel.'
-        }),
-        profileId: z.string().register(z.globalRegistry, {
-            description: 'Profile ID.'
-        }),
+        isShoppingCart: z.boolean(),
+        origin: z.string(),
+        salesChannel: z.string(),
+        profileId: z.string(),
         items: z.array(z.object({
-            index: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                description: 'Index.'
-            }),
-            id: z.string().register(z.globalRegistry, {
-                description: 'Item ID.'
-            }),
-            quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                description: 'The quantity of the item.'
-            }),
-            isGift: z.boolean().register(z.globalRegistry, {
-                description: 'Indicates whether the item is a gift.'
-            }),
-            measurementUnit: z.string().register(z.globalRegistry, {
-                description: 'Measurement unit.'
-            }),
-            unitMultiplier: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                description: 'Unit multiplier.'
-            }),
-            priceTags: z.array(z.string().register(z.globalRegistry, {
-                description: 'Price tag.'
-            })).register(z.globalRegistry, {
-                description: 'List of price tags.'
-            }),
+            index: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+            id: z.string(),
+            quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+            isGift: z.boolean(),
+            measurementUnit: z.string(),
+            unitMultiplier: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+            priceTags: z.array(z.string()),
             params: z.array(z.object({
-                name: z.string().register(z.globalRegistry, {
-                    description: 'Name of the item.'
-                }),
-                value: z.string().register(z.globalRegistry, {
-                    description: 'Value.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Object containing information about the parameters.'
-            })).register(z.globalRegistry, {
-                description: 'List of parameters.'
-            }),
-            priceSheet: z.array(z.string().register(z.globalRegistry, {
-                description: 'Price sheet.'
-            })).register(z.globalRegistry, {
-                description: 'List of price sheet.'
-            }),
-            logisticsInfos: z.array(z.string().register(z.globalRegistry, {
-                description: 'Logistic information.'
-            })).register(z.globalRegistry, {
-                description: 'List of logistics information.'
-            }),
-            sellerId: z.string().register(z.globalRegistry, {
-                description: 'Seller ID.'
-            }),
-            productSpecifications: z.array(z.string().register(z.globalRegistry, {
-                description: 'Product specification.'
-            })).register(z.globalRegistry, {
-                description: 'List of product specifications.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Object containing information about the items.'
-        })).register(z.globalRegistry, {
-            description: 'List of items.'
-        })
+                name: z.string(),
+                value: z.string()
+            })),
+            priceSheet: z.array(z.string()),
+            logisticsInfos: z.array(z.string()),
+            sellerId: z.string(),
+            productSpecifications: z.array(z.string())
+        }))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetcampaignconfigurationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        campaignId: z.string().register(z.globalRegistry, {
-            description: 'Campaign audience unique identifier.'
-        })
+        campaignId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -1482,407 +666,135 @@ export const zGetcampaignaudiencesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string(),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSetcampaignconfigurationData = z.object({
     body: z.object({
-        beginDateUtc: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Start date of the campaign audience in UTC format.'
-        })),
-        endDateUtc: z.optional(z.string().register(z.globalRegistry, {
-            description: 'End date of the campaign audience in UTC format.'
-        })),
-        id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Campaign audience ID.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Campaign audience name.'
-        })),
-        isActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the campaign audience is active (`true`) or not (`false`).'
-        })),
-        isAndOperator: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When `true`, determines that all the `targetConfigurations` need to be valid for the campaign audience to be active. When `false`, determines that if at least one of the `targetConfigurations` is valid, the campaign audience will be active.'
-        })),
-        isArchived: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the campaign audience is archived (`true`) or not (`false`).'
-        })),
+        beginDateUtc: z.optional(z.string()),
+        endDateUtc: z.optional(z.string()),
+        id: z.optional(z.string()),
+        name: z.optional(z.string()),
+        isActive: z.optional(z.boolean()),
+        isAndOperator: z.optional(z.boolean()),
+        isArchived: z.optional(z.boolean()),
         lastModified: z.optional(z.object({
-            dateUtc: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Date of the last update in UTC format.'
-            })),
-            user: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Email of the user who made the last update.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information about the last update of the campaign audience.'
+            dateUtc: z.optional(z.string()),
+            user: z.optional(z.string())
         })),
         targetConfigurations: z.optional(z.array(z.object({
-            featured: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the target audience is featured (`true`) or not (`false`).'
-            })),
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Target audience ID.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Target audience name.'
-            })),
-            daysAgoOfPurchases: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Number of days that are considered to add the purchase history.'
-            })),
-            origin: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Shows the campaign audience origin, `Marketplace` or `Fulfillment`.  Read [Difference between orders with marketplace and fulfillment sources](https://help.vtex.com/en/tutorial/what-are-orders-with-marketplace-source-and-orders-with-fulfillment-source--6eVYrmUAwMOeKICU2KuG06) for more information.'
-            })),
-            idSellerIsInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Shows if at least one of the sellers must be valid to active the campaign audience.'
-            })),
-            idsSalesChannel: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Trade policy ID.'
-            })).register(z.globalRegistry, {
-                description: 'Shows the trade policies that active the campaign audience.'
-            })),
-            areSalesChannelIdsExclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Shows if the trade policy IDs are exclusive.'
-            })),
-            marketingTags: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Campaign audience marketing tags.'
-            })).register(z.globalRegistry, {
-                description: 'Array with all campaign audience\'s marketing tags.'
-            })),
-            marketingTagsAreNotInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Shows if marketing tags are not inclusive.'
-            })),
+            featured: z.optional(z.boolean()),
+            id: z.optional(z.string()),
+            name: z.optional(z.string()),
+            daysAgoOfPurchases: z.optional(z.int()),
+            origin: z.optional(z.string()),
+            idSellerIsInclusive: z.optional(z.boolean()),
+            idsSalesChannel: z.optional(z.array(z.string())),
+            areSalesChannelIdsExclusive: z.optional(z.boolean()),
+            marketingTags: z.optional(z.array(z.string())),
+            marketingTagsAreNotInclusive: z.optional(z.boolean()),
             paymentsMethods: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Payment Method ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Payment Method Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the Payment Method.'
-            })).register(z.globalRegistry, {
-                description: 'Array composed by all the Payments Methods.'
-            })),
-            stores: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Store.'
-            })).register(z.globalRegistry, {
-                description: 'List of stores.'
-            })),
-            campaigns: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Campaign.'
-            })).register(z.globalRegistry, {
-                description: 'Campaign Audiences that activate this promotion.'
-            })),
-            storesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this promotion will be applied to any store present on the `stores` field. If set to `false`, stores present on that field will make this promotion not to be applied.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            stores: z.optional(z.array(z.string())),
+            campaigns: z.optional(z.array(z.string())),
+            storesAreInclusive: z.optional(z.boolean()),
             categories: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Category ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Category Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the category.'
-            })).register(z.globalRegistry, {
-                description: 'Object composed by the categories that will activate or deactivate the campaign audience.'
-            })),
-            categoriesAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this campaign audience will be applied to any category present on the `categories` field. If set to `false`, categories present on that field will make this campaign audience not to be applied.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            categoriesAreInclusive: z.optional(z.boolean()),
             brands: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Brand ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Brand Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the brand.'
-            })).register(z.globalRegistry, {
-                description: 'Object composed by the brands that will activate or deactivate the campaign audience.'
-            })),
-            brandsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this campaign audience will be applied to any brand present on the `brands` field. If set to `false`, brands present on that field will make this campaign audience not to be applied.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            brandsAreInclusive: z.optional(z.boolean()),
             products: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Product ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Product Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the product.'
-            })).register(z.globalRegistry, {
-                description: 'Object composed by the products that will activate or deactivate the campaign audience.'
-            })),
-            productsAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this campaign audience will be applied to any product present on the `products` field. If set to `false`, products present on that field will make this campaign audience not to be applied.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            productsAreInclusive: z.optional(z.boolean()),
             skus: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'SKU ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'SKU Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the SKU.'
-            })).register(z.globalRegistry, {
-                description: 'Object composed by the SKUs that will activate or deactivate the campaign audience.'
-            })),
-            skusAreInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this campaign audience will be applied to any SKU present on the `skus` field. If set to `false`, SKUs present on that field will make this campaign audience not to be applied.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            skusAreInclusive: z.optional(z.boolean()),
             collections1BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the collection to be added to the first list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the collection to be added to the first list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the collection to be added to the first list of the **Buy Together** promotion.'
-            })).register(z.globalRegistry, {
-                description: 'Collections that will generate the promotion, type **Buy Together**, **More for less**, **Progressive Discount**, **Buy One Get One**.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
             collections2BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the collection to be added to the first list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the collection to be added to the first list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the collection to be added to the first list of the **Buy Together** promotion.'
-            })).register(z.globalRegistry, {
-                description: 'Collections that will generate the promotion, type **Buy Together**, **More for less**, **Progressive Discount**, **Buy One Get One**.'
-            })),
-            minimumQuantityBuyTogether: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Minimum quantity for **Buy Together** promotion.'
-            })),
-            quantityToAffectBuyTogether: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Quantity to affect **Buy Together** promotion.'
-            })),
-            enableBuyTogetherPerSku: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Enable **Buy Together** per SKU.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            minimumQuantityBuyTogether: z.optional(z.int()),
+            quantityToAffectBuyTogether: z.optional(z.int()),
+            enableBuyTogetherPerSku: z.optional(z.boolean()),
             listSku1BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the SKU to be added to the first list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the SKU to be added to the first list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the SKU to be added to the first list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-            })).register(z.globalRegistry, {
-                description: 'Array of objects, each containing ID and Name of an SKU to be added in the first list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
             listSku2BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the SKU to be added to the second list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the SKU to be added to the second list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the SKU to be added to the second list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-            })).register(z.globalRegistry, {
-                description: 'Array of objects, each containing ID and Name of an SKU to be added to the second list of the **Buy Together** promotion. Learn more about this type of promotion in the [Creating a Buy Together promotion](https://help.vtex.com/en/tutorial/buy-together--tutorials_323) documentation.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
             listBrand1BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the brand to be added to the first list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the brand to be added to the first list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the brand to be added to the first list of the **Buy Together** promotion.'
-            })).register(z.globalRegistry, {
-                description: 'Array of objects, each containing ID and Name of a brand to be added in the first list of the **Buy Together** promotion.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
             listCategory1BuyTogether: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'ID of the category to be added to the first list of the **Buy Together** promotion.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Name of the category to be added to the first list of the **Buy Together** promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object containing the ID and Name of the category to be added to the first list of the **Buy Together** promotion.'
-            })).register(z.globalRegistry, {
-                description: 'Array of objects, each containing ID and Name of a category to be added in the first list of the **Buy Together** promotion.'
-            })),
-            coupon: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Coupon.'
-            })).register(z.globalRegistry, {
-                description: 'List of coupons.'
-            })),
-            totalValueFloor: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Minimum chart value to active the campaign audience.'
-            })),
-            totalValueCeling: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Maximum chart value to active the campaign audience.'
-            })),
-            totalValueIncludeAllItems: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Total value including all items.'
-            })),
-            totalValueMode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Total chart value to active the campaign audience.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            coupon: z.optional(z.array(z.string())),
+            totalValueFloor: z.optional(z.number()),
+            totalValueCeling: z.optional(z.number()),
+            totalValueIncludeAllItems: z.optional(z.boolean()),
+            totalValueMode: z.optional(z.string()),
             collections: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Collection ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Collection Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the collection.'
-            })).register(z.globalRegistry, {
-                description: 'Object composed by the collections that will activate or deactivate the campaign audience.'
-            })),
-            collectionsIsInclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If set to `true`, this campaign audience will be applied to any collection present on the `collections` field. If set to `false`, collections present on that field will make this campaign audience not to be applied.'
-            })),
-            restrictionsBins: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Card\'s BIN.'
-            })).register(z.globalRegistry, {
-                description: 'The discount will be granted if the card\'s BIN is given.'
-            })),
-            cardIssuers: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Card issuer.'
-            })).register(z.globalRegistry, {
-                description: 'List of card issuers.'
-            })),
-            totalValuePurchase: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Total value a client must have in past orders to active the campaign audience.'
-            })),
-            slasIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Shipping method.'
-            })).register(z.globalRegistry, {
-                description: 'The discount will be granted if the shipping method is the same as the one given.'
-            })),
-            isSlaSelected: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Applies selected discount only when one of the defined shipping method is selected by the customer.'
-            })),
-            isFirstBuy: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Applies the discount only if it\'s a first buy.'
-            })),
-            firstBuyIsProfileOptimistic: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Applies the discount even if the user is not logged.'
-            })),
-            compareListPriceAndPrice: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If the **List Price** and **Price** are the same.'
-            })),
-            isDifferentListPriceAndPrice: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Applies the campaign audience only if the list price and price is different.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            collectionsIsInclusive: z.optional(z.boolean()),
+            restrictionsBins: z.optional(z.array(z.string())),
+            cardIssuers: z.optional(z.array(z.string())),
+            totalValuePurchase: z.optional(z.number()),
+            slasIds: z.optional(z.array(z.string())),
+            isSlaSelected: z.optional(z.boolean()),
+            isFirstBuy: z.optional(z.boolean()),
+            firstBuyIsProfileOptimistic: z.optional(z.boolean()),
+            compareListPriceAndPrice: z.optional(z.boolean()),
+            isDifferentListPriceAndPrice: z.optional(z.boolean()),
             zipCodeRanges: z.optional(z.array(z.object({
-                zipCodeFrom: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Initial Zip Code.'
-                })),
-                zipCodeTo: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Final Zip Code.'
-                })),
-                inclusive: z.optional(z.boolean().register(z.globalRegistry, {
-                    description: 'Defines if the zip code range is included in the promotion.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the Zip Code'
-            })).register(z.globalRegistry, {
-                description: 'Range of the zip code that applies the promotion.'
-            })),
-            itemMaxPrice: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Maximum price of the item.'
-            })),
-            itemMinPrice: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Minimum price of the item.'
-            })),
-            installment: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Installment.'
-            })),
-            isMinMaxInstallments: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Set if the campaign audience will be applied considering a minimum and maximum values for installments.'
-            })),
-            minInstallment: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Minimum value for installment.'
-            })),
-            maxInstallment: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Maximum value for installment.'
-            })),
-            merchants: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Merchant.'
-            })).register(z.globalRegistry, {
-                description: 'List of merchants.'
-            })),
-            clusterExpressions: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Cluster expression.'
-            })).register(z.globalRegistry, {
-                description: 'Criteria to select a customer cluster. Each item in this array should follow the format of an equality function (`{propertyname}={value}`) or the format of a contains function (`{propertyname} contains {value}`). In both options, `{propertyname}` must be replaced with the name of the field in the data entity, and `{value}` must be replaced with the value determined in Master Data. Find more information about these criteria in [Filling in the Customer cluster field](https://help.vtex.com/tutorial/creating-promotion-for-a-customer-cluster--tutorials_342#filling-in-the-customer-cluster-field).'
-            })),
-            clusterOperator: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Cluster operator.'
-            })),
-            paymentsRules: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Payment rule.'
-            })).register(z.globalRegistry, {
-                description: 'List of payment rules.'
-            })),
-            giftListTypes: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Gift List Type.'
-            })).register(z.globalRegistry, {
-                description: 'Gifts List Type.'
-            })),
-            productsSpecifications: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Product specification.'
-            })).register(z.globalRegistry, {
-                description: 'List of product specifications.'
-            })),
+                zipCodeFrom: z.optional(z.string()),
+                zipCodeTo: z.optional(z.string()),
+                inclusive: z.optional(z.boolean())
+            }))),
+            itemMaxPrice: z.optional(z.number()),
+            itemMinPrice: z.optional(z.number()),
+            installment: z.optional(z.int()),
+            isMinMaxInstallments: z.optional(z.boolean()),
+            minInstallment: z.optional(z.int()),
+            maxInstallment: z.optional(z.int()),
+            merchants: z.optional(z.array(z.string())),
+            clusterExpressions: z.optional(z.array(z.string())),
+            clusterOperator: z.optional(z.string()),
+            paymentsRules: z.optional(z.array(z.string())),
+            giftListTypes: z.optional(z.array(z.string())),
+            productsSpecifications: z.optional(z.array(z.string())),
             affiliates: z.optional(z.array(z.object({
-                id: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Affiliate ID.'
-                })),
-                name: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Affiliate Name.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Object with information of the affiliate.'
-            })).register(z.globalRegistry, {
-                description: 'Marketplace order identifier. The discount will apply to selected affiliates.'
-            })),
-            maxUsage: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Defines how many times the campaign audience can be used.'
-            })),
-            maxUsagePerClient: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Defines if the campaign audience can be used multiple times per client.'
-            })),
-            shouldDistributeDiscountAmongMatchedItems: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Should distribute discount among matched items.'
-            })),
-            multipleUsePerClient: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the campaign audience can be used multiple times per client.'
-            })),
-            useNewProgressiveAlgorithm: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Use new progressive algorithm.'
-            })),
-            percentualDiscountValueList: z.optional(z.array(z.number().register(z.globalRegistry, {
-                description: 'Percentual discount value.'
-            })).register(z.globalRegistry, {
-                description: 'Percentual discount value list.'
-            })),
+                id: z.optional(z.string()),
+                name: z.optional(z.string())
+            }))),
+            maxUsage: z.optional(z.int()),
+            maxUsagePerClient: z.optional(z.int()),
+            shouldDistributeDiscountAmongMatchedItems: z.optional(z.boolean()),
+            multipleUsePerClient: z.optional(z.boolean()),
+            useNewProgressiveAlgorithm: z.optional(z.boolean()),
+            percentualDiscountValueList: z.optional(z.array(z.number())),
             type: z.optional(z.enum([
                 'regular',
                 'combo',
@@ -1891,32 +803,20 @@ export const zSetcampaignconfigurationData = z.object({
                 'buyAndWin',
                 'campaign',
                 'tax'
-            ]).register(z.globalRegistry, {
-                description: 'Defines the type of promotion. Possible values are:\r\n- `regular`: Regular promotion\r\n- `combo`: Buy Together promotion\r\n- `forThePriceOf`: More for Less promotion\r\n- `progressive`: Progressive discount promotion\r\n- `buyAndWin`: Buy One Get One promotion\r\n- `campaign`: Campaign promotion\r\n- `tax`: Tax (reverse promotion, increases the price)'
-            })),
+            ])),
             idTypeDiscountBuyTogether: z.optional(z.union([
                 z.literal(1),
                 z.literal(2),
                 z.literal(3),
                 z.literal(4),
                 z.literal(5)
-            ]).register(z.globalRegistry, {
-                description: 'Defines the ID type related to `type` field. Possible values are:\r\n- `1`: Buy Together promotion\r\n- `2`: Progressive promotion\r\n- `3`: More for Less promotion\r\n- `4`: Buy One Get One promotion\r\n- `5`: Campaign promotion'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Object with information about the target audience.'
-        })).register(z.globalRegistry, {
-            description: 'Array that contains all target audience that the campaign audience will be valid.'
-        }))
+            ]))
+        })))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

@@ -6,98 +6,40 @@ import * as z from 'zod';
  * Request body for creating or updating a contract.
  */
 export const zUpdateContractRequest = z.object({
-    email: z.string().max(300).register(z.globalRegistry, {
-        description: 'Email address of the contract.'
-    }),
-    firstName: z.string().max(300).register(z.globalRegistry, {
-        description: 'First name of the contract.'
-    }),
-    lastName: z.string().max(300).register(z.globalRegistry, {
-        description: 'Last name of the contract.'
-    }),
-    document: z.string().max(300).register(z.globalRegistry, {
-        description: 'Document number (e.g., CNPJ, CPF or Social ID).'
-    }),
-    documentType: z.string().max(300).register(z.globalRegistry, {
-        description: 'The type of document (e.g., "EIN", "State Business Registration Number").'
-    }),
-    corporateDocument: z.optional(z.string().max(300).register(z.globalRegistry, {
-        description: 'Business document number if different from main document.'
-    })),
-    homePhone: z.optional(z.string().max(300).register(z.globalRegistry, {
-        description: 'Home phone number.'
-    })),
-    cellPhone: z.optional(z.string().max(300).register(z.globalRegistry, {
-        description: 'Cell phone number.'
-    })),
-    corporateName: z.string().max(300).register(z.globalRegistry, {
-        description: 'Legal name of the company.'
-    }),
-    tradeName: z.optional(z.string().max(300).register(z.globalRegistry, {
-        description: 'Trade or fantasy name.'
-    })),
-    isCorporate: z.boolean().register(z.globalRegistry, {
-        description: 'Whether it\'s a legal entity. Always "true" for contracts.'
-    }).default(true),
-    stateRegistration: z.optional(z.string().max(300).register(z.globalRegistry, {
-        description: 'State registration number. Can be empty.'
-    })),
-    isFreeStateRegistration: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if the registration is free or exempt.'
-    })),
-    priceTables: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Comma-separated list of price tables.'
-    })),
+    email: z.string().max(300),
+    firstName: z.string().max(300),
+    lastName: z.string().max(300),
+    document: z.string().max(300),
+    documentType: z.string().max(300),
+    corporateDocument: z.optional(z.string().max(300)),
+    homePhone: z.optional(z.string().max(300)),
+    cellPhone: z.optional(z.string().max(300)),
+    corporateName: z.string().max(300),
+    tradeName: z.optional(z.string().max(300)),
+    isCorporate: z.boolean().default(true),
+    stateRegistration: z.optional(z.string().max(300)),
+    isFreeStateRegistration: z.optional(z.boolean()),
+    priceTables: z.optional(z.string()),
     restrictions: z.optional(z.object({
         'vtex.catalog': z.optional(z.object({
-            collectionIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Collection ID.'
-            })).register(z.globalRegistry, {
-                description: 'A list of collection IDs that define which product collections (sets of SKUs) the B2B customer can view or purchase from.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Contains restrictions regarding catalog.'
+            collectionIds: z.optional(z.array(z.string()))
         })),
         'vtex.checkout': z.optional(z.object({
-            creditCards: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Credit card ID.'
-            })).register(z.globalRegistry, {
-                description: 'A list of credit card IDs that the customer is allowed to use during checkout. These IDs reference cards stored in the BK entity, managed by the VTEX Checkout system.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Contains restrictions regarding checkout.'
+            creditCards: z.optional(z.array(z.string()))
         })),
         'vtex.payments': z.optional(z.object({
-            paymentSystemIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Payment system ID.'
-            })).register(z.globalRegistry, {
-                description: 'A list of numeric IDs that represent the allowed payment systems for the customer.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Contains restrictions regarding payments.'
+            paymentSystemIds: z.optional(z.array(z.string()))
         }))
-    }).register(z.globalRegistry, {
-        description: 'Object with restriction definitions for `vtex.catalog`, `vtex.checkout`, and `vtex.payments`.'
     }))
-}).register(z.globalRegistry, {
-    description: 'Request body for creating or updating a contract.'
 });
 
 /**
  * Response body for a created contract.
  */
 export const zCreateContractResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The ID of the created contract document.'
-    })),
-    href: z.optional(z.string().register(z.globalRegistry, {
-        description: 'URL of the created document.'
-    })),
-    documentId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The document ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response body for a created contract.'
+    id: z.optional(z.string()),
+    href: z.optional(z.string()),
+    documentId: z.optional(z.string())
 });
 
 /**
@@ -193,135 +135,83 @@ export const zContractResponse = z.object({
         z.null()
     ])),
     followers: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'User ID.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
     tags: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Tag value.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
     restrictions: z.optional(z.union([
         z.object({
             'vtex.catalog': z.optional(z.object({
-                collectionIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-                    description: 'Collection ID.'
-                })).register(z.globalRegistry, {
-                    description: 'A list of collection IDs that define which product collections (sets of SKUs) the B2B customer can view or purchase from.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Contains restrictions regarding catalog.'
+                collectionIds: z.optional(z.array(z.string()))
             })),
             'vtex.checkout': z.optional(z.object({
-                creditCards: z.optional(z.array(z.string().register(z.globalRegistry, {
-                    description: 'Credit card ID.'
-                })).register(z.globalRegistry, {
-                    description: 'A list of credit card IDs that the customer is allowed to use during checkout. These IDs reference cards stored in the BK entity, managed by the VTEX Checkout system.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Contains restrictions regarding checkout.'
+                creditCards: z.optional(z.array(z.string()))
             })),
             'vtex.payments': z.optional(z.object({
-                paymentSystemIds: z.optional(z.array(z.string().register(z.globalRegistry, {
-                    description: 'Payment system ID.'
-                })).register(z.globalRegistry, {
-                    description: 'A list of numeric IDs that represent the allowed payment systems for the customer.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Contains restrictions regarding payments.'
+                paymentSystemIds: z.optional(z.array(z.string()))
             }))
         }),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Response body for a contract document.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-}).default('application/json');
+export const zContentType = z.string().default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-}).default('application/vnd.vtex.ds.v10+json');
+export const zAccept = z.string().default('application/vnd.vtex.ds.v10+json');
 
 export const zCreateContractData = z.object({
     body: zUpdateContractRequest,
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zDeleteApiDataentitiesClDocumentsByContractIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contractId: z.string().register(z.globalRegistry, {
-            description: 'ID of the contract to be deleted.'
-        })
+        contractId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zGetApiDataentitiesClDocumentsByContractIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contractId: z.string().register(z.globalRegistry, {
-            description: 'ID of the contract to retrieve.'
-        })
+        contractId: z.string()
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Specifies that all fields of the document should be included in the response.'
-        })).default('_all')
+        _fields: z.optional(z.string()).default('_all')
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zPatchApiDataentitiesClDocumentsByContractIdData = z.object({
     body: zUpdateContractRequest,
     path: z.object({
-        contractId: z.string().register(z.globalRegistry, {
-            description: 'ID of the contract to update.'
-        })
+        contractId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
     })
 });

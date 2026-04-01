@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateorupdatefixedpricesonpricetableortradepolicyData, CreateorupdatefixedpricesonpricetableortradepolicyResponses, CreateUpdatePriceOrFixedPriceData, CreateUpdatePriceOrFixedPriceNoRemoveData, CreateUpdatePriceOrFixedPriceNoRemoveResponses, CreateUpdatePriceOrFixedPriceResponses, DeletefixedpricesonapricetableortradepolicyData, DeletefixedpricesonapricetableortradepolicyResponses, DeletePriceData, DeletePriceResponses, GetallpricetablesandrulesData, GetallpricetablesandrulesResponses, GetComputedPricebypricetableData, GetComputedPricebypricetableResponses, GetFixedPricesData, GetFixedPricesonapricetableData, GetFixedPricesonapricetableResponses, GetFixedPricesResponses, GetPriceData, GetPriceResponses, GetPricingConfigData, GetPricingConfigResponses, GetPricingv2StatusData, GetPricingv2StatusResponses, GetrulesforapricetableData, GetrulesforapricetableErrors, GetrulesforapricetableResponses, ListpricetablesData, ListpricetablesResponses, PutPricingPipelineCatalogByPriceTableIdData, PutPricingPipelineCatalogByPriceTableIdResponses, PutPricingTablesByPriceTableIdData, PutPricingTablesByPriceTableIdResponses } from './types.gen';
+import type { CreateorupdatefixedpricesonpricetableortradepolicyData, CreateorupdatefixedpricesonpricetableortradepolicyResponses, CreateUpdatePriceOrFixedPriceData, CreateUpdatePriceOrFixedPriceNoRemoveData, CreateUpdatePriceOrFixedPriceNoRemoveResponses, CreateUpdatePriceOrFixedPriceResponses, DeletefixedpricesonapricetableortradepolicyData, DeletefixedpricesonapricetableortradepolicyResponses, DeletePriceData, DeletePriceResponses, GetallpricetablesandrulesData, GetallpricetablesandrulesResponses, GetComputedPricebypricetableData, GetComputedPricebypricetableResponses, GetFixedPricesData, GetFixedPricesonapricetableData, GetFixedPricesonapricetableResponses, GetFixedPricesResponses, GetPriceData, GetPriceResponses, GetPricingConfigData, GetPricingConfigResponses, GetPricingPricesByItemIdComputedData, GetPricingPricesByItemIdComputedResponses, GetPricingv2StatusData, GetPricingv2StatusResponses, GetrulesforapricetableData, GetrulesforapricetableErrors, GetrulesforapricetableResponses, ListpricetablesData, ListpricetablesResponses, PutPricingPipelineCatalogByPriceTableIdData, PutPricingPipelineCatalogByPriceTableIdResponses, PutPricingTablesByPriceTableIdData, PutPricingTablesByPriceTableIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -252,6 +252,33 @@ export const createorupdatefixedpricesonpricetableortradepolicy = <ThrowOnError 
 });
 
 /**
+ * Get computed prices for all price tables
+ *
+ * Retrieves the computed prices for an SKU across all price tables that have a fixed price configured.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Pricing | Price List | **Read prices** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const getPricingPricesByItemIdComputed = <ThrowOnError extends boolean = false>(options: Options<GetPricingPricesByItemIdComputedData, ThrowOnError>) => (options.client ?? client).get<GetPricingPricesByItemIdComputedResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/pricing/prices/{itemId}/computed',
+    ...options
+});
+
+/**
  * Get computed price by price table or trade policy
  *
  * Gets the Computed Price, which is the price after all the steps in the Pricing pipeline, for an SKU in a specific price table or trade policy.
@@ -266,7 +293,7 @@ export const createorupdatefixedpricesonpricetableortradepolicy = <ThrowOnError 
  *
  * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
  *
- * >u2757 To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getComputedPricebypricetable = <ThrowOnError extends boolean = false>(options: Options<GetComputedPricebypricetableData, ThrowOnError>) => (options.client ?? client).get<GetComputedPricebypricetableResponses, unknown, ThrowOnError>({
     security: [

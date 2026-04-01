@@ -19,13 +19,17 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Create storefront user with username
+ * Create storefront user
  *
- * Registers a new storefront user in VTEX ID using a unique login key (username) as `identifier`.
+ * Creates a new storefront user in VTEX ID with one or more authentication identifiers (username, email, or phone number).
  *
  * The created user is not linked to any Organization Unit and does not have storefront permissions.
  *
- * Once a storefront user is added, it cannot be edited or removed. If incorrect data is uploaded, create a new username.
+ * ## Notes and limitations
+ *
+ * - There are currently **no APIs for updating authentication identifiers**. For update-related needs, contact our [Support](https://support.vtex.com/hc/en-us/).
+ * - Although `phoneNumber` can be registered and used for authentication, it is **not yet supported for password recovery**.
+ * - Once a storefront user is added, authentication identifiers cannot be edited or removed. If incorrect data is uploaded, you must create a new user.
  *
  * ## Permissions
  *

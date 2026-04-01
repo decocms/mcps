@@ -6,544 +6,304 @@ import * as z from 'zod';
  * Error response object.
  */
 export const zErrorResponse = z.object({
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message describing what went wrong.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Error response object.'
+    message: z.optional(z.string())
 });
 
 /**
  * Entity that can authorize an action.
  */
 export const zAuthorizer = z.object({
-    type: z.string().register(z.globalRegistry, {
-        description: 'Type of authorizer. For Organization Account, it\'s always `unit`.'
-    }),
-    id: z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the authorizer.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Entity that can authorize an action.'
+    type: z.string(),
+    id: z.string()
 });
 
 /**
  * Request body for creating or updating a dimension.
  */
 export const zCreateUpdateDimensionRequestBody = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Name of the dimension.'
-    }),
-    requireAllRulesAcceptance: z.boolean().register(z.globalRegistry, {
-        description: 'When set as `true`, all listed rules must be accepted for the dimension to be approved. When set as `false`, the first matching rule that evaluates to `true` will be executed.'
-    }),
-    unitId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the organization unit this dimension belongs to. Each unit can have one dimension. This field is required when using `appKey/appToken` authentication.'
-    })),
-    priority: z.int().register(z.globalRegistry, {
-        description: 'Dimension priority controls which organization unit\'s policies are evaluated in which order. Lower priority numbers are evaluated first. For hierarchical policies, assign descending priorities by hierarchy level (e.g., 9999 = top unit, 9998 = child units, 9997 = grandchild units) so lower-level org units are checked first. Sibling units share the same priority.'
-    }),
+    name: z.string(),
+    requireAllRulesAcceptance: z.boolean(),
+    unitId: z.optional(z.string()),
+    priority: z.int(),
     ruleCollection: z.array(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the rule.'
-        }),
-        priority: z.int().register(z.globalRegistry, {
-            description: 'Rule priority controls which policy type is checked first within the org unit. Lower numbers are evaluated first. You can have bypass rules and immediately approve orders by matching effect types with fixed priorities: `1` = bypass (effectType: 0), `2` = deny (effectType: 1), `3` = sequential workflow (effectType: 2).'
-        }),
+        name: z.string(),
+        priority: z.int(),
         trigger: z.object({
             condition: z.object({
                 conditionType: z.union([
                     z.literal(0),
                     z.literal(1),
                     z.literal(2)
-                ]).register(z.globalRegistry, {
-                    description: 'Type of condition, which can be `0` (bypass), `1` (deny) or `2` (sequential workflow). Type `2` defines that the rule condition is set by an expression (see field `expression`).'
-                }),
-                description: z.string().register(z.globalRegistry, {
-                    description: 'Description of the condition.'
-                }),
-                expression: z.string().register(z.globalRegistry, {
-                    description: 'JSONata expression that defines the condition logic. The expression is evaluated against the order payload, which includes fields like `orderId`, `items`, `value`, `budgetData`, `marketPlaceOrderId`, and other order properties. See [JSONata documentation](https://jsonata.org/) for expression syntax and available operators.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Condition that must be met to trigger the rule.'
+                ]),
+                description: z.string(),
+                expression: z.string()
             }),
             effect: z.object({
-                description: z.string().register(z.globalRegistry, {
-                    description: 'Description of the effect.'
-                }),
+                description: z.string(),
                 effectType: z.union([
                     z.literal(0),
                     z.literal(1),
                     z.literal(2)
-                ]).register(z.globalRegistry, {
-                    description: 'Type of effect. Possible values are: `0` (approve), `1` (deny), or `2` (pending, which means it requires manual approval).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Effect to apply when the condition is met.'
+                ])
             })
-        }).register(z.globalRegistry, {
-            description: 'Defines the condition and effect that trigger the rule.'
         }),
         scoreInterval: z.object({
-            accept: z.number().register(z.globalRegistry, {
-                description: 'Minimum score required to accept the rule.'
-            }),
-            deny: z.number().register(z.globalRegistry, {
-                description: 'Maximum score to deny the rule.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Defines acceptance and denial thresholds used during manual authorization via the [Accept or deny rule](https://developers.vtex.com/docs/api-reference/buying-policies-api#post-/commercial-authorizations/-orderAuthId-/callback) endpoint.'
+            accept: z.number(),
+            deny: z.number()
         }),
         authorizationData: z.optional(z.object({
-            requireAllApprovals: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'When set as `true`, all authorizers must approve. When set as `false`, approval from any single authorizer is sufficient.'
-            })),
-            authorizers: z.optional(z.array(zAuthorizer).register(z.globalRegistry, {
-                description: 'List of entities that can authorize the action.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Defines required authorizers and whether all must approve. Only applicable for rules with `effectType: 2` (pending). Supports both `unit` and `user` authorizers.'
+            requireAllApprovals: z.optional(z.boolean()),
+            authorizers: z.optional(z.array(zAuthorizer))
         }))
-    }).register(z.globalRegistry, {
-        description: 'Rule object that defines conditions and actions for authorization.'
-    })).register(z.globalRegistry, {
-        description: 'List of rules that define conditions and actions.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Request body for creating or updating a dimension.'
+    }))
 });
 
 /**
  * Object for creating or updating rules.
  */
 export const zCreateUpdateRuleRequestBody = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Name of the rule.'
-    }),
-    priority: z.int().register(z.globalRegistry, {
-        description: 'Rule priority controls which policy type is checked first within the org unit. Lower numbers are evaluated first. You can have bypass rules and immediately approve orders by matching effect types with fixed priorities: `1` = bypass (effectType: 0), `2` = deny (effectType: 1), `3` = sequential workflow (effectType: 2).'
-    }),
+    name: z.string(),
+    priority: z.int(),
     trigger: z.object({
         condition: z.object({
             conditionType: z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ]).register(z.globalRegistry, {
-                description: 'Type of condition, which can be `0` (bypass), `1` (deny) or `2` (sequential workflow). Type `2` defines that the rule condition is set by an expression (see field `expression`).'
-            }),
-            description: z.string().register(z.globalRegistry, {
-                description: 'Description of the condition being evaluated.'
-            }),
-            expression: z.optional(z.string().register(z.globalRegistry, {
-                description: 'JSONata expression that defines the condition logic. The expression is evaluated against the order payload, which includes fields like `orderId`, `items`, `value`, `budgetData`, `marketPlaceOrderId`, and other order properties. See [JSONata documentation](https://jsonata.org/) for expression syntax and available operators.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Condition that must be met to trigger the rule.'
+            ]),
+            description: z.string(),
+            expression: z.optional(z.string())
         }),
         effect: z.object({
-            description: z.string().register(z.globalRegistry, {
-                description: 'Description of the effect to be applied if condition is met.'
-            }),
+            description: z.string(),
             effectType: z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ]).register(z.globalRegistry, {
-                description: 'Type of effect. Possible values are: `0` (approve), `1` (deny), or `2` (pending, which means it requires manual approval/denial).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Effect to apply when the condition is met.'
+            ])
         })
-    }).register(z.globalRegistry, {
-        description: 'Defines the condition and effect that trigger the rule.'
     }),
     scoreInterval: z.object({
-        accept: z.number().register(z.globalRegistry, {
-            description: 'Minimum score required to accept the rule.'
-        }),
-        deny: z.number().register(z.globalRegistry, {
-            description: 'Maximum score to deny the rule.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Defines acceptance and denial thresholds used during manual authorization via the [Accept or deny rule](https://developers.vtex.com/docs/api-reference/buying-policies-api#post-/commercial-authorizations/-orderAuthId-/callback) endpoint.'
+        accept: z.number(),
+        deny: z.number()
     }),
     authorizationData: z.optional(z.object({
-        requireAllApprovals: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When set as `true`, all authorizers must approve. When set as `false`, approval from any single authorizer is sufficient.'
-        })),
-        authorizers: z.optional(z.array(zAuthorizer).register(z.globalRegistry, {
-            description: 'List of entities that can authorize the action.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Defines required authorizers and whether all must approve. Only applicable for rules with `effectType: 2` (pending). Supports both `unit` and `user` authorizers.'
+        requireAllApprovals: z.optional(z.boolean()),
+        authorizers: z.optional(z.array(zAuthorizer))
     }))
-}).register(z.globalRegistry, {
-    description: 'Object for creating or updating rules.'
 });
 
 /**
  * Rule object in the response containing conditions and actions for authorization.
  */
 export const zRuleResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the rule.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the rule.'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
     status: z.optional(z.nullable(z.enum([
         'accepted',
         'denied',
         'pending'
-    ])).register(z.globalRegistry, {
-        description: 'Current status of the rule.'
-    })),
-    priority: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Evaluation priority for the rule.'
-    })),
+    ]))),
+    priority: z.optional(z.int()),
     trigger: z.optional(z.object({
         condition: z.optional(z.object({
             conditionType: z.optional(z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ]).register(z.globalRegistry, {
-                description: 'Type of condition, which can be `0` (bypass), `1` (deny) or `2` (sequential workflow). Type `2` defines that the rule condition is set by an expression (see field `expression`).'
-            })),
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the condition.'
-            })),
-            expression: z.optional(z.string().register(z.globalRegistry, {
-                description: 'JSONata expression that defines the condition logic.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Condition that must be met to trigger the rule.'
+            ])),
+            description: z.optional(z.string()),
+            expression: z.optional(z.string())
         })),
         effect: z.optional(z.object({
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the effect.'
-            })),
+            description: z.optional(z.string()),
             effectType: z.optional(z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ]).register(z.globalRegistry, {
-                description: 'Type of effect: `0` (approve), `1` (deny), or `2` (pending).'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Effect to apply when the condition is met.'
+            ]))
         }))
-    }).register(z.globalRegistry, {
-        description: 'Contains the trigger condition and effect logic.'
     })),
     scoreInterval: z.optional(z.object({
-        accept: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Minimum score required to accept the rule.'
-        })),
-        deny: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum score to deny the rule.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Score range for accepting or denying the rule.'
+        accept: z.optional(z.number()),
+        deny: z.optional(z.number())
     })),
     authorizationData: z.optional(z.object({
-        requireAllApprovals: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Whether all authorizers must approve.'
-        })),
-        authorizers: z.optional(z.array(zAuthorizer).register(z.globalRegistry, {
-            description: 'List of entities that can authorize the action.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Defines required authorizers and whether all must approve (only present for rules with `effectType: 2`).'
+        requireAllApprovals: z.optional(z.boolean()),
+        authorizers: z.optional(z.array(zAuthorizer))
     }))
-}).register(z.globalRegistry, {
-    description: 'Rule object in the response containing conditions and actions for authorization.'
 });
 
 /**
  * Response object for an authorization dimension.
  */
 export const zDimensionResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Unique identifier of the dimension.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the authorization dimension.'
-    })),
-    unitId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the business unit this dimension belongs to. If this field is not provided in the request body, the value will default to the business unit associated with the user token from the `VtexIdclientAutCookie`.'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    unitId: z.optional(z.string()),
     status: z.optional(z.nullable(z.enum([
         'accepted',
         'denied',
         'pending',
         'ignored'
-    ])).register(z.globalRegistry, {
-        description: 'Current status of the dimension.'
-    })),
-    priority: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Execution priority of the dimension. Lower numbers are evaluated first.'
-    })),
-    requireAllRulesAcceptance: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Whether all listed rules must be accepted for the dimension to be approved.'
-    })),
-    ruleCollection: z.optional(z.array(zRuleResponse).register(z.globalRegistry, {
-        description: 'Collection of rules contained in this dimension.'
-    })),
-    creationDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Date and time of dimension creation in the format `YYYY-MM-DDThh:mm:ssZ`.'
-    })),
-    creationVersion: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Version of the system that created the dimension.'
-    })),
-    creationEnvironment: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Environment where the dimension was created (e.g., `stable`, `beta`).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response object for an authorization dimension.'
+    ]))),
+    priority: z.optional(z.int()),
+    requireAllRulesAcceptance: z.optional(z.boolean()),
+    ruleCollection: z.optional(z.array(zRuleResponse)),
+    creationDate: z.optional(z.iso.datetime()),
+    creationVersion: z.optional(z.string()),
+    creationEnvironment: z.optional(z.string())
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * Name of the VTEX account.
  */
-export const zAccountName = z.string().register(z.globalRegistry, {
-    description: 'Name of the VTEX account.'
-});
+export const zAccountName = z.string();
 
 /**
  * Unique identifier for the authorization dimension.
  */
-export const zDimensionId = z.string().register(z.globalRegistry, {
-    description: 'Unique identifier for the authorization dimension.'
-});
+export const zDimensionId = z.string();
 
 /**
  * Unique identifier for the dimension rule.
  */
-export const zRuleId = z.string().register(z.globalRegistry, {
-    description: 'Unique identifier for the dimension rule.'
-});
+export const zRuleId = z.string();
 
 /**
  * Unique identifier for the order authorization request.
  */
-export const zOrderAuthId = z.string().register(z.globalRegistry, {
-    description: 'Unique identifier for the order authorization request.'
-});
+export const zOrderAuthId = z.string();
 
 export const zGetByAccountNameAuthorizationDimensionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        })
+        accountName: z.string()
     }),
     query: z.optional(z.object({
-        id: z.optional(z.array(z.string()).register(z.globalRegistry, {
-            description: 'Filters by dimension ID(s). Supports exact matching, case-insensitive. You can pass multiple values by repeating the parameter.'
-        })),
-        unitId: z.optional(z.array(z.string()).register(z.globalRegistry, {
-            description: 'Filters by organizational unit ID(s). Supports exact matching, case-insensitive. You can pass multiple values by repeating the parameter.'
-        })),
-        name: z.optional(z.array(z.string()).register(z.globalRegistry, {
-            description: 'Filters by dimension name(s). Supports exact matching, case-insensitive. You can pass multiple values by repeating the parameter.'
-        }))
+        id: z.optional(z.array(z.string())),
+        unitId: z.optional(z.array(z.string())),
+        name: z.optional(z.array(z.string()))
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostByAccountNameAuthorizationDimensionsData = z.object({
     body: z.optional(zCreateUpdateDimensionRequestBody),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        })
+        accountName: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteByAccountNameAuthorizationDimensionsByDimensionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPutByAccountNameAuthorizationDimensionsByDimensionIdData = z.object({
     body: z.optional(zCreateUpdateDimensionRequestBody),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostByAccountNameAuthorizationDimensionsByDimensionIdRulesData = z.object({
     body: z.optional(zCreateUpdateRuleRequestBody),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutByAccountNameAuthorizationDimensionsByDimensionIdRulesData = z.object({
     body: z.optional(z.array(zCreateUpdateRuleRequestBody)),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteByAccountNameAuthorizationDimensionsByDimensionIdRulesByRuleIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        }),
-        ruleId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the dimension rule.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string(),
+        ruleId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPutByAccountNameAuthorizationDimensionsByDimensionIdRulesByRuleIdData = z.object({
     body: z.optional(zCreateUpdateRuleRequestBody),
     path: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }),
-        dimensionId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the authorization dimension.'
-        }),
-        ruleId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the dimension rule.'
-        })
+        accountName: z.string(),
+        dimensionId: z.string(),
+        ruleId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostCommercialAuthorizationsByOrderAuthIdCallbackData = z.object({
     body: z.optional(z.object({
         params: z.object({
-            score: z.int().register(z.globalRegistry, {
-                description: 'Score value to determine the authorization outcome. The score is compared against the rule\'s `scoreInterval` thresholds: scores ≥ `scoreInterval.accept` accept the rule, scores ≤ `scoreInterval.deny` deny it. For standard frontend values (`accept: 10`, `deny: 5`), use `10` to accept or `0` to deny a rule.'
-            }),
-            dimensionId: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the dimension being evaluated.'
-            }),
-            ruleId: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the rule associated with the dimension.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Information to deny or accept a rule from a given dimension.'
+            score: z.int(),
+            dimensionId: z.string(),
+            ruleId: z.string()
         })
     })),
     path: z.object({
-        orderAuthId: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier for the order authorization request.'
-        })
+        orderAuthId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

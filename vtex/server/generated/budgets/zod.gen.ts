@@ -6,430 +6,212 @@ import * as z from 'zod';
  * Object containing the error message.
  */
 export const zResponseError = z.object({
-    error: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object containing the error message.'
+    error: z.optional(z.string())
 });
 
 /**
  * Pagination information.
  */
 export const zPagination = z.object({
-    current: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Current page number.'
-    })),
-    pages: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Total number of pages available.'
-    })),
-    results: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Total number of results across all pages.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Pagination information.'
+    current: z.optional(z.int()),
+    pages: z.optional(z.int()),
+    results: z.optional(z.int())
 });
 
 /**
  * Response containing transaction details.
  */
 export const zTransactionResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the created transaction.'
-    })),
-    budgetId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the associated budget.'
-    })),
-    allocationId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the allocation within the budget.'
-    })),
-    origin: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Source system or origin of the transaction.'
-    })),
-    reference: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Reference identifier tied to the transaction.'
-    })),
-    amount: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Amount committed in the transaction.'
-    })),
-    requestedBy: z.optional(z.email().register(z.globalRegistry, {
-        description: 'Email of the user who created the transaction.'
-    })),
-    date: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Date and time of the transaction (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    })),
-    type: z.optional(z.enum(['DEBIT', 'CREDIT']).register(z.globalRegistry, {
-        description: 'Condition that defines how the transaction will impact the budget (e.g., `DEBIT` or `CREDIT`). If `type` is `DEBIT`, the amount will be subtracted from the budget. If `type` is `CREDIT`, the amount will be added to the budget.'
-    })),
-    contextType: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the context type associated with the budget which must be `UNIT` in B2B context.'
-    })),
-    contextId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier for the context type.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response containing transaction details.'
+    id: z.optional(z.string()),
+    budgetId: z.optional(z.string()),
+    allocationId: z.optional(z.string()),
+    origin: z.optional(z.string()),
+    reference: z.optional(z.string()),
+    amount: z.optional(z.number()),
+    requestedBy: z.optional(z.email()),
+    date: z.optional(z.iso.datetime()),
+    type: z.optional(z.enum(['DEBIT', 'CREDIT'])),
+    contextType: z.optional(z.string()),
+    contextId: z.optional(z.string())
 });
 
 /**
  * Response containing reservation details.
  */
 export const zReservationResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the reservation.'
-    })),
-    budgetId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the associated budget.'
-    })),
-    allocationId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the associated allocation.'
-    })),
-    origin: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The origin of the reservation (e.g., order system).'
-    })),
-    reference: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Reference tied to the reservation (e.g., order ID).'
-    })),
-    amount: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Amount reserved.'
-    })),
-    requestedBy: z.optional(z.email().register(z.globalRegistry, {
-        description: 'Email of the user who requested the reservation.'
-    })),
-    date: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Reservation date (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    })),
-    type: z.optional(z.enum(['DEBIT', 'CREDIT']).register(z.globalRegistry, {
-        description: 'Type of transaction (`DEBIT`, meaning a regular transaction or `CREDIT` indicating a refund).'
-    })),
-    contextType: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the context type associated with the budget which must be `UNIT` in B2B context.'
-    })),
-    contextId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the corresponding Unit.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response containing reservation details.'
+    id: z.optional(z.string()),
+    budgetId: z.optional(z.string()),
+    allocationId: z.optional(z.string()),
+    origin: z.optional(z.string()),
+    reference: z.optional(z.string()),
+    amount: z.optional(z.number()),
+    requestedBy: z.optional(z.email()),
+    date: z.optional(z.iso.datetime()),
+    type: z.optional(z.enum(['DEBIT', 'CREDIT'])),
+    contextType: z.optional(z.string()),
+    contextId: z.optional(z.string())
 });
 
 /**
  * List of thresholds that trigger a notification based on usage. Applies to both Budgets and Allocations.
  */
 export const zNotificationSettings = z.array(z.object({
-    type: z.optional(z.enum(['PERCENT', 'AMOUNT']).register(z.globalRegistry, {
-        description: 'Defines whether the threshold is based on percentage of usage or a fixed amount.'
-    })),
-    threshold: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The value of the threshold. For `"PERCENT"`, 100 means fully used (0 available); values above 100 indicate overuse.'
-    })),
+    type: z.optional(z.enum(['PERCENT', 'AMOUNT'])),
+    threshold: z.optional(z.number()),
     recipients: z.optional(z.array(z.object({
-        email: z.optional(z.email().register(z.globalRegistry, {
-            description: 'Email address of the recipient.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Recipient information.'
-    })).register(z.globalRegistry, {
-        description: 'List of recipients to notify.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Notification setting.'
-})).register(z.globalRegistry, {
-    description: 'List of thresholds that trigger a notification based on usage. Applies to both Budgets and Allocations.'
-});
+        email: z.optional(z.email())
+    })))
+}));
 
 /**
  * Thresholds that trigger a notification based on usage. Applies to both Budgets and Allocations.
  */
 export const zNotificationSettingsObject = z.object({
-    enable: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Enables notifications.'
-    })),
+    enable: z.optional(z.boolean()),
     thresholds: z.optional(z.array(z.object({
-        type: z.optional(z.enum(['PERCENT', 'AMOUNT']).register(z.globalRegistry, {
-            description: 'Defines whether the threshold is based on percentage of usage or a fixed amount.'
-        })),
-        Value: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The value of the threshold. For `"PERCENT"`, 100 means fully used (0 available); values above 100 indicate overuse.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Threshold configuration.'
-    })).register(z.globalRegistry, {
-        description: 'Array of threshold configurations.'
-    })),
+        type: z.optional(z.enum(['PERCENT', 'AMOUNT'])),
+        Value: z.optional(z.number())
+    }))),
     recipients: z.optional(z.array(z.object({
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Type of notification.'
-        })),
-        identifier: z.optional(z.email().register(z.globalRegistry, {
-            description: 'Email identifier to send notifications.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Recipient information.'
-    })).register(z.globalRegistry, {
-        description: 'List of recipients to notify.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Thresholds that trigger a notification based on usage. Applies to both Budgets and Allocations.'
+        type: z.optional(z.string()),
+        identifier: z.optional(z.email())
+    })))
 });
 
 /**
  * Response containing allocation details.
  */
 export const zAllocationResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the allocation.'
-    })),
-    budgetId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the budget.'
-    })),
+    id: z.optional(z.string()),
+    budgetId: z.optional(z.string()),
     linkedEntity: z.optional(z.object({
-        id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-        })),
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Linked entity information.'
+        id: z.optional(z.string()),
+        type: z.optional(z.string())
     })),
     balance: z.optional(z.object({
-        amount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Total amount in the budget.'
-        })),
-        balanceAdjustment: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Amount already utilized.'
-        })),
-        remaining: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Remaining budget.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Budget balance information.'
+        amount: z.optional(z.number()),
+        balanceAdjustment: z.optional(z.number()),
+        remaining: z.optional(z.number())
     })),
     notificationSettings: z.optional(zNotificationSettingsObject),
     status: z.optional(z.enum([
         'ACTIVE',
         'INACTIVE',
         'DELETED'
-    ]).register(z.globalRegistry, {
-        description: 'Current status of the allocation (e.g., `ACTIVE` or `INACTIVE`).'
-    })),
-    referenceId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-    })),
-    contractId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the contract. Alternative field to `referenceId`.'
-    })),
-    contextType: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the context type associated with the budget which must be `UNIT` in B2B context.'
-    })),
-    contextId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the corresponding Unit.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response containing allocation details.'
+    ])),
+    referenceId: z.optional(z.string()),
+    contractId: z.optional(z.string()),
+    contextType: z.optional(z.string()),
+    contextId: z.optional(z.string())
 });
 
 /**
  * Configuration for budget cycle.
  */
 export const zCycleConfiguration = z.object({
-    startDate: z.iso.datetime().register(z.globalRegistry, {
-        description: 'Start date of the budget cycle (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    }),
-    endDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'End date of the budget cycle (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    })),
-    autoResetOnPeriodEnd: z.boolean().register(z.globalRegistry, {
-        description: 'Enable (`true`) or disable (`false`) the autoreset period.'
-    }),
-    carryOverBalance: z.boolean().register(z.globalRegistry, {
-        description: 'Defines wether to carry over balance (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Configuration for budget cycle.'
+    startDate: z.iso.datetime(),
+    endDate: z.optional(z.iso.datetime()),
+    autoResetOnPeriodEnd: z.boolean(),
+    carryOverBalance: z.boolean()
 });
 
 /**
  * Configuration for budget cycle in response.
  */
 export const zCycleConfigurationResponse = z.object({
-    startDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Start date of the budget cycle (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    })),
-    endDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'End date of the budget cycle (ISO format: YYYY-MM-DDThh:mm:ssZ).'
-    })),
-    autoResetOnPeriodEnd: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Condition if the period will auto reset when ended.'
-    })),
-    carryOverBalance: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Condition if the remain balance will be transferred to the next cycle.'
-    })),
-    nextRenewal: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Next cycle renewal date (format: YYYY-MM-DDThh:mm:ssZ).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Configuration for budget cycle in response.'
+    startDate: z.optional(z.iso.datetime()),
+    endDate: z.optional(z.iso.datetime()),
+    autoResetOnPeriodEnd: z.optional(z.boolean()),
+    carryOverBalance: z.optional(z.boolean()),
+    nextRenewal: z.optional(z.iso.datetime())
 });
 
 /**
  * Response containing budget details.
  */
 export const zBudgetResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the budget.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the budget.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Description of the budget.'
-    })),
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    description: z.optional(z.string()),
     balance: z.optional(z.object({
-        amount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Total amount in the budget.'
-        })),
-        balanceAdjustment: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Amount already utilized.'
-        })),
-        remaining: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Remaining budget.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Budget balance information.'
+        amount: z.optional(z.number()),
+        balanceAdjustment: z.optional(z.number()),
+        remaining: z.optional(z.number())
     })),
     cycleConfiguration: z.optional(zCycleConfigurationResponse),
     notificationSettings: z.optional(zNotificationSettingsObject),
-    status: z.optional(z.enum(['ACTIVE', 'INACTIVE']).register(z.globalRegistry, {
-        description: 'Current status of the budget (e.g., `ACTIVE`, `INACTIVE`).'
-    })),
-    contextType: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Defines the context type associated with the budget which must be `UNIT` in B2B context.'
-    })),
-    contextId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier of the context type.'
-    })),
+    status: z.optional(z.enum(['ACTIVE', 'INACTIVE'])),
+    contextType: z.optional(z.string()),
+    contextId: z.optional(z.string()),
     allocations: z.optional(z.array(z.object({
-        id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Unique identifier of the allocation.'
-        })),
-        budgetId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier of the associated budget.'
-        })),
+        id: z.optional(z.string()),
+        budgetId: z.optional(z.string()),
         linkedEntity: z.optional(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-            })),
-            type: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Entity to which the allocation is linked.'
+            id: z.optional(z.string()),
+            type: z.optional(z.string())
         })),
         balance: z.optional(z.object({
-            amount: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Total amount allocated.'
-            })),
-            balanceAdjustment: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Amount already used from the allocation.'
-            })),
-            remaining: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Remaining balance.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Financial details of the allocation.'
+            amount: z.optional(z.number()),
+            balanceAdjustment: z.optional(z.number()),
+            remaining: z.optional(z.number())
         })),
         notificationSettings: z.optional(zNotificationSettingsObject),
-        status: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Current status of the allocation (e.g., `ACTIVE`).'
-        })),
-        referenceId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier of the related contract.'
-        })),
-        contextType: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Defines the context type associated with the budget which must be `UNIT` in B2B context.'
-        })),
-        contextId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier of the context type.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Allocation object.'
-    })).register(z.globalRegistry, {
-        description: 'Optional list of initial allocations to create with the budget.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response containing budget details.'
+        status: z.optional(z.string()),
+        referenceId: z.optional(z.string()),
+        contextType: z.optional(z.string()),
+        contextId: z.optional(z.string())
+    })))
 });
 
 /**
  * HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * Type of context for the budget (e.g., `UNIT`). This field can't be updated, it is used for validation. You must send the original value.
  */
-export const zContextType = z.string().register(z.globalRegistry, {
-    description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-});
+export const zContextType = z.string();
 
 /**
  * Identifier of the corresponding Unit. This field can't be updated, it is used for validation. You must send the original value.
  */
-export const zContextId = z.string().register(z.globalRegistry, {
-    description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-});
+export const zContextId = z.string();
 
 /**
  * Identifier of the budget.
  */
-export const zBudgetId = z.string().register(z.globalRegistry, {
-    description: 'Identifier of the budget.'
-});
+export const zBudgetId = z.string();
 
 /**
  * Identifier of the allocation.
  */
-export const zAllocationId = z.string().register(z.globalRegistry, {
-    description: 'Identifier of the allocation.'
-});
+export const zAllocationId = z.string();
 
 /**
  * Page number of the results.
  */
-export const zPage = z.int().register(z.globalRegistry, {
-    description: 'Page number of the results.'
-});
+export const zPage = z.int();
 
 /**
  * Number of items per page.
  */
-export const zPageSize = z.int().register(z.globalRegistry, {
-    description: 'Number of items per page.'
-});
+export const zPageSize = z.int();
 
 /**
  * Identifier of the transaction.
  */
-export const zTransactionId = z.string().register(z.globalRegistry, {
-    description: 'Identifier of the transaction.'
-});
+export const zTransactionId = z.string();
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * Identifier of the reservation.
  */
-export const zReservationId = z.string().register(z.globalRegistry, {
-    description: 'Identifier of the reservation.'
-});
+export const zReservationId = z.string();
 
 /**
  * Filter by reservation status (e.g., `RESERVED`, `CONFIRMED`, or `CANCELED`).
@@ -438,16 +220,12 @@ export const zStatus = z.enum([
     'RESERVED',
     'CONFIRMED',
     'CANCELED'
-]).register(z.globalRegistry, {
-    description: 'Filter by reservation status (e.g., `RESERVED`, `CONFIRMED`, or `CANCELED`).'
-});
+]);
 
 /**
  * Filters the allocations by linked entity type. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).
  */
-export const zType = z.string().register(z.globalRegistry, {
-    description: 'Filters the allocations by linked entity type. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-});
+export const zType = z.string();
 
 /**
  * Filter allocations by their status. Use `ACTIVE` for current allocations, `INACTIVE` for temporary disabled ones, or `DELETED` for removed allocations.
@@ -456,449 +234,251 @@ export const zAllocationStatus = z.enum([
     'ACTIVE',
     'INACTIVE',
     'DELETED'
-]).register(z.globalRegistry, {
-    description: 'Filter allocations by their status. Use `ACTIVE` for current allocations, `INACTIVE` for temporary disabled ones, or `DELETED` for removed allocations.'
-});
+]);
 
 /**
  * Filters the allocations by contract ID.
  */
-export const zReferenceId = z.string().register(z.globalRegistry, {
-    description: 'Filters the allocations by contract ID.'
-});
+export const zReferenceId = z.string();
 
 /**
  * Minimum budget amount for filtering.
  */
-export const zMinAmount = z.number().register(z.globalRegistry, {
-    description: 'Minimum budget amount for filtering.'
-});
+export const zMinAmount = z.number();
 
 /**
  * Maximum budget amount for filtering.
  */
-export const zMaxAmount = z.number().register(z.globalRegistry, {
-    description: 'Maximum budget amount for filtering.'
-});
+export const zMaxAmount = z.number();
 
 /**
  * Filter budgets by their status. Use `ACTIVE` for enabled budgets or `INACTIVE` for disabled budgets. The status `DELETED` is not applicable for budget filtering: deleted budgets are purged from the system and cannot be retrieved or filtered through the API.
  */
-export const zBudgetStatus = z.enum(['ACTIVE', 'INACTIVE']).register(z.globalRegistry, {
-    description: 'Filter budgets by their status. Use `ACTIVE` for enabled budgets or `INACTIVE` for disabled budgets. The status `DELETED` is not applicable for budget filtering: deleted budgets are purged from the system and cannot be retrieved or filtered through the API.'
-});
+export const zBudgetStatus = z.enum(['ACTIVE', 'INACTIVE']);
 
 /**
  * Budget name.
  */
-export const zBudgetName = z.string().register(z.globalRegistry, {
-    description: 'Budget name.'
-});
+export const zBudgetName = z.string();
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdStatementsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number of the results.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items per page.'
-        }))
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdStatementsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number of the results.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items per page.'
-        }))
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdTransactionsData = z.object({
     body: z.optional(z.object({
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Describes the origin or reason for the adjustment.'
-        }),
-        reference: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reference ID or note for tracking the adjustment.'
-        })),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Amount to adjust. For `DEBIT` transactions, provide a negative value (the amount will be subtracted from the allocation). For `CREDIT` transactions, provide a positive value (the amount will be added to the allocation).'
-        }),
-        type: z.enum(['DEBIT', 'CREDIT']).register(z.globalRegistry, {
-            description: 'Condition that defines how the transaction will impact the budget (e.g., `DEBIT` or `CREDIT`). If `type` is `DEBIT`, the amount will be subtracted from the budget. If `type` is `CREDIT`, the amount will be added to the budget.'
-        }),
-        requestedBy: z.email().register(z.globalRegistry, {
-            description: 'Email of the user requesting the change.'
-        })
+        origin: z.string(),
+        reference: z.optional(z.string()),
+        amount: z.number(),
+        type: z.enum(['DEBIT', 'CREDIT']),
+        requestedBy: z.email()
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdTransactionsByTransactionIdRefundData = z.object({
     body: z.optional(z.object({
-        requestedBy: z.email().register(z.globalRegistry, {
-            description: 'The email of the user initiating the refund.'
-        })
+        requestedBy: z.email()
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the transaction.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdTransactionsByTransactionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the transaction.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdReservationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number of the results.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items per page.'
-        })),
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int()),
         status: z.optional(z.enum([
             'RESERVED',
             'CONFIRMED',
             'CANCELED'
-        ]).register(z.globalRegistry, {
-            description: 'Filter by reservation status (e.g., `RESERVED`, `CONFIRMED`, or `CANCELED`).'
-        }))
+        ]))
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdReservationsData = z.object({
     body: z.optional(z.object({
-        origin: z.string().register(z.globalRegistry, {
-            description: 'The origin of the reservation (e.g., order system).'
-        }),
-        reference: z.string().register(z.globalRegistry, {
-            description: 'Reference tied to the reservation (e.g., order ID).'
-        }),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Amount to be reserved.'
-        }),
-        requestedBy: z.email().register(z.globalRegistry, {
-            description: 'Email of the user initiating the reservation.'
-        }),
-        reservationId: z.string().register(z.globalRegistry, {
-            description: 'Client-defined identifier for the reservation.'
-        }),
-        type: z.enum(['DEBIT', 'CREDIT']).register(z.globalRegistry, {
-            description: 'Type of transaction (`DEBIT`, meaning a regular transaction or `CREDIT` indicating a refund).'
-        })
+        origin: z.string(),
+        reference: z.string(),
+        amount: z.number(),
+        requestedBy: z.email(),
+        reservationId: z.string(),
+        type: z.enum(['DEBIT', 'CREDIT'])
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zDeleteApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdReservationsByReservationIdData = z.object({
     body: z.optional(z.object({
-        requestedBy: z.email().register(z.globalRegistry, {
-            description: 'Email of the user canceling the reservation.'
-        })
+        requestedBy: z.email()
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        }),
-        reservationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the reservation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string(),
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdReservationsByReservationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        }),
-        reservationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the reservation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string(),
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdReservationsByReservationIdConfirmationData = z.object({
     body: z.optional(z.object({
-        requestedBy: z.email().register(z.globalRegistry, {
-            description: 'Email of the user confirming the reservation.'
-        })
+        requestedBy: z.email()
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        }),
-        reservationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the reservation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string(),
+        reservationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.object({
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filters the allocations by linked entity type. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-        })),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number of the results.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items per page.'
-        })),
+        type: z.optional(z.string()),
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int()),
         status: z.optional(z.enum([
             'ACTIVE',
             'INACTIVE',
             'DELETED'
-        ]).register(z.globalRegistry, {
-            description: 'Filter allocations by their status. Use `ACTIVE` for current allocations, `INACTIVE` for temporary disabled ones, or `DELETED` for removed allocations.'
-        })),
-        referenceId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filters the allocations by contract ID.'
-        }))
+        ])),
+        referenceId: z.optional(z.string())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsData = z.object({
     body: z.optional(z.object({
         linkedEntity: z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-            }),
-            type: z.string().register(z.globalRegistry, {
-                description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Linked entity information.'
+            id: z.string(),
+            type: z.string()
         }),
-        referenceId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-        }),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Amount allocated.'
-        }),
+        referenceId: z.string(),
+        amount: z.number(),
         notificationSettings: z.optional(zNotificationSettingsObject)
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
@@ -906,485 +486,259 @@ export const zPostApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsBatchDa
     body: z.optional(z.object({
         allocations: z.array(z.object({
             linkedEntity: z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-                }),
-                type: z.string().register(z.globalRegistry, {
-                    description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Linked entity information.'
+                id: z.string(),
+                type: z.string()
             }),
-            referenceId: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-            }),
-            contractId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Identifier of the contract. Alternative field to `referenceId`.'
-            })),
-            amount: z.number().register(z.globalRegistry, {
-                description: 'Amount allocated.'
-            }),
+            referenceId: z.string(),
+            contractId: z.optional(z.string()),
+            amount: z.number(),
             notificationSettings: z.optional(zNotificationSettings)
-        }).register(z.globalRegistry, {
-            description: 'Allocation object.'
-        })).register(z.globalRegistry, {
-            description: 'List of allocation objects to be created.'
-        })
+        }))
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zDeleteApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdData = z.object({
     body: z.optional(z.object({
         linkedEntity: z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the entity linked to this allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-            }),
-            type: z.string().register(z.globalRegistry, {
-                description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Linked entity information.'
+            id: z.string(),
+            type: z.string()
         }),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Budget amount allocated.'
-        }),
-        referenceId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-        }),
-        contractId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier of the contract. Alternative field to `referenceId`.'
-        })),
+        amount: z.number(),
+        referenceId: z.string(),
+        contractId: z.optional(z.string()),
         allocations: z.optional(z.array(z.object({
             linkedEntity: z.optional(z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-                }),
-                type: z.string().register(z.globalRegistry, {
-                    description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Linked entity information.'
+                id: z.string(),
+                type: z.string()
             })),
-            referenceId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-            })),
-            contractId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Identifier of the contract. Alternative field to `referenceId`.'
-            })),
-            amount: z.optional(z.number().register(z.globalRegistry, {
-                description: 'Amount allocated.'
-            })),
+            referenceId: z.optional(z.string()),
+            contractId: z.optional(z.string()),
+            amount: z.optional(z.number()),
             notificationSettings: z.optional(zNotificationSettingsObject)
-        }).register(z.globalRegistry, {
-            description: 'Allocation object.'
-        })).register(z.globalRegistry, {
-            description: 'List of allocation objects to be created.'
-        })),
+        }))),
         notificationSettings: z.optional(zNotificationSettingsObject)
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdLinkedEntityData = z.object({
     body: z.optional(z.object({
-        linkedEntityId: z.string().register(z.globalRegistry, {
-            description: 'New identifier of the entity linked to this allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-        }),
-        linkedEntityType: z.string().register(z.globalRegistry, {
-            description: 'New type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-        })
+        linkedEntityId: z.string(),
+        linkedEntityType: z.string()
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdStatusData = z.object({
     body: z.optional(z.object({
-        status: z.enum(['ACTIVE', 'INACTIVE']).register(z.globalRegistry, {
-            description: 'The new status value to apply to allocation (e.g., `ACTIVE` or `INACTIVE`). The `DELETED` status is not applicable in this context.'
-        })
+        status: z.enum(['ACTIVE', 'INACTIVE'])
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdAllocationsByAllocationIdUsageData = z.object({
     body: z.optional(z.object({
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Describes the origin or reason for the adjustment.'
-        }),
-        reference: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reference ID or note for tracking the adjustment.'
-        })),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Amount to adjust (positive or negative).'
-        }),
-        requestedBy: z.string().register(z.globalRegistry, {
-            description: 'Identifier or name of the system requesting the change.'
-        }),
-        type: z.enum(['DEBIT', 'CREDIT']).register(z.globalRegistry, {
-            description: 'Type of transaction (`DEBIT`, meaning a regular transaction or `CREDIT` indicating a refund).'
-        })
+        origin: z.string(),
+        reference: z.optional(z.string()),
+        amount: z.number(),
+        requestedBy: z.string(),
+        type: z.enum(['DEBIT', 'CREDIT'])
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        }),
-        allocationId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the allocation.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string(),
+        allocationId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdAllocationsQueryData = z.object({
     body: z.optional(z.object({
         items: z.array(z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the entity linked to the allocation. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-            }),
-            type: z.string().register(z.globalRegistry, {
-                description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Linked entity to query.'
-        })).register(z.globalRegistry, {
-            description: 'List of linked entities to query allocations for.'
-        })
+            id: z.string(),
+            type: z.string()
+        }))
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        })
+        contextType: z.string(),
+        contextId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        })
+        contextType: z.string(),
+        contextId: z.string()
     }),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number of the results.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items per page.'
-        })),
-        minAmount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Minimum budget amount for filtering.'
-        })),
-        maxAmount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum budget amount for filtering.'
-        })),
-        status: z.optional(z.enum(['ACTIVE', 'INACTIVE']).register(z.globalRegistry, {
-            description: 'Filter budgets by their status. Use `ACTIVE` for enabled budgets or `INACTIVE` for disabled budgets. The status `DELETED` is not applicable for budget filtering: deleted budgets are purged from the system and cannot be retrieved or filtered through the API.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Budget name.'
-        }))
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int()),
+        minAmount: z.optional(z.number()),
+        maxAmount: z.optional(z.number()),
+        status: z.optional(z.enum(['ACTIVE', 'INACTIVE'])),
+        name: z.optional(z.string())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostApiBudgetsByContextTypeByContextIdData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the budget.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'Description of the budget.'
-        }),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Total amount allocated to the budget.'
-        }),
+        name: z.string(),
+        description: z.string(),
+        amount: z.number(),
         cycleConfiguration: z.optional(zCycleConfiguration),
         notificationSettings: z.optional(zNotificationSettingsObject),
         allocations: z.optional(z.array(z.object({
             linkedEntity: z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'Identifier of the entity. If `type` is `User` or `Address`, this should be the identifier of the user or address, respectively. If `type` is an Accounting Field ([Custom Field](https://developers.vtex.com/docs/guides/custom-fields-integration)), this should be the **value** of that Accounting Field.'
-                }),
-                type: z.string().register(z.globalRegistry, {
-                    description: 'Type of the linked entity. Currently, the accepted entity types are: `User`, `Address`, and Accounting Fields ([Custom Fields](https://developers.vtex.com/docs/guides/custom-fields-integration)).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Information about the entity to which the allocation is linked.'
+                id: z.string(),
+                type: z.string()
             }),
-            amount: z.number().register(z.globalRegistry, {
-                description: 'Amount allocated.'
-            }),
-            referenceId: z.string().register(z.globalRegistry, {
-                description: 'Identifier of the related entity (e.g., Identifier of a contract).'
-            }),
+            amount: z.number(),
+            referenceId: z.string(),
             notificationSettings: z.optional(zNotificationSettingsObject)
-        }).register(z.globalRegistry, {
-            description: 'Allocation object.'
-        })).register(z.globalRegistry, {
-            description: 'Optional list of initial allocations to create with the budget.'
-        }))
+        })))
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        })
+        contextType: z.string(),
+        contextId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zDeleteApiBudgetsByContextTypeByContextIdByBudgetIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zGetApiBudgetsByContextTypeByContextIdByBudgetIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the budget.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'Description of the budget.'
-        }),
-        amount: z.number().register(z.globalRegistry, {
-            description: 'Updated budget amount.'
-        }),
+        name: z.string(),
+        description: z.string(),
+        amount: z.number(),
         cycleConfiguration: z.optional(zCycleConfiguration),
         notificationSettings: z.optional(zNotificationSettingsObject)
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });
 
 export const zPutApiBudgetsByContextTypeByContextIdByBudgetIdStatusData = z.object({
     body: z.optional(z.object({
-        status: z.enum(['ACTIVE', 'INACTIVE']).register(z.globalRegistry, {
-            description: 'New status value for the budget (e.g., `ACTIVE` or `INACTIVE`).'
-        })
+        status: z.enum(['ACTIVE', 'INACTIVE'])
     })),
     path: z.object({
-        contextType: z.string().register(z.globalRegistry, {
-            description: 'Type of context for the budget (e.g., `UNIT`). This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        contextId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the corresponding Unit. This field can\'t be updated, it is used for validation. You must send the original value.'
-        }),
-        budgetId: z.string().register(z.globalRegistry, {
-            description: 'Identifier of the budget.'
-        })
+        contextType: z.string(),
+        contextId: z.string(),
+        budgetId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        })
+        'Content-Type': z.string()
     })
 });

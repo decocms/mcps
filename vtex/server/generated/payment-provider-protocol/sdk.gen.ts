@@ -27,172 +27,42 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * ## Available payment methods
  *
- * <table>
- * <tr>
- * <th>Payment Method</th>
- * <th>Type</th>
- * <th>Country</th>
- * </tr>
- * <tr>
- * <td><code>Visa</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Mastercard</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>American Express</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Discover</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>JCB</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Diners</code></td>
- * <td>Credit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Elo</code></td>
- * <td>Credit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Hipercard</code></td>
- * <td>Credit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Aura</code></td>
- * <td>Credit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Banricompras</code></td>
- * <td>Credit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Credz</code></td>
- * <td>Credit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Cabal</code></td>
- * <td>Credit Card</td>
- * <td>Argentina, Brazil, Uruguay, Paraguay</td>
- * </tr>
- * <td><code>Cartes Bancaires (CB)</code></td>
- * <td>Credit Card</td>
- * <td>France</td>
- * </tr>
- * <tr>
- * <td><code>VirtualDebitElo</code></td>
- * <td>Debit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Visa Electron</code></td>
- * <td>Debit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Maestro</code></td>
- * <td>Debit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Mastercard Debit</code></td>
- * <td>Debit Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Débito Online</code></td>
- * <td>Debit Card</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Cobranded</code></td>
- * <td>Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Privatelabels</code></td>
- * <td>Card</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Promissories</code></td>
- * <td>Generic</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Cash</code></td>
- * <td>Generic</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Pix</code></td>
- * <td>Online Transfer</td>
- * <td>Brazil</td>
- * </tr>
- * <tr>
- * <td><code>Safetypay</code></td>
- * <td>Online Transfer</td>
- * <td>Americas and Europe</td>
- * </tr>
- * <tr>
- * <td><code>BankInvoice</code></td>
- * <td>Offline/Voucher</td>
- * <td>Brazil (Boleto Bancário)</td>
- * </tr>
- * <tr>
- * <td><code>FichaDeposito</code></td>
- * <td>Offline/Voucher</td>
- * <td>Mexico</td>
- * </tr>
- * <tr>
- * <td><code>Rapipago</code></td>
- * <td>Offline/Voucher</td>
- * <td>Argentina</td>
- * </tr>
- * <tr>
- * <td><code>OXXO</code></td>
- * <td>Offline/Voucher</td>
- * <td>Mexico</td>
- * </tr>
- * <tr>
- * <td><code>Voucher</code></td>
- * <td>Offline/Voucher</td>
- * <td>Mexico</td>
- * </tr>
- * <tr>
- * <td><code>Bitcoin</code></td>
- * <td>Cryptocurrency</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Venda Direta Credito</code></td>
- * <td>Credit Card (Physical)</td>
- * <td>Global</td>
- * </tr>
- * <tr>
- * <td><code>Venda Direta Debito</code></td>
- * <td>Debit Card (Physical)</td>
- * <td>Global</td>
- * </tr>
- * </table>
+ * | Payment Method | Type | Country |
+ * |---|---|---|
+ * | `Visa` | Credit Card | Global |
+ * | `Mastercard` | Credit Card | Global |
+ * | `American Express` | Credit Card | Global |
+ * | `Discover` | Credit Card | Global |
+ * | `JCB` | Credit Card | Global |
+ * | `Diners` | Credit Card | Global |
+ * | `Elo` | Credit Card | Brazil |
+ * | `Hipercard` | Credit Card | Brazil |
+ * | `Aura` | Credit Card | Brazil |
+ * | `Banricompras` | Credit Card | Brazil |
+ * | `Credz` | Credit Card | Brazil |
+ * | `Cabal` | Credit Card | Argentina, Brazil, Uruguay, Paraguay |
+ * | `Cartes Bancaires (CB)` | Credit Card | France |
+ * | `VirtualDebitElo` | Debit Card | Brazil |
+ * | `Visa Electron` | Debit Card | Global |
+ * | `Maestro` | Debit Card | Global |
+ * | `Mastercard Debit` | Debit Card | Global |
+ * | `Débito Online` | Debit Card | Brazil |
+ * | `Cobranded` | Card | Global |
+ * | `Privatelabels` | Card | Global |
+ * | `Apple Pay` | Digital Wallet | Global |
+ * | `Google Pay` | Digital Wallet | Global |
+ * | `Promissories` | Generic | Global |
+ * | `Cash` | Generic | Global |
+ * | `Pix` | Online Transfer | Brazil |
+ * | `Safetypay` | Online Transfer | Americas and Europe |
+ * | `BankInvoice` | Offline/Voucher | Brazil (Boleto Bancário) |
+ * | `FichaDeposito` | Offline/Voucher | Mexico |
+ * | `Rapipago` | Offline/Voucher | Argentina |
+ * | `OXXO` | Offline/Voucher | Mexico |
+ * | `Voucher` | Offline/Voucher | Mexico |
+ * | `Bitcoin` | Cryptocurrency | Global |
+ * | `Venda Direta Credito` | Credit Card (Physical) | Global |
+ * | `Venda Direta Debito` | Debit Card (Physical) | Global |
  *
  * ## Permissions
  *

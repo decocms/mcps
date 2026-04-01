@@ -1397,20 +1397,22 @@ export type Query = string;
  *
  * The `facets` parameter follows the format: `/${facetKey1}/${facetValue1}/${facetKey2}/${facetValue2}/.../${facetKeyN}/${facetValueN}`.
  *
+ * >⚠️ **Required:** Only the `trade-policy` facet is mandatory. All other facets are optional filters.
+ *
  * The order in which the terms appear is not relevant to the search.
  *
  * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
  *
- * ## General filters
+ * ## Available filters
  *
- * The `facets` parameter also allows the following general filters:
+ * The `facets` parameter allows the following filters:
  *
  * | `facetKey` | Description | Example |
  * | - | - | - |
- * | `price` | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
- * | `category-${n}` | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
- * | `productClusterIds` | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
- * | `trade-policy` |  Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2`|
+ * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
+ * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
+ * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
+ * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
  *
  */
 export type FacetsPath = string | null;
@@ -1538,20 +1540,22 @@ export type GetBannersByFacetsData = {
          *
          * The `facets` parameter follows the format: `/${facetKey1}/${facetValue1}/${facetKey2}/${facetValue2}/.../${facetKeyN}/${facetValueN}`.
          *
+         * >⚠️ **Required:** Only the `trade-policy` facet is mandatory. All other facets are optional filters.
+         *
          * The order in which the terms appear is not relevant to the search.
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
-         * ## General filters
+         * ## Available filters
          *
-         * The `facets` parameter also allows the following general filters:
+         * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `price` | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         * | `trade-policy` |  Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2`|
+         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
+         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
+         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
          *
          */
         facets: string | null;
@@ -1611,20 +1615,22 @@ export type GetProductSearchByFacetsData = {
          *
          * The `facets` parameter follows the format: `/${facetKey1}/${facetValue1}/${facetKey2}/${facetValue2}/.../${facetKeyN}/${facetValueN}`.
          *
+         * >⚠️ **Required:** Only the `trade-policy` facet is mandatory. All other facets are optional filters.
+         *
          * The order in which the terms appear is not relevant to the search.
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
-         * ## General filters
+         * ## Available filters
          *
-         * The `facets` parameter also allows the following general filters:
+         * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `price` | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         * | `trade-policy` |  Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2`|
+         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
+         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
+         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
          *
          */
         facets: string | null;
@@ -1743,20 +1749,22 @@ export type GetFacetsByFacetsData = {
          *
          * The `facets` parameter follows the format: `/${facetKey1}/${facetValue1}/${facetKey2}/${facetValue2}/.../${facetKeyN}/${facetValueN}`.
          *
+         * >⚠️ **Required:** Only the `trade-policy` facet is mandatory. All other facets are optional filters.
+         *
          * The order in which the terms appear is not relevant to the search.
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
-         * ## General filters
+         * ## Available filters
          *
-         * The `facets` parameter also allows the following general filters:
+         * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `price` | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         * | `trade-policy` |  Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2`|
+         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
+         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
+         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
          *
          */
         facets: string | null;
@@ -1787,25 +1795,45 @@ export type GetFacetsByFacetsResponses = {
 
 export type GetFacetsByFacetsResponse = GetFacetsByFacetsResponses[keyof GetFacetsByFacetsResponses];
 
-export type GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyData = {
+export type GetPickupPointAvailabilityByFacetsData = {
     body?: never;
     path: {
         /**
-         * Product cluster IDs (collections) separated by commas. These represent the products for which you want to check pickup point availability.
+         * ## Format
+         *
+         * The `facets` parameter follows the format: `/${facetKey1}/${facetValue1}/${facetKey2}/${facetValue2}/.../${facetKeyN}/${facetValueN}`.
+         *
+         * >⚠️ **Required:** Only the `trade-policy` facet is mandatory. All other facets are optional filters.
+         *
+         * The order in which the terms appear is not relevant to the search.
+         *
+         * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
+         *
+         * ## Available filters
+         *
+         * The `facets` parameter allows the following filters:
+         *
+         * | `facetKey` | Description | Example |
+         * | - | - | - |
+         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
+         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
+         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
+         *
          */
-        productClusterIds: string;
-        /**
-         * Trade policy ID (also known as sales channel).
-         */
-        tradePolicy: string;
+        facets: string | null;
     };
     query: {
+        /**
+         * Search term. It can contain any character.
+         */
+        query?: string;
         /**
          * Account name. The name of the VTEX account.
          */
         an: string;
         /**
-         * Geographic coordinates in the format `latitude,longitude`. Used to calculate distance from pickup points and sort results by proximity. Required when using the country and ZIP code approach.
+         * Geographic coordinates in the format `longitude,latitude`. Used to calculate distance from pickup points and sort results by proximity. Required when using the country and ZIP code approach.
          */
         coordinates?: string;
         /**
@@ -1825,10 +1853,10 @@ export type GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradeP
          */
         pickupsHash?: string;
     };
-    url: '/pickup-point-availability/productClusterIds/{productClusterIds}/trade-policy/{tradePolicy}';
+    url: '/pickup-point-availability/{facets}';
 };
 
-export type GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponses = {
+export type GetPickupPointAvailabilityByFacetsResponses = {
     /**
      * Pickup points availability response.
      */
@@ -1903,4 +1931,4 @@ export type GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradeP
     };
 };
 
-export type GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponse = GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponses[keyof GetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyResponses];
+export type GetPickupPointAvailabilityByFacetsResponse = GetPickupPointAvailabilityByFacetsResponses[keyof GetPickupPointAvailabilityByFacetsResponses];

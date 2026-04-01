@@ -14,10 +14,11 @@ const sharedPlugins = [
     requests: true,
     // Skip response schemas — tools return raw JSON; saves ~50K+ lines
     responses: false,
-    // Reusable component schemas (for documentation + cross-reference)
-    definitions: true,
-    // Carry OpenAPI description metadata through to generated schemas
-    metadata: true,
+    // Reusable component schemas disabled (see definitions: false below)
+    // Skip metadata — descriptions are not read at runtime and waste ~2 MB
+    metadata: false,
+    // Skip reusable component schemas — tools only use request schemas
+    definitions: false,
   },
   {
     name: "@hey-api/sdk" as const,

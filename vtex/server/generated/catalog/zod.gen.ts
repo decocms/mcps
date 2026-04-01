@@ -6,267 +6,131 @@ import * as z from 'zod';
  * Object with the response.
  */
 export const zSpecificationValuesSubcollectionIdResponse = z.object({
-    Page: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Current page number of the result set.'
-    })),
-    Size: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Number of records per page.'
-    })),
-    TotalRows: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Total number of records returned.'
-    })),
-    TotalPage: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Total number of pages available.'
-    })),
+    Page: z.optional(z.int()),
+    Size: z.optional(z.int()),
+    TotalRows: z.optional(z.int()),
+    TotalPage: z.optional(z.int()),
     Data: z.optional(z.array(z.object({
-        SubCollectionId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique identifier.'
-        })),
-        SpecificationValueId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Subcollection specification value ID.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'SubCollection Specification Value records details.'
-    })).register(z.globalRegistry, {
-        description: 'Array of SubCollection Specification Value records.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+        SubCollectionId: z.optional(z.int()),
+        SpecificationValueId: z.optional(z.int())
+    })))
 });
 
 /**
  * Array with objects containing SKU files information.
  */
 export const zSkuFileResponse = z.array(z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Unique identifier of the association of the image to the SKU.'
-    })),
-    ArchiveId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Unique identifier of the image.'
-    })),
-    SkuId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU unique identifier.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Image name.'
-    })),
-    IsMain: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the image is the SKU main image (`true`) or not (`false`). This field will always be `true` when the image `Position` is `0`, and `false` otherwise.'
-    })),
-    Text: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU image text.'
-    })),
+    Id: z.optional(z.int()),
+    ArchiveId: z.optional(z.int()),
+    SkuId: z.optional(z.int()),
+    Name: z.optional(z.string()),
+    IsMain: z.optional(z.boolean()),
+    Text: z.optional(z.string()),
     Label: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    Url: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU image URL.'
-    })),
-    FileLocation: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Location where the file is stored.'
-    })),
-    Position: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Position of the SKU image as displayed in the storefront, where `0` corresponds to the first position, `1` to the second position, and so on. The position `0` will always make the `isMain` value `true`.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object containing a SKU file information.'
-})).register(z.globalRegistry, {
-    description: 'Array with objects containing SKU files information.'
-});
+    Url: z.optional(z.string()),
+    FileLocation: z.optional(z.string()),
+    Position: z.optional(z.int())
+}));
 
 /**
  * Object with the request.
  */
 export const zSkuFileUrl = z.object({
-    IsMain: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the image is the main image of the SKU.'
-    })),
-    Label: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU image label.'
-    })),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'SKU image name.'
-    }),
+    IsMain: z.optional(z.boolean()),
+    Label: z.optional(z.string()),
+    Name: z.string(),
     Text: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    Url: z.string().register(z.globalRegistry, {
-        description: 'External image\'s URL.  The URL must start with the protocol identifier (`http://` or `https://`) and end with the file extension (`.jpg`, `.png` or `.gif`).'
-    }),
-    Position: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Position of the SKU image as displayed in the storefront, where `0` corresponds to the first position, `1` to the second position, and so on. Note that:\r\n- When `isMain` is `true`, the image position will always be `0`.\r\n- When you configure more positions than the number of images, the count will jump a position. For example, if you have images in positions `0`, `1`, `2`, and you update image `1` to position `3`, you will have `0`, `2`, `3`.\r\n- If you configure images for the same position, they will both occupy it. For example, for images `0`, `1`, `2`, if you update image `2` for position `1`, you will have `0`, `1`, `1`. When in position conflict, images will be ordered by image ID.\r\n\r\nYou can reorganize all image positions using the [Reorder SKU files](https://developers.vtex.com/docs/api-reference/catalog-api#put-/api/catalog/pvt/stockkeepingunit/-skuId-/file/reorder) endpoint, or via VTEX Admin, on the [SKU editing page](https://help.vtex.com/en/tutorial/adding-or-editing-skus--4ryZ6J45kwn3jDiQBxGiiN).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    Url: z.string(),
+    Position: z.optional(z.int())
 });
 
 /**
  * A message about the image file size is displayed.
  */
-export const zSkuFile = z.string().register(z.globalRegistry, {
-    description: 'A message about the image file size is displayed.'
-});
+export const zSkuFile = z.string();
 
 /**
  * Object with category children information.
  */
 export const zGetCategoryTreeChild = z.object({
-    id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Category ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Category name.'
-    }),
-    hasChildren: z.boolean().register(z.globalRegistry, {
-        description: 'If the category has a category child (`true`) or not (`false`).'
-    }),
-    url: z.string().register(z.globalRegistry, {
-        description: 'Category URL.'
-    }),
-    children: z.array(z.string().register(z.globalRegistry, {
-        description: 'Category children ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with information about the category\'s children.'
-    }),
-    Title: z.string().register(z.globalRegistry, {
-        description: 'Category page title.'
-    }),
-    MetaTagDescription: z.string().register(z.globalRegistry, {
-        description: 'Category page Meta tag description.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with category children information.'
+    id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    name: z.string(),
+    hasChildren: z.boolean(),
+    url: z.string(),
+    children: z.array(z.string()),
+    Title: z.string(),
+    MetaTagDescription: z.string()
 });
 
 /**
  * Object with the response.
  */
 export const zGetCategoryTree = z.object({
-    id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Category ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Category name.'
-    }),
-    hasChildren: z.boolean().register(z.globalRegistry, {
-        description: 'If the category has a category child (`true`) or not (`false`).'
-    }),
-    url: z.string().register(z.globalRegistry, {
-        description: 'Category URL.'
-    }),
-    children: z.array(zGetCategoryTreeChild).register(z.globalRegistry, {
-        description: 'Array with information about the category\'s children.'
-    }),
-    Title: z.string().register(z.globalRegistry, {
-        description: 'Category page title.'
-    }),
-    MetaTagDescription: z.string().register(z.globalRegistry, {
-        description: 'Category page Meta tag description.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    name: z.string(),
+    hasChildren: z.boolean(),
+    url: z.string(),
+    children: z.array(zGetCategoryTreeChild),
+    Title: z.string(),
+    MetaTagDescription: z.string()
 });
 
 /**
  * Object with the category details.
  */
 export const zCategory = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Category ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Category name.'
-    }),
+    Id: z.int(),
+    Name: z.string(),
     FatherCategoryId: z.union([
         z.int(),
         z.null()
     ]),
-    Title: z.string().register(z.globalRegistry, {
-        description: 'Category page title.'
-    }),
-    Description: z.string().register(z.globalRegistry, {
-        description: 'Describes details about the category.'
-    }),
-    Keywords: z.string().register(z.globalRegistry, {
-        description: 'Substitutes words for the category.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Shows if the category is active (`true`) or not (`false`).'
-    }),
-    LomadeeCampaignCode: z.string().register(z.globalRegistry, {
-        description: 'This is a legacy field. Do not take this information into consideration.'
-    }),
-    AdWordsRemarketingCode: z.string().register(z.globalRegistry, {
-        description: 'This is a legacy field. Do not take this information into consideration.'
-    }),
-    ShowInStoreFront: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the category is shown on side and upper menu (`true`) or not (`false`).'
-    }),
-    ShowBrandFilter: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the category has brand filter (`true`) or not (`false`).'
-    }),
-    ActiveStoreFrontLink: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the category has an active link on the website (`true`) or not (`false`).'
-    }),
-    GlobalCategoryId: z.int().register(z.globalRegistry, {
-        description: 'Google global category ID.'
-    }),
-    StockKeepingUnitSelectionMode: z.string().register(z.globalRegistry, {
-        description: 'Defines how the SKU will be exhibited.'
-    }),
+    Title: z.string(),
+    Description: z.string(),
+    Keywords: z.string(),
+    IsActive: z.boolean(),
+    LomadeeCampaignCode: z.string(),
+    AdWordsRemarketingCode: z.string(),
+    ShowInStoreFront: z.boolean(),
+    ShowBrandFilter: z.boolean(),
+    ActiveStoreFrontLink: z.boolean(),
+    GlobalCategoryId: z.int(),
+    StockKeepingUnitSelectionMode: z.string(),
     Score: z.union([
         z.int(),
         z.null()
     ]),
-    LinkId: z.string().register(z.globalRegistry, {
-        description: 'Category text link ID. This field value is automatically generated when you create or update a category, and it corresponds to the category `name`. Once the category `linkId` is generated, it cannot be modified directly, but you can change it by updating the category with a new `name`.'
-    }),
-    HasChildren: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the category has child categories (`true`) or not (`false`).'
-    }),
+    LinkId: z.string(),
+    HasChildren: z.boolean(),
     TreePath: z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Category tree path.'
-        })),
+        z.array(z.string()),
         z.null()
     ]),
     TreePathIds: z.union([
-        z.array(z.int().register(z.globalRegistry, {
-            description: 'Category tree path ID.'
-        })),
+        z.array(z.int()),
         z.null()
     ]),
     TreePathLinkIds: z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Category tree path link ID.'
-        })),
+        z.array(z.string()),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Object with the category details.'
 });
 
 /**
  * Object with the request.
  */
 export const zCreateCategoryRequest = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Category unique identifier. If not informed, it will be automatically generated by VTEX.'
-    })),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Category name.'
-    }),
-    Keywords: z.string().register(z.globalRegistry, {
-        description: 'Substitute words for the category.'
-    }),
-    Title: z.string().register(z.globalRegistry, {
-        description: 'Text used in title tag for category page.'
-    }),
-    Description: z.string().register(z.globalRegistry, {
-        description: 'Text used in meta description tag for category page.'
-    }),
+    Id: z.optional(z.int()),
+    Name: z.string(),
+    Keywords: z.string(),
+    Title: z.string(),
+    Description: z.string(),
     AdWordsRemarketingCode: z.union([
         z.string(),
         z.null()
@@ -279,278 +143,134 @@ export const zCreateCategoryRequest = z.object({
         z.int(),
         z.null()
     ]),
-    GlobalCategoryId: z.int().register(z.globalRegistry, {
-        description: 'Google global category ID.'
-    }),
-    ShowInStoreFront: z.boolean().register(z.globalRegistry, {
-        description: 'If `true`, the category is shown in the top and side menu.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'If `true`, the category page becomes available in store.'
-    }),
-    ActiveStoreFrontLink: z.boolean().register(z.globalRegistry, {
-        description: 'If `true`, the category link becomes active in store.'
-    }),
-    ShowBrandFilter: z.boolean().register(z.globalRegistry, {
-        description: 'If `true`, the category page displays a brand filter.'
-    }),
+    GlobalCategoryId: z.int(),
+    ShowInStoreFront: z.boolean(),
+    IsActive: z.boolean(),
+    ActiveStoreFrontLink: z.boolean(),
+    ShowBrandFilter: z.boolean(),
     Score: z.union([
         z.int(),
         z.null()
     ]),
-    StockKeepingUnitSelectionMode: z.enum(['SPECIFICATION', 'LIST']).register(z.globalRegistry, {
-        description: 'Defines how SKUs will be displayed in the storefront and selected by customers. The possible values are:\r\n- `SPECIFICATION`: choosing product variations (like size or color) through specification fields.\r\n- `LIST`: selecting and item from a list of SKUs.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    StockKeepingUnitSelectionMode: z.enum(['SPECIFICATION', 'LIST'])
 });
 
 /**
  * Object with the request.
  */
 export const zGetorUpdateProductSpecification = z.object({
-    Value: z.array(z.string().register(z.globalRegistry, {
-        description: 'Specification value.'
-    })).register(z.globalRegistry, {
-        description: 'Array with specification values.'
-    }),
-    Id: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Specification field ID, which is the same as `FieldId` in other specification endpoints.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the specification.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    Value: z.array(z.string()),
+    Id: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    Name: z.optional(z.string())
 });
 
 /**
  * Object containing the SKU dimensions to be used on the shipping calculation.
  */
 export const zDimension = z.object({
-    cubicweight: z.number().register(z.globalRegistry, {
-        description: 'SKU [cubic weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-    }),
-    height: z.number().register(z.globalRegistry, {
-        description: 'SKU height.'
-    }),
-    length: z.number().register(z.globalRegistry, {
-        description: 'SKU length.'
-    }),
-    weight: z.number().register(z.globalRegistry, {
-        description: 'SKU weight.'
-    }),
-    width: z.number().register(z.globalRegistry, {
-        description: 'SKU width.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing the SKU dimensions to be used on the shipping calculation.'
+    cubicweight: z.number(),
+    height: z.number(),
+    length: z.number(),
+    weight: z.number(),
+    width: z.number()
 });
 
 /**
  * Object containing the real SKU dimensions, which appear in the product page.
  */
 export const zRealDimension = z.object({
-    realCubicWeight: z.number().register(z.globalRegistry, {
-        description: 'Real SKU [cubic weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-    }),
-    realHeight: z.number().register(z.globalRegistry, {
-        description: 'Real SKU height.'
-    }),
-    realLength: z.number().register(z.globalRegistry, {
-        description: 'Real SKU length.'
-    }),
-    realWeight: z.number().register(z.globalRegistry, {
-        description: 'Real SKU weight.'
-    }),
-    realWidth: z.number().register(z.globalRegistry, {
-        description: 'Real SKU width.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing the real SKU dimensions, which appear in the product page.'
+    realCubicWeight: z.number(),
+    realHeight: z.number(),
+    realLength: z.number(),
+    realWeight: z.number(),
+    realWidth: z.number()
 });
 
 /**
  * Object containing information about SKU attachments.
  */
 export const zAttachment = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Attachment ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Attachment name.'
-    }),
-    Keys: z.array(z.string().register(z.globalRegistry, {
-        description: 'Each attachment key.'
-    })).register(z.globalRegistry, {
-        description: 'Attachment Keys.'
-    }),
+    Id: z.int(),
+    Name: z.string(),
+    Keys: z.array(z.string()),
     Fields: z.array(z.object({
-        FieldName: z.string().register(z.globalRegistry, {
-            description: 'Attachment field name.'
-        }),
-        MaxCaracters: z.string().register(z.globalRegistry, {
-            description: 'Maximum number of characters accepted in the attachment field.'
-        }),
+        FieldName: z.string(),
+        MaxCaracters: z.string(),
         DomainValues: z.union([
             z.string(),
             z.null()
         ])
-    }).register(z.globalRegistry, {
-        description: 'Object with field details.'
-    })).register(z.globalRegistry, {
-        description: 'Array containing attachment fields.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is active or not.'
-    }),
-    IsRequired: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is required or not.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing information about SKU attachments.'
+    })),
+    IsActive: z.boolean(),
+    IsRequired: z.boolean()
 });
 
 /**
  * Object containing related SKU sellers data.
  */
 export const zSkuSeller = z.object({
-    SellerId: z.string().register(z.globalRegistry, {
-        description: 'SKU seller ID. This is the ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-    }),
-    StockKeepingUnitId: z.int().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    SellerStockKeepingUnitId: z.string().register(z.globalRegistry, {
-        description: 'SKU ID for the SKU seller.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is active.'
-    }),
-    FreightCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'Registered value for Seller Freight Commission.'
-    }),
-    ProductCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'Registered value for Seller product Commission.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing related SKU sellers data.'
+    SellerId: z.string(),
+    StockKeepingUnitId: z.int(),
+    SellerStockKeepingUnitId: z.string(),
+    IsActive: z.boolean(),
+    FreightCommissionPercentage: z.number(),
+    ProductCommissionPercentage: z.number()
 });
 
 /**
  * Object containing SKU images details.
  */
 export const zImage = z.object({
-    ImageUrl: z.string().register(z.globalRegistry, {
-        description: 'Image URL.'
-    }),
+    ImageUrl: z.string(),
     ImageName: z.union([
         z.string(),
         z.null()
     ]),
-    FileId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU image ID.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing SKU images details.'
+    FileId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });
 
 /**
  * Object containing related SKU specifications.
  */
 export const zSkuSpecification = z.object({
-    FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Specification field ID.'
-    }),
-    FieldName: z.string().register(z.globalRegistry, {
-        description: 'Specification field Name.'
-    }),
-    FieldValueIds: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Specification value ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with related specification values IDs.'
-    }),
-    FieldValues: z.array(z.string().register(z.globalRegistry, {
-        description: 'Each field value.'
-    })).register(z.globalRegistry, {
-        description: 'Array with related specification values.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object containing related SKU specifications.'
+    FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    FieldName: z.string(),
+    FieldValueIds: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    FieldValues: z.array(z.string())
 });
 
 /**
  * Object with product specification details.
  */
 export const zProductSpecification = z.object({
-    FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Specification field ID.'
-    }),
-    FieldName: z.string().register(z.globalRegistry, {
-        description: 'Specification name. Limited to 100 characters.'
-    }),
-    FieldValueIds: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Specification value ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with related specification values IDs.'
-    }),
-    FieldValues: z.array(z.string().register(z.globalRegistry, {
-        description: 'Each field value.'
-    })).register(z.globalRegistry, {
-        description: 'Array with related specification values.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with product specification details.'
+    FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    FieldName: z.string(),
+    FieldValueIds: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    FieldValues: z.array(z.string())
 });
 
 /**
  * Array with alternate SKU IDs, such as EAN and `RefId`.
  */
 export const zAlternateIds = z.object({
-    Ean: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU EAN.'
-    })),
-    RefId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU reference ID.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Array with alternate SKU IDs, such as EAN and `RefId`.'
+    Ean: z.optional(z.string()),
+    RefId: z.optional(z.string())
 });
 
 /**
  * Object with the response.
  */
 export const zGetSkUandContext = z.object({
-    Id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    ProductId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'ID of the related product.'
-    }),
-    NameComplete: z.string().register(z.globalRegistry, {
-        description: 'Product Name and SKU Name concatenated.'
-    }),
-    ComplementName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Product Complement Name.'
-    })),
-    ProductName: z.string().register(z.globalRegistry, {
-        description: 'Product Name.'
-    }),
-    ProductDescription: z.string().register(z.globalRegistry, {
-        description: 'Product Description. HTML is allowed.'
-    }),
-    ProductRefId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Reference ID of the related product.'
-    })),
-    TaxCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU Tax Code.'
-    })),
-    SkuName: z.string().register(z.globalRegistry, {
-        description: 'SKU Name.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is active or not.'
-    }),
+    Id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    ProductId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    NameComplete: z.string(),
+    ComplementName: z.optional(z.string()),
+    ProductName: z.string(),
+    ProductDescription: z.string(),
+    ProductRefId: z.optional(z.string()),
+    TaxCode: z.optional(z.string()),
+    SkuName: z.string(),
+    IsActive: z.boolean(),
     IsTransported: z.union([
         z.boolean(),
         z.null()
@@ -559,110 +279,46 @@ export const zGetSkUandContext = z.object({
         z.boolean(),
         z.null()
     ]),
-    IsGiftCardRecharge: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the purchase will generate a reward.'
-    }),
-    ImageUrl: z.string().register(z.globalRegistry, {
-        description: 'SKU image URL.'
-    }),
-    DetailUrl: z.string().register(z.globalRegistry, {
-        description: 'Product URL.'
-    }),
+    IsGiftCardRecharge: z.boolean(),
+    ImageUrl: z.string(),
+    DetailUrl: z.string(),
     CSCIdentification: z.union([
         z.string(),
         z.null()
     ]),
-    BrandId: z.string().register(z.globalRegistry, {
-        description: 'Product brand ID.'
-    }),
-    BrandName: z.string().register(z.globalRegistry, {
-        description: 'Product brand Name.'
-    }),
+    BrandId: z.string(),
+    BrandName: z.string(),
     Dimension: zDimension,
     RealDimension: zRealDimension,
-    ManufacturerCode: z.string().register(z.globalRegistry, {
-        description: 'Product Supplier ID.'
-    }),
-    IsKit: z.boolean().register(z.globalRegistry, {
-        description: 'Defines whether the SKU is made up of one or more SKUs (part of a kit) (`true`) or not (`false`). Must be enabled if you are adding a kit. Once activated, this definition cannot be reverted.'
-    }),
-    KitItems: z.array(z.string().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with SKU IDs of bundle components.'
-    }),
-    Services: z.array(z.string().register(z.globalRegistry, {
-        description: 'Service ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with Service IDs that are related to the SKU.'
-    }),
-    Categories: z.array(z.string().register(z.globalRegistry, {
-        description: 'Category ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with Categories from the related product.'
-    }),
-    Attachments: z.array(zAttachment).register(z.globalRegistry, {
-        description: 'Array with Attachments ID that are related to the SKU.'
-    }),
-    Collections: z.array(z.string().register(z.globalRegistry, {
-        description: 'Collection ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with Collection IDs that are related to the product.'
-    }),
-    SkuSellers: z.array(zSkuSeller).register(z.globalRegistry, {
-        description: 'Array with SKU sellers data.'
-    }),
-    SalesChannels: z.array(z.int().register(z.globalRegistry, {
-        description: 'Trade policy ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with the ID of all the trade policies that are related to the product.'
-    }),
-    Images: z.array(zImage).register(z.globalRegistry, {
-        description: 'Array with SKU images.'
-    }),
-    SkuSpecifications: z.array(zSkuSpecification).register(z.globalRegistry, {
-        description: 'Array with related SKU specifications.'
-    }),
-    ProductSpecifications: z.array(zProductSpecification).register(z.globalRegistry, {
-        description: 'Array with related product specifications.'
-    }),
-    ProductClustersIds: z.string().register(z.globalRegistry, {
-        description: 'Product clusters IDs.'
-    }),
-    ProductCategoryIds: z.string().register(z.globalRegistry, {
-        description: 'Category hierarchy with category IDs.'
-    }),
+    ManufacturerCode: z.string(),
+    IsKit: z.boolean(),
+    KitItems: z.array(z.string()),
+    Services: z.array(z.string()),
+    Categories: z.array(z.string()),
+    Attachments: z.array(zAttachment),
+    Collections: z.array(z.string()),
+    SkuSellers: z.array(zSkuSeller),
+    SalesChannels: z.array(z.int()),
+    Images: z.array(zImage),
+    SkuSpecifications: z.array(zSkuSpecification),
+    ProductSpecifications: z.array(zProductSpecification),
+    ProductClustersIds: z.string(),
+    ProductCategoryIds: z.string(),
     ProductGlobalCategoryId: z.union([
         z.int(),
         z.null()
     ]),
-    ProductCategories: z.record(z.string(), z.string().register(z.globalRegistry, {
-        description: 'Category ID.'
-    })).register(z.globalRegistry, {
-        description: 'Object containing product categories. Structure: "{CategoryID}": "{CategoryName}".'
-    }),
-    CommercialConditionId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Commercial condition ID, used to define SKU specific promotions or installment rules. In case of no specific condition, use `1` (default value). This field does not accept `0`. Learn more at [Registering a commercial condition](https://help.vtex.com/tutorial/registering-a-commercial-condition--tutorials_445).'
-    }).default(1),
-    RewardValue: z.number().register(z.globalRegistry, {
-        description: 'Credit that the customer receives when finalizing an order that includes the SKU. By filling this field out with `1`, the customer receives credit on the site in the selected currency, e.g. U$ 1.'
-    }),
+    ProductCategories: z.record(z.string(), z.string()),
+    CommercialConditionId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).default(1),
+    RewardValue: z.number(),
     AlternateIds: zAlternateIds,
-    AlternateIdValues: z.array(z.string().register(z.globalRegistry, {
-        description: 'Alternative SKU ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with values of alternative SKU IDs.'
-    }),
+    AlternateIdValues: z.array(z.string()),
     EstimatedDateArrival: z.union([
         z.string(),
         z.null()
     ]),
-    MeasurementUnit: z.string().register(z.globalRegistry, {
-        description: 'Measurement unit. This field should only be used when it is necessary to convert the unit of measure for sale. For example, if a product is sold in boxes, but customers want to buy per square meter (m²). In common cases, use `"un"`.'
-    }),
-    UnitMultiplier: z.number().register(z.globalRegistry, {
-        description: 'Multiple number of SKU. If the multiplier is 5.0000, the product can be added in multiple quantities of 5, 10, 15, 20, onward.'
-    }),
+    MeasurementUnit: z.string(),
+    UnitMultiplier: z.number(),
     InformationSource: z.union([
         z.string(),
         z.null()
@@ -679,189 +335,73 @@ export const zGetSkUandContext = z.object({
         z.string(),
         z.null()
     ])),
-    ProductIsVisible: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product is visible or not.'
-    })),
-    ShowIfNotAvailable: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product will be shown if it is not available.'
-    })),
-    IsProductActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product is active or not.'
-    })),
-    ProductFinalScore: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Product final score.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    ProductIsVisible: z.optional(z.boolean()),
+    ShowIfNotAvailable: z.optional(z.boolean()),
+    IsProductActive: z.optional(z.boolean()),
+    ProductFinalScore: z.optional(z.int())
 });
 
 /**
  * Object with the response.
  */
 export const zGetSkuAltId = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    ProductId: z.int().register(z.globalRegistry, {
-        description: 'Product ID.'
-    }),
-    NameComplete: z.string().register(z.globalRegistry, {
-        description: 'Product name and SKU name combined.'
-    }),
-    ComplementName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Product complement name.'
-    })),
-    ProductName: z.string().register(z.globalRegistry, {
-        description: 'Product name.'
-    }),
-    ProductDescription: z.string().register(z.globalRegistry, {
-        description: 'Product description. HTML is allowed.'
-    }),
-    ProductRefId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Product reference ID.'
-    })),
-    TaxCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU tax code.'
-    })),
-    SkuName: z.string().register(z.globalRegistry, {
-        description: 'SKU name.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is active or not.'
-    }),
-    IsTransported: z.boolean().register(z.globalRegistry, {
-        description: 'Deprecated field.'
-    }),
-    IsInventoried: z.boolean().register(z.globalRegistry, {
-        description: 'Deprecated field.'
-    }),
-    IsGiftCardRecharge: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the purchase of the SKU will generate reward value for the customer.'
-    }),
-    ImageUrl: z.string().register(z.globalRegistry, {
-        description: 'SKU image URL.'
-    }),
-    DetailUrl: z.string().register(z.globalRegistry, {
-        description: 'Product slug.'
-    }),
+    Id: z.int(),
+    ProductId: z.int(),
+    NameComplete: z.string(),
+    ComplementName: z.optional(z.string()),
+    ProductName: z.string(),
+    ProductDescription: z.string(),
+    ProductRefId: z.optional(z.string()),
+    TaxCode: z.optional(z.string()),
+    SkuName: z.string(),
+    IsActive: z.boolean(),
+    IsTransported: z.boolean(),
+    IsInventoried: z.boolean(),
+    IsGiftCardRecharge: z.boolean(),
+    ImageUrl: z.string(),
+    DetailUrl: z.string(),
     CSCIdentification: z.union([
         z.string(),
         z.null()
     ]),
-    BrandId: z.string().register(z.globalRegistry, {
-        description: 'Brand ID.'
-    }),
-    BrandName: z.string().register(z.globalRegistry, {
-        description: 'Brand name.'
-    }),
+    BrandId: z.string(),
+    BrandName: z.string(),
     Dimension: zDimension,
     RealDimension: zRealDimension,
-    ManufacturerCode: z.string().register(z.globalRegistry, {
-        description: 'Identifier provided by the manufacturers to identify their product. This field should be filled in if the product has a specific manufacturer\'s code.'
-    }),
-    IsKit: z.boolean().register(z.globalRegistry, {
-        description: 'Defines whether the SKU is made up of one or more SKUs (part of a kit) (`true`) or not (`false`). Must be enabled if you are adding a kit. Once activated, this definition cannot be reverted.'
-    }),
-    KitItems: z.array(z.string().register(z.globalRegistry, {
-        description: 'SKU ID of each bundle component.'
-    })).register(z.globalRegistry, {
-        description: 'Array with SKU IDs of bundle components.'
-    }),
-    Services: z.array(z.string().register(z.globalRegistry, {
-        description: 'Service IDs of each service related to the SKU.'
-    })).register(z.globalRegistry, {
-        description: 'Array with service IDs that are related to the SKU.'
-    }),
-    Categories: z.array(z.string().register(z.globalRegistry, {
-        description: 'Category ID.'
-    })).register(z.globalRegistry, {
-        description: 'Categories of the related product.'
-    }),
-    CategoriesFullPath: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Path composed by category IDs separated by `/`.'
-    })).register(z.globalRegistry, {
-        description: 'Path of categories of the related product.'
-    })),
-    Attachments: z.array(zAttachment).register(z.globalRegistry, {
-        description: 'Array with attachment IDs that are related to the product.'
-    }),
-    Collections: z.array(z.string().register(z.globalRegistry, {
-        description: 'Collection ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with collections IDs that are related to the product.'
-    }),
-    SkuSellers: z.array(zSkuSeller).register(z.globalRegistry, {
-        description: 'Array with related sellers data.'
-    }),
-    SalesChannels: z.array(z.int().register(z.globalRegistry, {
-        description: 'Trade policy ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array of trade policy IDs.'
-    }),
-    Images: z.array(zImage).register(z.globalRegistry, {
-        description: 'Array of objects with SKU image details.'
-    }),
-    SkuSpecifications: z.array(zSkuSpecification).register(z.globalRegistry, {
-        description: 'Array with related SKU specifications.'
-    }),
-    ProductSpecifications: z.array(zProductSpecification).register(z.globalRegistry, {
-        description: 'Array with related product specifications.'
-    }),
-    ProductClustersIds: z.string().register(z.globalRegistry, {
-        description: 'Product cluster IDs separated by comma (`,`).'
-    }),
-    PositionsInClusters: z.optional(z.record(z.string(), z.int().register(z.globalRegistry, {
-        description: 'Product cluster ID.'
-    })).register(z.globalRegistry, {
-        description: 'Product clusters position in each cluster. Structure: "{Product cluster ID}": {Position}.\n\n`{Product cluster ID}` is a string, while `{Position}` is an integer.'
-    })),
-    ProductClusterNames: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
-        description: 'Product cluster ID.'
-    })).register(z.globalRegistry, {
-        description: 'Product clusters names. Structure: "{Product cluster ID}": "{Product cluster name}". Both the key and the value are strings.'
-    })),
-    ProductClusterHighlights: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
-        description: 'Product cluster ID.'
-    })).register(z.globalRegistry, {
-        description: 'Product clusters highlights. Structure: "{Product cluster ID}": "{Product cluster name}". Both the key and the value are strings.'
-    })),
-    ProductCategoryIds: z.string().register(z.globalRegistry, {
-        description: 'Category path composed by category IDs separated by `/`.'
-    }),
-    IsDirectCategoryActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if the direct product category is active or not.'
-    })),
+    ManufacturerCode: z.string(),
+    IsKit: z.boolean(),
+    KitItems: z.array(z.string()),
+    Services: z.array(z.string()),
+    Categories: z.array(z.string()),
+    CategoriesFullPath: z.optional(z.array(z.string())),
+    Attachments: z.array(zAttachment),
+    Collections: z.array(z.string()),
+    SkuSellers: z.array(zSkuSeller),
+    SalesChannels: z.array(z.int()),
+    Images: z.array(zImage),
+    SkuSpecifications: z.array(zSkuSpecification),
+    ProductSpecifications: z.array(zProductSpecification),
+    ProductClustersIds: z.string(),
+    PositionsInClusters: z.optional(z.record(z.string(), z.int())),
+    ProductClusterNames: z.optional(z.record(z.string(), z.string())),
+    ProductClusterHighlights: z.optional(z.record(z.string(), z.string())),
+    ProductCategoryIds: z.string(),
+    IsDirectCategoryActive: z.optional(z.boolean()),
     ProductGlobalCategoryId: z.union([
         z.int(),
         z.null()
     ]),
-    ProductCategories: z.record(z.string(), z.string().register(z.globalRegistry, {
-        description: 'Category ID.'
-    })).register(z.globalRegistry, {
-        description: 'Object containing product categories. Structure: "{CategoryID}": "{CategoryName}". Both the key and the value are strings.'
-    }),
-    CommercialConditionId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Commercial condition ID, used to define SKU specific promotions or installment rules. In case of no specific condition, use `1` (default value). This field does not accept `0`. Learn more at [Registering a commercial condition](https://help.vtex.com/tutorial/registering-a-commercial-condition--tutorials_445).'
-    }).default(1),
-    RewardValue: z.number().register(z.globalRegistry, {
-        description: 'Credit that the customer receives when finalizing an order that includes the SKU. By filling this field out with `1`, the customer receives credit on the site in the selected currency, e.g. U$ 1.'
-    }),
+    ProductCategories: z.record(z.string(), z.string()),
+    CommercialConditionId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).default(1),
+    RewardValue: z.number(),
     AlternateIds: zAlternateIds,
-    AlternateIdValues: z.array(z.string().register(z.globalRegistry, {
-        description: 'Alternative SKU ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with values of alternative SKU IDs.'
-    }),
+    AlternateIdValues: z.array(z.string()),
     EstimatedDateArrival: z.union([
         z.string(),
         z.null()
     ]),
-    MeasurementUnit: z.string().register(z.globalRegistry, {
-        description: 'Measurement unit. This field should only be used when it is necessary to convert the unit of measure for sale. For example, if a product is sold in boxes, but customers want to buy per square meter (m²). In common cases, use `"un"`.'
-    }),
-    UnitMultiplier: z.number().register(z.globalRegistry, {
-        description: 'Multiple number of SKU. If the multiplier is 5.0000, the product can be added in multiple quantities of 5, 10, 15, 20, onward.'
-    }),
+    MeasurementUnit: z.string(),
+    UnitMultiplier: z.number(),
     InformationSource: z.union([
         z.string(),
         z.null()
@@ -878,61 +418,33 @@ export const zGetSkuAltId = z.object({
         z.string(),
         z.null()
     ])),
-    ProductIsVisible: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product is visible or not.'
-    })),
-    ShowIfNotAvailable: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product will be shown if it is not available.'
-    })),
-    IsProductActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the product is active or not.'
-    })),
-    ProductFinalScore: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Product final score.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    ProductIsVisible: z.optional(z.boolean()),
+    ShowIfNotAvailable: z.optional(z.boolean()),
+    IsProductActive: z.optional(z.boolean()),
+    ProductFinalScore: z.optional(z.int())
 });
 
 /**
  * Object with the response.
  */
 export const zSkulistbyProductId = z.object({
-    IsPersisted: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is persisted.'
-    })),
-    IsRemoved: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is removed.'
-    })),
-    Id: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU ID.'
-    })),
-    ProductId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Product ID.'
-    })),
-    IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is active or not.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU name.'
-    })),
-    Height: z.optional(z.number().register(z.globalRegistry, {
-        description: 'SKU height.'
-    })),
+    IsPersisted: z.optional(z.boolean()),
+    IsRemoved: z.optional(z.boolean()),
+    Id: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    ProductId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    IsActive: z.optional(z.boolean()),
+    Name: z.optional(z.string()),
+    Height: z.optional(z.number()),
     RealHeight: z.optional(z.union([
         z.number(),
         z.null()
     ])),
-    Width: z.optional(z.number().register(z.globalRegistry, {
-        description: 'SKU width.'
-    })),
+    Width: z.optional(z.number()),
     RealWidth: z.optional(z.union([
         z.number(),
         z.null()
     ])),
-    Length: z.optional(z.number().register(z.globalRegistry, {
-        description: 'SKU length.'
-    })),
+    Length: z.optional(z.number()),
     RealLength: z.optional(z.union([
         z.number(),
         z.null()
@@ -945,18 +457,10 @@ export const zSkulistbyProductId = z.object({
         z.number(),
         z.null()
     ])),
-    ModalId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Delivery method (modal type) ID.'
-    })),
-    RefId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Product reference ID.'
-    })),
-    CubicWeight: z.optional(z.number().register(z.globalRegistry, {
-        description: '[Cubic weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-    })),
-    IsKit: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines whether the SKU is made up of one or more SKUs (part of a kit) (`true`) or not (`false`). Must be enabled if you are adding a kit. Once activated, this definition cannot be reverted.'
-    })),
+    ModalId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    RefId: z.optional(z.string()),
+    CubicWeight: z.optional(z.number()),
+    IsKit: z.optional(z.boolean()),
     IsDynamicKit: z.optional(z.union([
         z.string(),
         z.null()
@@ -965,42 +469,26 @@ export const zSkulistbyProductId = z.object({
         z.string(),
         z.null()
     ])),
-    DateUpdated: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date when the product was updated for the most recent time.'
-    })),
+    DateUpdated: z.optional(z.string()),
     RewardValue: z.optional(z.union([
         z.number(),
         z.null()
     ])),
-    CommercialConditionId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Commercial condition ID, used to define SKU specific promotions or installment rules. In case of no specific condition, use `1` (default value). This field does not accept `0`. Learn more at [Registering a commercial condition](https://help.vtex.com/tutorial/registering-a-commercial-condition--tutorials_445).'
-    })).default(1),
+    CommercialConditionId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).default(1),
     EstimatedDateArrival: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    FlagKitItensSellApart: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU bundle items can be sold separately.'
-    })),
-    ManufacturerCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Identifier provided by the manufacturers to identify their product. This field should be filled in if the product has a specific manufacturer\'s code.'
-    })),
+    FlagKitItensSellApart: z.optional(z.boolean()),
+    ManufacturerCode: z.optional(z.string()),
     ReferenceStockKeepingUnitId: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    Position: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU position.'
-    })),
-    ActivateIfPossible: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'When set to `true`, this attribute will automatically update the SKU as active once associated with an image or an active component.'
-    })),
-    MeasurementUnit: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Measurement unit. This field should only be used when it is necessary to convert the unit of measure for sale. For example, if a product is sold in boxes, but customers want to buy per square meter (m²). In common cases, use `"un"`.'
-    })),
-    UnitMultiplier: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Multiple number of SKU. If the multiplier is 5.0000, the product can be added in multiple quantities of 5, 10, 15, 20, onward.'
-    })),
+    Position: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    ActivateIfPossible: z.optional(z.boolean()),
+    MeasurementUnit: z.optional(z.string()),
+    UnitMultiplier: z.optional(z.number()),
     IsInventoried: z.optional(z.union([
         z.boolean(),
         z.null()
@@ -1017,203 +505,81 @@ export const zSkulistbyProductId = z.object({
         z.string(),
         z.null()
     ])),
-    isKitOptimized: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU is an optimized bundle.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    isKitOptimized: z.optional(z.boolean())
 });
 
 /**
  * Object with the request.
  */
 export const zCreateSellerRequest = z.object({
-    SellerId: z.string().register(z.globalRegistry, {
-        description: 'Code used to identify the seller. It is assigned by the marketplace. We recommend filling it in with the seller\'s account name.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Name of the account in the seller\'s environment. You can find it on **Account settings > Account > Account Name**). Applicable only if the seller uses their own payment method.'
-    }),
-    Email: z.string().register(z.globalRegistry, {
-        description: 'Email of the admin responsible for the seller.'
-    }),
-    Description: z.string().register(z.globalRegistry, {
-        description: 'Text describing the seller with a marketing tone. You can display this text in the marketplace window display by [customizing the CMS](https://help.vtex.com/en/tutorial/list-of-controls-for-templates--tutorials_563).'
-    }),
-    ExchangeReturnPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the exchange and return policy previously agreed between the marketplace and the seller.'
-    }),
-    DeliveryPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the delivery policy previously agreed between the marketplace and the seller.'
-    }),
-    UseHybridPaymentOptions: z.boolean().register(z.globalRegistry, {
-        description: 'Allows customers to use gift cards from the seller to buy their products on the marketplace. It identifies purchases made with a gift card so that only the final price (with discounts applied) is paid to the seller.'
-    }),
-    UserName: z.string().register(z.globalRegistry, {
-        description: 'Seller username.'
-    }),
-    Password: z.string().register(z.globalRegistry, {
-        description: 'Seller password.'
-    }),
-    SecutityPrivacyPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the security policy previously agreed between the marketplace and the seller.'
-    }),
-    CNPJ: z.string().register(z.globalRegistry, {
-        description: 'Company registration number.'
-    }),
-    CSCIdentification: z.string().register(z.globalRegistry, {
-        description: 'CSC identification.'
-    }),
-    ArchiveId: z.int().register(z.globalRegistry, {
-        description: 'Seller archive ID.'
-    }),
-    UrlLogo: z.string().register(z.globalRegistry, {
-        description: 'Seller URL logo.'
-    }),
-    ProductCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    }),
-    FreightCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    }),
-    CategoryCommissionPercentage: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    })),
-    FulfillmentEndpoint: z.string().register(z.globalRegistry, {
-        description: 'URL of the endpoint for fulfillment of seller\'s orders, which the marketplace will use to communicate with the seller. This field applies to all sellers, regardless of their type. However, for `VTEX Stores`, you don\'t need to fill it in because the system will do that automatically. You can edit this field once the seller has been successfully added.'
-    }),
-    CatalogSystemEndpoint: z.string().register(z.globalRegistry, {
-        description: 'URL of the endpoint of the seller\'s catalog. This field will only be displayed if the seller type is VTEX Store. The field format will be as follows: `http://{sellerName}.vtexcommercestable.com.br/api/catalog_system/`.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'If the selle is active (`true`) or not (`false`).'
-    }),
-    MerchantName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the marketplace, used to guide payments. This field should be nulled if the marketplace is responsible for processing payments. Check out our [Split Payment](https://help.vtex.com/en/tutorial/split-payment--6k5JidhYRUxileNolY2VLx) article to know more.'
-    })),
-    FulfillmentSellerId: z.int().register(z.globalRegistry, {
-        description: 'Identification code of the seller responsible for fulfilling the order. This is an optional field used when a seller sells SKUs from another seller. If the seller sells their own SKUs, it must be left blank.'
-    }),
-    SellerType: z.int().register(z.globalRegistry, {
-        description: 'Seller type.'
-    }),
-    IsBetterScope: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates whether it is a [comprehensive seller](https://help.vtex.com/en/tutorial/comprehensive-seller--5Qn4O2GpjUIzWTPpvLUfkI).'
-    }),
-    TrustPolicy: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Seller trust policy. The default value is `\'Default\'`, but if your store is a B2B marketplace and you want to share the customers\'emails with the sellers you need to set this field as `\'AllowEmailSharing\'`.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    SellerId: z.string(),
+    Name: z.string(),
+    Email: z.string(),
+    Description: z.string(),
+    ExchangeReturnPolicy: z.string(),
+    DeliveryPolicy: z.string(),
+    UseHybridPaymentOptions: z.boolean(),
+    UserName: z.string(),
+    Password: z.string(),
+    SecutityPrivacyPolicy: z.string(),
+    CNPJ: z.string(),
+    CSCIdentification: z.string(),
+    ArchiveId: z.int(),
+    UrlLogo: z.string(),
+    ProductCommissionPercentage: z.number(),
+    FreightCommissionPercentage: z.number(),
+    CategoryCommissionPercentage: z.optional(z.string()),
+    FulfillmentEndpoint: z.string(),
+    CatalogSystemEndpoint: z.string(),
+    IsActive: z.boolean(),
+    MerchantName: z.optional(z.string()),
+    FulfillmentSellerId: z.int(),
+    SellerType: z.int(),
+    IsBetterScope: z.boolean(),
+    TrustPolicy: z.optional(z.string())
 });
 
 /**
  * Object with the request.
  */
 export const zUpdateSellerRequest = z.object({
-    SellerId: z.string().register(z.globalRegistry, {
-        description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Name of the account in the seller\'s environment. You can find it on **Account settings > Account > Account Name**). Applicable only if the seller uses their own payment method.'
-    }),
-    Email: z.string().register(z.globalRegistry, {
-        description: 'Email of the admin responsible for the seller.'
-    }),
-    Description: z.string().register(z.globalRegistry, {
-        description: 'Text describing the seller with a marketing tone. You can display this text in the marketplace window display by [customizing the CMS](https://help.vtex.com/en/tutorial/list-of-controls-for-templates--tutorials_563).'
-    }),
-    ExchangeReturnPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the exchange and return policy previously agreed between the marketplace and the seller.'
-    }),
-    DeliveryPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the delivery policy previously agreed between the marketplace and the seller.'
-    }),
-    UseHybridPaymentOptions: z.boolean().register(z.globalRegistry, {
-        description: 'Allows customers to use gift cards from the seller to buy their products on the marketplace. It identifies purchases made with a gift card so that only the final price (with discounts applied) is paid to the seller.'
-    }),
-    UserName: z.string().register(z.globalRegistry, {
-        description: 'Seller username.'
-    }),
-    Password: z.string().register(z.globalRegistry, {
-        description: 'Seller password.'
-    }),
-    SecutityPrivacyPolicy: z.string().register(z.globalRegistry, {
-        description: 'Text describing the security policy previously agreed between the marketplace and the seller.'
-    }),
-    CNPJ: z.string().register(z.globalRegistry, {
-        description: 'Company registration number.'
-    }),
-    CSCIdentification: z.string().register(z.globalRegistry, {
-        description: 'CSC identification.'
-    }),
-    ArchiveId: z.int().register(z.globalRegistry, {
-        description: 'Seller archive ID.'
-    }),
-    UrlLogo: z.string().register(z.globalRegistry, {
-        description: 'Seller URL logo.'
-    }),
-    ProductCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    }),
-    FreightCommissionPercentage: z.number().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    }),
-    CategoryCommissionPercentage: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The percentage that must be filled in as agreed between the marketplace and the seller. If there is no such commission, please fill in the field with the value: `0.00`.'
-    })),
-    FulfillmentEndpoint: z.string().register(z.globalRegistry, {
-        description: 'URL of the endpoint for fulfillment of seller\'s orders, which the marketplace will use to communicate with the seller. This field applies to all sellers, regardless of their type. However, for `VTEX Stores`, you don\'t need to fill it in because the system will do that automatically. You can edit this field once the seller has been successfully added.'
-    }),
-    CatalogSystemEndpoint: z.string().register(z.globalRegistry, {
-        description: 'URL of the endpoint of the seller\'s catalog. This field will only be displayed if the seller type is VTEX Store. The field format will be as follows: `http://{sellerName}.vtexcommercestable.com.br/api/catalog_system/`.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'If the selle is active (`true`) or not (`false`).'
-    }),
-    MerchantName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the marketplace, used to guide payments. This field should be nulled if the marketplace is responsible for processing payments. Check out our [Split Payment](https://help.vtex.com/en/tutorial/split-payment--6k5JidhYRUxileNolY2VLx) article to know more.'
-    })),
-    FulfillmentSellerId: z.int().register(z.globalRegistry, {
-        description: 'Identification code of the seller responsible for fulfilling the order. This is an optional field used when a seller sells SKUs from another seller. If the seller sells their own SKUs, it must be left blank.'
-    }),
-    SellerType: z.int().register(z.globalRegistry, {
-        description: 'Seller type.'
-    }),
-    IsBetterScope: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates whether it is a [comprehensive seller](https://help.vtex.com/en/tutorial/comprehensive-seller--5Qn4O2GpjUIzWTPpvLUfkI).'
-    }),
-    TrustPolicy: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Seller trust policy. The default value is `\'Default\'`, but if your store is a B2B marketplace and you want to share the customers\'emails with the sellers you need to set this field as `\'AllowEmailSharing\'`.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    SellerId: z.string(),
+    Name: z.string(),
+    Email: z.string(),
+    Description: z.string(),
+    ExchangeReturnPolicy: z.string(),
+    DeliveryPolicy: z.string(),
+    UseHybridPaymentOptions: z.boolean(),
+    UserName: z.string(),
+    Password: z.string(),
+    SecutityPrivacyPolicy: z.string(),
+    CNPJ: z.string(),
+    CSCIdentification: z.string(),
+    ArchiveId: z.int(),
+    UrlLogo: z.string(),
+    ProductCommissionPercentage: z.number(),
+    FreightCommissionPercentage: z.number(),
+    CategoryCommissionPercentage: z.optional(z.string()),
+    FulfillmentEndpoint: z.string(),
+    CatalogSystemEndpoint: z.string(),
+    IsActive: z.boolean(),
+    MerchantName: z.optional(z.string()),
+    FulfillmentSellerId: z.int(),
+    SellerType: z.int(),
+    IsBetterScope: z.boolean(),
+    TrustPolicy: z.optional(z.string())
 });
 
 /**
  * Array of objects.
  */
 export const zCategorySpecification = z.array(z.object({
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Specification name. Limited to 100 characters.'
-    })),
-    CategoryId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Category ID.'
-    })),
-    FieldId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Specification field ID.'
-    })),
-    IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the specification is active.'
-    })),
-    IsStockKeepingUnit: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if it is an SKU specification.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object containing specification information.'
-})).register(z.globalRegistry, {
-    description: 'Array of objects.'
-});
+    Name: z.optional(z.string()),
+    CategoryId: z.optional(z.int()),
+    FieldId: z.optional(z.int()),
+    IsActive: z.optional(z.boolean()),
+    IsStockKeepingUnit: z.optional(z.boolean())
+}));
 
 /**
  * Object with specification groups information.
@@ -1223,252 +589,124 @@ export const zSpecificationsGroup = z.object({
         z.int(),
         z.null()
     ]),
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Specification group ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Specification group name.'
-    }),
+    Id: z.int(),
+    Name: z.string(),
     Position: z.union([
         z.int(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Object with specification groups information.'
 });
 
 /**
  * List with SKU complement information.
  */
 export const zSkuComplement = z.array(z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU complement\'s unique numerical identifier.'
-    })),
-    SkuId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'ID of the SKU which will be inserted as a complement in the parent SKU.'
-    })),
-    ParentSkuId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'ID of the parent SKU, where the complement will be inserted.'
-    })),
+    Id: z.optional(z.int()),
+    SkuId: z.optional(z.int()),
+    ParentSkuId: z.optional(z.int()),
     ComplementTypeId: z.optional(z.union([
         z.literal(1),
         z.literal(2),
         z.literal(3),
         z.literal(4),
         z.literal(5)
-    ]).register(z.globalRegistry, {
-        description: 'Complement type ID. This represents the type of the complement. The possible values are: `1` for **Accessory**; `2` for  **Suggestion**; `3` for **Similar product**; `5` for **Show together**.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'SKU complement details.'
-})).register(z.globalRegistry, {
-    description: 'List with SKU complement information.'
-});
+    ]))
+}));
 
 /**
  * SKU kit object.
  */
 export const zSkuKit = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU kit ID, same as `StockKeepingUnitParent`.'
-    })),
-    StockKeepingUnitParent: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Parent SKU ID.'
-    })),
-    StockKeepingUnitId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU ID of the kit component.'
-    })),
-    Quantity: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Component quantity.'
-    })),
-    UnitPrice: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Component price per unit.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'SKU kit object.'
+    Id: z.optional(z.int()),
+    StockKeepingUnitParent: z.optional(z.int()),
+    StockKeepingUnitId: z.optional(z.int()),
+    Quantity: z.optional(z.int()),
+    UnitPrice: z.optional(z.int())
 });
 
 /**
  * Object with the response.
  */
 export const zSkuSpecificationResponse = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'ID of the association of the specification and the SKU. This ID is used to update or delete the specification.'
-    })),
-    SkuId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    })),
-    FieldId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Specification field ID.'
-    })),
-    FieldValueId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Specification value ID. Required only for `FieldTypeId` as `5`, `6` and `7`.'
-    })),
-    Text: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Value of specification. Only for `FieldTypeId` different from `5`, `6` and `7`.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    Id: z.optional(z.int()),
+    SkuId: z.optional(z.int()),
+    FieldId: z.optional(z.int()),
+    FieldValueId: z.optional(z.int()),
+    Text: z.optional(z.string())
 });
 
 /**
  * SKU service information.
  */
 export const zSkuService = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU service ID.'
-    })),
-    SkuServiceTypeId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU service type ID.'
-    })),
-    SkuServiceValueId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU service value ID.'
-    })),
-    SkuId: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU service name. Maximum of 50 characters.'
-    })),
-    Text: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Internal description of the SKU service. Maximum of 100 characters.'
-    })),
-    IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service is active or not.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'SKU service information.'
+    Id: z.optional(z.int()),
+    SkuServiceTypeId: z.optional(z.int()),
+    SkuServiceValueId: z.optional(z.int()),
+    SkuId: z.optional(z.int()),
+    Name: z.optional(z.string()),
+    Text: z.optional(z.string()),
+    IsActive: z.optional(z.boolean())
 });
 
 /**
  * Object with the request.
  */
 export const zSkuServiceTypeRequest = z.object({
-    Name: z.string().register(z.globalRegistry, {
-        description: 'SKU service type name. Maximum of 100 characters.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is active or not.'
-    }).default(true),
-    ShowOnProductFront: z.boolean().register(z.globalRegistry, {
-        description: 'Deprecated field.'
-    }),
-    ShowOnCartFront: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is displayed on the cart screen.'
-    }),
-    ShowOnAttachmentFront: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type has an attachment.'
-    }),
-    ShowOnFileUpload: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type can be associated with an attachment or not.'
-    }),
-    IsGiftCard: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is displayed as a gift card.'
-    }),
-    IsRequired: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is mandatory.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    Name: z.string(),
+    IsActive: z.boolean().default(true),
+    ShowOnProductFront: z.boolean(),
+    ShowOnCartFront: z.boolean(),
+    ShowOnAttachmentFront: z.boolean(),
+    ShowOnFileUpload: z.boolean(),
+    IsGiftCard: z.boolean(),
+    IsRequired: z.boolean()
 });
 
 /**
  * Object with the response.
  */
 export const zSkuServiceTypeResponse = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU service type ID.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'SKU service type name. Maximum of 100 characters.'
-    })),
-    IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is active or not.'
-    })),
-    ShowOnProductFront: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Deprecated field.'
-    })),
-    ShowOnCartFront: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is displayed on the cart screen.'
-    })),
-    ShowOnAttachmentFront: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type has an attachment.'
-    })).default(false),
-    ShowOnFileUpload: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type can be associated with an attachment or not.'
-    })).default(false),
-    IsGiftCard: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is displayed as a Gift Card.'
-    })).default(false),
-    IsRequired: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the SKU service type is mandatory.'
-    })).default(false)
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    Id: z.optional(z.int()),
+    Name: z.optional(z.string()),
+    IsActive: z.optional(z.boolean()),
+    ShowOnProductFront: z.optional(z.boolean()),
+    ShowOnCartFront: z.optional(z.boolean()),
+    ShowOnAttachmentFront: z.optional(z.boolean()).default(false),
+    ShowOnFileUpload: z.optional(z.boolean()).default(false),
+    IsGiftCard: z.optional(z.boolean()).default(false),
+    IsRequired: z.optional(z.boolean()).default(false)
 });
 
 /**
  * Object with the request.
  */
 export const zSkuServiceValueRequest = z.object({
-    SkuServiceTypeId: z.int().register(z.globalRegistry, {
-        description: 'SKU service type ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'SKU service value name. Maximum of 100 characters.'
-    }),
-    Value: z.number().register(z.globalRegistry, {
-        description: 'SKU service value value.'
-    }),
-    Cost: z.number().register(z.globalRegistry, {
-        description: 'SKU service value cost.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    SkuServiceTypeId: z.int(),
+    Name: z.string(),
+    Value: z.number(),
+    Cost: z.number()
 });
 
 /**
  * Object with the response.
  */
 export const zSkuServiceValueResponse = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'SKU service value ID.'
-    })),
-    SkuServiceTypeId: z.int().register(z.globalRegistry, {
-        description: 'SKU service type ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'SKU service value name. Maximum of 100 characters.'
-    }),
-    Value: z.number().register(z.globalRegistry, {
-        description: 'SKU service value value.'
-    }),
-    Cost: z.number().register(z.globalRegistry, {
-        description: 'SKU service value cost.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the response.'
+    Id: z.optional(z.int()),
+    SkuServiceTypeId: z.int(),
+    Name: z.string(),
+    Value: z.number(),
+    Cost: z.number()
 });
 
 /**
  * Object containing brand information.
  */
 export const zBrandCreateUpdateRequest = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Brand\'s unique numerical identifier.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Brand name.'
-    }),
-    Text: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Meta description for the brand page. A brief description of the brand, displayed by search engines. Since search engines can only display less than 150 characters, we recommend not exceeding this character limit when creating the description.'
-    })),
-    Keywords: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - Alternative search terms that will lead to the specific brand. The user can find the desired brand even when misspelling it. Used especially when words are of foreign origin and have a distinct spelling that is transcribed into a generic one, or when small spelling mistakes occur.'
-    })),
-    SiteTitle: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Meta title for the brand page.'
-    })),
+    Id: z.int(),
+    Name: z.string(),
+    Text: z.optional(z.string()),
+    Keywords: z.optional(z.string()),
+    SiteTitle: z.optional(z.string()),
     AdWordsRemarketingCode: z.optional(z.union([
         z.string(),
         z.null()
@@ -1481,452 +719,250 @@ export const zBrandCreateUpdateRequest = z.object({
         z.int(),
         z.null()
     ])),
-    MenuHome: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - Defines if the brand appears in the Department Menu control (`<vtex.cmc:departmentNavigator/>`).'
-    })),
-    Active: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the brand is active (`true`) or not (`false`).'
-    })),
+    MenuHome: z.optional(z.boolean()),
+    Active: z.optional(z.boolean()),
     LinkId: z.optional(z.union([
         z.string(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Object containing brand information.'
 });
 
 /**
  * Object containing brand information.
  */
 export const zBrandCreateUpdate = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Brand\'s unique numerical identifier.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Brand name.'
-    }),
-    Text: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Meta description for the brand page. A brief description of the brand, displayed by search engines. Since search engines can only display less than 150 characters, we recommend not exceeding this character limit when creating the description.'
-    })),
-    Keywords: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - Alternative search terms that will lead to the specific brand. The user can find the desired brand even when misspelling it. Used especially when words are of foreign origin and have a distinct spelling that is transcribed into a generic one, or when small spelling mistakes occur.'
-    })),
-    SiteTitle: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Meta title for the brand page.'
-    })),
-    AdWordsRemarketingCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'This is a legacy field. Do not take this information into consideration.'
-    })),
-    LomadeeCampaignCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'This is a legacy field. Do not take this information into consideration.'
-    })),
+    Id: z.int(),
+    Name: z.string(),
+    Text: z.optional(z.string()),
+    Keywords: z.optional(z.string()),
+    SiteTitle: z.optional(z.string()),
+    AdWordsRemarketingCode: z.optional(z.string()),
+    LomadeeCampaignCode: z.optional(z.string()),
     Score: z.optional(z.union([
         z.int(),
         z.null()
     ])),
-    MenuHome: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - Defines if the brand appears in the Department Menu control (`<vtex.cmc:departmentNavigator/>`).'
-    })),
-    Active: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the brand is active (`true`) or not (`false`).'
-    })),
+    MenuHome: z.optional(z.boolean()),
+    Active: z.optional(z.boolean()),
     LinkId: z.optional(z.union([
         z.string(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Object containing brand information.'
 });
 
 /**
  * Object containing brand information.
  */
 export const zBrandGet = z.object({
-    id: z.int().register(z.globalRegistry, {
-        description: 'Brand\'s unique numerical identifier.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Brand name.'
-    }),
-    isActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the brand is active (`true`) or not (`false`).'
-    }),
-    title: z.string().register(z.globalRegistry, {
-        description: 'Meta title for the brand page.'
-    }),
-    metaTagDescription: z.string().register(z.globalRegistry, {
-        description: 'Meta Description for the brand page. A brief description of the brand, displayed by search engines. Since search engines can only display less than 150 characters, we recommend not exceeding this character limit when creating the description.'
-    }),
+    id: z.int(),
+    name: z.string(),
+    isActive: z.boolean(),
+    title: z.string(),
+    metaTagDescription: z.string(),
     imageUrl: z.union([
         z.string(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Object containing brand information.'
 });
 
 /**
  * Attachment response object.
  */
 export const zAttachmentResponse = z.object({
-    Id: z.int().register(z.globalRegistry, {
-        description: 'Attachment ID.'
-    }),
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Attachment name.'
-    }),
-    IsRequired: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is required or not.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is active or not.'
-    }),
+    Id: z.int(),
+    Name: z.string(),
+    IsRequired: z.boolean(),
+    IsActive: z.boolean(),
     Domains: z.array(z.object({
-        FieldName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Attachment key name.'
-        })),
-        MaxCaracters: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Maximum number of characters in the attachment key.'
-        })),
-        DomainValues: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Allowed key values.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Attachment object.'
-    })).register(z.globalRegistry, {
-        description: 'List of characteristics related to the attachment.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Attachment response object.'
+        FieldName: z.optional(z.string()),
+        MaxCaracters: z.optional(z.string()),
+        DomainValues: z.optional(z.string())
+    }))
 });
 
 /**
  * Object with the request.
  */
 export const zAttachmentRequest = z.object({
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Attachment name.'
-    }),
-    IsRequired: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is required or not.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the attachment is active or not.'
-    }),
+    Name: z.string(),
+    IsRequired: z.boolean(),
+    IsActive: z.boolean(),
     Domains: z.array(z.object({
-        FieldName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Attachment key name.'
-        })),
-        MaxCaracters: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Maximum number of characters in the attachment key.'
-        })),
-        DomainValues: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Allowed key values.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Attachment details.'
-    })).register(z.globalRegistry, {
-        description: 'List of characteristics related to the attachment.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+        FieldName: z.optional(z.string()),
+        MaxCaracters: z.optional(z.string()),
+        DomainValues: z.optional(z.string())
+    }))
 });
 
 /**
  * Object with the request.
  */
 export const zSupplierRequest = z.object({
-    Name: z.string().register(z.globalRegistry, {
-        description: 'Supplier Name.'
-    }),
-    CorporateName: z.string().register(z.globalRegistry, {
-        description: 'Supplier Corporate Name.'
-    }),
-    StateInscription: z.string().register(z.globalRegistry, {
-        description: 'State Inscription.'
-    }),
-    Cnpj: z.string().register(z.globalRegistry, {
-        description: 'Corporate legal ID.'
-    }),
-    Phone: z.string().register(z.globalRegistry, {
-        description: 'Supplier Phone.'
-    }),
-    CellPhone: z.string().register(z.globalRegistry, {
-        description: 'Supplier Cellphone.'
-    }),
-    CorportePhone: z.string().register(z.globalRegistry, {
-        description: 'Supplier Corporate Phone.'
-    }),
-    Email: z.string().register(z.globalRegistry, {
-        description: 'Supplier email.'
-    }),
-    IsActive: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the Supplier is active (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with the request.'
+    Name: z.string(),
+    CorporateName: z.string(),
+    StateInscription: z.string(),
+    Cnpj: z.string(),
+    Phone: z.string(),
+    CellPhone: z.string(),
+    CorportePhone: z.string(),
+    Email: z.string(),
+    IsActive: z.boolean()
 });
 
 /**
  * Object containing the response.
  */
 export const zSupplierResponse = z.object({
-    Id: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Supplier unique identifier code.'
-    })),
-    Name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier name.'
-    })),
-    CorporateName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier corporate name.'
-    })),
-    StateInscription: z.optional(z.string().register(z.globalRegistry, {
-        description: 'State inscription.'
-    })),
-    Cnpj: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Corporate legal ID.'
-    })),
-    Phone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier phone.'
-    })),
-    CellPhone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier cellphone.'
-    })),
-    CorportePhone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier corporate phone.'
-    })),
-    Email: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Supplier email.'
-    })),
-    IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the Supplier is active (`true`) or not (`false`).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object containing the response.'
+    Id: z.optional(z.int()),
+    Name: z.optional(z.string()),
+    CorporateName: z.optional(z.string()),
+    StateInscription: z.optional(z.string()),
+    Cnpj: z.optional(z.string()),
+    Phone: z.optional(z.string()),
+    CellPhone: z.optional(z.string()),
+    CorportePhone: z.optional(z.string()),
+    Email: z.optional(z.string()),
+    IsActive: z.optional(z.boolean())
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-}).default('application/json');
+export const zContentType = z.string().default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-}).default('application/json');
+export const zAccept = z.string().default('application/json');
 
 /**
  * Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).
  */
-export const zSubCollectionId = z.int().register(z.globalRegistry, {
-    description: 'Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-});
+export const zSubCollectionId = z.int();
 
 /**
  * Unique identifier of the product.
  */
-export const zProductId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the product.'
-});
+export const zProductId = z.int();
 
 /**
  * Unique identifier of the SKU.
  */
-export const zSkuId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU.'
-});
+export const zSkuId = z.int();
 
 /**
  * Unique identifier of the category.
  */
-export const zCategoryId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the category.'
-});
+export const zCategoryId = z.int();
 
 /**
  * Unique identifier of the brand.
  */
-export const zBrandId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the brand.'
-});
+export const zBrandId = z.int();
 
 /**
  * Unique identifier of the collection.
  */
-export const zCollectionId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the collection.'
-});
+export const zCollectionId = z.int();
 
 /**
  * Unique identifier of the specification group.
  */
-export const zSpecificationGroupId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the specification group.'
-});
+export const zSpecificationGroupId = z.int();
 
 /**
  * Unique identifier of the specification.
  */
-export const zSpecificationId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the specification.'
-});
+export const zSpecificationId = z.int();
 
 /**
  * Unique identifier of the specification value.
  */
-export const zValueId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the specification value.'
-});
+export const zValueId = z.int();
 
 /**
  * Unique identifier of the attachment.
  */
-export const zAttachmentId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the attachment.'
-});
+export const zAttachmentId = z.int();
 
 /**
  * Unique identifier of the SKU file.
  */
-export const zSkuFileId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU file.'
-});
+export const zSkuFileId = z.int();
 
 /**
  * Unique identifier of the SKU attribute.
  */
-export const zSkuAttributeId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU attribute.'
-});
+export const zSkuAttributeId = z.int();
 
 /**
  * Unique identifier of the SKU service.
  */
-export const zSkuServiceId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU service.'
-});
+export const zSkuServiceId = z.int();
 
 /**
  * Unique identifier of the SKU service type.
  */
-export const zSkuServiceTypeId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU service type.'
-});
+export const zSkuServiceTypeId = z.int();
 
 /**
  * Unique identifier of the SKU service value.
  */
-export const zSkuServiceValueId = z.int().register(z.globalRegistry, {
-    description: 'Unique identifier of the SKU service value.'
-});
+export const zSkuServiceValueId = z.int();
 
 /**
  * Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as 'en-US' for English (United States), 'en-ES' for Spanish (Spain), or 'pt-BR' for Portuguese (Brazil).
  */
-export const zLocale = z.string().register(z.globalRegistry, {
-    description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-});
+export const zLocale = z.string();
 
 export const zProductAndSkuIdsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        categoryId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'ID of the category from which you need to retrieve products and SKUs.'
-        })),
-        _from: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Insert the ID that will start the request result.'
-        })),
-        _to: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Insert the ID that will end the request result.'
-        }))
+        categoryId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        _from: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        _to: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetProductbyidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtProductByProductIdData = z.object({
     body: z.optional(z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Product\'s name. Limited to 150 characters.'
-        }),
-        DepartmentId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Department ID according to the product\'s category.'
-        })),
-        CategoryId: z.int().register(z.globalRegistry, {
-            description: 'Category ID associated with this product.'
-        }),
-        BrandId: z.int().register(z.globalRegistry, {
-            description: 'Brand ID associated with this product.'
-        }),
-        LinkId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Slug that will be used to build the product page URL. If it not informed, it will be generated according to the product\'s name replacing spaces and special characters by hyphens (`-`).'
-        })),
-        RefId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product Reference Code. The limit for the product `RefId` is 100 characters.'
-        })),
-        IsVisible: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Shows (`true`) or hides (`false`) the product in search result and product pages, but the product can still be added to the shopping cart. Usually applicable for gifts.'
-        })),
-        Description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product description.'
-        })),
-        DescriptionShort: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Short product description. This information can be displayed on both the product page and the shelf, using the following controls:\r\n Store Framework: `$product.DescriptionShort`.\r\n Legacy CMS Portal: `<vtex.cmc:productDescriptionShort/>`.'
-        })),
-        ReleaseDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Used to assist in the ordering of the search result of the site. Using the `O=OrderByReleaseDateDESC` query string, you can pull this value and show the display order by release date. This attribute is also used as a condition for dynamic collections.'
-        })),
-        KeyWords: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Store Framework: Deprecated. \r\nLegacy CMS Portal: Keywords or synonyms related to the product, separated by comma (`,`). "Television", for example, can have a substitute word like "TV". This field is important to make your searches more comprehensive.'
-        })),
-        Title: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product\'s Title tag. Limited to 150 characters. It is presented in the browser tab and corresponds to the title of the product page. This field is important for SEO.'
-        })),
-        IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Activate (`true`) or inactivate (`false`) product.'
-        })),
-        TaxCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product tax code, used for tax calculation.'
-        })),
-        MetaTagDescription: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Brief description of the product for SEO. It is recommended not to exceed 150 characters.'
-        })),
+        Name: z.string(),
+        DepartmentId: z.optional(z.int()),
+        CategoryId: z.int(),
+        BrandId: z.int(),
+        LinkId: z.optional(z.string()),
+        RefId: z.optional(z.string()),
+        IsVisible: z.optional(z.boolean()),
+        Description: z.optional(z.string()),
+        DescriptionShort: z.optional(z.string()),
+        ReleaseDate: z.optional(z.string()),
+        KeyWords: z.optional(z.string()),
+        Title: z.optional(z.string()),
+        IsActive: z.optional(z.boolean()),
+        TaxCode: z.optional(z.string()),
+        MetaTagDescription: z.optional(z.string()),
         SupplierId: z.optional(z.union([
             z.int(),
             z.null()
         ])),
-        ShowWithoutStock: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If `true`, activates the [Notify Me](https://help.vtex.com/en/tutorial/setting-up-the-notify-me-option--2VqVifQuf6Co2KG048Yu6e) option when the product is out of stock.'
-        })),
+        ShowWithoutStock: z.optional(z.boolean()),
         AdWordsRemarketingCode: z.optional(z.union([
             z.string(),
             z.null()
@@ -1935,212 +971,112 @@ export const zPutApiCatalogPvtProductByProductIdData = z.object({
             z.string(),
             z.null()
         ])),
-        Score: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Value used to set the priority on the search result page.'
-        }))
+        Score: z.optional(z.int())
     })),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zProductandTradePolicyData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zProductbyRefIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        refId: z.string().register(z.globalRegistry, {
-            description: 'Product reference code.'
-        })
+        refId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zProductVariationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiAddonPvtReviewGetProductRateByProductIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtProductData = z.object({
     body: z.optional(z.union([
         z.object({
-            Id: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Product\'s unique numerical identifier. If not informed, it will be automatically generated by VTEX.'
-            })),
-            Name: z.string().register(z.globalRegistry, {
-                description: 'Product\'s name. Limited to 150 characters.'
-            }),
-            CategoryPath: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Path of categories associated with this product, from the highest level of category to the lowest level, separated by `/`. It is mandatory to use either this field or the `CategoryId` field.'
-            })),
-            DepartmentId: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Department ID according to the product\'s category.'
-            })),
-            BrandName: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Name of the brand that will be associated with this product. It is mandatory to use either this field or the `BrandId` field. If you wish to create a new brand, that is, in case the brand does not exist yet, use this field instead of `BrandId`.'
-            })),
-            RefId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product Reference Code. The limit for the product `RefId` is 100 characters.'
-            })),
-            Title: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product\'s Title tag. Limited to 150 characters. It is presented in the browser tab and corresponds to the title of the product page. This field is important for SEO.'
-            })),
-            LinkId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Slug that will be used to build the product page URL. If it not informed, it will be generated according to the product\'s name replacing spaces and special characters by hyphens (`-`).'
-            })),
-            Description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product description.'
-            })),
-            ReleaseDate: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Used to assist in the ordering of the search result of the site. Using the `O=OrderByReleaseDateDESC` query string, you can pull this value and show the display order by release date. This attribute is also used as a condition for dynamic collections.'
-            })),
-            IsVisible: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Shows (`true`) or hides (`false`) the product in search result and product pages, but the product can still be added to the shopping cart. Usually applicable for gifts.'
-            })),
-            IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Activate (`true`) or inactivate (`false`) product.'
-            })),
-            TaxCode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product tax code, used for tax calculation. This field is important for SEO. Limited to 150 characters.'
-            })),
-            MetaTagDescription: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Brief description of the product for SEO. It is recommended not to exceed 150 characters.'
-            })),
-            ShowWithoutStock: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If `true`, activates the [Notify Me](https://help.vtex.com/en/tutorial/setting-up-the-notify-me-option--2VqVifQuf6Co2KG048Yu6e) option when the product is out of stock.'
-            })),
+            Id: z.optional(z.int()),
+            Name: z.string(),
+            CategoryPath: z.optional(z.string()),
+            DepartmentId: z.optional(z.int()),
+            BrandName: z.optional(z.string()),
+            RefId: z.optional(z.string()),
+            Title: z.optional(z.string()),
+            LinkId: z.optional(z.string()),
+            Description: z.optional(z.string()),
+            ReleaseDate: z.optional(z.string()),
+            IsVisible: z.optional(z.boolean()),
+            IsActive: z.optional(z.boolean()),
+            TaxCode: z.optional(z.string()),
+            MetaTagDescription: z.optional(z.string()),
+            ShowWithoutStock: z.optional(z.boolean()),
             LomadeeCampaignCode: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            Score: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Value used to set the priority on the search result page.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Request type that creates a new product as well as a new category path (including subcategories) and a new brand by using `CategoryPath` and `BrandName` parameters.'
+            Score: z.optional(z.int())
         }),
         z.object({
-            Id: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Product\'s unique numerical identifier. If not informed, it will be automatically generated by VTEX.'
-            })),
-            Name: z.string().register(z.globalRegistry, {
-                description: 'Product\'s name. Limited to 150 characters.'
-            }),
-            DepartmentId: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Department ID according to the product\'s category.'
-            })),
-            CategoryId: z.optional(z.int().register(z.globalRegistry, {
-                description: 'ID of an existing category that will be associated with this product. It is mandatory to use either this field or the `CategoryPath` field.'
-            })),
-            BrandId: z.optional(z.int().register(z.globalRegistry, {
-                description: 'ID of an existing brand that will be associated with this product. It is mandatory to use either this field or the `BrandName` field.'
-            })),
-            LinkId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Slug that will be used to build the product page URL. If it not informed, it will be generated according to the product\'s name replacing spaces and special characters by hyphens (`-`).'
-            })),
-            RefId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product Reference Code. The limit for the product `RefId` is 100 characters.'
-            })),
-            IsVisible: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Shows (`true`) or hides (`false`) the product in search result and product pages, but the product can still be added to the shopping cart. Usually applicable for gifts.'
-            })),
-            Description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product description.'
-            })),
-            DescriptionShort: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Short product description. This information can be displayed on both the product page and the shelf, using the following controls:\r\n Store Framework: `$product.DescriptionShort`.\r\n Legacy CMS Portal: `<vtex.cmc:productDescriptionShort/>`.'
-            })),
-            ReleaseDate: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Used to assist in the ordering of the search result of the site. Using the `O=OrderByReleaseDateDESC` query string, you can pull this value and show the display order by release date. This attribute is also used as a condition for dynamic collections.'
-            })),
-            KeyWords: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Store Framework: Deprecated. \r\nLegacy CMS Portal: Keywords or synonyms related to the product, separated by comma (`,`). "Television", for example, can have a substitute word like "TV". This field is important to make your searches more comprehensive.'
-            })),
-            Title: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product\'s Title tag. Limited to 150 characters. It is presented in the browser tab and corresponds to the title of the product page. This field is important for SEO.'
-            })),
-            IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'Activate (`true`) or inactivate (`false`) product.'
-            })),
-            TaxCode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Product tax code, used for tax calculation. This field is important for SEO. Limited to 150 characters.'
-            })),
-            MetaTagDescription: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Brief description of the product for SEO. It is recommended not to exceed 150 characters.'
-            })),
+            Id: z.optional(z.int()),
+            Name: z.string(),
+            DepartmentId: z.optional(z.int()),
+            CategoryId: z.optional(z.int()),
+            BrandId: z.optional(z.int()),
+            LinkId: z.optional(z.string()),
+            RefId: z.optional(z.string()),
+            IsVisible: z.optional(z.boolean()),
+            Description: z.optional(z.string()),
+            DescriptionShort: z.optional(z.string()),
+            ReleaseDate: z.optional(z.string()),
+            KeyWords: z.optional(z.string()),
+            Title: z.optional(z.string()),
+            IsActive: z.optional(z.boolean()),
+            TaxCode: z.optional(z.string()),
+            MetaTagDescription: z.optional(z.string()),
             SupplierId: z.optional(z.union([
                 z.int(),
                 z.null()
             ])),
-            ShowWithoutStock: z.optional(z.boolean().register(z.globalRegistry, {
-                description: 'If `true`, activates the [Notify Me](https://help.vtex.com/en/tutorial/setting-up-the-notify-me-option--2VqVifQuf6Co2KG048Yu6e) option when the product is out of stock.'
-            })),
+            ShowWithoutStock: z.optional(z.boolean()),
             AdWordsRemarketingCode: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -2149,178 +1085,108 @@ export const zPostApiCatalogPvtProductData = z.object({
                 z.string(),
                 z.null()
             ])),
-            Score: z.optional(z.int().register(z.globalRegistry, {
-                description: 'Value used to set the priority on the search result page.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Request type that creates a new product given an existing `BrandId` and an existing `CategoryId`.'
+            Score: z.optional(z.int())
         })
     ])),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetProductSpecificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zUpdateProductSpecificationData = z.object({
     body: z.optional(z.array(zGetorUpdateProductSpecification)),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteAllProductSpecificationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetProductSpecificationbyProductIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtProductByProductIdSpecificationData = z.object({
     body: z.optional(z.object({
-        FieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        }),
-        FieldValueId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Specification value ID. Mandatory for `FieldTypeId` `5`, `6` and `7`. Must not be used for any other Field types.'
-        })),
-        Text: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Value of specification. Only for `FieldTypeId` different from `5`, `6` and `7`.'
-        }))
+        FieldId: z.int(),
+        FieldValueId: z.optional(z.int()),
+        Text: z.optional(z.string())
     })),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteaProductSpecificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        }),
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Product specification\'s unique numerical identifier. For radio, checkbox, or combo specifications, use the specification field ID (`specificationFieldId`) instead. You can retrieve these values using the endpoint [Get product specifications and their information by product ID](https://developers.vtex.com/docs/api-reference/catalog-api#get-/api/catalog/pvt/product/-productId-/specification). They correspond to the `Id` and `FieldId` values, respectively.'
-        })
+        productId: z.int(),
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtProductByProductIdSpecificationvalueData = z.object({
     body: z.optional(z.object({
-        FieldName: z.string().register(z.globalRegistry, {
-            description: 'Specification name. Limited to 100 characters.'
-        }),
-        GroupName: z.string().register(z.globalRegistry, {
-            description: 'Group name.'
-        }),
-        RootLevelSpecification: z.boolean().register(z.globalRegistry, {
-            description: 'Root level specification.'
-        }),
-        FieldValues: z.array(z.string().register(z.globalRegistry, {
-            description: 'Specification value.'
-        })).register(z.globalRegistry, {
-            description: 'Array of specification values.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Object with product specification information.'
+        FieldName: z.string(),
+        GroupName: z.string(),
+        RootLevelSpecification: z.boolean(),
+        FieldValues: z.array(z.string())
     })),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2328,42 +1194,26 @@ export const zListallSkuidsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        page: z.int().register(z.globalRegistry, {
-            description: 'Number of the page from where you need to retrieve SKU IDs.'
-        }),
-        pagesize: z.int().register(z.globalRegistry, {
-            description: 'Size of the page from where you need retrieve SKU IDs. The maximum value is `1000`.'
-        })
+        page: z.int(),
+        pagesize: z.int()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkuContextData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique identifier number.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.object({
-        sc: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Trade policy\'s unique identifier number.'
-        }))
+        sc: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2371,86 +1221,40 @@ export const zGetApiCatalogPvtStockkeepingunitData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        RefId: z.string().register(z.globalRegistry, {
-            description: 'SKU reference ID.'
-        })
+        RefId: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtStockkeepingunitData = z.object({
     body: z.optional(z.object({
-        Id: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier. If not informed, it will be automatically generated by VTEX.'
-        })),
-        ProductId: z.int().register(z.globalRegistry, {
-            description: 'ID of the product associated with this SKU.'
-        }),
-        IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the SKU is active (`true`) or not (`false`). During SKU creation, do not set this field as `true` or you will receive a `400 Bad Request` error. You should activate the SKU afterwards, as explained in [Activating an SKU](https://developers.vtex.com/docs/guides/skus#activating-an-sku).'
-        })),
-        ActivateIfPossible: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When set to `true`, this attribute will automatically update the SKU as active once associated with an image or an active component. We recommend setting it to `true`, unless you plan to have an internal workflow to manually activate SKUs.'
-        })),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'SKU name, meaning the variation of the previously added product. For example: **Product** - _Fridge_, **SKU** - _110V_. Limited to 200 characters.'
-        }),
-        RefId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reference code used internally for organizational purposes. Must be unique. Required only if `Ean` is not informed, but can be used alongside `Ean` as well. The limit for the SKU `RefId` is 50 characters.'
-        })),
-        PackagedHeight: z.number().register(z.globalRegistry, {
-            description: 'Height used for shipping calculation.'
-        }),
-        PackagedLength: z.number().register(z.globalRegistry, {
-            description: 'Length used for shipping calculation.'
-        }),
-        PackagedWidth: z.number().register(z.globalRegistry, {
-            description: 'Width used for shipping calculation.'
-        }),
-        PackagedWeightKg: z.int().register(z.globalRegistry, {
-            description: 'Weight used for shipping calculation, in the measurement [configured in the store](https://help.vtex.com/en/tutorial/filling-in-system-settings--tutorials_269), which by default is in grams. Do not fill in this field with `0` or `null`, because this might result in shipping issues.'
-        }),
-        Height: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real height.'
-        })),
-        Length: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real length.'
-        })),
-        Width: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real width.'
-        })),
-        WeightKg: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Weight of the SKU in the measurement [configured in the store](https://help.vtex.com/en/tutorial/filling-in-system-settings--tutorials_269), which by default is in grams.'
-        })),
-        CubicWeight: z.optional(z.number().register(z.globalRegistry, {
-            description: '[Cubic weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-        })),
-        IsKit: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines whether the SKU is made up of one or more SKUs (part of a kit) (`true`) or not (`false`). Must be enabled if you are adding a kit. Once activated, this definition cannot be reverted.'
-        })),
-        CreationDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Date and time of the SKU\'s creation.'
-        })),
-        RewardValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Credit that the customer receives when finalizing an order that includes the SKU. By filling this field out with `1`, the customer receives credit on the site in the selected currency, e.g. U$ 1.'
-        })),
+        Id: z.optional(z.int()),
+        ProductId: z.int(),
+        IsActive: z.optional(z.boolean()),
+        ActivateIfPossible: z.optional(z.boolean()),
+        Name: z.string(),
+        RefId: z.optional(z.string()),
+        PackagedHeight: z.number(),
+        PackagedLength: z.number(),
+        PackagedWidth: z.number(),
+        PackagedWeightKg: z.int(),
+        Height: z.optional(z.number()),
+        Length: z.optional(z.number()),
+        Width: z.optional(z.number()),
+        WeightKg: z.optional(z.number()),
+        CubicWeight: z.optional(z.number()),
+        IsKit: z.optional(z.boolean()),
+        CreationDate: z.optional(z.string()),
+        RewardValue: z.optional(z.number()),
         EstimatedDateArrival: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        ManufacturerCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier provided by the manufacturers to identify their product. This field should be filled in if the product has a specific manufacturer\'s code.'
-        })),
-        CommercialConditionId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Commercial condition ID, used to define SKU specific promotions or installment rules. In case of no specific condition, use `1` (default value). This field does not accept `0`. Learn more at [Registering a commercial condition](https://help.vtex.com/tutorial/registering-a-commercial-condition--tutorials_445).'
-        })),
+        ManufacturerCode: z.optional(z.string()),
+        CommercialConditionId: z.optional(z.int()),
         MeasurementUnit: z.optional(z.enum([
             'un',
             'kg',
@@ -2473,190 +1277,106 @@ export const zPostApiCatalogPvtStockkeepingunitData = z.object({
             'in',
             'in²',
             'in³'
-        ]).register(z.globalRegistry, {
-            description: 'Measurement unit. This field should only be used when it is necessary to convert the unit of measure for sale. In common cases, use `un` (unit).\n\rThe acceptables values are:\n\r- `un`: Unit\n\r- `kg`: Kilogram\n\r- `g`: Gram\n\r- `mg`: Milligram\n\r- `m`: Meter\n\r- `m²`: Square meter\n\r- `m³`: Cubic meter\n\r- `cm`: Centimeter\n\r- `cm²`: Square centimeter\n\r- `cm³`: Cubic centimeter\n\r- `mm`: Millimeter\n\r- `mm²`: Square millimeter\n\r- `mm³`: Cubic millimeter\n\r- `oz`: Ounce\n\r- `lb`: Pound\n\r- `ft`: Foot\n\r- `ft²`: Square foot\n\r- `ft³`: Cubic foot\n\r- `in`: Inch\n\r- `in²`: Square inch\n\r- `in³`: Cubic inch'
-        })),
-        UnitMultiplier: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Multiple number of SKU. If the multiplier is 5.0000, the product can be added in multiple quantities of 5, 10, 15, 20, onward.'
-        })),
+        ])),
+        UnitMultiplier: z.optional(z.number()),
         ModalType: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        KitItensSellApart: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if kit components can be sold apart.'
-        })),
-        Videos: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'URL'
-        })).register(z.globalRegistry, {
-            description: 'Videos URLs.'
-        }))
+        KitItensSellApart: z.optional(z.boolean()),
+        Videos: z.optional(z.array(z.string()))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkuIdbyRefIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        refId: z.string().register(z.globalRegistry, {
-            description: 'SKU reference ID.'
-        })
+        refId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkubyAlternateIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        alternateId: z.int().register(z.globalRegistry, {
-            description: 'Product EAN or `RefId`.'
-        })
+        alternateId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkulistbyProductIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkuIdlistbyRefIdlistData = z.object({
-    body: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'SKU reference ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array with SKU reference IDs from which you need to retrieve the related SKU IDs. Do not repeat values in the array, or the API will return an error 500.'
-    })),
+    body: z.optional(z.array(z.string())),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkuData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier number.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdData = z.object({
     body: z.optional(z.object({
-        ProductId: z.int().register(z.globalRegistry, {
-            description: 'ID of the product associated with this SKU.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Although the inclusion of the IsActive field is optional, not including it will result in the field\'s value being interpreted as null, leading to the deactivation of the SKU. When updating the integration with the Catalog, send (`true`) If you wish to make sure the SKU is active. Otherwise send (`false`).'
-        }),
-        ActivateIfPossible: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When set to `true`, this attribute will automatically update the SKU as active once associated with an image or an active component.'
-        })),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'SKU name, meaning the variation of the previously added product. For example: **Product** - _Fridge_, **SKU** - _110V_.'
-        }),
-        RefId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Reference code used internally for organizational purposes. Must be unique. It is not required only if EAN code already exists. If not, this field must be provided. The limit for the SKU `RefId` is 50 characters.'
-        })),
-        PackagedHeight: z.number().register(z.globalRegistry, {
-            description: 'Height used for shipping calculation.'
-        }),
-        PackagedLength: z.number().register(z.globalRegistry, {
-            description: 'Length used for shipping calculation.'
-        }),
-        PackagedWidth: z.number().register(z.globalRegistry, {
-            description: 'Width used for shipping calculation.'
-        }),
-        PackagedWeightKg: z.int().register(z.globalRegistry, {
-            description: 'Weight used for shipping calculation, in the measurement [configured in the store](https://help.vtex.com/en/tutorial/filling-in-system-settings--tutorials_269), which by default is in grams. Do not fill in this field with `0` or `null`, because this might result in shipping issues.'
-        }),
-        Height: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real height.'
-        })),
-        Length: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real length.'
-        })),
-        Width: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU real width.'
-        })),
-        WeightKg: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Weight of the SKU in the measurement [configured in the store](https://help.vtex.com/en/tutorial/filling-in-system-settings--tutorials_269), which by default is in grams.'
-        })),
-        CubicWeight: z.optional(z.number().register(z.globalRegistry, {
-            description: '[Cubic weight](https://help.vtex.com/en/tutorial/understanding-the-cubic-weight-factor--tutorials_128).'
-        })),
-        IsKit: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines whether the SKU is made up of one or more SKUs (part of a kit) (`true`) or not (`false`). Must be enabled if you are adding a kit. Once activated, this definition cannot be reverted.'
-        })),
-        CreationDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Date and time of the SKU\'s creation.'
-        })),
-        RewardValue: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Credit that the customer receives when finalizing an order that includes the SKU. By filling this field out with `1`, the customer receives credit on the site in the selected currency, e.g. U$ 1.'
-        })),
+        ProductId: z.int(),
+        IsActive: z.boolean(),
+        ActivateIfPossible: z.optional(z.boolean()),
+        Name: z.string(),
+        RefId: z.optional(z.string()),
+        PackagedHeight: z.number(),
+        PackagedLength: z.number(),
+        PackagedWidth: z.number(),
+        PackagedWeightKg: z.int(),
+        Height: z.optional(z.number()),
+        Length: z.optional(z.number()),
+        Width: z.optional(z.number()),
+        WeightKg: z.optional(z.number()),
+        CubicWeight: z.optional(z.number()),
+        IsKit: z.optional(z.boolean()),
+        CreationDate: z.optional(z.string()),
+        RewardValue: z.optional(z.number()),
         EstimatedDateArrival: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        ManufacturerCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Identifier provided by the manufacturers to identify their product. This field should be filled in if the product has a specific manufacturer\'s code.'
-        })),
-        CommercialConditionId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Commercial condition ID, used to define SKU specific promotions or installment rules. In case of no specific condition, use `1` (default value). This field does not accept `0`. Learn more at [Registering a commercial condition](https://help.vtex.com/tutorial/registering-a-commercial-condition--tutorials_445).'
-        })),
+        ManufacturerCode: z.optional(z.string()),
+        CommercialConditionId: z.optional(z.int()),
         MeasurementUnit: z.optional(z.enum([
             'un',
             'kg',
@@ -2679,260 +1399,165 @@ export const zPutApiCatalogPvtStockkeepingunitBySkuIdData = z.object({
             'in',
             'in²',
             'in³'
-        ]).register(z.globalRegistry, {
-            description: 'Measurement unit. This field should only be used when it is necessary to convert the unit of measure for sale. In common cases, use `un` (unit).\n\rThe acceptables values are:\n\r- `un`: Unit\n\r- `kg`: Kilogram\n\r- `g`: Gram\n\r- `mg`: Milligram\n\r- `m`: Meter\n\r- `m²`: Square meter\n\r- `m³`: Cubic meter\n\r- `cm`: Centimeter\n\r- `cm²`: Square centimeter\n\r- `cm³`: Cubic centimeter\n\r- `mm`: Millimeter\n\r- `mm²`: Square millimeter\n\r- `mm³`: Cubic millimeter\n\r- `oz`: Ounce\n\r- `lb`: Pound\n\r- `ft`: Foot\n\r- `ft²`: Square foot\n\r- `ft³`: Cubic foot\n\r- `in`: Inch\n\r- `in²`: Square inch\n\r- `in³`: Cubic inch'
-        })),
-        UnitMultiplier: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Multiple number of SKU. If the multiplier is 5.0000, the product can be added in multiple quantities of 5, 10, 15, 20, onward.'
-        })),
+        ])),
+        UnitMultiplier: z.optional(z.number()),
         ModalType: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        KitItensSellApart: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if kit components can be sold apart.'
-        })),
-        Videos: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Video URL.'
-        })).register(z.globalRegistry, {
-            description: 'Videos URLs.'
-        }))
+        KitItensSellApart: z.optional(z.boolean()),
+        Videos: z.optional(z.array(z.string()))
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSkuComplementbySkuidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSkuComplementsbyComplementTypeIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'ID of the SKU which will be inserted as a complement in the parent SKU.'
-        }),
-        complementTypeId: z.int().register(z.globalRegistry, {
-            description: 'Complement type ID. This represents the type of the complement. The possible values are: `1` for **Accessory**; `2` for **Suggestion**; `3` for **Similar product**; `5` for **Show together**.'
-        })
+        skuId: z.int(),
+        complementTypeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSkUcomplementsbytypeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        parentSkuId: z.int().register(z.globalRegistry, {
-            description: 'ID of the parent SKU, where the complement is inserted.'
-        }),
-        type: z.int().register(z.globalRegistry, {
-            description: 'Complement type ID. This represents the type of the complement. The possible values are: `1` for **Accessory**; `2` for **Suggestion**; `3` for **Similar product**; `5` for **Show together**.'
-        })
+        parentSkuId: z.int(),
+        type: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateSkuComplementData = z.object({
     body: z.optional(z.object({
-        ParentSkuId: z.int().register(z.globalRegistry, {
-            description: 'ID of the parent SKU, where the complement is inserted.'
-        }),
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'ID of the SKU which will be inserted as a complement in the parent SKU.'
-        }),
+        ParentSkuId: z.int(),
+        SkuId: z.int(),
         ComplementTypeId: z.union([
             z.literal(1),
             z.literal(2),
             z.literal(3),
-            z.literal(4),
             z.literal(5)
-        ]).register(z.globalRegistry, {
-            description: 'Complement type ID. This represents the type of the complement. The possible values are: `1` for **Accessory**; `2` for **Suggestion**; `3` for **Similar product**; `5` for **Show together**.'
-        })
+        ])
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteSkuComplementbySkuComplementIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuComplementId: z.int().register(z.globalRegistry, {
-            description: 'SKU complement\'s unique numerical identifier.'
-        })
+        skuComplementId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSkuComplementbySkuComplementIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuComplementId: z.int().register(z.globalRegistry, {
-            description: 'SKU complement\'s unique numerical identifier.'
-        })
+        skuComplementId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSkubyEanData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        ean: z.string().register(z.globalRegistry, {
-            description: 'EAN of the SKU which you need to retrieve details from.'
-        })
+        ean: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdEanData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdEanData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdEanByEanData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        ean: z.string().register(z.globalRegistry, {
-            description: 'EAN number.'
-        })
+        skuId: z.int(),
+        ean: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtStockkeepingunitBySkuIdEanByEanData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        ean: z.string().register(z.globalRegistry, {
-            description: 'EAN.'
-        })
+        skuId: z.int(),
+        ean: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -2940,265 +1565,165 @@ export const zDeleteApiCatalogPvtSkuattachmentData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'SKU ID. By using this query param, you can dissociate all the attachments from an SKU based on its SKU ID.'
-        })),
-        attachmentId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Attachment ID. By using this query param, you can dissociate the given attachment from all previously associated SKUs.'
-        }))
+        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        attachmentId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSkuattachmentData = z.object({
     body: z.optional(z.object({
-        AttachmentId: z.int().register(z.globalRegistry, {
-            description: 'Attachment ID.'
-        }),
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of an SKU.'
-        })
+        AttachmentId: z.int(),
+        SkuId: z.int()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdAttachmentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSkuattachmentBySkuAttachmentAssociationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuAttachmentAssociationId: z.int().register(z.globalRegistry, {
-            description: 'ID of the association between the attachment and the SKU, which corresponds to the `Id` in the response body of the [Associate SKU attachment](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-post-sku-attachment) and the [Get SKU attachment by SKU ID](https://developers.vtex.com/vtex-rest-api/reference/get_api-catalog-pvt-stockkeepingunit-skuid-attachment) endpoints.'
-        })
+        skuAttachmentAssociationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zAssociateattachmentstoSkuData = z.object({
     body: z.object({
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        }),
-        AttachmentNames: z.array(z.string().register(z.globalRegistry, {
-            description: 'Attachment name.'
-        })).register(z.globalRegistry, {
-            description: 'Array with all the names of the attachments that you need to associate to the SKU.'
-        })
+        SkuId: z.int(),
+        AttachmentNames: z.array(z.string())
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdFileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdFileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtStockkeepingunitBySkuIdFileData = z.object({
     body: z.optional(zSkuFileUrl),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdFileBySkuFileIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        skuFileId: z.int().register(z.globalRegistry, {
-            description: 'ID of the association of the SKU and the image, which can be obtained by placing a request to the [Get SKU file](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-sku-file) endpoint and copying the `Id` field.'
-        })
+        skuId: z.int(),
+        skuFileId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdFileBySkuFileIdData = z.object({
     body: z.optional(zSkuFileUrl),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        skuFileId: z.int().register(z.globalRegistry, {
-            description: 'ID of the association of the SKU and the image, which can be obtained by placing a request to the [Get SKU file](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-sku-file) endpoint and copying the `Id` field.'
-        })
+        skuId: z.int(),
+        skuFileId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdFileReorderData = z.object({
     body: z.optional(z.array(z.object({
-        Id: z.int().register(z.globalRegistry, {
-            description: 'SKU image file unique identifier.'
-        }),
-        Position: z.int().register(z.globalRegistry, {
-            description: 'The number of the position you wish to display the image in the storefront, where `0` corresponds to the first position, `1` to the second position, and so on.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Object containing SKU file ID and position.'
+        Id: z.int(),
+        Position: z.int()
     }))),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitCopyBySkuIdfromBySkuIdtoFileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuIdfrom: z.int().register(z.globalRegistry, {
-            description: '__Origin__ SKU\'s unique numerical identifier.'
-        }),
-        skuIdto: z.int().register(z.globalRegistry, {
-            description: '__Target__ SKU\'s unique numerical identifier.'
-        })
+        skuIdfrom: z.int(),
+        skuIdto: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitDisassociateBySkuIdFileBySkuFileIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        skuFileId: z.int().register(z.globalRegistry, {
-            description: 'ID of the association of the SKU and the image, which can be obtained by placing a request to the [Get SKU file](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-sku-file) endpoint and copying the `Id` field.'
-        })
+        skuId: z.int(),
+        skuFileId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3206,20 +1731,12 @@ export const zDeleteApiCatalogPvtStockkeepingunitkitData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })),
-        parentSkuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Parent SKU\'s unique numerical identifier.'
-        }))
+        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        parentSkuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3227,270 +1744,245 @@ export const zGetApiCatalogPvtStockkeepingunitkitData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })),
-        parentSkuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Parent SKU\'s unique numerical identifier.'
-        }))
+        skuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        parentSkuId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtStockkeepingunitkitData = z.object({
     body: z.optional(z.object({
-        StockKeepingUnitParent: z.int().register(z.globalRegistry, {
-            description: 'SKU ID of the SKU kit.'
-        }),
-        StockKeepingUnitId: z.int().register(z.globalRegistry, {
-            description: 'Component SKU ID.'
-        }),
-        Quantity: z.int().register(z.globalRegistry, {
-            description: 'Component quantity.'
-        }),
-        UnitPrice: z.number().register(z.globalRegistry, {
-            description: 'Component price per unit.'
-        })
+        StockKeepingUnitParent: z.int(),
+        StockKeepingUnitId: z.int(),
+        Quantity: z.int(),
+        UnitPrice: z.number()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitkitByKitIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        kitId: z.int().register(z.globalRegistry, {
-            description: 'Kit\'s unique numerical identifier.'
-        })
+        kitId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitkitByKitIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        kitId: z.int().register(z.globalRegistry, {
-            description: 'Kit\'s unique numerical identifier'
-        })
+        kitId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSkUsellerData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-        }),
-        sellerSkuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID in the seller\'s store.'
-        })
+        sellerId: z.string(),
+        sellerSkuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteSkUsellerassociationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-        }),
-        sellerSkuId: z.string().register(z.globalRegistry, {
-            description: 'SKU ID in the seller\'s store.'
-        })
+        sellerId: z.string(),
+        sellerSkuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogSystemPvtSkusellerChangenotificationBySellerIdBySellerSkuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-        }),
-        sellerSkuId: z.string().register(z.globalRegistry, {
-            description: 'ID of the binding of the seller with the SKU.'
-        })
+        sellerId: z.string(),
+        sellerSkuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zChangeNotificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string().register(z.globalRegistry, {
-            description: 'A string that identifies the SKU in the marketplace. This is the ID that the marketplace will use to look for the SKU whose change the seller wants to inform. If the marketplace finds this ID, it responds with status code 200. Otherwise, it responds with status code 404.'
-        })
+        skuId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        skuId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zGetApiCatalogPvtStockkeepingunitBySkuIdAttributeData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        skuId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCatalogPvtStockkeepingunitBySkuIdAttributeData = z.object({
+    body: z.optional(z.object({
+        SpecificationName: z.string(),
+        SpecificationValue: z.string(),
+        IsVisible: z.optional(z.boolean())
+    })),
+    path: z.object({
+        skuId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        skuId: z.int(),
+        skuAttributeId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zGetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        skuId: z.int(),
+        skuAttributeId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = z.object({
+    body: z.optional(z.object({
+        SpecificationName: z.string(),
+        SpecificationValue: z.string().max(3500),
+        IsVisible: z.optional(z.boolean())
+    })),
+    path: z.object({
+        skuId: z.int(),
+        skuAttributeId: z.int()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSkuserviceBySkuServiceIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceId: z.int().register(z.globalRegistry, {
-            description: 'SKU service unique identifier.'
-        })
+        skuServiceId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuserviceBySkuServiceIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceId: z.int().register(z.globalRegistry, {
-            description: 'SKU service unique identifier.'
-        })
+        skuServiceId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuserviceBySkuServiceIdData = z.object({
     body: z.optional(z.object({
-        SkuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type ID.'
-        }),
-        SkuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'SKU service value ID.'
-        }),
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'SKU service name. Maximum of 50 characters.'
-        }),
-        Text: z.string().register(z.globalRegistry, {
-            description: 'Internal description for the SKU service. Maximum of 100 characters.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the SKU service is active or not.'
-        })
+        SkuServiceTypeId: z.int(),
+        SkuServiceValueId: z.int(),
+        SkuId: z.int(),
+        Name: z.string(),
+        Text: z.string(),
+        IsActive: z.boolean()
     })),
     path: z.object({
-        skuServiceId: z.int().register(z.globalRegistry, {
-            description: 'SKU service unique identifier.'
-        })
+        skuServiceId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSkuserviceData = z.object({
     body: z.optional(z.object({
-        SkuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type ID.'
-        }),
-        SkuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'SKU service value ID.'
-        }),
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'SKU service name. Maximum of 50 characters.'
-        }),
-        Text: z.string().register(z.globalRegistry, {
-            description: 'Internal description of the SKU service. Maximum of 100 characters.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the SKU service is active or not.'
-        })
+        SkuServiceTypeId: z.int(),
+        SkuServiceValueId: z.int(),
+        SkuId: z.int(),
+        Name: z.string(),
+        Text: z.string(),
+        IsActive: z.boolean()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3498,59 +1990,37 @@ export const zDeleteApiCatalogPvtSkuservicetypeattachmentData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        attachmentId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU service attachment unique identifier.'
-        })),
-        skuServiceTypeId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU service type unique identifier.'
-        }))
+        attachmentId: z.optional(z.int()),
+        skuServiceTypeId: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSkuservicetypeattachmentData = z.object({
     body: z.optional(z.object({
-        AttachmentId: z.int().register(z.globalRegistry, {
-            description: 'Attachment ID.'
-        }),
-        SkuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type ID.'
-        })
+        AttachmentId: z.int(),
+        SkuServiceTypeId: z.int()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSkuservicetypeattachmentBySkuServiceTypeAttachmentIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceTypeAttachmentId: z.int().register(z.globalRegistry, {
-            description: 'SKU service attachment unique identifier.'
-        })
+        skuServiceTypeAttachmentId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3559,66 +2029,44 @@ export const zPostApiCatalogPvtSkuservicetypeData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSkuservicetypeBySkuServiceTypeIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type unique identifier.'
-        })
+        skuServiceTypeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuservicetypeBySkuServiceTypeIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type unique identifier.'
-        })
+        skuServiceTypeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuservicetypeBySkuServiceTypeIdData = z.object({
     body: z.optional(zSkuServiceTypeRequest),
     path: z.object({
-        skuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'SKU service type unique identifier.'
-        })
+        skuServiceTypeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3627,315 +2075,193 @@ export const zPostApiCatalogPvtSkuservicevalueData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSkuservicevalueBySkuServiceValueIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'SKU service value unique identifier.'
-        })
+        skuServiceValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuservicevalueBySkuServiceValueIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'SKU service value unique identifier.'
-        })
+        skuServiceValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuservicevalueBySkuServiceValueIdData = z.object({
     body: z.optional(zSkuServiceValueRequest),
     path: z.object({
-        skuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'SKU service value unique identifier.'
-        })
+        skuServiceValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdSpecificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdSpecificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtStockkeepingunitBySkuIdSpecificationData = z.object({
     body: z.optional(z.object({
-        FieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        }),
-        FieldValueId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Specification value ID. Required only for `FieldTypeId` as `5`, `6` and `7`.'
-        }))
+        FieldId: z.int(),
+        FieldValueId: z.optional(z.int())
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdSpecificationData = z.object({
     body: z.optional(z.object({
-        Id: z.int().register(z.globalRegistry, {
-            description: 'Specification and SKU association unique identifier. This field cannot be updated.'
-        }),
-        SkuId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier. This field cannot be updated.'
-        })),
-        FieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field unique identifier. This field cannot be updated.'
-        }),
-        FieldValueId: z.int().register(z.globalRegistry, {
-            description: 'Specification value unique identifier. This field can only be updated with other values of the same `FieldId`.'
-        }),
-        Text: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Specification value name. This field is automatically updated if the `FieldValue` is updated. Otherwise, the value cannot be modified.'
-        }))
+        Id: z.int(),
+        SkuId: z.optional(z.int()),
+        FieldId: z.int(),
+        FieldValueId: z.int(),
+        Text: z.optional(z.string())
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtStockkeepingunitBySkuIdSpecificationBySpecificationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        }),
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Specification\'s unique numerical identifier.'
-        })
+        skuId: z.int(),
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdSpecificationvalueData = z.object({
     body: z.optional(z.object({
-        FieldName: z.string().register(z.globalRegistry, {
-            description: 'Specification name. Limited to 100 characters.'
-        }),
-        GroupName: z.string().register(z.globalRegistry, {
-            description: 'Group name.'
-        }),
-        RootLevelSpecification: z.boolean().register(z.globalRegistry, {
-            description: 'Root level specification.'
-        }),
-        FieldValues: z.array(z.string().register(z.globalRegistry, {
-            description: 'Specification value.'
-        })).register(z.globalRegistry, {
-            description: 'Array of specification values. SKU specifications must contain only one value.'
-        })
+        FieldName: z.string(),
+        GroupName: z.string(),
+        RootLevelSpecification: z.boolean(),
+        FieldValues: z.array(z.string())
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSubcollectionBySubCollectionIdStockkeepingunitData = z.object({
     body: z.optional(z.object({
-        SkuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of an SKU.'
-        })
+        SkuId: z.int()
     })),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'\'\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSubcollectionBySubCollectionIdStockkeepingunitBySkuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        }),
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        subCollectionId: z.int(),
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCategoryTreeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryLevels: z.string().register(z.globalRegistry, {
-            description: 'Value of the category level you need to retrieve.'
-        })
+        categoryLevels: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtCategoryByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Category\'s unique numerical identifier.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.object({
-        includeTreePath: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'When you use the `includeTreePath` query param set as `true`, the response body returns the existing values for the following fields:\r\n- `TreePath`\r\n- `TreePathIds`\r\n- `TreePathLinkIds`\r\n\r\nUsing this param is optional.'
-        }))
+        includeTreePath: z.optional(z.boolean())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtCategoryByCategoryIdData = z.object({
     body: z.optional(z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Category name.'
-        }),
-        Keywords: z.string().register(z.globalRegistry, {
-            description: 'Substitute words for the category.'
-        }),
-        Title: z.string().register(z.globalRegistry, {
-            description: 'Text used in title tag for category page.'
-        }),
-        Description: z.string().register(z.globalRegistry, {
-            description: 'Text used in meta description tag for category page.'
-        }),
+        Name: z.string(),
+        Keywords: z.string(),
+        Title: z.string(),
+        Description: z.string(),
         AdWordsRemarketingCode: z.union([
             z.string(),
             z.null()
@@ -3948,41 +2274,21 @@ export const zPutApiCatalogPvtCategoryByCategoryIdData = z.object({
             z.int(),
             z.null()
         ]),
-        GlobalCategoryId: z.int().register(z.globalRegistry, {
-            description: 'Google global category ID.'
-        }),
-        ShowInStoreFront: z.boolean().register(z.globalRegistry, {
-            description: 'If true, the category is shown in the top and side menu.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'If true, the category page becomes available in store.'
-        }),
-        ActiveStoreFrontLink: z.boolean().register(z.globalRegistry, {
-            description: 'If true, the category link becomes active in store.'
-        }),
-        ShowBrandFilter: z.boolean().register(z.globalRegistry, {
-            description: 'If true, the category page displays a brand filter.'
-        }),
-        Score: z.int().register(z.globalRegistry, {
-            description: 'Score for search sorting order.'
-        }),
-        StockKeepingUnitSelectionMode: z.string().register(z.globalRegistry, {
-            description: 'Defines how the SKU will be exhibited.'
-        })
+        GlobalCategoryId: z.int(),
+        ShowInStoreFront: z.boolean(),
+        IsActive: z.boolean(),
+        ActiveStoreFrontLink: z.boolean(),
+        ShowBrandFilter: z.boolean(),
+        Score: z.int(),
+        StockKeepingUnitSelectionMode: z.string()
     })),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Category\'s unique numerical identifier.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -3991,151 +2297,97 @@ export const zPostApiCatalogPvtCategoryData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtProductByProductIdSimilarcategoryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtProductByProductIdSimilarcategoryByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        }),
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Similar category\'s unique numerical identifier.'
-        })
+        productId: z.int(),
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtProductByProductIdSimilarcategoryByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        }),
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Similar category\'s unique numerical identifier.'
-        })
+        productId: z.int(),
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Category ID.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsTreeByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Category ID.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSubcollectionBySubCollectionIdCategoryData = z.object({
     body: z.optional(z.object({
-        CategoryId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of a category.'
-        })
+        CategoryId: z.int()
     })),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSubcollectionBySubCollectionIdCategoryByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by dollection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        }),
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Category\'s unique numerical identifier.'
-        })
+        subCollectionId: z.int(),
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4144,12 +2396,8 @@ export const zBrandListData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4157,38 +2405,24 @@ export const zBrandListPerPageData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        pageSize: z.int().register(z.globalRegistry, {
-            description: 'Quantity of brands per page.'
-        }),
-        page: z.int().register(z.globalRegistry, {
-            description: 'Page number of the brand list.'
-        })
+        pageSize: z.int(),
+        page: z.int()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zBrandData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand ID.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4197,163 +2431,107 @@ export const zPostApiCatalogPvtBrandData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtBrandByBrandIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand\'s unique numerical identifier.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtBrandByBrandIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand ID.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtBrandByBrandIdData = z.object({
     body: z.optional(zBrandCreateUpdateRequest),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand\'s unique numerical identifier.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSubcollectionBySubCollectionIdBrandData = z.object({
     body: z.optional(z.object({
-        BrandId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of a brand.'
-        })
+        BrandId: z.int()
     })),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSubcollectionBySubCollectionIdBrandByBrandIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        }),
-        brandId: z.int().register(z.globalRegistry, {
-            description: 'Brand\'s unique numerical identifier.'
-        })
+        subCollectionId: z.int(),
+        brandId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtAttachmentByAttachmentidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        attachmentid: z.string().register(z.globalRegistry, {
-            description: 'Attachment ID.'
-        })
+        attachmentid: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtAttachmentByAttachmentidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        attachmentid: z.string().register(z.globalRegistry, {
-            description: 'Attachment ID.'
-        })
+        attachmentid: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtAttachmentByAttachmentidData = z.object({
     body: z.optional(zAttachmentRequest),
     path: z.object({
-        attachmentid: z.string().register(z.globalRegistry, {
-            description: 'Attachment ID.'
-        })
+        attachmentid: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4362,12 +2540,8 @@ export const zPostApiCatalogPvtAttachmentData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4376,12 +2550,8 @@ export const zGetApiCatalogPvtAttachmentsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4390,45 +2560,25 @@ export const zGetAllInactiveCollectionsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostCreateCollectionData = z.object({
     body: z.optional(z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Collection\'s name.'
-        }),
-        Description: z.string().register(z.globalRegistry, {
-            description: 'Collection\'s description for internal use, with the collection\'s details. It will not be used for search engines.'
-        }),
-        Searchable: z.boolean().register(z.globalRegistry, {
-            description: 'Option making the collection searchable in the store.'
-        }),
-        Highlight: z.boolean().register(z.globalRegistry, {
-            description: 'Option if you want the collection to highlight specific products using a tag.'
-        }),
-        DateFrom: z.string().register(z.globalRegistry, {
-            description: 'Collection start date and time. If a future date and time are set, the collection will have a scheduled status.'
-        }),
-        DateTo: z.string().register(z.globalRegistry, {
-            description: 'Collection end date and time.'
-        })
+        Name: z.string(),
+        Description: z.string(),
+        Searchable: z.boolean(),
+        Highlight: z.boolean(),
+        DateFrom: z.string(),
+        DateTo: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4437,406 +2587,240 @@ export const zGetImportfileexampleData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        Accept: z.string()
     })
 });
 
 export const zPostAddproductsbyimportfileData = z.object({
     body: z.optional(z.object({
-        file: z.optional(z.unknown().register(z.globalRegistry, {
-            description: 'XML file with information about products to be added to a collection. The file must be an imported template from [Import collection file example](https://developers.vtex.com/vtex-developer-docs/reference/get-importfileexample) endpoint.'
-        }))
+        file: z.optional(z.unknown())
     })),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostRemoveproductsbyimportfileData = z.object({
     body: z.optional(z.object({
-        file: z.optional(z.unknown().register(z.globalRegistry, {
-            description: 'XML file with information about products to be added to a collection. The file must be an imported template from [Import collection file example](https://developers.vtex.com/vtex-developer-docs/reference/get-importfileexample) endpoint.'
-        }))
+        file: z.optional(z.unknown())
     })),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetProductsfromacollectionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.object({
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of the items of the page.'
-        })),
-        Filter: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter used to refine the collection\'s products.'
-        })),
-        Active: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the status of the product is active or not.'
-        })),
-        Visible: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the product is visible on the store or not.'
-        })),
-        CategoryId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Product\'s category unique identifier.'
-        })),
-        BrandId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Product\'s brand unique identifier.'
-        })),
-        SupplierId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Product\'s supplier unique identifier.'
-        })),
-        SalesChannelId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Product\'s trade policy unique identifier.'
-        })),
-        ReleaseFrom: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product past release date.'
-        })),
-        ReleaseTo: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product future release date.'
-        })),
-        SpecificationProduct: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product specification field Value. You must also fill in `SpecificationFieldId` to use this parameter.'
-        })),
-        SpecificationFieldId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Product specification field unique identifier.'
-        }))
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int()),
+        Filter: z.optional(z.string()),
+        Active: z.optional(z.boolean()),
+        Visible: z.optional(z.boolean()),
+        CategoryId: z.optional(z.int()),
+        BrandId: z.optional(z.int()),
+        SupplierId: z.optional(z.int()),
+        SalesChannelId: z.optional(z.int()),
+        ReleaseFrom: z.optional(z.string()),
+        ReleaseTo: z.optional(z.string()),
+        SpecificationProduct: z.optional(z.string()),
+        SpecificationFieldId: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtCollectionByCollectionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique numerical identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtCollectionByCollectionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique numerical identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtCollectionByCollectionIdData = z.object({
     body: z.optional(z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Collection name.'
-        }),
-        Searchable: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the collection is searchable or not.'
-        }),
-        Highlight: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the collection is highlighted or not.'
-        }),
-        DateFrom: z.string().register(z.globalRegistry, {
-            description: 'Initial value date for the collection.'
-        }),
-        DateTo: z.string().register(z.globalRegistry, {
-            description: 'Final value date for the collection.'
-        })
+        Name: z.string(),
+        Searchable: z.boolean(),
+        Highlight: z.boolean(),
+        DateFrom: z.string(),
+        DateTo: z.string()
     })),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique numerical identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtCollectionByCollectionIdSubcollectionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique numerical identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSubcollectionBySubCollectionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSubcollectionBySubCollectionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSubcollectionBySubCollectionIdData = z.object({
     body: z.optional(z.object({
-        CollectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'SubCollection name.'
-        }),
-        Type: z.string().register(z.globalRegistry, {
-            description: 'Either `“Exclusive”` (all the products contained in it will not be used) or `“Inclusive”` (all the products contained in it will be used).'
-        }),
-        PreSale: z.boolean().register(z.globalRegistry, {
-            description: 'Defines PreSale date.'
-        }),
-        Release: z.boolean().register(z.globalRegistry, {
-            description: 'Defines Release date.'
-        })
+        CollectionId: z.int(),
+        Name: z.string(),
+        Type: z.string(),
+        PreSale: z.boolean(),
+        Release: z.boolean()
     })),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection\'s unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSubcollectionData = z.object({
     body: z.optional(z.object({
-        CollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Subcollection name.'
-        }),
-        Type: z.string().register(z.globalRegistry, {
-            description: 'Either `“Exclusive”` (all the products contained in it will not be used) or `“Inclusive”` (all the products contained in it will be used).'
-        }),
-        PreSale: z.boolean().register(z.globalRegistry, {
-            description: 'Defines PreSale date.'
-        }),
-        Release: z.boolean().register(z.globalRegistry, {
-            description: 'Defines Release date.'
-        })
+        CollectionId: z.int(),
+        Name: z.string(),
+        Type: z.string(),
+        PreSale: z.boolean(),
+        Release: z.boolean()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtCollectionByCollectionIdPositionData = z.object({
     body: z.optional(z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        position: z.int().register(z.globalRegistry, {
-            description: 'SKU position.'
-        }),
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection ID.'
-        })
+        skuId: z.int(),
+        position: z.int(),
+        subCollectionId: z.int()
     })),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Collection\'s unique numerical identifier.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSubcollectionBySubCollectionIdSpecificationvalueData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSubcollectionBySubCollectionIdSpecificationvalueData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSubcollectionBySubCollectionIdSpecificationvalueData = z.object({
     body: z.optional(z.object({
-        SubCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique identifier.'
-        }),
-        SpecificationValueId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection specification value ID.'
-        })
+        SubCollectionId: z.int(),
+        SpecificationValueId: z.int()
     })),
     path: z.object({
-        subCollectionId: z.int().register(z.globalRegistry, {
-            description: 'Subcollection unique numerical identifier, which can be obtained by placing a request to [Get subcollection by collection ID](https://developers.vtex.com/vtex-rest-api/reference/catalog-api-get-subcollection-collectionid).'
-        })
+        subCollectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationBySpecificationIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Specification\'s unique numerical identifier.'
-        })
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4851,65 +2835,29 @@ export const zPutApiCatalogPvtSpecificationBySpecificationIdData = z.object({
             z.literal(7),
             z.literal(8),
             z.literal(9)
-        ]).register(z.globalRegistry, {
-            description: 'Field type can be `1 - Text`, `2 - Multi-Line Text`, `4 - Number`, `5 - Combo`, `6 - Radio`, `7 - Checkbox`, `8 - Indexed Text`, `9 - Indexed Multi-Line Text`. This information is not editable.'
-        }),
-        CategoryId: z.int().register(z.globalRegistry, {
-            description: 'Specification category ID. This information is not editable.'
-        }),
-        FieldGroupId: z.int().register(z.globalRegistry, {
-            description: 'Numerical ID of the specification group that contains the new specification. This information is not editable.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification name. Limited to 100 characters.'
-        }),
-        Description: z.string().register(z.globalRegistry, {
-            description: 'Specification description.'
-        }),
-        Position: z.int().register(z.globalRegistry, {
-            description: 'The current specification\'s position in comparison to the other specifications.'
-        }),
-        IsFilter: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification can be used as a filter.'
-        }),
-        IsRequired: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification is required or not.'
-        }),
-        IsOnProductDetails: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification will be  shown on the product screen in the specification area.'
-        }),
-        IsStockKeepingUnit: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification is applied to a specific SKU. This information is not editable.'
-        }),
-        IsWizard: z.boolean().register(z.globalRegistry, {
-            description: 'Deprecated field.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification is active or not.'
-        }),
-        IsTopMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification is shown in the main menu of the site.'
-        }),
-        IsSideMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification is shown in the side menu.'
-        }),
-        DefaultValue: z.string().register(z.globalRegistry, {
-            description: 'Specification default value.'
-        })
+        ]),
+        CategoryId: z.int(),
+        FieldGroupId: z.int(),
+        Name: z.string(),
+        Description: z.string(),
+        Position: z.int(),
+        IsFilter: z.boolean(),
+        IsRequired: z.boolean(),
+        IsOnProductDetails: z.boolean(),
+        IsStockKeepingUnit: z.boolean(),
+        IsWizard: z.boolean(),
+        IsActive: z.boolean(),
+        IsTopMenuLinkActive: z.boolean(),
+        IsSideMenuLinkActive: z.boolean(),
+        DefaultValue: z.string()
     })),
     path: z.object({
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Specification\'s unique numerical identifier.'
-        })
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -4924,89 +2872,51 @@ export const zPostApiCatalogPvtSpecificationData = z.object({
             z.literal(7),
             z.literal(8),
             z.literal(9)
-        ]).register(z.globalRegistry, {
-            description: 'Field type ID can be `1 - Text`, `2 - Multi-Line Text`, `4 - Number`, `5 - Combo`, `6 - Radio`, `7 - Checkbox`, `8 - Indexed Text`, `9 - Indexed Multi-Line Text`.'
-        }),
-        CategoryId: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Category ID associated with this specification.'
-        })),
-        FieldGroupId: z.int().register(z.globalRegistry, {
-            description: 'ID of the group of specifications that contains the new specification.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification name. Limited to 100 characters.'
-        }),
+        ]),
+        CategoryId: z.optional(z.int()),
+        FieldGroupId: z.int(),
+        Name: z.string(),
         Description: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        Position: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - This position number is used in ordering the specifications both in the navigation menu and in the specification listing on the product page.'
-        })),
-        IsFilter: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To allow the specification to be used as a facet (filter) on the search navigation bar.'
-        })),
-        IsRequired: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Makes the specification mandatory (`true`) or optional (`false`).'
-        })),
-        IsOnProductDetails: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal -If specification is visible on the product page.'
-        })),
-        IsStockKeepingUnit: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If `true`, it will be added as a SKU specification. If `false`, it will be added as a product specification field.'
-        })),
+        Position: z.optional(z.int()),
+        IsFilter: z.optional(z.boolean()),
+        IsRequired: z.optional(z.boolean()),
+        IsOnProductDetails: z.optional(z.boolean()),
+        IsStockKeepingUnit: z.optional(z.boolean()),
         IsWizard: z.optional(z.union([
             z.boolean(),
             z.null()
         ])),
-        IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Enable (`true`) or disable (`false`) specification.'
-        })),
-        IsTopMenuLinkActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification visible in the store\'s upper menu.'
-        })),
-        IsSideMenuLinkActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification field clickable in the search navigation bar.'
-        })),
-        DefaultValue: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Specification default value.'
-        }))
+        IsActive: z.optional(z.boolean()),
+        IsTopMenuLinkActive: z.optional(z.boolean()),
+        IsSideMenuLinkActive: z.optional(z.boolean()),
+        DefaultValue: z.optional(z.string())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsFieldData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        fieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        })
+        fieldId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsInsertFieldData = z.object({
     body: z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification field name. Limited to 100 characters.'
-        }),
+        Name: z.string(),
         CategoryId: z.union([
             z.int(),
             z.null()
@@ -5015,15 +2925,9 @@ export const zSpecificationsInsertFieldData = z.object({
             z.int(),
             z.null()
         ]),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification field is active. The default value is `true`.'
-        }),
-        IsRequired: z.boolean().register(z.globalRegistry, {
-            description: 'Makes the specification field mandatory (`true`) or optional (`false`).'
-        }),
-        FieldTypeId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification field type ID.'
-        }),
+        IsActive: z.boolean(),
+        IsRequired: z.boolean(),
+        FieldTypeId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
         FieldValueId: z.union([
             z.int(),
             z.null()
@@ -5032,55 +2936,31 @@ export const zSpecificationsInsertFieldData = z.object({
             z.string(),
             z.null()
         ]),
-        IsStockKeepingUnit: z.boolean().register(z.globalRegistry, {
-            description: 'If `true`, it will be added as a SKU specification. If `false`, it will be added as a product specification field.'
-        }),
-        IsFilter: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To allow the specification to be used as a facet (filter) on the search navigation bar.'
-        }),
-        IsOnProductDetails: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal -If specification is visible on the product page.'
-        }),
-        Position: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification field position.'
-        }),
-        IsWizard: z.boolean().register(z.globalRegistry, {
-            description: 'Deprecated field.'
-        }),
-        IsTopMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification visible in the store\'s upper menu.'
-        }),
-        IsSideMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification field clickable in the search navigation bar.'
-        }),
+        IsStockKeepingUnit: z.boolean(),
+        IsFilter: z.boolean(),
+        IsOnProductDetails: z.boolean(),
+        Position: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        IsWizard: z.boolean(),
+        IsTopMenuLinkActive: z.boolean(),
+        IsSideMenuLinkActive: z.boolean(),
         DefaultValue: z.union([
             z.string(),
             z.null()
         ]),
-        FieldGroupId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification field group ID.'
-        }),
-        FieldGroupName: z.string().register(z.globalRegistry, {
-            description: 'Specification field group name.'
-        })
+        FieldGroupId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        FieldGroupName: z.string()
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsInsertFieldUpdateData = z.object({
     body: z.object({
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        }),
+        Name: z.string(),
         CategoryId: z.union([
             z.int(),
             z.null()
@@ -5089,15 +2969,9 @@ export const zSpecificationsInsertFieldUpdateData = z.object({
             z.int(),
             z.null()
         ]),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Enables(`true`) or disables (`false`) the specification field.'
-        }),
-        IsRequired: z.boolean().register(z.globalRegistry, {
-            description: 'Makes the specification field mandatory (`true`) or optional (`false`).'
-        }),
-        FieldTypeId: z.int().register(z.globalRegistry, {
-            description: 'Specification field type ID.'
-        }),
+        IsActive: z.boolean(),
+        IsRequired: z.boolean(),
+        FieldTypeId: z.int(),
         FieldValueId: z.optional(z.union([
             z.int(),
             z.null()
@@ -5106,113 +2980,65 @@ export const zSpecificationsInsertFieldUpdateData = z.object({
             z.string(),
             z.null()
         ]),
-        IsStockKeepingUnit: z.boolean().register(z.globalRegistry, {
-            description: 'If `true`, it will be added as a SKU specification field. If `false`, it will be added as a product specification field.'
-        }),
-        IsFilter: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To allow the specification to be used as a facet (filter) on the search navigation bar.'
-        }),
-        IsOnProductDetails: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - If the specification is visible on the product page.'
-        }),
-        Position: z.int().register(z.globalRegistry, {
-            description: 'Specification field position.'
-        }),
-        IsWizard: z.boolean().register(z.globalRegistry, {
-            description: 'Deprecated field.'
-        }),
-        IsTopMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification visible in the store\'s upper menu.'
-        }),
-        IsSideMenuLinkActive: z.boolean().register(z.globalRegistry, {
-            description: 'Store Framework - Deprecated.\r\nLegacy CMS Portal - To make the specification field clickable in the search navigation bar.'
-        }),
+        IsStockKeepingUnit: z.boolean(),
+        IsFilter: z.boolean(),
+        IsOnProductDetails: z.boolean(),
+        Position: z.int(),
+        IsWizard: z.boolean(),
+        IsTopMenuLinkActive: z.boolean(),
+        IsSideMenuLinkActive: z.boolean(),
         DefaultValue: z.union([
             z.string(),
             z.null()
         ]),
-        FieldGroupId: z.int().register(z.globalRegistry, {
-            description: 'Specification field group ID.'
-        }),
-        FieldGroupName: z.string().register(z.globalRegistry, {
-            description: 'Specification field group name.'
-        })
+        FieldGroupId: z.int(),
+        FieldGroupName: z.string()
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsGetFieldValueData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        fieldValueId: z.string().register(z.globalRegistry, {
-            description: 'Specification value ID.'
-        })
+        fieldValueId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsValuesByFieldIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        fieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        })
+        fieldId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsInsertFieldValueData = z.object({
     body: z.optional(z.object({
-        FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification field ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification field value name.'
-        }),
-        Text: z.string().register(z.globalRegistry, {
-            description: 'Specification field value description.'
-        }),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification field value is active (`true`) or inactive (`false`).'
-        }),
-        Position: z.int().register(z.globalRegistry, {
-            description: 'Specification field value position.'
-        })
+        FieldId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        Name: z.string(),
+        Text: z.string(),
+        IsActive: z.boolean(),
+        Position: z.int()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5222,237 +3048,149 @@ export const zSpecificationsUpdateFieldValueData = z.object({
             z.int(),
             z.null()
         ]),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification field value name.'
-        }),
+        Name: z.string(),
         Text: z.union([
             z.string(),
             z.null()
         ]),
-        IsActive: z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the specification field value is active (`true`) or inactive (`false`).'
-        }),
-        Position: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification field position.'
-        })
+        IsActive: z.boolean(),
+        Position: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationvalueBySpecificationValueIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        specificationValueId: z.int().register(z.globalRegistry, {
-            description: 'Specification value\'s unique numerical identifier.'
-        })
+        specificationValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSpecificationvalueBySpecificationValueIdData = z.object({
     body: z.optional(z.object({
-        FieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification ID associated with this specification value.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification value name.'
-        }),
+        FieldId: z.int(),
+        Name: z.string(),
         Text: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Enable (`true`) or disable (`false`) specification value.'
-        })),
-        Position: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The position of the value to be shown on product registration page (`/admin/Site/Produto.aspx`).'
-        }))
+        IsActive: z.optional(z.boolean()),
+        Position: z.optional(z.int())
     })),
     path: z.object({
-        specificationValueId: z.int().register(z.globalRegistry, {
-            description: ' specification value\'s unique numerical identifier.'
-        })
+        specificationValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtSpecificationvalueData = z.object({
     body: z.optional(z.object({
-        FieldId: z.int().register(z.globalRegistry, {
-            description: 'Specification field ID associated with this specification value.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification value name.'
-        }),
+        FieldId: z.int(),
+        Name: z.string(),
         Text: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        IsActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Enable (`true`) or disable (`false`) specification value.'
-        })),
-        Position: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The position of the value to be shown on product registration page (`/admin/Site/Produto.aspx`).'
-        }))
+        IsActive: z.optional(z.boolean()),
+        Position: z.optional(z.int())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsGroupListbyCategoryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.string().register(z.globalRegistry, {
-            description: 'Category ID.'
-        })
+        categoryId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationsGroupGetData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupId: z.string().register(z.globalRegistry, {
-            description: 'Specification group ID.'
-        })
+        groupId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSpecificationGroupInsert2Data = z.object({
     body: z.optional(z.object({
-        CategoryId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Category ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification group name.'
-        })
+        CategoryId: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        Name: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSpecificationgroupByGroupIdData = z.object({
     body: z.optional(z.object({
-        CategoryId: z.int().register(z.globalRegistry, {
-            description: 'Category ID where the specification group is contained.'
-        }),
-        Id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Specification group ID.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Specification group name.'
-        }),
-        Position: z.int().register(z.globalRegistry, {
-            description: 'Specification group position.'
-        })
+        CategoryId: z.int(),
+        Id: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        Name: z.string(),
+        Position: z.int()
     })),
     path: z.object({
-        groupId: z.int().register(z.globalRegistry, {
-            description: 'Group\'s unique numerical identifier.'
-        })
+        groupId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSpecificationNonstructuredByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        Id: z.int().register(z.globalRegistry, {
-            description: 'Non-structured specification\'s unique numerical identifier.'
-        })
+        Id: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationNonstructuredByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        Id: z.int().register(z.globalRegistry, {
-            description: 'Non-structured specification\'s unique numerical identifier.'
-        })
+        Id: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5460,17 +3198,11 @@ export const zDeleteApiCatalogPvtSpecificationNonstructuredData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5478,17 +3210,11 @@ export const zGetApiCatalogPvtSpecificationNonstructuredData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'SKU\'s unique numerical identifier.'
-        })
+        skuId: z.int()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5497,30 +3223,20 @@ export const zSalesChannelListData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSalesChannelbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        salesChannelId: z.string().register(z.globalRegistry, {
-            description: 'Trade policy ID.'
-        })
+        salesChannelId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5528,41 +3244,25 @@ export const zSellerListData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        sc: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Trade policy ID.'
-        })),
-        sellerType: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'There are two possible values for this parameter:\n\r- `1`: Regular sellers\n\r- `2`: [White label sellers](https://help.vtex.com/en/tutorial/seller-white-label--5orlGHyDHGAYciQ64oEgKa)'
-        })),
-        isBetterScope: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If the seller is better scope.'
-        }))
+        sc: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        sellerType: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        isBetterScope: z.optional(z.boolean())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSellerbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-        })
+        sellerId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5571,12 +3271,8 @@ export const zCreateSellerData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5585,30 +3281,20 @@ export const zUpdateSellerData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetSellersbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string().register(z.globalRegistry, {
-            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
-        })
+        sellerId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5617,108 +3303,70 @@ export const zPostApiCatalogPvtSupplierData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtSupplierBySupplierIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        supplierId: z.int().register(z.globalRegistry, {
-            description: 'Supplier\'s unique numerical identifier.'
-        })
+        supplierId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSupplierBySupplierIdData = z.object({
     body: z.optional(zSupplierRequest),
     path: z.object({
-        supplierId: z.int().register(z.globalRegistry, {
-            description: 'Supplier\'s unique numerical identifier.'
-        })
+        supplierId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtProductByProductIdSalespolicyData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteApiCatalogPvtProductByProductIdSalespolicyByTradepolicyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        }),
-        tradepolicyId: z.int().register(z.globalRegistry, {
-            description: 'Trade policy\'s unique numerical identifier.'
-        })
+        productId: z.int(),
+        tradepolicyId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPostApiCatalogPvtProductByProductIdSalespolicyByTradepolicyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        }),
-        tradepolicyId: z.int().register(z.globalRegistry, {
-            description: 'Trade policy\'s unique numerical identifier.'
-        })
+        productId: z.int(),
+        tradepolicyId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -5726,44 +3374,26 @@ export const zGetApiCatalogSystemPvtSkuStockkeepingunitidsbysaleschannelData = z
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        sc: z.int().register(z.globalRegistry, {
-            description: 'Trade policy\'s unique numerical identifier.'
-        }),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Page number.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items in the page.'
-        })),
-        onlyAssigned: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If set as `false`, it allows the user to decide if the SKUs that are not assigned to a specific trade policy should be also returned.'
-        }))
+        sc: z.int(),
+        page: z.optional(z.int()),
+        pageSize: z.optional(z.int()),
+        onlyAssigned: z.optional(z.boolean())
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zIndexedInfoData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product\'s unique numerical identifier.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string()
     })
 });
 
@@ -5772,81 +3402,53 @@ export const zGetAllCommercialConditionsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetCommercialConditionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        commercialConditionId: z.int().register(z.globalRegistry, {
-            description: 'Commercial condition unique numerical identifier.'
-        })
+        commercialConditionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetGiftListData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        listId: z.int().register(z.globalRegistry, {
-            description: 'Gift list unique numerical identifier.'
-        })
+        listId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtProductByProductIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the product.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtProductByProductIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the product.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Title: z.union([
             z.string(),
             z.null()
@@ -5873,437 +3475,267 @@ export const zPutApiCatalogPvtProductByProductIdLanguageData = z.object({
         ]))
     })),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the product.'
-        })
+        productId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtProductsByProductIdSpecificationBySpecificationIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the product.'
-        }),
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification.'
-        })
+        productId: z.int(),
+        specificationId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtProductsByProductIdSpecificationBySpecificationIdLanguageData = z.object({
     body: z.optional(z.object({
-        ProductId: z.int().register(z.globalRegistry, {
-            description: 'Product unique identifier.'
-        }),
-        SpecificationId: z.int().register(z.globalRegistry, {
-            description: 'Specification unique identifier.'
-        }),
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the product specification.'
-        }),
+        ProductId: z.int(),
+        SpecificationId: z.int(),
+        Locale: z.string(),
+        Name: z.string(),
         Value: z.union([
             z.string(),
             z.null()
         ]),
         Values: z.optional(z.union([
-            z.array(z.string().register(z.globalRegistry, {
-                description: 'Translated product specification value option.'
-            })),
+            z.array(z.string()),
             z.null()
         ]))
     })),
     path: z.object({
-        productId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the product.'
-        }),
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification.'
-        })
+        productId: z.int(),
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the SKU.'
-        }),
-        MeasurementUnit: z.string().register(z.globalRegistry, {
-            description: 'Measurement unit for the SKU. The acceptables values are:\n\r- `un`: Unit\n\r- `kg`: Kilogram\n\r- `g`: Gram\n\r- `mg`: Milligram\n\r- `m`: Meter\n\r- `m²`: Square meter\n\r- `m³`: Cubic meter\n\r- `cm`: Centimeter\n\r- `cm²`: Square centimeter\n\r- `cm³`: Cubic centimeter\n\r- `mm`: Millimeter\n\r- `mm²`: Square millimeter\n\r- `mm³`: Cubic millimeter\n\r- `oz`: Ounce\n\r- `lb`: Pound\n\r- `ft`: Foot\n\r- `ft²`: Square foot\n\r- `ft³`: Cubic foot\n\r- `in`: Inch\n\r- `in²`: Square inch\n\r- `in³`: Cubic inch'
-        })
+        Locale: z.string(),
+        Name: z.string(),
+        MeasurementUnit: z.string()
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        })
+        skuId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        }),
-        skuAttributeId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU attribute.'
-        })
+        skuId: z.int(),
+        skuAttributeId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdLanguageData = z.object({
     body: z.optional(z.object({
-        Id: z.int().register(z.globalRegistry, {
-            description: 'SKU specification attribute unique identifier.'
-        }),
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        AttributeName: z.string().register(z.globalRegistry, {
-            description: 'Translated SKU attribute name.'
-        }),
-        AttributeValue: z.string().register(z.globalRegistry, {
-            description: 'Translated SKU attribute value.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Object containing language-specific information for a SKU attribute.'
+        Id: z.int(),
+        Locale: z.string(),
+        AttributeName: z.string(),
+        AttributeValue: z.string()
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        }),
-        skuAttributeId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU attribute.'
-        })
+        skuId: z.int(),
+        skuAttributeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtStockkeepingunitBySkuIdFileBySkuFileIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        }),
-        skuFileId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU file.'
-        })
+        skuId: z.int(),
+        skuFileId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtStockkeepingunitBySkuIdFileBySkuFileIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
+        Locale: z.string(),
         Label: z.union([
             z.string(),
             z.null()
         ]),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the SKU file.'
-        }),
+        Name: z.string(),
         Text: z.union([
             z.string(),
             z.null()
         ])
     })),
     path: z.object({
-        skuId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU.'
-        }),
-        skuFileId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU file.'
-        })
+        skuId: z.int(),
+        skuFileId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationgroupBySpecificationGroupIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        specificationGroupId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification group.'
-        })
+        specificationGroupId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSpecificationgroupBySpecificationGroupIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the specification group.'
-        })
+        Locale: z.string(),
+        Name: z.string()
     })),
     path: z.object({
-        specificationGroupId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification group.'
-        })
+        specificationGroupId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationBySpecificationIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification.'
-        })
+        specificationId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSpecificationBySpecificationIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the specification.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Description: z.optional(z.union([
             z.string(),
             z.null()
         ]))
     })),
     path: z.object({
-        specificationId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification.'
-        })
+        specificationId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSpecificationvalueByValueIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        valueId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification value.'
-        })
+        valueId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSpecificationvalueByValueIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the specification value.'
-        })
+        Locale: z.string(),
+        Name: z.string()
     })),
     path: z.object({
-        valueId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the specification value.'
-        })
+        valueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtCategoryByCategoryIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the category.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtCategoryByCategoryIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the category.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Title: z.optional(z.union([
             z.string(),
             z.null()
@@ -6322,51 +3754,33 @@ export const zPutApiCatalogPvtCategoryByCategoryIdLanguageData = z.object({
         ]))
     })),
     path: z.object({
-        categoryId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the category.'
-        })
+        categoryId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtBrandByBrandIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        brandId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the brand.'
-        })
+        brandId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtBrandByBrandIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the brand.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Text: z.optional(z.union([
             z.string(),
             z.null()
@@ -6385,243 +3799,153 @@ export const zPutApiCatalogPvtBrandByBrandIdLanguageData = z.object({
         ]))
     })),
     path: z.object({
-        brandId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the brand.'
-        })
+        brandId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtAttachmentByAttachmentIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        attachmentId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the attachment.'
-        })
+        attachmentId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtAttachmentByAttachmentIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the attachment.'
-        })
+        Locale: z.string(),
+        Name: z.string()
     })),
     path: z.object({
-        attachmentId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the attachment.'
-        })
+        attachmentId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuservicetypeBySkuServiceTypeIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service type.'
-        })
+        skuServiceTypeId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuservicetypeBySkuServiceTypeIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the SKU service type.'
-        })
+        Locale: z.string(),
+        Name: z.string()
     })),
     path: z.object({
-        skuServiceTypeId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service type.'
-        })
+        skuServiceTypeId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuserviceBySkuserviceIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuserviceId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service.'
-        })
+        skuserviceId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuserviceBySkuserviceIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the SKU service.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Text: z.optional(z.union([
             z.string(),
             z.null()
         ]))
     })),
     path: z.object({
-        skuserviceId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service.'
-        })
+        skuserviceId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtSkuservicevalueBySkuServiceValueIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service value.'
-        })
+        skuServiceValueId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtSkuservicevalueBySkuServiceValueIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the SKU service value.'
-        })
+        Locale: z.string(),
+        Name: z.string()
     })),
     path: z.object({
-        skuServiceValueId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the SKU service value.'
-        })
+        skuServiceValueId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetApiCatalogPvtCollectionByCollectionIdLanguageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the collection.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.object({
-        locale: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }))
+        locale: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPutApiCatalogPvtCollectionByCollectionIdLanguageData = z.object({
     body: z.optional(z.object({
-        Locale: z.string().register(z.globalRegistry, {
-            description: 'The locale code for this translation. It follows the IETF BCP 47 standard, such as \'en-US\' for English (United States), \'en-ES\' for Spanish (Spain), or \'pt-BR\' for Portuguese (Brazil).'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Translated name of the collection.'
-        }),
+        Locale: z.string(),
+        Name: z.string(),
         Description: z.optional(z.union([
             z.string(),
             z.null()
@@ -6632,17 +3956,11 @@ export const zPutApiCatalogPvtCollectionByCollectionIdLanguageData = z.object({
         ]))
     })),
     path: z.object({
-        collectionId: z.int().register(z.globalRegistry, {
-            description: 'Unique identifier of the collection.'
-        })
+        collectionId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

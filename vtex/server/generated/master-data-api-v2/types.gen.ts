@@ -40,7 +40,7 @@ export type UsingFieldsAll = {
 /**
  * SaveschemabynameRequest
  *
- * Schema.
+ * JSON Schema of the data entity. Add `v-indexed` with an array of property names to make those fields filterable and sortable in /search and /scroll.
  */
 export type SaveschemabynameRequest = {
     /**
@@ -57,6 +57,10 @@ export type SaveschemabynameRequest = {
             type: 'array' | 'boolean' | 'integer' | 'number' | 'object' | 'string';
         };
     };
+    /**
+     * Names of properties to index for /search, /scroll, and _sort. Required for reliable filtering (e.g. _where=field=value) and sorting (_sort=field ASC). Indexing is asynchronous after schema save.
+     */
+    'v-indexed'?: Array<string>;
 };
 
 /**
@@ -866,7 +870,7 @@ export type GetschemabynameResponse = GetschemabynameResponses[keyof Getschemaby
 
 export type SaveschemabynameData = {
     /**
-     * Request body for saving schema
+     * JSON Schema of the data entity. Include `v-indexed` with an array of property names when you will filter or sort by those fields in /search or /scroll.
      */
     body: SaveschemabynameRequest;
     path: {

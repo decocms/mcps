@@ -8,56 +8,32 @@ import * as z from 'zod';
  * Object with policy conditions.
  */
 export const zPolicyActionGetResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Action ID.'
-    })),
-    metadata: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
-        description: 'Metadata object from the current action.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with policy conditions.'
+    id: z.optional(z.string()),
+    metadata: z.optional(z.record(z.string(), z.unknown()))
 });
 
 /**
  * Object with policy conditions.
  */
 export const zEvaluatePolicyRequest = z.object({
-    resource: z.string().register(z.globalRegistry, {
-        description: 'Scope on which this policy must be evaluated.'
-    }),
-    context: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
-        description: 'Conditions that the policy needs to satisfy.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with policy conditions.'
+    resource: z.string(),
+    context: z.record(z.string(), z.unknown())
 });
 
 /**
  * Object with policy conditions.
  */
 export const zStatementGet = z.object({
-    effect: z.string().register(z.globalRegistry, {
-        description: 'This field is not functional at the moment. To create a correct request, fill the field with `Allow`.'
-    }),
+    effect: z.string(),
     actions: z.optional(z.array(z.object({
         id: z.optional(z.enum([
             'SendSlackMessage',
             'SendEmail',
             'DeactivatePromotions'
-        ]).register(z.globalRegistry, {
-            description: 'Action ID.'
-        })),
-        metadata: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
-            description: 'Data inside of the actions.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Array with actions information.'
-    })).register(z.globalRegistry, {
-        description: 'Actions that the policy will execute.'
-    })),
-    resource: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Scope on which this policy must be evaluated.'
-    })),
+        ])),
+        metadata: z.optional(z.record(z.string(), z.unknown()))
+    }))),
+    resource: z.optional(z.string()),
     condition: z.optional(z.object({
         operation: z.optional(z.enum([
             'None',
@@ -75,13 +51,9 @@ export const zStatementGet = z.object({
             'dateTimeUtcGreaterThan',
             'dateTimeUtcLessThan',
             'between'
-        ]).register(z.globalRegistry, {
-            description: 'This operation will determine if all the conditions need to be valid or at least one of them, if the conditions array is not empty.'
-        })),
+        ])),
         conditions: z.optional(z.array(z.object({
-            conditions: z.optional(z.unknown().register(z.globalRegistry, {
-                description: 'List of conditions the actions can have. It can be an empty array `[]`.'
-            })),
+            conditions: z.optional(z.unknown()),
             operation: z.optional(z.enum([
                 'None',
                 'stringEquals',
@@ -98,79 +70,41 @@ export const zStatementGet = z.object({
                 'dateTimeUtcGreaterThan',
                 'dateTimeUtcLessThan',
                 'between'
-            ]).register(z.globalRegistry, {
-                description: 'The action of the condition.'
-            })),
+            ])),
             key: z.optional(z.enum([
                 'skuId',
                 'brandId',
                 'discountPercentage'
-            ]).register(z.globalRegistry, {
-                description: 'The element that will define what the policy will influence.'
-            })),
-            values: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Key value.'
-            })).register(z.globalRegistry, {
-                description: 'Array with values of the key.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'List of conditions that will activate the policy.'
-        })).register(z.globalRegistry, {
-            description: 'List of conditions that will activate the policy.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Condition to activate this policy. This object can have a maximum of ten recursive conditions.'
+            ])),
+            values: z.optional(z.array(z.string()))
+        })))
     }))
-}).register(z.globalRegistry, {
-    description: 'Object with policy conditions.'
 });
 
 /**
  * Object with policy save information.
  */
 export const zPolicySaveRequest = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Policy name.'
-    }),
-    description: z.string().register(z.globalRegistry, {
-        description: 'Policy description, only for internal use.'
-    }),
-    status: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The status field defines if the policy is `active` or `inactive`. An `active` policy is enforced, while an `inactive` policy is stored but not applied.'
-    })),
-    statements: z.array(zStatementGet).register(z.globalRegistry, {
-        description: 'Requirements for the the policy to be applied.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object with policy save information.'
+    name: z.string(),
+    description: z.string(),
+    status: z.optional(z.string()),
+    statements: z.array(zStatementGet)
 });
 
 /**
  * Object with policy conditions.
  */
 export const zStatementGetResponse = z.object({
-    effect: z.string().register(z.globalRegistry, {
-        description: 'This field is not functional at the moment. To create a correct request, fill the field with `Allow`.'
-    }),
+    effect: z.string(),
     actions: z.optional(z.array(z.object({
         id: z.optional(z.enum([
             'SendSlackMessage',
             'SendEmail',
             'DeactivatePromotions'
-        ]).register(z.globalRegistry, {
-            description: 'Action ID.'
-        })),
-        metadata: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
-            description: 'Data inside of the actions.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Array with actions information.'
-    })).register(z.globalRegistry, {
-        description: 'Actions that the policy will execute.'
-    })),
-    resource: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Scope on which this policy must be evaluated.'
-    })),
+        ])),
+        metadata: z.optional(z.record(z.string(), z.unknown()))
+    }))),
+    resource: z.optional(z.string()),
     condition: z.optional(z.object({
         operation: z.optional(z.enum([
             'None',
@@ -188,13 +122,9 @@ export const zStatementGetResponse = z.object({
             'dateTimeUtcGreaterThan',
             'dateTimeUtcLessThan',
             'between'
-        ]).register(z.globalRegistry, {
-            description: 'This operation will determine if all the conditions need to be valid or at least one of them, if the conditions array is not empty.'
-        })),
+        ])),
         conditions: z.optional(z.array(z.object({
-            conditions: z.optional(z.unknown().register(z.globalRegistry, {
-                description: 'List of conditions the actions can have. It can be an empty array `[]`.'
-            })),
+            conditions: z.optional(z.unknown()),
             operation: z.optional(z.enum([
                 'None',
                 'stringEquals',
@@ -211,31 +141,15 @@ export const zStatementGetResponse = z.object({
                 'dateTimeUtcGreaterThan',
                 'dateTimeUtcLessThan',
                 'between'
-            ]).register(z.globalRegistry, {
-                description: 'The action of the condition.'
-            })),
+            ])),
             key: z.optional(z.enum([
                 'skuId',
                 'brandId',
                 'discountPercentage'
-            ]).register(z.globalRegistry, {
-                description: 'The element that will define what the policy will influence.'
-            })),
-            values: z.optional(z.array(z.string().register(z.globalRegistry, {
-                description: 'Key value.'
-            })).register(z.globalRegistry, {
-                description: 'Array with values of the key.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'List of conditions that will activate the policy.'
-        })).register(z.globalRegistry, {
-            description: 'List of conditions that will activate the policy.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Condition to activate this policy. This object can have a maximum of ten recursive conditions.'
+            ])),
+            values: z.optional(z.array(z.string()))
+        })))
     }))
-}).register(z.globalRegistry, {
-    description: 'Object with policy conditions.'
 });
 
 /**
@@ -244,47 +158,29 @@ export const zStatementGetResponse = z.object({
  * Object with policy information.
  */
 export const zPolicyGetResponse = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Policy ID.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Policy name.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Policy description, only for internal use.'
-    })),
-    statements: z.optional(z.array(zStatementGetResponse).register(z.globalRegistry, {
-        description: 'Requirements for the policy to be applied.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object with policy information.'
+    id: z.optional(z.string()),
+    name: z.optional(z.string()),
+    description: z.optional(z.string()),
+    statements: z.optional(z.array(zStatementGetResponse))
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-}).default('application/json');
+export const zContentType = z.string().default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-}).default('application/json');
+export const zAccept = z.string().default('application/json');
 
 export const zPolicyListData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -293,83 +189,55 @@ export const zPolicyEvaluateData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPolicyDeleteData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Policy ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPolicyGetData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Policy ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPolicyCreateOrUpdateData = z.object({
     body: z.optional(zPolicySaveRequest),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Policy ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zPolicyUpdateData = z.object({
     body: zPolicySaveRequest,
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Policy ID.'
-        })
+        id: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
