@@ -17,6 +17,13 @@ const FileSchema = z.object({
   modifiedTime: z.string().optional(),
   size: z.string().optional(),
   webViewLink: z.string().optional(),
+  shortcutDetails: z
+    .object({
+      targetId: z.string(),
+      targetMimeType: z.string(),
+      targetResourceKey: z.string().optional(),
+    })
+    .optional(),
   isShortcut: z.boolean().optional(),
 });
 
