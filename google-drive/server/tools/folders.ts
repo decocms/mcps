@@ -26,10 +26,7 @@ export const createCreateFolderTool = (env: Env) =>
     description: "Create a new folder in Google Drive.",
     inputSchema: z.object({
       name: z.string().describe("Folder name"),
-      parentId: z
-        .string()
-        .optional()
-        .describe("Parent folder ID (root if not specified)"),
+      parentId: z.string().optional().describe("Parent folder ID (root if not specified)"),
     }),
     outputSchema: z.object({
       folder: FileSchema,
@@ -51,10 +48,7 @@ export const createListFolderContentsTool = (env: Env) =>
         .string()
         .regex(/^[a-zA-Z0-9_-]+$|^root$/, "Invalid folder ID format")
         .describe("Folder ID (use 'root' for root folder)"),
-      fileType: z
-        .enum(["all", "folders", "files"])
-        .optional()
-        .describe("Filter by type"),
+      fileType: z.enum(["all", "folders", "files"]).optional().describe("Filter by type"),
     }),
     outputSchema: z.object({
       files: z.array(FileSchema),
@@ -76,10 +70,7 @@ export const createListFolderContentsTool = (env: Env) =>
 
       // Resolve shortcuts: replace id/mimeType with the target so they're navigable
       const resolved = items.map((f) => {
-        if (
-          f.mimeType === MIME_TYPES.SHORTCUT &&
-          f.shortcutDetails
-        ) {
+        if (f.mimeType === MIME_TYPES.SHORTCUT && f.shortcutDetails) {
           return {
             ...f,
             id: f.shortcutDetails.targetId,
@@ -96,7 +87,4 @@ export const createListFolderContentsTool = (env: Env) =>
     },
   });
 
-export const folderTools = [
-  createCreateFolderTool,
-  createListFolderContentsTool,
-];
+export const folderTools = [createCreateFolderTool, createListFolderContentsTool];
