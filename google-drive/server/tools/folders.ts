@@ -17,6 +17,7 @@ const FileSchema = z.object({
   modifiedTime: z.string().optional(),
   size: z.string().optional(),
   webViewLink: z.string().optional(),
+  isShortcut: z.boolean().optional(),
 });
 
 export const createCreateFolderTool = (env: Env) =>
@@ -66,15 +67,37 @@ export const createListFolderContentsTool = (env: Env) =>
       const safeFolderId = context.folderId.replace(/'/g, "\\'");
       let query = `'${safeFolderId}' in parents and trashed = false`;
       if (context.fileType === "folders") {
-        query += ` and mimeType = '${MIME_TYPES.FOLDER}'`;
+        query += ` and (mimeType = '${MIME_TYPES.FOLDER}' or mimeType = '${MIME_TYPES.SHORTCUT}')`;
       } else if (context.fileType === "files") {
         query += ` and mimeType != '${MIME_TYPES.FOLDER}'`;
       }
       const result = await client.listFiles({ q: query, pageSize: 1000 });
       const items = result.files || [];
-      const folders = items.filter((f) => f.mimeType === MIME_TYPES.FOLDER);
-      const files = items.filter((f) => f.mimeType !== MIME_TYPES.FOLDER);
-      return { files, folders, totalCount: items.length };
+
+      // Resolve shortcuts: replace id/mimeType with the target so they're navigable
+      const resolved = items.map((f) => {
+        if (f.mimeType === MIME_TYPES.SHORTCUT && f.shortcutDetails) {
+          return {
+            ...f,
+            id: f.shortcutDetails.targetId,
+            mimeType: f.shortcutDetails.targetMimeType,
+            isShortcut: true,
+          };
+        }
+        return f;
+      });
+
+      // Apply fileType filter after resolution since shortcuts may resolve to either type
+      const filtered =
+        context.fileType === "folders"
+          ? resolved.filter((f) => f.mimeType === MIME_TYPES.FOLDER)
+          : context.fileType === "files"
+            ? resolved.filter((f) => f.mimeType !== MIME_TYPES.FOLDER)
+            : resolved;
+
+      const folders = filtered.filter((f) => f.mimeType === MIME_TYPES.FOLDER);
+      const files = filtered.filter((f) => f.mimeType !== MIME_TYPES.FOLDER);
+      return { files, folders, totalCount: filtered.length };
     },
   });
 

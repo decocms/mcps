@@ -23,6 +23,7 @@ export const MIME_TYPES = {
   PRESENTATION: "application/vnd.google-apps.presentation",
   FORM: "application/vnd.google-apps.form",
   DRAWING: "application/vnd.google-apps.drawing",
+  SHORTCUT: "application/vnd.google-apps.shortcut",
   PDF: "application/pdf",
   DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -30,7 +31,7 @@ export const MIME_TYPES = {
 } as const;
 
 export const DEFAULT_FIELDS =
-  "id,name,mimeType,parents,createdTime,modifiedTime,size,webViewLink,webContentLink";
+  "id,name,mimeType,parents,createdTime,modifiedTime,size,webViewLink,webContentLink,shortcutDetails";
 
 // Google OAuth scopes
 export const GOOGLE_SCOPES = {
