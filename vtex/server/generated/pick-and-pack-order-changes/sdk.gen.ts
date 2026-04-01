@@ -104,11 +104,7 @@ export const postOrderChanges = <ThrowOnError extends boolean = false>(options: 
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const deleteBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean = false>(options: Options<DeleteBySkuIdWarehousesByWarehouseIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteBySkuIdWarehousesByWarehouseIdResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses/{warehouseId}',
     ...options
 });
@@ -135,11 +131,7 @@ export const deleteBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolea
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean = false>(options: Options<GetBySkuIdWarehousesByWarehouseIdData, ThrowOnError>) => (options.client ?? client).get<GetBySkuIdWarehousesByWarehouseIdResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses/{warehouseId}',
     ...options
 });
@@ -166,11 +158,7 @@ export const getBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean =
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const postBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean = false>(options: Options<PostBySkuIdWarehousesByWarehouseIdData, ThrowOnError>) => (options.client ?? client).post<PostBySkuIdWarehousesByWarehouseIdResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses/{warehouseId}',
     ...options
 });
@@ -197,11 +185,7 @@ export const postBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean 
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const putBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean = false>(options: Options<PutBySkuIdWarehousesByWarehouseIdData, ThrowOnError>) => (options.client ?? client).put<PutBySkuIdWarehousesByWarehouseIdResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses/{warehouseId}',
     ...options
 });
@@ -228,11 +212,7 @@ export const putBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean =
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const deleteBySkuIdWarehouses = <ThrowOnError extends boolean = false>(options: Options<DeleteBySkuIdWarehousesData, ThrowOnError>) => (options.client ?? client).delete<DeleteBySkuIdWarehousesResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses',
     ...options
 });
@@ -259,11 +239,7 @@ export const deleteBySkuIdWarehouses = <ThrowOnError extends boolean = false>(op
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getBySkuIdWarehouses = <ThrowOnError extends boolean = false>(options: Options<GetBySkuIdWarehousesData, ThrowOnError>) => (options.client ?? client).get<GetBySkuIdWarehousesResponses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
+    security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/{skuId}/warehouses',
     ...options
 });

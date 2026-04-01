@@ -6,289 +6,119 @@ import * as z from 'zod';
  * Array of delivery services.
  */
 export const zDeliveryService = z.array(z.object({
-    deliveryServiceType: z.optional(z.string().min(0).max(11).register(z.globalRegistry, {
-        description: 'The type of delivery service being provided. The maximum length is 11 characters.'
-    })),
-    idExternalShipperCustomer: z.optional(z.string().min(0).max(30).register(z.globalRegistry, {
-        description: 'External identifier for the shipper customer. The maximum length is 30 characters.'
-    })),
+    deliveryServiceType: z.optional(z.string().min(0).max(11)),
+    idExternalShipperCustomer: z.optional(z.string().min(0).max(30)),
     shipperCustomer: z.optional(z.object({
-        legalType: z.string().length(2).register(z.globalRegistry, {
-            description: 'The legal type of the shipper customer. It is a 2-character code representing the legal classification.'
-        }),
-        email: z.optional(z.string().min(0).max(254).register(z.globalRegistry, {
-            description: 'The email address of the shipper customer. The maximum length is 254 characters.'
-        })),
-        firstName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'The first name of the shipper customer. The maximum length is 100 characters.'
-        })),
-        lastName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'The last name of the shipper customer. The maximum length is 100 characters.'
-        })),
-        cpf: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-            description: 'The CPF (Cadastro de Pessoas Físicas) number of the shipper customer. This is a unique identifier for individuals in Brazil.'
-        })),
-        addressStreet: z.string().min(0).max(150).register(z.globalRegistry, {
-            description: 'The street address of the shipper customer. The maximum length is 150 characters.'
-        }),
-        addressNumber: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-            description: 'The address number of the shipper customer. The maximum length is 50 characters.'
-        })),
-        addressComplement: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-            description: 'Additional address information, such as apartment or suite number. The maximum length is 50 characters.'
-        })),
-        addressNeighborhood: z.optional(z.string().min(0).max(150).register(z.globalRegistry, {
-            description: 'The neighborhood of the shipper customer\'s address. The maximum length is 150 characters.'
-        })),
-        addressCity: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'The city of the shipper customer\'s address. The maximum length is 100 characters.'
-        })),
-        postalCode: z.string().min(0).max(9).register(z.globalRegistry, {
-            description: 'The postal code of the shipper customer\'s address. The maximum length is 9 characters.'
-        }),
-        state: z.optional(z.string().length(2).register(z.globalRegistry, {
-            description: 'The state code of the shipper customer\'s address. It is a 2-character code.'
-        })),
-        companyName: z.optional(z.string().min(0).max(150).register(z.globalRegistry, {
-            description: 'The name of the shipper customer\'s company. The maximum length is 150 characters.'
-        })),
-        cnpj: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-            description: 'The CNPJ (Cadastro Nacional da Pessoa Jurídica) number of the shipper customer\'s company. This is a unique identifier for Brazilian companies.'
-        })),
-        idExternalShipperCustomer: z.optional(z.string().min(0).max(30).register(z.globalRegistry, {
-            description: 'An external identifier for the shipper customer, used for integration with other systems. The maximum length is 30 characters.'
-        })),
-        phoneAreaCode: z.optional(z.string().min(0).max(3).register(z.globalRegistry, {
-            description: 'The area code of the shipper customer\'s phone number. The maximum length is 3 characters.'
-        })),
-        phoneNumber: z.optional(z.string().min(0).max(12).register(z.globalRegistry, {
-            description: 'The phone number of the shipper customer. The maximum length is 12 characters.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipper customer information.'
+        legalType: z.string().length(2),
+        email: z.optional(z.string().min(0).max(254)),
+        firstName: z.optional(z.string().min(0).max(100)),
+        lastName: z.optional(z.string().min(0).max(100)),
+        cpf: z.optional(z.string().min(0).max(50)),
+        addressStreet: z.string().min(0).max(150),
+        addressNumber: z.optional(z.string().min(0).max(50)),
+        addressComplement: z.optional(z.string().min(0).max(50)),
+        addressNeighborhood: z.optional(z.string().min(0).max(150)),
+        addressCity: z.optional(z.string().min(0).max(100)),
+        postalCode: z.string().min(0).max(9),
+        state: z.optional(z.string().length(2)),
+        companyName: z.optional(z.string().min(0).max(150)),
+        cnpj: z.optional(z.string().min(0).max(50)),
+        idExternalShipperCustomer: z.optional(z.string().min(0).max(30)),
+        phoneAreaCode: z.optional(z.string().min(0).max(3)),
+        phoneNumber: z.optional(z.string().min(0).max(12))
     })),
-    invoiceOrderOfService: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The order of service associated with the invoice.'
-    })),
-    invoiceOrderOfServiceSerie: z.optional(z.string().min(0).max(3).register(z.globalRegistry, {
-        description: 'A series or batch identifier for the invoice order of service, with a maximum length of 3 characters.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Description of the service or delivery. This field provides additional information about the order.'
-    })),
-    sender: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The name or identifier of the sender of the delivery.'
-    })),
-    cnpjShipperPartner: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ of the shipper partner. This is a unique identifier for Brazilian companies.'
-    })),
-    orderNumber: z.optional(z.string().min(0).max(200).register(z.globalRegistry, {
-        description: 'Order number.'
-    })),
-    deliveryServiceHighLighter: z.optional(z.string().min(0).max(11).register(z.globalRegistry, {
-        description: 'A highlighter or special identifier for the delivery service, with a maximum length of 11 characters.'
-    })),
-    latitude: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The geographic latitude of the delivery location.'
-    })),
-    longitude: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The geographic longitude of the delivery location.'
-    })),
+    invoiceOrderOfService: z.optional(z.string()),
+    invoiceOrderOfServiceSerie: z.optional(z.string().min(0).max(3)),
+    description: z.optional(z.string()),
+    sender: z.optional(z.string()),
+    cnpjShipperPartner: z.optional(z.string()),
+    orderNumber: z.optional(z.string().min(0).max(200)),
+    deliveryServiceHighLighter: z.optional(z.string().min(0).max(11)),
+    latitude: z.optional(z.number()),
+    longitude: z.optional(z.number()),
     deliveryServiceScheduling: z.optional(z.object({
-        shipperCustomerSchedulingDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'The date and time when the shipper\'s customer has scheduled the delivery.'
-        })),
-        shipperSchedulingDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'The date and time when the shipper has scheduled the delivery.'
-        })),
-        morningPeriod: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if the delivery is scheduled for the morning period (`true`) or not (`false`).'
-        })),
-        afternoonPeriod: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if the delivery is scheduled for the afternoon period (`true`) or not (`false`).'
-        })),
-        nightPeriod: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if the delivery is scheduled for the night period (`true`) or not (`false`).'
-        })),
-        origin: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'The origin code of the delivery service, usually an integer representing the location or depot.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Delivery service scheduling information.'
+        shipperCustomerSchedulingDateTime: z.optional(z.iso.datetime()),
+        shipperSchedulingDateTime: z.optional(z.iso.datetime()),
+        morningPeriod: z.optional(z.boolean()),
+        afternoonPeriod: z.optional(z.boolean()),
+        nightPeriod: z.optional(z.boolean()),
+        origin: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
     })),
-    cnpjcarrier: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ (Cadastro Nacional da Pessoa Jurídica) number of the carrier company.'
-    })),
-    cnpjbranch: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ number of the branch of the carrier company.'
-    })),
-    idExternal: z.optional(z.string().min(0).max(30).register(z.globalRegistry, {
-        description: 'External ID of the delivery service.'
-    })),
-    idShippingCompany: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'ID of the shipping company.'
-    })),
-    packingList: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-        description: 'Packing list.'
-    })),
-    packingListDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Date and time of the packing list.'
-    })),
-    integrationDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Date and time of the integration.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Delivery service information.'
-})).register(z.globalRegistry, {
-    description: 'Array of delivery services.'
-});
+    cnpjcarrier: z.optional(z.string()),
+    cnpjbranch: z.optional(z.string()),
+    idExternal: z.optional(z.string().min(0).max(30)),
+    idShippingCompany: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    packingList: z.optional(z.string().min(0).max(50)),
+    packingListDateTime: z.optional(z.iso.datetime()),
+    integrationDateTime: z.optional(z.iso.datetime())
+}));
 
 /**
  * State response.
  */
 export const zStateResponse = z.object({
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'State name.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'State code.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'State response.'
+    name: z.optional(z.string()),
+    code: z.optional(z.string())
 });
 
 /**
  * Country response.
  */
 export const zCountryResponse = z.object({
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Country name.'
-    })),
-    code: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Country code.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Country response.'
+    name: z.optional(z.string()),
+    code: z.optional(z.string())
 });
 
 /**
  * Shipping company response.
  */
 export const zShippingCompanyResponse = z.object({
-    companyName: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The name of the company.'
-    })),
-    trade: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The trade or industry in which the company operates.'
-    })),
-    cnpj: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ number, which is the Brazilian national registry of legal entities.'
-    })),
-    companyContact: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The primary contact person\'s name at the company.'
-    })),
-    telephoneArea: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The area code for the company\'s telephone number.'
-    })),
-    telephone: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The company\'s telephone number.'
-    })),
-    mobileArea: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The area code for the company\'s mobile number.'
-    })),
-    mobile: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The company\'s mobile number.'
-    })),
-    email: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The company\'s email address.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Shipping company response.'
+    companyName: z.optional(z.string()),
+    trade: z.optional(z.string()),
+    cnpj: z.optional(z.string()),
+    companyContact: z.optional(z.string()),
+    telephoneArea: z.optional(z.string()),
+    telephone: z.optional(z.string()),
+    mobileArea: z.optional(z.string()),
+    mobile: z.optional(z.string()),
+    email: z.optional(z.string())
 });
 
 /**
  * Delivery service response.
  */
 export const zDeliveryServiceResponseV11 = z.object({
-    pictures: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Picture URL.'
-    })).register(z.globalRegistry, {
-        description: 'Pictures array.'
-    })),
-    idDeliveryService: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'ID of the delivery service.'
-    })),
+    pictures: z.optional(z.array(z.string())),
+    idDeliveryService: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
     deliveryServiceType: z.optional(z.object({
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of the delivery service type.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Delivery service type information.'
+        description: z.optional(z.string())
     })),
     deliveryServiceStatus: z.optional(z.object({
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of the delivery service status.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Delivery service status information.'
+        description: z.optional(z.string())
     })),
     shipper: z.optional(z.object({
-        companyName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Shipper company name.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipper information.'
+        companyName: z.optional(z.string())
     })),
     shipperCustomer: z.optional(z.object({
-        idShipperCustomer: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Unique identifier for the shipper customer.'
-        })),
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Email address of the shipper customer.'
-        })),
-        firstName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'First name of the shipper customer.'
-        })),
-        lastName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Last name of the shipper customer.'
-        })),
-        cpf: z.optional(z.string().register(z.globalRegistry, {
-            description: 'CPF number of the shipper customer.'
-        })),
-        addressStreet: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Street of the shipper customer address.'
-        })),
-        addressNumber: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Address number of the shipper customer.'
-        })),
-        addressComplement: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Address complement of the shipper customer.'
-        })),
-        addressNeighborhood: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Neighborhood of the shipper customer\'s address.'
-        })),
-        addressCity: z.optional(z.string().register(z.globalRegistry, {
-            description: 'City of the shipper customer\'s address.'
-        })),
-        postalCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Postal code of the shipper customer\'s address.'
-        })),
+        idShipperCustomer: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        email: z.optional(z.string()),
+        firstName: z.optional(z.string()),
+        lastName: z.optional(z.string()),
+        cpf: z.optional(z.string()),
+        addressStreet: z.optional(z.string()),
+        addressNumber: z.optional(z.string()),
+        addressComplement: z.optional(z.string()),
+        addressNeighborhood: z.optional(z.string()),
+        addressCity: z.optional(z.string()),
+        postalCode: z.optional(z.string()),
         state: z.optional(zStateResponse),
         country: z.optional(zCountryResponse),
-        created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the shipper customer record was created.'
-        })),
-        companyName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Company name of the shipper customer.'
-        })),
-        cnpj: z.optional(z.string().register(z.globalRegistry, {
-            description: 'CNPJ number of the shipper customer.'
-        })),
+        created: z.optional(z.iso.datetime()),
+        companyName: z.optional(z.string()),
+        cnpj: z.optional(z.string()),
         legalType: z.optional(z.union([
             z.object({
-                description: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Description of the legal type of the shipper customer.'
-                }))
+                description: z.optional(z.string())
             }),
             z.null()
         ])),
@@ -296,435 +126,173 @@ export const zDeliveryServiceResponseV11 = z.object({
             z.string(),
             z.null()
         ])),
-        phoneAreaCode: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Area code for the shipper customer\'s phone number.'
-        })),
-        phoneNumber: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Phone number of the shipper customer.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipper customer information.'
+        phoneAreaCode: z.optional(z.string()),
+        phoneNumber: z.optional(z.string())
     })),
     carrier: z.optional(z.object({
-        username: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'A string representing the username of the carrier.'
-        })),
-        firstName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'A string representing the first name of the carrier.'
-        })),
-        lastName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-            description: 'A string representing the last name of the carrier.'
-        })),
-        cpf: z.optional(z.string().min(0).max(14).register(z.globalRegistry, {
-            description: 'A string representing the Brazilian CPF number of the carrier.'
-        })),
-        email: z.optional(z.string().min(0).max(254).register(z.globalRegistry, {
-            description: 'A string representing the email address of the carrier.'
-        })),
-        cnpjtransportCompany: z.optional(z.string().register(z.globalRegistry, {
-            description: 'A string representing the CNPJ number of the transport company associated with the carrier.'
-        })),
-        mobileAreaCode: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-            description: 'A string representing the area code for the carrier\'s mobile phone.'
-        })),
-        mobile: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-            description: 'The carrier\'s mobile phone number.'
-        })),
-        phoneAreaCode: z.optional(z.string().min(0).max(3).register(z.globalRegistry, {
-            description: 'Area code for the carrier\'s landline phone.'
-        })),
-        phone: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-            description: 'A string representing the carrier\'s landline phone number.'
-        })),
-        created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the carrier record was created.'
-        })),
-        idExternalCarrier: z.optional(z.string().min(0).max(30).register(z.globalRegistry, {
-            description: 'External identifier for the carrier.'
-        })),
-        isCarrierAppOnline: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'A boolean indicating whether the carrier is currently online in the carrier application.'
-        })),
+        username: z.optional(z.string().min(0).max(100)),
+        firstName: z.optional(z.string().min(0).max(100)),
+        lastName: z.optional(z.string().min(0).max(100)),
+        cpf: z.optional(z.string().min(0).max(14)),
+        email: z.optional(z.string().min(0).max(254)),
+        cnpjtransportCompany: z.optional(z.string()),
+        mobileAreaCode: z.optional(z.string().min(0).max(10)),
+        mobile: z.optional(z.string().min(0).max(10)),
+        phoneAreaCode: z.optional(z.string().min(0).max(3)),
+        phone: z.optional(z.string().min(0).max(10)),
+        created: z.optional(z.iso.datetime()),
+        idExternalCarrier: z.optional(z.string().min(0).max(30)),
+        isCarrierAppOnline: z.optional(z.boolean()),
         shippingCompany: z.optional(zShippingCompanyResponse),
-        rg: z.optional(z.string().min(0).max(12).register(z.globalRegistry, {
-            description: 'A string representing the Brazilian RG number of the carrier.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Carrier information.'
+        rg: z.optional(z.string().min(0).max(12))
     })),
     displacementType: z.optional(z.object({
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Displacement type description.'
-        })),
+        description: z.optional(z.string()),
         vehicleType: z.optional(z.object({
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the vehicle type.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Vehicle type information.'
+            description: z.optional(z.string())
         }))
-    }).register(z.globalRegistry, {
-        description: 'Displacement type information.'
     })),
     state: z.optional(zStateResponse),
     country: z.optional(zCountryResponse),
     nonDeliveryReason: z.optional(z.object({
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'A description explaining the reason for non-delivery.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Information about the reason for non-delivery.'
+        description: z.optional(z.string())
     })),
     shipperPartner: z.optional(z.object({
-        cnpj: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The CNPJ number of the Shipper partner.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Shipper partner name.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipper partner information.'
+        cnpj: z.optional(z.string()),
+        name: z.optional(z.string())
     })),
     shipperBranch: z.optional(z.object({
         shipperType: z.optional(z.object({
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the type of shipper.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Shipper type information.'
+            description: z.optional(z.string())
         })),
-        companyName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The name of the shipping company branch.'
-        })),
-        trade: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The trade or industry in which the shipping company operates.'
-        })),
-        cnpj: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The CNPJ (Cadastro Nacional da Pessoa Jurídica) number of the shipping company branch.'
-        })),
-        companyContact: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The primary contact person\'s name at the shipping company branch.'
-        })),
-        telephoneArea: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The area code for the shipping company branch\'s telephone number.'
-        })),
-        telephone: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The telephone number of the shipping company branch.'
-        })),
-        mobileArea: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The area code for the shipping company branch\'s mobile number.'
-        })),
-        mobile: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The mobile number of the shipping company branch.'
-        })),
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The email address of the shipping company branch.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Shipper branch information.'
+        companyName: z.optional(z.string()),
+        trade: z.optional(z.string()),
+        cnpj: z.optional(z.string()),
+        companyContact: z.optional(z.string()),
+        telephoneArea: z.optional(z.string()),
+        telephone: z.optional(z.string()),
+        mobileArea: z.optional(z.string()),
+        mobile: z.optional(z.string()),
+        email: z.optional(z.string())
     })),
     freightPrice: z.optional(z.object({
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of the freight price details.'
-        })),
-        firstPostalCodeInterval: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The starting range of postal codes for which the freight price applies.'
-        })),
-        secondPostalCodeInterval: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The ending range of postal codes for which the freight price applies.'
-        })),
-        price: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The price charged for the freight service.'
-        })),
-        created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'The date and time when the freight price was created.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Freight price information.'
+        description: z.optional(z.string()),
+        firstPostalCodeInterval: z.optional(z.string()),
+        secondPostalCodeInterval: z.optional(z.string()),
+        price: z.optional(z.number()),
+        created: z.optional(z.iso.datetime())
     })),
     shippingCompany: z.optional(zShippingCompanyResponse),
-    invoiceOrderOfService: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The invoice order number for the service.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Delivery service description.'
-    })),
-    addressStreet: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The street address for the delivery.'
-    })),
-    addressNumber: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The number of the building or house for the delivery address.'
-    })),
-    addressComplement: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Additional address details, such as apartment or suite number.'
-    })),
-    addressNeighborhood: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The neighborhood of the delivery address.'
-    })),
-    addressCity: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The city of the delivery address.'
-    })),
-    postalCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The postal code of the delivery address.'
-    })),
-    estimateDeliveryHour: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'The estimated delivery time and date.'
-    })),
-    created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'The date and time when the delivery service was created.'
-    })),
-    initialEstimateDeliveryHour: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'The initially estimated delivery time and date.'
-    })),
-    deliveryDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Date and time of delivery.'
-    })),
-    estimateDeliveryDistance: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Delivery service esimate distance.'
-    })),
-    travelledDeliveryDistance: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'The total distance traveled for the delivery, measured in kilometers.'
-    })),
-    orderNumber: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The unique number associated with the order.'
-    })),
-    cteNumber: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The number of the CTE (Conhecimento de Transporte Eletrônico), an electronic transport document used in Brazil.'
-    })),
-    cteDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'The date and time when the CTE was issued.'
-    })),
-    sender: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The name of the sender of the delivery.'
-    })),
-    senderCity: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The city from which the delivery was sent.'
-    })),
-    senderState: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'The state code from which the delivery was sent.'
-    })),
-    weight: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The weight of the delivery item in kilograms.'
-    })),
-    cubicMeter: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The volume of the delivery item in cubic meters.'
-    })),
-    cubicMeterWeight: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The weight of the delivery item calculated based on its volume.'
-    })),
-    value: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The monetary value of the delivery item.'
-    })),
-    freightPriceReceived: z.optional(z.number().register(z.globalRegistry, {
-        description: 'The amount received for the freight service.'
-    })),
-    deliveryAttempts: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'The number of attempts made to deliver the item.'
-    })),
-    serviceTime: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'The time spent on the delivery service, measured in minutes.'
-    })),
-    invoiceOrderOfServiceSerie: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The series of the invoice order of service.'
-    })),
-    leadTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'The lead time for the delivery, calculated from the order date to the delivery date.'
-    })),
-    cnpjcarrier: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ (Cadastro Nacional da Pessoa Jurídica) number of the carrier company.'
-    })),
-    cnpjbranch: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The CNPJ number of the branch of the carrier company.'
-    })),
-    idExternal: z.optional(z.string().register(z.globalRegistry, {
-        description: 'External ID of the delivery service.'
-    })),
+    invoiceOrderOfService: z.optional(z.string()),
+    description: z.optional(z.string()),
+    addressStreet: z.optional(z.string()),
+    addressNumber: z.optional(z.string()),
+    addressComplement: z.optional(z.string()),
+    addressNeighborhood: z.optional(z.string()),
+    addressCity: z.optional(z.string()),
+    postalCode: z.optional(z.string()),
+    estimateDeliveryHour: z.optional(z.iso.datetime()),
+    created: z.optional(z.iso.datetime()),
+    initialEstimateDeliveryHour: z.optional(z.iso.datetime()),
+    deliveryDateTime: z.optional(z.iso.datetime()),
+    estimateDeliveryDistance: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    travelledDeliveryDistance: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    orderNumber: z.optional(z.string()),
+    cteNumber: z.optional(z.string()),
+    cteDate: z.optional(z.iso.datetime()),
+    sender: z.optional(z.string()),
+    senderCity: z.optional(z.string()),
+    senderState: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    weight: z.optional(z.number()),
+    cubicMeter: z.optional(z.number()),
+    cubicMeterWeight: z.optional(z.number()),
+    value: z.optional(z.number()),
+    freightPriceReceived: z.optional(z.number()),
+    deliveryAttempts: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    serviceTime: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    invoiceOrderOfServiceSerie: z.optional(z.string()),
+    leadTime: z.optional(z.iso.datetime()),
+    cnpjcarrier: z.optional(z.string()),
+    cnpjbranch: z.optional(z.string()),
+    idExternal: z.optional(z.string()),
     billingInfo: z.optional(z.array(z.object({
-        receivableAmount: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The total amount receivable for the billing item.'
-        })),
-        money: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The amount received in cash.'
-        })),
-        cheque: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The amount received via cheque.'
-        })),
-        creditCard: z.optional(z.number().register(z.globalRegistry, {
-            description: 'The amount received via credit card.'
-        })),
-        webComment: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Comments or notes made via the web interface regarding the billing item.'
-        })),
-        carrierComment: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Comments or notes made by the carrier regarding the billing item.'
-        })),
-        billingConfirmDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'The date and time when the billing was confirmed.'
-        })),
-        created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'The date and time when the billing item was created.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Billing information.'
-    })).register(z.globalRegistry, {
-        description: 'Billing information array.'
-    })),
+        receivableAmount: z.optional(z.number()),
+        money: z.optional(z.number()),
+        cheque: z.optional(z.number()),
+        creditCard: z.optional(z.number()),
+        webComment: z.optional(z.string()),
+        carrierComment: z.optional(z.string()),
+        billingConfirmDate: z.optional(z.iso.datetime()),
+        created: z.optional(z.iso.datetime())
+    }))),
     deliveryServiceRouteItem: z.optional(z.array(z.object({
-        idDeliveryServiceRouteItem: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Unique identifier for the delivery service route item.'
-        })),
+        idDeliveryServiceRouteItem: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
         deliveryServiceRoute: z.optional(z.object({
-            idDeliveryServiceRoute: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                description: 'Unique identifier for the delivery service route.'
-            })),
+            idDeliveryServiceRoute: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
             deliveryServiceRouteStatus: z.optional(z.object({
-                description: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'Delivery service route status response description.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Delivery service route status.'
+                description: z.optional(z.string())
             })),
-            deliveryServiceDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Date and time of the delivery service.'
-            })),
-            created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Date and time when the delivery service route was created.'
-            })),
-            startWorkDayDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Start date and time of the workday.'
-            })),
-            finishWorkDayDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Finish date and time of the workday.'
-            })),
-            itinerantDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'Date and time of the itinerant delivery service.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery service route.'
+            deliveryServiceDate: z.optional(z.iso.datetime()),
+            created: z.optional(z.iso.datetime()),
+            startWorkDayDateTime: z.optional(z.iso.datetime()),
+            finishWorkDayDateTime: z.optional(z.iso.datetime()),
+            itinerantDate: z.optional(z.iso.datetime())
         })),
         deliveryServiceRouteItemStatus: z.optional(z.object({
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the delivery service route item status.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery service route item status.'
+            description: z.optional(z.string())
         })),
-        nonDeliveryDescription: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of why the delivery was not completed.'
-        })),
-        index: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Index of the delivery service route item.'
-        })),
-        created: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the delivery service route item was created.'
-        })),
-        startDisplacementDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Start date and time of the displacement.'
-        })),
-        startDisplacementLatitude: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Latitude at the start of the displacement.'
-        })),
-        startDisplacementLongitude: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Longitude at the start of the displacement.'
-        })),
-        finishedDisplacementLatitude: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Latitude at the end of the displacement.'
-        })),
-        finishedDisplacementLongitude: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Longitude at the end of the displacement.'
-        })),
-        receiverName: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name of the person receiving the delivery.'
-        })),
-        receiverDocument: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Document or identification of the receiver.'
-        })),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of the delivery service route item.'
-        })),
-        deliveryArrived: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the delivery arrived.'
-        })),
-        comment: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Additional comments about the delivery service route item.'
-        })),
-        rating: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Rating given to the delivery service.'
-        })),
-        pauseDisplacementDateTime: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the displacement was paused.'
-        })),
-        deliveryLeft: z.optional(z.iso.datetime().register(z.globalRegistry, {
-            description: 'Date and time when the delivery was left or completed.'
-        })),
+        nonDeliveryDescription: z.optional(z.string()),
+        index: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        created: z.optional(z.iso.datetime()),
+        startDisplacementDateTime: z.optional(z.iso.datetime()),
+        startDisplacementLatitude: z.optional(z.number()),
+        startDisplacementLongitude: z.optional(z.number()),
+        finishedDisplacementLatitude: z.optional(z.number()),
+        finishedDisplacementLongitude: z.optional(z.number()),
+        receiverName: z.optional(z.string()),
+        receiverDocument: z.optional(z.string()),
+        description: z.optional(z.string()),
+        deliveryArrived: z.optional(z.iso.datetime()),
+        comment: z.optional(z.string()),
+        rating: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        pauseDisplacementDateTime: z.optional(z.iso.datetime()),
+        deliveryLeft: z.optional(z.iso.datetime()),
         deliveryReason: z.optional(z.object({
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Description of the reason for the delivery.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery reason.'
+            description: z.optional(z.string())
         }))
-    }).register(z.globalRegistry, {
-        description: 'Delivery service route information.'
-    })).register(z.globalRegistry, {
-        description: 'Array in which each item corresponds to a delivery service route.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Delivery service response.'
+    })))
 });
 
 /**
  * Paginated delivery service response.
  */
 export const zPaginationResultDeliveryServiceResponsev11 = z.object({
-    page: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Number of the page that was returned.'
-    })),
-    pageSize: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Number of items per returned page.'
-    })),
-    totalCount: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Total number of pages given the page size and total results.'
-    })),
-    data: z.optional(z.array(zDeliveryServiceResponseV11).register(z.globalRegistry, {
-        description: 'Array where each item contains information of a delivery service.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Paginated delivery service response.'
+    page: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    pageSize: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    totalCount: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    data: z.optional(z.array(zDeliveryServiceResponseV11))
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zPostAuthData = z.object({
     body: z.optional(z.object({
-        username: z.string().register(z.globalRegistry, {
-            description: 'Add client\'s username.'
-        }),
-        password: z.string().register(z.globalRegistry, {
-            description: 'Add client\'s password.'
-        })
+        username: z.string(),
+        password: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -732,29 +300,15 @@ export const zGetServicesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        status: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Current status of the delivery service. The status parameters are not case sensitive, you can write them with upper or lower case. This field includes the following statuses as possible values: `Ativo`, `Roteirizado`, `Realizado`, `EmAndamento`, `NaoRealizado`.'
-        })),
-        dateInit: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Initial date of registration of the requested service. The date format is `yyyy-mm-dd`.'
-        })),
-        dateEnd: z.optional(z.string().register(z.globalRegistry, {
-            description: 'End date of registration of the requested service. The date format is `yyyy-mm-dd`.\n\r\n\rMake sure that the period of time between `dateInit` and `dateEnd` is not greater than 30 days.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items shown per consultation page. The default is `25`.'
-        })),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The consultation\'s desired page.'
-        }))
+        status: z.optional(z.string()),
+        dateInit: z.optional(z.string()),
+        dateEnd: z.optional(z.string()),
+        pageSize: z.optional(z.int()),
+        page: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -763,53 +317,33 @@ export const zPostServicesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutServicesData = z.object({
     body: z.optional(z.array(z.object({
-        invoice: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Chosen invoice filter.'
-        })),
-        serie: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Serie\'s number on the invoice.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Service information.'
+        invoice: z.optional(z.string()),
+        serie: z.optional(z.string())
     }))),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetServicesByIdDeliveryServiceData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        idDeliveryService: z.int().register(z.globalRegistry, {
-            description: 'The delivery service\'s unique identifier.'
-        })
+        idDeliveryService: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -817,135 +351,59 @@ export const zGetServicesRoutesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        status: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Current status of the delivery service. Includes the following statuses as possible values: `Ativo`, `Roteirizado`, `Realizado`, `EmAndamento`, `NaoRealizado`.'
-        })),
-        dateInit: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Initial date of registration of the requested service. The date format is `yyyy-mm-dd`.'
-        })),
-        dateEnd: z.optional(z.string().register(z.globalRegistry, {
-            description: 'End date of registration of the requested service. The date format is `yyyy-mm-dd`.\n\r\n\rMake sure that the period of time between `dateInit` and `dateEnd` is not greater than 30 days.'
-        })),
-        pageSize: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Number of items shown per consultation page. The default is `25`.'
-        })),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The desired page for the consultation.'
-        }))
+        status: z.optional(z.string()),
+        dateInit: z.optional(z.string()),
+        dateEnd: z.optional(z.string()),
+        pageSize: z.optional(z.int()),
+        page: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostDeliveryServiceWithRouteAsyncData = z.object({
     body: z.optional(z.object({
-        deliveryService: z.optional(z.array(zDeliveryService).register(z.globalRegistry, {
-            description: 'Delivery service array.'
-        })),
+        deliveryService: z.optional(z.array(zDeliveryService)),
         deliveryServiceRoute: z.optional(z.object({
             carrier: z.object({
-                username: z.string().min(0).max(100).register(z.globalRegistry, {
-                    description: 'The username of the user. This field can be used for login purposes and identification.'
-                }),
-                firstName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-                    description: 'The first name of the user.'
-                })),
-                lastName: z.optional(z.string().min(0).max(100).register(z.globalRegistry, {
-                    description: 'The last name of the user.'
-                })),
-                cpf: z.optional(z.string().min(0).max(14).register(z.globalRegistry, {
-                    description: 'The CPF document number of the user.'
-                })),
-                email: z.optional(z.string().min(0).max(254).register(z.globalRegistry, {
-                    description: 'The email address of the user.'
-                })),
-                mobileAreaCode: z.optional(z.string().min(0).max(3).register(z.globalRegistry, {
-                    description: 'The area code for the user\'s mobile phone.'
-                })),
-                mobile: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-                    description: 'The mobile phone number of the user.'
-                })),
-                phoneAreaCode: z.optional(z.string().min(0).max(3).register(z.globalRegistry, {
-                    description: 'The area code for the user\'s telephone.'
-                })),
-                phone: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-                    description: 'The telephone number of the user.'
-                })),
-                idExternalCarrier: z.optional(z.string().min(0).max(30).register(z.globalRegistry, {
-                    description: 'An external identifier for the carrier associated with the user.'
-                })),
-                rg: z.optional(z.string().min(0).max(12).register(z.globalRegistry, {
-                    description: 'The RG document number of the user.'
-                })),
-                idShipperBranch: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                    description: 'The unique identifier for the shipper branch associated with the user.'
-                })),
-                idShippingCompany: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-                    description: 'The unique identifier for the shipping company associated with the user.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Route carrier information.'
+                username: z.string().min(0).max(100),
+                firstName: z.optional(z.string().min(0).max(100)),
+                lastName: z.optional(z.string().min(0).max(100)),
+                cpf: z.optional(z.string().min(0).max(14)),
+                email: z.optional(z.string().min(0).max(254)),
+                mobileAreaCode: z.optional(z.string().min(0).max(3)),
+                mobile: z.optional(z.string().min(0).max(10)),
+                phoneAreaCode: z.optional(z.string().min(0).max(3)),
+                phone: z.optional(z.string().min(0).max(10)),
+                idExternalCarrier: z.optional(z.string().min(0).max(30)),
+                rg: z.optional(z.string().min(0).max(12)),
+                idShipperBranch: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+                idShippingCompany: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
             }),
-            displacementType: z.string().min(0).max(15).register(z.globalRegistry, {
-                description: 'Displacement type.'
-            }),
+            displacementType: z.string().min(0).max(15),
             vehicle: z.optional(z.object({
-                registrationPlate: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-                    description: 'Vehicle registration plate.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Vehicle information.'
+                registrationPlate: z.optional(z.string().min(0).max(50))
             })),
-            deliveryServiceRouteTimeOfDay: z.optional(z.string().min(0).max(10).register(z.globalRegistry, {
-                description: 'The time of day for the delivery service route.'
-            })),
-            deliveryServiceDate: z.iso.datetime().register(z.globalRegistry, {
-                description: 'The date and time when the delivery service is scheduled to occur.'
-            }),
-            idExternalRoute: z.optional(z.string().min(0).max(50).register(z.globalRegistry, {
-                description: 'An external identifier for the delivery service route.'
-            })),
-            itinerantDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
-                description: 'The date and time of the itinerant delivery service.'
-            })),
+            deliveryServiceRouteTimeOfDay: z.optional(z.string().min(0).max(10)),
+            deliveryServiceDate: z.iso.datetime(),
+            idExternalRoute: z.optional(z.string().min(0).max(50)),
+            itinerantDate: z.optional(z.iso.datetime()),
             addressStart: z.optional(z.object({
-                addressStreet: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'The street of the address.'
-                })),
-                addressNumber: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'The number of the building or house on the street.'
-                })),
-                postalCode: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'The postal code of the location, which is used for mail delivery purposes.'
-                })),
-                addressCity: z.optional(z.string().register(z.globalRegistry, {
-                    description: 'The city in which the address is located.'
-                })),
-                state: z.optional(z.string().min(0).max(2).register(z.globalRegistry, {
-                    description: 'The state or province code where the address is located.'
-                }))
-            }).register(z.globalRegistry, {
-                description: 'Address of the start of the delivery route.'
+                addressStreet: z.optional(z.string()),
+                addressNumber: z.optional(z.string()),
+                postalCode: z.optional(z.string()),
+                addressCity: z.optional(z.string()),
+                state: z.optional(z.string().min(0).max(2))
             }))
-        }).register(z.globalRegistry, {
-            description: 'Delivery service route information.'
         }))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -953,16 +411,10 @@ export const zGetServicesInvoiceData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        invoice: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Invoice code.'
-        }))
+        invoice: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

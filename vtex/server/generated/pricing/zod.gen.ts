@@ -6,100 +6,55 @@ import * as z from 'zod';
  * Trade Policy Fixed Price Validity Period Object.
  */
 export const zDateRange = z.object({
-    from: z.string().register(z.globalRegistry, {
-        description: 'Indicates the date and time when the fixed price will start to be valid.'
-    }),
-    to: z.string().register(z.globalRegistry, {
-        description: 'Indicates the date and time from which the fixed price will no longer be valid.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Trade Policy Fixed Price Validity Period Object.'
+    from: z.string(),
+    to: z.string()
 });
 
 /**
  * Fixed price request body information.
  */
 export const zFixedPrice = z.object({
-    tradePolicyId: z.string().register(z.globalRegistry, {
-        description: 'Trade Policy ID.'
-    }),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Trade Policy Fixed Price Value.'
-    }),
+    tradePolicyId: z.string(),
+    value: z.number(),
     listPrice: z.union([
         z.number(),
         z.null()
     ]),
-    minQuantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Trade Policy Fixed Price Minimum Item Quantity.'
-    }),
+    minQuantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     dateRange: z.optional(zDateRange)
-}).register(z.globalRegistry, {
-    description: 'Fixed price request body information.'
 });
 
 /**
  * Price request body information.
  */
 export const zGetprice = z.object({
-    itemId: z.string().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Suggested retail price for the SKU.'
-    }),
-    costPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU\'s cost price.'
-    }),
-    markup: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Desired profit margin with the SKU\'s sale.'
-    }),
-    basePrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'SKU\'s reference price.'
-    }),
-    fixedPrices: z.array(zFixedPrice).register(z.globalRegistry, {
-        description: 'The fixed price is a price that overlaps all other existing price configurations of a price table.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Price request body information.'
+    itemId: z.string(),
+    listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    costPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    markup: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    basePrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    fixedPrices: z.array(zFixedPrice)
 });
 
 /**
  * Computed price request body information.
  */
 export const zGetcomputedprice = z.object({
-    tradePolicyId: z.string().register(z.globalRegistry, {
-        description: 'Trade Policy ID ou `priceTableId`.'
-    }),
-    listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Trade Policy List Price, also known as "from" price.'
-    }),
-    costPrice: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Cost price.'
-    })),
-    sellingPrice: z.number().register(z.globalRegistry, {
-        description: 'Computed Price before applying coupons, promotions and taxes. This price may change before reaching the shelf.'
-    }),
-    priceValidUntil: z.string().register(z.globalRegistry, {
-        description: 'Date until when the computed price will be valid, due to price scheduling. If no price scheduling applies, this will be set a year from the current time.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Computed price request body information.'
+    tradePolicyId: z.string(),
+    listPrice: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    costPrice: z.optional(z.number()),
+    sellingPrice: z.number(),
+    priceValidUntil: z.string(),
+    priceTable: z.optional(z.string())
 });
 
 /**
  * Pricing configuration request body information.
  */
 export const zPricingConfiguration = z.object({
-    hasMigrated: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the account has migrated to Pricing V2.'
-    }),
-    migrationStatus: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Pricing V2 migration status.'
-    })),
-    defaultMarkup: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Account default markup.'
-    }),
+    hasMigrated: z.boolean(),
+    migrationStatus: z.optional(z.string()),
+    defaultMarkup: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     priceVariation: z.optional(z.object({
         upperLimit: z.optional(z.union([
             z.int(),
@@ -109,349 +64,203 @@ export const zPricingConfiguration = z.object({
             z.int(),
             z.null()
         ]))
-    }).register(z.globalRegistry, {
-        description: 'Price Variation object.'
     })),
-    minimumMarkups: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Additional property.'
-    })).register(z.globalRegistry, {
-        description: 'Account minimum markup.'
-    }),
+    minimumMarkups: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
     tradePolicyConfigs: z.optional(z.array(z.object({
-        tradePolicyId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Trade Policy ID.'
-        })),
-        minimumMarkup: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Trade Policy Minimum Markup.'
-        })),
-        rulesShouldAffectListPrice: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Defines if the Price Rule should affect the list price too.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Information trade polity configuration.'
-    })).register(z.globalRegistry, {
-        description: 'Trade Policy Configurations array.'
-    })),
+        tradePolicyId: z.optional(z.string()),
+        minimumMarkup: z.optional(z.int()),
+        rulesShouldAffectListPrice: z.optional(z.boolean())
+    }))),
     sellersToOverride: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Seller ID.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
-    hasPriceInheritance: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Deprecated. Use the `priceInheritance` field instead.'
-    })),
-    priceInheritance: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Condition of price inheritance from its parent account. This field can have three possible values: `never` if the store should never inherit prices, `nonexistent` if the store should only inherit prices in case of nonexistent prices for a given product, or `always` if the store should always inherit prices, regardless of its own prices.'
-    })),
-    hasOptionalBasePrice: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if optional base price is allowed.'
-    })),
-    blockAccount: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if access to the Pricing APIs is blocked for external requests.'
-    })),
+    hasPriceInheritance: z.optional(z.boolean()),
+    priceInheritance: z.optional(z.string()),
+    hasOptionalBasePrice: z.optional(z.boolean()),
+    blockAccount: z.optional(z.boolean()),
     blockedRoutes: z.optional(z.union([
-        z.array(z.string().register(z.globalRegistry, {
-            description: 'Blocked route.'
-        })),
+        z.array(z.string()),
         z.null()
     ])),
-    priceTableSelectionStrategy: z.optional(z.string().register(z.globalRegistry, {
-        description: 'The strategy used to get prices when there is more than one option. Possible values: `first`, `highest`, `lowest`. Default: `first`.'
-    })).default('first'),
+    priceTableSelectionStrategy: z.optional(z.string()).default('first'),
     priceTableLimit: z.optional(z.union([
         z.int(),
         z.null()
     ]))
-}).register(z.globalRegistry, {
-    description: 'Pricing configuration request body information.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zDeletePriceData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        itemId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetPriceData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        itemId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateUpdatePriceOrFixedPriceData = z.object({
     body: z.optional(z.object({
-        markup: z.optional(z.int().register(z.globalRegistry, {
-            description: 'The profit percentage that is to be obtained from the sale of that SKU. If you decide to fill the `markup` item, you must also fill the `costPrice`. The `basePrice` will be automatically generated based on both values.'
-        })),
-        listPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU\'s suggested selling price.'
-        })),
-        basePrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU selling base price. If you decide to fill only the `basePrice` item, the `markup` and `costPrice` will be automatically generated to adapt to the number inserted in `basePrice`.'
-        })),
-        costPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU selling cost price. If you decide to fill the `costPrice` item, you must also fill the `markup` and `basePrice` will be automatically generated based on both values.'
-        })),
+        markup: z.optional(z.int()),
+        listPrice: z.optional(z.number()),
+        basePrice: z.optional(z.number()),
+        costPrice: z.optional(z.number()),
         fixedPrices: z.optional(z.array(z.object({
-            tradePolicyId: z.string().register(z.globalRegistry, {
-                description: 'The name or ID of the trade policy, or the name of the price table where the fixed price will be configured.'
-            }),
-            value: z.number().register(z.globalRegistry, {
-                description: 'Fixed price value.'
-            }),
-            listPrice: z.optional(z.number().register(z.globalRegistry, {
-                description: 'SKU List Fixed Price.'
-            })),
-            minQuantity: z.int().register(z.globalRegistry, {
-                description: 'Minimum quantity of the SKU for the fixed price to be applied.'
-            }),
+            tradePolicyId: z.string(),
+            value: z.number(),
+            listPrice: z.optional(z.number()),
+            minQuantity: z.int(),
             dateRange: z.optional(z.object({
-                from: z.string().register(z.globalRegistry, {
-                    description: 'Start date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone. Ensure that `to` is after than `from`, identical values may cause an error.'
-                }),
-                to: z.string().register(z.globalRegistry, {
-                    description: 'End date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone. Ensure that `to` is after than `from`, identical values may cause an error.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Period of time when the fixed price will be applied to the SKU.'
+                from: z.string(),
+                to: z.string()
             }))
-        }).register(z.globalRegistry, {
-            description: 'Array with general information about the SKU\'s fixed prices.'
-        })).register(z.globalRegistry, {
-            description: 'Information  about the SKU\'s fixed prices.'
-        }))
+        })))
     })),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier number.'
-        })
+        itemId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetFixedPricesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        })
+        itemId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateUpdatePriceOrFixedPriceNoRemoveData = z.object({
     body: z.optional(z.array(z.object({
-        tradePolicyId: z.string().register(z.globalRegistry, {
-            description: 'The name or ID of the trade policy, or the price table name, where the fixed price will be configured.'
-        }),
-        value: z.number().register(z.globalRegistry, {
-            description: 'Selling price of the SKU for this fixed price entry.'
-        }),
-        listPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Original or reference price of the SKU for this fixed price.'
-        })),
-        minQuantity: z.int().register(z.globalRegistry, {
-            description: 'Minimum quantity required for the fixed price to apply.'
-        }).default(1),
+        tradePolicyId: z.string(),
+        value: z.number(),
+        listPrice: z.optional(z.number()),
+        minQuantity: z.int().default(1),
         dateRange: z.optional(z.object({
-            from: z.string().register(z.globalRegistry, {
-                description: 'Start date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone.'
-            }),
-            to: z.string().register(z.globalRegistry, {
-                description: 'End date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Period of time when the fixed price will be applied to the SKU. If not provided, the price is not restricted by a date range.'
+            from: z.string(),
+            to: z.string()
         }))
-    }).register(z.globalRegistry, {
-        description: 'Array with general information about the SKU\'s fixed prices.'
-    })).register(z.globalRegistry, {
-        description: 'Information about the SKU\'s fixed prices.'
-    })),
+    }))),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU unique identifier number.'
-        })
+        itemId: z.int()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeletefixedpricesonapricetableortradepolicyData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'Price Table or Trade Policy Name.'
-        })
+        itemId: z.int(),
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetFixedPricesonapricetableData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'Price Table Name'
-        })
+        itemId: z.int(),
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateorupdatefixedpricesonpricetableortradepolicyData = z.object({
     body: z.optional(z.array(z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Fixed price value.'
-        }),
-        listPrice: z.optional(z.number().register(z.globalRegistry, {
-            description: 'SKU List Fixed Price.'
-        })),
-        minQuantity: z.int().register(z.globalRegistry, {
-            description: 'The minimum SKU quantity for the fixed price to be applied.'
-        }),
+        value: z.number(),
+        listPrice: z.optional(z.number()),
+        minQuantity: z.int(),
         dateRange: z.optional(z.object({
-            from: z.string().register(z.globalRegistry, {
-                description: 'Start date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone.'
-            }),
-            to: z.string().register(z.globalRegistry, {
-                description: 'End date of the price. This date follows the [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format, which includes the time zone.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Period of time when the fixed price will be applied to the SKU.'
+            from: z.string(),
+            to: z.string()
         }))
-    }).register(z.globalRegistry, {
-        description: 'Information about prices and fixed prices.'
     }))),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'SKU **price table** name or **trade policy** ID.'
-        })
+        itemId: z.int(),
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetPricingPricesByItemIdComputedData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        itemId: z.int()
+    }),
+    query: z.optional(z.object({
+        categoryIds: z.optional(z.int()),
+        brandId: z.optional(z.int()),
+        quantity: z.optional(z.int())
+    })),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetComputedPricebypricetableData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        itemId: z.int().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'SKU Price Table Name.'
-        })
+        itemId: z.int(),
+        priceTableId: z.string()
     }),
-    query: z.object({
-        categoryIds: z.int().register(z.globalRegistry, {
-            description: 'Category ID.'
-        }),
-        brandId: z.int().register(z.globalRegistry, {
-            description: 'Brand ID.'
-        }),
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'SKU quantity.'
-        })
-    }),
+    query: z.optional(z.object({
+        categoryIds: z.optional(z.int()),
+        brandId: z.optional(z.int()),
+        quantity: z.optional(z.int())
+    })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -460,12 +269,8 @@ export const zGetPricingConfigData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -474,50 +279,30 @@ export const zGetPricingv2StatusData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetrulesforapricetableData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'Price Table Name.'
-        })
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutPricingPipelineCatalogByPriceTableIdData = z.object({
     body: z.optional(z.object({
         rules: z.array(z.object({
-            id: z.int().register(z.globalRegistry, {
-                description: 'Rule ID.'
-            }),
+            id: z.int(),
             context: z.object({
-                categories: z.record(z.string(), z.string().register(z.globalRegistry, {
-                    description: 'Category ID.'
-                })).register(z.globalRegistry, {
-                    description: 'Categories that an item should have to be eligible for the rule. Format: key: `categoryId`, value: `categoryName`.'
-                }),
-                brands: z.record(z.string(), z.string().register(z.globalRegistry, {
-                    description: 'Brand ID.'
-                })).register(z.globalRegistry, {
-                    description: 'Brands that an item should have to be eligible for the rule. Format: key: `brandId`, value: `brandName`.'
-                }),
+                categories: z.record(z.string(), z.string()),
+                brands: z.record(z.string(), z.string()),
                 stockStatuses: z.optional(z.union([
                     z.record(z.string(), z.unknown()),
                     z.null()
@@ -528,68 +313,38 @@ export const zPutPricingPipelineCatalogByPriceTableIdData = z.object({
                 ])),
                 markupRange: z.union([
                     z.object({
-                        from: z.int().register(z.globalRegistry, {
-                            description: 'Item markup should be greater than or equal to this value.'
-                        }),
-                        to: z.int().register(z.globalRegistry, {
-                            description: 'Item markup should be less than or equal to this value.'
-                        })
+                        from: z.int(),
+                        to: z.int()
                     }),
                     z.null()
                 ]),
                 dateRange: z.object({
-                    from: z.string().register(z.globalRegistry, {
-                        description: 'Date when rule will be activated. Date format: `RFC3339`.'
-                    }),
-                    to: z.string().register(z.globalRegistry, {
-                        description: 'Date when the rule will be deactivated. Date format: `RFC3339`.'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'The rule will be active during this time range.'
+                    from: z.string(),
+                    to: z.string()
                 })
-            }).register(z.globalRegistry, {
-                description: 'Rule Context is a group of filters to be checked at an item level when applying the rule. If all those filters check out, the rule will be applied for that item, unless there is a fixed price for that item.'
             }),
-            percentualModifier: z.number().register(z.globalRegistry, {
-                description: 'Percentual modifier.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Object containing a price table rule.'
-        })).register(z.globalRegistry, {
-            description: 'Array of rules for the price table.'
-        })
+            percentualModifier: z.number()
+        }))
     })),
     path: z.object({
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'Price Table Name.'
-        })
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutPricingTablesByPriceTableIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        priceTableId: z.string().register(z.globalRegistry, {
-            description: 'Price Table Name.'
-        })
+        priceTableId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -598,12 +353,8 @@ export const zGetallpricetablesandrulesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -612,11 +363,7 @@ export const zListpricetablesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

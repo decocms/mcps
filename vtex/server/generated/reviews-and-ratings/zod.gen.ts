@@ -8,26 +8,12 @@ import * as z from 'zod';
  * Request body.
  */
 export const zSaveReviewRequest = z.object({
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Product ID.'
-    }),
-    rating: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-        description: 'Customer rating.'
-    }),
-    title: z.string().register(z.globalRegistry, {
-        description: 'Review\'s title.'
-    }),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Review\'s text.'
-    }),
-    reviewerName: z.string().register(z.globalRegistry, {
-        description: 'Reviewer name.'
-    }),
-    approved: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if the review was approved (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Request body.'
+    productId: z.string(),
+    rating: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    title: z.string(),
+    text: z.string(),
+    reviewerName: z.string(),
+    approved: z.boolean()
 });
 
 /**
@@ -36,144 +22,82 @@ export const zSaveReviewRequest = z.object({
  * Request body.
  */
 export const zSaveMultipleReviewsRequest = z.object({
-    id: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Review ID.'
-    })),
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Product ID.'
-    }),
-    rating: z.number().register(z.globalRegistry, {
-        description: 'Customer rating.'
-    }),
-    title: z.string().register(z.globalRegistry, {
-        description: 'Review\'s title.'
-    }),
-    text: z.string().register(z.globalRegistry, {
-        description: 'Review\'s text.'
-    }),
-    reviewerName: z.string().register(z.globalRegistry, {
-        description: 'Reviewer name.'
-    }),
-    approved: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the review was approved (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Request body.'
+    id: z.optional(z.string()),
+    productId: z.string(),
+    rating: z.number(),
+    title: z.string(),
+    text: z.string(),
+    reviewerName: z.string(),
+    approved: z.boolean()
 });
 
 export const zGetProductRatingData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product ID.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteReviewData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reviewId: z.string().register(z.globalRegistry, {
-            description: 'Review ID.'
-        })
+        reviewId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetReviewbyReviewIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        reviewId: z.string().register(z.globalRegistry, {
-            description: 'Review ID.'
-        })
+        reviewId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zEditReviewData = z.object({
     body: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product ID.'
-        }),
-        rating: z.number().register(z.globalRegistry, {
-            description: 'Customer rating.'
-        }),
-        title: z.string().register(z.globalRegistry, {
-            description: 'Review\'s title.'
-        }),
-        text: z.string().register(z.globalRegistry, {
-            description: 'Review\'s text.'
-        }),
-        reviewerName: z.string().register(z.globalRegistry, {
-            description: 'Reviewer name.'
-        }),
-        shopperId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Shopper email.'
-        })),
-        verifiedPurchaser: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates if the reviewer is a verified purchaser (`true`) or not (`false`).'
-        })),
+        productId: z.string(),
+        rating: z.number(),
+        title: z.string(),
+        text: z.string(),
+        reviewerName: z.string(),
+        shopperId: z.optional(z.string()),
+        verifiedPurchaser: z.optional(z.boolean()),
         locale: z.optional(z.union([
             z.string(),
             z.null()
         ]))
     }),
     path: z.object({
-        reviewId: z.string().register(z.globalRegistry, {
-            description: 'Review ID.'
-        })
+        reviewId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zDeleteMultipleReviewsData = z.object({
-    body: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Review ID.'
-    })).register(z.globalRegistry, {
-        description: 'Array of reviews IDs.'
-    })),
+    body: z.optional(z.array(z.string())),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -181,48 +105,26 @@ export const zGetalistofReviewsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        search_term: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Returns Reviews that contain the search term in `productId`, `sku`, `shopperId`, or `reviewerName`.'
-        })),
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Zero base starting record number, `0` is the default value.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Zero base ending record number, `3` is the default value.'
-        })),
-        order_by: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Field name to order records. The field name must have the first letter uppercase. Allowed field names: `ProductId`, `ShopperId`, `Approved`, `ReviewDateTime`, `SearchDate`, `Rating`, `Locale`. Optionally add `:asc` or `:desc`.'
-        })),
-        status: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Status of the review, approved (`true`) or not (`false`).'
-        })),
-        product_id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter the reviews by product ID.'
-        }))
+        search_term: z.optional(z.string()),
+        from: z.optional(z.string()),
+        to: z.optional(z.string()),
+        order_by: z.optional(z.string()),
+        status: z.optional(z.boolean()),
+        product_id: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSaveMultipleReviewsData = z.object({
-    body: z.array(zSaveMultipleReviewsRequest).register(z.globalRegistry, {
-        description: 'List of reviews.'
-    }),
+    body: z.array(zSaveMultipleReviewsRequest),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -231,11 +133,7 @@ export const zSaveReviewData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

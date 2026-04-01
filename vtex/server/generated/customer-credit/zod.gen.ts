@@ -5,136 +5,82 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * Credit account identification.
  */
-export const zCreditAccountId = z.string().register(z.globalRegistry, {
-    description: 'Credit account identification.'
-});
+export const zCreditAccountId = z.string();
 
 /**
  * Invoice identification.
  */
-export const zInvoiceId = z.string().register(z.globalRegistry, {
-    description: 'Invoice identification.'
-});
+export const zInvoiceId = z.string();
 
 /**
  * Simplified identification of an invoice. This code is created automatically, always associated with an existing invoice. It consists of an 8-digit random ID (of numbers and letters) and the installment.
  */
-export const zFriendlyId = z.string().register(z.globalRegistry, {
-    description: 'Simplified identification of an invoice. This code is created automatically, always associated with an existing invoice. It consists of an 8-digit random ID (of numbers and letters) and the installment.'
-});
+export const zFriendlyId = z.string();
 
 /**
  * Pre-authorization identification.
  */
-export const zTransactionId = z.string().register(z.globalRegistry, {
-    description: 'Pre-authorization identification.'
-});
+export const zTransactionId = z.string();
 
 export const zSearchallinvoicesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the starting position of the invoice to be searched in the invoice list. For example, the value `1` indicates that the first invoice in the list will be returned.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the final position of the invoice to be searched in the invoice list. For example, if the value of `from` is equal to `1` and `to` is `300`, information from 300 invoices will be displayed in the response body of the request.'
-        })),
-        createdDateFrom: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the initial creation date of invoices that should be searched in the invoice list based on their creation date. The dates should be in ISO8601 format.'
-        })),
-        createdDateTo: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the final creation date of invoices that should be searched in the invoice list based on their creation date. The dates should be in ISO8601 format.'
-        })),
-        dueDateFrom: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the initial due date of invoices that should be searched in the invoice list based on their creation date. The dates should be in ISO8601 format.'
-        })),
-        dueDateTo: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the final due date of invoices that should be searched in the invoice list based on their creation date. The dates should be in ISO8601 format.'
-        })),
-        value: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Indicates the value of the invoices to be searched for. It must be completed with a decimal value.'
-        })),
+        from: z.optional(z.string()),
+        to: z.optional(z.string()),
+        createdDateFrom: z.optional(z.string()),
+        createdDateTo: z.optional(z.string()),
+        dueDateFrom: z.optional(z.string()),
+        dueDateTo: z.optional(z.string()),
+        value: z.optional(z.number()),
         status: z.optional(z.enum([
             'Opened',
             'Paid',
             'Cancelled'
-        ]).register(z.globalRegistry, {
-            description: 'Indicates the status of the invoices to be searched for.'
-        })),
-        friendlyId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Simplified identification of an invoice. This code is created automatically, always associated with an existing invoice. It consists of an 8-digit random ID (of numbers and letters) and the installment.'
-        })),
-        observation: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Observation notes about the invoice.'
-        })),
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        ])),
+        friendlyId: z.optional(z.string()),
+        observation: z.optional(z.string()),
+        creditAccountId: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCancelInvoiceData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        invoiceId: z.string().register(z.globalRegistry, {
-            description: 'Invoice identification.'
-        })
+        creditAccountId: z.string(),
+        invoiceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zRetrieveInvoicebyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        invoiceId: z.string().register(z.globalRegistry, {
-            description: 'Invoice identification.'
-        })
+        creditAccountId: z.string(),
+        invoiceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -144,9 +90,7 @@ export const zChangeInvoiceData = z.object({
             'Opened',
             'Paid',
             'Cancelled'
-        ]).register(z.globalRegistry, {
-            description: 'Invoice status.'
-        }),
+        ]),
         observation: z.optional(z.union([
             z.string(),
             z.null()
@@ -157,89 +101,55 @@ export const zChangeInvoiceData = z.object({
         ]))
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        invoiceId: z.string().register(z.globalRegistry, {
-            description: 'Invoice identification.'
-        })
+        creditAccountId: z.string(),
+        invoiceId: z.string()
     }),
     query: z.optional(z.object({
-        friendlyId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Simplified identification of an invoice. This code is created automatically, always associated with an existing invoice. It consists of an 8-digit random ID (of numbers and letters) and the installment.'
-        }))
+        friendlyId: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zSearchallinvoicesofaAccountData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zMarkaninvoiceasPaidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        invoiceId: z.string().register(z.globalRegistry, {
-            description: 'Invoice identification.'
-        })
+        creditAccountId: z.string(),
+        invoiceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostponeaninvoiceData = z.object({
     body: z.object({
-        dueDays: z.number().register(z.globalRegistry, {
-            description: 'Number of days to postpone the invoice.'
-        })
+        dueDays: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        invoiceId: z.string().register(z.globalRegistry, {
-            description: 'Invoice identification.'
-        })
+        creditAccountId: z.string(),
+        invoiceId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -247,422 +157,254 @@ export const zSearchallaccountsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the starting position of the credit customer account to be searched in the account list. Example, value `1` indicates that the first account in the list will be returned.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the final position of the credit customer account to be searched in the account list. Example, if the value of `from` is equal to `1` and `to` is `40`, information from 40 accounts will be displayed in the response body of the request.'
-        })),
+        from: z.optional(z.string()),
+        to: z.optional(z.string()),
         status: z.optional(z.enum([
             'Opened',
             'Paid',
             'Cancelled'
-        ]).register(z.globalRegistry, {
-            description: 'Indicates the status of the accounts to be searched for.'
-        })),
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Indicates the email registered to the account to be searched.'
-        }))
+        ])),
+        email: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zOpenanAccountData = z.object({
     body: z.object({
-        document: z.string().register(z.globalRegistry, {
-            description: 'Account owner document.'
-        }),
+        document: z.string(),
         documentType: z.enum([
             'CPF',
             'CNPJ',
             'Other'
-        ]).register(z.globalRegistry, {
-            description: 'Document type.'
-        }),
-        email: z.string().register(z.globalRegistry, {
-            description: 'Account owner email.'
-        }),
-        creditLimit: z.string().register(z.globalRegistry, {
-            description: 'Maximum credit amount on the account.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'This field is deprecated.'
-        }),
-        tolerance: z.string().register(z.globalRegistry, {
-            description: 'Account credit tolerance (in decimals). This value represents the increase in credit on an account. For example, a value of `0.30` indicates that the account owner can use up to 30% above the account\'s original maximum credit amount.'
-        })
+        ]),
+        email: z.string(),
+        creditLimit: z.string(),
+        description: z.string(),
+        tolerance: z.string()
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCloseanAccountData = z.object({
     body: z.object({
-        document: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Account owner document.'
-        })),
+        document: z.optional(z.string()),
         documentType: z.optional(z.enum([
             'CPF',
             'CNPJ',
             'Other'
-        ]).register(z.globalRegistry, {
-            description: 'Document type.'
-        })),
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Account owner email.'
-        }))
+        ])),
+        email: z.optional(z.string())
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zRetrieveaAccountbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zUpdateemailanddescriptionofaaccountData = z.object({
     body: z.object({
-        email: z.string().register(z.globalRegistry, {
-            description: 'Account owner email.'
-        }),
-        document: z.string().register(z.globalRegistry, {
-            description: 'Account owner document.'
-        }),
+        email: z.string(),
+        document: z.string(),
         documentType: z.enum([
             'CPF',
             'CNPJ',
             'Other'
-        ]).register(z.globalRegistry, {
-            description: 'Document type.'
-        }),
-        creditLimit: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Maximum credit amount on the account.'
-        })),
-        tolerance: z.optional(z.number().register(z.globalRegistry, {
-            description: 'Account credit tolerance (in decimals). This value represents the increase in credit on an account. For example, a value of `0.30` indicates that the account owner can use up to 30% above the account\'s original maximum credit amount.'
-        }))
+        ]),
+        creditLimit: z.optional(z.number()),
+        tolerance: z.optional(z.number())
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zAccountstatementsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zChangecreditlimitofanAccountData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Credit limit value.'
-        })
+        value: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDecreasebalanceofanaccountData = z.object({
     body: z.object({
-        value: z.string().register(z.globalRegistry, {
-            description: 'Value to be debited from the account balance.'
-        })
+        value: z.string()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        statementId: z.string().register(z.globalRegistry, {
-            description: 'Statement identification. This is the same `transactionId` value obtained from the [Account statements](https://developers.vtex.com/docs/api-reference/customer-credit-api#get-/api/creditcontrol/accounts/-creditAccountId-) endpoint response body.'
-        })
+        creditAccountId: z.string(),
+        statementId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateorUpdateSettlementData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Value to be settled in the invoice.'
-        })
+        value: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Pre-authorization identification.'
-        })
+        creditAccountId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateaPreAuthorizationData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Pre-Authorization value.'
-        }),
-        settle: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether pre-authorization should be available to be settled. This means that the `transactionId` created in this request can be used to be associated with an order within a maximum period of 30 days.'
-        }),
-        installments: z.number().register(z.globalRegistry, {
-            description: 'Number of installments.'
-        }),
-        expirationDate: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pre-Authorization expiration date. This field should only be sent if the `settle` field is sent as `false`.'
-        }))
+        value: z.number(),
+        settle: z.boolean(),
+        installments: z.number(),
+        expirationDate: z.optional(z.string())
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCancelaPreAuthorizationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Pre-authorization identification.'
-        })
+        creditAccountId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateaPreAuthorizationUsingidData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Pre-Authorization value.'
-        }),
-        settle: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether pre-authorization should be available to be settled. This means that the `transactionId` can be used to be associated with an order within a maximum period of 30 days.'
-        }),
-        installments: z.number().register(z.globalRegistry, {
-            description: 'Number of installments.'
-        })
+        value: z.number(),
+        settle: z.boolean(),
+        installments: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Pre-authorization identification.'
-        })
+        creditAccountId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zAddanaccountHolderData = z.object({
     body: z.object({
         claims: z.object({
-            email: z.string().register(z.globalRegistry, {
-                description: 'Holder email.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Holder information.'
+            email: z.string()
         })
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteanaccountholderData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        holderId: z.string().register(z.globalRegistry, {
-            description: 'Holder identification.'
-        })
+        creditAccountId: z.string(),
+        holderId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zChangetoleranceofanaccountData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'This value represents the increase in credit on an account. For example, a value of `0.30` indicates that the account owner can use up to 30% above the account\'s original maximum credit amount.'
-        })
+        value: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        })
+        creditAccountId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPartialorTotalRefundaSettlementData = z.object({
     body: z.object({
-        value: z.number().register(z.globalRegistry, {
-            description: 'Refund amount. This number must always be less than or equal to the value of the captured transaction.'
-        })
+        value: z.number()
     }),
     path: z.object({
-        creditAccountId: z.string().register(z.globalRegistry, {
-            description: 'Credit account identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Pre-authorization identification.'
-        })
+        creditAccountId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -671,84 +413,38 @@ export const zRetrievestoreconfigurationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateorchangestoreconfigurationData = z.object({
     body: z.object({
-        dailyInterestRate: z.number().register(z.globalRegistry, {
-            description: 'Daily interest rate (percent 0.1 = 10%).'
-        }),
-        invoicePostponementLimit: z.number().register(z.globalRegistry, {
-            description: 'Maximum number of postponements allowed.'
-        }),
-        taxRate: z.number().register(z.globalRegistry, {
-            description: 'Tax rate value (percent 0.1 = 10%).'
-        }),
-        maxPostponementDays: z.number().register(z.globalRegistry, {
-            description: 'Maximum number of days of postponement.'
-        }),
-        defaultCreditValue: z.number().register(z.globalRegistry, {
-            description: 'Default credit amount.'
-        }),
-        maxPreAuthorizationGrowthRate: z.number().register(z.globalRegistry, {
-            description: 'Pre-authorization growth rate value (percent 0.1 = 10%).'
-        }),
-        myCreditsEnabled: z.boolean().register(z.globalRegistry, {
-            description: 'Show the [My Credits](https://help.vtex.com/en/tutorial/customer-credit-overview--1uIqTjWxIIIEW0COMg4uE0#my-credits) page on storefront.'
-        }),
-        toleranceEnabled: z.boolean().register(z.globalRegistry, {
-            description: 'Allows orders to be placed even if they exceed X % of the account\'s credit limit.'
-        }),
-        automaticCheckingAccountCreationEnabled: z.boolean().register(z.globalRegistry, {
-            description: 'Allows users who have not previously received credit to complete an order.'
-        }),
-        postponementEnabled: z.boolean().register(z.globalRegistry, {
-            description: 'Postponement option activated.'
-        }),
+        dailyInterestRate: z.number(),
+        invoicePostponementLimit: z.number(),
+        taxRate: z.number(),
+        maxPostponementDays: z.number(),
+        defaultCreditValue: z.number(),
+        maxPreAuthorizationGrowthRate: z.number(),
+        myCreditsEnabled: z.boolean(),
+        toleranceEnabled: z.boolean(),
+        automaticCheckingAccountCreationEnabled: z.boolean(),
+        postponementEnabled: z.boolean(),
         notificationsSettings: z.optional(z.object({
             daysPrior: z.optional(z.array(z.object({
-                days: z.int().register(z.globalRegistry, {
-                    description: 'How many days before the invoice payment date is the notification sent.'
-                }),
-                timeOfDay: z.string().register(z.globalRegistry, {
-                    description: 'Notification sending time.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Object with information about the moment when the notification is sent.'
-            })).register(z.globalRegistry, {
-                description: 'Notification information sent before invoice payment date.'
-            })),
+                days: z.int(),
+                timeOfDay: z.string()
+            }))),
             daysAfter: z.optional(z.array(z.object({
-                days: z.int().register(z.globalRegistry, {
-                    description: 'How many days after the invoice payment date is the notification sent.'
-                }),
-                timeOfDay: z.string().register(z.globalRegistry, {
-                    description: 'Notification sending time.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Object with information about the moment when the notification is sent.'
-            })).register(z.globalRegistry, {
-                description: 'Notification information sent after invoice payment date.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Notification settings information.'
+                days: z.int(),
+                timeOfDay: z.string()
+            })))
         }))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

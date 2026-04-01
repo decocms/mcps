@@ -1838,9 +1838,21 @@ export type GetShipmentsByShipmentIdResponses = {
             };
         }>;
         /**
-         * Fulfillment flow type for the job.
+         * Fulfillment flow type for the order or shipment. This field defines how the item will be handled and routed within the logistics process.
+         *
+         * The acceptable values are:
+         *
+         * - `PICKUP`: The customer picks up the product in person at the store or designated [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).
+         *
+         * - `DELIVERY`: The product is picked up from a warehouse or distribution center and delivered directly to the customer's home.
+         *
+         * - `PICKUP_DELIVERY`: The product is first picked up at the store and then delivered to the customer's home.
+         *
+         * - `TRANSFER`: The product is shipped from one store to another store for availability or further processing.
+         *
+         * - `RETURN`: The customer returns the product to the store for review or further handling.
          */
-        type: string;
+        type: 'PICKUP' | 'DELIVERY' | 'PICKUP_DELIVERY' | 'TRANSFER' | 'RETURN';
         /**
          * Operational notes recorded during the shipment lifecycle.
          */

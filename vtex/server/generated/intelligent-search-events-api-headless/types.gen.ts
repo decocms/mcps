@@ -8,13 +8,13 @@ export type UserIdentification = {
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
 };
@@ -22,19 +22,19 @@ export type UserIdentification = {
 /**
  * SessionPing
  *
- * Sends an ACK to the API to renew the session server-side. It should be sent every 1 minute.
+ * Sends an ACK to the API to renew the session server-side. It should be sent every 1 minute. This event is essential to keep the session active and to determine if a session is ongoing or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event, and events registered for closed sessions are automatically disregarded.
  */
 export type SessionPing = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -46,9 +46,33 @@ export type SessionPing = {
     /**
      * agent
      *
-     * Identifies whether the request came from a mobile or desktop application. It's used as a filter in the search report.
+     * HTTP User-Agent of the device that made the request.
      */
     agent: string;
+    /**
+     * device
+     *
+     * Device type. It can take on one of two values: "mobile" or "desktop". If specified, it takes precedence over the value specified in agent.
+     */
+    device?: 'mobile' | 'desktop';
+    /**
+     * ab
+     *
+     * A/B test variant that the shopper is currently participating in. It is used to determine which variant of an A/B test the shopper saw when the event occurred. This property is optional, and its value is not predefined, as it is specific to each A/B test.
+     */
+    ab?: string;
+    /**
+     * vtexSession
+     *
+     * Current navigation session using the VtexRCSessionIdv7 cookie.
+     */
+    vtexSession?: string;
+    /**
+     * vtexMac
+     *
+     * Anonymous shopper information using the VtexRCMacIdv7 cookie.
+     */
+    vtexMac?: string;
 };
 
 /**
@@ -60,13 +84,13 @@ export type PageCart = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -92,13 +116,13 @@ export type PageEmptyCart = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -124,13 +148,13 @@ export type PageConfirmation = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -166,13 +190,25 @@ export type Click = {
      */
     type: string;
     /**
-     * Unique identifier of the clicked product.
+     * Unique identifier of the product that the user clicked on.
      */
-    productId: string;
+    product: string;
     /**
-     * Position of the clicked product on the search results page.
+     * Position of the clicked product on the search results page.  This is useful to identify which product was clicked in case there are multiple products displayed on the same page. The position should start at 0 for the first product in the list.
      */
     position: number;
+    /**
+     * page
+     *
+     * Page number on which the clicked product was displayed. This is useful in case there are multiple pages of search results, allowing to identify on which page the click happened.
+     */
+    page?: string;
+    /**
+     * clickType
+     *
+     * Type of click event.
+     */
+    clickType?: string;
     /**
      * url
      *
@@ -188,19 +224,43 @@ export type Click = {
     /**
      * agent
      *
-     * Identifies whether the request came from a mobile or desktop application. It's used as a filter in the search report.
+     * HTTP User-Agent of the device that made the request.
      */
     agent?: string;
     /**
+     * device
+     *
+     * Device type. It can take on one of two values: "mobile" or "desktop". If specified, it takes precedence over the value specified in agent.
+     */
+    device?: 'mobile' | 'desktop';
+    /**
+     * ab
+     *
+     * A/B test variant that the shopper is currently participating in. It is used to determine which variant of an A/B test the shopper saw when the event occurred. This property is optional, and its value is not predefined, as it is specific to each A/B test.
+     */
+    ab?: string;
+    /**
+     * vtexSession
+     *
+     * Current navigation session using the VtexRCSessionIdv7 cookie.
+     */
+    vtexSession?: string;
+    /**
+     * vtexMac
+     *
+     * Anonymous shopper information using the VtexRCMacIdv7 cookie.
+     */
+    vtexMac?: string;
+    /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
 };
@@ -214,13 +274,13 @@ export type Query = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -232,9 +292,33 @@ export type Query = {
     /**
      * agent
      *
-     * Identifies whether the request came from a mobile or desktop application. It's used as a filter in the search report.
+     * HTTP User-Agent of the device that made the request.
      */
     agent?: string;
+    /**
+     * device
+     *
+     * Device type. It can take on one of two values: "mobile" or "desktop". If specified, it takes precedence over the value specified in agent.
+     */
+    device?: 'mobile' | 'desktop';
+    /**
+     * ab
+     *
+     * A/B test variant that the shopper is currently participating in. It is used to determine which variant of an A/B test the shopper saw when the event occurred. This property is optional, and its value is not predefined, as it is specific to each A/B test.
+     */
+    ab?: string;
+    /**
+     * vtexSession
+     *
+     * Current navigation session using the VtexRCSessionIdv7 cookie.
+     */
+    vtexSession?: string;
+    /**
+     * vtexMac
+     *
+     * Anonymous shopper information using the VtexRCMacIdv7 cookie.
+     */
+    vtexMac?: string;
     /**
      * type
      *
@@ -250,21 +334,53 @@ export type Query = {
     /**
      * misspelled
      *
-     * Indicates whether the query has a typo (`true`) or not (`false`).
+     * Indicates whether the search query has any spelling mistakes or not. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
      */
-    misspelled: boolean;
+    misspelled?: boolean | null;
     /**
      * match
      *
-     * Amount of products retrieved by the search.
+     * Number of products retrieved by the search query. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
      */
-    match: number;
+    match?: number;
+    products?: Array<string> | Array<{
+        /**
+         * Unique identifier of the product.
+         */
+        id: string;
+        /**
+         * Position in the current page.
+         */
+        local: number;
+        /**
+         * Position in the result set.
+         */
+        global: number;
+    }>;
+    /**
+     * page
+     *
+     * Index of the current page. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
+     */
+    page?: number;
+    /**
+     * count
+     *
+     * Number of products returned per page. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
+     */
+    count?: number;
+    /**
+     * locale
+     *
+     * Shopper's locale.
+     */
+    locale?: string;
     /**
      * operator
      *
-     * Identifies the type of operator used on the search. The possible values are: `and`, `or`. Find more details in [this Elastic Search guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html).
+     * Identifies the type of operator used on the search.
      */
-    operator: string;
+    operator: 'and' | 'or';
 };
 
 /**
@@ -282,11 +398,23 @@ export type AutocompleteClick = {
     /**
      * Unique identifier of the clicked product.
      */
-    productId: string;
+    product: string;
     /**
-     * Position of the clicked product on the search results page.
+     * Position of the clicked product within the list of search results. This is useful to identify which product was clicked in case there are multiple products displayed on the same page. The position should start at 0 for the first product in the list.
      */
     position: number;
+    /**
+     * page
+     *
+     * Page number on which the clicked product was displayed. This is useful in case there are multiple pages of search results, allowing to identify on which page the click happened.
+     */
+    page?: string;
+    /**
+     * clickType
+     *
+     * Type of click event.
+     */
+    clickType?: string;
     /**
      * url
      *
@@ -302,19 +430,43 @@ export type AutocompleteClick = {
     /**
      * agent
      *
-     * Identifies whether the request came from a mobile or desktop application. It's used as a filter in the search report.
+     * HTTP User-Agent of the device that made the request.
      */
     agent?: string;
     /**
+     * device
+     *
+     * Device type. It can take on one of two values: "mobile" or "desktop". If specified, it takes precedence over the value specified in agent.
+     */
+    device?: 'mobile' | 'desktop';
+    /**
+     * ab
+     *
+     * A/B test variant that the shopper is currently participating in. It is used to determine which variant of an A/B test the shopper saw when the event occurred. This property is optional, and its value is not predefined, as it is specific to each A/B test.
+     */
+    ab?: string;
+    /**
+     * vtexSession
+     *
+     * Current navigation session using the VtexRCSessionIdv7 cookie.
+     */
+    vtexSession?: string;
+    /**
+     * vtexMac
+     *
+     * Anonymous shopper information using the VtexRCMacIdv7 cookie.
+     */
+    vtexMac?: string;
+    /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
 };
@@ -328,13 +480,13 @@ export type AutocompleteQuery = {
     /**
      * session
      *
-     * Identifier related to the current navigation, in UUID v4 format without dashes. It is a cookie that lasts for 30 minutes, changing if the user opens another tab in private navigation mode.
+     * Identifier related to the current navigation, in UUID v4 format without dashes. The session cookie must be updated with each `session.ping` event, which is essential to determine if a session is active or has been closed. A session is automatically closed after 30 minutes without any `session.ping` event. Events registered for a session that has already been closed by the system are automatically disregarded. The session identifier changes if the user opens another tab in private navigation mode.
      */
     session: string;
     /**
      * anonymous
      *
-     * Identifier related to related to the user, in UUID v4 format without dashes. This information is kept in storage for one year.
+     * Identifier related to the user, in UUID v4 format without dashes. This information is kept in storage for one year. Similar to the session identifier, the anonymous identifier should be renewed to measure returning customers, though the lack of renewal is less critical due to the longer duration of this identifier.
      */
     anonymous: string;
     /**
@@ -346,9 +498,33 @@ export type AutocompleteQuery = {
     /**
      * agent
      *
-     * Identifies whether the request came from a mobile or desktop application. It's used as a filter in the search report.
+     * HTTP User-Agent of the device that made the request.
      */
     agent?: string;
+    /**
+     * device
+     *
+     * Device type. It can take on one of two values: "mobile" or "desktop". If specified, it takes precedence over the value specified in agent.
+     */
+    device?: 'mobile' | 'desktop';
+    /**
+     * ab
+     *
+     * A/B test variant that the shopper is currently participating in. It is used to determine which variant of an A/B test the shopper saw when the event occurred. This property is optional, and its value is not predefined, as it is specific to each A/B test.
+     */
+    ab?: string;
+    /**
+     * vtexSession
+     *
+     * Current navigation session using the VtexRCSessionIdv7 cookie.
+     */
+    vtexSession?: string;
+    /**
+     * vtexMac
+     *
+     * Anonymous shopper information using the VtexRCMacIdv7 cookie.
+     */
+    vtexMac?: string;
     /**
      * type
      *
@@ -364,19 +540,51 @@ export type AutocompleteQuery = {
     /**
      * misspelled
      *
-     * Indicates whether the query has a typo (`true`) or not (`false`).
+     * Indicates whether the search query has any spelling mistakes or not. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
      */
-    misspelled: boolean;
+    misspelled?: boolean | null;
     /**
      * match
      *
-     * Amount of products retrieved by the search.
+     * Number of products retrieved by the search query. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
      */
-    match: number;
+    match?: number;
+    products?: Array<string> | Array<{
+        /**
+         * Unique identifier of the product.
+         */
+        id: string;
+        /**
+         * Position in the current page.
+         */
+        local: number;
+        /**
+         * Position in the result set.
+         */
+        global: number;
+    }>;
+    /**
+     * page
+     *
+     * Index of the current page. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
+     */
+    page?: number;
+    /**
+     * count
+     *
+     * Number of products returned per page. This value can be retrieved from `GET` [Get list of products for a query](https://developers.vtex.com/docs/api-reference/intelligent-search-api#get-/product_search/-facets-?endpoint=get-/product_search/-facets-).
+     */
+    count?: number;
+    /**
+     * locale
+     *
+     * Shopper's locale.
+     */
+    locale?: string;
     /**
      * operator
      *
-     * Identifies the type of operator used on the search. The possible values are: `and`, `or`. Find more details in [this Elastic Search guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html).
+     * Identifies the type of operator used on the search.
      */
     operator: 'and' | 'or';
 };
@@ -386,9 +594,9 @@ export type AutocompleteQuery = {
  */
 export type CartProduct = {
     /**
-     * Unique identifier of the product.
+     * Unique identifier for a product in the shopper's shopping cart.
      */
-    productId: string;
+    product: string;
     /**
      * Quantity of the product.
      */
@@ -402,19 +610,19 @@ export type OrderProduct = {
     /**
      * Unique identifier of the product.
      */
-    productId: string;
+    product: string;
     /**
      * Price of the product.
      */
-    price: number;
+    price?: number;
     /**
-     * Quantity of the product.
+     * Quantity of the product that was purchased.
      */
     quantity: number;
 };
 
 export type PostEventData = {
-    body?: SessionPing | PageConfirmation | Click | Query | AutocompleteQuery | AutocompleteClick;
+    body?: SessionPing | Query | Click | PageConfirmation | AutocompleteQuery | AutocompleteClick;
     path: {
         /**
          * Name of the VTEX account. Used as part of the URL.
@@ -427,7 +635,7 @@ export type PostEventData = {
 
 export type PostEventResponses = {
     /**
-     * No content
+     * No Content
      */
     204: void;
 };

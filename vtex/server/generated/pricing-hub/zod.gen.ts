@@ -6,36 +6,14 @@ import * as z from 'zod';
  * List of items to be priced by Pricing Hub.
  */
 export const zItems = z.array(z.object({
-    index: z.int().register(z.globalRegistry, {
-        description: 'Index of the item at Checkout\'s cart. It has to be unique in the items array.'
-    }),
-    skuId: z.string().register(z.globalRegistry, {
-        description: 'ID of the SKU that will be priced.'
-    }),
-    quantity: z.int().register(z.globalRegistry, {
-        description: 'This is the amount of items that will be priced. It is possible to have a volume discount for many repeated items. Hence, the price may not be the quantity of the item multiplied by the unitary price.'
-    }),
-    brandId: z.string().register(z.globalRegistry, {
-        description: 'Brand ID for the item.'
-    }),
-    sellerId: z.string().register(z.globalRegistry, {
-        description: 'Seller ID for the item.'
-    }),
-    priceTableIds: z.array(z.string().register(z.globalRegistry, {
-        description: 'ID of a price table that will be used to compute the price.'
-    })).register(z.globalRegistry, {
-        description: 'IDs of the price tables that will be used to compute the price. More than one price table might be passed to the array. The final price rule might be more complex than the lowest or the highest price.'
-    }).default(['1']),
-    categoriesIds: z.array(z.string().register(z.globalRegistry, {
-        description: 'ID of a category that will be used to compute the price.'
-    })).register(z.globalRegistry, {
-        description: 'ID of the categories that will be used to compute the price.'
-    }).default(['1'])
-}).register(z.globalRegistry, {
-    description: 'Each item to be priced by Pricing Hub.'
-})).register(z.globalRegistry, {
-    description: 'List of items to be priced by Pricing Hub.'
-});
+    index: z.int(),
+    skuId: z.string(),
+    quantity: z.int(),
+    brandId: z.string(),
+    sellerId: z.string(),
+    priceTableIds: z.array(z.string()).default(['1']),
+    categoriesIds: z.array(z.string()).default(['1'])
+}));
 
 export const zGetPricesRequestObject = z.object({
     items: zItems,
@@ -47,80 +25,46 @@ export const zGetPricesRequestObject = z.object({
         z.string(),
         z.null()
     ])),
-    UtmCampaign: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Campaign name, represented by the `utm_campaign` value in the URL that led to the order. If there is no value, use `null`.'
-    })),
+    UtmCampaign: z.optional(z.string()),
     UtmInternalCampaign: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    salesChannel: z.string().register(z.globalRegistry, {
-        description: 'Represents Checkout\'s sales channel.'
-    }),
-    email: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s email address. If there is no value, use an empty string.'
-    })
+    salesChannel: z.string(),
+    email: z.string()
 });
 
 /**
  * Each price item.
  */
 export const zItem1 = z.object({
-    index: z.int().register(z.globalRegistry, {
-        description: 'The same index referring to Checkout\'s cart that was passed to the API.'
-    }),
-    skuId: z.string().register(z.globalRegistry, {
-        description: 'The same skuId that was passed to the API.'
-    }),
-    price: z.number().register(z.globalRegistry, {
-        description: 'The price returned by the pricing API that was used by Pricing Hub. It is measured in cents, so 5000 means 50,00 in local currency.'
-    }),
-    costPrice: z.number().register(z.globalRegistry, {
-        description: 'The cost price returned by the pricing API that was used by Pricing Hub. It is measured in cents, so 5000 means 50,00 in local currency.'
-    }),
-    listPrice: z.number().register(z.globalRegistry, {
-        description: 'The list price returned by the pricing API that was used by Pricing Hub. It is measured in cents, so 5000 means 50,00 in local currency.'
-    }),
-    priceTable: z.string().register(z.globalRegistry, {
-        description: 'The price table that was used to price the item.'
-    }),
-    priceValidUntil: z.string().register(z.globalRegistry, {
-        description: 'The moment up until the price is valid. After that moment, it will be necessary to call the pricing API again. The format of the string is in RFC3339.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Each price item.'
+    index: z.int(),
+    skuId: z.string(),
+    price: z.number(),
+    costPrice: z.number(),
+    listPrice: z.number(),
+    priceTable: z.string(),
+    priceValidUntil: z.string()
 });
 
 export const zResponse2 = z.object({
-    items: z.array(zItem1).register(z.globalRegistry, {
-        description: 'List of items and their respective prices applied by Pricing Hub.'
-    })
+    items: z.array(zItem1)
 });
 
 export const zConfigExternalPriceSourceRequest = z.object({
-    active: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the external price source is active (`true`) or not (`false`). If not set, the default value will be `false`.'
-    })),
-    appName: z.string().register(z.globalRegistry, {
-        description: 'Name of the app that communicates with the external pricing source.'
-    })
+    active: z.optional(z.boolean()),
+    appName: z.string()
 });
 
 export const zPostApiPricingHubPricesData = z.object({
     body: zGetPricesRequestObject,
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account. Used as part of the URL.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
@@ -128,16 +72,10 @@ export const zConfigExternalPriceSourceData = z.object({
     body: zConfigExternalPriceSourceRequest,
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        an: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account.'
-        }))
+        an: z.optional(z.string())
     })),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });

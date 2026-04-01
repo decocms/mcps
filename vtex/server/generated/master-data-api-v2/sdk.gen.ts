@@ -431,6 +431,27 @@ export const getschemabyname = <ThrowOnError extends boolean = false>(options: O
  *
  * > Each Master Data v2 data entity can have up to 60 schemas.
  *
+ * ## Indexing fields for search, scroll and sort
+ *
+ * To filter or sort by a field in [Search documents](https://developers.vtex.com/docs/api-reference/master-data-api-v2#get-/api/dataentities/-dataEntityName-/search) or [Scroll documents](https://developers.vtex.com/docs/api-reference/master-data-api-v2#get-/api/dataentities/-dataEntityName-/scroll), add that field to the `v-indexed` array in the schema. This is the schema-level index (separate from the [indices](https://developers.vtex.com/docs/api-reference/master-data-api-v2#get-/api/dataentities/-dataEntityName-/indices) endpoint).
+ *
+ * - `v-indexed`: Array of property names that Master Data v2 must index for `/search`, `/scroll`, and `_sort`. Use it whenever you want to use `_where`, `_sort`, or range filters (e.g. `_where=postalCode between 10000 AND 20000`) on that field. Indexing runs asynchronously after the schema is saved.
+ * - `filterable` and `searchable`: Apply to the UI (e.g. Master Data v1/CRM-style behavior). They do **not** create the index used by `/search`; only `v-indexed` does.
+ *
+ * **Example request body with `v-indexed`:**
+ *
+ * ```json
+ * {
+ * "properties": {
+ * "skuId": { "type": "string" },
+ * "postalCode": { "type": "string" }
+ * },
+ * "v-indexed": ["postalCode"]
+ * }
+ * ```
+ *
+ * > ℹ️ Use `v-indexed` when you need fields to be filterable/sortable in `/search`. Use the [/indices](https://developers.vtex.com/docs/api-reference/master-data-api-v2#put-/api/dataentities/-dataEntityName-/indices) endpoint when you need entity-level uniqueness, composite keys, or relationships between entities.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:

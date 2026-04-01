@@ -509,7 +509,7 @@ export type GetApiOrganizationUnitsV1RootsResponses = {
 
 export type GetApiOrganizationUnitsV1RootsResponse = GetApiOrganizationUnitsV1RootsResponses[keyof GetApiOrganizationUnitsV1RootsResponses];
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathData = {
+export type PutApiOrganizationUnitsV1ByOrganizationUnitIdPathData = {
     /**
      * Request body for moving an organization unit to a new parent.
      */
@@ -539,7 +539,7 @@ export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathData = {
     url: '/api/organization-units/v1/{organizationUnitId}/path';
 };
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors = {
+export type PutApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors = {
     /**
      * Bad Request
      */
@@ -550,18 +550,18 @@ export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors = {
     404: ErrorResponse;
 };
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathError = PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors[keyof PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors];
+export type PutApiOrganizationUnitsV1ByOrganizationUnitIdPathError = PutApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors[keyof PutApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors];
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses = {
+export type PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses = {
     /**
      * OK
      */
     200: OrganizationUnit;
 };
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponse = PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses[keyof PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses];
+export type PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponse = PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses[keyof PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses];
 
-export type DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
+export type DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
     body: {
         /**
          * List of user IDs to remove from the organization unit.
@@ -585,17 +585,17 @@ export type DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
         organizationUnitId: string;
     };
     query?: never;
-    url: '/api/organization-units/v1/{organizationUnitId}/users';
+    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
 };
 
-export type DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses = {
+export type DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
+export type GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
     body?: never;
     headers: {
         /**
@@ -614,10 +614,10 @@ export type GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
         organizationUnitId: string;
     };
     query?: never;
-    url: '/api/organization-units/v1/{organizationUnitId}/users';
+    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
 };
 
-export type GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses = {
+export type GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {
     /**
      * Response object containing the list of users in the organization unit.
      */
@@ -638,9 +638,9 @@ export type GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses = {
     };
 };
 
-export type GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponse = GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses[keyof GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses];
+export type GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponse = GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses[keyof GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses];
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
+export type PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
     /**
      * Request body for adding users to an organization unit.
      */
@@ -662,10 +662,10 @@ export type PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = {
          */
         force: boolean;
     };
-    url: '/api/organization-units/v1/{organizationUnitId}/users';
+    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
 };
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses = {
+export type PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {
     /**
      * OK
      */
@@ -685,7 +685,7 @@ export type PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses = {
     };
 };
 
-export type PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponse = PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses[keyof PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses];
+export type PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponse = PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses[keyof PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses];
 
 export type DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesData = {
     body?: never;

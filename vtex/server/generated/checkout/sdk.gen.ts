@@ -588,7 +588,7 @@ export const setSingleCustomFieldValue = <ThrowOnError extends boolean = false>(
  *
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -611,7 +611,7 @@ export const putApiCheckoutPubOrderFormByOrderFormIdCustomFields = <ThrowOnError
  *
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -634,7 +634,7 @@ export const putApiCheckoutPubOrderFormByOrderFormIdCustomFieldsOrder = <ThrowOn
  *
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -657,7 +657,7 @@ export const deleteApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemId 
  *
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -680,7 +680,7 @@ export const putApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemId = <
  *
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *

@@ -6,155 +6,75 @@ import * as z from 'zod';
  * Gift card information.
  */
 export const zCreateGiftCardRequest = z.object({
-    relationName: z.string().register(z.globalRegistry, {
-        description: 'A unique identifier for the relationship between the client and the store. This value must be different for each gift card, and we recommend generating it deterministically or at random, for example, using the `profileId` or a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).'
-    }),
-    expiringDate: z.string().register(z.globalRegistry, {
-        description: 'It must be in the format `YYYY-MM-DDThh:mm:ss.fff` (ISO 8601 format).'
-    }),
-    caption: z.string().register(z.globalRegistry, {
-        description: 'Field to be filled in if a loyalty program must be created for the gift card.'
-    }),
-    profileId: z.string().register(z.globalRegistry, {
-        description: 'Client ID. You can use the customer\'s registered email or the `userId` parameter which can be found in the [Master Data](https://help.vtex.com/en/tutorial/master-data--4otjBnR27u4WUIciQsmkAw).'
-    }),
-    currencyCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Currency code in ISO 4217.'
-    })),
-    restrictedToOwner: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'The gift card can only be used for a specified client\'s ID.'
-    })),
-    multipleCredits: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'The gift card balance can be changed.'
-    })),
-    multipleRedemptions: z.optional(z.boolean().register(z.globalRegistry, {
-        description: 'The gift card can be used to make new purchases until its value is completely used.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Gift card information.'
+    relationName: z.string(),
+    expiringDate: z.string(),
+    caption: z.string(),
+    profileId: z.string(),
+    currencyCode: z.optional(z.string()),
+    restrictedToOwner: z.optional(z.boolean()),
+    multipleCredits: z.optional(z.boolean()),
+    multipleRedemptions: z.optional(z.boolean())
 });
 
 /**
  * Transactions information.
  */
 export const zTransactions = z.object({
-    href: z.string().register(z.globalRegistry, {
-        description: 'Gift card resource URL. The number described in the URL refers to the gift card identification.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Transactions information.'
+    href: z.string()
 });
 
 /**
  * Gift card information.
  */
 export const zResponse = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Gift card identification.'
-    }),
-    redemptionToken: z.string().register(z.globalRegistry, {
-        description: 'Gift card redemption token.'
-    }),
-    redemptionCode: z.string().register(z.globalRegistry, {
-        description: 'Gift card identification code used at checkout. Minimum of 6 characters.'
-    }),
-    balance: z.number().register(z.globalRegistry, {
-        description: 'Gift card current balance (amount that is still available on the gift card to be used as a payment method for a purchase). For newly created gift cards, the balance will be 0.0.'
-    }),
-    relationName: z.string().register(z.globalRegistry, {
-        description: 'A unique identifier for the relationship between the client and the store. This value must be different for each gift card, and we recommend generating it deterministically or at random, for example, using the `profileId` or a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).'
-    }),
-    emissionDate: z.string().register(z.globalRegistry, {
-        description: 'Gift card creation date. [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (`YYYY-MM-DDThh:mm:ss.fff`).'
-    }),
-    expiringDate: z.string().register(z.globalRegistry, {
-        description: 'Gift card expiration date. [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (`YYYY-MM-DDThh:mm:ss.fff`)'
-    }),
-    caption: z.string().register(z.globalRegistry, {
-        description: 'Field to be filled in if a loyalty program must be created for the Gift Card.'
-    }),
-    currencyCode: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Currency code in ISO 4217.'
-    })),
+    id: z.string(),
+    redemptionToken: z.string(),
+    redemptionCode: z.string(),
+    balance: z.number(),
+    relationName: z.string(),
+    emissionDate: z.string(),
+    expiringDate: z.string(),
+    caption: z.string(),
+    currencyCode: z.optional(z.string()),
     transactions: zTransactions
-}).register(z.globalRegistry, {
-    description: 'Gift card information.'
 });
 
 /**
  * Item information.
  */
 export const zItem = z.object({
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Product ID.'
-    }),
-    id: z.string().register(z.globalRegistry, {
-        description: 'The ID of the SKU in VTEX platform.'
-    }),
-    refId: z.string().register(z.globalRegistry, {
-        description: 'Product Reference ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Product name.'
-    }),
-    price: z.int().register(z.globalRegistry, {
-        description: 'Product price.'
-    }),
-    quantity: z.int().register(z.globalRegistry, {
-        description: 'Product quantity.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Item information.'
+    productId: z.string(),
+    id: z.string(),
+    refId: z.string(),
+    name: z.string(),
+    price: z.int(),
+    quantity: z.int()
 });
 
 /**
  * Cart information.
  */
 export const zCart = z.object({
-    grandTotal: z.int().register(z.globalRegistry, {
-        description: 'Total payment value.'
-    }),
+    grandTotal: z.int(),
     relationName: z.union([
         z.string(),
         z.null()
     ]),
-    redemptionCode: z.string().register(z.globalRegistry, {
-        description: 'Gift card identification code used at checkout. Minimum of 6 characters.'
-    }),
-    discounts: z.int().register(z.globalRegistry, {
-        description: 'Discounts value.'
-    }),
-    shipping: z.int().register(z.globalRegistry, {
-        description: 'Shipping value.'
-    }),
-    taxes: z.int().register(z.globalRegistry, {
-        description: 'Taxes value.'
-    }),
-    items: z.array(zItem).register(z.globalRegistry, {
-        description: 'Items information.'
-    }),
-    itemsTotal: z.int().register(z.globalRegistry, {
-        description: 'Total items value.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Cart information.'
+    redemptionCode: z.string(),
+    discounts: z.int(),
+    shipping: z.int(),
+    taxes: z.int(),
+    items: z.array(zItem),
+    itemsTotal: z.int()
 });
 
 /**
  * Client information.
  */
 export const zClient = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s identification.'
-    }),
-    email: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s email address.'
-    }),
-    document: z.string().register(z.globalRegistry, {
-        description: 'Document number informed by the customer.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Client information.'
+    id: z.string(),
+    email: z.string(),
+    document: z.string()
 });
 
 /**
@@ -163,212 +83,110 @@ export const zClient = z.object({
 export const zGetGiftCardusingJsonRequest = z.object({
     cart: zCart,
     client: zClient
-}).register(z.globalRegistry, {
-    description: 'Gift card information.'
 });
 
 /**
  * Object that carries an auto reference of the transaction (on its API).
  */
 export const zSelf = z.object({
-    href: z.string().register(z.globalRegistry, {
-        description: 'Gift card resource URL. The first number described in the URL refers to the gift card identification. The second number, refers to the transaction identification.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object that carries an auto reference of the transaction (on its API).'
+    href: z.string()
 });
 
 /**
  * Item information.
  */
 export const zItem1 = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Item identification.'
-    }),
+    id: z.string(),
     _self: zSelf
-}).register(z.globalRegistry, {
-    description: 'Item information.'
 });
 
 /**
  * Paging information.
  */
 export const zPaging = z.object({
-    page: z.int().register(z.globalRegistry, {
-        description: 'Page number of the gift card list.'
-    }),
-    perPage: z.int().register(z.globalRegistry, {
-        description: 'Quantity of gift cards per page.'
-    }),
-    total: z.int().register(z.globalRegistry, {
-        description: 'Total of gift cards in the store.'
-    }),
-    pages: z.int().register(z.globalRegistry, {
-        description: 'Total number of pages.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Paging information.'
+    page: z.int(),
+    perPage: z.int(),
+    total: z.int(),
+    pages: z.int()
 });
 
 /**
  * Items information.
  */
 export const zResponse2 = z.object({
-    items: z.array(zItem1).register(z.globalRegistry, {
-        description: 'Items information.'
-    }),
+    items: z.array(zItem1),
     paging: zPaging
-}).register(z.globalRegistry, {
-    description: 'Items information.'
 });
 
 /**
  * Transaction information.
  */
 export const zResponse3 = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'Transaction identification.'
-    }),
+    id: z.string(),
     _self: zSelf
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
 });
 
 /**
  * Price tag information.
  */
 export const zPriceTag = z.object({
-    name: z.string().register(z.globalRegistry, {
-        description: 'Price tag name.'
-    }),
-    value: z.int().register(z.globalRegistry, {
-        description: 'Price tag value.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Price tag information.'
+    name: z.string(),
+    value: z.int()
 });
 
 /**
  * Item information.
  */
 export const zItem2 = z.object({
-    id: z.string().register(z.globalRegistry, {
-        description: 'SKU ID.'
-    }),
-    productId: z.string().register(z.globalRegistry, {
-        description: 'Product ID.'
-    }),
-    refId: z.string().register(z.globalRegistry, {
-        description: 'Product Reference ID.'
-    }),
-    name: z.string().register(z.globalRegistry, {
-        description: 'Product name.'
-    }),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Product value.'
-    }),
-    price: z.number().register(z.globalRegistry, {
-        description: 'Product price.'
-    }),
-    quantity: z.int().register(z.globalRegistry, {
-        description: 'Product quantity.'
-    }),
-    shippingDiscount: z.int().register(z.globalRegistry, {
-        description: 'Discount to be applied for the shipping value.'
-    }),
-    discount: z.number().register(z.globalRegistry, {
-        description: 'Discount applied on item.'
-    }),
-    priceTags: z.array(zPriceTag).register(z.globalRegistry, {
-        description: 'Array of price tags, each of which modifies the price in some way, like discounts or rates that apply to the item in the context of the order.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Item information.'
+    id: z.string(),
+    productId: z.string(),
+    refId: z.string(),
+    name: z.string(),
+    value: z.number(),
+    price: z.number(),
+    quantity: z.int(),
+    shippingDiscount: z.int(),
+    discount: z.number(),
+    priceTags: z.array(zPriceTag)
 });
 
 /**
  * Order information.
  */
 export const zCart1 = z.object({
-    items: z.array(zItem2).register(z.globalRegistry, {
-        description: 'Items information.'
-    }),
-    grandTotal: z.int().register(z.globalRegistry, {
-        description: 'Total payment value.'
-    }),
-    discounts: z.number().register(z.globalRegistry, {
-        description: 'Discounts value.'
-    }),
-    shipping: z.number().register(z.globalRegistry, {
-        description: 'Shipping value.'
-    }),
-    taxes: z.int().register(z.globalRegistry, {
-        description: 'Taxes value.'
-    }),
-    itemsTotal: z.number().register(z.globalRegistry, {
-        description: 'Total items value.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Order information.'
+    items: z.array(zItem2),
+    grandTotal: z.int(),
+    discounts: z.number(),
+    shipping: z.number(),
+    taxes: z.int(),
+    itemsTotal: z.number()
 });
 
 /**
  * Client Profile information.
  */
 export const zClientProfile = z.object({
-    email: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s email address.'
-    }),
-    firstName: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s first name.'
-    }),
-    lastName: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s last name.'
-    }),
-    document: z.string().register(z.globalRegistry, {
-        description: 'Document number informed by the customer.'
-    }),
-    phone: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s phone number.'
-    }),
-    birthDate: z.string().register(z.globalRegistry, {
-        description: 'Customer\'s birth date.'
-    }),
-    isCorporate: z.boolean().register(z.globalRegistry, {
-        description: 'Defines if the customer is a company (`true`) or not (`false`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Client Profile information.'
+    email: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    document: z.string(),
+    phone: z.string(),
+    birthDate: z.string(),
+    isCorporate: z.boolean()
 });
 
 /**
  * Shipping information.
  */
 export const zShipping = z.object({
-    receiverName: z.string().register(z.globalRegistry, {
-        description: 'Name of the person who is going to receive the order.'
-    }),
-    postalCode: z.string().register(z.globalRegistry, {
-        description: 'Postal code.'
-    }),
-    city: z.string().register(z.globalRegistry, {
-        description: 'City of the shipping address.'
-    }),
-    state: z.string().register(z.globalRegistry, {
-        description: 'State of the shipping address.'
-    }),
-    country: z.string().register(z.globalRegistry, {
-        description: 'Country of the shipping address.'
-    }),
-    street: z.string().register(z.globalRegistry, {
-        description: 'Street of the shipping address.'
-    }),
-    number: z.string().register(z.globalRegistry, {
-        description: 'Number of the building, house or apartment in the shipping address.'
-    }),
-    neighborhood: z.string().register(z.globalRegistry, {
-        description: 'Neighborhood of the address.'
-    }),
+    receiverName: z.string(),
+    postalCode: z.string(),
+    city: z.string(),
+    state: z.string(),
+    country: z.string(),
+    street: z.string(),
+    number: z.string(),
+    neighborhood: z.string(),
     complement: z.union([
         z.string(),
         z.null()
@@ -377,144 +195,76 @@ export const zShipping = z.object({
         z.string(),
         z.null()
     ])
-}).register(z.globalRegistry, {
-    description: 'Shipping information.'
 });
 
 /**
  * Order information.
  */
 export const zOrderInfo = z.object({
-    orderId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Order ID.'
-    })),
-    sequence: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Sequence number.'
-    })),
+    orderId: z.optional(z.string()),
+    sequence: z.optional(z.int()),
     cart: z.optional(zCart1),
     clientProfile: z.optional(zClientProfile),
     shipping: z.optional(zShipping)
-}).register(z.globalRegistry, {
-    description: 'Order information.'
 });
 
 /**
  * Transaction information.
  */
 export const zCreateGiftCardTransactionRequest = z.object({
-    operation: z.string().register(z.globalRegistry, {
-        description: 'Type of operation. Possible values are: `Debit` or `Credit`.'
-    }),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Operation value.'
-    }),
-    description: z.string().register(z.globalRegistry, {
-        description: 'Description information.'
-    }),
-    redemptionToken: z.string().register(z.globalRegistry, {
-        description: 'Gift card redemption token.'
-    }),
-    redemptionCode: z.string().register(z.globalRegistry, {
-        description: 'Gift card identification code used at checkout. Minimum of 6 characters.'
-    }),
-    requestId: z.string().register(z.globalRegistry, {
-        description: 'Request identification of the transaction. You need to send a different `requestId` value every time you make a new transaction. If you send the same `requestId`two or more times with a specific `redemptionCode`or `redemptionToken`, the gift card balance will not be updated.'
-    }),
+    operation: z.string(),
+    value: z.number(),
+    description: z.string(),
+    redemptionToken: z.string(),
+    redemptionCode: z.string(),
+    requestId: z.string(),
     orderInfo: z.optional(zOrderInfo)
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
 });
 
 /**
  * Transaction information.
  */
 export const zResponse5 = z.object({
-    value: z.optional(z.number().register(z.globalRegistry, {
-        description: 'Transaction value.'
-    })),
-    description: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Transaction description.'
-    })),
-    date: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Date of the transaction in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (`YYYY-MM-DDThh:mm:ss.fff`).'
-    })),
-    requestId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'VTEX request identifier.'
-    })),
+    value: z.optional(z.number()),
+    description: z.optional(z.string()),
+    date: z.optional(z.string()),
+    requestId: z.optional(z.string()),
     settlement: z.optional(z.object({
-        href: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Gift card resource URL. The first number described in the URL refers to the gift card identification. The second number, refers to the transaction identification.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Settlement transaction information.'
+        href: z.optional(z.string())
     })),
     cancellation: z.optional(z.object({
-        href: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Gift card resource URL. The first number described in the URL refers to the gift card identification. The second number, refers to the transaction identification.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Cancellation transaction information.'
+        href: z.optional(z.string())
     })),
     authorization: z.optional(z.object({
-        href: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Gift card resource URL. The first number described in the URL refers to the gift card identification. The second number, refers to the transaction identification.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Authorization transaction information.'
+        href: z.optional(z.string())
     })),
-    operation: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Operation information (`credit` or `debit`).'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
+    operation: z.optional(z.string())
 });
 
 /**
  * Transaction information.
  */
 export const zResponse6 = z.object({
-    oid: z.string().register(z.globalRegistry, {
-        description: 'Operation identification.'
-    }),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Value information.'
-    }),
-    date: z.string().register(z.globalRegistry, {
-        description: 'Date of the transaction in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (`YYYY-MM-DDThh:mm:ss.fff`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
+    oid: z.string(),
+    value: z.number(),
+    date: z.string()
 });
 
 /**
  * Transaction information.
  */
 export const zResponse7 = z.object({
-    oid: z.string().register(z.globalRegistry, {
-        description: 'Operation identification.'
-    }),
-    value: z.number().register(z.globalRegistry, {
-        description: 'Value information.'
-    }),
-    date: z.string().register(z.globalRegistry, {
-        description: 'Date of the transaction in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (`YYYY-MM-DDThh:mm:ss.fff`).'
-    })
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
+    oid: z.string(),
+    value: z.number(),
+    date: z.string()
 });
 
 /**
  * Transaction information.
  */
 export const zGiftCardTransactionRequest = z.object({
-    value: z.number().register(z.globalRegistry, {
-        description: 'Value information.'
-    }),
-    requestId: z.string().register(z.globalRegistry, {
-        description: 'VTEX request identifier.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Transaction information.'
+    value: z.number(),
+    requestId: z.string()
 });
 
 export const zCreateGiftCardData = z.object({
@@ -522,30 +272,20 @@ export const zCreateGiftCardData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetGiftCardbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        })
+        giftCardId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
@@ -554,176 +294,110 @@ export const zSearchGiftCardsfromcartdataData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'REST-Range': z.optional(z.string().register(z.globalRegistry, {
-            description: 'Pagination control. This query variable must follow the format _resources={from}-{to}_.'
-        })).default('resources=0-49')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json'),
+        'REST-Range': z.optional(z.string()).default('resources=0-49')
     })
 });
 
 export const zGetGiftCardTransactionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        })
+        giftCardId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCreateGiftCardTransactionData = z.object({
     body: z.optional(zCreateGiftCardTransactionRequest),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        })
+        giftCardId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetGiftCardTransactionbyIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetTransactionAuthorizationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetTransactionCancellationsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zCancelGiftCardTransactionData = z.object({
     body: zGiftCardTransactionRequest,
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zGetTransactionSettlementsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSettleGiftCardTransactionData = z.object({
     body: zGiftCardTransactionRequest,
     path: z.object({
-        giftCardId: z.string().register(z.globalRegistry, {
-            description: 'Gift card identification.'
-        }),
-        transactionId: z.string().register(z.globalRegistry, {
-            description: 'Transaction identification.'
-        })
+        giftCardId: z.string(),
+        transactionId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });

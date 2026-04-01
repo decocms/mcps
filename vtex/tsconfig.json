@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-"target": "ES2022",
+    "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
@@ -18,10 +18,6 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-"paths": {
-      "shared/*": ["./shared/*"],
-      "server/*": ["./server/*"]
-    },
     "types": ["@cloudflare/workers-types", "bun"]
   },
   "include": ["server", "shared", "scripts"],

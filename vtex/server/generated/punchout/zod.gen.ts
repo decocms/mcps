@@ -5,61 +5,39 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zPostApiAuthenticatorPunchoutStartData = z.object({
     body: z.optional(z.object({
-        username: z.string().register(z.globalRegistry, {
-            description: 'Username of an existing VTEX user.'
-        }),
-        password: z.string().register(z.globalRegistry, {
-            description: 'Password of the VTEX user.'
-        })
+        username: z.string(),
+        password: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        returnURL: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Optional path that will complement the `storeHost` for post-authentication redirection. This value is validated against a list of authorized hosts to prevent open redirect vulnerabilities.'
-        }))
+        returnURL: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiAuthenticatorPunchoutAuthenticatedStartData = z.object({
     body: z.optional(z.object({
-        username: z.string().register(z.globalRegistry, {
-            description: 'Username for the procurement system user, who doesn\'t need to be an existing VTEX user.'
-        })
+        username: z.string()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        returnURL: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Optional path that will complement the `storeHost` for post-authentication redirection. This value is validated against a list of authorized hosts to prevent open redirect vulnerabilities.'
-        }))
+        returnURL: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -67,16 +45,10 @@ export const zGetApiAuthenticatorPunchoutFinishData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        ott: z.string().register(z.globalRegistry, {
-            description: 'One-time token obtained from the start endpoint.'
-        })
+        ott: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

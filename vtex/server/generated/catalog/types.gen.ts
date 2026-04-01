@@ -494,7 +494,7 @@ export type GetSkUandContext = {
      */
     SkuSellers: Array<SkuSeller>;
     /**
-     * Array with the ID of all the trade policies that are related to the product.
+     * Array with the ID of all the sales channels that are related to the product.
      */
     SalesChannels: Array<number>;
     /**
@@ -906,7 +906,7 @@ export type GetSkuAltId = {
      */
     SkuSellers: Array<SkuSeller>;
     /**
-     * Array of trade policy IDs.
+     * Array of sales channel IDs.
      */
     SalesChannels: Array<number>;
     /**
@@ -2294,7 +2294,7 @@ export type PutApiCatalogPvtProductByProductIdData = {
          */
         RefId?: string;
         /**
-         * Shows (`true`) or hides (`false`) the product in search result and product pages, but the product can still be added to the shopping cart. Usually applicable for gifts.
+         * Whether the product appears in search results and product listing pages (`true`) or doesn't (`false`). Typically used for gift items. Even when set as `false`, the product can still be added to the shopping cart. Although this isn't a mandatory field, if you don't send it in the request, its value will be automatically set to `false`.
          */
         IsVisible?: boolean;
         /**
@@ -2582,7 +2582,7 @@ export type ProductandTradePolicyResponses = {
          */
         ShowWithoutStock?: boolean;
         /**
-         * List with the IDs of trade policies where the product is included.
+         * List with the IDs of sales channels where the product is included.
          */
         ListStoreId?: Array<number>;
         /**
@@ -2702,7 +2702,7 @@ export type ProductbyRefIdResponses = {
          */
         ShowWithoutStock?: boolean;
         /**
-         * Array with the ID of all the trade policies that are related to the product.
+         * Array with the ID of all the sales channels that are related to the product.
          */
         ListStoreId?: Array<number>;
         /**
@@ -2758,7 +2758,7 @@ export type ProductVariationsResponses = {
          */
         name?: string;
         /**
-         * Trade policy ID.
+         * Sales channel ID.
          */
         salesChannel?: string;
         /**
@@ -3606,7 +3606,7 @@ export type SkuContextData = {
     };
     query?: {
         /**
-         * Trade policy's unique identifier number.
+         * Sales channel's unique identifier number.
          */
         sc?: number;
     };
@@ -4717,7 +4717,7 @@ export type CreateSkuComplementData = {
         /**
          * Complement type ID. This represents the type of the complement. The possible values are: `1` for **Accessory**; `2` for **Suggestion**; `3` for **Similar product**; `5` for **Show together**.
          */
-        ComplementTypeId: 1 | 2 | 3 | 4 | 5;
+        ComplementTypeId: 1 | 2 | 3 | 5;
     };
     headers: {
         /**
@@ -5796,6 +5796,328 @@ export type ChangeNotificationResponses = {
      */
     200: unknown;
 };
+
+export type DeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute';
+};
+
+export type DeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute';
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses = {
+    /**
+     * OK
+     */
+    200: Array<{
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        Id?: number;
+        /**
+         * SKU's unique numerical identifier.
+         */
+        SkuId?: number;
+        /**
+         * Name of the SKU attribute.
+         */
+        SpecificationName?: string;
+        /**
+         * Value of the SKU attribute.
+         */
+        SpecificationValue?: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    }>;
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeResponse = GetApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses[keyof GetApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses];
+
+export type PostApiCatalogPvtStockkeepingunitBySkuIdAttributeData = {
+    body?: {
+        /**
+         * Name of the SKU attribute. This is an open-text field.
+         */
+        SpecificationName: string;
+        /**
+         * Value of the SKU attribute. This is an open-text field with a maximum length of 3,500 characters. Avoid characters that break the JSON string (for example, unescaped backslashes), as they will cause a status code `400` error.
+         */
+        SpecificationValue: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute';
+};
+
+export type PostApiCatalogPvtStockkeepingunitBySkuIdAttributeErrors = {
+    /**
+     * Bad Request
+     */
+    400: string;
+};
+
+export type PostApiCatalogPvtStockkeepingunitBySkuIdAttributeError = PostApiCatalogPvtStockkeepingunitBySkuIdAttributeErrors[keyof PostApiCatalogPvtStockkeepingunitBySkuIdAttributeErrors];
+
+export type PostApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses = {
+    /**
+     * OK
+     */
+    200: {
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        Id?: number;
+        /**
+         * SKU's unique numerical identifier.
+         */
+        SkuId?: number;
+        /**
+         * Name of the SKU attribute.
+         */
+        SpecificationName?: string;
+        /**
+         * Value of the SKU attribute.
+         */
+        SpecificationValue?: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    };
+};
+
+export type PostApiCatalogPvtStockkeepingunitBySkuIdAttributeResponse = PostApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses[keyof PostApiCatalogPvtStockkeepingunitBySkuIdAttributeResponses];
+
+export type DeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        skuAttributeId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute/{skuAttributeId}';
+};
+
+export type DeleteApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        skuAttributeId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute/{skuAttributeId}';
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses = {
+    /**
+     * OK
+     */
+    200: {
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        Id?: number;
+        /**
+         * SKU's unique numerical identifier.
+         */
+        SkuId?: number;
+        /**
+         * Name of the SKU attribute.
+         */
+        SpecificationName?: string;
+        /**
+         * Value of the SKU attribute.
+         */
+        SpecificationValue?: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    };
+};
+
+export type GetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponse = GetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses[keyof GetApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses];
+
+export type PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdData = {
+    body?: {
+        /**
+         * Name of the SKU attribute. This is an open-text field.
+         */
+        SpecificationName: string;
+        /**
+         * Value of the SKU attribute. This is an open-text field with a maximum length of 3,500 characters. Avoid characters that break the JSON string (for example, unescaped backslashes), as they will cause a status code `400` error.
+         */
+        SpecificationValue: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * SKU's unique numerical identifier.
+         */
+        skuId: number;
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        skuAttributeId: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/stockkeepingunit/{skuId}/attribute/{skuAttributeId}';
+};
+
+export type PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: string;
+};
+
+export type PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdError = PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdErrors[keyof PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdErrors];
+
+export type PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses = {
+    /**
+     * OK
+     */
+    200: {
+        /**
+         * SKU attribute unique numerical identifier.
+         */
+        Id?: number;
+        /**
+         * SKU's unique numerical identifier.
+         */
+        SkuId?: number;
+        /**
+         * Name of the SKU attribute.
+         */
+        SpecificationName?: string;
+        /**
+         * Value of the SKU attribute with a maximum length of 3,500 characters.
+         */
+        SpecificationValue?: string;
+        /**
+         * Defines if the attribute is visible on the store (`true`) or not (`false`).
+         */
+        IsVisible?: boolean;
+    };
+};
+
+export type PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponse = PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses[keyof PutApiCatalogPvtStockkeepingunitBySkuIdAttributeBySkuAttributeIdResponses];
 
 export type DeleteApiCatalogPvtSkuserviceBySkuServiceIdData = {
     body?: never;
@@ -6939,7 +7261,7 @@ export type PostApiCatalogPvtProductByProductIdSimilarcategoryByCategoryIdRespon
          */
         ProductId?: number;
         /**
-         * Trade policy ID.
+         * Sales channel ID.
          */
         StoreId?: number;
     };
@@ -7854,7 +8176,7 @@ export type GetProductsfromacollectionData = {
          */
         SupplierId?: number;
         /**
-         * Product's trade policy unique identifier.
+         * Product's sales channel unique identifier.
          */
         SalesChannelId?: number;
         /**
@@ -10210,7 +10532,7 @@ export type SalesChannelbyIdData = {
     };
     path: {
         /**
-         * Trade policy ID.
+         * Sales channel ID.
          */
         salesChannelId: string;
     };
@@ -10224,19 +10546,19 @@ export type SalesChannelbyIdResponses = {
      */
     200: {
         /**
-         * Trade policy unique identifier.
+         * Sales channel unique identifier.
          */
         Id?: number;
         /**
-         * Trade policy name.
+         * Sales channel name.
          */
         Name?: string;
         /**
-         * Defines if the trade policy is active (`true`) or not (`false`).
+         * Defines if the sales channel is active (`true`) or not (`false`).
          */
         IsActive?: boolean;
         /**
-         * Product cluster ID, if the Sales channel has releated product cluster.
+         * Product cluster ID, if the sales channel has releated product cluster.
          */
         ProductClusterId?: number | null;
         /**
@@ -10289,7 +10611,7 @@ export type SalesChannelbyIdResponses = {
             StartsWithCurrencySymbol?: boolean;
         };
         /**
-         * Origin of products in the trade policy.
+         * Origin of products in the sales channel.
          */
         Origin?: string | null;
         /**
@@ -10324,7 +10646,7 @@ export type SellerListData = {
     path?: never;
     query?: {
         /**
-         * Trade policy ID.
+         * Sales channel ID.
          */
         sc?: number;
         /**
@@ -11089,7 +11411,7 @@ export type GetApiCatalogPvtProductByProductIdSalespolicyResponses = {
          */
         ProductId?: number;
         /**
-         * Trade policy's unique numerical identifier.
+         * Sales channel's unique numerical identifier.
          */
         StoreId?: number;
     }>;
@@ -11115,7 +11437,7 @@ export type DeleteApiCatalogPvtProductByProductIdSalespolicyByTradepolicyIdData 
          */
         productId: number;
         /**
-         * Trade policy's unique numerical identifier.
+         * Sales channel's unique numerical identifier.
          */
         tradepolicyId: number;
     };
@@ -11148,7 +11470,7 @@ export type PostApiCatalogPvtProductByProductIdSalespolicyByTradepolicyIdData = 
          */
         productId: number;
         /**
-         * Trade policy's unique numerical identifier.
+         * Sales channel's unique numerical identifier.
          */
         tradepolicyId: number;
     };
@@ -11178,7 +11500,7 @@ export type GetApiCatalogSystemPvtSkuStockkeepingunitidsbysaleschannelData = {
     path?: never;
     query: {
         /**
-         * Trade policy's unique numerical identifier.
+         * Sales channel's unique numerical identifier.
          */
         sc: number;
         /**
@@ -11190,7 +11512,7 @@ export type GetApiCatalogSystemPvtSkuStockkeepingunitidsbysaleschannelData = {
          */
         pageSize?: number;
         /**
-         * If set as `false`, it allows the user to decide if the SKUs that are not assigned to a specific trade policy should be also returned.
+         * If set as `false`, it allows the user to decide if the SKUs that are not assigned to a specific sales channel should be also returned.
          */
         onlyAssigned?: boolean;
     };
@@ -11199,7 +11521,7 @@ export type GetApiCatalogSystemPvtSkuStockkeepingunitidsbysaleschannelData = {
 
 export type GetApiCatalogSystemPvtSkuStockkeepingunitidsbysaleschannelResponses = {
     /**
-     * List of SKU IDs of the trade policy.
+     * List of SKU IDs of the sales channel.
      */
     200: Array<number>;
 };

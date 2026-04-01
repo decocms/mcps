@@ -5,42 +5,28 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 /**
  * Name of your VTEX account.
  */
-export const zAn = z.string().register(z.globalRegistry, {
-    description: 'Name of your VTEX account.'
-});
+export const zAn = z.string();
 
 export const zPostApiUserRightsCreateAndProcessDeleteUserDataData = z.object({
     body: z.optional(z.object({
-        email: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Email of the client whose data will be deleted.'
-        }))
+        email: z.optional(z.string())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        an: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name of your VTEX account.'
-        }))
+        an: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

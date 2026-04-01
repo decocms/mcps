@@ -2238,10 +2238,8 @@ export const intelligentSearchTools = [
     description:
       "Get pickup point availability for product clusters and trade policy.",
     annotations: { readOnlyHint: true },
-    requestSchema:
-      intelligentSearchZod.zGetPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicyData,
-    sdkFn:
-      intelligentSearchSdk.getPickupPointAvailabilityProductClusterIdsByProductClusterIdsTradePolicyByTradePolicy as any,
+    requestSchema: intelligentSearchZod.zGetPickupPointAvailabilityByFacetsData,
+    sdkFn: intelligentSearchSdk.getPickupPointAvailabilityByFacets as any,
     clientFactory: createVtexIsClient,
   }),
 ];
@@ -3451,35 +3449,35 @@ export const organizationUnitsTools = [
     id: "VTEX_ORG_UNITS_POST_PATH",
     description: "Move an organization unit to a new path.",
     requestSchema:
-      organizationUnitsZod.zPostApiOrganizationUnitsV1ByOrganizationUnitIdPathData,
+      organizationUnitsZod.zPutApiOrganizationUnitsV1ByOrganizationUnitIdPathData,
     sdkFn:
-      organizationUnitsSdk.postApiOrganizationUnitsV1ByOrganizationUnitIdPath as any,
+      organizationUnitsSdk.putApiOrganizationUnitsV1ByOrganizationUnitIdPath as any,
   }),
   createToolFromOperation({
     id: "VTEX_ORG_UNITS_DELETE_USERS",
     description: "Remove users from an organization unit.",
     annotations: { destructiveHint: true },
     requestSchema:
-      organizationUnitsZod.zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData,
+      organizationUnitsZod.zDeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData,
     sdkFn:
-      organizationUnitsSdk.deleteApiOrganizationUnitsV1ByOrganizationUnitIdUsers as any,
+      organizationUnitsSdk.deleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsers as any,
   }),
   createToolFromOperation({
     id: "VTEX_ORG_UNITS_GET_USERS",
     description: "Get users in an organization unit.",
     annotations: { readOnlyHint: true },
     requestSchema:
-      organizationUnitsZod.zGetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData,
+      organizationUnitsZod.zGetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData,
     sdkFn:
-      organizationUnitsSdk.getApiOrganizationUnitsV1ByOrganizationUnitIdUsers as any,
+      organizationUnitsSdk.getApiVtexidOrganizationUnitsByOrganizationUnitIdUsers as any,
   }),
   createToolFromOperation({
     id: "VTEX_ORG_UNITS_POST_USERS",
     description: "Add users to an organization unit.",
     requestSchema:
-      organizationUnitsZod.zPostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData,
+      organizationUnitsZod.zPostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData,
     sdkFn:
-      organizationUnitsSdk.postApiOrganizationUnitsV1ByOrganizationUnitIdUsers as any,
+      organizationUnitsSdk.postApiVtexidOrganizationUnitsByOrganizationUnitIdUsers as any,
   }),
   createToolFromOperation({
     id: "VTEX_ORG_UNITS_DELETE_SCOPES",

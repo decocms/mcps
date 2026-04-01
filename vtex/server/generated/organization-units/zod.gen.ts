@@ -6,149 +6,85 @@ import * as z from 'zod';
  * Error response object.
  */
 export const zErrorResponse = z.object({
-    message: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Error message describing what went wrong.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Error response object.'
+    message: z.optional(z.string())
 });
 
 /**
  * Organization unit object.
  */
 export const zOrganizationUnit = z.object({
-    id: z.optional(z.uuid().register(z.globalRegistry, {
-        description: 'Unique identifier of the organization unit.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the organization unit.'
-    })),
+    id: z.optional(z.uuid()),
+    name: z.optional(z.string()),
     path: z.optional(z.object({
-        ids: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Forward-slash separated path of IDs from tenant root to this unit.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Hierarchical path of the organization unit.'
+        ids: z.optional(z.string())
     })),
-    createdAt: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Timestamp when the organization unit was created.'
-    })),
-    updatedAt: z.optional(z.iso.datetime().register(z.globalRegistry, {
-        description: 'Timestamp when the organization unit was last updated.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Organization unit object.'
+    createdAt: z.optional(z.iso.datetime()),
+    updatedAt: z.optional(z.iso.datetime())
 });
 
 /**
  * Scope with associated values.
  */
 export const zScopeResponse = z.object({
-    scope: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Scope type identifier.'
-    })),
-    ids: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Scope value.'
-    })).register(z.globalRegistry, {
-        description: 'List of values associated with this scope.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Scope with associated values.'
+    scope: z.optional(z.string()),
+    ids: z.optional(z.array(z.string()))
 });
 
 /**
  * Request body containing scope values.
  */
 export const zScopeValuesRequest = z.object({
-    ids: z.array(z.string().register(z.globalRegistry, {
-        description: 'Scope value identifier.'
-    })).register(z.globalRegistry, {
-        description: 'Set of unique values for the scope.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Request body containing scope values.'
+    ids: z.array(z.string())
 });
 
 /**
  * Response for scope creation, update, or removal operations.
  */
 export const zScopeOperationResponse = z.object({
-    organizationUnitId: z.optional(z.uuid().register(z.globalRegistry, {
-        description: 'Unique identifier of the organization unit.'
-    })),
-    scope: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Scope type identifier.'
-    })),
-    ids: z.optional(z.array(z.string().register(z.globalRegistry, {
-        description: 'Scope value.'
-    })).register(z.globalRegistry, {
-        description: 'Current list of values for this scope after the operation.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Response for scope creation, update, or removal operations.'
+    organizationUnitId: z.optional(z.uuid()),
+    scope: z.optional(z.string()),
+    ids: z.optional(z.array(z.string()))
 });
 
 /**
  * Simplified organization unit object.
  */
 export const zUnitDto = z.object({
-    id: z.optional(z.uuid().register(z.globalRegistry, {
-        description: 'Unique identifier of the organization unit.'
-    })),
-    name: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Name of the organization unit.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Simplified organization unit object.'
+    id: z.optional(z.uuid()),
+    name: z.optional(z.string())
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zGetApiOrganizationUnitsV1UsersByUserIdScopesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the user.'
-        })
+        userId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiOrganizationUnitsV1ByUserIdUnitData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the user.'
-        })
+        userId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -156,94 +92,60 @@ export const zGetApiOrganizationUnitsV1Data = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Name or partial name of the organization unit to search for. If not provided, all units are returned.'
-        })),
-        page: z.optional(z.int().gte(1).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
-            description: 'Page number for pagination. Must be greater than 0.'
-        })).default(1),
-        pageSize: z.optional(z.int().gte(1).lte(1000).register(z.globalRegistry, {
-            description: 'Number of items per page. Must be between 1 and 1000.'
-        })).default(20)
+        name: z.optional(z.string()),
+        page: z.optional(z.int().gte(1).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).default(1),
+        pageSize: z.optional(z.int().gte(1).lte(1000)).default(20)
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiOrganizationUnitsV1Data = z.object({
     body: z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Name of the new organization unit.'
-        })
+        name: z.string()
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit to delete.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.object({
-        cascade: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'If `true`, deletes all child organization units of the specified organization unit. If `false` and the organization unit has children, the request will fail.'
-        })).default(false)
+        cascade: z.optional(z.boolean()).default(false)
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiOrganizationUnitsV1ByOrganizationUnitIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPatchApiOrganizationUnitsV1ByOrganizationUnitIdData = z.object({
     body: z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'New name for the organization unit.'
-        })
+        name: z.string()
     }),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit to update.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never())
 });
@@ -251,22 +153,14 @@ export const zPatchApiOrganizationUnitsV1ByOrganizationUnitIdData = z.object({
 export const zGetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the parent organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.object({
-        shallowSearch: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether to retrieve only direct children (`true`) or all descendants (`false`).'
-        })).default(true)
+        shallowSearch: z.optional(z.boolean()).default(true)
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -275,146 +169,94 @@ export const zGetApiOrganizationUnitsV1RootsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
-export const zPostApiOrganizationUnitsV1ByOrganizationUnitIdPathData = z.object({
+export const zPutApiOrganizationUnitsV1ByOrganizationUnitIdPathData = z.object({
     body: z.object({
         parentId: z.union([
             z.uuid(),
             z.null()
         ])
-    }).register(z.globalRegistry, {
-        description: 'Request body for moving an organization unit to a new parent.'
     }),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit to move.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
-export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = z.object({
+export const zDeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = z.object({
     body: z.object({
-        userIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'ID of the user to remove from the organization unit.'
-        })).register(z.globalRegistry, {
-            description: 'List of user IDs to remove from the organization unit.'
-        })
+        userIds: z.array(z.string())
     }),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
-export const zGetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = z.object({
+export const zGetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
-export const zPostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData = z.object({
+export const zPostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = z.object({
     body: z.object({
-        userIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'ID of the user to add to the organization unit.'
-        })).register(z.globalRegistry, {
-            description: 'List of user IDs to add to the organization unit.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Request body for adding users to an organization unit.'
+        userIds: z.array(z.string())
     }),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.object({
-        force: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether user should be forcefully moved to the organization unit in case they are already assigned to another organization unit. If set to `true`, users already assigned to the organization unit will be returned in `addedUserIds`. If set to  `false`, those users will appear in `failedUserIds` instead.'
-        })
+        force: z.boolean()
     })
 });
 
 export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiOrganizationUnitsV1ByOrganizationUnitIdScopesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        })
+        organizationUnitId: z.uuid()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        }),
+        organizationUnitId: z.uuid(),
         scope: z.enum([
             'contractIds',
             'creditCards',
@@ -424,9 +266,7 @@ export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData 
             'paymentSystemIds',
             'addresses',
             'customFields'
-        ]).register(z.globalRegistry, {
-            description: 'Name of the scope category for which data should be retrieved. Supported values are: `contractIds`, `creditCards`, `installmentOptions`, `collectionIds`, `priceTables`, `paymentSystemIds`, `addresses`, `customFields`.'
-        })
+        ])
     }),
     query: z.optional(z.never())
 });
@@ -434,9 +274,7 @@ export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData 
 export const zPostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData = z.object({
     body: z.optional(zScopeValuesRequest),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        }),
+        organizationUnitId: z.uuid(),
         scope: z.enum([
             'contractIds',
             'creditCards',
@@ -446,27 +284,19 @@ export const zPostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData = 
             'paymentSystemIds',
             'addresses',
             'customFields'
-        ]).register(z.globalRegistry, {
-            description: 'Name of the scope category for which data should be retrieved. Supported values are: `contractIds`, `creditCards`, `installmentOptions`, `collectionIds`, `priceTables`, `paymentSystemIds`, `addresses`, `customFields`.'
-        })
+        ])
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData = z.object({
     body: z.optional(zScopeValuesRequest),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        }),
+        organizationUnitId: z.uuid(),
         scope: z.enum([
             'contractIds',
             'creditCards',
@@ -476,27 +306,19 @@ export const zPutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData = z
             'paymentSystemIds',
             'addresses',
             'customFields'
-        ]).register(z.globalRegistry, {
-            description: 'Name of the scope category for which data should be retrieved. Supported values are: `contractIds`, `creditCards`, `installmentOptions`, `collectionIds`, `priceTables`, `paymentSystemIds`, `addresses`, `customFields`.'
-        })
+        ])
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveData = z.object({
     body: z.optional(zScopeValuesRequest),
     path: z.object({
-        organizationUnitId: z.uuid().register(z.globalRegistry, {
-            description: 'Unique identifier (GUID) of the organization unit.'
-        }),
+        organizationUnitId: z.uuid(),
         scope: z.enum([
             'contractIds',
             'creditCards',
@@ -506,18 +328,12 @@ export const zDeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemov
             'paymentSystemIds',
             'addresses',
             'customFields'
-        ]).register(z.globalRegistry, {
-            description: 'Name of the scope category for which data should be retrieved. Supported values are: `contractIds`, `creditCards`, `installmentOptions`, `collectionIds`, `priceTables`, `paymentSystemIds`, `addresses`, `customFields`.'
-        })
+        ])
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -533,20 +349,12 @@ export const zGetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueData = z.obj
             'paymentSystemIds',
             'addresses',
             'customFields'
-        ]).register(z.globalRegistry, {
-            description: 'Name of the scope category for which data should be retrieved. Supported values are: `contractIds`, `creditCards`, `installmentOptions`, `collectionIds`, `priceTables`, `paymentSystemIds`, `addresses`, `customFields`.'
-        }),
-        scopeValue: z.string().register(z.globalRegistry, {
-            description: 'Unique identifier within the given scope. Example: For contractIds, use the contract ID.'
-        })
+        ]),
+        scopeValue: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

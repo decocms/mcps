@@ -23,6 +23,8 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Retrieves the settings of custom fields for a given contract. The response includes field configuration details such as name, type, level, and whether the field is enabled or required.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -49,6 +51,8 @@ export const getApiDataentitiesCustomFieldSettingsSearch = <ThrowOnError extends
  *
  * Creates and configures a custom field for a specific contract. You can define the field name, type, level, and whether it is enabled or required.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -74,6 +78,8 @@ export const postApiDataentitiesCustomFieldSettingsDocuments = <ThrowOnError ext
  *
  * Deletes the custom field settings document associated with the given document ID.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -97,6 +103,8 @@ export const deleteApiDataentitiesCustomFieldSettingsDocumentsByDocumentId = <Th
  * Update custom field settings
  *
  * Updates the configuration of an existing custom field. This endpoint allows you to enable or disable a custom field, mark it as required, define the level (`item`, `order`, or `address`), and set its type (`text`, `number`, or `option`). You can also provide optional `additionalData` for custom validations, allowed values, or integration rules. Each request handles a single custom field configuration. The field is identified by its auto-generated ID.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -123,6 +131,8 @@ export const patchApiDataentitiesCustomFieldSettingsDocumentsByDocumentId = <Thr
  *
  * Creates a value for an existing custom field for a given contract. If you are creating a value for a custom field configured with level `address`, you must send a valid address ID in the field `auxId`.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -148,6 +158,8 @@ export const postApiDataentitiesCustomFieldValuesDocuments = <ThrowOnError exten
  *
  * Deletes a specific custom field value document.
  *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -171,6 +183,8 @@ export const deleteApiDataentitiesCustomFieldValuesDocumentsByCustomFieldValueId
  * Get custom field value
  *
  * Retrieves a specific custom field value document by its ID.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -197,6 +211,8 @@ export const getApiDataentitiesCustomFieldValuesDocumentsByCustomFieldValueId = 
  * Update custom field value
  *
  * Updates the value of a specific custom field for a given contract.
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -226,6 +242,8 @@ export const patchApiDataentitiesCustomFieldValuesDocumentsByCustomFieldValueId 
  * You can use the `_where` query parameter to filter results:
  * - To get all values: `_where=contractId={{contractId}} AND customFieldId="{{customFieldId}}"`
  * - To get a specific value: `_where=contractId={{contractId}} AND customFieldId="{{customFieldId}}" AND value="{{value}}"`
+ *
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *

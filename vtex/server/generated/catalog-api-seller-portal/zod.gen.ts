@@ -5,89 +5,43 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zGetProductData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product unique identifier number.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutProductData = z.object({
     body: z.optional(z.object({
-        id: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product\'s unique identifier number.'
-        })),
-        externalId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product reference unique identifier number in the store.'
-        })),
-        status: z.string().register(z.globalRegistry, {
-            description: 'Status of the product. Its values can be `active` or `inactive`.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Product name. Use simple words and avoid other languages or complex writing. This field is essential for SEO and must respect the 150 character limit.'
-        }),
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Product\'s brand unique identifier number.'
-        }),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'New description data for SKU/product.'
-        })),
-        categoryIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'Product\'s category unique identifier number.'
-        })).register(z.globalRegistry, {
-            description: 'Product\'s categories unique identifier numbers. It can have multiples IDs for each category and subcategories.'
-        }),
+        id: z.optional(z.string()),
+        externalId: z.optional(z.string()),
+        status: z.string(),
+        name: z.string(),
+        brandId: z.string(),
+        description: z.optional(z.string()),
+        categoryIds: z.array(z.string()),
         specs: z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'Specification name.'
-            }),
-            values: z.array(z.string().register(z.globalRegistry, {
-                description: 'Specification value.'
-            })).register(z.globalRegistry, {
-                description: 'Specification values.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'SKU specification.'
-        })).register(z.globalRegistry, {
-            description: 'Specifications that will differentiate the possible product SKUs.'
-        }),
+            name: z.string(),
+            values: z.array(z.string())
+        })),
         attributes: z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'Attribute name.'
-            }),
-            value: z.string().register(z.globalRegistry, {
-                description: 'Attribute value.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Product attribute.'
-        })).register(z.globalRegistry, {
-            description: 'Attributes of the product. Attributes are additional properties used to create site browsing filters.'
-        }),
-        slug: z.string().register(z.globalRegistry, {
-            description: 'Reference of the product in the URL of the store.'
-        }),
+            name: z.string(),
+            value: z.string()
+        })),
+        slug: z.string(),
         transportModal: z.optional(z.union([
             z.string(),
             z.null()
@@ -97,321 +51,141 @@ export const zPutProductData = z.object({
             z.null()
         ])),
         images: z.array(z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'Image ID.'
-            }),
-            url: z.string().register(z.globalRegistry, {
-                description: 'Image URL, which must be in the following format: `https://{accountName}.vtexassets.com/assets/{path}`, saved using the [Catalog Images app](https://developers.vtex.com/vtex-developer-docs/docs/vtex-catalog-images).'
-            }),
-            alt: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Image alternative description.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Image information.'
-        })).register(z.globalRegistry, {
-            description: 'Information of the images of the product.'
-        }),
+            id: z.string(),
+            url: z.string(),
+            alt: z.optional(z.string())
+        })),
         skus: z.array(z.object({
-            id: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU unique identifier number. Do not include this field when adding a new SKU, only when editing existing SKUs.'
-            })),
-            name: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU name. Use simple words and avoid other languages or complex writing. This field is essential for SEO and must respect the 150 character limit.'
-            })),
-            externalId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Unique reference code created to improve the store\'s organization.'
-            })),
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'New description data for SKU or product.'
-            })),
-            ean: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Unique SKU identification code (barcode), composed of up to 13 numeric characters.'
-            })),
-            manufacturerCode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU reference code in the store.'
-            })),
-            isActive: z.boolean().register(z.globalRegistry, {
-                description: 'Defines if the SKU is active (`true`) or inactive (`false`).'
-            }),
-            weight: z.int().register(z.globalRegistry, {
-                description: 'SKU weight. It can be lighter than 1000 g.'
-            }),
+            id: z.optional(z.string()),
+            name: z.optional(z.string()),
+            externalId: z.optional(z.string()),
+            description: z.optional(z.string()),
+            ean: z.optional(z.string()),
+            manufacturerCode: z.optional(z.string()),
+            isActive: z.boolean(),
+            weight: z.int(),
             dimensions: z.object({
-                width: z.number().register(z.globalRegistry, {
-                    description: 'SKU width.'
-                }),
-                height: z.number().register(z.globalRegistry, {
-                    description: 'SKU height.'
-                }),
-                length: z.number().register(z.globalRegistry, {
-                    description: 'SKU length.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'SKU dimensions.'
+                width: z.number(),
+                height: z.number(),
+                length: z.number()
             }),
-            RealWeight: z.optional(z.number().register(z.globalRegistry, {
-                description: 'The product\'s real weight.'
-            })),
+            RealWeight: z.optional(z.number()),
             RealDimensions: z.optional(z.object({
-                width: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real width.'
-                }),
-                height: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real height.'
-                }),
-                length: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real length.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'The product\'s real dimensions.'
+                width: z.number(),
+                height: z.number(),
+                length: z.number()
             })),
             specs: z.union([
                 z.array(z.object({
-                    name: z.string().register(z.globalRegistry, {
-                        description: 'SKU\'s specification name.'
-                    }),
-                    value: z.string().register(z.globalRegistry, {
-                        description: 'SKU\'s specification values.'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'SKU specification information.'
+                    name: z.string(),
+                    value: z.string()
                 })),
                 z.null()
             ]),
-            images: z.array(z.string().register(z.globalRegistry, {
-                description: 'SKU image ID.'
-            })).register(z.globalRegistry, {
-                description: 'Array of SKU images IDs.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'SKU information.'
-        })).register(z.globalRegistry, {
-            description: 'SKUs of the product.'
-        }),
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Origin account of the product. It is not possible to alter products where the origin is `marketplace`.'
-        })
+            images: z.array(z.string())
+        })),
+        origin: z.string()
     })),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product unique identifier number.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetProductDescriptionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product unique identifier number.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutProductDescriptionData = z.object({
     body: z.optional(z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product\'s unique identifier number.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'Product description.'
-        })
+        productId: z.string(),
+        description: z.string()
     })),
     path: z.object({
-        productId: z.string().register(z.globalRegistry, {
-            description: 'Product unique identifier number.'
-        })
+        productId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetProductQueryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        param: z.string().register(z.globalRegistry, {
-            description: 'This part of the path must follow this format: `{param}={value}`. Replace `{param}` with the name of the parameter used to fetch a product, which can be one of the following: `external-id` (product reference unique identifier number in the store), `sku-id` (SKU unique identifier number), `sku-external-id` (SKU reference unique identifier number in the store) or `slug` (reference of the product in the URL of the store). Replace `{value}` with the value of the selected param. Make sure there is a `=` between them.'
-        })
+        param: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostProductData = z.object({
     body: z.optional(z.object({
-        externalId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product reference unique identifier number in the store.'
-        })),
-        status: z.string().register(z.globalRegistry, {
-            description: 'Status of the product. Its values can be `active` or `inactive`.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Product name. Use simple words and avoid other languages or complex writing. This field is essential for SEO and must respect the 150 character limit.'
-        }),
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Product\'s brand unique identifier number.'
-        }),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Product\'s data description.'
-        })),
-        categoryIds: z.array(z.string().register(z.globalRegistry, {
-            description: 'Product\'s Category unique idenfier number.'
-        })).register(z.globalRegistry, {
-            description: 'Product\'s categories unique identifier numbers. It can have multiples IDs for each category and subcategories.'
-        }),
+        externalId: z.optional(z.string()),
+        status: z.string(),
+        name: z.string(),
+        brandId: z.string(),
+        description: z.optional(z.string()),
+        categoryIds: z.array(z.string()),
         specs: z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'Specification name.'
-            }),
-            values: z.array(z.string().register(z.globalRegistry, {
-                description: 'Specification value.'
-            })).register(z.globalRegistry, {
-                description: 'Specification values.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Product specification.'
-        })).register(z.globalRegistry, {
-            description: 'Specifications that will differentiate the possible product SKUs.'
-        }),
+            name: z.string(),
+            values: z.array(z.string())
+        })),
         attributes: z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'Attribute name.'
-            }),
-            value: z.string().register(z.globalRegistry, {
-                description: 'Attribute value.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Product attribute.'
-        })).register(z.globalRegistry, {
-            description: 'Attributes of the product. Attributes are additional properties used to create site browsing filters.'
-        }),
-        slug: z.string().register(z.globalRegistry, {
-            description: 'Reference of the product in the URL of the store.'
-        }),
+            name: z.string(),
+            value: z.string()
+        })),
+        slug: z.string(),
         images: z.array(z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'Image ID.'
-            }),
-            url: z.string().register(z.globalRegistry, {
-                description: 'Image URL, which must be in the following format: `https://{accountName}.vtexassets.com/assets/{path}`, saved using the [Catalog Images app](https://developers.vtex.com/vtex-developer-docs/docs/vtex-catalog-images).'
-            }),
-            alt: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Image alternative description.'
-            }))
-        }).register(z.globalRegistry, {
-            description: 'Image information.'
-        })).register(z.globalRegistry, {
-            description: 'Information of the images of the product.'
-        }),
+            id: z.string(),
+            url: z.string(),
+            alt: z.optional(z.string())
+        })),
         skus: z.array(z.object({
-            name: z.string().register(z.globalRegistry, {
-                description: 'SKU name. Use simple words and avoid other languages or complex writing. This field is essential for SEO and must respect the 150 character limit.'
-            }),
-            externalId: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Unique reference code created to improve the store\'s organization.'
-            })),
-            description: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU description.'
-            })),
-            ean: z.optional(z.string().register(z.globalRegistry, {
-                description: 'Unique SKU identification code (barcode), composed of up to 13 numeric characters.'
-            })),
-            manufacturerCode: z.optional(z.string().register(z.globalRegistry, {
-                description: 'SKU reference code in the store.'
-            })),
-            isActive: z.boolean().register(z.globalRegistry, {
-                description: 'If the SKU is active (`true`) or inactive (`false`).'
-            }),
-            weight: z.int().register(z.globalRegistry, {
-                description: 'SKU weight. It can be lighter than 1000 g.'
-            }),
+            name: z.string(),
+            externalId: z.optional(z.string()),
+            description: z.optional(z.string()),
+            ean: z.optional(z.string()),
+            manufacturerCode: z.optional(z.string()),
+            isActive: z.boolean(),
+            weight: z.int(),
             dimensions: z.object({
-                width: z.number().register(z.globalRegistry, {
-                    description: 'SKU width.'
-                }),
-                height: z.number().register(z.globalRegistry, {
-                    description: 'SKU height.'
-                }),
-                length: z.number().register(z.globalRegistry, {
-                    description: 'SKU length.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'SKU dimensions.'
+                width: z.number(),
+                height: z.number(),
+                length: z.number()
             }),
-            RealWeight: z.optional(z.number().register(z.globalRegistry, {
-                description: 'The product\'s real weight.'
-            })),
+            RealWeight: z.optional(z.number()),
             RealDimensions: z.optional(z.object({
-                width: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real width.'
-                }),
-                height: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real height.'
-                }),
-                length: z.number().register(z.globalRegistry, {
-                    description: 'The product\'s real length.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'The product\'s real dimensions.'
+                width: z.number(),
+                height: z.number(),
+                length: z.number()
             })),
             specs: z.union([
                 z.array(z.object({
-                    name: z.string().register(z.globalRegistry, {
-                        description: 'SKU\'s specification name.'
-                    }),
-                    value: z.string().register(z.globalRegistry, {
-                        description: 'SKU\'s specification values.'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'SKU specification.'
+                    name: z.string(),
+                    value: z.string()
                 })),
                 z.null()
             ]),
-            images: z.array(z.string().register(z.globalRegistry, {
-                description: 'SKU image ID.'
-            })).register(z.globalRegistry, {
-                description: 'List of SKU images IDs.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'SKU information.'
-        })).register(z.globalRegistry, {
-            description: 'SKUs of the product.'
-        }),
-        origin: z.string().register(z.globalRegistry, {
-            description: 'Origin account of the product. It is not possible to alter products where the origin is `marketplace`.'
-        }),
+            images: z.array(z.string())
+        })),
+        origin: z.string(),
         transportModal: z.optional(z.union([
             z.string(),
             z.null()
@@ -424,12 +198,8 @@ export const zPostProductData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -437,26 +207,14 @@ export const zSearchSkuData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The first page of the interval of the product list.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The last page of the interval of the product list.'
-        })),
-        id: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU unique idenfier number.'
-        })),
-        externalid: z.optional(z.int().register(z.globalRegistry, {
-            description: 'SKU reference unique identifier number in the store.'
-        }))
+        from: z.optional(z.string()),
+        to: z.optional(z.string()),
+        id: z.optional(z.int()),
+        externalid: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -464,20 +222,12 @@ export const zListSkuData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The first page of the interval of the product list.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The last page of the interval of the product list.'
-        }))
+        from: z.optional(z.string()),
+        to: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -485,96 +235,56 @@ export const zListBrandData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        q: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Search word.'
-        })),
-        from: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The first page of the interval of the brand list.'
-        })),
-        to: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The last page of the interval of the brand list.'
-        })),
-        orderBy: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The order that the list is displayed. You can select `name`, or `updated_at` to select the order criteria. Then you can add `,` , `asc` or `desc` to define the brands order.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Brand name.'
-        }))
+        q: z.optional(z.string()),
+        from: z.optional(z.string()),
+        to: z.optional(z.string()),
+        orderBy: z.optional(z.string()),
+        name: z.optional(z.string())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostBrandData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Brand name.'
-        }),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'The condition defines if the brand is active (`true`) or inactive (`false`).'
-        })
+        name: z.string(),
+        isActive: z.boolean()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetBrandData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand unique identifier number.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPutBrandData = z.object({
     body: z.optional(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Brand unique identifier number.'
-        }),
-        name: z.string().register(z.globalRegistry, {
-            description: 'Brand name.'
-        }),
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'The condition defines if the brand is active (`true`) or inactive (`false`).'
-        })
+        id: z.string(),
+        name: z.string(),
+        isActive: z.boolean()
     })),
     path: z.object({
-        brandId: z.string().register(z.globalRegistry, {
-            description: 'Brand unique identifier number.'
-        })
+        brandId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -582,17 +292,11 @@ export const zGetCategoryTreeData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        depth: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Category tree level.'
-        }))
+        depth: z.optional(z.int())
     })),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
@@ -600,90 +304,48 @@ export const zUpdateCategoryTreeData = z.object({
     body: z.object({
         roots: z.array(z.object({
             value: z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'Category unique identifier number.'
-                }),
-                name: z.string().register(z.globalRegistry, {
-                    description: 'Category name.'
-                }),
-                isActive: z.boolean().register(z.globalRegistry, {
-                    description: 'The condition defines if the category is active (`true`) or inactive (`false`).'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Object with values of a category.'
+                id: z.string(),
+                name: z.string(),
+                isActive: z.boolean()
             }),
             children: z.array(z.object({
                 value: z.object({
-                    id: z.string().register(z.globalRegistry, {
-                        description: 'Child category unique identifier number.'
-                    }),
-                    name: z.string().register(z.globalRegistry, {
-                        description: 'Child category name.'
-                    }),
-                    isActive: z.boolean().register(z.globalRegistry, {
-                        description: 'The condition defines if the child category is active (`true`) or inactive (`false`).'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'Object with values of a child category.'
+                    id: z.string(),
+                    name: z.string(),
+                    isActive: z.boolean()
                 })
-            }).register(z.globalRegistry, {
-                description: 'Child category information.'
-            })).register(z.globalRegistry, {
-                description: 'List of all children categories of the parent category.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Category information.'
-        })).register(z.globalRegistry, {
-            description: 'List of all categories of the store.'
-        })
+            }))
+        }))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetbyidData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.string().register(z.globalRegistry, {
-            description: 'Category unique identifier number.'
-        })
+        categoryId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zCreateCategoryData = z.object({
     body: z.object({
-        parentId: z.string().register(z.globalRegistry, {
-            description: 'Parent category unique identifier number.'
-        }),
-        Name: z.string().register(z.globalRegistry, {
-            description: 'Category name.'
-        })
+        parentId: z.string(),
+        Name: z.string()
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

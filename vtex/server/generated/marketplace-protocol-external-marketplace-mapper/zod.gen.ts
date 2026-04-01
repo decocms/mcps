@@ -5,470 +5,232 @@ import * as z from 'zod';
 export const zListAllChannelsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        enviroment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of the URL.'
-        })
+        enviroment: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector/partner.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-type': z.string().default('application/json')
     })
 });
 
 export const zRetrieveChannelData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        enviroment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of the URL.'
-        }),
-        channelId: z.number().register(z.globalRegistry, {
-            description: 'Channel\'s ID in Channel Manager, available through the List All Channels endpoint.'
-        })
+        enviroment: z.string(),
+        channelId: z.number()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector/partner.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-type': z.string().default('application/json')
     })
 });
 
 export const zVtexMapperRegistrationData = z.object({
     body: z.object({
-        displayName: z.string().register(z.globalRegistry, {
-            description: 'Marketplace name, that will be displayed in VTEX Mapper.'
-        }),
-        categoryTreeEndPoint: z.string().register(z.globalRegistry, {
-            description: 'Endpoint that returns categories and attributes according to VTEX Mapper specifications.'
-        }),
-        mappingEndPoint: z.string().register(z.globalRegistry, {
-            description: 'Secure endpoint that will receive the category mapping sent by VTEX Mapper.'
-        }),
+        displayName: z.string(),
+        categoryTreeEndPoint: z.string(),
+        mappingEndPoint: z.string(),
         properties: z.object({
-            allowsRemap: z.boolean().register(z.globalRegistry, {
-                description: 'Allows remaping categories in case the marketplace or seller tree is altered. If marked as `true`, all trees will be remapped.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Refers to the `allowsRemap` property.'
+            allowsRemap: z.boolean()
         }),
-        CategoryTreeProcessingNotificationEndpoint: z.optional(z.string().register(z.globalRegistry, {
-            description: 'The `CategoryTreeProcessingNotificationEndpoint` is optional, and should be an endpoint from the external marketplace, that will be notified after the marketplace\'s category tree is successfully processed or not.'
-        }))
+        CategoryTreeProcessingNotificationEndpoint: z.optional(z.string())
     }),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account. Used as part of the URL.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zSendCategoryMappingVtexMapperData = z.object({
     body: z.object({
         categories: z.array(z.object({
-            id: z.string().register(z.globalRegistry, {
-                description: 'ID of the parent category in the marketplace.'
-            }),
-            name: z.string().register(z.globalRegistry, {
-                description: 'Name of the parent category in the marketplace.'
-            }),
+            id: z.string(),
+            name: z.string(),
             children: z.array(z.object({
-                id: z.string().register(z.globalRegistry, {
-                    description: 'ID of the child category in the marketplace.'
-                }),
-                name: z.string().register(z.globalRegistry, {
-                    description: 'Name of the child category in the marketplace.'
-                }),
+                id: z.string(),
+                name: z.string(),
                 children: z.union([
                     z.array(z.object({
-                        id: z.string().register(z.globalRegistry, {
-                            description: 'Grandchild category ID.'
-                        }),
-                        name: z.string().register(z.globalRegistry, {
-                            description: 'Grandchild category name.'
-                        }),
+                        id: z.string(),
+                        name: z.string(),
                         specifications: z.array(z.object({
-                            attributeName: z.string().register(z.globalRegistry, {
-                                description: 'Name of the attribute sent as a specification.'
-                            }),
-                            required: z.boolean().register(z.globalRegistry, {
-                                description: 'If the specification is required, mark this flag as `true`. If not, mark it as `false`.'
-                            }),
+                            attributeName: z.string(),
+                            required: z.boolean(),
                             attributeValues: z.array(z.object({
-                                valueName: z.string().register(z.globalRegistry, {
-                                    description: 'Name of the value.'
-                                })
-                            }).register(z.globalRegistry, {
-                                description: 'Array of the multiple `valueNames` for the specificied attribute.'
-                            })).register(z.globalRegistry, {
-                                description: 'Values for the specified attribute.'
-                            })
-                        }).register(z.globalRegistry, {
-                            description: 'Specifications of the grandchild category.'
-                        })).register(z.globalRegistry, {
-                            description: 'List of specifications of the granchild category.'
-                        })
-                    }).register(z.globalRegistry, {
-                        description: 'Grandchildren category information.'
+                                valueName: z.string()
+                            }))
+                        }))
                     })),
                     z.null()
                 ]),
                 specifications: z.array(z.object({
-                    attributeName: z.string().register(z.globalRegistry, {
-                        description: 'Name of the attribute sent as a specification.'
-                    }),
-                    required: z.boolean().register(z.globalRegistry, {
-                        description: 'If the specification is required, mark this flag as `true`. If not, mark it as `false`.'
-                    }),
+                    attributeName: z.string(),
+                    required: z.boolean(),
                     attributeValues: z.array(z.object({
-                        valueName: z.string().register(z.globalRegistry, {
-                            description: 'Name of the value.'
-                        })
-                    }).register(z.globalRegistry, {
-                        description: 'Array of the multiple `valueNames` for the attribute specificied.'
-                    })).register(z.globalRegistry, {
-                        description: 'Values for the specified attribute.'
-                    })
-                }).register(z.globalRegistry, {
-                    description: 'Specifications of children categories.'
-                })).register(z.globalRegistry, {
-                    description: 'Specifications for the product or SKU.'
-                })
-            }).register(z.globalRegistry, {
-                description: 'Children category information.'
-            })).register(z.globalRegistry, {
-                description: 'Array with children categories in the marketplace, and their information.'
-            })
-        }).register(z.globalRegistry, {
-            description: 'Category information.'
-        })).register(z.globalRegistry, {
-            description: 'Array with Marketplace parent categories and their information.'
-        })
+                        valueName: z.string()
+                    }))
+                }))
+            }))
+        }))
     }),
     path: z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'Code identifying returned in the *VTEX Mapper Registration* endpoint.'
-        }).default('123456789')
+        id: z.string().default('123456789')
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json'),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json')
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
     })
 });
 
 export const zRegisterConnectorData = z.object({
     body: z.optional(z.object({
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Connector name.'
-        })),
-        website: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Connector website.'
-        })),
-        logo: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Connector logo URL.'
-        })),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Connector description.'
-        })),
-        segment: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Market segment.'
-        })),
-        availableCountries: z.optional(z.array(z.string().register(z.globalRegistry, {
-            description: 'Country code.'
-        })).register(z.globalRegistry, {
-            description: 'List of countries where connector is available for integration.'
-        })),
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'What type of connector, if it is native, VTEX or partner.'
-        })),
-        isActive: z.optional(z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether connector is active (`true`) or not (`false`).'
-        })),
-        helpUrl: z.optional(z.string().register(z.globalRegistry, {
-            description: 'URL of connector integration documentation page.'
-        })),
-        connectorVtexAdminPath: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Admin VTEX URL, where the merchant will be redirected to manage and view his connections after integration.'
-        })),
-        connectorPageUrl: z.optional(z.string().register(z.globalRegistry, {
-            description: 'URL where the merchant will be redirected to start the onboarding process.'
-        })),
-        connectorApiEndpoint: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Partner connector API base URL.'
-        })),
-        channelId: z.optional(z.string().register(z.globalRegistry, {
-            description: 'ID of the channel that a connector joins to.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Body of the request to execute the Resgister connector.'
+        name: z.optional(z.string()),
+        website: z.optional(z.string()),
+        logo: z.optional(z.string()),
+        description: z.optional(z.string()),
+        segment: z.optional(z.string()),
+        availableCountries: z.optional(z.array(z.string())),
+        type: z.optional(z.string()),
+        isActive: z.optional(z.boolean()),
+        helpUrl: z.optional(z.string()),
+        connectorVtexAdminPath: z.optional(z.string()),
+        connectorPageUrl: z.optional(z.string()),
+        connectorApiEndpoint: z.optional(z.string()),
+        channelId: z.optional(z.string())
     })),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        })
+        environment: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector/partner, ex. `apiexemple`'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zListAllConnectorsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        })
+        environment: z.string()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Merchant\'s account name in VTEX, ex. `apiexemple`.'
-        }),
-        segment: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter data by connector\'s segment.'
-        })),
-        orderByConnectorType: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Order data using a custom logic by connector\'s\' type, and not alphabetically.'
-        })),
-        active: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter data by the connector\'s status.'
-        })),
-        name: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter data by the connector\'s name.'
-        })),
-        page: z.optional(z.int().register(z.globalRegistry, {
-            description: 'Current page to load data from.'
-        })),
-        pageSize: z.int().register(z.globalRegistry, {
-            description: 'Page size to define number of results returned.'
-        }),
-        country: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter by connector\'s country.'
-        })),
-        type: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter by connector\'s type.'
-        })),
-        account: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Filter by connector\'s owner account.'
-        }))
+        an: z.string(),
+        segment: z.optional(z.string()),
+        orderByConnectorType: z.optional(z.string()),
+        active: z.optional(z.string()),
+        name: z.optional(z.string()),
+        page: z.optional(z.int()),
+        pageSize: z.int(),
+        country: z.optional(z.string()),
+        type: z.optional(z.string()),
+        account: z.optional(z.string())
     }),
     headers: z.object({
-        accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'content-type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        accept: z.string().default('application/json'),
+        'content-type': z.string().default('application/json')
     })
 });
 
 export const zRemoveConnectorData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        }),
-        connectorId: z.number().register(z.globalRegistry, {
-            description: 'Connector\'s ID in Channel Manager, available through the List all connectors route, or in the response of the registration.'
-        })
+        environment: z.string(),
+        connectorId: z.number()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Merchant\'s account name in VTEX, ex. `apiexemple`.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zRetrieveConnectorData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        }),
-        connectorId: z.int().register(z.globalRegistry, {
-            description: 'Connector\'s ID in Channel Manager, available through the List all connectors, or in the response of the registration.'
-        })
+        environment: z.string(),
+        connectorId: z.int()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector/partner.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'content-type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        accept: z.string().default('application/json'),
+        'content-type': z.string().default('application/json')
     })
 });
 
 export const zPartialUpdateConnectorData = z.object({
     body: z.optional(z.object({
-        path: z.string().register(z.globalRegistry, {
-            description: 'What part of the configuration do you want to change.'
-        }),
-        op: z.string().register(z.globalRegistry, {
-            description: 'Type of operation to be performed.'
-        }),
-        value: z.string().register(z.globalRegistry, {
-            description: 'New value which will appear in the changed field.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Body of the request to execute the Partial update connector call.'
+        path: z.string(),
+        op: z.string(),
+        value: z.string()
     })),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        }),
-        connectorId: z.number().register(z.globalRegistry, {
-            description: 'Connector\'s ID in Channel Manager, available through the list all connectors route, or in the response of the registration.'
-        })
+        environment: z.string(),
+        connectorId: z.number()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector/partner, ex. `apiexemple`.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-type': z.string().register(z.globalRegistry, {
-            description: 'Required header to indicate the request is a PATCH.'
-        }).default('application/json-patch+json')
+        Accept: z.string().default('application/json'),
+        'Content-type': z.string().default('application/json-patch+json')
     })
 });
 
 export const zUpsertMerchantConnectionData = z.object({
     body: z.optional(z.object({
-        isActive: z.boolean().register(z.globalRegistry, {
-            description: 'Indicates whether connection is active (`true`) or not (`false`).'
-        }),
-        affiliateId: z.string().register(z.globalRegistry, {
-            description: 'Affiliate ID corresponding to the connector.'
-        })
+        isActive: z.boolean(),
+        affiliateId: z.string()
     })),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        }),
-        connectorId: z.int().register(z.globalRegistry, {
-            description: 'Connector\'s ID in Channel Manager, available through the list all connectors route, or in the response of the registration.'
-        })
+        environment: z.string(),
+        connectorId: z.int()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'Merchant\'s account name in VTEX, ex. `apiexemple`.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zFullUpdateConnectorData = z.object({
     body: z.optional(z.object({
-        name: z.string().register(z.globalRegistry, {
-            description: 'Connector name.'
-        }),
-        website: z.string().register(z.globalRegistry, {
-            description: 'Connector website.'
-        }),
-        logo: z.string().register(z.globalRegistry, {
-            description: 'Connector logo URL.'
-        }),
-        description: z.string().register(z.globalRegistry, {
-            description: 'Marketplace presentation description.'
-        }),
-        segment: z.string().register(z.globalRegistry, {
-            description: 'Marketplace segment.'
-        }),
-        availableCountries: z.array(z.string().register(z.globalRegistry, {
-            description: 'Country code.'
-        })).register(z.globalRegistry, {
-            description: 'Countries where integration is available.'
-        }),
-        connectorVtexAdminPath: z.string().register(z.globalRegistry, {
-            description: 'Link to Admin VTEX page where the merchant can configure integration with connector.'
-        }),
-        connectorApiEndpoint: z.string().register(z.globalRegistry, {
-            description: 'Partner connector API base URL.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Body of the request to execute the Full update connector.'
+        name: z.string(),
+        website: z.string(),
+        logo: z.string(),
+        description: z.string(),
+        segment: z.string(),
+        availableCountries: z.array(z.string()),
+        connectorVtexAdminPath: z.string(),
+        connectorApiEndpoint: z.string()
     })),
     path: z.object({
-        environment: z.string().register(z.globalRegistry, {
-            description: 'Environment used as part of URL.'
-        }),
-        connectorId: z.number().register(z.globalRegistry, {
-            description: 'Connector\'s ID in Channel Manager, available through the list all connectors route, or in the response of the registration.'
-        })
+        environment: z.string(),
+        connectorId: z.number()
     }),
     query: z.object({
-        an: z.string().register(z.globalRegistry, {
-            description: 'VTEX\'s account name owned by the connector or partner, ex. `apiexemple`.'
-        })
+        an: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Describes the type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });

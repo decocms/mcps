@@ -6,287 +6,161 @@ import * as z from 'zod';
  * Object used to send invoice information related to an order.
  */
 export const zRequestSendInvoice = z.object({
-    type: z.string().register(z.globalRegistry, {
-        description: 'Indicates the type of the invoice. Use `"Output"` for regular orders and `"Input"` for returns.'
-    }),
-    invoiceNumber: z.string().register(z.globalRegistry, {
-        description: 'Invoice number.'
-    }),
-    courier: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Courier, if available on invoice.'
-    })),
-    trackingNumber: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tracking number.'
-    })),
-    trackingUrl: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Tracking URL.'
-    })),
+    type: z.string(),
+    invoiceNumber: z.string(),
+    courier: z.optional(z.string()),
+    trackingNumber: z.optional(z.string()),
+    trackingUrl: z.optional(z.string()),
     items: z.array(z.object({
-        id: z.string().register(z.globalRegistry, {
-            description: 'SKU ID.'
-        }),
-        quantity: z.int().register(z.globalRegistry, {
-            description: 'Quantity of items of the SKU in the cart.'
-        }),
-        price: z.int().register(z.globalRegistry, {
-            description: 'Price of the item.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Specification data for each order item.'
-    })).register(z.globalRegistry, {
-        description: 'Array containing the order items.'
-    }),
-    issuanceDate: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Issuance date.'
+        id: z.string(),
+        quantity: z.int(),
+        price: z.int()
     })),
-    invoiceValue: z.optional(z.int().register(z.globalRegistry, {
-        description: 'Invoice value.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Object used to send invoice information related to an order.'
+    issuanceDate: z.optional(z.string()),
+    invoiceValue: z.optional(z.int())
 });
 
 export const zResponseFulfill = z.object({
-    date: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Request processing date and time.'
-    })),
-    orderId: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Order ID referring to the Invoice number sent.'
-    })),
-    receipt: z.optional(z.string().register(z.globalRegistry, {
-        description: 'Requisition receipt code.'
-    }))
+    date: z.optional(z.string()),
+    orderId: z.optional(z.string()),
+    receipt: z.optional(z.string())
 });
 
 export const zRequestSendTracking = z.object({
-    courier: z.string().register(z.globalRegistry, {
-        description: 'Courier.'
-    }),
-    trackingNumber: z.string().register(z.globalRegistry, {
-        description: 'Tracking number.'
-    }),
-    trackingUrl: z.string().register(z.globalRegistry, {
-        description: 'Tracking URL.'
-    }),
-    dispatchedDate: z.string().register(z.globalRegistry, {
-        description: 'Date of order dispatch.'
-    })
+    courier: z.string(),
+    trackingNumber: z.string(),
+    trackingUrl: z.string(),
+    dispatchedDate: z.string()
 });
 
 /**
  * Request body object used to update the tracking status of an order.
  */
 export const zRequestUpdateTrackingStatus = z.object({
-    isDelivered: z.boolean().register(z.globalRegistry, {
-        description: 'Indicates if order has been delivered. `false` if it is in transit.'
-    }),
+    isDelivered: z.boolean(),
     events: z.optional(z.array(z.object({
-        city: z.optional(z.string().register(z.globalRegistry, {
-            description: 'City where the event ocurred.'
-        })),
-        state: z.optional(z.string().register(z.globalRegistry, {
-            description: 'State where the event ocurred.'
-        })),
-        description: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Description of the event.'
-        })),
-        date: z.optional(z.string().register(z.globalRegistry, {
-            description: 'Date when event ocurred.'
-        }))
-    }).register(z.globalRegistry, {
-        description: 'Description of tracking event fields.'
-    })).register(z.globalRegistry, {
-        description: 'Array containing information on each tracking event received.'
-    }))
-}).register(z.globalRegistry, {
-    description: 'Request body object used to update the tracking status of an order.'
+        city: z.optional(z.string()),
+        state: z.optional(z.string()),
+        description: z.optional(z.string()),
+        date: z.optional(z.string())
+    })))
 });
 
 /**
  * Object used to request the cancellation of an order on the marketplace.
  */
 export const zRequestCancelOrderMarketplace = z.object({
-    reason: z.string().register(z.globalRegistry, {
-        description: 'Insert here the reason for the order\'s cancellation.'
-    })
-}).register(z.globalRegistry, {
-    description: 'Object used to request the cancellation of an order on the marketplace.'
+    reason: z.string()
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-}).default('application/json');
+export const zContentType = z.string().default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-}).default('application/json');
+export const zAccept = z.string().default('application/json');
 
 /**
  * This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).
  */
-export const zMarketplaceServicesEndpoint = z.string().register(z.globalRegistry, {
-    description: 'This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).'
-});
+export const zMarketplaceServicesEndpoint = z.string();
 
 /**
  * Identifies the order in the marketplace.
  */
-export const zMarketplaceOrderId = z.string().register(z.globalRegistry, {
-    description: 'Identifies the order in the marketplace.'
-});
+export const zMarketplaceOrderId = z.string();
 
 /**
  * Invoice number.
  */
-export const zInvoiceNumber = z.string().register(z.globalRegistry, {
-    description: 'Invoice number.'
-});
+export const zInvoiceNumber = z.string();
 
 /**
  * Order ID of the order for wish you want to send the agreement.
  */
-export const zOrderId = z.string().register(z.globalRegistry, {
-    description: 'Order ID of the order for wish you want to send the agreement.'
-});
+export const zOrderId = z.string();
 
 /**
  * Once you make an order modification, you generate a `changeId` code that identifies the modifications made to that order. This field should be filled with that code.
  */
-export const zChangeId = z.string().register(z.globalRegistry, {
-    description: 'Once you make an order modification, you generate a `changeId` code that identifies the modifications made to that order. This field should be filled with that code.'
-});
+export const zChangeId = z.string();
 
 /**
  * Name of the VTEX account that created the order.
  */
-export const zAccountName = z.string().register(z.globalRegistry, {
-    description: 'Name of the VTEX account that created the order.'
-});
+export const zAccountName = z.string();
 
 export const zSendInvoiceData = z.object({
     body: zRequestSendInvoice,
     path: z.object({
-        marketplaceOrderId: z.string().register(z.globalRegistry, {
-            description: 'Identifies the order in the marketplace.'
-        }),
-        marketplaceServicesEndpoint: z.string().register(z.globalRegistry, {
-            description: 'This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).'
-        }),
-        invoiceNumber: z.string().register(z.globalRegistry, {
-            description: 'Invoice number.'
-        })
+        marketplaceOrderId: z.string(),
+        marketplaceServicesEndpoint: z.string(),
+        invoiceNumber: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zSendTrackingInformationData = z.object({
     body: zRequestSendTracking,
     path: z.object({
-        marketplaceServicesEndpoint: z.string().register(z.globalRegistry, {
-            description: 'This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).'
-        }),
-        marketplaceOrderId: z.string().register(z.globalRegistry, {
-            description: 'Identifies the order in the marketplace.'
-        }),
-        invoiceNumber: z.string().register(z.globalRegistry, {
-            description: 'Invoice number.'
-        })
+        marketplaceServicesEndpoint: z.string(),
+        marketplaceOrderId: z.string(),
+        invoiceNumber: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zUpdateTrackingStatusData = z.object({
     body: zRequestUpdateTrackingStatus,
     path: z.object({
-        marketplaceServicesEndpoint: z.string().register(z.globalRegistry, {
-            description: 'This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).'
-        }),
-        marketplaceOrderId: z.string().register(z.globalRegistry, {
-            description: 'Identifies the order in the marketplace.'
-        }),
-        invoiceNumber: z.string().register(z.globalRegistry, {
-            description: 'Invoice number.'
-        })
+        marketplaceServicesEndpoint: z.string(),
+        marketplaceOrderId: z.string(),
+        invoiceNumber: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zCancelOrderInMarketplaceData = z.object({
     body: zRequestCancelOrderMarketplace,
     path: z.object({
-        marketplaceServicesEndpoint: z.string().register(z.globalRegistry, {
-            description: 'This is an endpoint sent from VTEX to the external seller in the [Order placement request](https://developers.vtex.com/docs/api-reference/marketplace-protocol-external-seller-fulfillment#post-/pvt/orders).'
-        }),
-        marketplaceOrderId: z.string().register(z.globalRegistry, {
-            description: 'Identifies the order in the marketplace.'
-        })
+        marketplaceServicesEndpoint: z.string(),
+        marketplaceOrderId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });
 
 export const zSendAgreementData = z.object({
     body: z.object({
-        agreementType: z.optional(z.enum(['Acknowledgment', 'Confirmation']).register(z.globalRegistry, {
-            description: 'Type of agreement sent for the order modification. Allowed values are: `Acknowledgment` (the seller recognizes the modification request) or `Confirmation` (the seller confirms the modification has been applied to the order).'
-        }))
+        agreementType: z.optional(z.enum(['Acknowledgment', 'Confirmation']))
     }),
     path: z.object({
-        orderId: z.string().register(z.globalRegistry, {
-            description: 'Order ID of the order for wish you want to send the agreement.'
-        }),
-        changeId: z.string().register(z.globalRegistry, {
-            description: 'Once you make an order modification, you generate a `changeId` code that identifies the modifications made to that order. This field should be filled with that code.'
-        })
+        orderId: z.string(),
+        changeId: z.string()
     }),
     query: z.object({
-        accountName: z.string().register(z.globalRegistry, {
-            description: 'Name of the VTEX account that created the order.'
-        })
+        accountName: z.string()
     }),
     headers: z.object({
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        }).default('application/json'),
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }).default('application/json')
+        Accept: z.string().default('application/json'),
+        'Content-Type': z.string().default('application/json')
     })
 });

@@ -1425,6 +1425,10 @@ export type CartSimulationData = {
          * Array containing two floats with geocoordinates, first longitude, then latitude.
          */
         geoCoordinates?: Array<number>;
+        /**
+         * Array of allowed data that can be skipped in the cart simulation.
+         */
+        allowedOutdatedData?: Array<'inventoryData' | 'deliveryData' | 'promotionData' | 'paymentData' | 'taxData'>;
     };
     headers: {
         /**

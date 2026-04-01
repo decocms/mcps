@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiOrganizationUnitsV1ByOrganizationUnitIdData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenData, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdData, GetApiOrganizationUnitsV1ByOrganizationUnitIdErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesData, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, GetApiOrganizationUnitsV1ByUserIdUnitData, GetApiOrganizationUnitsV1ByUserIdUnitErrors, GetApiOrganizationUnitsV1ByUserIdUnitResponses, GetApiOrganizationUnitsV1Data, GetApiOrganizationUnitsV1Errors, GetApiOrganizationUnitsV1Responses, GetApiOrganizationUnitsV1RootsData, GetApiOrganizationUnitsV1RootsResponses, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueData, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueErrors, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueResponses, GetApiOrganizationUnitsV1UsersByUserIdScopesData, GetApiOrganizationUnitsV1UsersByUserIdScopesErrors, GetApiOrganizationUnitsV1UsersByUserIdScopesResponses, PatchApiOrganizationUnitsV1ByOrganizationUnitIdData, PatchApiOrganizationUnitsV1ByOrganizationUnitIdErrors, PatchApiOrganizationUnitsV1ByOrganizationUnitIdResponses, PostApiOrganizationUnitsV1ByOrganizationUnitIdPathData, PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors, PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses, PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, PostApiOrganizationUnitsV1Data, PostApiOrganizationUnitsV1Errors, PostApiOrganizationUnitsV1Responses, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses } from './types.gen';
+import type { DeleteApiOrganizationUnitsV1ByOrganizationUnitIdData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemoveResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesData, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesErrors, DeleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesResponses, DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenData, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdChildrenResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdData, GetApiOrganizationUnitsV1ByOrganizationUnitIdErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdResponses, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesData, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesErrors, GetApiOrganizationUnitsV1ByOrganizationUnitIdScopesResponses, GetApiOrganizationUnitsV1ByUserIdUnitData, GetApiOrganizationUnitsV1ByUserIdUnitErrors, GetApiOrganizationUnitsV1ByUserIdUnitResponses, GetApiOrganizationUnitsV1Data, GetApiOrganizationUnitsV1Errors, GetApiOrganizationUnitsV1Responses, GetApiOrganizationUnitsV1RootsData, GetApiOrganizationUnitsV1RootsResponses, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueData, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueErrors, GetApiOrganizationUnitsV1ScopeByScopeValueByScopeValueResponses, GetApiOrganizationUnitsV1UsersByUserIdScopesData, GetApiOrganizationUnitsV1UsersByUserIdScopesErrors, GetApiOrganizationUnitsV1UsersByUserIdScopesResponses, GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, PatchApiOrganizationUnitsV1ByOrganizationUnitIdData, PatchApiOrganizationUnitsV1ByOrganizationUnitIdErrors, PatchApiOrganizationUnitsV1ByOrganizationUnitIdResponses, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, PostApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses, PostApiOrganizationUnitsV1Data, PostApiOrganizationUnitsV1Errors, PostApiOrganizationUnitsV1Responses, PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, PutApiOrganizationUnitsV1ByOrganizationUnitIdPathData, PutApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors, PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeData, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeErrors, PutApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Retrieves all scopes associated with a user's organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -50,7 +50,7 @@ export const getApiOrganizationUnitsV1UsersByUserIdScopes = <ThrowOnError extend
  *
  * Retrieves the organization unit associated with a specific user.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -77,7 +77,7 @@ export const getApiOrganizationUnitsV1ByUserIdUnit = <ThrowOnError extends boole
  *
  * Searches for organization units based on query parameters, with pagination support. If no name filter is provided, returns all organization units for the account.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -104,7 +104,7 @@ export const getApiOrganizationUnitsV1 = <ThrowOnError extends boolean = false>(
  *
  * Creates a new organization unit at the root level of the organizational hierarchy.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -131,7 +131,7 @@ export const postApiOrganizationUnitsV1 = <ThrowOnError extends boolean = false>
  *
  * Deletes an organization unit. If the unit has children and the `cascade` parameter is `true`, all children will also be deleted. If `cascade` is `false` and the unit has children, the request will fail.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -158,7 +158,7 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitId = <ThrowOnError ex
  *
  * Retrieves details of a specific organization unit by its unique identifier.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -185,7 +185,7 @@ export const getApiOrganizationUnitsV1ByOrganizationUnitId = <ThrowOnError exten
  *
  * Updates the name of an existing organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -216,7 +216,7 @@ export const patchApiOrganizationUnitsV1ByOrganizationUnitId = <ThrowOnError ext
  *
  * Lists all children of a specific organization unit. The `shallowSearch` parameter controls whether to retrieve only direct children or all descendants.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -243,7 +243,7 @@ export const getApiOrganizationUnitsV1ByOrganizationUnitIdChildren = <ThrowOnErr
  *
  * Retrieves all root-level organization units for the account. Root units are top-level units with no parent.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -270,7 +270,7 @@ export const getApiOrganizationUnitsV1Roots = <ThrowOnError extends boolean = fa
  *
  * Moves an organization unit to a different parent in the hierarchy. If no `parentId` is provided in the request body, the organization unit becomes a root organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -286,7 +286,7 @@ export const getApiOrganizationUnitsV1Roots = <ThrowOnError extends boolean = fa
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const postApiOrganizationUnitsV1ByOrganizationUnitIdPath = <ThrowOnError extends boolean = false>(options: Options<PostApiOrganizationUnitsV1ByOrganizationUnitIdPathData, ThrowOnError>) => (options.client ?? client).post<PostApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses, PostApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors, ThrowOnError>({
+export const putApiOrganizationUnitsV1ByOrganizationUnitIdPath = <ThrowOnError extends boolean = false>(options: Options<PutApiOrganizationUnitsV1ByOrganizationUnitIdPathData, ThrowOnError>) => (options.client ?? client).put<PutApiOrganizationUnitsV1ByOrganizationUnitIdPathResponses, PutApiOrganizationUnitsV1ByOrganizationUnitIdPathErrors, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
     url: '/api/organization-units/v1/{organizationUnitId}/path',
     ...options
@@ -297,7 +297,7 @@ export const postApiOrganizationUnitsV1ByOrganizationUnitIdPath = <ThrowOnError 
  *
  * Removes one or more users from a specific organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -313,9 +313,9 @@ export const postApiOrganizationUnitsV1ByOrganizationUnitIdPath = <ThrowOnError 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
+export const deleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api/organization-units/v1/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options
 });
 
@@ -324,7 +324,7 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnErr
  *
  * Retrieves all users associated with a specific organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -340,9 +340,9 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnErr
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).get<GetApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
+export const getApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).get<GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api/organization-units/v1/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options
 });
 
@@ -351,7 +351,7 @@ export const getApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError 
  *
  * Adds a user to a specific organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -367,9 +367,9 @@ export const getApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const postApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).post<PostApiOrganizationUnitsV1ByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
+export const postApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).post<PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api/organization-units/v1/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -382,7 +382,7 @@ export const postApiOrganizationUnitsV1ByOrganizationUnitIdUsers = <ThrowOnError
  *
  * Deletes all scopes from an organization unit.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -409,7 +409,7 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdScopes = <ThrowOnEr
  *
  * Retrieves all scopes defined for a specific organization unit. Scopes represent domain-specific attributes such as contract IDs, collection IDs, or addresses.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -436,7 +436,7 @@ export const getApiOrganizationUnitsV1ByOrganizationUnitIdScopes = <ThrowOnError
  *
  * Deletes a specific scope from an organization unit, removing all associated values.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -463,7 +463,7 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScope = <Th
  *
  * Creates a new scope with specified values for an organization unit. If the scope already exists, this operation will fail.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -490,7 +490,7 @@ export const postApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScope = <Thro
  *
  * Updates an existing scope by replacing all its values with the provided set.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -517,7 +517,7 @@ export const putApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScope = <Throw
  *
  * Removes specific values from an organization unit scope without deleting the entire scope. If all values are removed, the scope remains but with an empty set of values.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -544,7 +544,7 @@ export const deleteApiOrganizationUnitsV1ByOrganizationUnitIdScopesByScopeRemove
  *
  * Retrieves all organization units that have a specific scope value. This is useful for reverse lookups, such as finding which organization units are associated with a particular contract ID.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *

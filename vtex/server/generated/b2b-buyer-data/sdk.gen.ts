@@ -25,7 +25,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * > ℹ️ The buyer schema supports `additionalProperties: true`, allowing clients to send and persist additional properties beyond the defined schema properties (e.g., `phone2`, `marketingOptIn`, or any business-specific fields).
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -55,7 +55,7 @@ export const getApiDataentitiesShopperSchemasV1 = <ThrowOnError extends boolean 
  *
  * > ℹ️ The buyer schema supports additional properties. Clients can include extra properties (e.g., `phone2`, `marketingOptIn`) in the request body, and they will be persisted alongside the standard fields.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -82,7 +82,7 @@ export const postApiDataentitiesShopperDocuments = <ThrowOnError extends boolean
  *
  * Deletes a buyer document.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -110,7 +110,7 @@ export const deleteApiDataentitiesShopperDocumentsByBuyerId = <ThrowOnError exte
  *
  * > ℹ️ The response may include additional properties beyond the standard schema if they were previously stored (e.g., `phone2`, `marketingOptIn`).
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * ## Permissions
  *
@@ -138,7 +138,7 @@ export const getApiDataentitiesShopperDocumentsByBuyerId = <ThrowOnError extends
  *
  * This request allows you to partially update a buyer document.
  *
- * >⚠️ This endpoint is only available for B2B Buyer Portal. Authorization from the Commerce Engineer of the account is required for usage.
+ * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *
  * >ℹ️ You can use this request to update documents for any given data entity. Because of this, you are not restricted to using the fields exemplified below in your requests. But you should be aware of the fields allowed or required for each document you wish to update.
  *
