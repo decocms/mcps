@@ -6,6 +6,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
+import { MIME_TYPES } from "../constants.ts";
 
 const FileSchema = z.object({
   id: z.string(),
@@ -223,6 +224,68 @@ export const createSearchFilesTool = (env: Env) =>
     },
   });
 
+// Map Google Workspace MIME types to their best text export format
+const GOOGLE_EXPORT_MAP: Record<string, { mimeType: string; label: string }> = {
+  [MIME_TYPES.DOCUMENT]: { mimeType: "text/plain", label: "plain text" },
+  [MIME_TYPES.SPREADSHEET]: { mimeType: "text/csv", label: "CSV" },
+  [MIME_TYPES.PRESENTATION]: { mimeType: "text/plain", label: "plain text" },
+  [MIME_TYPES.DRAWING]: { mimeType: "image/svg+xml", label: "SVG" },
+};
+
+export const createReadFileContentTool = (env: Env) =>
+  createPrivateTool({
+    id: "read_file_content",
+    description:
+      "Read the text content of a file. For Google Docs/Sheets/Slides, exports as text/CSV. For regular files (txt, json, csv, etc.), downloads the content directly.",
+    inputSchema: z.object({
+      fileId: z.string().describe("File ID"),
+      exportMimeType: z
+        .string()
+        .optional()
+        .describe(
+          "Override export format for Google Workspace files (e.g., 'text/html', 'text/csv', 'application/pdf'). If not specified, uses a sensible default.",
+        ),
+    }),
+    outputSchema: z.object({
+      content: z.string(),
+      fileName: z.string(),
+      mimeType: z.string(),
+      exportedAs: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const client = new DriveClient({ accessToken: getAccessToken(env) });
+      const file = await client.getFile(context.fileId);
+
+      const exportInfo = GOOGLE_EXPORT_MAP[file.mimeType];
+      if (exportInfo) {
+        // Google Workspace file — must use export
+        const exportMime = context.exportMimeType || exportInfo.mimeType;
+        const content = await client.exportFile(context.fileId, exportMime);
+        return {
+          content,
+          fileName: file.name,
+          mimeType: file.mimeType,
+          exportedAs: exportMime,
+        };
+      }
+
+      // Google Workspace types not in the export map can't be downloaded
+      if (file.mimeType.startsWith("application/vnd.google-apps.")) {
+        throw new Error(
+          `Cannot read content of ${file.mimeType} files. This Google Workspace type does not support export or download.`,
+        );
+      }
+
+      // Regular file — download directly
+      const content = await client.downloadFile(context.fileId);
+      return {
+        content,
+        fileName: file.name,
+        mimeType: file.mimeType,
+      };
+    },
+  });
+
 export const fileTools = [
   createListFilesTool,
   createGetFileTool,
@@ -231,4 +294,5 @@ export const fileTools = [
   createDeleteFileTool,
   createCopyFileTool,
   createSearchFilesTool,
+  createReadFileContentTool,
 ];
