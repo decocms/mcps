@@ -17,6 +17,13 @@ const FileSchema = z.object({
   size: z.string().optional(),
   webViewLink: z.string().optional(),
   webContentLink: z.string().optional(),
+  shortcutDetails: z
+    .object({
+      targetId: z.string(),
+      targetMimeType: z.string(),
+      targetResourceKey: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const createListFilesTool = (env: Env) =>
