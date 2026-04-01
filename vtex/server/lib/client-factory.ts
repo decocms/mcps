@@ -29,9 +29,9 @@ function buildClient(baseUrl: string, credentials: VTEXCredentials): Client {
     }
     // Ensure timeout for all requests
     if (!request.signal) {
-      const controller = new AbortController();
-      setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-      return new Request(request, { signal: controller.signal });
+      return new Request(request, {
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
     }
     return request;
   });

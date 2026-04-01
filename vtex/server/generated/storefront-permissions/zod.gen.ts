@@ -5,173 +5,109 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().register(z.globalRegistry, {
-    description: 'Type of the content being sent.'
-});
+export const zContentType = z.string();
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().register(z.globalRegistry, {
-    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-});
+export const zAccept = z.string();
 
 export const zPostApiLicenseManagerStorefrontRolesAssignData = z.object({
     body: z.optional(z.object({
-        roleId: z.int().register(z.globalRegistry, {
-            description: 'Storefront role ID to assign. Check the [Storefront Permissions](https://developers.vtex.com/docs/guides/storefront-permissions) guide for the full list of roles.'
-        }),
-        userId: z.uuid().register(z.globalRegistry, {
-            description: 'GUID of the user to assign the storefront role to.'
-        })
+        roleId: z.int(),
+        userId: z.uuid()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiLicenseManagerStorefrontRolesRevokeData = z.object({
     body: z.optional(z.object({
-        roleId: z.int().register(z.globalRegistry, {
-            description: 'Storefront role ID to revoke. Check the [Storefront Permissions](https://developers.vtex.com/docs/guides/storefront-permissions) guide for the full list of roles.'
-        }),
-        userId: z.uuid().register(z.globalRegistry, {
-            description: 'GUID of the user to revoke the storefront role from.'
-        })
+        roleId: z.int(),
+        userId: z.uuid()
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zPostApiLicenseManagerStorefrontUsersData = z.object({
     body: z.optional(z.object({
-        id: z.uuid().register(z.globalRegistry, {
-            description: 'GUID of the storefront user to create.'
-        }),
-        roleIds: z.array(z.int().register(z.globalRegistry, {
-            description: 'Storefront role ID to assign to the user.'
-        })).register(z.globalRegistry, {
-            description: 'List of storefront role IDs to assign to the user. Check the [Storefront Permissions](https://developers.vtex.com/docs/guides/storefront-permissions) guide for the full list of roles.'
-        })
-    }).register(z.globalRegistry, {
-        description: 'Storefront user information.'
+        id: z.uuid(),
+        roleIds: z.array(z.int())
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string().register(z.globalRegistry, {
-            description: 'GUID of the user to check.'
-        }),
-        resourceKey: z.string().register(z.globalRegistry, {
-            description: 'Storefront resource key. Check the [Storefront Permissions](https://developers.vtex.com/docs/guides/storefront-permissions) guide for the full list of resources.'
-        })
+        userId: z.string(),
+        resourceKey: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zDeleteApiLicenseManagerStorefrontRemoveUsersByUserIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string().register(z.globalRegistry, {
-            description: 'GUID of the user to remove.'
-        })
+        userId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiLicenseManagerStorefrontUsersByUserIdRolesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string().register(z.globalRegistry, {
-            description: 'GUID of the user to retrieve roles for.'
-        })
+        userId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiLicenseManagerStorefrontUsersByEmailRolesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        email: z.string().register(z.globalRegistry, {
-            description: 'Email address of the user to retrieve roles for.'
-        })
+        email: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
 
 export const zGetApiLicenseManagerStorefrontUsersByUserIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string().register(z.globalRegistry, {
-            description: 'GUID of the user to retrieve.'
-        })
+        userId: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().register(z.globalRegistry, {
-            description: 'Type of the content being sent.'
-        }),
-        Accept: z.string().register(z.globalRegistry, {
-            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
-        })
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });
