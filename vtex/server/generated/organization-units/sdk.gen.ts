@@ -315,7 +315,7 @@ export const putApiOrganizationUnitsV1ByOrganizationUnitIdPath = <ThrowOnError e
  */
 export const deleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options
 });
 
@@ -342,7 +342,7 @@ export const deleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowO
  */
 export const getApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).get<GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options
 });
 
@@ -369,7 +369,7 @@ export const getApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnEr
  */
 export const postApiVtexidOrganizationUnitsByOrganizationUnitIdUsers = <ThrowOnError extends boolean = false>(options: Options<PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData, ThrowOnError>) => (options.client ?? client).post<PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses, unknown, ThrowOnError>({
     security: [{ name: 'VtexIdclientAutCookie', type: 'apiKey' }],
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users',
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users',
     ...options,
     headers: {
         'Content-Type': 'application/json',
