@@ -23,14 +23,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Path Aliases */
-    "baseUrl": ".",
-    "paths": {
-      "shared/*": ["./shared/*"],
-      "server/*": ["./server/*"],
-      "worker/*": ["./worker/*"]
-    },
-
     /* Types */
     "types": ["@cloudflare/workers-types"]
   },
