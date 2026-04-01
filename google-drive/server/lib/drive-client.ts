@@ -175,6 +175,21 @@ export class DriveClient {
     });
   }
 
+  // Download file content (non-Google Workspace files)
+  async downloadFile(fileId: string): Promise<string> {
+    const url = new URL(ENDPOINTS.FILE(fileId));
+    url.searchParams.set("alt", "media");
+    url.searchParams.set("supportsAllDrives", "true");
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Drive download error: ${response.status} - ${error}`);
+    }
+    return response.text();
+  }
+
   // Export Google Docs formats
   async exportFile(fileId: string, mimeType: string): Promise<string> {
     const url = new URL(ENDPOINTS.FILE_EXPORT(fileId));
