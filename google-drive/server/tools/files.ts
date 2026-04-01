@@ -269,6 +269,13 @@ export const createReadFileContentTool = (env: Env) =>
         };
       }
 
+      // Google Workspace types not in the export map can't be downloaded
+      if (file.mimeType.startsWith("application/vnd.google-apps.")) {
+        throw new Error(
+          `Cannot read content of ${file.mimeType} files. This Google Workspace type does not support export or download.`,
+        );
+      }
+
       // Regular file — download directly
       const content = await client.downloadFile(context.fileId);
       return {
