@@ -40,6 +40,8 @@ export class DriveClient {
   ): Promise<FileList> {
     const url = new URL(ENDPOINTS.FILES);
     url.searchParams.set("fields", `nextPageToken,files(${DEFAULT_FIELDS})`);
+    url.searchParams.set("supportsAllDrives", "true");
+    url.searchParams.set("includeItemsFromAllDrives", "true");
     if (params.q) url.searchParams.set("q", params.q);
     if (params.pageSize)
       url.searchParams.set("pageSize", String(params.pageSize));
@@ -51,6 +53,7 @@ export class DriveClient {
   async getFile(fileId: string): Promise<DriveFile> {
     const url = new URL(ENDPOINTS.FILE(fileId));
     url.searchParams.set("fields", DEFAULT_FIELDS);
+    url.searchParams.set("supportsAllDrives", "true");
     return this.request<DriveFile>(url.toString());
   }
 

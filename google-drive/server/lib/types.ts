@@ -12,6 +12,11 @@ export interface DriveFile {
   size?: string;
   webViewLink?: string;
   webContentLink?: string;
+  shortcutDetails?: {
+    targetId: string;
+    targetMimeType: string;
+    targetResourceKey?: string;
+  };
   description?: string;
   starred?: boolean;
   trashed?: boolean;
