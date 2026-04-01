@@ -87,9 +87,17 @@ export const createListFolderContentsTool = (env: Env) =>
         return f;
       });
 
-      const folders = resolved.filter((f) => f.mimeType === MIME_TYPES.FOLDER);
-      const files = resolved.filter((f) => f.mimeType !== MIME_TYPES.FOLDER);
-      return { files, folders, totalCount: resolved.length };
+      // Apply fileType filter after resolution since shortcuts may resolve to either type
+      const filtered =
+        context.fileType === "folders"
+          ? resolved.filter((f) => f.mimeType === MIME_TYPES.FOLDER)
+          : context.fileType === "files"
+            ? resolved.filter((f) => f.mimeType !== MIME_TYPES.FOLDER)
+            : resolved;
+
+      const folders = filtered.filter((f) => f.mimeType === MIME_TYPES.FOLDER);
+      const files = filtered.filter((f) => f.mimeType !== MIME_TYPES.FOLDER);
+      return { files, folders, totalCount: filtered.length };
     },
   });
 
