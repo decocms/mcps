@@ -1,6 +1,6 @@
 {
   "scopeName": "deco",
-  "name": "vtex-mcp",
+  "name": "vtex",
   "friendlyName": "VTEX Commerce APIs",
   "connection": {
     "type": "HTTP",
