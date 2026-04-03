@@ -28,8 +28,8 @@ export const createGetTranscriptTool = (env: Env) =>
           z.object({
             speaker: z.string(),
             text: z.string(),
-            start_time: z.number(),
-            end_time: z.number(),
+            start_time: z.number().optional(),
+            end_time: z.number().optional(),
           }),
         ),
       ]),

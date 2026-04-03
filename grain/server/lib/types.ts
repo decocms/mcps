@@ -67,8 +67,8 @@ export interface RecordingDetails extends Recording {
 export interface TranscriptEntry {
   speaker: string;
   text: string;
-  start_time: number;
-  end_time: number;
+  start_time?: number;
+  end_time?: number;
 }
 
 export interface IntelligenceNoteSection {

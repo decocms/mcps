@@ -14,7 +14,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
       "server/*": ["./server/*"],
       "shared/*": ["./shared/*"],
