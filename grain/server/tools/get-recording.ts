@@ -104,7 +104,7 @@ export const createGetRecordingTool = (env: Env) =>
         if (error instanceof GrainAPIError) {
           throw new Error(error.getUserMessage());
         }
-        throw error instanceof Error ? error : new Error(String(error));
+        throw error instanceof Error ? error : new Error(JSON.stringify(error));
       }
     },
   });
