@@ -73,7 +73,8 @@ export const createListRecordingsTool = (env: Env) =>
         });
 
         return {
-          recordings: response.recordings,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          recordings: response.recordings as any,
           cursor: response.cursor,
         };
       } catch (error) {
