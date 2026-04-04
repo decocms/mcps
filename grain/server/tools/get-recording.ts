@@ -42,6 +42,7 @@ export const createGetRecordingTool = (env: Env) =>
               name: z.string().nullable(),
               scope: z.string().nullable(),
             })
+            .passthrough()
             .catchall(z.unknown()),
         )
         .optional(),

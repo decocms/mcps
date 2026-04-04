@@ -55,7 +55,7 @@ export const createListRecordingsTool = (env: Env) =>
             end_datetime: z.string(),
             public_thumbnail_url: z.string().nullable(),
           })
-          .catchall(z.unknown()),
+          .passthrough(),
       ),
       cursor: z.string().nullable().describe("Next page cursor, null if last"),
     }),
