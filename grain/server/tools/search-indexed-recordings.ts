@@ -14,11 +14,22 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
       query: z
         .string()
         .optional()
-        .describe("Free-text search across title, participants, and intelligence notes"),
-      start_date: z.string().optional().describe("Recordings on or after this date (ISO 8601)"),
-      end_date: z.string().optional().describe("Recordings on or before this date (ISO 8601)"),
+        .describe(
+          "Free-text search across title, participants, and intelligence notes",
+        ),
+      start_date: z
+        .string()
+        .optional()
+        .describe("Recordings on or after this date (ISO 8601)"),
+      end_date: z
+        .string()
+        .optional()
+        .describe("Recordings on or before this date (ISO 8601)"),
       tag: z.string().optional().describe("Filter by exact tag"),
-      owner: z.string().optional().describe("Filter by owner email (exact match)"),
+      owner: z
+        .string()
+        .optional()
+        .describe("Filter by owner email (exact match)"),
       limit: z
         .number()
         .int()
@@ -59,7 +70,9 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
 
       const trimmedQuery = query?.trim() || undefined;
       if (!trimmedQuery && !start_date && !end_date && !tag && !owner) {
-        throw new Error("Provide at least one filter: query, start_date, end_date, tag, or owner.");
+        throw new Error(
+          "Provide at least one filter: query, start_date, end_date, tag, or owner.",
+        );
       }
 
       const recordings = await searchIndexedRecordings({
