@@ -113,10 +113,11 @@ export async function searchIndexedRecordings(
     qb = qb.contains("owners", [filters.owner]);
   }
   if (filters.query && filters.query.trim().length > 0) {
-    const q = filters.query.trim();
-    qb = qb.or(
-      `title.ilike.%${q}%,participants_text.ilike.%${q}%,intelligence_notes_md.ilike.%${q}%`,
-    );
+    // Remove characters that have special meaning in PostgREST filter syntax
+    const q = filters.query.trim().replace(/[,.*()\\%]/g, "");
+    if (q.length > 0) {
+      qb = qb.or(`title.ilike.%${q}%,participants_text.ilike.%${q}%`);
+    }
   }
 
   const { data, error } = await qb;
