@@ -114,9 +114,7 @@ export async function searchIndexedRecordings(
   }
   if (filters.query && filters.query.trim().length > 0) {
     const q = filters.query.trim();
-    qb = qb.or(
-      `title.ilike.%${q}%,participants_text.ilike.%${q}%,intelligence_notes_md.ilike.%${q}%`,
-    );
+    qb = qb.or(`title.ilike.%${q}%,participants_text.ilike.%${q}%`);
   }
 
   const { data, error } = await qb;

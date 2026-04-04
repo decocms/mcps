@@ -46,14 +46,16 @@ export const createListRecordingsTool = (env: Env) =>
     }),
     outputSchema: z.object({
       recordings: z.array(
-        z.object({
-          id: z.string(),
-          title: z.string(),
-          url: z.string(),
-          start_datetime: z.string(),
-          end_datetime: z.string(),
-          public_thumbnail_url: z.string().nullable(),
-        }),
+        z
+          .object({
+            id: z.string(),
+            title: z.string(),
+            url: z.string(),
+            start_datetime: z.string(),
+            end_datetime: z.string(),
+            public_thumbnail_url: z.string().nullable(),
+          })
+          .passthrough(),
       ),
       cursor: z.string().nullable().describe("Next page cursor, null if last"),
     }),
@@ -78,7 +80,7 @@ export const createListRecordingsTool = (env: Env) =>
         if (error instanceof GrainAPIError) {
           throw new Error(error.getUserMessage());
         }
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       }
     },
   });
