@@ -55,7 +55,8 @@ export const createListRecordingsTool = (env: Env) =>
             end_datetime: z.string(),
             public_thumbnail_url: z.string().nullable(),
           })
-          .passthrough(),
+          .passthrough()
+          .catchall(z.unknown()),
       ),
       cursor: z.string().nullable().describe("Next page cursor, null if last"),
     }),
@@ -81,14 +82,7 @@ export const createListRecordingsTool = (env: Env) =>
         if (error instanceof GrainAPIError) {
           throw new Error(error.getUserMessage());
         }
-        const message = (() => {
-          try {
-            return typeof error === "string" ? error : JSON.stringify(error);
-          } catch {
-            return String(error);
-          }
-        })();
-        throw error instanceof Error ? error : new Error(message);
+        throw error;
       }
     },
   });

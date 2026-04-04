@@ -25,12 +25,15 @@ export const createGetTranscriptTool = (env: Env) =>
       content: z.union([
         z.string(),
         z.array(
-          z.object({
-            speaker: z.string(),
-            text: z.string(),
-            start_time: z.number().optional(),
-            end_time: z.number().optional(),
-          }),
+          z
+            .object({
+              speaker: z.string(),
+              text: z.string(),
+              start_time: z.number().optional(),
+              end_time: z.number().optional(),
+            })
+            .passthrough()
+            .catchall(z.unknown()),
         ),
       ]),
     }),
@@ -51,7 +54,8 @@ export const createGetTranscriptTool = (env: Env) =>
           id: recording.id,
           title: recording.title,
           format,
-          content: transcript,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          content: transcript as any,
         };
       } catch (error) {
         if (error instanceof GrainAPIError) {

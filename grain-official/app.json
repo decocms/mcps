@@ -2,10 +2,7 @@
   "scopeName": "grain",
   "name": "grain-mcp",
   "friendlyName": "Grain",
-<<<<<<< HEAD
   "category": "Collaboration",
-=======
->>>>>>> 2795092 (Update app.json files for Google Tag Manager and Grain MCP)
   "connection": {
     "type": "HTTP",
     "url": "https://api.grain.com/_/mcp"
