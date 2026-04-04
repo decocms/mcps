@@ -12,10 +12,7 @@ export const createGetRecordingTool = (env: Env) =>
       "Choose what to include: participants, highlights, transcript (JSON), intelligence notes (markdown).",
     inputSchema: z.object({
       recordingId: z.string().describe("The recording UUID"),
-      include_highlights: z
-        .boolean()
-        .optional()
-        .describe("Include highlights (default false)"),
+      include_highlights: z.boolean().optional().describe("Include highlights (default false)"),
       include_transcript: z
         .boolean()
         .optional()
@@ -36,11 +33,13 @@ export const createGetRecordingTool = (env: Env) =>
       tags: z.array(z.string()).optional(),
       participants: z
         .array(
-          z.object({
-            email: z.string(),
-            name: z.string(),
-            scope: z.string(),
-          }).passthrough(),
+          z
+            .object({
+              email: z.string(),
+              name: z.string(),
+              scope: z.string(),
+            })
+            .passthrough(),
         )
         .optional(),
       highlights: z
