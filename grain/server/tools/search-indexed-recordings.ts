@@ -93,7 +93,8 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
           end_datetime: r.end_datetime,
           owners: r.owners,
           tags: r.tags,
-          participants: r.participants,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          participants: r.participants as any,
           intelligence_notes_md: r.intelligence_notes_md,
           indexed_at: r.indexed_at,
         })),
