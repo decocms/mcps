@@ -36,11 +36,13 @@ export const createGetRecordingTool = (env: Env) =>
       tags: z.array(z.string()).optional(),
       participants: z
         .array(
-          z.object({
-            email: z.string(),
-            name: z.string(),
-            scope: z.string(),
-          }),
+          z
+            .object({
+              email: z.string(),
+              name: z.string(),
+              scope: z.string(),
+            })
+            .passthrough(),
         )
         .optional(),
       highlights: z
@@ -88,7 +90,8 @@ export const createGetRecordingTool = (env: Env) =>
           public_thumbnail_url: recording.public_thumbnail_url,
           owners: recording.owners,
           tags: recording.tags,
-          participants: recording.participants,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          participants: recording.participants as any,
           highlights: recording.highlights?.map((h) => ({
             id: h.id,
             text: h.text,
