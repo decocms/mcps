@@ -40,7 +40,7 @@ export const createGetRecordingTool = (env: Env) =>
             email: z.string(),
             name: z.string(),
             scope: z.string(),
-          }),
+          }).passthrough(),
         )
         .optional(),
       highlights: z

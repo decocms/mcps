@@ -54,7 +54,7 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
               email: z.string(),
               name: z.string(),
               scope: z.string(),
-            }),
+            }).passthrough(),
           ),
           intelligence_notes_md: z.string().nullable(),
           indexed_at: z.string(),
