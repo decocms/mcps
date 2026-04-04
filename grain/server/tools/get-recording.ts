@@ -38,11 +38,12 @@ export const createGetRecordingTool = (env: Env) =>
         .array(
           z
             .object({
-              email: z.string(),
-              name: z.string(),
-              scope: z.string(),
+              email: z.string().nullable(),
+              name: z.string().nullable(),
+              scope: z.string().nullable(),
             })
-            .passthrough(),
+            .passthrough()
+            .catchall(z.unknown()),
         )
         .optional(),
       highlights: z
