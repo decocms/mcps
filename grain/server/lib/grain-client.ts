@@ -182,9 +182,11 @@ export class GrainClient {
     const endpoint = `${GRAIN_RECORDINGS_ENDPOINT}/${recordingId}/transcript${suffix}`;
 
     const url = new URL(`${this.baseUrl}${endpoint}`);
-    const response = await fetch(url.toString(), {
-      headers: this.getHeaders(),
-    });
+    const headers = this.getHeaders();
+    if (format !== "json") {
+      headers["Accept"] = "text/plain";
+    }
+    const response = await fetch(url.toString(), { headers });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");

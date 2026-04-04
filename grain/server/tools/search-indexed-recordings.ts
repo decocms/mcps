@@ -52,11 +52,11 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
           participants: z.array(
             z
               .object({
-                email: z.string(),
-                name: z.string(),
-                scope: z.string(),
+                email: z.string().nullable(),
+                name: z.string().nullable(),
+                scope: z.string().nullable(),
               })
-              .passthrough(),
+              .catchall(z.unknown()),
           ),
           intelligence_notes_md: z.string().nullable(),
           indexed_at: z.string(),
