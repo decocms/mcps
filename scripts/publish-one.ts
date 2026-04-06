@@ -33,6 +33,11 @@ interface AppJson {
     configSchema?: Record<string, unknown>;
   };
   bindings?: Record<string, string>;
+  requester?: {
+    name?: string;
+    email?: string;
+    repository?: string;
+  };
   metadata?: {
     categories?: string[];
     official?: boolean;
@@ -82,6 +87,9 @@ interface PublishRequestBody {
         title?: string;
         description?: string;
       }>;
+      repository?: {
+        url?: string;
+      };
     };
   };
   requester?: {
@@ -115,17 +123,21 @@ if (!mcpName) {
 }
 
 const mcpPath = join(ROOT, mcpName);
+const decoJsonPath = join(mcpPath, "deco.json");
 const appJsonPath = join(mcpPath, "app.json");
+const configPath = existsSync(decoJsonPath) ? decoJsonPath : appJsonPath;
 
-if (!existsSync(appJsonPath)) {
-  console.log(`⏭️  ${mcpName}: no app.json found, skipping mesh publish`);
+if (!existsSync(configPath)) {
+  console.log(
+    `⏭️  ${mcpName}: no deco.json or app.json found, skipping mesh publish`,
+  );
   process.exit(0);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function readAppJson(): Promise<AppJson> {
-  const raw = await readFile(appJsonPath, "utf-8");
+  const raw = await readFile(configPath, "utf-8");
   return JSON.parse(raw) as AppJson;
 }
 
@@ -218,11 +230,14 @@ function buildPayload(
         description: app.description,
         ...(app.icon ? { icons: [{ src: app.icon }] } : {}),
         ...(remotes.length ? { remotes } : {}),
+        ...(app.requester?.repository
+          ? { repository: { url: app.requester.repository } }
+          : {}),
       },
     },
     requester: {
-      name: committer.name,
-      email: committer.email,
+      name: app.requester?.name ?? committer.name,
+      email: app.requester?.email ?? committer.email,
     },
   };
 }

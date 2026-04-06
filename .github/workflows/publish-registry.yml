@@ -59,10 +59,10 @@ jobs:
 
           echo "Changed MCPs: $CHANGED_MCPS"
 
-          # Filter to only MCPs that have an app.json (publishable to registry)
+          # Filter to only MCPs that have a deco.json or app.json (publishable to registry)
           PUBLISHABLE='[]'
           for mcp in $(echo "$CHANGED_MCPS" | jq -r '.[]'); do
-            if [ -f "$mcp/app.json" ]; then
+            if [ -f "$mcp/deco.json" ] || [ -f "$mcp/app.json" ]; then
               PUBLISHABLE=$(echo "$PUBLISHABLE" | jq -c --arg m "$mcp" '. + [$m]')
             fi
           done
