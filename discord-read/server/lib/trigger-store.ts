@@ -106,6 +106,64 @@ export const triggers = createTriggers({
           .describe("Filter by guild ID. Leave empty for all guilds."),
       }),
     },
+    {
+      type: "discord.thread.created",
+      description:
+        "Triggered when a thread or forum post is created in a Discord channel",
+      params: z.object({
+        guild_id: z
+          .string()
+          .optional()
+          .describe("Filter by guild ID. Leave empty for all guilds."),
+        channel_id: z
+          .string()
+          .optional()
+          .describe(
+            "Filter by parent channel ID. Leave empty for all channels.",
+          ),
+      }),
+    },
+    {
+      type: "discord.thread.deleted",
+      description: "Triggered when a thread or forum post is deleted",
+      params: z.object({
+        guild_id: z
+          .string()
+          .optional()
+          .describe("Filter by guild ID. Leave empty for all guilds."),
+      }),
+    },
+    {
+      type: "discord.thread.updated",
+      description:
+        "Triggered when a thread or forum post is updated (archived, renamed, etc.)",
+      params: z.object({
+        guild_id: z
+          .string()
+          .optional()
+          .describe("Filter by guild ID. Leave empty for all guilds."),
+      }),
+    },
+    {
+      type: "discord.channel.created",
+      description: "Triggered when a channel is created in a guild",
+      params: z.object({
+        guild_id: z
+          .string()
+          .optional()
+          .describe("Filter by guild ID. Leave empty for all guilds."),
+      }),
+    },
+    {
+      type: "discord.channel.deleted",
+      description: "Triggered when a channel is deleted from a guild",
+      params: z.object({
+        guild_id: z
+          .string()
+          .optional()
+          .describe("Filter by guild ID. Leave empty for all guilds."),
+      }),
+    },
   ],
   storage,
 });

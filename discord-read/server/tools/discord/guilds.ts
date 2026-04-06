@@ -87,24 +87,24 @@ export const createListBotGuildsTool = (env: Env) =>
         after: z.string().optional().describe("Get guilds after this ID"),
       })
       .strict(),
-    outputSchema: z
-      .object({
-        guilds: z.array(
-          z.object({
+    outputSchema: z.object({
+      guilds: z.array(
+        z
+          .object({
             id: z.string(),
             name: z.string(),
             icon: z.string().nullable(),
-            owner: z.boolean(),
-            permissions: z.string(),
+            owner: z.boolean().optional(),
+            permissions: z.string().optional(),
             banner: z.string().optional(),
             features: z.array(z.string()).optional(),
             approximate_member_count: z.number().optional(),
             approximate_presence_count: z.number().optional(),
-          }),
-        ),
-        count: z.number(),
-      })
-      .strict(),
+          })
+          .catchall(z.unknown()),
+      ),
+      count: z.number(),
+    }),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         limit: number;

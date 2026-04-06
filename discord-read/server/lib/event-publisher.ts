@@ -6,7 +6,16 @@
  */
 
 import type { Env } from "../types/env.ts";
-import type { Message, GuildMember, MessageReaction, User } from "discord.js";
+import type {
+  Message,
+  GuildMember,
+  MessageReaction,
+  User,
+  ThreadChannel,
+  AnyThreadChannel,
+  GuildChannel,
+  CategoryChannel,
+} from "discord.js";
 import { triggers } from "./trigger-store.ts";
 
 /**
@@ -269,5 +278,145 @@ export function publishReactionRemoved(
   });
   console.log(
     `[Triggers] Notified discord.reaction.removed: ${emoji} from ${reaction.message.id}`,
+  );
+}
+
+/**
+ * Publish a discord.thread.created event
+ */
+export function publishThreadCreated(
+  env: Env,
+  thread: ThreadChannel | AnyThreadChannel,
+): void {
+  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  if (!connectionId) return;
+
+  triggers.notify(connectionId, "discord.thread.created", {
+    event: "discord.thread.created",
+    subject: thread.id,
+    thread_id: thread.id,
+    thread_name: thread.name,
+    guild_id: thread.guild?.id,
+    guild_name: thread.guild?.name,
+    channel_id: thread.parentId,
+    channel_name: thread.parent?.name,
+    owner_id: thread.ownerId,
+    type: thread.type,
+    archived: thread.archived,
+    locked: thread.locked,
+    message_count: thread.messageCount,
+    member_count: thread.memberCount,
+    created_at: thread.createdAt?.toISOString(),
+  });
+  console.log(
+    `[Triggers] Notified discord.thread.created: ${thread.name} (${thread.id})`,
+  );
+}
+
+/**
+ * Publish a discord.thread.deleted event
+ */
+export function publishThreadDeleted(
+  env: Env,
+  thread: ThreadChannel | AnyThreadChannel,
+): void {
+  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  if (!connectionId) return;
+
+  triggers.notify(connectionId, "discord.thread.deleted", {
+    event: "discord.thread.deleted",
+    subject: thread.id,
+    thread_id: thread.id,
+    thread_name: thread.name,
+    guild_id: thread.guild?.id,
+    guild_name: thread.guild?.name,
+    channel_id: thread.parentId,
+    deleted_at: new Date().toISOString(),
+  });
+  console.log(
+    `[Triggers] Notified discord.thread.deleted: ${thread.name} (${thread.id})`,
+  );
+}
+
+/**
+ * Publish a discord.thread.updated event
+ */
+export function publishThreadUpdated(
+  env: Env,
+  oldThread: ThreadChannel | AnyThreadChannel,
+  newThread: ThreadChannel | AnyThreadChannel,
+): void {
+  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  if (!connectionId) return;
+
+  triggers.notify(connectionId, "discord.thread.updated", {
+    event: "discord.thread.updated",
+    subject: newThread.id,
+    thread_id: newThread.id,
+    thread_name: newThread.name,
+    guild_id: newThread.guild?.id,
+    guild_name: newThread.guild?.name,
+    channel_id: newThread.parentId,
+    old_name: oldThread.name,
+    new_name: newThread.name,
+    name_changed: oldThread.name !== newThread.name,
+    old_archived: oldThread.archived,
+    new_archived: newThread.archived,
+    old_locked: oldThread.locked,
+    new_locked: newThread.locked,
+    updated_at: new Date().toISOString(),
+  });
+  console.log(
+    `[Triggers] Notified discord.thread.updated: ${newThread.name} (${newThread.id})`,
+  );
+}
+
+/**
+ * Publish a discord.channel.created event
+ */
+export function publishChannelCreated(env: Env, channel: GuildChannel): void {
+  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  if (!connectionId) return;
+
+  const categoryName =
+    "parent" in channel ? (channel.parent as CategoryChannel)?.name : undefined;
+
+  triggers.notify(connectionId, "discord.channel.created", {
+    event: "discord.channel.created",
+    subject: channel.id,
+    channel_id: channel.id,
+    channel_name: channel.name,
+    guild_id: channel.guild?.id,
+    guild_name: channel.guild?.name,
+    type: channel.type,
+    parent_id: "parentId" in channel ? channel.parentId : undefined,
+    category_name: categoryName,
+    position: channel.position,
+    created_at: channel.createdAt?.toISOString(),
+  });
+  console.log(
+    `[Triggers] Notified discord.channel.created: ${channel.name} (${channel.id})`,
+  );
+}
+
+/**
+ * Publish a discord.channel.deleted event
+ */
+export function publishChannelDeleted(env: Env, channel: GuildChannel): void {
+  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  if (!connectionId) return;
+
+  triggers.notify(connectionId, "discord.channel.deleted", {
+    event: "discord.channel.deleted",
+    subject: channel.id,
+    channel_id: channel.id,
+    channel_name: channel.name,
+    guild_id: channel.guild?.id,
+    guild_name: channel.guild?.name,
+    type: channel.type,
+    deleted_at: new Date().toISOString(),
+  });
+  console.log(
+    `[Triggers] Notified discord.channel.deleted: ${channel.name} (${channel.id})`,
   );
 }
