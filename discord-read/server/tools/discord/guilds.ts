@@ -96,7 +96,7 @@ export const createListBotGuildsTool = (env: Env) =>
             icon: z.string().nullable(),
             owner: z.boolean().optional(),
             permissions: z.string().optional(),
-            banner: z.string().optional(),
+            banner: z.string().nullable().optional(),
             features: z.array(z.string()).optional(),
             approximate_member_count: z.number().optional(),
             approximate_presence_count: z.number().optional(),
