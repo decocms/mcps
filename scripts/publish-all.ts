@@ -42,6 +42,11 @@ interface AppJson {
     configSchema?: Record<string, unknown>;
   };
   bindings?: Record<string, string>;
+  requester?: {
+    name?: string;
+    email?: string;
+    repository?: string;
+  };
   metadata?: {
     categories?: string[];
     official?: boolean;
@@ -91,6 +96,9 @@ interface PublishRequestBody {
         title?: string;
         description?: string;
       }>;
+      repository?: {
+        url?: string;
+      };
     };
   };
   requester?: {
@@ -180,12 +188,10 @@ async function findMcpFolders(): Promise<string[]> {
     const s = await stat(fullPath);
     if (!s.isDirectory()) continue;
 
-    const appJsonPath = join(fullPath, "app.json");
-    try {
-      await stat(appJsonPath);
+    const hasDecoJson = existsSync(join(fullPath, "deco.json"));
+    const hasAppJson = existsSync(join(fullPath, "app.json"));
+    if (hasDecoJson || hasAppJson) {
       folders.push(entry);
-    } catch {
-      // no app.json — skip
     }
   }
 
@@ -193,7 +199,11 @@ async function findMcpFolders(): Promise<string[]> {
 }
 
 async function readAppJson(mcpFolder: string): Promise<AppJson> {
-  const raw = await readFile(join(ROOT, mcpFolder, "app.json"), "utf-8");
+  const decoJsonPath = join(ROOT, mcpFolder, "deco.json");
+  const configPath = existsSync(decoJsonPath)
+    ? decoJsonPath
+    : join(ROOT, mcpFolder, "app.json");
+  const raw = await readFile(configPath, "utf-8");
   return JSON.parse(raw) as AppJson;
 }
 
@@ -285,11 +295,14 @@ function buildPayload(
         description: app.description,
         ...(app.icon ? { icons: [{ src: app.icon }] } : {}),
         ...(remotes.length ? { remotes } : {}),
+        ...(app.requester?.repository
+          ? { repository: { url: app.requester.repository } }
+          : {}),
       },
     },
     requester: {
-      name: committer.name,
-      email: committer.email,
+      name: app.requester?.name ?? committer.name,
+      email: app.requester?.email ?? committer.email,
     },
   };
 }
@@ -360,7 +373,7 @@ async function publishWithRetry(
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  console.log("🔍 Buscando MCPs com app.json...\n");
+  console.log("🔍 Buscando MCPs com deco.json ou app.json...\n");
 
   let folders = await findMcpFolders();
 
