@@ -28,6 +28,11 @@ import {
   publishMemberRoleRemoved,
   publishReactionAdded,
   publishReactionRemoved,
+  publishThreadCreated,
+  publishThreadDeleted,
+  publishThreadUpdated,
+  publishChannelCreated,
+  publishChannelDeleted,
 } from "../lib/event-publisher.ts";
 import {
   indexMessage,
@@ -563,8 +568,10 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread create event
   client.on("threadCreate", async (thread) => {
     if (!thread.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleThreadCreate(thread);
+      publishThreadCreated(currentEnv, thread);
     } catch (error) {
       console.error("[Discord] Error handling thread create:", error);
     }
@@ -573,8 +580,10 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread delete event
   client.on("threadDelete", async (thread) => {
     if (!thread.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleThreadDelete(thread);
+      publishThreadDeleted(currentEnv, thread);
     } catch (error) {
       console.error("[Discord] Error handling thread delete:", error);
     }
@@ -583,8 +592,10 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread update event
   client.on("threadUpdate", async (oldThread, newThread) => {
     if (!newThread.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleThreadUpdate(newThread);
+      publishThreadUpdated(currentEnv, oldThread, newThread);
     } catch (error) {
       console.error("[Discord] Error handling thread update:", error);
     }
@@ -647,8 +658,10 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Channel create event
   client.on("channelCreate", async (channel) => {
     if (!("guild" in channel) || !channel.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleChannelCreate(channel);
+      publishChannelCreated(currentEnv, channel);
     } catch (error) {
       console.error("[Discord] Error handling channel create:", error);
     }
@@ -657,8 +670,10 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Channel delete event
   client.on("channelDelete", async (channel) => {
     if (!("guild" in channel) || !channel.guild) return;
+    const currentEnv = getCurrentEnv() || env;
     try {
       await handleChannelDelete(channel);
+      publishChannelDeleted(currentEnv, channel);
     } catch (error) {
       console.error("[Discord] Error handling channel delete:", error);
     }
