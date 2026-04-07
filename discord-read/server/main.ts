@@ -15,7 +15,7 @@ import {
   shutdownAllBots,
   isBotRunning,
 } from "./bot-manager.ts";
-import { getOrCreateInstance } from "./bot-instance.ts";
+import { getOrCreateInstance, getInstance } from "./bot-instance.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
@@ -320,9 +320,9 @@ async function bootstrapFromSupabase(): Promise<void> {
     console.log(`[BOOTSTRAP] Found ${rows.length} saved connection(s)`);
 
     // Deduplicate by bot_token — only start one Discord client per unique token.
-    // Multiple connections may share the same bot; we pick the first and register
-    // the rest as aliases so config-cache / triggers still work for them.
-    const startedTokens = new Set<string>();
+    // Multiple connections sharing the same bot share the same Client instance.
+    // Maps bot_token → connectionId of the primary (first) instance that started it.
+    const tokenToOwner = new Map<string, string>();
 
     for (const row of rows) {
       const connectionId = row.connection_id;
@@ -353,14 +353,6 @@ async function bootstrapFromSupabase(): Promise<void> {
         commandPrefix: row.command_prefix || "!",
       });
 
-      // Skip starting a second Discord client for the same bot token
-      if (startedTokens.has(row.bot_token)) {
-        console.log(
-          `[BOOTSTRAP] Skipping ${connectionId} — bot already started for this token`,
-        );
-        continue;
-      }
-
       // Build a synthetic env so ensureBotRunning can resolve the token
       const syntheticEnv = {
         MESH_REQUEST_CONTEXT: {
@@ -374,13 +366,27 @@ async function bootstrapFromSupabase(): Promise<void> {
       } as unknown as Env;
 
       // Ensure instance is created (superAdmins come from StateSchema on next onChange)
-      getOrCreateInstance(connectionId, syntheticEnv);
+      const instance = getOrCreateInstance(connectionId, syntheticEnv);
+
+      // If another connection already started a client for this token, share it
+      const ownerConnectionId = tokenToOwner.get(row.bot_token);
+      if (ownerConnectionId) {
+        const ownerInstance = getInstance(ownerConnectionId);
+        if (ownerInstance?.client) {
+          instance.client = ownerInstance.client;
+          instance.initialized = true;
+          console.log(
+            `[BOOTSTRAP] ${connectionId} sharing client from ${ownerConnectionId} (same token)`,
+          );
+        }
+        continue;
+      }
 
       try {
         console.log(`[BOOTSTRAP] Starting bot for ${connectionId}...`);
         const started = await ensureBotRunning(syntheticEnv);
         if (started) {
-          startedTokens.add(row.bot_token);
+          tokenToOwner.set(row.bot_token, connectionId);
           console.log(`[BOOTSTRAP] Bot started for ${connectionId} ✓`);
         } else {
           console.log(`[BOOTSTRAP] Bot failed to start for ${connectionId}`);
