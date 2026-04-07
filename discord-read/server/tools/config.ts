@@ -71,7 +71,8 @@ export const createSaveConfigTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { context, env } = params;
+      const { context, runtimeContext } = params;
+      const env = runtimeContext?.env;
       const {
         botToken,
         discordPublicKey,
@@ -188,7 +189,8 @@ export const createUpdateConfigTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { context, env } = params;
+      const { context, runtimeContext } = params;
+      const env = runtimeContext?.env;
       const { systemPrompt, commandPrefix, authorizedGuilds, ownerId } =
         context as {
           systemPrompt?: string;
@@ -303,7 +305,7 @@ export const createLoadConfigTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { env } = params;
+      const env = params.runtimeContext?.env;
       // Check if Supabase is configured
       if (!isSupabaseConfigured()) {
         return {
@@ -316,7 +318,7 @@ export const createLoadConfigTool = (env: Env) =>
 
       // Get connection ID from env
       const connectionId =
-        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
 
       try {
         const config = await getDiscordConfig(connectionId);
@@ -372,7 +374,7 @@ export const createDeleteConfigTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { env } = params;
+      const env = params.runtimeContext?.env;
       if (!isSupabaseConfigured()) {
         return {
           success: false,
@@ -381,7 +383,7 @@ export const createDeleteConfigTool = (env: Env) =>
       }
 
       const connectionId =
-        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
 
       try {
         await deleteDiscordConfig(connectionId);
@@ -469,7 +471,7 @@ export const createGenerateApiKeyTool = (_env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { env } = params;
+      const env = params.runtimeContext?.env;
 
       // Check if Supabase is configured
       if (!isSupabaseConfigured()) {
@@ -481,7 +483,7 @@ export const createGenerateApiKeyTool = (_env: Env) =>
         };
       }
 
-      // Get current connection context from params.env (runtime env)
+      // Get current connection context from runtimeContext.env
       const connectionId =
         env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
       const organizationId = env?.MESH_REQUEST_CONTEXT?.organizationId;

@@ -30,7 +30,7 @@ export const createStartBotTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const currentEnv = params.env || env;
+      const currentEnv = params.runtimeContext?.env || env;
 
       const connectionId =
         currentEnv.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
@@ -85,7 +85,7 @@ export const createStopBotTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const currentEnv = params.env || env;
+      const currentEnv = params.runtimeContext?.env || env;
 
       console.log("[Tool] DISCORD_BOT_STOP called");
 
@@ -125,7 +125,7 @@ export const createBotStatusTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const currentEnv = params.env || env;
+      const currentEnv = params.runtimeContext?.env || env;
 
       console.log("[Tool] DISCORD_BOT_STATUS called");
 
