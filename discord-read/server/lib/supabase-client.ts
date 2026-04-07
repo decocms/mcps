@@ -236,22 +236,16 @@ export async function saveTriggerCredentials(
     throw new Error("Supabase client not initialized");
   }
 
-  const now = new Date().toISOString();
-
-  const row: TriggerCredentialsRow = {
-    connection_id: connectionId,
-    callback_url: state.credentials.callbackUrl,
-    callback_token: state.credentials.callbackToken,
-    active_trigger_types: state.activeTriggerTypes,
-    created_at: now,
-    updated_at: now,
-  };
-
-  const { error } = await client
-    .from("discord_trigger_credentials")
-    .upsert(row as any, {
-      onConflict: "connection_id",
-    });
+  const { error } = await client.from("discord_trigger_credentials").upsert(
+    {
+      connection_id: connectionId,
+      callback_url: state.credentials.callbackUrl,
+      callback_token: state.credentials.callbackToken,
+      active_trigger_types: state.activeTriggerTypes,
+      updated_at: new Date().toISOString(),
+    } as any,
+    { onConflict: "connection_id" },
+  );
 
   if (error) {
     throw new Error(`Failed to save trigger credentials: ${error.message}`);
