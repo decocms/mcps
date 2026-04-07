@@ -71,15 +71,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const token = env.MESH_REQUEST_CONTEXT?.token;
 
-      // Configure HyperDX logger if API key is provided
-      if (state?.HYPERDX_API_KEY) {
-        logger.setApiKey(state.HYPERDX_API_KEY);
-        logger.info("HyperDX logger configured", {
-          trace_id: traceId,
-          organizationId,
-        });
-      }
-
       // Database tables are managed via Supabase
       console.log("[Setup] Skipping database initialization (using Supabase)");
 
