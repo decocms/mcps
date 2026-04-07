@@ -13,7 +13,7 @@ import {
 import type { Env } from "../../types/env.ts";
 import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
-import { getInstance, getOrCreateInstance } from "../../bot-instance.ts";
+import { getInstance } from "../../bot-instance.ts";
 
 const MAX_PROCESSED_CACHE = 100;
 const MAX_CACHE_SIZE = 1000;

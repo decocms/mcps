@@ -8,7 +8,6 @@
 
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
-import { getDiscordClient } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
 import {
   updateEnv,

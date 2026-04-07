@@ -8,12 +8,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import {
-  ensureBotRunning,
-  isBotRunning,
-  shutdownBot,
-  getBotStatus,
-} from "../bot-manager.ts";
+import { ensureBotRunning, isBotRunning, shutdownBot } from "../bot-manager.ts";
 import { getDiscordClient } from "../discord/client.ts";
 
 /**

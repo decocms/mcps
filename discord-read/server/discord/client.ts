@@ -61,7 +61,6 @@ import {
 import {
   getOrCreateInstance,
   getInstance,
-  getInstanceByClient,
   type BotInstance,
 } from "../bot-instance.ts";
 
