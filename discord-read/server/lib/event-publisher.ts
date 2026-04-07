@@ -20,10 +20,15 @@ import { triggers } from "./trigger-store.ts";
 import { getAllInstances } from "../bot-instance.ts";
 
 /**
- * Notify a trigger event for all connections whose bot is in the same guild.
- * Only notifies connections that have an active client with access to the guild
- * where the event originated. DM events (no guildId) are scoped to only the
- * originating connection to prevent leaking private content across tenants.
+ * Notify a trigger event for all registered connections.
+ *
+ * For guild events: notifies all connections. Connections with an active bot
+ * are filtered by guild membership; connections without a bot (but with
+ * trigger callbacks configured) are always notified since we can't check
+ * guild membership without a client.
+ *
+ * For DM events: only the originating connection is notified to prevent
+ * leaking private content across tenants.
  */
 function notifyAllConnections(
   type: Parameters<(typeof triggers)["notify"]>[1],
@@ -34,12 +39,15 @@ function notifyAllConnections(
   const guildId = data.guild_id as string | undefined;
 
   for (const instance of instances) {
-    // Skip connections without an active bot
-    if (!instance.client?.isReady()) continue;
-
     if (guildId) {
-      // Guild event: only notify bots that are in that guild
-      if (!instance.client.guilds.cache.has(guildId)) continue;
+      // Guild event: if bot is active, check guild membership; otherwise notify anyway
+      // (the connection may have triggers configured even without a running bot)
+      if (
+        instance.client?.isReady() &&
+        !instance.client.guilds.cache.has(guildId)
+      ) {
+        continue;
+      }
     } else {
       // DM event: only notify the originating connection (no cross-tenant leak)
       if (sourceConnectionId && instance.connectionId !== sourceConnectionId)
