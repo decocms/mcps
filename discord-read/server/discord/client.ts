@@ -181,27 +181,21 @@ async function doInitialize(instance: BotInstance, env: Env): Promise<Client> {
   setDatabaseEnv(env);
   instance.env = env;
 
-  // Load config from Supabase
-  console.log(
-    `[Discord] Looking for saved config for connection: ${connectionId}`,
-  );
+  // Resolve bot token (auth header first, then Supabase)
+  console.log(`[Discord] Resolving bot token for connection: ${connectionId}`);
 
+  const { getDiscordBotToken } = await import("../lib/env.ts");
+  const token = await getDiscordBotToken(env);
+
+  // Also load saved config for metadata (authorized guilds, etc.)
   const { getDiscordConfig } = await import("../lib/config-cache.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
-  if (!savedConfig?.botToken) {
-    throw new Error(
-      `Discord Bot Token not configured for connection '${connectionId}'. ` +
-        "Please use DISCORD_SAVE_CONFIG to save your bot token first.",
-    );
-  }
-
-  const token = savedConfig.botToken;
   console.log(
-    `[Discord] Bot token loaded from Supabase config for ${connectionId}`,
+    `[Discord] Bot token resolved for ${connectionId} (saved config: ${savedConfig ? "yes" : "no"})`,
   );
   console.log(
-    `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
+    `[Discord] Authorized guilds: ${savedConfig?.authorizedGuilds?.length || "all"}`,
   );
 
   // Create client with required intents
