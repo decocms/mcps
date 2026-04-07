@@ -71,6 +71,12 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const token = env.MESH_REQUEST_CONTEXT?.token;
 
+      // Initialize trigger storage with Mesh credentials (lazy — first onChange wins)
+      if (meshUrl && token) {
+        const { triggerStorage } = await import("./lib/trigger-store.ts");
+        triggerStorage.configure(meshUrl, token);
+      }
+
       // Configure HyperDX logger if API key is provided
       if (state?.HYPERDX_API_KEY) {
         logger.setApiKey(state.HYPERDX_API_KEY);
