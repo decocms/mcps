@@ -284,6 +284,100 @@ Discord MCP Server Started
 // ============================================================================
 
 import { getAllInstances } from "./bot-instance.ts";
+import { loadAllConnectionConfigs } from "./lib/supabase-client.ts";
+import { triggerStorage } from "./lib/trigger-store.ts";
+
+/**
+ * Bootstrap bots from Supabase on startup (no onChange needed).
+ *
+ * Loads all saved connection configs and auto-starts each bot using
+ * a synthetic env built from the persisted config. This ensures bots
+ * come back online after deploy/restart without waiting for a user
+ * to save config in the Mesh UI.
+ */
+async function bootstrapFromSupabase(): Promise<void> {
+  console.log("[BOOTSTRAP] Loading saved connections from Supabase...");
+
+  try {
+    const rows = await loadAllConnectionConfigs();
+
+    if (rows.length === 0) {
+      console.log("[BOOTSTRAP] No saved connections found");
+      return;
+    }
+
+    console.log(`[BOOTSTRAP] Found ${rows.length} saved connection(s)`);
+
+    for (const row of rows) {
+      const connectionId = row.connection_id;
+
+      if (!row.bot_token) {
+        console.log(
+          `[BOOTSTRAP] Skipping ${connectionId} — no bot token saved`,
+        );
+        continue;
+      }
+
+      // Configure trigger storage from saved credentials
+      const meshUrl = row.mesh_url;
+      const meshApiKey = row.mesh_api_key || row.mesh_token;
+      if (meshUrl && meshApiKey && !triggerStorage.isReady) {
+        triggerStorage.configure(meshUrl, meshApiKey);
+      }
+
+      // Build a synthetic env so ensureBotRunning can resolve the token
+      const syntheticEnv = {
+        MESH_REQUEST_CONTEXT: {
+          connectionId,
+          organizationId: row.organization_id,
+          meshUrl,
+          token: meshApiKey || undefined,
+          authorization: `Bearer ${row.bot_token}`,
+          state: {},
+        },
+      } as unknown as Env;
+
+      // Sync config to in-memory cache
+      const { setDiscordConfig } = await import("./lib/config-cache.ts");
+      await setDiscordConfig({
+        connectionId,
+        organizationId: row.organization_id,
+        meshUrl,
+        meshToken: row.mesh_token || undefined,
+        meshApiKey: row.mesh_api_key || undefined,
+        botToken: row.bot_token,
+        discordPublicKey: row.discord_public_key || undefined,
+        discordApplicationId: row.discord_application_id || undefined,
+        authorizedGuilds: row.authorized_guilds || undefined,
+        ownerId: row.owner_id || undefined,
+        commandPrefix: row.command_prefix || "!",
+      });
+
+      // Ensure instance is created (superAdmins come from StateSchema on next onChange)
+      getOrCreateInstance(connectionId, syntheticEnv);
+
+      try {
+        console.log(`[BOOTSTRAP] Starting bot for ${connectionId}...`);
+        const started = await ensureBotRunning(syntheticEnv);
+        if (started) {
+          console.log(`[BOOTSTRAP] Bot started for ${connectionId} ✓`);
+        } else {
+          console.log(`[BOOTSTRAP] Bot failed to start for ${connectionId}`);
+        }
+      } catch (error) {
+        console.error(
+          `[BOOTSTRAP] Error starting bot for ${connectionId}:`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[BOOTSTRAP] Failed to load configs from Supabase:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
 
 /**
  * Check all bot instances and restart any that are down.
@@ -329,8 +423,11 @@ async function autoRestartCheck(): Promise<void> {
   }
 }
 
-setImmediate(() => {
+setImmediate(async () => {
+  // Bootstrap bots from Supabase first (no onChange needed)
+  await bootstrapFromSupabase();
+
+  // Then schedule periodic health checks
   autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
   console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
-  setTimeout(autoRestartCheck, 30000);
 });
