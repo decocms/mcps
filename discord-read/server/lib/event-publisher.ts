@@ -17,40 +17,74 @@ import type {
   CategoryChannel,
 } from "discord.js";
 import { triggers } from "./trigger-store.ts";
+import { getAllInstances } from "../bot-instance.ts";
+
+/**
+ * Notify a trigger event for all connections whose bot is in the same guild.
+ * Only notifies connections that have an active client with access to the guild
+ * where the event originated. DM events (no guildId) are scoped to only the
+ * originating connection to prevent leaking private content across tenants.
+ */
+function notifyAllConnections(
+  type: Parameters<(typeof triggers)["notify"]>[1],
+  data: Record<string, unknown>,
+  sourceConnectionId?: string,
+): void {
+  const instances = getAllInstances();
+  const guildId = data.guild_id as string | undefined;
+
+  for (const instance of instances) {
+    // Skip connections without an active bot
+    if (!instance.client?.isReady()) continue;
+
+    if (guildId) {
+      // Guild event: only notify bots that are in that guild
+      if (!instance.client.guilds.cache.has(guildId)) continue;
+    } else {
+      // DM event: only notify the originating connection (no cross-tenant leak)
+      if (sourceConnectionId && instance.connectionId !== sourceConnectionId)
+        continue;
+    }
+
+    triggers.notify(instance.connectionId, type, data);
+  }
+}
 
 /**
  * Publish a discord.message.created event
  */
 export function publishMessageCreated(env: Env, message: Message): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.created", {
-    event: "discord.message.created",
-    subject: message.id,
-    message_id: message.id,
-    guild_id: message.guild?.id,
-    guild_name: message.guild?.name,
-    channel_id: message.channelId,
-    channel_name:
-      message.channel && "name" in message.channel
-        ? message.channel.name
-        : undefined,
-    parent_id:
-      message.channel && "parentId" in message.channel
-        ? message.channel.parentId
-        : undefined,
-    author_id: message.author.id,
-    author_username: message.author.username,
-    author_bot: message.author.bot,
-    content: message.content,
-    has_attachments: message.attachments.size > 0,
-    attachment_count: message.attachments.size,
-    has_embeds: message.embeds.length > 0,
-    is_dm: !message.guild,
-    timestamp: message.createdAt.toISOString(),
-    referenced_message_id: message.reference?.messageId,
-  });
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.created",
+    {
+      event: "discord.message.created",
+      subject: message.id,
+      message_id: message.id,
+      guild_id: message.guild?.id,
+      guild_name: message.guild?.name,
+      channel_id: message.channelId,
+      channel_name:
+        message.channel && "name" in message.channel
+          ? message.channel.name
+          : undefined,
+      parent_id:
+        message.channel && "parentId" in message.channel
+          ? message.channel.parentId
+          : undefined,
+      author_id: message.author.id,
+      author_username: message.author.username,
+      author_bot: message.author.bot,
+      content: message.content,
+      has_attachments: message.attachments.size > 0,
+      attachment_count: message.attachments.size,
+      has_embeds: message.embeds.length > 0,
+      is_dm: !message.guild,
+      timestamp: message.createdAt.toISOString(),
+      referenced_message_id: message.reference?.messageId,
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.created: ${message.id}`);
 }
 
@@ -58,24 +92,26 @@ export function publishMessageCreated(env: Env, message: Message): void {
  * Publish a discord.message.deleted event
  */
 export function publishMessageDeleted(env: Env, message: Message): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.deleted", {
-    event: "discord.message.deleted",
-    subject: message.id,
-    message_id: message.id,
-    guild_id: message.guild?.id,
-    guild_name: message.guild?.name,
-    channel_id: message.channelId,
-    channel_name:
-      message.channel && "name" in message.channel
-        ? message.channel.name
-        : undefined,
-    author_id: message.author?.id,
-    author_username: message.author?.username,
-    deleted_at: new Date().toISOString(),
-  });
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.deleted",
+    {
+      event: "discord.message.deleted",
+      subject: message.id,
+      message_id: message.id,
+      guild_id: message.guild?.id,
+      guild_name: message.guild?.name,
+      channel_id: message.channelId,
+      channel_name:
+        message.channel && "name" in message.channel
+          ? message.channel.name
+          : undefined,
+      author_id: message.author?.id,
+      author_username: message.author?.username,
+      deleted_at: new Date().toISOString(),
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.deleted: ${message.id}`);
 }
 
@@ -87,38 +123,37 @@ export function publishMessageUpdated(
   oldMessage: Message,
   newMessage: Message,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.updated", {
-    event: "discord.message.updated",
-    subject: newMessage.id,
-    message_id: newMessage.id,
-    guild_id: newMessage.guild?.id,
-    guild_name: newMessage.guild?.name,
-    channel_id: newMessage.channelId,
-    channel_name:
-      newMessage.channel && "name" in newMessage.channel
-        ? newMessage.channel.name
-        : undefined,
-    author_id: newMessage.author.id,
-    author_username: newMessage.author.username,
-    old_content: oldMessage.content,
-    new_content: newMessage.content,
-    content_changed: oldMessage.content !== newMessage.content,
-    edited_at: newMessage.editedAt?.toISOString(),
-  });
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.updated",
+    {
+      event: "discord.message.updated",
+      subject: newMessage.id,
+      message_id: newMessage.id,
+      guild_id: newMessage.guild?.id,
+      guild_name: newMessage.guild?.name,
+      channel_id: newMessage.channelId,
+      channel_name:
+        newMessage.channel && "name" in newMessage.channel
+          ? newMessage.channel.name
+          : undefined,
+      author_id: newMessage.author.id,
+      author_username: newMessage.author.username,
+      old_content: oldMessage.content,
+      new_content: newMessage.content,
+      content_changed: oldMessage.content !== newMessage.content,
+      edited_at: newMessage.editedAt?.toISOString(),
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.updated: ${newMessage.id}`);
 }
 
 /**
  * Publish a discord.member.joined event
  */
-export function publishMemberJoined(env: Env, member: GuildMember): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.joined", {
+export function publishMemberJoined(_env: Env, member: GuildMember): void {
+  notifyAllConnections("discord.member.joined", {
     event: "discord.member.joined",
     subject: member.id,
     user_id: member.id,
@@ -136,11 +171,8 @@ export function publishMemberJoined(env: Env, member: GuildMember): void {
 /**
  * Publish a discord.member.left event
  */
-export function publishMemberLeft(env: Env, member: GuildMember): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.left", {
+export function publishMemberLeft(_env: Env, member: GuildMember): void {
+  notifyAllConnections("discord.member.left", {
     event: "discord.member.left",
     subject: member.id,
     user_id: member.id,
@@ -161,15 +193,12 @@ export function publishMemberLeft(env: Env, member: GuildMember): void {
  * Publish a discord.member.role.added event
  */
 export function publishMemberRoleAdded(
-  env: Env,
+  _env: Env,
   member: GuildMember,
   roleId: string,
   roleName: string,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.role.added", {
+  notifyAllConnections("discord.member.role.added", {
     event: "discord.member.role.added",
     subject: member.id,
     user_id: member.id,
@@ -189,15 +218,12 @@ export function publishMemberRoleAdded(
  * Publish a discord.member.role.removed event
  */
 export function publishMemberRoleRemoved(
-  env: Env,
+  _env: Env,
   member: GuildMember,
   roleId: string,
   roleName: string,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.role.removed", {
+  notifyAllConnections("discord.member.role.removed", {
     event: "discord.member.role.removed",
     subject: member.id,
     user_id: member.id,
@@ -217,18 +243,15 @@ export function publishMemberRoleRemoved(
  * Publish a discord.reaction.added event
  */
 export function publishReactionAdded(
-  env: Env,
+  _env: Env,
   reaction: MessageReaction,
   user: User,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
   const emoji = reaction.emoji.id
     ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
     : reaction.emoji.name;
 
-  triggers.notify(connectionId, "discord.reaction.added", {
+  notifyAllConnections("discord.reaction.added", {
     event: "discord.reaction.added",
     subject: reaction.message.id,
     message_id: reaction.message.id,
@@ -251,18 +274,15 @@ export function publishReactionAdded(
  * Publish a discord.reaction.removed event
  */
 export function publishReactionRemoved(
-  env: Env,
+  _env: Env,
   reaction: MessageReaction,
   user: User,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
   const emoji = reaction.emoji.id
     ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
     : reaction.emoji.name;
 
-  triggers.notify(connectionId, "discord.reaction.removed", {
+  notifyAllConnections("discord.reaction.removed", {
     event: "discord.reaction.removed",
     subject: reaction.message.id,
     message_id: reaction.message.id,
@@ -285,13 +305,10 @@ export function publishReactionRemoved(
  * Publish a discord.thread.created event
  */
 export function publishThreadCreated(
-  env: Env,
+  _env: Env,
   thread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.created", {
+  notifyAllConnections("discord.thread.created", {
     event: "discord.thread.created",
     subject: thread.id,
     thread_id: thread.id,
@@ -317,13 +334,10 @@ export function publishThreadCreated(
  * Publish a discord.thread.deleted event
  */
 export function publishThreadDeleted(
-  env: Env,
+  _env: Env,
   thread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.deleted", {
+  notifyAllConnections("discord.thread.deleted", {
     event: "discord.thread.deleted",
     subject: thread.id,
     thread_id: thread.id,
@@ -342,14 +356,11 @@ export function publishThreadDeleted(
  * Publish a discord.thread.updated event
  */
 export function publishThreadUpdated(
-  env: Env,
+  _env: Env,
   oldThread: ThreadChannel | AnyThreadChannel,
   newThread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.updated", {
+  notifyAllConnections("discord.thread.updated", {
     event: "discord.thread.updated",
     subject: newThread.id,
     thread_id: newThread.id,
@@ -374,14 +385,11 @@ export function publishThreadUpdated(
 /**
  * Publish a discord.channel.created event
  */
-export function publishChannelCreated(env: Env, channel: GuildChannel): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
+export function publishChannelCreated(_env: Env, channel: GuildChannel): void {
   const categoryName =
     "parent" in channel ? (channel.parent as CategoryChannel)?.name : undefined;
 
-  triggers.notify(connectionId, "discord.channel.created", {
+  notifyAllConnections("discord.channel.created", {
     event: "discord.channel.created",
     subject: channel.id,
     channel_id: channel.id,
@@ -402,11 +410,8 @@ export function publishChannelCreated(env: Env, channel: GuildChannel): void {
 /**
  * Publish a discord.channel.deleted event
  */
-export function publishChannelDeleted(env: Env, channel: GuildChannel): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.channel.deleted", {
+export function publishChannelDeleted(_env: Env, channel: GuildChannel): void {
+  notifyAllConnections("discord.channel.deleted", {
     event: "discord.channel.deleted",
     subject: channel.id,
     channel_id: channel.id,
