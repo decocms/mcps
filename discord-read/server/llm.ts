@@ -164,7 +164,7 @@ export function configureWhisper(
 }
 
 export function isWhisperConfigured(connectionId: string): boolean {
-  return getInstance(connectionId)?.whisperConfig !== null;
+  return getInstance(connectionId)?.whisperConfig != null;
 }
 
 export async function transcribeAudio(
