@@ -123,6 +123,12 @@ export const StateSchema = z.object({
         .describe(
           "Stream responses in real-time (message updates as LLM generates). Disable for a single final response.",
         ),
+      THINKING_MESSAGE: z
+        .string()
+        .default("🤔 Pensando")
+        .describe(
+          "Message shown while the bot is thinking (e.g. '🤔 Pensando', '🤔 Thinking'). Dots are animated automatically.",
+        ),
       TOOL_PROCESSING_MESSAGE: z
         .string()
         .default("🔧 Processando...")

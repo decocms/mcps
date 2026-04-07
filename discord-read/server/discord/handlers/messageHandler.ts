@@ -350,17 +350,20 @@ async function handleDefaultAgent(
   const authorMention = `<@${message.author.id}>`;
 
   // Send thinking message for streaming mode
+  const thinkingText =
+    env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG?.THINKING_MESSAGE ||
+    "🤔 Pensando";
   let thinkingMsg: Message | null = null;
   let thinkingAnimation: { stop: () => void } | null = null;
   if (useStreaming) {
-    thinkingMsg = await sendThinkingMessage(message);
+    thinkingMsg = await sendThinkingMessage(message, thinkingText);
     if (thinkingMsg) {
-      // Start thinking animation (matches Slack's pattern)
+      // Start thinking animation (text configurable via RESPONSE_CONFIG)
       const frames = [
-        "🤔 Pensando",
-        "🤔 Pensando.",
-        "🤔 Pensando..",
-        "🤔 Pensando...",
+        thinkingText,
+        `${thinkingText}.`,
+        `${thinkingText}..`,
+        `${thinkingText}...`,
       ];
       let frame = 0;
       let stopped = false;

@@ -690,6 +690,7 @@ export async function shutdownDiscordClient(
  */
 export async function sendThinkingMessage(
   message: Message,
+  thinkingText?: string,
 ): Promise<Message | null> {
   try {
     const channel = message.channel;
@@ -698,8 +699,9 @@ export async function sendThinkingMessage(
       return null;
     }
 
+    const text = thinkingText || "🤔 Pensando";
     const thinkingMsg = await channel.send({
-      content: `<@${message.author.id}> 🤔 Pensando...`,
+      content: `<@${message.author.id}> ${text}...`,
     });
 
     return thinkingMsg;
