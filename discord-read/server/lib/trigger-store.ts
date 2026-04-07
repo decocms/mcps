@@ -1,14 +1,59 @@
-import { createTriggers } from "@decocms/runtime/triggers";
+import { createTriggers, type TriggerStorage } from "@decocms/runtime/triggers";
 import { StudioKV } from "@decocms/runtime/trigger-storage";
 import { z } from "zod";
 
-const storage =
-  process.env.MESH_URL && process.env.MESH_API_KEY
-    ? new StudioKV({
+/**
+ * Lazy-initialized StudioKV storage.
+ *
+ * On startup, MESH_URL and MESH_API_KEY env vars may not be set yet.
+ * This wrapper defers StudioKV creation until the first onChange provides
+ * meshUrl + token, so trigger credentials survive pod restarts without
+ * requiring static env vars.
+ */
+class LazyStudioKV implements TriggerStorage {
+  private inner: StudioKV | null = null;
+  private currentApiKey: string | null = null;
+
+  constructor() {
+    // Try env vars at startup (works if they're set)
+    if (process.env.MESH_URL && process.env.MESH_API_KEY) {
+      this.inner = new StudioKV({
         url: process.env.MESH_URL,
         apiKey: process.env.MESH_API_KEY,
-      })
-    : undefined;
+      });
+      this.currentApiKey = process.env.MESH_API_KEY;
+      console.log("[TriggerStorage] Initialized from env vars");
+    }
+  }
+
+  /** Called from onChange / bootstrap / per-request to set or refresh credentials */
+  configure(url: string, apiKey: string): void {
+    if (this.inner && this.currentApiKey === apiKey) return; // Same credentials
+    const isRefresh = this.inner !== null;
+    this.inner = new StudioKV({ url, apiKey });
+    this.currentApiKey = apiKey;
+    console.log(
+      `[TriggerStorage] ${isRefresh ? "Refreshed" : "Initialized"} credentials (key: ${apiKey.slice(0, 8)}...)`,
+    );
+  }
+
+  get isReady(): boolean {
+    return this.inner !== null;
+  }
+
+  async get(connectionId: string) {
+    return this.inner?.get(connectionId) ?? null;
+  }
+  async set(connectionId: string, state: any) {
+    await this.inner?.set(connectionId, state);
+  }
+  async delete(connectionId: string) {
+    await this.inner?.delete(connectionId);
+  }
+}
+
+export const triggerStorage = new LazyStudioKV();
+const storage = triggerStorage;
 
 export const triggers = createTriggers({
   definitions: [
