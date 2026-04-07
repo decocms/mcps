@@ -70,10 +70,23 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
 
   // Check if we have a saved config or authorization header
   const { getDiscordConfig } = await import("./lib/config-cache.ts");
-  const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
+  let savedConfig;
+  try {
+    savedConfig = await getDiscordConfig(connectionId);
+  } catch (err) {
+    console.error(
+      `[BotManager] Error loading config from Supabase for ${connectionId}:`,
+      err instanceof Error ? err.message : String(err),
+    );
+    savedConfig = null;
+  }
 
   const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
   const hasSavedConfig = !!savedConfig?.botToken;
+
+  console.log(
+    `[BotManager] Config check for ${connectionId}: hasAuth=${hasAuth}, hasSavedConfig=${hasSavedConfig}`,
+  );
 
   if (!hasAuth && !hasSavedConfig) {
     console.log(
