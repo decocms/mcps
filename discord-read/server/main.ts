@@ -132,6 +132,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       }
 
       // If we have a connection ID, sync to config-cache
+      console.log(
+        `[CONFIG] Save check: connectionId=${connectionId || "MISSING"}, organizationId=${organizationId || "MISSING"}, meshUrl=${meshUrl ? "yes" : "MISSING"}, authorization=${authorization ? "yes" : "MISSING"}`,
+      );
       if (connectionId && organizationId && meshUrl) {
         const existingConfig = await getDiscordConfig(connectionId);
 
@@ -168,6 +171,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
         console.log(
           `[CONFIG] Authorized Guilds: ${authorizedGuilds.length > 0 ? authorizedGuilds.join(", ") : "all"}`,
+        );
+        console.log(
+          `[CONFIG] Bot token: ${botToken ? `${botToken.slice(0, 10)}...${botToken.slice(-4)}` : "MISSING"}`,
+        );
+      } else {
+        console.warn(
+          `[CONFIG] ⚠️ Cannot save config — missing: ${!connectionId ? "connectionId " : ""}${!organizationId ? "organizationId " : ""}${!meshUrl ? "meshUrl" : ""}`,
         );
       }
 
@@ -308,6 +318,11 @@ async function bootstrapFromSupabase(): Promise<void> {
 
     console.log(`[BOOTSTRAP] Found ${rows.length} saved connection(s)`);
 
+    // Deduplicate by bot_token — only start one Discord client per unique token.
+    // Multiple connections may share the same bot; we pick the first and register
+    // the rest as aliases so config-cache / triggers still work for them.
+    const startedTokens = new Set<string>();
+
     for (const row of rows) {
       const connectionId = row.connection_id;
 
@@ -325,19 +340,7 @@ async function bootstrapFromSupabase(): Promise<void> {
         triggerStorage.configure(meshUrl, meshApiKey);
       }
 
-      // Build a synthetic env so ensureBotRunning can resolve the token
-      const syntheticEnv = {
-        MESH_REQUEST_CONTEXT: {
-          connectionId,
-          organizationId: row.organization_id,
-          meshUrl,
-          token: meshApiKey || undefined,
-          authorization: `Bearer ${row.bot_token}`,
-          state: {},
-        },
-      } as unknown as Env;
-
-      // Sync config to in-memory cache
+      // Sync config to in-memory cache (always, even for duplicate tokens)
       const { setDiscordConfig } = await import("./lib/config-cache.ts");
       await setDiscordConfig({
         connectionId,
@@ -353,6 +356,26 @@ async function bootstrapFromSupabase(): Promise<void> {
         commandPrefix: row.command_prefix || "!",
       });
 
+      // Skip starting a second Discord client for the same bot token
+      if (startedTokens.has(row.bot_token)) {
+        console.log(
+          `[BOOTSTRAP] Skipping ${connectionId} — bot already started for this token`,
+        );
+        continue;
+      }
+
+      // Build a synthetic env so ensureBotRunning can resolve the token
+      const syntheticEnv = {
+        MESH_REQUEST_CONTEXT: {
+          connectionId,
+          organizationId: row.organization_id,
+          meshUrl,
+          token: meshApiKey || undefined,
+          authorization: `Bearer ${row.bot_token}`,
+          state: {},
+        },
+      } as unknown as Env;
+
       // Ensure instance is created (superAdmins come from StateSchema on next onChange)
       getOrCreateInstance(connectionId, syntheticEnv);
 
@@ -360,6 +383,7 @@ async function bootstrapFromSupabase(): Promise<void> {
         console.log(`[BOOTSTRAP] Starting bot for ${connectionId}...`);
         const started = await ensureBotRunning(syntheticEnv);
         if (started) {
+          startedTokens.add(row.bot_token);
           console.log(`[BOOTSTRAP] Bot started for ${connectionId} ✓`);
         } else {
           console.log(`[BOOTSTRAP] Bot failed to start for ${connectionId}`);

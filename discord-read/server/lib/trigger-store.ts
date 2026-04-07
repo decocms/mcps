@@ -42,12 +42,20 @@ class LazyStudioKV implements TriggerStorage {
   }
 
   async get(connectionId: string) {
-    return this.inner?.get(connectionId) ?? null;
+    const result = (await this.inner?.get(connectionId)) ?? null;
+    console.log(
+      `[TriggerStorage] GET ${connectionId}: ${result ? "found credentials" : "empty"} (ready=${this.isReady})`,
+    );
+    return result;
   }
   async set(connectionId: string, state: any) {
+    console.log(
+      `[TriggerStorage] SET ${connectionId}: saving credentials (ready=${this.isReady})`,
+    );
     await this.inner?.set(connectionId, state);
   }
   async delete(connectionId: string) {
+    console.log(`[TriggerStorage] DELETE ${connectionId}`);
     await this.inner?.delete(connectionId);
   }
 }
