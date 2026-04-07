@@ -184,6 +184,25 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
       if (hasAuth) {
         if (isBotRunning(env)) {
+          // Bot is already running (possibly via shared client from bootstrap).
+          // Update the primary instance's env so event handlers get fresh state
+          // (AGENT config, system prompt, etc.) instead of the empty bootstrap state.
+          if (connectionId) {
+            const currentInstance = getInstance(connectionId);
+            if (currentInstance?.client) {
+              const { getInstanceByClient } = await import("./bot-instance.ts");
+              const ownerInstance = getInstanceByClient(currentInstance.client);
+              if (
+                ownerInstance &&
+                ownerInstance.connectionId !== connectionId
+              ) {
+                ownerInstance.env = env;
+                console.log(
+                  `[CONFIG] Updated primary instance ${ownerInstance.connectionId} env from ${connectionId} onChange`,
+                );
+              }
+            }
+          }
           console.log(
             `[CONFIG] Bot already running for ${connectionId || "unknown"}`,
           );
