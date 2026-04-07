@@ -132,9 +132,11 @@ export async function collectStreamText(
 ): Promise<string> {
   let text = "";
   for await (const message of stream) {
+    // Each streamed message contains the full accumulated text so far,
+    // not a delta. We always take the latest snapshot.
     for (const part of message.parts) {
       if (part.type === "text" && part.text) {
-        text += part.text;
+        text = part.text;
       }
     }
   }
