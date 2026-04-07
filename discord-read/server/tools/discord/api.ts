@@ -5,7 +5,7 @@
  */
 
 import type { Env } from "../../types/env.ts";
-import { getCurrentEnv } from "../../bot-manager.ts";
+import { getInstance } from "../../bot-instance.ts";
 import { getDiscordBotToken } from "../../lib/env.ts";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
@@ -83,11 +83,13 @@ export async function discordAPI<T>(
   try {
     botToken = await getDiscordBotToken(env);
   } catch (error) {
-    // Fallback: try to get from global env (set when Discord bot started)
-    const globalEnv = getCurrentEnv();
-    if (globalEnv) {
+    // Fallback: try to get from the connection's stored env
+    const connectionId =
+      env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+    const instance = getInstance(connectionId);
+    if (instance?.env) {
       try {
-        botToken = await getDiscordBotToken(globalEnv);
+        botToken = await getDiscordBotToken(instance.env);
       } catch {
         throw new Error(
           `Discord Bot Token not found: ${error instanceof Error ? error.message : String(error)}`,

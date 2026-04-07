@@ -1,64 +1,74 @@
 /**
  * Bot Manager
  *
- * Manages Discord bot lifecycle - auto-starts on first request.
+ * Manages Discord bot lifecycle per connection (multi-tenant).
+ * Each connectionId gets its own Discord client and state.
  */
 
 import type { Env } from "./types/env.ts";
 import {
   initializeDiscordClient,
-  getDiscordClient,
   shutdownDiscordClient,
 } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-// Global state
-let botInitializing = false;
-let _botInitialized = false;
+import {
+  getInstance,
+  getOrCreateInstance,
+  getAllInstances,
+  removeInstance,
+} from "./bot-instance.ts";
 
-// Store the latest env globally for access in event handlers
-let _currentEnv: Env | null = null;
+function getConnectionId(env: Env): string {
+  return env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+}
 
 /**
- * Update the stored environment (called when new requests come in)
+ * Update the stored environment for a specific connection.
  */
 export function updateEnv(env: Env): void {
-  _currentEnv = env;
-  // Also update database env
+  const connectionId = getConnectionId(env);
+  const instance = getOrCreateInstance(connectionId, env);
+  instance.env = env;
+  // Also update database env (shared Supabase credentials)
   setDatabaseEnv(env);
 }
 
 /**
- * Get the current stored environment
+ * Get the current stored environment for a connection.
+ * If no connectionId is provided, returns undefined (no more global fallback).
  */
-export function getCurrentEnv(): Env | null {
-  return _currentEnv;
+export function getCurrentEnv(connectionId?: string): Env | null {
+  if (!connectionId) return null;
+  return getInstance(connectionId)?.env ?? null;
 }
 
 /**
- * Ensure bot is running. Call this from any tool or handler.
+ * Ensure bot is running for this connection.
  * Returns true if bot is ready, false if still initializing or failed.
  */
 export async function ensureBotRunning(env: Env): Promise<boolean> {
-  // Always update the stored env with latest context
-  updateEnv(env);
+  const connectionId = getConnectionId(env);
+  const instance = getOrCreateInstance(connectionId, env);
 
-  // Already running
-  const client = getDiscordClient();
-  if (client?.isReady()) {
+  // Always update env with latest context
+  instance.env = env;
+  setDatabaseEnv(env);
+
+  // Already running for this connection
+  if (instance.client?.isReady()) {
     return true;
   }
 
-  // Already initializing (prevent multiple concurrent inits)
-  if (botInitializing) {
-    console.log("[BotManager] Bot is already initializing, waiting...");
-    // Wait a bit and check again
+  // Already initializing this connection (prevent concurrent inits)
+  if (instance.initializing) {
+    console.log(
+      `[BotManager] Bot for ${connectionId} is already initializing, waiting...`,
+    );
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    return getDiscordClient()?.isReady() ?? false;
+    return instance.client?.isReady() ?? false;
   }
 
   // Check if we have a saved config or authorization header
-  const connectionId =
-    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
   const { getDiscordConfig } = await import("./lib/config-cache.ts");
   const savedConfig = await getDiscordConfig(connectionId).catch(() => null);
 
@@ -67,78 +77,97 @@ export async function ensureBotRunning(env: Env): Promise<boolean> {
 
   if (!hasAuth && !hasSavedConfig) {
     console.log(
-      "[BotManager] Bot not configured. Use DISCORD_SAVE_CONFIG to save configuration or add token in Authorization header.",
+      `[BotManager] Bot not configured for ${connectionId}. Use DISCORD_SAVE_CONFIG or add token in Authorization header.`,
     );
     return false;
   }
 
   if (hasSavedConfig) {
-    console.log("[BotManager] Found saved configuration in Supabase");
+    console.log(
+      `[BotManager] Found saved configuration in Supabase for ${connectionId}`,
+    );
   }
 
-  // Start initialization
-  botInitializing = true;
-  console.log("[BotManager] Auto-starting Discord bot...");
+  // Start initialization for this connection
+  instance.initializing = true;
+  console.log(`[BotManager] Auto-starting Discord bot for ${connectionId}...`);
 
   try {
-    // Set database env
     setDatabaseEnv(env);
-
-    // Ensure database tables exist
-    // Database tables are managed via Supabase - no need to ensure here
-    console.log(
-      "[BotManager] Skipping database initialization (using Supabase)",
-    );
     console.log("[BotManager] Database ready");
 
-    // Initialize Discord client
+    // Initialize Discord client for this connection
     await initializeDiscordClient(env);
-    _botInitialized = true;
-    console.log("[BotManager] Discord bot started ✓");
+    instance.initialized = true;
+    console.log(`[BotManager] Discord bot started for ${connectionId} ✓`);
 
     return true;
   } catch (error) {
-    console.error("[BotManager] Failed to start bot:", error);
+    console.error(
+      `[BotManager] Failed to start bot for ${connectionId}:`,
+      error,
+    );
     return false;
   } finally {
-    botInitializing = false;
+    instance.initializing = false;
   }
 }
 
 /**
- * Check if bot is running.
+ * Check if bot is running for a given connection.
  */
-export function isBotRunning(): boolean {
-  return getDiscordClient()?.isReady() ?? false;
+export function isBotRunning(env: Env): boolean {
+  const connectionId = getConnectionId(env);
+  return getInstance(connectionId)?.client?.isReady() ?? false;
 }
 
 /**
- * Get bot status info.
+ * Get bot status info for a given connection.
  */
-export function getBotStatus() {
-  const client = getDiscordClient();
+export function getBotStatus(env: Env) {
+  const connectionId = getConnectionId(env);
+  const instance = getInstance(connectionId);
 
-  if (!client || !client.isReady()) {
+  if (!instance?.client || !instance.client.isReady()) {
     return {
       running: false,
-      initializing: botInitializing,
+      initializing: instance?.initializing ?? false,
     };
   }
 
   return {
     running: true,
     initializing: false,
-    user: client.user?.tag,
-    guilds: client.guilds.cache.size,
-    uptime: client.uptime,
+    user: instance.client.user?.tag,
+    guilds: instance.client.guilds.cache.size,
+    uptime: instance.client.uptime,
   };
 }
 
 /**
- * Shutdown the bot.
+ * Shutdown the bot for a specific connection.
  */
-export async function shutdownBot(): Promise<void> {
-  await shutdownDiscordClient();
-  _botInitialized = false;
-  botInitializing = false;
+export async function shutdownBot(env: Env): Promise<void> {
+  const connectionId = getConnectionId(env);
+  await shutdownDiscordClient(connectionId);
+  removeInstance(connectionId);
+}
+
+/**
+ * Shutdown all bot instances (for graceful process shutdown).
+ */
+export async function shutdownAllBots(): Promise<void> {
+  const instances = getAllInstances();
+  console.log(`[BotManager] Shutting down ${instances.length} bot instance(s)`);
+  for (const instance of instances) {
+    try {
+      await shutdownDiscordClient(instance.connectionId);
+      removeInstance(instance.connectionId);
+    } catch (error) {
+      console.error(
+        `[BotManager] Error shutting down ${instance.connectionId}:`,
+        error,
+      );
+    }
+  }
 }

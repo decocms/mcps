@@ -1,7 +1,7 @@
 /**
  * Discord Client Module
  *
- * Initializes and manages the Discord.js client within the MCP server.
+ * Initializes and manages Discord.js clients per connection (multi-tenant).
  */
 
 import {
@@ -17,7 +17,6 @@ import {
 } from "discord.js";
 import type { Env } from "../types/env.ts";
 import { setDatabaseEnv } from "../../shared/db.ts";
-import { getCurrentEnv, updateEnv } from "../bot-manager.ts";
 import {
   publishMessageCreated,
   publishMessageDeleted,
@@ -59,28 +58,26 @@ import {
   handleReactionRemoveAll,
   handleReactionRemoveEmoji,
 } from "./handlers/reactionHandler.ts";
+import {
+  getOrCreateInstance,
+  getInstance,
+  type BotInstance,
+} from "../bot-instance.ts";
 
-let client: Client | null = null;
-let eventsRegistered = false;
-let initializingPromise: Promise<Client> | null = null;
-
-// Cache for auto_respond channels to avoid DB queries on every message
-interface AutoRespondCacheEntry {
-  autoRespond: boolean;
-  timestamp: number;
-}
-const autoRespondCache = new Map<string, AutoRespondCacheEntry>();
+// Debounce TTLs
+const MESSAGE_CACHE_TTL = 10000; // 10 seconds
 const AUTO_RESPOND_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Check if a channel has auto_respond enabled (with caching)
+ * Check if a channel has auto_respond enabled (with per-instance caching)
  */
 async function isAutoRespondChannel(
+  instance: BotInstance,
   guildId: string,
   channelId: string,
 ): Promise<boolean> {
   const cacheKey = `${guildId}:${channelId}`;
-  const cached = autoRespondCache.get(cacheKey);
+  const cached = instance.autoRespondCache.get(cacheKey);
 
   if (cached && Date.now() - cached.timestamp < AUTO_RESPOND_CACHE_TTL) {
     return cached.autoRespond;
@@ -91,7 +88,7 @@ async function isAutoRespondChannel(
     const channelContext = await db.getChannelContext(guildId, channelId);
     const autoRespond = channelContext?.auto_respond ?? false;
 
-    autoRespondCache.set(cacheKey, {
+    instance.autoRespondCache.set(cacheKey, {
       autoRespond,
       timestamp: Date.now(),
     });
@@ -103,79 +100,88 @@ async function isAutoRespondChannel(
 }
 
 /**
- * Invalidate auto_respond cache for a channel (call when setting changes)
+ * Invalidate auto_respond cache for a channel on a specific connection
  */
 export function invalidateAutoRespondCache(
+  connectionId: string,
   guildId: string,
   channelId: string,
 ): void {
-  const cacheKey = `${guildId}:${channelId}`;
-  autoRespondCache.delete(cacheKey);
+  const instance = getInstance(connectionId);
+  if (instance) {
+    const cacheKey = `${guildId}:${channelId}`;
+    instance.autoRespondCache.delete(cacheKey);
+  }
 }
 
-// Instance ID for debugging multiple instances
-const CLIENT_INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-// Debounce for message processing
-const processedMessageIds = new Set<string>();
-const MESSAGE_CACHE_TTL = 10000; // 10 seconds
+/**
+ * Get the Discord client for a specific connection.
+ */
+export function getDiscordClient(connectionId: string): Client | null {
+  return getInstance(connectionId)?.client ?? null;
+}
 
 /**
- * Initialize the Discord client with the given environment.
+ * Initialize the Discord client for a connection.
  */
 export async function initializeDiscordClient(env: Env): Promise<Client> {
+  const connectionId =
+    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  const instance = getOrCreateInstance(connectionId, env);
+
   console.log(
-    `[Discord] 🆔 initializeDiscordClient called (Instance: ${CLIENT_INSTANCE_ID})`,
+    `[Discord] initializeDiscordClient called for connection: ${connectionId}`,
   );
 
   // If already initializing, wait for it
-  if (initializingPromise) {
-    console.log("[Discord] ⏳ Already initializing, waiting...");
-    return initializingPromise;
+  if (instance.initializingPromise) {
+    console.log(`[Discord] Already initializing ${connectionId}, waiting...`);
+    return instance.initializingPromise;
   }
 
   // Check if already initialized and ready
-  if (client?.isReady()) {
+  if (instance.client?.isReady()) {
     console.log(
-      `[Discord] ✅ Client already initialized and ready (guilds: ${client.guilds.cache.size})`,
+      `[Discord] Client already ready for ${connectionId} (guilds: ${instance.client.guilds.cache.size})`,
     );
-    return client;
+    return instance.client;
   }
 
   // If there's an existing client that's not ready, destroy it
-  if (client) {
-    console.log("[Discord] Destroying previous unready client...");
+  if (instance.client) {
+    console.log(
+      `[Discord] Destroying previous unready client for ${connectionId}...`,
+    );
     try {
-      client.removeAllListeners();
-      client.destroy();
+      instance.client.removeAllListeners();
+      instance.client.destroy();
     } catch (error) {
       console.error("[Discord] Error destroying client:", error);
     }
-    client = null;
-    eventsRegistered = false;
+    instance.client = null;
   }
 
   // Create promise to prevent concurrent initializations
-  initializingPromise = (async () => {
+  instance.initializingPromise = (async () => {
     try {
-      return await doInitialize(env);
+      return await doInitialize(instance, env);
     } finally {
-      initializingPromise = null;
+      instance.initializingPromise = null;
     }
   })();
 
-  return initializingPromise;
+  return instance.initializingPromise;
 }
 
-async function doInitialize(env: Env): Promise<Client> {
-  console.log("[Discord] Starting initialization...");
+async function doInitialize(instance: BotInstance, env: Env): Promise<Client> {
+  const connectionId = instance.connectionId;
+  console.log(`[Discord] Starting initialization for ${connectionId}...`);
 
   // Set database environment for shared module
   setDatabaseEnv(env);
+  instance.env = env;
 
-  // Try to load config from Supabase first
-  const connectionId =
-    env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+  // Load config from Supabase
   console.log(
     `[Discord] Looking for saved config for connection: ${connectionId}`,
   );
@@ -190,15 +196,16 @@ async function doInitialize(env: Env): Promise<Client> {
     );
   }
 
-  // Use token from Supabase config
   const token = savedConfig.botToken;
-  console.log("[Discord] ✅ Bot token loaded from Supabase config");
+  console.log(
+    `[Discord] Bot token loaded from Supabase config for ${connectionId}`,
+  );
   console.log(
     `[Discord] Authorized guilds: ${savedConfig.authorizedGuilds?.length || "all"}`,
   );
 
   // Create client with required intents
-  client = new Client({
+  const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMessages,
@@ -209,30 +216,32 @@ async function doInitialize(env: Env): Promise<Client> {
     partials: [Partials.Message, Partials.Reaction, Partials.User],
   });
 
+  instance.client = client;
+
   // Set database env BEFORE registering handlers
   setDatabaseEnv(env);
-  // Also update global env
-  updateEnv(env);
 
-  // Register event handlers
-  registerEventHandlers(client, env);
+  // Register event handlers scoped to this instance
+  registerEventHandlers(client, instance);
 
   // Login and wait for ready
   await client.login(token);
-  console.log(`[Discord] 🤖 Logged in as ${client.user?.tag}`);
-  console.log(`[Discord] 🆔 Client Instance: ${CLIENT_INSTANCE_ID}`);
+  console.log(
+    `[Discord] Logged in as ${client.user?.tag} for connection ${connectionId}`,
+  );
 
   // Wait for the client to be fully ready
-  if (client && !client.isReady()) {
-    console.log(`[Discord] Waiting for ready event...`);
-    const c = client; // Capture reference for closure
+  if (!client.isReady()) {
+    console.log(`[Discord] Waiting for ready event (${connectionId})...`);
     await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        console.log(`[Discord] Ready timeout, continuing anyway...`);
+        console.log(
+          `[Discord] Ready timeout for ${connectionId}, continuing anyway...`,
+        );
         resolve();
-      }, 10000); // 10 second timeout
+      }, 10000);
 
-      c.once("clientReady", () => {
+      client.once("clientReady", () => {
         clearTimeout(timeout);
         resolve();
       });
@@ -243,35 +252,23 @@ async function doInitialize(env: Env): Promise<Client> {
 }
 
 /**
- * Get the current Discord client instance.
+ * Register all event handlers for a Discord client, scoped to a BotInstance.
  */
-export function getDiscordClient(): Client | null {
-  return client;
-}
-
-/**
- * Register all event handlers for the Discord client.
- */
-function registerEventHandlers(client: Client, env: Env): void {
-  // Check how many listeners exist before cleanup
-  const existingListeners = client.eventNames().length;
-  console.log(
-    `[Discord] 🔍 Existing event listeners before cleanup: ${existingListeners}`,
-  );
+function registerEventHandlers(client: Client, instance: BotInstance): void {
+  const connectionId = instance.connectionId;
 
   // CRITICAL: Remove ALL existing listeners to prevent duplicates on hot reload
-  console.log("[Discord] Clearing existing event listeners...");
   client.removeAllListeners();
-  eventsRegistered = false;
 
   console.log(
-    `[Discord] 📝 Registering event handlers (Instance: ${CLIENT_INSTANCE_ID})...`,
+    `[Discord] Registering event handlers for connection ${connectionId}...`,
   );
-  eventsRegistered = true;
-  // Ready event (use 'clientReady' for Discord.js v15+)
+
+  // Ready event
   client.once("clientReady", () => {
-    const prefix = env.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
-    console.log(`[Discord] Bot is ready!`);
+    const prefix =
+      instance.env.MESH_REQUEST_CONTEXT?.state?.COMMAND_PREFIX || "!";
+    console.log(`[Discord] Bot is ready! (${connectionId})`);
     console.log(`[Discord] - Guilds: ${client.guilds.cache.size}`);
     console.log(`[Discord] - Command prefix: "${prefix}"`);
     console.log(`[Discord] - Listening for messages...`);
@@ -281,17 +278,18 @@ function registerEventHandlers(client: Client, env: Env): void {
   client.on("messageCreate", async (message: Message) => {
     const isDM = !message.guild;
 
-    // CRITICAL: Debounce to prevent duplicate processing
-    if (processedMessageIds.has(message.id)) {
-      return; // Already processed this message
+    // CRITICAL: Debounce to prevent duplicate processing (per-instance)
+    if (instance.processedMessageIds.has(message.id)) {
+      return;
     }
-    processedMessageIds.add(message.id);
+    instance.processedMessageIds.add(message.id);
+    setTimeout(
+      () => instance.processedMessageIds.delete(message.id),
+      MESSAGE_CACHE_TTL,
+    );
 
-    // Auto-cleanup after TTL
-    setTimeout(() => processedMessageIds.delete(message.id), MESSAGE_CACHE_TTL);
-
-    // Get the latest env (updated by tool calls from Mesh)
-    const currentEnv = getCurrentEnv() || env;
+    // Use this instance's env (not a global)
+    const currentEnv = instance.env;
 
     // Check if DMs are allowed
     if (isDM) {
@@ -302,7 +300,6 @@ function registerEventHandlers(client: Client, env: Env): void {
         return;
       }
 
-      // Check if user is allowed to DM
       const dmAllowedUsers =
         currentEnv.MESH_REQUEST_CONTEXT?.state?.DM_ALLOWED_USERS;
       if (dmAllowedUsers) {
@@ -321,20 +318,18 @@ function registerEventHandlers(client: Client, env: Env): void {
       }
     }
 
-    // Removed verbose logging for better performance
-
-    // Re-set database env (ensures it's available for this message)
+    // Re-set database env
     setDatabaseEnv(currentEnv);
 
     try {
-      // Index all messages to Supabase (async, don't await)
+      // Index message (async, fire-and-forget)
       console.log(
-        `[Message] 📝 Indexing message ${message.id} from ${message.author.username}`,
+        `[Message] Indexing message ${message.id} from ${message.author.username}`,
       );
       indexMessage(message, isDM)
-        .then(() => console.log(`[Message] ✅ Indexed message ${message.id}`))
+        .then(() => console.log(`[Message] Indexed message ${message.id}`))
         .catch((e) =>
-          console.log(`[Message] ❌ Failed to index ${message.id}:`, e.message),
+          console.log(`[Message] Failed to index ${message.id}:`, e.message),
         );
 
       // Publish message.created event via triggers
@@ -359,7 +354,6 @@ function registerEventHandlers(client: Client, env: Env): void {
             console.log(
               `[Discord] User ${message.author.username} doesn't have required roles`,
             );
-            // Don't respond - just silently ignore
             return;
           }
         }
@@ -387,7 +381,6 @@ function registerEventHandlers(client: Client, env: Env): void {
         prefix = configuredPrefix;
         content = content.slice(configuredPrefix.length).trim();
       } else if (message.reference?.messageId) {
-        // Only fetch reply if no prefix matched (optimization)
         try {
           const repliedMsg = await message.channel.messages.fetch(
             message.reference.messageId,
@@ -395,7 +388,7 @@ function registerEventHandlers(client: Client, env: Env): void {
           if (repliedMsg.author.id === client.user?.id) {
             prefix = "REPLY";
             content = message.content;
-            replyToMessage = repliedMsg.content; // Get content while we have it
+            replyToMessage = repliedMsg.content;
           }
         } catch {
           // Silently fail - reply detection is optional
@@ -405,6 +398,7 @@ function registerEventHandlers(client: Client, env: Env): void {
       // Check for auto_respond channel (no mention/prefix needed)
       if (!prefix && !isDM && message.guild?.id) {
         const autoRespond = await isAutoRespondChannel(
+          instance,
           message.guild.id,
           message.channel.id,
         );
@@ -412,14 +406,14 @@ function registerEventHandlers(client: Client, env: Env): void {
           prefix = "AUTO_RESPOND";
           content = message.content;
           console.log(
-            `[Discord] 🤖 Auto-respond channel detected: ${message.channel.id}`,
+            `[Discord] Auto-respond channel detected: ${message.channel.id}`,
           );
         }
       }
 
       if (prefix) {
         console.log(
-          `[Discord] 📨 Processing command from ${message.author.username} (Instance: ${CLIENT_INSTANCE_ID})`,
+          `[Discord] Processing command from ${message.author.username} (connection: ${connectionId})`,
         );
         await processCommand(
           message,
@@ -428,6 +422,7 @@ function registerEventHandlers(client: Client, env: Env): void {
           content,
           isDM,
           replyToMessage,
+          connectionId,
         );
       }
     } catch (error) {
@@ -443,15 +438,13 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
-      const currentEnv = getCurrentEnv() || env;
+      const currentEnv = instance.env;
       try {
-        // Fetch partial data if needed
         if (reaction.partial) await reaction.fetch();
         if (user.partial) await user.fetch();
 
         await handleReactionAdd(reaction, user);
 
-        // Publish event (only if not partial after fetch)
         if (!reaction.partial && !user.partial) {
           publishReactionAdded(
             currentEnv,
@@ -473,15 +466,13 @@ function registerEventHandlers(client: Client, env: Env): void {
       user: User | PartialUser,
     ) => {
       if (!reaction.message.guild) return;
-      const currentEnv = getCurrentEnv() || env;
+      const currentEnv = instance.env;
       try {
-        // Fetch partial data if needed
         if (reaction.partial) await reaction.fetch();
         if (user.partial) await user.fetch();
 
         await handleReactionRemove(reaction, user);
 
-        // Publish event (only if not partial after fetch)
         if (!reaction.partial && !user.partial) {
           publishReactionRemoved(
             currentEnv,
@@ -521,10 +512,9 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message delete event
   client.on("messageDelete", async (message) => {
     if (!message.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleMessageDelete(message);
-      // Publish event (only if not partial)
       if (!message.partial) {
         publishMessageDeleted(currentEnv, message as Message);
       }
@@ -536,7 +526,6 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Bulk message delete event
   client.on("messageDeleteBulk", async (messages) => {
     try {
-      // Convert ReadonlyCollection to Map for the handler
       const messagesMap = new Map(messages.entries());
       await handleMessageDeleteBulk(messagesMap);
     } catch (error) {
@@ -547,10 +536,9 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Message update/edit event
   client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleMessageUpdate(oldMessage, newMessage);
-      // Publish event (only if both messages are available and not partial)
       if (oldMessage.partial) await oldMessage.fetch();
       if (newMessage.partial) await newMessage.fetch();
       if (!oldMessage.partial && !newMessage.partial) {
@@ -568,7 +556,7 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread create event
   client.on("threadCreate", async (thread) => {
     if (!thread.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleThreadCreate(thread);
       publishThreadCreated(currentEnv, thread);
@@ -580,7 +568,7 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread delete event
   client.on("threadDelete", async (thread) => {
     if (!thread.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleThreadDelete(thread);
       publishThreadDeleted(currentEnv, thread);
@@ -592,7 +580,7 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Thread update event
   client.on("threadUpdate", async (oldThread, newThread) => {
     if (!newThread.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleThreadUpdate(newThread);
       publishThreadUpdated(currentEnv, oldThread, newThread);
@@ -603,10 +591,9 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member join event
   client.on("guildMemberAdd", async (member) => {
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleMemberJoin(member);
-      // Publish event
       publishMemberJoined(currentEnv, member);
     } catch (error) {
       console.error("[Discord] Error handling member join:", error);
@@ -615,10 +602,9 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member leave event
   client.on("guildMemberRemove", async (member) => {
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleMemberLeave(member);
-      // Publish event (only if not partial)
       if (!member.partial) {
         publishMemberLeft(currentEnv, member as GuildMember);
       }
@@ -629,22 +615,19 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Member update event
   client.on("guildMemberUpdate", async (oldMember, newMember) => {
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleMemberUpdate(newMember);
 
-      // Detect role changes and publish events
       const oldRoles = oldMember.roles.cache;
       const newRoles = newMember.roles.cache;
 
-      // Roles added
       newRoles.forEach((role) => {
         if (!oldRoles.has(role.id)) {
           publishMemberRoleAdded(currentEnv, newMember, role.id, role.name);
         }
       });
 
-      // Roles removed
       oldRoles.forEach((role) => {
         if (!newRoles.has(role.id)) {
           publishMemberRoleRemoved(currentEnv, newMember, role.id, role.name);
@@ -658,7 +641,7 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Channel create event
   client.on("channelCreate", async (channel) => {
     if (!("guild" in channel) || !channel.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleChannelCreate(channel);
       publishChannelCreated(currentEnv, channel);
@@ -670,7 +653,7 @@ function registerEventHandlers(client: Client, env: Env): void {
   // Channel delete event
   client.on("channelDelete", async (channel) => {
     if (!("guild" in channel) || !channel.guild) return;
-    const currentEnv = getCurrentEnv() || env;
+    const currentEnv = instance.env;
     try {
       await handleChannelDelete(channel);
       publishChannelDeleted(currentEnv, channel);
@@ -681,23 +664,26 @@ function registerEventHandlers(client: Client, env: Env): void {
 
   // Error handling
   client.on("error", (error) => {
-    console.error("[Discord] Client error:", error);
+    console.error(`[Discord] Client error (${connectionId}):`, error);
   });
 
   client.on("warn", (warning) => {
-    console.warn("[Discord] Warning:", warning);
+    console.warn(`[Discord] Warning (${connectionId}):`, warning);
   });
 }
 
 /**
- * Shutdown the Discord client gracefully.
+ * Shutdown the Discord client for a specific connection.
  */
-export async function shutdownDiscordClient(): Promise<void> {
-  if (client) {
-    client.destroy();
-    client = null;
-    eventsRegistered = false; // Reset flag so events can be re-registered
-    console.log("[Discord] Client shutdown");
+export async function shutdownDiscordClient(
+  connectionId: string,
+): Promise<void> {
+  const instance = getInstance(connectionId);
+  if (instance?.client) {
+    instance.client.removeAllListeners();
+    instance.client.destroy();
+    instance.client = null;
+    console.log(`[Discord] Client shutdown for ${connectionId}`);
   }
 }
 
@@ -707,7 +693,6 @@ export async function shutdownDiscordClient(): Promise<void> {
 
 /**
  * Send a "thinking" message that will be updated with the actual response.
- * Returns the message for later editing.
  */
 export async function sendThinkingMessage(
   message: Message,
@@ -732,7 +717,6 @@ export async function sendThinkingMessage(
 
 /**
  * Edit an existing message with new content.
- * Used for streaming responses.
  */
 export async function editMessage(
   message: Message,
@@ -748,8 +732,8 @@ export async function editMessage(
 }
 
 /**
- * Update a thinking message with the actual response (or partial response during streaming).
- * Handles Discord's 2000 character limit by truncating if necessary.
+ * Update a thinking message with the actual response.
+ * Handles Discord's 2000 character limit.
  */
 export async function updateThinkingMessage(
   thinkingMsg: Message,
@@ -757,10 +741,7 @@ export async function updateThinkingMessage(
   authorMention?: string,
 ): Promise<boolean> {
   try {
-    // Add author mention if provided
     const fullContent = authorMention ? `${authorMention} ${content}` : content;
-
-    // Discord has a 2000 character limit
     const maxLength = 2000;
     const truncatedContent =
       fullContent.length > maxLength
@@ -776,7 +757,7 @@ export async function updateThinkingMessage(
 }
 
 /**
- * Split long text into chunks that fit Discord's message limit.
+ * Split a long message into chunks respecting Discord's character limit.
  */
 export function splitMessage(text: string, maxLength: number = 2000): string[] {
   if (text.length <= maxLength) {
@@ -792,7 +773,6 @@ export function splitMessage(text: string, maxLength: number = 2000): string[] {
       break;
     }
 
-    // Try to split at natural break points
     let splitIndex = remaining.lastIndexOf("\n", maxLength);
     if (splitIndex === -1 || splitIndex < maxLength / 2) {
       splitIndex = remaining.lastIndexOf(" ", maxLength);

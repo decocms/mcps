@@ -13,76 +13,63 @@ import {
 import type { Env } from "../../types/env.ts";
 import { logger, HyperDXLogger } from "../../lib/logger.ts";
 
-// Super Admins - configurable via BOT_SUPER_ADMINS state field
-let superAdmins: string[] = [];
+import { getInstance } from "../../bot-instance.ts";
 
-/**
- * Update the super admins list (called from config onChange or bot-manager)
- */
-export function setSuperAdmins(ids: string[]): void {
-  superAdmins = ids;
-}
-
-// Track processed messages to prevent duplicates
-const processedMessages = new Set<string>();
 const MAX_PROCESSED_CACHE = 100;
-
-// Cache for channel context (LRU - keeps last 1000 channels)
-// Channel prompts rarely change, so we cache aggressively
-interface CachedChannelContext {
-  prompt: string;
-  timestamp: number;
-}
-const channelContextCache = new Map<string, CachedChannelContext>();
-const MAX_CACHE_SIZE = 1000; // Increased from 50 - channel prompts rarely change
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (was 5 minutes)
+const MAX_CACHE_SIZE = 1000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
- * Check if a user is a super admin
+ * Update the super admins list for a specific connection.
  */
-export function isSuperAdmin(userId: string): boolean {
-  return superAdmins.includes(userId);
+export function setSuperAdmins(connectionId: string, ids: string[]): void {
+  const instance = getInstance(connectionId);
+  if (instance) {
+    instance.superAdmins = ids;
+  }
 }
 
 /**
- * Get cached channel context or fetch from DB
+ * Check if a user is a super admin for a specific connection.
+ */
+export function isSuperAdmin(connectionId: string, userId: string): boolean {
+  const instance = getInstance(connectionId);
+  return instance?.superAdmins.includes(userId) ?? false;
+}
+
+/**
+ * Get cached channel context or fetch from DB (per-instance cache)
  */
 async function getCachedChannelContext(
+  connectionId: string,
   guildId: string,
   channelId: string,
 ): Promise<string | undefined> {
-  const cacheKey = `${guildId}:${channelId}`;
-  const cached = channelContextCache.get(cacheKey);
+  const instance = getInstance(connectionId);
+  if (!instance) return undefined;
 
-  // Check if cache is valid
+  const cache = instance.channelContextCache;
+  const cacheKey = `${guildId}:${channelId}`;
+  const cached = cache.get(cacheKey);
+
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.prompt;
   }
 
-  // Fetch from DB
   try {
     const db = await import("../../../shared/db.ts");
     const channelContext = await db.getChannelContext(guildId, channelId);
     const prompt = channelContext?.system_prompt;
 
-    // Update cache (with LRU eviction)
-    if (channelContextCache.size >= MAX_CACHE_SIZE) {
-      // Remove oldest entry
-      const firstKey = channelContextCache.keys().next().value;
-      if (firstKey) channelContextCache.delete(firstKey);
+    if (cache.size >= MAX_CACHE_SIZE) {
+      const firstKey = cache.keys().next().value;
+      if (firstKey) cache.delete(firstKey);
     }
 
     if (prompt) {
-      channelContextCache.set(cacheKey, {
-        prompt,
-        timestamp: Date.now(),
-      });
+      cache.set(cacheKey, { prompt, timestamp: Date.now() });
     } else {
-      // Cache empty result too (to avoid repeated DB calls)
-      channelContextCache.set(cacheKey, {
-        prompt: "",
-        timestamp: Date.now(),
-      });
+      cache.set(cacheKey, { prompt: "", timestamp: Date.now() });
     }
 
     return prompt;
@@ -93,14 +80,18 @@ async function getCachedChannelContext(
 }
 
 /**
- * Invalidate channel context cache (call when prompt is updated)
+ * Invalidate channel context cache for a specific connection
  */
 export function invalidateChannelContextCache(
+  connectionId: string,
   guildId: string,
   channelId: string,
 ): void {
-  const cacheKey = `${guildId}:${channelId}`;
-  channelContextCache.delete(cacheKey);
+  const instance = getInstance(connectionId);
+  if (instance) {
+    const cacheKey = `${guildId}:${channelId}`;
+    instance.channelContextCache.delete(cacheKey);
+  }
 }
 
 /**
@@ -272,12 +263,20 @@ export async function processCommand(
   cleanContent?: string,
   isDM: boolean = false,
   replyToMessage?: string,
+  connectionId?: string,
 ): Promise<void> {
   // In guilds, we need member info; in DMs, we don't have it
   if (!isDM && (!message.guild || !message.member)) return;
 
-  // Prevent duplicate processing
+  const connId =
+    connectionId ||
+    env.MESH_REQUEST_CONTEXT?.connectionId ||
+    "default-connection";
+  const instance = getInstance(connId);
+
+  // Prevent duplicate processing (per-instance)
   const messageKey = `${message.id}-${message.channelId}`;
+  const processedMessages = instance?.processedMessages ?? new Set<string>();
   if (processedMessages.has(messageKey)) {
     return;
   }
@@ -425,9 +424,13 @@ async function handleDefaultAgent(
           return "";
         }
       })(),
-      // Fetch channel-specific prompt (with cache)
+      // Fetch channel-specific prompt (with cache, per-connection)
       message.guild?.id
-        ? getCachedChannelContext(message.guild.id, message.channel.id)
+        ? getCachedChannelContext(
+            env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection",
+            message.guild.id,
+            message.channel.id,
+          )
         : Promise.resolve(undefined),
     ]);
 
@@ -537,6 +540,7 @@ async function handleDefaultAgent(
         channelName,
         message.author.id,
         message.author.username,
+        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection",
       );
     }
 
@@ -665,6 +669,7 @@ async function processPromptMarkers(
   channelName: string | undefined,
   authorId: string,
   authorUsername: string,
+  connectionId: string,
 ): Promise<string> {
   const db = await import("../../../shared/db.ts");
 
@@ -687,7 +692,7 @@ async function processPromptMarkers(
           created_by_username: authorUsername,
         });
         // Invalidate cache after saving
-        invalidateChannelContextCache(guildId, channelId);
+        invalidateChannelContextCache(connectionId, guildId, channelId);
       } catch (error) {
         console.error(`[Agent] Failed to save channel prompt:`, error);
       }
@@ -705,7 +710,7 @@ async function processPromptMarkers(
     try {
       await db.deleteChannelContext(guildId, channelId);
       // Invalidate cache after clearing
-      invalidateChannelContextCache(guildId, channelId);
+      invalidateChannelContextCache(connectionId, guildId, channelId);
     } catch (error) {
       console.error(`[Agent] Failed to clear channel prompt:`, error);
     }

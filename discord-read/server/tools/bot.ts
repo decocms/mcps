@@ -2,17 +2,13 @@
  * Bot Control Tools
  *
  * Tools for starting, stopping, and checking bot status.
+ * All operations are scoped to the calling connection (multi-tenant).
  */
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import {
-  ensureBotRunning,
-  isBotRunning,
-  shutdownBot,
-  getBotStatus,
-} from "../bot-manager.ts";
+import { ensureBotRunning, isBotRunning, shutdownBot } from "../bot-manager.ts";
 import { getDiscordClient } from "../discord/client.ts";
 
 /**
@@ -34,41 +30,12 @@ export const createStartBotTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
-      const { env } = params;
+      const currentEnv = params.env || env;
 
       console.log("[Tool] DISCORD_BOT_START called");
 
-      if (!env) {
-        // Fallback: Try to get env from bot-manager
-        const { getCurrentEnv } = await import("../bot-manager.ts");
-        const currentEnv = getCurrentEnv();
-        if (currentEnv) {
-          const started = await ensureBotRunning(currentEnv);
-          if (!started) {
-            return {
-              success: false,
-              message:
-                "Failed to start bot. Make sure you have saved configuration using DISCORD_SAVE_CONFIG.",
-            };
-          }
-          const client = getDiscordClient();
-          return {
-            success: true,
-            message: `Discord bot started successfully! Connected as ${client?.user?.tag || "Unknown"}`,
-            botTag: client?.user?.tag || "Unknown",
-            guilds: client?.guilds.cache.size || 0,
-          };
-        }
-
-        return {
-          success: false,
-          message:
-            "Environment not available. Please save the configuration first using DISCORD_SAVE_CONFIG.",
-        };
-      }
-
       try {
-        const started = await ensureBotRunning(env);
+        const started = await ensureBotRunning(currentEnv);
 
         if (!started) {
           return {
@@ -78,7 +45,9 @@ export const createStartBotTool = (env: Env) =>
           };
         }
 
-        const client = getDiscordClient();
+        const connectionId =
+          currentEnv.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+        const client = getDiscordClient(connectionId);
         const botTag = client?.user?.tag || "Unknown";
         const guilds = client?.guilds.cache.size || 0;
 
@@ -112,11 +81,13 @@ export const createStopBotTool = (env: Env) =>
         message: z.string(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (params: any) => {
+      const currentEnv = params.env || env;
+
       console.log("[Tool] DISCORD_BOT_STOP called");
 
       try {
-        await shutdownBot();
+        await shutdownBot(currentEnv);
 
         return {
           success: true,
@@ -150,11 +121,15 @@ export const createBotStatusTool = (env: Env) =>
         message: z.string(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (params: any) => {
+      const currentEnv = params.env || env;
+
       console.log("[Tool] DISCORD_BOT_STATUS called");
 
-      const running = isBotRunning();
-      const client = getDiscordClient();
+      const connectionId =
+        currentEnv.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+      const running = isBotRunning(currentEnv);
+      const client = getDiscordClient(connectionId);
 
       if (!running || !client) {
         return {

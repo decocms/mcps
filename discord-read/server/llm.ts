@@ -142,33 +142,42 @@ export async function collectStreamText(
 }
 
 // ============================================================================
-// Whisper Integration (unchanged)
+// Whisper Integration (per-connection)
 // ============================================================================
 
-let globalWhisperConfig: WhisperConfig | null = null;
+import { getInstance } from "./bot-instance.ts";
 
-export function configureWhisper(config: WhisperConfig): void {
-  globalWhisperConfig = config;
+export function configureWhisper(
+  connectionId: string,
+  config: WhisperConfig,
+): void {
+  const instance = getInstance(connectionId);
+  if (instance) {
+    instance.whisperConfig = config;
+  }
   console.log("[Whisper] Configured", {
+    connectionId,
     meshUrl: config.meshUrl,
     whisperConnectionId: config.whisperConnectionId,
     hasToken: !!config.token,
   });
 }
 
-export function isWhisperConfigured(): boolean {
-  return globalWhisperConfig !== null;
+export function isWhisperConfigured(connectionId: string): boolean {
+  return getInstance(connectionId)?.whisperConfig != null;
 }
 
 export async function transcribeAudio(
+  connectionId: string,
   audioUrl: string,
   _mimeType: string,
   filename: string,
 ): Promise<string | null> {
-  if (!globalWhisperConfig) {
+  const whisperConfig = getInstance(connectionId)?.whisperConfig;
+  if (!whisperConfig) {
     console.log("[Whisper] Not configured, skipping transcription");
     return null;
   }
 
-  return sharedTranscribeAudio(globalWhisperConfig, audioUrl, filename);
+  return sharedTranscribeAudio(whisperConfig, audioUrl, filename);
 }

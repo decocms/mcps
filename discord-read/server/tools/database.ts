@@ -530,8 +530,11 @@ export const createSetChannelAutoRespondTool = (env: Env) =>
         }
 
         // Invalidate caches so new setting takes effect immediately
-        invalidateChannelContextCache(guildId, channelId);
-        invalidateAutoRespondCache(guildId, channelId);
+        const connId =
+          (params.env || env).MESH_REQUEST_CONTEXT?.connectionId ||
+          "default-connection";
+        invalidateChannelContextCache(connId, guildId, channelId);
+        invalidateAutoRespondCache(connId, guildId, channelId);
 
         return {
           success: true,
