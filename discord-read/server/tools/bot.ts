@@ -32,7 +32,12 @@ export const createStartBotTool = (env: Env) =>
     execute: async (params: any) => {
       const currentEnv = params.env || env;
 
-      console.log("[Tool] DISCORD_BOT_START called");
+      const connectionId =
+        currentEnv.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+      const hasAuth = !!currentEnv.MESH_REQUEST_CONTEXT?.authorization;
+      console.log(
+        `[Tool] DISCORD_BOT_START called for ${connectionId}, hasAuth=${hasAuth}`,
+      );
 
       try {
         const started = await ensureBotRunning(currentEnv);
@@ -45,8 +50,6 @@ export const createStartBotTool = (env: Env) =>
           };
         }
 
-        const connectionId =
-          currentEnv.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
         const client = getDiscordClient(connectionId);
         const botTag = client?.user?.tag || "Unknown";
         const guilds = client?.guilds.cache.size || 0;
