@@ -17,15 +17,28 @@ import type {
   CategoryChannel,
 } from "discord.js";
 import { triggers } from "./trigger-store.ts";
+import { getAllInstances } from "../bot-instance.ts";
+
+/**
+ * Notify a trigger event for ALL registered connections, not just the one
+ * whose bot received the event. This ensures that if two bots are in the
+ * same guild/channel, both connections receive the trigger callback.
+ */
+function notifyAllConnections(
+  type: string,
+  data: Record<string, unknown>,
+): void {
+  const instances = getAllInstances();
+  for (const instance of instances) {
+    triggers.notify(instance.connectionId, type, data);
+  }
+}
 
 /**
  * Publish a discord.message.created event
  */
-export function publishMessageCreated(env: Env, message: Message): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.created", {
+export function publishMessageCreated(_env: Env, message: Message): void {
+  notifyAllConnections("discord.message.created", {
     event: "discord.message.created",
     subject: message.id,
     message_id: message.id,
@@ -57,11 +70,8 @@ export function publishMessageCreated(env: Env, message: Message): void {
 /**
  * Publish a discord.message.deleted event
  */
-export function publishMessageDeleted(env: Env, message: Message): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.deleted", {
+export function publishMessageDeleted(_env: Env, message: Message): void {
+  notifyAllConnections("discord.message.deleted", {
     event: "discord.message.deleted",
     subject: message.id,
     message_id: message.id,
@@ -83,14 +93,11 @@ export function publishMessageDeleted(env: Env, message: Message): void {
  * Publish a discord.message.updated event
  */
 export function publishMessageUpdated(
-  env: Env,
+  _env: Env,
   oldMessage: Message,
   newMessage: Message,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.message.updated", {
+  notifyAllConnections("discord.message.updated", {
     event: "discord.message.updated",
     subject: newMessage.id,
     message_id: newMessage.id,
@@ -114,11 +121,8 @@ export function publishMessageUpdated(
 /**
  * Publish a discord.member.joined event
  */
-export function publishMemberJoined(env: Env, member: GuildMember): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.joined", {
+export function publishMemberJoined(_env: Env, member: GuildMember): void {
+  notifyAllConnections("discord.member.joined", {
     event: "discord.member.joined",
     subject: member.id,
     user_id: member.id,
@@ -136,11 +140,8 @@ export function publishMemberJoined(env: Env, member: GuildMember): void {
 /**
  * Publish a discord.member.left event
  */
-export function publishMemberLeft(env: Env, member: GuildMember): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.left", {
+export function publishMemberLeft(_env: Env, member: GuildMember): void {
+  notifyAllConnections("discord.member.left", {
     event: "discord.member.left",
     subject: member.id,
     user_id: member.id,
@@ -161,15 +162,12 @@ export function publishMemberLeft(env: Env, member: GuildMember): void {
  * Publish a discord.member.role.added event
  */
 export function publishMemberRoleAdded(
-  env: Env,
+  _env: Env,
   member: GuildMember,
   roleId: string,
   roleName: string,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.role.added", {
+  notifyAllConnections("discord.member.role.added", {
     event: "discord.member.role.added",
     subject: member.id,
     user_id: member.id,
@@ -189,15 +187,12 @@ export function publishMemberRoleAdded(
  * Publish a discord.member.role.removed event
  */
 export function publishMemberRoleRemoved(
-  env: Env,
+  _env: Env,
   member: GuildMember,
   roleId: string,
   roleName: string,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.member.role.removed", {
+  notifyAllConnections("discord.member.role.removed", {
     event: "discord.member.role.removed",
     subject: member.id,
     user_id: member.id,
@@ -217,18 +212,15 @@ export function publishMemberRoleRemoved(
  * Publish a discord.reaction.added event
  */
 export function publishReactionAdded(
-  env: Env,
+  _env: Env,
   reaction: MessageReaction,
   user: User,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
   const emoji = reaction.emoji.id
     ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
     : reaction.emoji.name;
 
-  triggers.notify(connectionId, "discord.reaction.added", {
+  notifyAllConnections("discord.reaction.added", {
     event: "discord.reaction.added",
     subject: reaction.message.id,
     message_id: reaction.message.id,
@@ -251,18 +243,15 @@ export function publishReactionAdded(
  * Publish a discord.reaction.removed event
  */
 export function publishReactionRemoved(
-  env: Env,
+  _env: Env,
   reaction: MessageReaction,
   user: User,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
   const emoji = reaction.emoji.id
     ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
     : reaction.emoji.name;
 
-  triggers.notify(connectionId, "discord.reaction.removed", {
+  notifyAllConnections("discord.reaction.removed", {
     event: "discord.reaction.removed",
     subject: reaction.message.id,
     message_id: reaction.message.id,
@@ -285,13 +274,10 @@ export function publishReactionRemoved(
  * Publish a discord.thread.created event
  */
 export function publishThreadCreated(
-  env: Env,
+  _env: Env,
   thread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.created", {
+  notifyAllConnections("discord.thread.created", {
     event: "discord.thread.created",
     subject: thread.id,
     thread_id: thread.id,
@@ -317,13 +303,10 @@ export function publishThreadCreated(
  * Publish a discord.thread.deleted event
  */
 export function publishThreadDeleted(
-  env: Env,
+  _env: Env,
   thread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.deleted", {
+  notifyAllConnections("discord.thread.deleted", {
     event: "discord.thread.deleted",
     subject: thread.id,
     thread_id: thread.id,
@@ -342,14 +325,11 @@ export function publishThreadDeleted(
  * Publish a discord.thread.updated event
  */
 export function publishThreadUpdated(
-  env: Env,
+  _env: Env,
   oldThread: ThreadChannel | AnyThreadChannel,
   newThread: ThreadChannel | AnyThreadChannel,
 ): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.thread.updated", {
+  notifyAllConnections("discord.thread.updated", {
     event: "discord.thread.updated",
     subject: newThread.id,
     thread_id: newThread.id,
@@ -374,14 +354,11 @@ export function publishThreadUpdated(
 /**
  * Publish a discord.channel.created event
  */
-export function publishChannelCreated(env: Env, channel: GuildChannel): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
+export function publishChannelCreated(_env: Env, channel: GuildChannel): void {
   const categoryName =
     "parent" in channel ? (channel.parent as CategoryChannel)?.name : undefined;
 
-  triggers.notify(connectionId, "discord.channel.created", {
+  notifyAllConnections("discord.channel.created", {
     event: "discord.channel.created",
     subject: channel.id,
     channel_id: channel.id,
@@ -402,11 +379,8 @@ export function publishChannelCreated(env: Env, channel: GuildChannel): void {
 /**
  * Publish a discord.channel.deleted event
  */
-export function publishChannelDeleted(env: Env, channel: GuildChannel): void {
-  const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-  if (!connectionId) return;
-
-  triggers.notify(connectionId, "discord.channel.deleted", {
+export function publishChannelDeleted(_env: Env, channel: GuildChannel): void {
+  notifyAllConnections("discord.channel.deleted", {
     event: "discord.channel.deleted",
     subject: channel.id,
     channel_id: channel.id,
