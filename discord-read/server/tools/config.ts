@@ -104,10 +104,14 @@ export const createSaveConfigTool = (env: Env) =>
 
       // Get connection ID from env
       const connectionId =
-        env.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
+        env?.MESH_REQUEST_CONTEXT?.connectionId || "default-connection";
       const organizationId =
-        env.MESH_REQUEST_CONTEXT?.organizationId || "default-org";
-      const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl || "";
+        env?.MESH_REQUEST_CONTEXT?.organizationId || "default-org";
+      const meshUrl = env?.MESH_REQUEST_CONTEXT?.meshUrl || "";
+
+      console.log(
+        `[Tool] DISCORD_SAVE_CONFIG: connectionId=${connectionId}, organizationId=${organizationId}, meshUrl=${meshUrl ? "yes" : "EMPTY"}, env=${!!env}, runtimeContext=${!!runtimeContext}`,
+      );
 
       // Create config object
       const config: DiscordConfig = {

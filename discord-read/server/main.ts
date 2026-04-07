@@ -132,6 +132,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       }
 
       // If we have a connection ID, sync to config-cache
+      console.log(
+        `[CONFIG] Save check: connectionId=${connectionId || "MISSING"}, organizationId=${organizationId || "MISSING"}, meshUrl=${meshUrl ? "yes" : "MISSING"}, authorization=${authorization ? "yes" : "MISSING"}`,
+      );
       if (connectionId && organizationId && meshUrl) {
         const existingConfig = await getDiscordConfig(connectionId);
 
@@ -168,6 +171,13 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
         console.log(
           `[CONFIG] Authorized Guilds: ${authorizedGuilds.length > 0 ? authorizedGuilds.join(", ") : "all"}`,
+        );
+        console.log(
+          `[CONFIG] Bot token: ${botToken ? `${botToken.slice(0, 10)}...${botToken.slice(-4)}` : "MISSING"}`,
+        );
+      } else {
+        console.warn(
+          `[CONFIG] ⚠️ Cannot save config — missing: ${!connectionId ? "connectionId " : ""}${!organizationId ? "organizationId " : ""}${!meshUrl ? "meshUrl" : ""}`,
         );
       }
 
