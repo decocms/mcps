@@ -24,7 +24,7 @@ function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
     // Ensure trigger storage is configured (survives restarts without onChange)
     const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
     const token = env.MESH_REQUEST_CONTEXT?.token;
-    if (meshUrl && token && !triggerStorage.isReady) {
+    if (meshUrl && token) {
       triggerStorage.configure(meshUrl, token);
     }
 

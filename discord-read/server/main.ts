@@ -321,7 +321,7 @@ async function bootstrapFromSupabase(): Promise<void> {
       // Configure trigger storage from saved credentials
       const meshUrl = row.mesh_url;
       const meshApiKey = row.mesh_api_key || row.mesh_token;
-      if (meshUrl && meshApiKey && !triggerStorage.isReady) {
+      if (meshUrl && meshApiKey) {
         triggerStorage.configure(meshUrl, meshApiKey);
       }
 

@@ -12,6 +12,7 @@ import { z } from "zod";
  */
 class LazyStudioKV implements TriggerStorage {
   private inner: StudioKV | null = null;
+  private currentApiKey: string | null = null;
 
   constructor() {
     // Try env vars at startup (works if they're set)
@@ -20,15 +21,20 @@ class LazyStudioKV implements TriggerStorage {
         url: process.env.MESH_URL,
         apiKey: process.env.MESH_API_KEY,
       });
+      this.currentApiKey = process.env.MESH_API_KEY;
       console.log("[TriggerStorage] Initialized from env vars");
     }
   }
 
-  /** Called from onChange when we learn the mesh URL and token */
+  /** Called from onChange / bootstrap / per-request to set or refresh credentials */
   configure(url: string, apiKey: string): void {
-    if (this.inner) return; // Already configured
+    if (this.inner && this.currentApiKey === apiKey) return; // Same credentials
+    const isRefresh = this.inner !== null;
     this.inner = new StudioKV({ url, apiKey });
-    console.log("[TriggerStorage] Initialized from onChange credentials");
+    this.currentApiKey = apiKey;
+    console.log(
+      `[TriggerStorage] ${isRefresh ? "Refreshed" : "Initialized"} credentials (key: ${apiKey.slice(0, 8)}...)`,
+    );
   }
 
   get isReady(): boolean {
