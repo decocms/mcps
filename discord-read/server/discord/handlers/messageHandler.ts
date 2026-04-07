@@ -353,14 +353,17 @@ async function handleDefaultAgent(
   let thinkingMsg: Message | null = null;
   let thinkingAnimation: { stop: () => void } | null = null;
   if (useStreaming) {
-    thinkingMsg = await sendThinkingMessage(message);
+    const thinkingText =
+      env.MESH_REQUEST_CONTEXT?.state?.RESPONSE_CONFIG?.THINKING_MESSAGE ||
+      "🤔 Pensando";
+    thinkingMsg = await sendThinkingMessage(message, thinkingText);
     if (thinkingMsg) {
       // Start thinking animation (matches Slack's pattern)
       const frames = [
-        "🤔 Pensando",
-        "🤔 Pensando.",
-        "🤔 Pensando..",
-        "🤔 Pensando...",
+        thinkingText,
+        `${thinkingText}.`,
+        `${thinkingText}..`,
+        `${thinkingText}...`,
       ];
       let frame = 0;
       let stopped = false;
