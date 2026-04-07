@@ -13,13 +13,21 @@ import { configTools } from "./config.ts";
 import { botTools } from "./bot.ts";
 import { databaseTools } from "./database.ts";
 import { slashCommandTools } from "./slash-commands.ts";
-import { triggers } from "../lib/trigger-store.ts";
+import { triggers, triggerStorage } from "../lib/trigger-store.ts";
 
 // Wrap each tool factory to update env on every call
 function wrapWithEnvUpdate(toolFactory: ToolFactory<Env>): ToolFactory<Env> {
   return (env: Env) => {
     // Update global env with latest MESH_REQUEST_CONTEXT
     updateEnv(env);
+
+    // Ensure trigger storage is configured (survives restarts without onChange)
+    const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
+    const token = env.MESH_REQUEST_CONTEXT?.token;
+    if (meshUrl && token && !triggerStorage.isReady) {
+      triggerStorage.configure(meshUrl, token);
+    }
+
     return toolFactory(env);
   };
 }
