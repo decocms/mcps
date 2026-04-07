@@ -30,6 +30,18 @@ export const createStartBotTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
+      console.log(
+        `[Tool] DISCORD_BOT_START params keys: ${Object.keys(params).join(", ")}`,
+      );
+      console.log(
+        `[Tool] runtimeContext exists: ${!!params.runtimeContext}, runtimeContext.env exists: ${!!params.runtimeContext?.env}`,
+      );
+      console.log(
+        `[Tool] runtimeContext.env connectionId: ${params.runtimeContext?.env?.MESH_REQUEST_CONTEXT?.connectionId}`,
+      );
+      console.log(
+        `[Tool] closure env connectionId: ${env.MESH_REQUEST_CONTEXT?.connectionId}`,
+      );
       const currentEnv = params.runtimeContext?.env || env;
 
       const connectionId =
@@ -125,6 +137,18 @@ export const createBotStatusTool = (env: Env) =>
       })
       .strict(),
     execute: async (params: any) => {
+      console.log(
+        `[Tool] DISCORD_BOT_STATUS params keys: ${Object.keys(params).join(", ")}`,
+      );
+      console.log(
+        `[Tool] runtimeContext exists: ${!!params.runtimeContext}, runtimeContext.env exists: ${!!params.runtimeContext?.env}`,
+      );
+      console.log(
+        `[Tool] runtimeContext.env connectionId: ${params.runtimeContext?.env?.MESH_REQUEST_CONTEXT?.connectionId}`,
+      );
+      console.log(
+        `[Tool] closure env connectionId: ${env.MESH_REQUEST_CONTEXT?.connectionId}`,
+      );
       const currentEnv = params.runtimeContext?.env || env;
 
       console.log("[Tool] DISCORD_BOT_STATUS called");
