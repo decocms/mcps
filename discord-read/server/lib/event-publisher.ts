@@ -26,7 +26,7 @@ import { getAllInstances } from "../bot-instance.ts";
  * If no guildId is provided (e.g. DM events), notifies all connections.
  */
 function notifyAllConnections(
-  type: string,
+  type: Parameters<(typeof triggers)["notify"]>[1],
   data: Record<string, unknown>,
 ): void {
   const instances = getAllInstances();
