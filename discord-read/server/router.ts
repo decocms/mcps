@@ -16,8 +16,8 @@ import {
   type DiscordInteraction,
 } from "./webhook.ts";
 import { getDiscordConfig } from "./lib/config-cache.ts";
-import { ensureBotRunning, isBotRunning } from "./bot-manager.ts";
-import { getCurrentEnv } from "./bot-manager.ts";
+import { ensureBotRunning } from "./bot-manager.ts";
+import { getInstance } from "./bot-instance.ts";
 import { getSupabaseClient } from "./lib/supabase-client.ts";
 
 export const app = new Hono();
@@ -208,9 +208,9 @@ async function handleStartCommand(
   // Start bot in background
   setTimeout(async () => {
     try {
-      const env = getCurrentEnv();
-      if (!env) {
-        console.error("[Command] No environment available");
+      const instance = getInstance(connectionId);
+      if (!instance?.env) {
+        console.error(`[Command] No environment available for ${connectionId}`);
         await editInteractionResponse(
           interaction.application_id,
           interaction.token,
@@ -219,8 +219,10 @@ async function handleStartCommand(
         return;
       }
 
-      // Check if bot is already running
-      if (isBotRunning()) {
+      const env = instance.env;
+
+      // Check if bot is already running for this connection
+      if (instance.client?.isReady()) {
         await editInteractionResponse(
           interaction.application_id,
           interaction.token,
@@ -229,7 +231,7 @@ async function handleStartCommand(
         return;
       }
 
-      // Try to start the bot
+      // Try to start the bot for this connection
       const success = await ensureBotRunning(env);
 
       if (success) {

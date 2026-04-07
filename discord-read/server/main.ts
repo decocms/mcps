@@ -2,18 +2,21 @@
  * Discord MCP Server - Main Entry Point
  *
  * MCP server for Discord bot integration with message indexing
- * and AI agent commands.
+ * and AI agent commands. Supports multi-tenant: multiple connections
+ * can each run their own Discord bot on the same pod.
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
-import {
-  initializeDiscordClient,
-  getDiscordClient,
-  shutdownDiscordClient,
-} from "./discord/client.ts";
+import { getDiscordClient } from "./discord/client.ts";
 import { setDatabaseEnv } from "../shared/db.ts";
-import { updateEnv, getCurrentEnv, ensureBotRunning } from "./bot-manager.ts";
+import {
+  updateEnv,
+  ensureBotRunning,
+  shutdownAllBots,
+  isBotRunning,
+} from "./bot-manager.ts";
+import { getOrCreateInstance } from "./bot-instance.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
@@ -29,21 +32,17 @@ export { StateSchema };
 // ============================================================================
 // STARTUP DEBUGGING
 // ============================================================================
-// Generate unique instance ID to detect multiple instances running
 const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 console.log("=".repeat(80));
 console.log("[STARTUP] Discord MCP Server initializing...");
-console.log(`[STARTUP] 🆔 Instance ID: ${INSTANCE_ID}`);
+console.log(`[STARTUP] Instance ID: ${INSTANCE_ID}`);
 console.log(`[STARTUP] Node.js version: ${process.version}`);
 console.log(`[STARTUP] Bun version: ${Bun.version}`);
 console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
 console.log(`[STARTUP] PORT: ${process.env.PORT || "not set"}`);
 console.log(`[STARTUP] Working directory: ${process.cwd()}`);
 console.log("=".repeat(80));
-
-// Track Discord client state
-let discordInitialized = false;
 
 // Auto-restart cron interval (1 hour)
 const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
@@ -53,14 +52,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
       const traceId = HyperDXLogger.generateTraceId();
+      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
 
       logger.info("Configuration changed", {
         trace_id: traceId,
         organizationId: env.MESH_REQUEST_CONTEXT?.organizationId,
-        connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+        connectionId,
       });
 
-      // Update global env for Discord bot handlers
+      // Update env for this specific connection
       updateEnv(env);
 
       // Set database env for shared module
@@ -81,8 +81,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         });
       }
 
-      // Create tables first, then indexes
-      // Database tables are managed via Supabase - no need to ensure here
+      // Database tables are managed via Supabase
       console.log("[Setup] Skipping database initialization (using Supabase)");
 
       logger.info("Database tables ready", {
@@ -90,15 +89,11 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         organizationId,
       });
 
-      // Agent binding is resolved automatically by the runtime via AgentOf()
-      // No manual LLM configuration needed — env.MESH_REQUEST_CONTEXT.state.AGENT
-      // provides a .STREAM() method directly.
       console.log("[CONFIG] Agent binding configured via AgentOf()");
 
       // ======================================================================
       // Sync StateSchema fields to config-cache for webhook endpoint
       // ======================================================================
-      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
       const discordPublicKey = state?.DISCORD_PUBLIC_KEY;
       const discordApplicationId = state?.DISCORD_APPLICATION_ID;
@@ -115,27 +110,26 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             .filter(Boolean)
         : [];
 
-      // Parse and set super admins (comma-separated string to array)
+      // Parse and set super admins per connection
       const superAdmins = superAdminsStr
         ? superAdminsStr
             .split(",")
             .map((id) => id.trim())
             .filter(Boolean)
         : [];
-      if (superAdmins.length > 0) {
-        const { setSuperAdmins } = await import(
-          "./discord/handlers/messageHandler.ts"
+      if (connectionId && superAdmins.length > 0) {
+        // Ensure the instance exists before setting super admins
+        const instance = getOrCreateInstance(connectionId, env);
+        instance.superAdmins = superAdmins;
+        console.log(
+          `[CONFIG] Super admins for ${connectionId}: ${superAdmins.length} configured`,
         );
-        setSuperAdmins(superAdmins);
-        console.log(`[CONFIG] Super admins: ${superAdmins.length} configured`);
       }
 
-      // If we have a connection ID, sync to config-cache (discordPublicKey is optional but needed for webhooks)
+      // If we have a connection ID, sync to config-cache
       if (connectionId && organizationId && meshUrl) {
-        // Try to load existing config to preserve other fields
         const existingConfig = await getDiscordConfig(connectionId);
 
-        // Extract bot token from authorization header (Bearer token)
         let botToken = existingConfig?.botToken || "";
         if (authorization) {
           const authMatch = authorization.match(/^Bearer\s+(.+)$/i);
@@ -145,9 +139,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         }
 
         const configToSave: DiscordConfig = {
-          // Preserve existing config fields
           ...(existingConfig || {}),
-          // Update with current values
           connectionId,
           organizationId,
           meshUrl,
@@ -162,11 +154,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         };
 
         await setDiscordConfig(configToSave);
+        console.log(`[CONFIG] Synced config for connection ${connectionId}`);
         console.log(
-          `[CONFIG] ✅ Synced StateSchema to config-cache for webhook endpoint`,
-        );
-        console.log(
-          `[CONFIG] Discord Public Key: ${discordPublicKey ? "✓ configured" : "✗ missing"}`,
+          `[CONFIG] Discord Public Key: ${discordPublicKey ? "configured" : "missing"}`,
         );
         console.log(
           `[CONFIG] Application ID: ${discordApplicationId || "not set"}`,
@@ -176,26 +166,31 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
-      // Auto-initialize Discord client when config is available
+      // Auto-initialize Discord client for this connection
       const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
       if (hasAuth) {
-        if (discordInitialized && getDiscordClient()?.isReady()) {
-          console.log("[CONFIG] ✅ Bot is running");
+        if (isBotRunning(env)) {
+          console.log(
+            `[CONFIG] Bot already running for ${connectionId || "unknown"}`,
+          );
         } else {
-          console.log("[CONFIG] ⚡ Auto-starting Discord bot...");
+          console.log(
+            `[CONFIG] Auto-starting Discord bot for ${connectionId || "unknown"}...`,
+          );
           try {
             const started = await ensureBotRunning(env);
             if (started) {
-              discordInitialized = true;
-              console.log("[CONFIG] ✅ Bot auto-started successfully");
+              console.log(
+                `[CONFIG] Bot auto-started for ${connectionId || "unknown"}`,
+              );
             } else {
               console.log(
-                "[CONFIG] ⚠️ Bot auto-start failed. Use DISCORD_BOT_START tool manually.",
+                `[CONFIG] Bot auto-start failed for ${connectionId || "unknown"}. Use DISCORD_BOT_START manually.`,
               );
             }
           } catch (error) {
             console.error(
-              "[CONFIG] ❌ Bot auto-start error:",
+              `[CONFIG] Bot auto-start error for ${connectionId || "unknown"}:`,
               error instanceof Error ? error.message : String(error),
             );
           }
@@ -218,24 +213,20 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   prompts: [],
 });
 
-// Graceful shutdown handler - destroy Discord client when process exits
+// Graceful shutdown handler - destroy ALL Discord clients
 async function gracefulShutdown(signal: string) {
   console.log(`\n[SHUTDOWN] Received ${signal}, shutting down...`);
 
   try {
-    // Stop auto-restart cron
     if (autoRestartInterval) {
       console.log("[SHUTDOWN] Stopping auto-restart cron...");
       clearInterval(autoRestartInterval);
       autoRestartInterval = null;
     }
 
-    const client = getDiscordClient();
-    if (client) {
-      console.log("[SHUTDOWN] Destroying Discord client...");
-      await shutdownDiscordClient();
-      console.log("[SHUTDOWN] Discord client destroyed ✓");
-    }
+    console.log("[SHUTDOWN] Destroying all Discord clients...");
+    await shutdownAllBots();
+    console.log("[SHUTDOWN] All Discord clients destroyed");
   } catch (error) {
     console.error("[SHUTDOWN] Error during shutdown:", error);
   }
@@ -248,122 +239,93 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("beforeExit", () => gracefulShutdown("beforeExit"));
 
-// Also handle uncaught exceptions to cleanup
 process.on("uncaughtException", async (error) => {
   console.error("[CRASH] Uncaught exception:", error);
   await gracefulShutdown("uncaughtException");
 });
 
 // ============================================================================
-// START HTTP SERVER FIRST (before any Discord initialization)
+// START HTTP SERVER
 // ============================================================================
 console.log("[SERVER] Starting HTTP server...");
 console.log(
   `[SERVER] PORT env variable: ${process.env.PORT || "not set (will use default)"}`,
 );
 
-/**
- * Serve requests:
- * - Webhook routes handled by webhookRouter (/discord/interactions, /health)
- * - MCP requests handled by runtime
- */
 try {
   serve(async (req, env, ctx) => {
-    // Try webhook router first
     const webhookResponse = await webhookRouter.fetch(req, env, ctx);
-
-    // If webhook router returned 404, fall back to MCP runtime
     if (webhookResponse.status === 404) {
       return runtime.fetch(req, env, ctx);
     }
-
     return webhookResponse;
   });
-  console.log("[SERVER] ✅ serve() called successfully");
+  console.log("[SERVER] serve() called successfully");
   console.log("[SERVER] Webhook endpoint: /discord/interactions/:connectionId");
   console.log("[SERVER] Health check: /health");
 } catch (error) {
-  console.error("[SERVER] ❌ Failed to start server:", error);
+  console.error("[SERVER] Failed to start server:", error);
   throw error;
 }
 
 console.log(`
-╔══════════════════════════════════════════════════════════╗
-║              Discord MCP Server Started                  ║
-╠══════════════════════════════════════════════════════════╣
-║  Status:        ✅ HTTP Server Ready                      ║
-║  Discord Bot:   Waiting for configuration...             ║
-╚══════════════════════════════════════════════════════════╝
+Discord MCP Server Started
+  Status:      HTTP Server Ready
+  Discord Bot: Waiting for configuration (multi-tenant)
 `);
-
-console.log(`
-📡 MCP Server ready!
-
-💡 The Discord bot will start when Mesh sends the configuration.
-   → Open Mesh Dashboard and click on this MCP to trigger initialization.
-   → Or use the tools in the dashboard.
-
-⚠️  Press Ctrl+C to gracefully shutdown the Discord bot.
-`);
-
-// ============================================================================
-// BOT INITIALIZATION
-// ============================================================================
-// Bot will be initialized via:
-// 1. onChange configuration callback (when Mesh sends config)
-// 2. DISCORD_BOT_START tool (manual start)
 
 // ============================================================================
 // Auto-Restart Cron Job (every 1 hour)
 // ============================================================================
 
+import { getAllInstances } from "./bot-instance.ts";
+
 /**
- * Check if the bot is running and restart if needed.
- * Runs every hour to ensure the bot stays online.
+ * Check all bot instances and restart any that are down.
  */
 async function autoRestartCheck(): Promise<void> {
-  const client = getDiscordClient();
+  const instances = getAllInstances();
 
-  if (!client || !client.isReady()) {
-    console.log("[AUTO-RESTART] Bot is down, attempting restart...");
+  if (instances.length === 0) {
+    console.log("[AUTO-RESTART] No bot instances registered");
+    return;
+  }
 
-    const env = getCurrentEnv();
-    if (!env) {
-      console.log("[AUTO-RESTART] No environment available, skipping restart");
-      return;
-    }
-
-    const hasAuth = !!env.MESH_REQUEST_CONTEXT?.authorization;
-    if (!hasAuth) {
+  for (const instance of instances) {
+    if (!instance.client || !instance.client.isReady()) {
       console.log(
-        "[AUTO-RESTART] No authorization configured, skipping restart",
+        `[AUTO-RESTART] Bot for ${instance.connectionId} is down, attempting restart...`,
       );
-      return;
-    }
 
-    try {
-      await initializeDiscordClient(env);
-      discordInitialized = true;
-      console.log("[AUTO-RESTART] Bot restarted successfully ✓");
-    } catch (error) {
-      console.error(
-        "[AUTO-RESTART] Failed to restart bot:",
-        error instanceof Error ? error.message : String(error),
+      const hasAuth = !!instance.env.MESH_REQUEST_CONTEXT?.authorization;
+      if (!hasAuth) {
+        console.log(
+          `[AUTO-RESTART] No authorization for ${instance.connectionId}, skipping`,
+        );
+        continue;
+      }
+
+      try {
+        await ensureBotRunning(instance.env);
+        console.log(
+          `[AUTO-RESTART] Bot restarted for ${instance.connectionId}`,
+        );
+      } catch (error) {
+        console.error(
+          `[AUTO-RESTART] Failed to restart ${instance.connectionId}:`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    } else {
+      console.log(
+        `[AUTO-RESTART] Bot for ${instance.connectionId} is healthy (${instance.client.guilds.cache.size} guilds)`,
       );
     }
-  } else {
-    console.log(
-      `[AUTO-RESTART] Bot is healthy (${client.guilds.cache.size} guilds)`,
-    );
   }
 }
 
-// Start auto-restart cron
-// Use setImmediate to ensure this runs after HTTP server is ready
 setImmediate(() => {
   autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);
   console.log(`[CRON] Auto-restart check scheduled every 1 hour`);
-
-  // Run initial check after 30 seconds (give time for normal startup and HTTP server)
   setTimeout(autoRestartCheck, 30000);
 });
