@@ -15,7 +15,7 @@ import {
   shutdownAllBots,
   isBotRunning,
 } from "./bot-manager.ts";
-import { getOrCreateInstance } from "./bot-instance.ts";
+import { getOrCreateInstance, getInstance } from "./bot-instance.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
@@ -71,12 +71,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
       const token = env.MESH_REQUEST_CONTEXT?.token;
 
-      // Initialize trigger storage with Mesh credentials (lazy — first onChange wins)
-      if (meshUrl && token) {
-        const { triggerStorage } = await import("./lib/trigger-store.ts");
-        triggerStorage.configure(meshUrl, token);
-      }
-
       // Configure HyperDX logger if API key is provided
       if (state?.HYPERDX_API_KEY) {
         logger.setApiKey(state.HYPERDX_API_KEY);
@@ -131,13 +125,20 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
-      // If we have a connection ID, sync to config-cache
-      console.log(
-        `[CONFIG] Save check: connectionId=${connectionId || "MISSING"}, organizationId=${organizationId || "MISSING"}, meshUrl=${meshUrl ? "yes" : "MISSING"}, authorization=${authorization ? "yes" : "MISSING"}`,
-      );
-      if (connectionId && organizationId && meshUrl) {
-        const existingConfig = await getDiscordConfig(connectionId);
+      // Sync to config-cache — merge with existing config for missing fields
+      const existingConfig = connectionId
+        ? await getDiscordConfig(connectionId)
+        : null;
 
+      const mergedConnectionId = connectionId || existingConfig?.connectionId;
+      const mergedOrgId = organizationId || existingConfig?.organizationId;
+      const mergedMeshUrl = meshUrl || existingConfig?.meshUrl;
+
+      console.log(
+        `[CONFIG] Save check: connectionId=${mergedConnectionId || "MISSING"}, organizationId=${mergedOrgId || "MISSING"}, meshUrl=${mergedMeshUrl ? "yes" : "MISSING"}, authorization=${authorization ? "yes" : "MISSING"}`,
+      );
+
+      if (mergedConnectionId && mergedOrgId && mergedMeshUrl) {
         let botToken = existingConfig?.botToken || "";
         if (authorization) {
           const authMatch = authorization.match(/^Bearer\s+(.+)$/i);
@@ -148,36 +149,34 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
         const configToSave: DiscordConfig = {
           ...(existingConfig || {}),
-          connectionId,
-          organizationId,
-          meshUrl,
-          meshToken: token,
+          connectionId: mergedConnectionId,
+          organizationId: mergedOrgId,
+          meshUrl: mergedMeshUrl,
+          meshToken: token || existingConfig?.meshToken,
           botToken,
-          discordPublicKey,
-          discordApplicationId,
-          authorizedGuilds,
-          ownerId: botOwnerId,
+          discordPublicKey:
+            discordPublicKey || existingConfig?.discordPublicKey,
+          discordApplicationId:
+            discordApplicationId || existingConfig?.discordApplicationId,
+          authorizedGuilds:
+            authorizedGuilds.length > 0
+              ? authorizedGuilds
+              : existingConfig?.authorizedGuilds,
+          ownerId: botOwnerId || existingConfig?.ownerId,
           commandPrefix,
           updatedAt: new Date().toISOString(),
         };
 
         await setDiscordConfig(configToSave);
-        console.log(`[CONFIG] Synced config for connection ${connectionId}`);
         console.log(
-          `[CONFIG] Discord Public Key: ${discordPublicKey ? "configured" : "missing"}`,
-        );
-        console.log(
-          `[CONFIG] Application ID: ${discordApplicationId || "not set"}`,
-        );
-        console.log(
-          `[CONFIG] Authorized Guilds: ${authorizedGuilds.length > 0 ? authorizedGuilds.join(", ") : "all"}`,
+          `[CONFIG] Synced config for connection ${mergedConnectionId}`,
         );
         console.log(
           `[CONFIG] Bot token: ${botToken ? `${botToken.slice(0, 10)}...${botToken.slice(-4)}` : "MISSING"}`,
         );
       } else {
         console.warn(
-          `[CONFIG] ⚠️ Cannot save config — missing: ${!connectionId ? "connectionId " : ""}${!organizationId ? "organizationId " : ""}${!meshUrl ? "meshUrl" : ""}`,
+          `[CONFIG] Cannot save config — missing after merge: ${!mergedConnectionId ? "connectionId " : ""}${!mergedOrgId ? "organizationId " : ""}${!mergedMeshUrl ? "meshUrl" : ""}`,
         );
       }
 
@@ -200,7 +199,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
               );
             } else {
               console.log(
-                `[CONFIG] Bot auto-start failed for ${connectionId || "unknown"}. Use DISCORD_BOT_START manually.`,
+                `[CONFIG] Bot auto-start failed for ${connectionId || "unknown"}. Will retry on next auto-restart cycle.`,
               );
             }
           } catch (error) {
@@ -294,8 +293,10 @@ Discord MCP Server Started
 // ============================================================================
 
 import { getAllInstances } from "./bot-instance.ts";
-import { loadAllConnectionConfigs } from "./lib/supabase-client.ts";
-import { triggerStorage } from "./lib/trigger-store.ts";
+import {
+  loadAllConnectionConfigs,
+  loadAllTriggerCredentials,
+} from "./lib/supabase-client.ts";
 
 /**
  * Bootstrap bots from Supabase on startup (no onChange needed).
@@ -319,9 +320,9 @@ async function bootstrapFromSupabase(): Promise<void> {
     console.log(`[BOOTSTRAP] Found ${rows.length} saved connection(s)`);
 
     // Deduplicate by bot_token — only start one Discord client per unique token.
-    // Multiple connections may share the same bot; we pick the first and register
-    // the rest as aliases so config-cache / triggers still work for them.
-    const startedTokens = new Set<string>();
+    // Multiple connections sharing the same bot share the same Client instance.
+    // Maps bot_token → connectionId of the primary (first) instance that started it.
+    const tokenToOwner = new Map<string, string>();
 
     for (const row of rows) {
       const connectionId = row.connection_id;
@@ -333,12 +334,8 @@ async function bootstrapFromSupabase(): Promise<void> {
         continue;
       }
 
-      // Configure trigger storage from saved credentials
       const meshUrl = row.mesh_url;
       const meshApiKey = row.mesh_api_key || row.mesh_token;
-      if (meshUrl && meshApiKey) {
-        triggerStorage.configure(meshUrl, meshApiKey);
-      }
 
       // Sync config to in-memory cache (always, even for duplicate tokens)
       const { setDiscordConfig } = await import("./lib/config-cache.ts");
@@ -356,14 +353,6 @@ async function bootstrapFromSupabase(): Promise<void> {
         commandPrefix: row.command_prefix || "!",
       });
 
-      // Skip starting a second Discord client for the same bot token
-      if (startedTokens.has(row.bot_token)) {
-        console.log(
-          `[BOOTSTRAP] Skipping ${connectionId} — bot already started for this token`,
-        );
-        continue;
-      }
-
       // Build a synthetic env so ensureBotRunning can resolve the token
       const syntheticEnv = {
         MESH_REQUEST_CONTEXT: {
@@ -377,13 +366,27 @@ async function bootstrapFromSupabase(): Promise<void> {
       } as unknown as Env;
 
       // Ensure instance is created (superAdmins come from StateSchema on next onChange)
-      getOrCreateInstance(connectionId, syntheticEnv);
+      const instance = getOrCreateInstance(connectionId, syntheticEnv);
+
+      // If another connection already started a client for this token, share it
+      const ownerConnectionId = tokenToOwner.get(row.bot_token);
+      if (ownerConnectionId) {
+        const ownerInstance = getInstance(ownerConnectionId);
+        if (ownerInstance?.client) {
+          instance.client = ownerInstance.client;
+          instance.initialized = true;
+          console.log(
+            `[BOOTSTRAP] ${connectionId} sharing client from ${ownerConnectionId} (same token)`,
+          );
+        }
+        continue;
+      }
 
       try {
         console.log(`[BOOTSTRAP] Starting bot for ${connectionId}...`);
         const started = await ensureBotRunning(syntheticEnv);
         if (started) {
-          startedTokens.add(row.bot_token);
+          tokenToOwner.set(row.bot_token, connectionId);
           console.log(`[BOOTSTRAP] Bot started for ${connectionId} ✓`);
         } else {
           console.log(`[BOOTSTRAP] Bot failed to start for ${connectionId}`);
@@ -450,6 +453,24 @@ async function autoRestartCheck(): Promise<void> {
 setImmediate(async () => {
   // Bootstrap bots from Supabase first (no onChange needed)
   await bootstrapFromSupabase();
+
+  // Pre-warm: log trigger credentials available in Supabase
+  try {
+    const allCredentials = await loadAllTriggerCredentials();
+    for (const { connectionId, state } of allCredentials) {
+      console.log(
+        `[BOOTSTRAP] Trigger credentials found for ${connectionId}: ${state.activeTriggerTypes.length} type(s)`,
+      );
+    }
+    console.log(
+      `[BOOTSTRAP] ${allCredentials.length} trigger credential(s) available in Supabase`,
+    );
+  } catch (error) {
+    console.warn(
+      "[BOOTSTRAP] Failed to load trigger credentials:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
 
   // Then schedule periodic health checks
   autoRestartInterval = setInterval(autoRestartCheck, AUTO_RESTART_INTERVAL_MS);

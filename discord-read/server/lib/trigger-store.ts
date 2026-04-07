@@ -1,67 +1,60 @@
 import { createTriggers, type TriggerStorage } from "@decocms/runtime/triggers";
-import { StudioKV } from "@decocms/runtime/trigger-storage";
+import {
+  saveTriggerCredentials,
+  loadTriggerCredentials,
+  deleteTriggerCredentials,
+} from "./supabase-client.ts";
 import { z } from "zod";
 
 /**
- * Lazy-initialized StudioKV storage.
+ * Supabase-backed trigger storage.
  *
- * On startup, MESH_URL and MESH_API_KEY env vars may not be set yet.
- * This wrapper defers StudioKV creation until the first onChange provides
- * meshUrl + token, so trigger credentials survive pod restarts without
- * requiring static env vars.
+ * Uses static SUPABASE_URL / SUPABASE_ANON_KEY env vars (never expire).
+ * No configure() needed — always ready as long as Supabase is configured.
  */
-class LazyStudioKV implements TriggerStorage {
-  private inner: StudioKV | null = null;
-  private currentApiKey: string | null = null;
-
-  constructor() {
-    // Try env vars at startup (works if they're set)
-    if (process.env.MESH_URL && process.env.MESH_API_KEY) {
-      this.inner = new StudioKV({
-        url: process.env.MESH_URL,
-        apiKey: process.env.MESH_API_KEY,
-      });
-      this.currentApiKey = process.env.MESH_API_KEY;
-      console.log("[TriggerStorage] Initialized from env vars");
+class SupabaseTriggerStorage implements TriggerStorage {
+  async get(connectionId: string) {
+    try {
+      const result = await loadTriggerCredentials(connectionId);
+      console.log(
+        `[TriggerStorage] GET ${connectionId}: ${result ? "found credentials" : "empty"}`,
+      );
+      return result;
+    } catch (error) {
+      console.error(
+        `[TriggerStorage] GET ${connectionId} failed:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return null;
     }
   }
 
-  /** Called from onChange / bootstrap / per-request to set or refresh credentials */
-  configure(url: string, apiKey: string): void {
-    if (this.inner && this.currentApiKey === apiKey) return; // Same credentials
-    const isRefresh = this.inner !== null;
-    this.inner = new StudioKV({ url, apiKey });
-    this.currentApiKey = apiKey;
-    console.log(
-      `[TriggerStorage] ${isRefresh ? "Refreshed" : "Initialized"} credentials (key: ${apiKey.slice(0, 8)}...)`,
-    );
-  }
-
-  get isReady(): boolean {
-    return this.inner !== null;
-  }
-
-  async get(connectionId: string) {
-    const result = (await this.inner?.get(connectionId)) ?? null;
-    console.log(
-      `[TriggerStorage] GET ${connectionId}: ${result ? "found credentials" : "empty"} (ready=${this.isReady})`,
-    );
-    return result;
-  }
   async set(connectionId: string, state: any) {
-    console.log(
-      `[TriggerStorage] SET ${connectionId}: saving credentials (ready=${this.isReady})`,
-    );
-    await this.inner?.set(connectionId, state);
+    try {
+      console.log(`[TriggerStorage] SET ${connectionId}: saving credentials`);
+      await saveTriggerCredentials(connectionId, state);
+    } catch (error) {
+      console.error(
+        `[TriggerStorage] SET ${connectionId} failed:`,
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
+
   async delete(connectionId: string) {
-    console.log(`[TriggerStorage] DELETE ${connectionId}`);
-    await this.inner?.delete(connectionId);
+    try {
+      console.log(`[TriggerStorage] DELETE ${connectionId}`);
+      await deleteTriggerCredentials(connectionId);
+    } catch (error) {
+      console.error(
+        `[TriggerStorage] DELETE ${connectionId} failed:`,
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
 }
 
-export const triggerStorage = new LazyStudioKV();
-const storage = triggerStorage;
+const storage = new SupabaseTriggerStorage();
 
 export const triggers = createTriggers({
   definitions: [
