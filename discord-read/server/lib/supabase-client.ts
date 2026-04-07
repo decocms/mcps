@@ -205,6 +205,158 @@ export async function deleteConnectionConfig(
   console.log(`[Supabase] 🗑️ Deleted connection config: ${connectionId}`);
 }
 
+// ============================================================================
+// TRIGGER CREDENTIALS (discord_trigger_credentials table)
+// ============================================================================
+
+interface TriggerCredentialsRow {
+  connection_id: string;
+  callback_url: string;
+  callback_token: string;
+  active_trigger_types: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface TriggerState {
+  credentials: { callbackUrl: string; callbackToken: string };
+  activeTriggerTypes: string[];
+}
+
+/**
+ * Save or update trigger credentials in Supabase
+ * ⚠️  Internal use only - NEVER expose as MCP tool!
+ */
+export async function saveTriggerCredentials(
+  connectionId: string,
+  state: TriggerState,
+): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const now = new Date().toISOString();
+
+  const row: TriggerCredentialsRow = {
+    connection_id: connectionId,
+    callback_url: state.credentials.callbackUrl,
+    callback_token: state.credentials.callbackToken,
+    active_trigger_types: state.activeTriggerTypes,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const { error } = await client
+    .from("discord_trigger_credentials")
+    .upsert(row as any, {
+      onConflict: "connection_id",
+    });
+
+  if (error) {
+    throw new Error(`Failed to save trigger credentials: ${error.message}`);
+  }
+
+  console.log(
+    `[Supabase] Saved trigger credentials for ${connectionId} (${state.activeTriggerTypes.length} types)`,
+  );
+}
+
+/**
+ * Load trigger credentials from Supabase
+ * ⚠️  Internal use only - NEVER expose as MCP tool!
+ */
+export async function loadTriggerCredentials(
+  connectionId: string,
+): Promise<TriggerState | null> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { data, error } = await client
+    .from("discord_trigger_credentials")
+    .select("*")
+    .eq("connection_id", connectionId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null;
+    }
+    throw new Error(`Failed to load trigger credentials: ${error.message}`);
+  }
+
+  const row = data as TriggerCredentialsRow;
+  return {
+    credentials: {
+      callbackUrl: row.callback_url,
+      callbackToken: row.callback_token,
+    },
+    activeTriggerTypes: row.active_trigger_types,
+  };
+}
+
+/**
+ * Delete trigger credentials from Supabase
+ * ⚠️  Internal use only - NEVER expose as MCP tool!
+ */
+export async function deleteTriggerCredentials(
+  connectionId: string,
+): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { error } = await client
+    .from("discord_trigger_credentials")
+    .delete()
+    .eq("connection_id", connectionId);
+
+  if (error) {
+    throw new Error(`Failed to delete trigger credentials: ${error.message}`);
+  }
+
+  console.log(`[Supabase] Deleted trigger credentials for ${connectionId}`);
+}
+
+/**
+ * Load all trigger credentials from Supabase
+ * ⚠️  Internal use only - NEVER expose as MCP tool!
+ */
+export async function loadAllTriggerCredentials(): Promise<
+  Array<{ connectionId: string; state: TriggerState }>
+> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { data, error } = await client
+    .from("discord_trigger_credentials")
+    .select("*");
+
+  if (error) {
+    throw new Error(`Failed to load trigger credentials: ${error.message}`);
+  }
+
+  return ((data || []) as TriggerCredentialsRow[]).map((row) => ({
+    connectionId: row.connection_id,
+    state: {
+      credentials: {
+        callbackUrl: row.callback_url,
+        callbackToken: row.callback_token,
+      },
+      activeTriggerTypes: row.active_trigger_types,
+    },
+  }));
+}
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
 /**
  * Count total connections in Supabase
  * ⚠️  Internal use only - NEVER expose as MCP tool!
