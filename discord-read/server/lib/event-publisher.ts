@@ -22,12 +22,13 @@ import { getAllInstances } from "../bot-instance.ts";
 /**
  * Notify a trigger event for all connections whose bot is in the same guild.
  * Only notifies connections that have an active client with access to the guild
- * where the event originated. Connections without a bot in that guild are skipped.
- * If no guildId is provided (e.g. DM events), notifies all connections.
+ * where the event originated. DM events (no guildId) are scoped to only the
+ * originating connection to prevent leaking private content across tenants.
  */
 function notifyAllConnections(
   type: Parameters<(typeof triggers)["notify"]>[1],
   data: Record<string, unknown>,
+  sourceConnectionId?: string,
 ): void {
   const instances = getAllInstances();
   const guildId = data.guild_id as string | undefined;
@@ -36,8 +37,14 @@ function notifyAllConnections(
     // Skip connections without an active bot
     if (!instance.client?.isReady()) continue;
 
-    // If event has a guild, only notify bots that are in that guild
-    if (guildId && !instance.client.guilds.cache.has(guildId)) continue;
+    if (guildId) {
+      // Guild event: only notify bots that are in that guild
+      if (!instance.client.guilds.cache.has(guildId)) continue;
+    } else {
+      // DM event: only notify the originating connection (no cross-tenant leak)
+      if (sourceConnectionId && instance.connectionId !== sourceConnectionId)
+        continue;
+    }
 
     triggers.notify(instance.connectionId, type, data);
   }
@@ -46,55 +53,65 @@ function notifyAllConnections(
 /**
  * Publish a discord.message.created event
  */
-export function publishMessageCreated(_env: Env, message: Message): void {
-  notifyAllConnections("discord.message.created", {
-    event: "discord.message.created",
-    subject: message.id,
-    message_id: message.id,
-    guild_id: message.guild?.id,
-    guild_name: message.guild?.name,
-    channel_id: message.channelId,
-    channel_name:
-      message.channel && "name" in message.channel
-        ? message.channel.name
-        : undefined,
-    parent_id:
-      message.channel && "parentId" in message.channel
-        ? message.channel.parentId
-        : undefined,
-    author_id: message.author.id,
-    author_username: message.author.username,
-    author_bot: message.author.bot,
-    content: message.content,
-    has_attachments: message.attachments.size > 0,
-    attachment_count: message.attachments.size,
-    has_embeds: message.embeds.length > 0,
-    is_dm: !message.guild,
-    timestamp: message.createdAt.toISOString(),
-    referenced_message_id: message.reference?.messageId,
-  });
+export function publishMessageCreated(env: Env, message: Message): void {
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.created",
+    {
+      event: "discord.message.created",
+      subject: message.id,
+      message_id: message.id,
+      guild_id: message.guild?.id,
+      guild_name: message.guild?.name,
+      channel_id: message.channelId,
+      channel_name:
+        message.channel && "name" in message.channel
+          ? message.channel.name
+          : undefined,
+      parent_id:
+        message.channel && "parentId" in message.channel
+          ? message.channel.parentId
+          : undefined,
+      author_id: message.author.id,
+      author_username: message.author.username,
+      author_bot: message.author.bot,
+      content: message.content,
+      has_attachments: message.attachments.size > 0,
+      attachment_count: message.attachments.size,
+      has_embeds: message.embeds.length > 0,
+      is_dm: !message.guild,
+      timestamp: message.createdAt.toISOString(),
+      referenced_message_id: message.reference?.messageId,
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.created: ${message.id}`);
 }
 
 /**
  * Publish a discord.message.deleted event
  */
-export function publishMessageDeleted(_env: Env, message: Message): void {
-  notifyAllConnections("discord.message.deleted", {
-    event: "discord.message.deleted",
-    subject: message.id,
-    message_id: message.id,
-    guild_id: message.guild?.id,
-    guild_name: message.guild?.name,
-    channel_id: message.channelId,
-    channel_name:
-      message.channel && "name" in message.channel
-        ? message.channel.name
-        : undefined,
-    author_id: message.author?.id,
-    author_username: message.author?.username,
-    deleted_at: new Date().toISOString(),
-  });
+export function publishMessageDeleted(env: Env, message: Message): void {
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.deleted",
+    {
+      event: "discord.message.deleted",
+      subject: message.id,
+      message_id: message.id,
+      guild_id: message.guild?.id,
+      guild_name: message.guild?.name,
+      channel_id: message.channelId,
+      channel_name:
+        message.channel && "name" in message.channel
+          ? message.channel.name
+          : undefined,
+      author_id: message.author?.id,
+      author_username: message.author?.username,
+      deleted_at: new Date().toISOString(),
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.deleted: ${message.id}`);
 }
 
@@ -102,28 +119,33 @@ export function publishMessageDeleted(_env: Env, message: Message): void {
  * Publish a discord.message.updated event
  */
 export function publishMessageUpdated(
-  _env: Env,
+  env: Env,
   oldMessage: Message,
   newMessage: Message,
 ): void {
-  notifyAllConnections("discord.message.updated", {
-    event: "discord.message.updated",
-    subject: newMessage.id,
-    message_id: newMessage.id,
-    guild_id: newMessage.guild?.id,
-    guild_name: newMessage.guild?.name,
-    channel_id: newMessage.channelId,
-    channel_name:
-      newMessage.channel && "name" in newMessage.channel
-        ? newMessage.channel.name
-        : undefined,
-    author_id: newMessage.author.id,
-    author_username: newMessage.author.username,
-    old_content: oldMessage.content,
-    new_content: newMessage.content,
-    content_changed: oldMessage.content !== newMessage.content,
-    edited_at: newMessage.editedAt?.toISOString(),
-  });
+  const connId = env.MESH_REQUEST_CONTEXT?.connectionId;
+  notifyAllConnections(
+    "discord.message.updated",
+    {
+      event: "discord.message.updated",
+      subject: newMessage.id,
+      message_id: newMessage.id,
+      guild_id: newMessage.guild?.id,
+      guild_name: newMessage.guild?.name,
+      channel_id: newMessage.channelId,
+      channel_name:
+        newMessage.channel && "name" in newMessage.channel
+          ? newMessage.channel.name
+          : undefined,
+      author_id: newMessage.author.id,
+      author_username: newMessage.author.username,
+      old_content: oldMessage.content,
+      new_content: newMessage.content,
+      content_changed: oldMessage.content !== newMessage.content,
+      edited_at: newMessage.editedAt?.toISOString(),
+    },
+    connId,
+  );
   console.log(`[Triggers] Notified discord.message.updated: ${newMessage.id}`);
 }
 
