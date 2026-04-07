@@ -20,16 +20,25 @@ import { triggers } from "./trigger-store.ts";
 import { getAllInstances } from "../bot-instance.ts";
 
 /**
- * Notify a trigger event for ALL registered connections, not just the one
- * whose bot received the event. This ensures that if two bots are in the
- * same guild/channel, both connections receive the trigger callback.
+ * Notify a trigger event for all connections whose bot is in the same guild.
+ * Only notifies connections that have an active client with access to the guild
+ * where the event originated. Connections without a bot in that guild are skipped.
+ * If no guildId is provided (e.g. DM events), notifies all connections.
  */
 function notifyAllConnections(
   type: string,
   data: Record<string, unknown>,
 ): void {
   const instances = getAllInstances();
+  const guildId = data.guild_id as string | undefined;
+
   for (const instance of instances) {
+    // Skip connections without an active bot
+    if (!instance.client?.isReady()) continue;
+
+    // If event has a guild, only notify bots that are in that guild
+    if (guildId && !instance.client.guilds.cache.has(guildId)) continue;
+
     triggers.notify(instance.connectionId, type, data);
   }
 }
