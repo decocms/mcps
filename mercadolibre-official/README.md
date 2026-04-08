@@ -40,5 +40,4 @@ https://mcp.mercadolibre.com/mcp
 
 ---
 
-*This MCP requires an active Mercado Libre seller account and API credentials.*
-
+_This MCP requires an active Mercado Libre seller account and API credentials._

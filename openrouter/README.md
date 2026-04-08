@@ -1,5 +1,5 @@
 # OpenRouter MCP
-  
+
 A comprehensive Model Context Protocol (MCP) server for [OpenRouter](https://openrouter.ai), providing unified access to hundreds of AI models with intelligent routing, cost optimization, and fallback mechanisms.
 
 ## Overview
@@ -18,12 +18,14 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 ### 🔧 **Tools & APIs**
 
 #### Model Discovery (4 tools)
+
 1. **`LIST_MODELS`** - Paginated model catalog with filters, sorting, and curated “well-known” ordering
 2. **`GET_MODEL`** - Get detailed model information
 3. **`COMPARE_MODELS`** - Compare multiple models side-by-side
 4. **`RECOMMEND_MODEL`** - Get AI model recommendations for tasks
 
 #### AI Chat
+
 - **`CHAT_COMPLETION`** – Non-streaming chat completions
 - **`GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
 - **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `CHAT_COMPLETION` tool schema.
@@ -33,6 +35,7 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 -->
 
 ### 🌐 **API Routes**
+
 - **`POST /api/chat`** - Streams OpenRouter responses directly from the worker (no intermediate tool call required)
 
 ## Installation
@@ -86,16 +89,16 @@ const { models } = await LIST_MODELS({
   filter: {
     modality: "text+image->text",
     maxPromptPrice: 5.0,
-    minContextLength: 100000
+    minContextLength: 100000,
   },
-  sortBy: "price"
+  sortBy: "price",
 });
 
 // Search for specific models
 const { models } = await LIST_MODELS({
   filter: {
-    search: "gpt-4"
-  }
+    search: "gpt-4",
+  },
 });
 
 // Jump to the second page (results 51-100)
@@ -121,7 +124,7 @@ Get comprehensive information about a specific model:
 
 ```typescript
 const model = await GET_MODEL({
-  modelId: "anthropic/claude-3.5-sonnet"
+  modelId: "anthropic/claude-3.5-sonnet",
 });
 
 console.log(model.pricing); // { prompt: "3", completion: "15" }
@@ -135,16 +138,12 @@ Compare multiple models to choose the best one:
 
 ```typescript
 const { comparison, recommendation } = await COMPARE_MODELS({
-  modelIds: [
-    "openai/gpt-4o",
-    "anthropic/claude-3.5-sonnet",
-    "google/gemini-2.0-flash-exp"
-  ],
-  criteria: ["price", "context_length"]
+  modelIds: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash-exp"],
+  criteria: ["price", "context_length"],
 });
 
 console.log(recommendation);
-// "google/gemini-2.0-flash-exp is most cost-effective. 
+// "google/gemini-2.0-flash-exp is most cost-effective.
 //  anthropic/claude-3.5-sonnet has the largest context window."
 ```
 
@@ -158,11 +157,11 @@ const { recommendations } = await RECOMMEND_MODEL({
   requirements: {
     maxCostPer1MTokens: 10,
     minContextLength: 50000,
-    prioritize: "quality"
-  }
+    prioritize: "quality",
+  },
 });
 
-recommendations.forEach(rec => {
+recommendations.forEach((rec) => {
   console.log(`${rec.name} (score: ${rec.score})`);
   console.log(`Reasoning: ${rec.reasoning}`);
   console.log(`Price: $${rec.pricing.promptPrice}/1M tokens\n`);
@@ -332,18 +331,24 @@ openrouter/
 OpenRouter supports three routing modes:
 
 1. **Single Model**: Direct selection
+
    ```typescript
-   { model: "openai/gpt-4o" }
+   {
+     model: "openai/gpt-4o";
+   }
    ```
 
 2. **Auto Router**: Intelligent selection by NotDiamond
+
    ```typescript
-   { model: "openrouter/auto" }
+   {
+     model: "openrouter/auto";
+   }
    ```
 
 3. **Fallback Chain**: Array of models with automatic fallback
    ```typescript
-   { 
+   {
      model: "openai/gpt-4o",
      models: ["anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash-exp"]
    }
@@ -463,13 +468,19 @@ Configuration is managed through the Deco platform when you install the MCP.
 ## Best Practices
 
 ### 1. **Use Auto-Router by Default**
+
 Let OpenRouter choose the best model for your prompt:
+
 ```typescript
-{ model: "openrouter/auto" }
+{
+  model: "openrouter/auto";
+}
 ```
 
 ### 2. **Set Up Fallback Chains**
+
 Ensure reliability with fallbacks:
+
 ```typescript
 {
   model: "openai/gpt-4o",
@@ -478,13 +489,17 @@ Ensure reliability with fallbacks:
 ```
 
 ### 3. **Monitor Costs**
+
 Always check cost estimates:
+
 ```typescript
 console.log(`Cost: $${response.estimatedCost.total}`);
 ```
 
 ### 4. **Filter Models Appropriately**
+
 Use filters to find the right model:
+
 ```typescript
 {
   filter: {
@@ -496,6 +511,7 @@ Use filters to find the right model:
 ```
 
 ### 5. **Use Streaming for Long Responses**
+
 For long-form content, hit `POST /api/chat` with `stream: true` semantics and pipe the response to your UI (see the examples above referencing the [OpenRouter streaming guide](https://openrouter.ai/docs/api-reference/streaming)).
 
 ## Limitations
@@ -521,6 +537,7 @@ Contributions are welcome! Please follow the existing code structure and add tes
 ## Changelog
 
 ### v1.0.0 - Initial Release
+
 - ✅ Model discovery and filtering
 - ✅ Model comparison and recommendations
 - ✅ Chat completions (streaming and non-streaming)
@@ -534,4 +551,3 @@ Contributions are welcome! Please follow the existing code structure and add tes
 - [OpenRouter](https://openrouter.ai) - Unified AI model API
 - [Deco MCP Platform](https://deco.cx) - MCP hosting and management
 - [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
-

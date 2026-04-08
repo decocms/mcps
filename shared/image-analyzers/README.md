@@ -21,16 +21,12 @@ export const visionTools = createImageAnalyzerTools<Env>({
     description: "Analisa imagens usando My Vision API",
   },
   getClient: (env) => createMyVisionClient(env),
-  
+
   // Tool obrigatória: analyze
   analyzeTool: {
     execute: async ({ env, input, client }) => {
-      const response = await client.analyzeImage(
-        input.imageUrl,
-        input.prompt,
-        input.model
-      );
-      
+      const response = await client.analyzeImage(input.imageUrl, input.prompt, input.model);
+
       return {
         analysis: response.text,
         finishReason: response.finishReason,
@@ -38,16 +34,12 @@ export const visionTools = createImageAnalyzerTools<Env>({
       };
     },
   },
-  
+
   // Tool opcional: compare
   compareTool: {
     execute: async ({ env, input, client }) => {
-      const response = await client.compareImages(
-        input.imageUrls,
-        input.prompt,
-        input.model
-      );
-      
+      const response = await client.compareImages(input.imageUrls, input.prompt, input.model);
+
       return {
         comparison: response.text,
         finishReason: response.finishReason,
@@ -55,21 +47,15 @@ export const visionTools = createImageAnalyzerTools<Env>({
       };
     },
   },
-  
+
   // Tool opcional: extract text (OCR)
   extractTextTool: {
     execute: async ({ env, input, client }) => {
-      const languageHint = input.language 
-        ? ` O texto está em ${input.language}.` 
-        : "";
+      const languageHint = input.language ? ` O texto está em ${input.language}.` : "";
       const prompt = `Extraia TODO o texto visível nesta imagem.${languageHint}`;
-      
-      const response = await client.analyzeImage(
-        input.imageUrl,
-        prompt,
-        input.model
-      );
-      
+
+      const response = await client.analyzeImage(input.imageUrl, prompt, input.model);
+
       return {
         text: response.text,
         finishReason: response.finishReason,
@@ -98,40 +84,49 @@ export const tools = [
 ## 📦 Ferramentas Disponíveis
 
 ### 1. `analyzeImage` (obrigatória)
+
 Analisa uma única imagem com base em um prompt.
 
 **Input:**
+
 - `imageUrl`: URL da imagem
 - `prompt`: Pergunta ou instrução sobre a imagem
 - `model`: (opcional) Modelo a usar
 
 **Output:**
+
 - `analysis`: Texto com a análise
 - `finishReason`: Motivo do término
 - `usageMetadata`: Informações de uso de tokens
 
 ### 2. `compareImages` (opcional)
+
 Compara múltiplas imagens.
 
 **Input:**
+
 - `imageUrls`: Array de URLs (mínimo 2)
 - `prompt`: Como comparar as imagens
 - `model`: (opcional) Modelo a usar
 
 **Output:**
+
 - `comparison`: Texto com a comparação
 - `finishReason`: Motivo do término
 - `usageMetadata`: Informações de uso de tokens
 
 ### 3. `extractTextFromImage` (opcional)
+
 Extrai texto de imagens (OCR).
 
 **Input:**
+
 - `imageUrl`: URL da imagem
 - `language`: (opcional) Idioma do texto
 - `model`: (opcional) Modelo a usar
 
 **Output:**
+
 - `text`: Texto extraído
 - `finishReason`: Motivo do término
 - `usageMetadata`: Informações de uso de tokens
@@ -139,22 +134,26 @@ Extrai texto de imagens (OCR).
 ## 🔧 Recursos Incluídos
 
 ### Middleware
+
 - **Retry**: Tenta novamente em caso de falha (3 tentativas por padrão)
 - **Timeout**: Cancela após 60 segundos
 - **Logging**: Registra início, fim e erros
 
 ### Contract Support (Billing)
+
 - **Authorization**: Autoriza cobranças antes da operação
 - **Settlement**: Finaliza cobrança após sucesso
 - **Rollback**: Não cobra em caso de falha
 - **Opcional**: Cada tool pode ter ou não contract
 
 ### Schemas Padronizados
+
 Todos os inputs e outputs são validados com Zod, garantindo type-safety.
 
 ## 🎨 Exemplos de Providers
 
 ### Gemini Vision (com Contract)
+
 ```typescript
 export const geminiVisionTools = createImageAnalyzerTools<Env>({
   metadata: {
@@ -204,6 +203,7 @@ export const geminiVisionTools = createImageAnalyzerTools<Env>({
 ```
 
 **wrangler.toml:**
+
 ```toml
 [[deco.bindings]]
 type = "contract"
@@ -229,47 +229,60 @@ description = "$0.03 per OCR operation"
 ```
 
 ### GPT-4 Vision
+
 ```typescript
 export const gpt4VisionTools = createImageAnalyzerTools<Env>({
   metadata: {
     provider: "GPT-4 Vision",
   },
   getClient: (env) => createOpenAIClient(env),
-  analyzeTool: { /* ... */ },
+  analyzeTool: {
+    /* ... */
+  },
   // GPT-4V suporta múltiplas imagens nativamente
-  compareTool: { /* ... */ },
-  extractTextTool: { /* ... */ },
+  compareTool: {
+    /* ... */
+  },
+  extractTextTool: {
+    /* ... */
+  },
 });
 ```
 
 ### Claude Vision
+
 ```typescript
 export const claudeVisionTools = createImageAnalyzerTools<Env>({
   metadata: {
     provider: "Claude Vision",
   },
   getClient: (env) => createAnthropicClient(env),
-  analyzeTool: { /* ... */ },
+  analyzeTool: {
+    /* ... */
+  },
   // Claude também suporta múltiplas imagens
-  compareTool: { /* ... */ },
-  extractTextTool: { /* ... */ },
+  compareTool: {
+    /* ... */
+  },
+  extractTextTool: {
+    /* ... */
+  },
 });
 ```
 
 ## 🔍 Diferenças vs Video Generators
 
-| Feature | Video Generators | Image Analyzers |
-|---------|-----------------|----------------|
-| **Operação Principal** | Gerar vídeo | Analisar imagem |
-| **Storage** | Obrigatório (salvar vídeo) | Não usado (retorna texto) |
-| **Contract** | ✅ Suportado | ✅ Suportado |
-| **Timeout Padrão** | 6 minutos | 1 minuto |
-| **Tools Opcionais** | list, extend | compare, extractText |
-| **Contract por Tool** | Sim (generateTool obrigatório) | Sim (todas opcionais) |
+| Feature                | Video Generators               | Image Analyzers           |
+| ---------------------- | ------------------------------ | ------------------------- |
+| **Operação Principal** | Gerar vídeo                    | Analisar imagem           |
+| **Storage**            | Obrigatório (salvar vídeo)     | Não usado (retorna texto) |
+| **Contract**           | ✅ Suportado                   | ✅ Suportado              |
+| **Timeout Padrão**     | 6 minutos                      | 1 minuto                  |
+| **Tools Opcionais**    | list, extend                   | compare, extractText      |
+| **Contract por Tool**  | Sim (generateTool obrigatório) | Sim (todas opcionais)     |
 
 ## 📚 Ver Também
 
 - [Video Generators](../video-generators/README.md)
 - [Image Generators](../image-generators/README.md)
 - [File Management](../tools/file-management/README.md)
-

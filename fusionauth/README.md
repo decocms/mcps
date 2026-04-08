@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Query FusionAuth documentation for implementation guidance
 - Find code examples and configuration references for auth workflows
 - Access API documentation for users, applications, and tokens

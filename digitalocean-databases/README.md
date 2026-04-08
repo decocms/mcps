@@ -48,5 +48,4 @@ https://databases.mcp.digitalocean.com/mcp
 
 ---
 
-*This MCP requires an active DigitalOcean account and API token to function.*
-
+_This MCP requires an active DigitalOcean account and API token to function._

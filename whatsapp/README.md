@@ -66,11 +66,13 @@ List all phone numbers for the business account.
 Creates a new phone number for the business account.
 
 **Input:**
+
 - `countryCode` (string) - Country code (e.g., "1" for US)
 - `phoneNumber` (string) - Phone number
 - `verifiedName` (string) - Display name for the number
 
 **Output:**
+
 - `id` (string) - The created phone number ID
 
 ### REQUEST_CODE_FOR_PHONE_NUMBER
@@ -78,11 +80,13 @@ Creates a new phone number for the business account.
 Requests a verification code for a registered phone number.
 
 **Input:**
+
 - `phoneNumberId` (string) - The phone number ID
 - `codeMethod` (optional, "SMS" | "VOICE") - Delivery method (default: "SMS")
 - `language` (optional, string) - Language code (default: "en_US")
 
 **Output:**
+
 - `success` (boolean) - Whether the request was successful
 
 ### VERIFY_CODE_FOR_PHONE_NUMBER
@@ -90,10 +94,12 @@ Requests a verification code for a registered phone number.
 Validates a verification code for a registered phone number.
 
 **Input:**
+
 - `phoneNumberId` (string) - The phone number ID
 - `code` (string) - The verification code received
 
 **Output:**
+
 - `success` (boolean) - Whether verification was successful
 
 ### REGISTER_PHONE_NUMBER
@@ -101,10 +107,12 @@ Validates a verification code for a registered phone number.
 Registers a phone number for the business account.
 
 **Input:**
+
 - `phoneNumberId` (string) - The phone number ID
 - `pin` (string) - 6-digit PIN for two-step verification
 
 **Output:**
+
 - `success` (boolean) - Whether registration was successful
 
 ### UPDATE_PHONE_NUMBER_WEBHOOK
@@ -112,6 +120,7 @@ Registers a phone number for the business account.
 Update the webhook configuration for a phone number.
 
 **Input:**
+
 - `phoneNumberId` (string) - The phone number ID
 - `webhookUrl` (string) - The webhook URL
 - `verifyToken` (string) - Token for webhook verification

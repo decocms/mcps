@@ -12,7 +12,17 @@
   "metadata": {
     "categories": ["Search"],
     "official": true,
-    "tags": ["search", "ai-search", "semantic-search", "web-search", "research", "exa", "knowledge", "discovery", "nlp"],
+    "tags": [
+      "search",
+      "ai-search",
+      "semantic-search",
+      "web-search",
+      "research",
+      "exa",
+      "knowledge",
+      "discovery",
+      "nlp"
+    ],
     "short_description": "AI-powered semantic search engine for finding high-quality content",
     "mesh_description": "Exa is an AI-powered search engine designed specifically for LLMs and AI applications, providing semantic search capabilities that understand the meaning and context of queries rather than just matching keywords. This official MCP enables you to search the web using natural language queries that understand intent, find similar content based on examples, and discover high-quality articles, research papers, and authoritative sources. Unlike traditional search engines, Exa uses neural embeddings to understand semantic relationships between concepts, allowing you to find content even when the exact keywords don't match. Search by similarity - provide a URL or text sample and find similar content across the web. Filter results by domain, publication date, content type, and authority scores. Access cleaned, structured content without ads, popups, or irrelevant information. Use Exa for research tasks like competitive analysis, market research, academic literature review, and trend discovery. Find expert opinions, technical documentation, case studies, and data-driven articles. The search engine is optimized for factual accuracy and source reliability, making it ideal for AI applications that need trustworthy information. Perfect for building RAG systems, research assistants, content discovery tools, and knowledge management applications that require high-quality web content with semantic understanding."
   }

@@ -5,24 +5,28 @@ MCP Server for TikTok Marketing API integration. Manage campaigns, ad groups, ad
 ## Features
 
 ### Campaign Management
+
 - **list_campaigns** - List all campaigns with filters
 - **get_campaign** - Get details of a specific campaign
 - **create_campaign** - Create a new campaign
 - **update_campaign** - Update existing campaign
 
 ### Ad Group Management
+
 - **list_adgroups** - List ad groups with filters
 - **get_adgroup** - Get details of a specific ad group
 - **create_adgroup** - Create a new ad group
 - **update_adgroup** - Update existing ad group
 
 ### Ad Management
+
 - **list_ads** - List ads with filters
 - **get_ad** - Get details of a specific ad
 - **create_ad** - Create a new ad
 - **update_ad** - Update existing ad
 
 ### Reports & Analytics
+
 - **get_report** - Get custom performance reports
 - **get_campaign_report** - Get campaign performance metrics
 - **get_adgroup_report** - Get ad group performance metrics
@@ -206,28 +210,28 @@ tiktok-ads/
 
 ## Campaign Objectives
 
-| Objective | Description |
-|-----------|-------------|
-| TRAFFIC | Drive traffic to your website |
-| APP_PROMOTION | Promote app installs and engagement |
-| WEB_CONVERSIONS | Drive website conversions |
-| PRODUCT_SALES | Sell products from a catalog |
-| REACH | Maximize reach to your audience |
-| VIDEO_VIEWS | Get more video views |
-| LEAD_GENERATION | Collect leads from forms |
-| COMMUNITY_INTERACTION | Increase profile engagement |
+| Objective             | Description                         |
+| --------------------- | ----------------------------------- |
+| TRAFFIC               | Drive traffic to your website       |
+| APP_PROMOTION         | Promote app installs and engagement |
+| WEB_CONVERSIONS       | Drive website conversions           |
+| PRODUCT_SALES         | Sell products from a catalog        |
+| REACH                 | Maximize reach to your audience     |
+| VIDEO_VIEWS           | Get more video views                |
+| LEAD_GENERATION       | Collect leads from forms            |
+| COMMUNITY_INTERACTION | Increase profile engagement         |
 
 ## Optimization Goals
 
-| Goal | Description |
-|------|-------------|
-| CLICK | Optimize for clicks |
-| CONVERT | Optimize for conversions |
-| SHOW | Optimize for impressions |
-| REACH | Optimize for unique reach |
-| VIDEO_VIEW | Optimize for video views |
+| Goal            | Description                        |
+| --------------- | ---------------------------------- |
+| CLICK           | Optimize for clicks                |
+| CONVERT         | Optimize for conversions           |
+| SHOW            | Optimize for impressions           |
+| REACH           | Optimize for unique reach          |
+| VIDEO_VIEW      | Optimize for video views           |
 | LEAD_GENERATION | Optimize for lead form submissions |
-| ENGAGEMENT | Optimize for profile engagement |
+| ENGAGEMENT      | Optimize for profile engagement    |
 
 ## Report Metrics
 
@@ -262,6 +266,7 @@ Este MCP usa autenticação via Access Token direto, gerado no TikTok Developer 
 - ✅ **Simples de configurar** - Basta gerar o token e colar na instalação
 
 Para gerar o token:
+
 1. Acesse [TikTok Developer Portal](https://business-api.tiktok.com/portal/apps/)
 2. Vá em "Tools" > "Access Token"
 3. Gere e copie o token
@@ -269,10 +274,10 @@ Para gerar o token:
 ## API Reference
 
 This MCP uses the TikTok Marketing API v1.3:
+
 - Base URL: `https://business-api.tiktok.com/open_api/v1.3/`
 - [Official Documentation](https://business-api.tiktok.com/marketing_api/docs)
 
 ## License
 
 MIT
-

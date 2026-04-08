@@ -459,7 +459,9 @@ export class MetaAdsClient {
     return makeRequest<PaginatedResponse<Campaign>>(
       this.config,
       `/${formattedId}/campaigns`,
-      { params },
+      {
+        params,
+      },
     );
   }
 
@@ -1090,7 +1092,9 @@ export class MetaAdsClient {
     return makeRequest<PaginatedResponse<InsightData>>(
       this.config,
       `/${objectId}/insights`,
-      { params: queryParams },
+      {
+        params: queryParams,
+      },
     );
   }
 }

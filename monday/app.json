@@ -13,7 +13,14 @@
   "metadata": {
     "categories": ["Productivity", "Automation"],
     "official": true,
-    "tags": ["monday.com", "project-management", "automation", "workflows", "integration", "boards"],
+    "tags": [
+      "monday.com",
+      "project-management",
+      "automation",
+      "workflows",
+      "integration",
+      "boards"
+    ],
     "short_description": "MCP server for monday.com - manage boards, items, and automations",
     "mesh_description": "Connects to monday.com, enabling integration with its project management platform. It provides a bridge for interacting with monday.com boards, tasks, and automations. Manage work items, update statuses, create automations, and build custom workflows. Perfect for teams using monday.com for project management who want AI-powered assistance with task management and workflow automation."
   }

@@ -1,8 +1,8 @@
 {
   "name": "whatsappagent",
   "version": "1.0.0",
-  "description": "WhatsApp MCP",
   "private": true,
+  "description": "WhatsApp MCP",
   "type": "module",
   "scripts": {
     "dev": "bun run scripts/dev.ts",

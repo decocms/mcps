@@ -11,20 +11,26 @@ O **Datajud** é a base nacional de metadados processuais do Poder Judiciário b
 Este MCP oferece três ferramentas principais:
 
 ### 🔍 SEARCH_PROCESSES
+
 Busca processos judiciais com filtros avançados:
+
 - Filtrar por classe, assunto, órgão julgador
 - Filtrar por data de ajuizamento, grau, instância
 - Paginação de resultados
 - Ordenação personalizada
 
 ### 📋 GET_PROCESS
+
 Consulta um processo específico pelo número:
+
 - Retorna metadados completos do processo
 - Inclui movimentações, assuntos, partes
 - Baseado no Modelo de Transferência de Dados (MTD)
 
 ### 📊 AGGREGATE_STATISTICS
+
 Gera estatísticas e agregações:
+
 - Contagens por classe, assunto, órgão
 - Médias de tempo de tramitação
 - Distribuição temporal de ajuizamentos
@@ -45,6 +51,7 @@ Obtenha a API Key pública do Datajud em:
 https://datajud-wiki.cnj.jus.br/api-publica/acesso/
 
 **API Key atual (novembro 2024):**
+
 ```
 cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==
 ```
@@ -77,6 +84,7 @@ Se não configurar um tribunal padrão, será necessário especificar o tribunal
 Alguns códigos de tribunais disponíveis:
 
 ### Tribunais de Justiça Estaduais
+
 - `tjdft` - Tribunal de Justiça do Distrito Federal e Territórios
 - `tjsp` - Tribunal de Justiça de São Paulo
 - `tjrj` - Tribunal de Justiça do Rio de Janeiro
@@ -89,6 +97,7 @@ Alguns códigos de tribunais disponíveis:
 - `tjce` - Tribunal de Justiça do Ceará
 
 ### Tribunais Regionais Federais
+
 - `trf1` - Tribunal Regional Federal da 1ª Região
 - `trf2` - Tribunal Regional Federal da 2ª Região
 - `trf3` - Tribunal Regional Federal da 3ª Região
@@ -97,6 +106,7 @@ Alguns códigos de tribunais disponíveis:
 - `trf6` - Tribunal Regional Federal da 6ª Região
 
 ### Tribunais Superiores
+
 - `tst` - Tribunal Superior do Trabalho
 - `stj` - Superior Tribunal de Justiça
 - `stf` - Supremo Tribunal Federal
@@ -197,15 +207,19 @@ Os processos retornados seguem o [Modelo de Transferência de Dados (MTD)](https
 ## Limitações e Considerações
 
 ### Rate Limiting
+
 A API Pública do Datajud pode ter limites de taxa. Use paginação e evite fazer muitas requisições simultâneas.
 
 ### Sigilo Processual
+
 Processos com sigilo (níveis 1-5) podem ter dados omitidos ou restritos.
 
 ### Atualização dos Dados
+
 Os dados são atualizados periodicamente pelos tribunais. A frequência de atualização pode variar.
 
 ### Tamanho das Respostas
+
 Para consultas que retornam muitos resultados, use paginação (`size` e `from`) para evitar timeouts.
 
 ## Documentação Oficial
@@ -264,4 +278,3 @@ Para questões sobre este MCP, abra uma issue no repositório.
 ## Licença
 
 Este projeto segue a mesma licença do repositório principal.
-

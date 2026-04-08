@@ -1,8 +1,8 @@
 {
   "name": "hyperdx",
   "version": "1.0.0",
-  "description": "MCP server for HyperDX observability platform",
   "private": true,
+  "description": "MCP server for HyperDX observability platform",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

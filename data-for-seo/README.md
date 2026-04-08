@@ -1,4 +1,4 @@
-# DataForSEO MCP  
+# DataForSEO MCP
 
 ## Project Description
 
@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Perform comprehensive keyword research and competitive analysis
 - Analyze SERP results (organic, news, and historical trends)
 - Get backlink analysis and domain authority metrics
@@ -15,20 +16,21 @@ This MCP server allows client applications to:
 
 ### Key Features
 
-- 🔍 **Keyword Research**: Search volume and related keywords (2 tools)  
-- 📊 **SERP Analysis**: Organic and news SERP data (2 tools)  
-- 🎯 **Domain Analysis**: Ranked keywords and domain authority (2 tools)  
-- 🔄 **Real-time Data**: Live API endpoints with 2-8 second response times  
-- 🌐 **Multi-language Support**: Analyze data for different languages and locations  
-- 💰 **Pay-as-you-go**: All tools work with credit-based pricing (no monthly plans required)  
+- 🔍 **Keyword Research**: Search volume and related keywords (2 tools)
+- 📊 **SERP Analysis**: Organic and news SERP data (2 tools)
+- 🎯 **Domain Analysis**: Ranked keywords and domain authority (2 tools)
+- 🔄 **Real-time Data**: Live API endpoints with 2-8 second response times
+- 🌐 **Multi-language Support**: Analyze data for different languages and locations
+- 💰 **Pay-as-you-go**: All tools work with credit-based pricing (no monthly plans required)
 - 🛠️ **MCP Tools**: 6 working tools total, easy integration with MCP-compatible AI assistants
 
 > **⚠️ Note**: Some tools require additional DataForSEO subscriptions or are not available:
+>
 > - **Backlinks API** (3 tools) - Requires Backlinks subscription ($99/month)
 > - **Google Trends** (1 tool) - API parameter issues (under investigation)
 > - **Keyword Difficulty** (1 tool) - Not available via live API
 > - **Keyword Suggestions** (2 tools) - Not available via live API
-> - **Competitors Discovery** (1 tool) - Not available via live API  
+> - **Competitors Discovery** (1 tool) - Not available via live API
 > - **Historical SERP** (1 tool) - Not available via live API
 
 ## Setup / Installation
@@ -42,11 +44,13 @@ This MCP server allows client applications to:
 ### Local Installation
 
 1. Navigate to the data-for-seo directory:
+
 ```bash
 cd data-for-seo
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
@@ -56,6 +60,7 @@ bun install
    - **API Password**: Your DataForSEO API Token (NOT your account password)
 
 4. Start the development server:
+
 ```bash
 bun run dev
 ```
@@ -82,27 +87,28 @@ This creates a production bundle at `dist/server/main.js`.
 
 ### 📊 Summary: 6 Working Tools ✅
 
-| Category | Tools | Best For | Status |
-|----------|-------|----------|--------|
-| **Keywords** (2) | Search Volume, Related Keywords | Keyword research and discovery | ✅ Working |
-| **Domain Analysis** (2) | Ranked Keywords, Domain Rank | Competitive intelligence and authority | ✅ Working |
-| **SERP** (2) | Organic SERP, News SERP | Ranking analysis and monitoring | ✅ Working |
+| Category                | Tools                           | Best For                               | Status     |
+| ----------------------- | ------------------------------- | -------------------------------------- | ---------- |
+| **Keywords** (2)        | Search Volume, Related Keywords | Keyword research and discovery         | ✅ Working |
+| **Domain Analysis** (2) | Ranked Keywords, Domain Rank    | Competitive intelligence and authority | ✅ Working |
+| **SERP** (2)            | Organic SERP, News SERP         | Ranking analysis and monitoring        | ✅ Working |
 
 ### ⚠️ Tools Not Available (9 tools)
 
-| Category | Tools | Status | Reason |
-|----------|-------|--------|--------|
-| **Backlinks** (3) | Overview, List, Referring Domains | 🔒 Requires Subscription | Need $99/month Backlinks plan |
-| **Google Trends** (1) | Trends Explore | ⚠️ API Issue | Parameter validation error |
-| **Keyword Research** (3) | Difficulty, Suggestions, Ideas | ❌ Not Available | Not in live API |
-| **Domain Analysis** (1) | Competitors Discovery | ❌ Not Available | Not in live API |
-| **SERP** (1) | Historical SERP | ❌ Not Available | Not in live API |
+| Category                 | Tools                             | Status                   | Reason                        |
+| ------------------------ | --------------------------------- | ------------------------ | ----------------------------- |
+| **Backlinks** (3)        | Overview, List, Referring Domains | 🔒 Requires Subscription | Need $99/month Backlinks plan |
+| **Google Trends** (1)    | Trends Explore                    | ⚠️ API Issue             | Parameter validation error    |
+| **Keyword Research** (3) | Difficulty, Suggestions, Ideas    | ❌ Not Available         | Not in live API               |
+| **Domain Analysis** (1)  | Competitors Discovery             | ❌ Not Available         | Not in live API               |
+| **SERP** (1)             | Historical SERP                   | ❌ Not Available         | Not in live API               |
 
 ---
 
 ### Keywords Tools (4 tools)
 
 #### `DATAFORSEO_GET_SEARCH_VOLUME`
+
 **[ASYNC - Standard Plan]** Get search volume, CPC, and competition data for up to 1000 keywords at once.
 
 **Response Time:** 2-5 seconds  
@@ -110,6 +116,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keywords: string[];           // Array of keywords to analyze (max 1000)
@@ -125,6 +132,7 @@ This creates a production bundle at `dist/server/main.js`.
 ---
 
 #### `DATAFORSEO_GET_RELATED_KEYWORDS`
+
 **[ASYNC - DataForSEO Labs]** Get keyword suggestions with semantic relationships.
 
 **Response Time:** 3-10 seconds  
@@ -132,6 +140,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (higher cost)
 
 **Input:**
+
 ```typescript
 {
   keyword: string;             // Seed keyword (single keyword)
@@ -148,7 +157,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_GOOGLE_TRENDS` 
+#### `DATAFORSEO_GOOGLE_TRENDS`
+
 **[ASYNC - Standard Plan]** Get Google Trends data for up to 5 keywords including interest over time, regional interest, and related queries.
 
 **Response Time:** 3-8 seconds  
@@ -156,12 +166,13 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keywords: string[];              // 1-5 keywords to compare trends
   locationName?: string;           // Default: "United States"
   locationCode?: number;           // Alternative to locationName
-  timeRange?: string;              // "now 1-d", "now 7-d", "today 1-m", "today 3-m", 
+  timeRange?: string;              // "now 1-d", "now 7-d", "today 1-m", "today 3-m",
                                    // "today 12-m", "today 5-y", "2004-present"
   category?: number;               // Category ID (0 = All categories)
 }
@@ -170,6 +181,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Interest over time (trend graphs), regional interest by location, related queries, rising queries
 
 **Use Cases:**
+
 - Track keyword popularity trends over time
 - Identify seasonal patterns in search behavior
 - Compare multiple keywords trending patterns
@@ -178,7 +190,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_KEYWORD_DIFFICULTY` 
+#### `DATAFORSEO_KEYWORD_DIFFICULTY`
+
 **[ASYNC - DataForSEO Labs]** Get keyword difficulty scores (0-100) for up to 100 keywords at once.
 
 **Response Time:** 3-10 seconds  
@@ -186,6 +199,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (DataForSEO Labs)
 
 **Input:**
+
 ```typescript
 {
   keywords: string[];              // 1-100 keywords to analyze
@@ -199,6 +213,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Difficulty score (0-100, lower = easier to rank), competitive metrics, top-ranking domains, ranking complexity analysis
 
 **Difficulty Score Interpretation:**
+
 - **0-20**: Very Easy - Low competition, great for new websites
 - **21-40**: Easy - Moderate competition, achievable with good content
 - **41-60**: Medium - Competitive, requires SEO strategy
@@ -206,6 +221,7 @@ This creates a production bundle at `dist/server/main.js`.
 - **81-100**: Very Hard - Extremely competitive, major brands/authority sites
 
 **Use Cases:**
+
 - Evaluate keyword competitiveness before targeting
 - Build content strategy around low-difficulty keywords
 - Prioritize keyword opportunities by difficulty vs. search volume
@@ -216,7 +232,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ### Domain Analysis Tools (3 tools)
 
-#### `DATAFORSEO_RANKED_KEYWORDS` 
+#### `DATAFORSEO_RANKED_KEYWORDS`
+
 **[ASYNC - DataForSEO Labs]** Get ALL keywords a domain ranks for in Google with positions, search volume, and estimated traffic.
 
 **Response Time:** 5-15 seconds  
@@ -224,6 +241,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (DataForSEO Labs)
 
 **Input:**
+
 ```typescript
 {
   target: string;                  // Domain to analyze (e.g., "example.com")
@@ -239,6 +257,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Complete list of keywords with rankings (position 1-100), search volume, CPC, traffic estimates, URL that ranks
 
 **Use Cases:**
+
 - Discover ALL keywords a competitor ranks for
 - Find keyword gaps between your site and competitors
 - Identify low-hanging fruit opportunities (high volume, low competition)
@@ -247,7 +266,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_DOMAIN_RANK` 
+#### `DATAFORSEO_DOMAIN_RANK`
+
 **[ASYNC - DataForSEO Labs]** Get comprehensive domain authority metrics and organic performance overview.
 
 **Response Time:** 2-5 seconds  
@@ -255,15 +275,17 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (DataForSEO Labs)
 
 **Input:**
+
 ```typescript
 {
-  target: string;                  // Domain to analyze (e.g., "example.com")
+  target: string; // Domain to analyze (e.g., "example.com")
 }
 ```
 
 **Returns:** Domain rank score, total organic keywords count, estimated traffic, organic cost (traffic value), visibility score
 
 **Use Cases:**
+
 - Quick domain authority assessment
 - Compare domain strength across competitors
 - Track domain growth over time
@@ -272,7 +294,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_COMPETITORS_DOMAIN` 
+#### `DATAFORSEO_COMPETITORS_DOMAIN`
+
 **[ASYNC - DataForSEO Labs]** Automatically discover competitor domains based on common keyword rankings.
 
 **Response Time:** 5-12 seconds  
@@ -280,6 +303,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (DataForSEO Labs)
 
 **Input:**
+
 ```typescript
 {
   target: string;                  // Your domain (e.g., "yoursite.com")
@@ -294,6 +318,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** List of competitor domains with common keywords count, organic keywords overlap, estimated traffic, competitive metrics
 
 **Use Cases:**
+
 - Automated competitor discovery (no manual research!)
 - Identify direct and indirect competitors
 - Analyze keyword overlap and competitive gaps
@@ -304,7 +329,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ### Keyword Suggestions Tools (2 tools)
 
-#### `DATAFORSEO_KEYWORD_SUGGESTIONS` 
+#### `DATAFORSEO_KEYWORD_SUGGESTIONS`
+
 **[ASYNC - Standard Plan]** Get keyword suggestions from Google Autocomplete with search volume data.
 
 **Response Time:** 2-5 seconds  
@@ -312,6 +338,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keyword: string;                 // Seed keyword for suggestions
@@ -326,6 +353,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Google Autocomplete suggestions with search volume, CPC, competition data
 
 **Use Cases:**
+
 - Discover long-tail keyword variations
 - Understand how users actually search
 - Content ideation based on user intent
@@ -334,7 +362,8 @@ This creates a production bundle at `dist/server/main.js`.
 
 ---
 
-#### `DATAFORSEO_KEYWORD_IDEAS` 
+#### `DATAFORSEO_KEYWORD_IDEAS`
+
 **[ASYNC - Standard Plan]** Get keyword ideas using Google's internal keyword matching algorithm.
 
 **Response Time:** 3-8 seconds  
@@ -342,6 +371,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keywords: string[];              // 1-5 seed keywords
@@ -356,6 +386,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Related keyword ideas with search volume, competition, CPC, and relevance metrics
 
 **Use Cases:**
+
 - Alternative to Related Keywords (different algorithm)
 - Keyword brainstorming for content clusters
 - Discover semantic keyword variations
@@ -367,6 +398,7 @@ This creates a production bundle at `dist/server/main.js`.
 ### SERP Tools (3 tools)
 
 #### `DATAFORSEO_GET_ORGANIC_SERP`
+
 **[ASYNC - Live SERP]** Get real-time organic search results from Google.
 
 **Response Time:** 3-8 seconds  
@@ -374,6 +406,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keyword: string;
@@ -389,6 +422,7 @@ This creates a production bundle at `dist/server/main.js`.
 ---
 
 #### `DATAFORSEO_GET_NEWS_SERP`
+
 **[ASYNC - Live SERP]** Get real-time Google News results.
 
 **Response Time:** 2-5 seconds  
@@ -396,6 +430,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   keyword: string;
@@ -411,6 +446,7 @@ This creates a production bundle at `dist/server/main.js`.
 ---
 
 #### `DATAFORSEO_HISTORICAL_SERP`
+
 **[ASYNC - DataForSEO Labs]** Get historical SERP ranking data showing how rankings changed over time.
 
 **Response Time:** 5-12 seconds  
@@ -418,6 +454,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans (DataForSEO Labs)
 
 **Input:**
+
 ```typescript
 {
   keyword: string;
@@ -433,6 +470,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Returns:** Historical ranking data showing position changes for top domains over time, SERP volatility metrics
 
 **Use Cases:**
+
 - Analyze Google algorithm update impacts
 - Track seasonal ranking fluctuations
 - Measure SERP volatility and stability
@@ -444,6 +482,7 @@ This creates a production bundle at `dist/server/main.js`.
 ### Backlinks Tools (3 tools)
 
 #### `DATAFORSEO_GET_BACKLINKS_OVERVIEW`
+
 **[ASYNC - Backlinks Summary]** Get comprehensive backlinks overview for any domain.
 
 **Response Time:** 2-4 seconds  
@@ -451,9 +490,10 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
-  target: string;              // Domain or URL (e.g., "example.com")
+  target: string; // Domain or URL (e.g., "example.com")
 }
 ```
 
@@ -462,6 +502,7 @@ This creates a production bundle at `dist/server/main.js`.
 ---
 
 #### `DATAFORSEO_GET_BACKLINKS`
+
 **[ASYNC - Detailed Backlinks]** Get paginated list of individual backlinks.
 
 **Response Time:** 3-8 seconds  
@@ -469,6 +510,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   target: string;
@@ -482,6 +524,7 @@ This creates a production bundle at `dist/server/main.js`.
 ---
 
 #### `DATAFORSEO_GET_REFERRING_DOMAINS`
+
 **[ASYNC - Referring Domains]** Get paginated list of unique domains linking to target.
 
 **Response Time:** 3-8 seconds  
@@ -489,6 +532,7 @@ This creates a production bundle at `dist/server/main.js`.
 **Plan Required:** All plans
 
 **Input:**
+
 ```typescript
 {
   target: string;
@@ -508,7 +552,7 @@ This creates a production bundle at `dist/server/main.js`.
 const result = await client.callTool("DATAFORSEO_GET_SEARCH_VOLUME", {
   keywords: ["seo tools", "keyword research"],
   languageName: "English",
-  locationName: "United States"
+  locationName: "United States",
 });
 ```
 
@@ -519,7 +563,7 @@ const serp = await client.callTool("DATAFORSEO_GET_ORGANIC_SERP", {
   keyword: "digital marketing",
   languageCode: "en",
   locationCode: 2840,
-  depth: 10
+  depth: 10,
 });
 ```
 
@@ -527,7 +571,7 @@ const serp = await client.callTool("DATAFORSEO_GET_ORGANIC_SERP", {
 
 ```typescript
 const backlinks = await client.callTool("DATAFORSEO_GET_BACKLINKS_OVERVIEW", {
-  target: "example.com"
+  target: "example.com",
 });
 ```
 
@@ -565,8 +609,8 @@ The MCP is configured through the Mesh UI with the following fields:
 ```typescript
 {
   API_CREDENTIALS: {
-    login: string;      // DataForSEO API Login
-    password: string;   // DataForSEO API Token
+    login: string; // DataForSEO API Login
+    password: string; // DataForSEO API Token
   }
 }
 ```
@@ -576,6 +620,7 @@ The MCP is configured through the Mesh UI with the following fields:
 ### Rate Limits & Performance
 
 DataForSEO has rate limits based on your subscription plan. Be aware of:
+
 - **Concurrent request limits**: Typically 2-5 simultaneous requests
 - **Daily/monthly request quotas**: Varies by plan
 - **Cost per API call**: See individual tool documentation above
@@ -621,6 +666,7 @@ DataForSEO uses **separate API credentials** for authentication, not your accoun
 ### Troubleshooting Authentication
 
 If you get error 40100 (Not Authorized):
+
 - ✅ Make sure you're using the API credentials from https://app.dataforseo.com/api-access
 - ✅ Verify your API Login (email) is correct
 - ✅ Use the API Password (token), NOT your account password

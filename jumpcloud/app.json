@@ -13,7 +13,14 @@
   "metadata": {
     "categories": ["Infrastructure", "Automation", "Security"],
     "official": true,
-    "tags": ["jumpcloud", "directory-management", "llm", "automation", "access-control", "identity"],
+    "tags": [
+      "jumpcloud",
+      "directory-management",
+      "llm",
+      "automation",
+      "access-control",
+      "identity"
+    ],
     "short_description": "Manage JumpCloud directory resources with AI-powered automation",
     "mesh_description": "Provides an API to LLMs to manage JumpCloud resources. Enables LLMs to interact with JumpCloud's directory platform, allowing for automated user management, access control, and device management. Manage users, groups, policies, and devices across your organization. Perfect for IT teams seeking to automate identity and access management tasks with AI assistance."
   }

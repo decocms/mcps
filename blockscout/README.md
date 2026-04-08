@@ -68,16 +68,16 @@ Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ
 
 1. Add the following configuration to your `~/.gemini/settings.json` file:
 
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "httpUrl": "https://mcp.blockscout.com/mcp",
-          "timeout": 180000
-        }
-      }
-    }
-    ```
+   ```json
+   {
+     "mcpServers": {
+       "blockscout": {
+         "httpUrl": "https://mcp.blockscout.com/mcp",
+         "timeout": 180000
+       }
+     }
+   }
+   ```
 
 2. For detailed Gemini CLI MCP server configuration instructions, see the [official documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
 
@@ -96,10 +96,7 @@ If you want to run the server locally for development purposes:
   "mcpServers": {
     "blockscout": {
       "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "ghcr.io/blockscout/mcp-server:latest"
-      ]
+      "args": ["run", "--rm", "-i", "ghcr.io/blockscout/mcp-server:latest"]
     }
   }
 }
@@ -171,7 +168,7 @@ When the most recent reward distribution of Kinto token was made to the wallet
 ```
 
 ```plaintext
-Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum 
+Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum
 mainnet could emit `SequencerBatchDelivered`?
 ```
 

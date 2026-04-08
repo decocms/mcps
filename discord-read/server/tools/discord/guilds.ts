@@ -513,7 +513,11 @@ export const createBanMemberTool = (env: Env) =>
         await discordAPI(
           env,
           `/guilds/${input.guild_id}/bans/${usersToBan[0]}`,
-          { method: "PUT", body, reason: input.reason },
+          {
+            method: "PUT",
+            body,
+            reason: input.reason,
+          },
         );
         return { success: true, banned_count: 1, failed_count: 0 };
       }

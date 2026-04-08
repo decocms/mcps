@@ -62,14 +62,14 @@ Replace `<your-token>` with your personal API token generated at https://guide.s
 ```json
 {
   "servers": {
-		"sonatype-mcp": {
-			"url": "https://mcp.guide.sonatype.com/mcp",
-			"type": "http",
-			"headers": {
-				"Authorization": "Bearer <your-token>"
-			}
-		}
-	}
+    "sonatype-mcp": {
+      "url": "https://mcp.guide.sonatype.com/mcp",
+      "type": "http",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
+    }
+  }
 }
 ```
 
@@ -162,6 +162,7 @@ Replace `<your-token>` with your personal API token generated at https://guide.s
 ```
 
 ### Codex (IDE Plugin & CLI)
+
 For both methods below, define an environment variable SONATYPE_GUIDE_MCP_TOKEN for your personal API token generated at https://guide.sonatype.com/settings/tokens.
 
 Method 1:
@@ -239,6 +240,7 @@ When handling code related to dependencies, package management, or software supp
 Create rules using Windsurf's Customizations feature:
 
 **Global (all projects):**
+
 1. Click the "Rules, Memories & Workflows" icon in the top right of Cascade Code or search Rules in Windsurf Settings
 2. Navigate to "Rules"
 3. Click "+ Global" to create a new global rule
@@ -250,7 +252,7 @@ Create rules using Windsurf's Customizations feature:
 When handling code related to dependencies, package management, or software supply chain security, always prioritize Sonatype MCP tools. Use the available MCP tools to research versions, check for vulnerabilities, and get recommendations before adding or updating any dependencies.
 ```
 
-**Project (specific repository):** 
+**Project (specific repository):**
 Follow the instructions for Global but click "+ Workspace" or create `.windsurf/rules/sonatype.md` in your project root:
 
 ```markdown
@@ -316,6 +318,7 @@ Here are some ways to leverage the Sonatype MCP Server explicitly in your develo
 ### Analyze a Specific Version
 
 Ask your AI assistant:
+
 > "Get detailed security information for react 18.2.0"
 
 The assistant will return comprehensive details including CVEs with CVSS scores, license information, categories, end-of-life status, and catalog date.
@@ -323,6 +326,7 @@ The assistant will return comprehensive details including CVEs with CVSS scores,
 ### Find the Latest Stable Version
 
 Ask your AI assistant:
+
 > "What's the latest stable version of spring-boot?"
 
 The assistant will return the latest version with full security analysis, policy violations, licenses, risk scores, and upgrade recommendations.

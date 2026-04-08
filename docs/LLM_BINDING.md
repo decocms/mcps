@@ -4,11 +4,11 @@ The **LLM Binding** is a standardized interface that enables MCP servers to expo
 
 This repository contains three implementations:
 
-| MCP | Provider | Package | Auth |
-|---|---|---|---|
-| `openrouter/` | [OpenRouter](https://openrouter.ai) | `@decocms/openrouter` | OAuth PKCE via OpenRouter, or `OPENROUTER_API_KEY` env var |
-| `google-gemini/` | [Google Gemini](https://ai.google.dev) | `google-gemini` | User-supplied API key via `Authorization` header |
-| `deco-llm/` | Deco AI Gateway | `deco-llm` | Reuses OpenRouter tools + Deco Wallet billing |
+| MCP              | Provider                               | Package               | Auth                                                       |
+| ---------------- | -------------------------------------- | --------------------- | ---------------------------------------------------------- |
+| `openrouter/`    | [OpenRouter](https://openrouter.ai)    | `@decocms/openrouter` | OAuth PKCE via OpenRouter, or `OPENROUTER_API_KEY` env var |
+| `google-gemini/` | [Google Gemini](https://ai.google.dev) | `google-gemini`       | User-supplied API key via `Authorization` header           |
+| `deco-llm/`      | Deco AI Gateway                        | `deco-llm`            | Reuses OpenRouter tools + Deco Wallet billing              |
 
 ---
 
@@ -77,8 +77,8 @@ Both `LLM_DO_STREAM` and `LLM_DO_GENERATE` return token usage information via th
 ```typescript
 {
   usage: {
-    promptTokens: number;      // Number of tokens in the input
-    completionTokens: number;  // Number of tokens in the output
+    promptTokens: number; // Number of tokens in the input
+    completionTokens: number; // Number of tokens in the output
   }
 }
 ```
@@ -90,7 +90,7 @@ Providers may include additional cost information in `providerMetadata`. For exa
   providerMetadata: {
     openrouter: {
       usage: {
-        cost: number;  // Actual cost in USD (e.g., 0.00015)
+        cost: number; // Actual cost in USD (e.g., 0.00015)
       }
     }
   }
@@ -102,13 +102,14 @@ Providers may include additional cost information in `providerMetadata`. For exa
 ```typescript
 {
   costs: {
-    input: number;   // Cost per input token (USD), e.g., 0.000003 = $0.000003/token
-    output: number;  // Cost per output token (USD)
+    input: number; // Cost per input token (USD), e.g., 0.000003 = $0.000003/token
+    output: number; // Cost per output token (USD)
   }
 }
 ```
 
 Different providers return pricing in different formats from their APIs:
+
 - **OpenRouter**: Returns per-token prices directly (e.g., "0.000003" = $0.000003/token)
 - **Google Gemini**: Returns prices per 1M tokens (e.g., "0.15" = $0.15/1M tokens), which the binding divides by 1,000,000 to normalize to per-token
 
@@ -214,11 +215,11 @@ All three implementations share the following patterns:
 
 ## Key Dependencies
 
-| Package | Purpose |
-|---|---|
-| `@decocms/bindings/llm` | Binding definitions and schemas (`LANGUAGE_MODEL_BINDING`, `ModelCollectionEntitySchema`) |
-| `@decocms/runtime/bindings` | `streamToResponse` for converting AI SDK streams to HTTP responses |
-| `@decocms/runtime/tools` | `createPrivateTool`, `createStreamableTool` |
-| `@ai-sdk/provider` | AI SDK types (`LanguageModelV2StreamPart`, `APICallError`, `LanguageModelV2Usage`) |
-| `@ai-sdk/google` | Google Gemini AI SDK provider |
-| `@openrouter/ai-sdk-provider` | OpenRouter AI SDK provider |
+| Package                       | Purpose                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `@decocms/bindings/llm`       | Binding definitions and schemas (`LANGUAGE_MODEL_BINDING`, `ModelCollectionEntitySchema`) |
+| `@decocms/runtime/bindings`   | `streamToResponse` for converting AI SDK streams to HTTP responses                        |
+| `@decocms/runtime/tools`      | `createPrivateTool`, `createStreamableTool`                                               |
+| `@ai-sdk/provider`            | AI SDK types (`LanguageModelV2StreamPart`, `APICallError`, `LanguageModelV2Usage`)        |
+| `@ai-sdk/google`              | Google Gemini AI SDK provider                                                             |
+| `@openrouter/ai-sdk-provider` | OpenRouter AI SDK provider                                                                |

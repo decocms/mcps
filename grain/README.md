@@ -67,13 +67,13 @@ Create the table manually in Supabase using [`server/db/schema.sql`](server/db/s
 
 ## Tools
 
-| Tool | Purpose |
-| --- | --- |
-| `LIST_RECORDINGS` | List and filter recordings from Grain API |
-| `GET_RECORDING` | Get full details for one recording, with optional selective output (`summary`, `transcript`, `highlights`) |
-| `GET_TRANSCRIPT` | Get transcript URL and optional transcript content (`json`, `txt`, `srt`, `vtt`) |
-| `GET_SUMMARY` | Get only summary fields (`summary`, `summary_points`, `intelligence_notes_md`) |
-| `SEARCH_INDEXED_RECORDINGS` | Search Supabase-indexed recordings by query and/or date filters |
+| Tool                        | Purpose                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `LIST_RECORDINGS`           | List and filter recordings from Grain API                                                                  |
+| `GET_RECORDING`             | Get full details for one recording, with optional selective output (`summary`, `transcript`, `highlights`) |
+| `GET_TRANSCRIPT`            | Get transcript URL and optional transcript content (`json`, `txt`, `srt`, `vtt`)                           |
+| `GET_SUMMARY`               | Get only summary fields (`summary`, `summary_points`, `intelligence_notes_md`)                             |
+| `SEARCH_INDEXED_RECORDINGS` | Search Supabase-indexed recordings by query and/or date filters                                            |
 
 ## Environment Variables
 
@@ -103,4 +103,3 @@ bun run build
 
 - Grain API base URL: `https://api.grain.com`
 - This project is part of the Deco MCP monorepo
-

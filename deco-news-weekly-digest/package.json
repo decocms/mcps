@@ -1,8 +1,8 @@
 {
   "name": "deco-news-weekly-digest",
   "version": "1.0.0",
-  "description": "Weekly digest management MCP for deco.cx news articles",
   "private": true,
+  "description": "Weekly digest management MCP for deco.cx news articles",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",
@@ -34,4 +34,3 @@
     "node": ">=22.0.0"
   }
 }
-

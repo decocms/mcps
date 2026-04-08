@@ -22,6 +22,7 @@ A Model Context Protocol (MCP) server that provides secure, read-only SQL query 
 ### Setup
 
 1. Install dependencies:
+
 ```bash
 bun install
 ```
@@ -35,21 +36,26 @@ bun install
 When installing this MCP, you'll need to provide:
 
 ### Database Type
+
 Choose from:
+
 - `postgres` - PostgreSQL database (currently supported)
 - `mysql` - MySQL database (planned)
 - `sqlite` - SQLite database (planned)
 
 ### Connection String
+
 Format depends on your database type:
 
 **PostgreSQL:**
+
 ```
 postgresql://username:password@hostname:port/database
 postgresql://username:password@hostname:port/database?sslmode=require
 ```
 
 Examples:
+
 - Local: `postgresql://myuser:mypassword@localhost:5432/mydb`
 - Remote: `postgresql://user:pass@db.example.com:5432/production?sslmode=require`
 - Supabase: `postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres`
@@ -62,11 +68,13 @@ Examples:
 Execute a read-only SQL query against the configured database.
 
 **Input:**
+
 - `query` (string, required): The SQL query to execute. Must be read-only (SELECT, SHOW, DESCRIBE, EXPLAIN, etc.)
 - `params` (array, optional): Parameters for parameterized queries (use $1, $2, etc. for PostgreSQL)
 - `limit` (number, optional, default: 1000): Maximum number of rows to return
 
 **Output:**
+
 - `rows` (array): Array of result rows, each row is an object with column names as keys
 - `totalRowCount` (number): Total number of rows that matched the query
 - `returnedCount` (number): Number of rows actually returned (after applying limit)
@@ -78,19 +86,19 @@ Execute a read-only SQL query against the configured database.
 ```typescript
 // Simple query
 const result = await QUERY_SQL({
-  query: "SELECT * FROM users WHERE active = true"
+  query: "SELECT * FROM users WHERE active = true",
 });
 
 // Parameterized query (PostgreSQL)
 const result = await QUERY_SQL({
   query: "SELECT * FROM users WHERE email = $1",
-  params: ["user@example.com"]
+  params: ["user@example.com"],
 });
 
 // Query with custom limit
 const result = await QUERY_SQL({
   query: "SELECT * FROM large_table",
-  limit: 100
+  limit: 100,
 });
 
 // Complex query with JOINs
@@ -103,7 +111,7 @@ const result = await QUERY_SQL({
     GROUP BY u.id, u.name
     ORDER BY order_count DESC
   `,
-  params: ["2024-01-01"]
+  params: ["2024-01-01"],
 });
 ```
 
@@ -114,18 +122,23 @@ const result = await QUERY_SQL({
 All queries are validated before execution to ensure they are read-only. The following are blocked:
 
 **Write Operations:**
+
 - `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `MERGE`, `UPSERT`
 
 **Schema Modifications:**
+
 - `CREATE`, `ALTER`, `DROP`, `RENAME`
 
 **Transaction Control:**
+
 - `COMMIT`, `ROLLBACK`, `SAVEPOINT`
 
 **Permission Changes:**
+
 - `GRANT`, `REVOKE`
 
 **Dangerous Operations:**
+
 - `EXEC`, `EXECUTE`, `CALL`
 - File operations (`INTO OUTFILE`, `LOAD_FILE`)
 - System commands
@@ -207,8 +220,8 @@ Example for MySQL:
 
 ```typescript
 // server/lib/clients/mysql.ts
-import type { DatabaseClient, QueryResult } from '../db-client.ts';
-import mysql from 'mysql2/promise';
+import type { DatabaseClient, QueryResult } from "../db-client.ts";
+import mysql from "mysql2/promise";
 
 export class MySQLClient implements DatabaseClient {
   private connection: mysql.Connection;
@@ -264,4 +277,3 @@ MIT
 ## Support
 
 For issues, questions, or contributions, please visit the [GitHub repository](https://github.com/deco-cx/apps).
-

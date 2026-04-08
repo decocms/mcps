@@ -1,4 +1,5 @@
 <!-- mcp-name: com.rootly/mcp-server -->
+
 # Rootly MCP Server
 
 [![PyPI version](https://badge.fury.io/py/rootly-mcp-server.svg)](https://pypi.org/project/rootly-mcp-server/)
@@ -194,13 +195,7 @@ For full functionality of tools like `get_oncall_handoff_summary`, `get_oncall_s
   "mcpServers": {
     "rootly": {
       "command": "uv",
-      "args": [
-        "tool",
-        "run",
-        "--from",
-        "rootly-mcp-server",
-        "rootly-mcp-server"
-      ],
+      "args": ["tool", "run", "--from", "rootly-mcp-server", "rootly-mcp-server"],
       "env": {
         "ROOTLY_API_TOKEN": "<YOUR_ROOTLY_API_TOKEN>"
       }
@@ -251,11 +246,7 @@ docker run -p 8000:8000 \
   "mcpServers": {
     "rootly": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "rootly-mcp-server",
-        "rootly-mcp-server"
-      ],
+      "args": ["--from", "rootly-mcp-server", "rootly-mcp-server"],
       "env": {
         "ROOTLY_API_TOKEN": "<YOUR_ROOTLY_API_TOKEN>"
       }
@@ -433,6 +424,7 @@ Want to get started quickly? We provide pre-built Claude Code skills that showca
 ### 🚨 [Rootly Incident Responder](examples/skills/rootly-incident-responder.md)
 
 An AI-powered incident response specialist that:
+
 - Analyzes production incidents with full context
 - Finds similar historical incidents using ML-based similarity matching
 - Suggests solutions based on past successful resolutions
@@ -442,6 +434,7 @@ An AI-powered incident response specialist that:
 - Provides confidence scores and time estimates
 
 **Quick Start:**
+
 ```bash
 # Copy the skill to your project
 mkdir -p .claude/skills
@@ -503,14 +496,13 @@ get_shift_incidents(
 
 Returns: `incidents` list + `summary` (counts, avg resolution time, grouping)
 
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for developer setup and guidelines.
 
 ## Play with it on Postman
-[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://god.gw.postman.com/run-collection/45004446-1074ba3c-44fe-40e3-a932-af7c071b96eb?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D45004446-1074ba3c-44fe-40e3-a932-af7c071b96eb%26entityType%3Dcollection%26workspaceId%3D4bec6e3c-50a0-4746-85f1-00a703c32f24)
 
+[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://god.gw.postman.com/run-collection/45004446-1074ba3c-44fe-40e3-a932-af7c071b96eb?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D45004446-1074ba3c-44fe-40e3-a932-af7c071b96eb%26entityType%3Dcollection%26workspaceId%3D4bec6e3c-50a0-4746-85f1-00a703c32f24)
 
 ## About Rootly AI Labs
 

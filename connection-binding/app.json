@@ -59,10 +59,7 @@
             "additionalProperties": true
           }
         },
-        "required": [
-          "id",
-          "data"
-        ],
+        "required": ["id", "data"],
         "additionalProperties": false
       },
       "outputSchema": {
@@ -97,40 +94,24 @@
             "description": "Organization ID this connection belongs to"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Description of the connection"
           },
           "icon": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Icon URL for the connection"
           },
           "app_name": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Associated app name"
           },
           "app_id": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Associated app ID"
           },
           "connection_type": {
             "type": "string",
-            "enum": [
-              "HTTP",
-              "SSE",
-              "Websocket"
-            ],
+            "enum": ["HTTP", "SSE", "Websocket"],
             "description": "Type of connection"
           },
           "connection_url": {
@@ -138,10 +119,7 @@
             "description": "URL for the connection"
           },
           "connection_token": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Authentication token"
           },
           "connection_headers": {
@@ -189,10 +167,7 @@
                   },
                   "grantType": {
                     "type": "string",
-                    "enum": [
-                      "authorization_code",
-                      "client_credentials"
-                    ]
+                    "enum": ["authorization_code", "client_credentials"]
                   }
                 },
                 "required": [
@@ -270,10 +245,7 @@
                       "additionalProperties": {}
                     }
                   },
-                  "required": [
-                    "name",
-                    "inputSchema"
-                  ],
+                  "required": ["name", "inputSchema"],
                   "additionalProperties": false
                 }
               },
@@ -299,11 +271,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "inactive",
-              "error"
-            ],
+            "enum": ["active", "inactive", "error"],
             "description": "Current status"
           }
         },
@@ -377,40 +345,24 @@
             "description": "Organization ID this connection belongs to"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Description of the connection"
           },
           "icon": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Icon URL for the connection"
           },
           "app_name": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Associated app name"
           },
           "app_id": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Associated app ID"
           },
           "connection_type": {
             "type": "string",
-            "enum": [
-              "HTTP",
-              "SSE",
-              "Websocket"
-            ],
+            "enum": ["HTTP", "SSE", "Websocket"],
             "description": "Type of connection"
           },
           "connection_url": {
@@ -418,10 +370,7 @@
             "description": "URL for the connection"
           },
           "connection_token": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Authentication token"
           },
           "connection_headers": {
@@ -469,10 +418,7 @@
                   },
                   "grantType": {
                     "type": "string",
-                    "enum": [
-                      "authorization_code",
-                      "client_credentials"
-                    ]
+                    "enum": ["authorization_code", "client_credentials"]
                   }
                 },
                 "required": [
@@ -550,10 +496,7 @@
                       "additionalProperties": {}
                     }
                   },
-                  "required": [
-                    "name",
-                    "inputSchema"
-                  ],
+                  "required": ["name", "inputSchema"],
                   "additionalProperties": false
                 }
               },
@@ -579,11 +522,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "inactive",
-              "error"
-            ],
+            "enum": ["active", "inactive", "error"],
             "description": "Current status"
           }
         },

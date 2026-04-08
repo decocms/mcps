@@ -1,8 +1,8 @@
 {
   "name": "google-big-query",
   "version": "1.0.0",
-  "description": "Google BigQuery MCP Server - Query and manage BigQuery datasets",
   "private": true,
+  "description": "Google BigQuery MCP Server - Query and manage BigQuery datasets",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
@@ -25,4 +25,3 @@
     "node": ">=22.0.0"
   }
 }
-

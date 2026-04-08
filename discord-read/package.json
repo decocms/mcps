@@ -1,9 +1,9 @@
 {
   "name": "discord-read",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
   "description": "Discord bot with message indexing, AI agent commands and reaction tracking - unified MCP server",
+  "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
     "configure": "deco configure",

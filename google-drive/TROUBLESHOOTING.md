@@ -3,6 +3,7 @@
 ## ❌ Erro: 401 invalid_client
 
 **Mensagem completa:**
+
 ```
 Acesso bloqueado: erro de autorização
 The OAuth client was not found.
@@ -27,11 +28,13 @@ Erro 401: invalid_client
 ### 1. Verificar Credenciais
 
 Verifique o arquivo `.env`:
+
 ```bash
 cat .env
 ```
 
 Deve conter:
+
 ```env
 GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=seu-client-secret
@@ -57,6 +60,7 @@ GOOGLE_CLIENT_SECRET=seu-client-secret
 Acesse: https://console.cloud.google.com/apis/library
 
 Habilite estas APIs:
+
 - ✅ Google Drive API
 - ✅ Google Calendar API
 - ✅ Google Docs API
@@ -84,6 +88,7 @@ Habilite estas APIs:
 ### 5. Verificar Projeto
 
 Certifique-se de que está no projeto correto:
+
 ```bash
 # No .env, o Client ID deve terminar com .apps.googleusercontent.com
 # E deve corresponder ao projeto que você está vendo no console
@@ -102,12 +107,10 @@ Para verificar se as credenciais estão sendo carregadas:
 
 ```typescript
 // No código do servidor
-console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
-console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing');
+console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID?.substring(0, 20) + "...");
+console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "configured" : "missing");
 ```
 
 ## 📝 Nota Importante
 
 Todos os MCPs do Google (Calendar, Drive, Docs, Sheets, etc.) usam as **mesmas credenciais OAuth**. Configure uma vez e use em todos!
-
-

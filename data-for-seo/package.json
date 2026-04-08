@@ -1,8 +1,8 @@
 {
   "name": "data-for-seo",
   "version": "1.0.0",
-  "description": "MCP server for DataForSEO API - comprehensive SEO data analysis including keywords, SERP, backlinks, and traffic analytics",
   "private": true,
+  "description": "MCP server for DataForSEO API - comprehensive SEO data analysis including keywords, SERP, backlinks, and traffic analytics",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

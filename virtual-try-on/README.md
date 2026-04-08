@@ -9,8 +9,8 @@ and delegates generation to **nanobanana**, returning a generated image URL.
 
 ## Configuration (State)
 
-| Field | Type | Description |
-|---|---|---|
+| Field        | Type                       | Description                 |
+| ------------ | -------------------------- | --------------------------- |
 | `NANOBANANA` | `@deco/nanobanana` binding | Nanobanana image generator. |
 
 Simply connect a nanobanana MCP through the Mesh UI.

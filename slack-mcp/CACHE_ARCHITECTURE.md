@@ -1,5 +1,5 @@
 # Cache Architecture - DATABASE Binding & K8s Multi-Pod Support
- 
+
 ## 🎯 Problem Statement
 
 ### The Challenge
@@ -57,19 +57,20 @@ When user saves config in Mesh UI:
 // server/main.ts - onChange handler
 onChange: async (env, config) => {
   const state = config.state; // Has resolved bindings!
-  
+
   // Step 1: Save to DATABASE (PostgreSQL)
   // env.MESH_REQUEST_CONTEXT.state.DATABASE is available here
   await saveConnectionConfig(env, configData);
   // ↑ Uses DATABASE.DATABASES_RUN_SQL internally
-  
+
   // Step 2: Cache locally for webhooks
   await cacheConnectionConfig(configData);
   // ↑ Saves to ./data/slack-kv.json
-}
+};
 ```
 
 **Key Points:**
+
 - `env` has `MESH_REQUEST_CONTEXT` with resolved bindings
 - `env.MESH_REQUEST_CONTEXT.state.DATABASE` is an MCP client, not a connection string!
 - We call `DATABASE.DATABASES_RUN_SQL({ sql, params })` to interact with PostgreSQL
@@ -82,20 +83,21 @@ When Slack webhook arrives:
 // server/router.ts
 app.post("/slack/events/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
-  
+
   // Read from KV cache (no DATABASE binding needed!)
   const config = await getCachedConnectionConfig(connectionId);
-  
+
   if (!config) {
     return c.json({ error: "Config not cached" }, 503);
   }
-  
+
   // Process webhook with cached config
   await processWebhook(config);
 });
 ```
 
 **Key Points:**
+
 - No MCP context → can't access DATABASE binding
 - Reads from local KV cache instead
 - Fast (local disk, no network call)
@@ -139,6 +141,7 @@ setTimeout(async () => {
 ```
 
 **What happens:**
+
 1. Pod starts with empty cache
 2. After 2s, calls `SYNC_CONFIG_CACHE` tool (MCP context!)
 3. Tool queries DATABASE binding for all configs
@@ -155,14 +158,14 @@ export const syncCacheTool = {
   id: "SYNC_CONFIG_CACHE",
   async execute({ runtimeContext }) {
     const env = runtimeContext.env;
-    
+
     // Step 1: Query DATABASE (only works in MCP context!)
     const configs = await runSQL(
       env, // Has MESH_REQUEST_CONTEXT with DATABASE binding
       "SELECT * FROM slack_connections",
-      []
+      [],
     );
-    
+
     // Step 2: Cache each config locally
     for (const row of configs) {
       await cacheConnectionConfig({
@@ -171,13 +174,14 @@ export const syncCacheTool = {
         // ... other fields
       });
     }
-    
+
     return { success: true, synced: configs.length };
-  }
+  },
 };
 ```
 
 **Key Points:**
+
 - Runs in MCP context (has DATABASE binding access)
 - Called automatically on startup (warm-up)
 - Can be called manually via health check or MCP client
@@ -257,14 +261,14 @@ export async function runSQL<T>(
 ): Promise<T[]> {
   // Get DATABASE binding from MCP context
   const dbBinding = env.MESH_REQUEST_CONTEXT?.state?.DATABASE;
-  
+
   if (!dbBinding) {
     throw new Error("DATABASE binding not available");
   }
-  
+
   // Call DATABASES_RUN_SQL tool
   const response = await dbBinding.DATABASES_RUN_SQL({ sql, params });
-  
+
   return response.result[0].results ?? [];
 }
 
@@ -284,16 +288,14 @@ export async function saveConnectionConfig(
 #### config-cache.ts - Cache Interface
 
 ```typescript
-export async function cacheConnectionConfig(
-  config: ConnectionConfig
-): Promise<void> {
+export async function cacheConnectionConfig(config: ConnectionConfig): Promise<void> {
   const kv = getKvStore(); // Persistent KV store
   const key = `config:${config.connectionId}`;
   await kv.set(key, config); // Saves to ./data/slack-kv.json
 }
 
 export async function getCachedConnectionConfig(
-  connectionId: string
+  connectionId: string,
 ): Promise<ConnectionConfig | null> {
   const kv = getKvStore();
   const key = `config:${connectionId}`;
@@ -316,7 +318,7 @@ GET /health
   "status": "ok",
   "uptime": 3600,
   "metrics": {
-    "configCacheSize": 5,  // ← Number of cached configs
+    "configCacheSize": 5, // ← Number of cached configs
     "kvStoreSize": 150,
     "apiKeysCount": 5
   },
@@ -353,14 +355,16 @@ curl -X POST http://localhost:8080/mcp \
 {
   "jsonrpc": "2.0",
   "result": {
-    "content": [{
-      "type": "text",
-      "text": {
-        "success": true,
-        "synced": 5,
-        "errors": []
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "success": true,
+          "synced": 5,
+          "errors": []
+        }
       }
-    }]
+    ]
   }
 }
 ```
@@ -387,12 +391,13 @@ MESH_URL=https://mesh.example.com
    - For faster startup, use PV for `./data/` directory
 
 2. **Readiness Probe**
+
    ```yaml
    readinessProbe:
      httpGet:
        path: /health
        port: 8080
-     initialDelaySeconds: 5  # Wait for warm-up
+     initialDelaySeconds: 5 # Wait for warm-up
      periodSeconds: 10
    ```
 
@@ -426,11 +431,13 @@ MESH_URL=https://mesh.example.com
 ### Issue: Webhook returns 503 "Config not cached"
 
 **Causes:**
+
 1. New pod, warm-up not completed yet (wait 2-5 seconds)
 2. Warm-up failed (check logs for DATABASE connection errors)
 3. Config never saved in Mesh UI
 
 **Solutions:**
+
 1. Check health endpoint: `GET /health` → look at `configCacheSize`
 2. Check logs for warm-up status: `[Warmup] ✅ Cache sync result`
 3. Manually trigger sync: Call `SYNC_CONFIG_CACHE` tool
@@ -446,7 +453,8 @@ MESH_URL=https://mesh.example.com
 
 **Cause:** One pod has stale cache
 
-**Solution:** 
+**Solution:**
+
 1. Re-save config in Mesh UI → populates all caches via `onChange`
 2. Or manually call `SYNC_CONFIG_CACHE` on affected pod
 
@@ -468,6 +476,7 @@ Warm-up sync (all configs)         | 100-500ms
 Expected: **99.9%+** after warm-up completes
 
 Cache miss only if:
+
 - Brand new pod (<2s after startup)
 - Warm-up failed (rare, check DATABASE connectivity)
 
@@ -490,15 +499,14 @@ Cache miss only if:
 
 ### Trade-offs
 
-| Approach              | Pros                          | Cons                        |
-|-----------------------|-------------------------------|-----------------------------|
-| DATABASE only         | Simple, single source         | Can't use in webhook routes |
-| KV cache only         | Fast, always available        | Doesn't persist across pods |
-| **Our solution**      | Best of both worlds           | Slightly more complex       |
+| Approach         | Pros                   | Cons                        |
+| ---------------- | ---------------------- | --------------------------- |
+| DATABASE only    | Simple, single source  | Can't use in webhook routes |
+| KV cache only    | Fast, always available | Doesn't persist across pods |
+| **Our solution** | Best of both worlds    | Slightly more complex       |
 
 ---
 
 **Last Updated:** 2026-01-28  
 **Author:** Slack MCP Team  
 **Version:** 1.0
-

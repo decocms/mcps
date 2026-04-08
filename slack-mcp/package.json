@@ -1,9 +1,9 @@
 {
   "name": "slack-mcp",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
   "description": "Slack bot with intelligent thread management, AI agent commands, and webhook support",
+  "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",
     "reset-db": "bun run scripts/reset-db.ts",
@@ -31,8 +31,8 @@
   },
   "devDependencies": {
     "@decocms/mcps-shared": "1.0.0",
-    "@types/pg": "^8.16.0",
     "@types/ioredis": "^5.0.0",
+    "@types/pg": "^8.16.0",
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   },

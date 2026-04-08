@@ -55,21 +55,21 @@ DECLARE
 BEGIN
   -- Get connection_id from current settings
   conn_id := current_setting('app.connection_id', true);
-  
+
   IF conn_id IS NULL THEN
     RETURN FALSE;
   END IF;
-  
+
   -- Get authorized guilds for this connection
   SELECT authorized_guilds INTO auth_guilds
   FROM discord_connections
   WHERE connection_id = conn_id;
-  
+
   -- If no authorized guilds or empty array, allow all
   IF auth_guilds IS NULL OR array_length(auth_guilds, 1) IS NULL THEN
     RETURN TRUE;
   END IF;
-  
+
   -- Check if guild is in authorized list
   RETURN check_guild_id = ANY(auth_guilds);
 END;
@@ -163,11 +163,11 @@ BEGIN
   SELECT guild_id INTO msg_guild_id
   FROM discord_message
   WHERE id = check_message_id;
-  
+
   IF msg_guild_id IS NULL THEN
     RETURN FALSE;
   END IF;
-  
+
   RETURN is_guild_authorized(msg_guild_id);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -215,14 +215,14 @@ CREATE POLICY "Delete channel context from authorized guilds"
 
 ```typescript
 // No código do MCP, antes de fazer query:
-await supabaseClient.rpc('set_config', {
-  key: 'app.connection_id',
-  value: connectionId
+await supabaseClient.rpc("set_config", {
+  key: "app.connection_id",
+  value: connectionId,
 });
 
-await supabaseClient.rpc('set_config', {
-  key: 'app.organization_id', 
-  value: organizationId
+await supabaseClient.rpc("set_config", {
+  key: "app.organization_id",
+  value: organizationId,
 });
 ```
 
@@ -279,4 +279,3 @@ SELECT * FROM discord_message;
 - ✅ **Proteção automática** - não precisa lembrar de filtrar
 - ✅ **Audit trail** - logs do Supabase mostram acessos
 - ✅ **Zero trust** - mesmo se alguém acessa o banco, RLS protege
-

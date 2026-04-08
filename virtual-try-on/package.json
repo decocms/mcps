@@ -1,8 +1,8 @@
 {
   "name": "virtual-try-on",
   "version": "1.0.0",
-  "description": "Virtual try-on MCP: compose person photo + garment images and delegate to an image generator (e.g., nanobanana).",
   "private": true,
+  "description": "Virtual try-on MCP: compose person photo + garment images and delegate to an image generator (e.g., nanobanana).",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/dev-server.ts",
@@ -27,5 +27,3 @@
     "node": ">=22.0.0"
   }
 }
-
-

@@ -1,8 +1,8 @@
 {
   "name": "nanobanana",
   "version": "1.0.0",
-  "description": "MCP server for image generation using Gemini models via OpenRouter",
   "private": true,
+  "description": "MCP server for image generation using Gemini models via OpenRouter",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

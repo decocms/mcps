@@ -9,6 +9,7 @@ MCP server para interagir com o Reddit. Permite buscar posts de subreddits e pes
 Busca posts de um subreddit específico.
 
 **Parâmetros:**
+
 - `subreddit` (obrigatório): Nome do subreddit (sem o "r/"). Ex: "mcp", "programming", "news"
 - `sort` (opcional): Como ordenar os posts - "hot", "new", "top", "rising" (padrão: "hot")
 - `time` (opcional): Filtro de tempo para ordenação "top" - "hour", "day", "week", "month", "year", "all"
@@ -16,6 +17,7 @@ Busca posts de um subreddit específico.
 - `after` (opcional): Cursor para paginação
 
 **Exemplo de uso:**
+
 ```
 Busque os posts mais recentes do r/mcp
 ```
@@ -25,6 +27,7 @@ Busque os posts mais recentes do r/mcp
 Pesquisa posts no Reddit por termo de busca.
 
 **Parâmetros:**
+
 - `query` (obrigatório): Termo de busca
 - `subreddit` (opcional): Limitar busca a um subreddit específico
 - `sort` (opcional): Como ordenar - "relevance", "hot", "top", "new", "comments" (padrão: "relevance")
@@ -33,6 +36,7 @@ Pesquisa posts no Reddit por termo de busca.
 - `after` (opcional): Cursor para paginação
 
 **Exemplo de uso:**
+
 ```
 Pesquise por "MCP server" no Reddit
 Busque posts sobre "AI agents" no r/LocalLLaMA
@@ -57,5 +61,3 @@ bun run check
 # Deploy
 bun run deploy
 ```
-
-

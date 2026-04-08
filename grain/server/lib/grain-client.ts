@@ -136,7 +136,9 @@ export class GrainClient {
     return this.request<ListRecordingsResponse>(
       "GET",
       GRAIN_RECORDINGS_ENDPOINT,
-      { params: queryParams },
+      {
+        params: queryParams,
+      },
     );
   }
 
@@ -164,7 +166,9 @@ export class GrainClient {
     return this.request<RecordingDetails>(
       "GET",
       `${GRAIN_RECORDINGS_ENDPOINT}/${recordingId}`,
-      { params },
+      {
+        params,
+      },
     );
   }
 

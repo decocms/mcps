@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Index and search video content using natural language queries
 - Generate embeddings and analyze video at a semantic level
 - Extract insights, summaries, and structured data from video files

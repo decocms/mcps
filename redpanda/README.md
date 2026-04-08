@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Query Redpanda documentation for configuration and deployment guidance
 - Find API references and code examples for producers, consumers, and streams
 - Access guidance on Redpanda cluster management and operations

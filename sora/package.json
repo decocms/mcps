@@ -1,8 +1,8 @@
 {
   "name": "sora",
   "version": "1.0.0",
-  "description": "Sora 2 MCP",
   "private": true,
+  "description": "Sora 2 MCP",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

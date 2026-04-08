@@ -14,9 +14,9 @@ Stack Overflow MCP is a standardized "front door" for AI agents to discover and 
 
 It enables your AI to:
 
-* **🔍 Search:** Search relevant technical questions and answers.
-* **📖 Retrieve:** Retrieve full conversation threads, including accepted solutions and comments.
-* **🧠 Ground:** Ground answers in community-verified data to reduce hallucinations.
+- **🔍 Search:** Search relevant technical questions and answers.
+- **📖 Retrieve:** Retrieve full conversation threads, including accepted solutions and comments.
+- **🧠 Ground:** Ground answers in community-verified data to reduce hallucinations.
 
 All through natural language — just describe your technical problem and let it do the heavy lifting for you.
 
@@ -24,10 +24,10 @@ All through natural language — just describe your technical problem and let it
 
 ## ⚡ Key Features
 
-* **Trusted Knowledge** – Access the vast library of developer solutions directly within your AI workflow.
-* **Real-Time Data** – Fetch the latest discussions and answers without relying on outdated data.
-* **Standardized Access** – No bespoke API integration; use a unified protocol compatible with standard MCP clients.
-* **Secure Authentication** – Simple OAuth flow connects securely to your existing Stack Overflow account.
+- **Trusted Knowledge** – Access the vast library of developer solutions directly within your AI workflow.
+- **Real-Time Data** – Fetch the latest discussions and answers without relying on outdated data.
+- **Standardized Access** – No bespoke API integration; use a unified protocol compatible with standard MCP clients.
+- **Secure Authentication** – Simple OAuth flow connects securely to your existing Stack Overflow account.
 
 ---
 
@@ -35,8 +35,8 @@ All through natural language — just describe your technical problem and let it
 
 ### Prerequisites
 
-* An MCP-compatible client (e.g., Claude Desktop, Cursor, Visual Studio Code, etc).
-* A Stack Overflow account ([free to join](https://stackoverflow.com/users/signup)).
+- An MCP-compatible client (e.g., Claude Desktop, Cursor, Visual Studio Code, etc).
+- A Stack Overflow account ([free to join](https://stackoverflow.com/users/signup)).
 
 Read the **[official documentation](https://api.stackexchange.com/docs/mcp-server)** to set up the Stack Overflow MCP Server in your client.
 
@@ -48,5 +48,5 @@ Read the **[official documentation](https://api.stackexchange.com/docs/mcp-serve
 
 This is a beta server, and your input is critical to its evolution.
 
-* **Support:** Use our [contact form](https://stackoverflow.com/contact)
-* **Feedback:** Share your thoughts in our [feedback form](https://forms.gle/oTLpxPQ6CGfS4Axp7)
+- **Support:** Use our [contact form](https://stackoverflow.com/contact)
+- **Feedback:** Share your thoughts in our [feedback form](https://forms.gle/oTLpxPQ6CGfS4Axp7)

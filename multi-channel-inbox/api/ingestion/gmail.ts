@@ -122,7 +122,10 @@ async function pollGmailSource(
     env,
     source.connection_id,
     "gmail_search_messages",
-    { q: sinceQuery, maxResults: 50 },
+    {
+      q: sinceQuery,
+      maxResults: 50,
+    },
   );
 
   let messages: GmailMessage[];
@@ -159,7 +162,9 @@ async function pollGmailSource(
           env,
           source.connection_id,
           "gmail_get_message",
-          { messageId: msg.id },
+          {
+            messageId: msg.id,
+          },
         );
         fullMsg = parseJsonFromResult<GmailMessage>(detailResult);
       } catch {

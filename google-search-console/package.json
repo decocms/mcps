@@ -1,8 +1,8 @@
 {
   "name": "google-search-console",
   "version": "1.0.0",
-  "description": "Google Search Console MCP - Search analytics, sitemaps, sites, and URL inspection",
   "private": true,
+  "description": "Google Search Console MCP - Search analytics, sitemaps, sites, and URL inspection",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

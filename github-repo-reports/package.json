@@ -1,8 +1,8 @@
 {
   "name": "github-repo-reports",
   "version": "1.0.0",
-  "description": "GitHub-backed reports MCP server implementing the Reports Binding. Stores and reads reports as Markdown files with YAML frontmatter from a configurable GitHub repository.",
   "private": true,
+  "description": "GitHub-backed reports MCP server implementing the Reports Binding. Stores and reads reports as Markdown files with YAML frontmatter from a configurable GitHub repository.",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

@@ -64,6 +64,7 @@ bun run dev
 ```
 
 **Deve ver:**
+
 ```
 [Supabase] ✅ Client initialized successfully
 [Storage] Using Supabase for config persistence (multi-pod ready)
@@ -93,4 +94,3 @@ Supabase Dashboard → Table Editor → slack_connections
 
 - `SUPABASE_SETUP_SIMPLE.md` - Setup detalhado
 - `ENV_VARS.md` - Todas as variáveis de ambiente
-

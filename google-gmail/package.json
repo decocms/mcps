@@ -1,8 +1,8 @@
 {
   "name": "google-gmail",
   "version": "1.0.0",
-  "description": "Google Gmail MCP Server - Read, send and manage emails",
   "private": true,
+  "description": "Google Gmail MCP Server - Read, send and manage emails",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

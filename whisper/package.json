@@ -1,8 +1,8 @@
 {
   "name": "whisper",
   "version": "1.0.0",
-  "description": "Whisper MCP for transcribing audio files",
   "private": true,
+  "description": "Whisper MCP for transcribing audio files",
   "type": "module",
   "scripts": {
     "dev": "deco dev --vite",

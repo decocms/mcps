@@ -39,5 +39,4 @@ https://container.googleapis.com/mcp
 
 ---
 
-*This MCP requires an active Google Cloud account with GKE enabled.*
-
+_This MCP requires an active Google Cloud account with GKE enabled._

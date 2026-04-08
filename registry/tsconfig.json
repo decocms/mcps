@@ -34,9 +34,5 @@
     /* Types */
     "types": ["@types/node", "vite/client"]
   },
-  "include": [
-    "server",
-    "shared",
-    "vite.config.ts"
-  ]
+  "include": ["server", "shared", "vite.config.ts"]
 }

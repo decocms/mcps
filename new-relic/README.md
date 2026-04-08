@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Query application performance metrics and infrastructure data
 - Search and analyze logs across services and environments
 - Investigate distributed traces and identify bottlenecks

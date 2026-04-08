@@ -23,4 +23,3 @@ Requires a Cloudflare API token with DEX/Zero Trust permissions.
 - **GitHub**: https://github.com/cloudflare/mcp-server-cloudflare
 - **Website**: https://www.cloudflare.com/zero-trust/
 - **Documentation**: https://developers.cloudflare.com/cloudflare-one/insights/dex/
-

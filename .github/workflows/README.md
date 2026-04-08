@@ -9,6 +9,7 @@ This directory contains the centralized deployment workflows for all MCPs in the
 **Trigger**: Push to `main` branch
 
 **What it does**:
+
 1. Detects which MCP directories have changed
 2. Builds and deploys only the changed MCPs to production
 3. Uses the `deco deploy` command for each changed MCP
@@ -20,6 +21,7 @@ This directory contains the centralized deployment workflows for all MCPs in the
 **Trigger**: Pull requests to `main` branch
 
 **What it does**:
+
 1. Detects which MCP directories have changed in the PR
 2. Builds and deploys preview versions (without promoting)
 3. Comments on the PR with preview URLs for each deployed MCP
@@ -45,11 +47,13 @@ Both workflows use **automatic MCP discovery** powered by a TypeScript script (`
 ## Adding a New MCP
 
 **No configuration needed!** Just create a new directory with a `package.json` and the workflows will automatically:
+
 - Detect it as an MCP
 - Monitor it for changes
 - Deploy it when changes occur
 
 Example:
+
 ```bash
 mkdir my-new-mcp
 cd my-new-mcp
@@ -73,6 +77,7 @@ Both workflows use GitHub Actions matrix strategy to deploy multiple MCPs in par
 ## Failure Handling
 
 The workflows use `fail-fast: false` in their matrix strategy, which means:
+
 - If one MCP fails to deploy, others will continue
 - You'll get individual success/failure notifications for each MCP
 - The overall workflow will be marked as failed if any MCP fails
@@ -80,6 +85,7 @@ The workflows use `fail-fast: false` in their matrix strategy, which means:
 ## Deployment Script
 
 Both workflows use the TypeScript deployment script located at `scripts/deploy.ts`. This script:
+
 - Changes to the MCP directory
 - Installs dependencies with Bun
 - Runs the build script
@@ -89,4 +95,3 @@ Both workflows use the TypeScript deployment script located at `scripts/deploy.t
 ## Artifacts
 
 The preview deployment workflow creates temporary artifacts containing deployment information (MCP name and preview URL) which are used to construct the PR comment. These artifacts are automatically cleaned up after 1 day.
-

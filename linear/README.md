@@ -7,6 +7,7 @@
 ### Purpose
 
 This MCP server allows client applications to:
+
 - Create, update, and query Linear issues and projects
 - Manage workflows, cycles, and team assignments
 - Track progress and status across engineering projects

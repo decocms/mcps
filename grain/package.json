@@ -1,8 +1,8 @@
 {
   "name": "grain",
   "version": "1.0.0",
-  "description": "Grain MCP - Access and manage your Grain recordings and meetings",
   "private": true,
+  "description": "Grain MCP - Access and manage your Grain recordings and meetings",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

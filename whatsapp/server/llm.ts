@@ -123,9 +123,7 @@ export async function generateResponseForEvent(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `Mesh API error (${response.status}): ${
-        errorText || response.statusText
-      }`,
+      `Mesh API error (${response.status}): ${errorText || response.statusText}`,
     );
   }
 

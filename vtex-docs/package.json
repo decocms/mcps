@@ -1,8 +1,8 @@
 {
   "name": "vtex-docs",
   "version": "1.0.0",
-  "description": "RAG-based MCP for VTEX documentation search",
   "private": true,
+  "description": "RAG-based MCP for VTEX documentation search",
   "type": "module",
   "scripts": {
     "dev": "bun run --hot server/main.ts",

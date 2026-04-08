@@ -78,7 +78,7 @@ const result = await saveImage(storage, {
   writeExpiresIn: 60, // 1 minute (default)
 });
 
-console.log(result.url);  // Public URL to access the image
+console.log(result.url); // Public URL to access the image
 console.log(result.path); // Path where it was saved
 ```
 
@@ -97,11 +97,7 @@ const { mimeType, imageData } = extractImageData(inlineData);
 ```typescript
 import { S3Client } from "@aws-sdk/client-s3";
 import { createTool } from "@decocms/runtime/mastra";
-import {
-  S3StorageAdapter,
-  saveImage,
-  extractImageData,
-} from "@shared/image-generators";
+import { S3StorageAdapter, saveImage, extractImageData } from "@shared/image-generators";
 import { z } from "zod";
 
 export const createImageGeneratorTool = (env: Env) => {
@@ -124,12 +120,10 @@ export const createImageGeneratorTool = (env: Env) => {
     execute: async ({ context, input }) => {
       // 1. Generate image with AI
       const generatedImage = await yourAIModel.generate(input.prompt);
-      
+
       // 2. Extract image data
-      const { mimeType, imageData } = extractImageData(
-        generatedImage.inlineData
-      );
-      
+      const { mimeType, imageData } = extractImageData(generatedImage.inlineData);
+
       // 3. Save using injected storage
       const result = await saveImage(storage, {
         imageData,
@@ -141,7 +135,7 @@ export const createImageGeneratorTool = (env: Env) => {
         },
         directory: "/generated",
       });
-      
+
       return {
         url: result.url,
         path: result.path,
@@ -315,4 +309,3 @@ This module is part of the MCPs monorepo. To contribute:
 ## License
 
 See LICENSE in the main repository.
-

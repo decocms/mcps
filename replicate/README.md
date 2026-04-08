@@ -1,4 +1,4 @@
-# Replicate MCP 
+# Replicate MCP
 
 MCP (Model Context Protocol) server for interacting with the Replicate API, enabling execution of ML/AI models in the cloud.
 
@@ -7,9 +7,11 @@ MCP (Model Context Protocol) server for interacting with the Replicate API, enab
 This MCP provides the following tools:
 
 ### 🚀 Run Model
+
 Execute predictions using Replicate models. Supports any model available on the platform.
 
 **Usage example:**
+
 ```typescript
 {
   model: "stability-ai/sdxl",
@@ -23,42 +25,50 @@ Execute predictions using Replicate models. Supports any model available on the 
 ```
 
 ### 📊 Get Prediction
+
 Get the status and results of a prediction by ID.
 
 **Usage example:**
+
 ```typescript
 {
-  predictionId: "abc123xyz"
+  predictionId: "abc123xyz";
 }
 ```
 
 ### ❌ Cancel Prediction
+
 Cancel a running prediction.
 
 **Usage example:**
+
 ```typescript
 {
-  predictionId: "abc123xyz"
+  predictionId: "abc123xyz";
 }
 ```
 
 ### 📋 List Models
+
 List available models from a specific user or organization.
 
 **Usage example:**
+
 ```typescript
 {
-  owner: "stability-ai"
+  owner: "stability-ai";
 }
 ```
 
 ### 🔍 Get Model
+
 Get detailed information about a specific model, including input/output schema.
 
 **Usage example:**
+
 ```typescript
 {
-  model: "stability-ai/sdxl"
+  model: "stability-ai/sdxl";
 }
 ```
 
@@ -72,6 +82,7 @@ Get detailed information about a specific model, including input/output schema.
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 bun install
 ```
@@ -133,6 +144,6 @@ Replicate usage is consumption-based. Each model has its own cost per execution.
 ## Support
 
 For issues or questions:
+
 - [Replicate Community](https://discord.gg/replicate)
 - [GitHub Issues](https://github.com/replicate/replicate)
-

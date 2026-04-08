@@ -4,8 +4,7 @@
 
 <br/>
 
-# ThoughtSpot MCP Server <br/> ![MCP Server](https://badge.mcpx.dev?type=server 'MCP Server') ![Static Badge](https://img.shields.io/badge/cloudflare%20worker-deployed-green?link=https%3A%2F%2Fdash.cloudflare.com%2F485d90aa3d1ea138ad7ede769fe2c35e%2Fworkers%2Fservices%2Fview%2Fthoughtspot-mcp-server%2Fproduction%2Fmetrics) ![GitHub branch check runs](https://img.shields.io/github/check-runs/thoughtspot/mcp-server/main) [![Coverage Status](https://coveralls.io/repos/github/thoughtspot/mcp-server/badge.svg?branch=main)](https://coveralls.io/github/thoughtspot/mcp-server?branch=main) <a href="https://developer.thoughtspot.com/join-discord" target="_blank"> <img alt="Discord: ThoughtSpot" src="https://img.shields.io/discord/1143209406037758065?style=flat-square&label=Chat%20on%20Discord" /> </a>
-
+# ThoughtSpot MCP Server <br/> ![MCP Server](https://badge.mcpx.dev?type=server "MCP Server") ![Static Badge](https://img.shields.io/badge/cloudflare%20worker-deployed-green?link=https%3A%2F%2Fdash.cloudflare.com%2F485d90aa3d1ea138ad7ede769fe2c35e%2Fworkers%2Fservices%2Fview%2Fthoughtspot-mcp-server%2Fproduction%2Fmetrics) ![GitHub branch check runs](https://img.shields.io/github/check-runs/thoughtspot/mcp-server/main) [![Coverage Status](https://coveralls.io/repos/github/thoughtspot/mcp-server/badge.svg?branch=main)](https://coveralls.io/github/thoughtspot/mcp-server?branch=main) <a href="https://developer.thoughtspot.com/join-discord" target="_blank"> <img alt="Discord: ThoughtSpot" src="https://img.shields.io/discord/1143209406037758065?style=flat-square&label=Chat%20on%20Discord" /> </a>
 
 The ThoughtSpot MCP Server provides secure OAuth-based authentication and a set of tools for querying and retrieving relevant data from your ThoughtSpot instance. It's a remote server hosted on Cloudflare.
 
@@ -34,19 +33,20 @@ Join our [Discord](https://developers.thoughtspot.com/join-discord) to get suppo
   - [Local Development](#local-development)
   - [Endpoints](#endpoints)
 
-
 ## Connect
 
 If using a client which supports remote MCPs natively (Claude.ai etc) then just enter:
 
-MCP Server URL: 
+MCP Server URL:
 
 ```
 https://agent.thoughtspot.app/mcp
 ```
+
 Preferred Auth method: Oauth
 
 - For OpenAI ChatGPT Deep Research, add the URL as:
+
 ```js
 https://agent.thoughtspot.app/openai/mcp
 ```
@@ -58,10 +58,7 @@ To configure this MCP server in your MCP client (such as Claude Desktop, Windsur
   "mcpServers": {
     "ThoughtSpot": {
       "command": "npx",
-      "args": [
-         "mcp-remote",
-         "https://agent.thoughtspot.app/mcp"
-      ]
+      "args": ["mcp-remote", "https://agent.thoughtspot.app/mcp"]
     }
   }
 }
@@ -87,7 +84,7 @@ Watch on [Loom](https://www.loom.com/share/433988d98a7b41fb8df2239da014169a?sid=
 
 ## Usage in APIs
 
-ThoughtSpot's remote MCP server can be used in LLM APIs which support calling MCP tools. 
+ThoughtSpot's remote MCP server can be used in LLM APIs which support calling MCP tools.
 
 Here are examples with the common LLM providers:
 
@@ -116,7 +113,6 @@ curl https://api.openai.com/v1/responses \
 
 More details on how can you use OpenAI API with MCP tool calling can be found [here](https://platform.openai.com/docs/guides/tools-remote-mcp).
 
-
 ### Claude MCP Connector
 
 ```bash
@@ -129,7 +125,7 @@ curl https://api.anthropic.com/v1/messages \
     "model": "claude-sonnet-4-20250514",
     "max_tokens": 1000,
     "messages": [{
-      "role": "user", 
+      "role": "user",
       "content": "How do I increase my sales ?"
     }],
     "mcp_servers": [
@@ -147,32 +143,32 @@ Note: In the `authorization_token` field we have suffixed the ThoughtSpot instan
 
 More details on Claude MCP connector [here](https://docs.anthropic.com/en/docs/agents-and-tools/mcp-connector).
 
-
 ### Gemini API
 
 MCP tools can be used with the Gemini Python/Typescript SDK. Here is an example using typescript:
 
 ```typescript
-import { GoogleGenAI, FunctionCallingConfigMode , mcpToTool} from '@google/genai';
+import { GoogleGenAI, FunctionCallingConfigMode, mcpToTool } from "@google/genai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 // Create server parameters for stdio connection
-const serverParams = new StreamableHTTPClientTransport(new URL("https://agent.thoughtspot.app/bearer/mcp"), {
-    requestInit: {
-        headers: {
-            "Authorization": "Bearer $TS_AUTH_TOKEN", // Read below how to get the $TS_AUTH_TOKEN
-            "x-ts-host": "my-thoughtspot-instance.thoughtspot.cloud"
-        },
-    }
-});
-
-const client = new Client(
+const serverParams = new StreamableHTTPClientTransport(
+  new URL("https://agent.thoughtspot.app/bearer/mcp"),
   {
-    name: "example-client",
-    version: "1.0.0"
-  }
+    requestInit: {
+      headers: {
+        Authorization: "Bearer $TS_AUTH_TOKEN", // Read below how to get the $TS_AUTH_TOKEN
+        "x-ts-host": "my-thoughtspot-instance.thoughtspot.cloud",
+      },
+    },
+  },
 );
+
+const client = new Client({
+  name: "example-client",
+  version: "1.0.0",
+});
 
 // Configure the client
 const ai = new GoogleGenAI({});
@@ -185,14 +181,14 @@ const response = await ai.models.generateContent({
   model: "gemini-2.5-flash",
   contents: `What is the weather in London in ${new Date().toLocaleDateString()}?`,
   config: {
-    tools: [mcpToTool(client)],  // uses the session, will automatically call the tool
+    tools: [mcpToTool(client)], // uses the session, will automatically call the tool
     // Uncomment if you **don't** want the sdk to automatically call the tool
     // automaticFunctionCalling: {
     //   disable: true,
     // },
   },
 });
-console.log(response.text)
+console.log(response.text);
 
 // Close the connection
 await client.close();
@@ -212,11 +208,9 @@ gemini extensions install https://github.com/thoughtspot/mcp-server
 
 Read more about Gemini CLI [here](https://github.com/google-gemini/gemini-cli).
 
-
 ### How to get TS_AUTH_TOKEN for APIs ?
 
-For API usage, you would the token endpoints with a `secret_key` to generate the `API_TOKEN` for a specific user/role, more details [here](https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2). 
-
+For API usage, you would the token endpoints with a `secret_key` to generate the `API_TOKEN` for a specific user/role, more details [here](https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2).
 
 ## Features
 
@@ -230,13 +224,12 @@ For API usage, you would the token endpoints with a `secret_key` to generate the
   - `createLiveboard`: Create a liveboard from a list of answers.
   - `getDataSourceSuggestions`: Get datasource suggestions for a given query.
 - **MCP Resources**:
-   - `datasources`: List of ThoughtSpot Data models the user has access to.
+  - `datasources`: List of ThoughtSpot Data models the user has access to.
 
 ### Supported transports
 
 - SSE: https://agent.thoughtspot.app/sse
 - Streamed HTTP: https://agent.thoughtspot.app/mcp
-
 
 ## Manual client registration
 
@@ -257,6 +250,7 @@ Manual client registration also allows to associate with a specific ThoughtSpot 
 - You should get a token in the response, thats the bearer token.
 
 #### Alternative way to get `TS_AUTH_TOKEN`
+
 - Login to the ThoughtSpot instance as you would normally.
 - Opem in a new tab this URL:
   - https://your-ts-instance/api/rest/2.0/auth/session/token
@@ -269,19 +263,19 @@ Manual client registration also allows to associate with a specific ThoughtSpot 
 
 Make sure to add the following entries in your ThoughtSpot instance:
 
-*CORS*
+_CORS_
 
 - Go to ThoughtSpot => _Develop_ => Security settings
 - Click "Edit"
-- Add "agent.thoughtspot.app" to the the "CORS whitelisted domains". 
+- Add "agent.thoughtspot.app" to the the "CORS whitelisted domains".
 
-*SAML* (need to be Admin)
+_SAML_ (need to be Admin)
 
 - Go to ThoughtSpot => _Develop_
 - Go to "All Orgs" Tab on the left panel if there is one.
 - Click "Security settings"
 - Click "Edit"
-- Add "agent.thoughtspot.app" to the the "SAML redirect domains". 
+- Add "agent.thoughtspot.app" to the the "SAML redirect domains".
 
 > MCP server install error due to node issues
 
