@@ -1,0 +1,19 @@
+{
+  "scopeName": "tldraw",
+  "name": "tldraw-mcp",
+  "friendlyName": "tldraw",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://tldraw-mcp-app.tldraw.workers.dev/mcp"
+  },
+  "description": "Draw, diagram, and visually collaborate with AI agents. Create, edit, and delete shapes on an interactive tldraw canvas directly from your chat.",
+  "icon": "https://assets.decocache.com/starting/8aa4b355-765d-4b74-92d7-53fa95bd8363/tldrawlogo.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Design"],
+    "official": true,
+    "tags": ["tldraw", "drawing", "diagrams", "whiteboard", "canvas", "design", "visual-collaboration", "shapes"],
+    "short_description": "Draw, diagram, and visually collaborate with AI agents",
+    "mesh_description": "tldraw is a collaborative whiteboard and diagramming tool used by developers and designers worldwide. This official MCP gives AI agents the ability to draw, diagram, and visually collaborate with you on an interactive canvas. Create shapes to add new visual elements like rectangles, arrows, text, and freeform drawings to the canvas. Edit shapes to modify existing elements — change positions, sizes, colors, labels, and properties. Delete shapes to remove elements from the diagram. The agent receives real-time feedback about canvas changes, enabling iterative visual design through conversation. Perfect for planning system architecture, designing login flows, sketching UI layouts, creating state machines, mapping data flows, and brainstorming ideas visually. The interactive tldraw canvas renders directly in your chat interface, making it easy to iterate on diagrams without leaving your workflow."
+  }
+}
