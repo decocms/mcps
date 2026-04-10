@@ -14,6 +14,7 @@ import {
   getChannelMembers,
   openDM,
   inviteToChannel,
+  getUserInfo,
 } from "../lib/slack-client.ts";
 
 /**
@@ -92,6 +93,80 @@ export const createListChannelsTool = (_env: Env) =>
         return {
           success: false,
           channels: [],
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  });
+
+/**
+ * List all direct message conversations
+ */
+export const createListDMsTool = (_env: Env) =>
+  createTool({
+    id: "SLACK_LIST_DMS",
+    description:
+      "List all direct message conversations the bot has. Returns channel IDs that can be used with SLACK_GET_CHANNEL_HISTORY to read DM messages.",
+    annotations: { readOnlyHint: true },
+    inputSchema: z
+      .object({
+        limit: z
+          .number()
+          .optional()
+          .default(100)
+          .describe("Maximum number of DMs to return"),
+      })
+      .strict(),
+    outputSchema: z
+      .object({
+        success: z.boolean(),
+        dms: z.array(
+          z.object({
+            channel_id: z.string(),
+            user_id: z.string(),
+            user_name: z.string(),
+          }),
+        ),
+        error: z.string().optional(),
+      })
+      .strict(),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as { limit?: number };
+
+      try {
+        const channels = await listChannels({
+          types: "im",
+          limit: input.limit,
+          skipCache: true,
+        });
+
+        const imChannels = channels.filter((c) => c.is_im && c.user);
+
+        const dms = await Promise.all(
+          imChannels.map(async (c) => {
+            const userInfo = await getUserInfo(c.user!);
+            const userName = userInfo
+              ? userInfo.profile?.display_name ||
+                userInfo.real_name ||
+                userInfo.name
+              : "(unknown user)";
+
+            return {
+              channel_id: c.id,
+              user_id: c.user!,
+              user_name: userName,
+            };
+          }),
+        );
+
+        return {
+          success: true,
+          dms,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          dms: [],
           error: error instanceof Error ? error.message : String(error),
         };
       }
@@ -356,6 +431,7 @@ export const createInviteToChannelTool = (_env: Env) =>
  */
 export const channelTools = [
   createListChannelsTool,
+  createListDMsTool,
   createGetChannelInfoTool,
   createJoinChannelTool,
   createGetChannelMembersTool,
