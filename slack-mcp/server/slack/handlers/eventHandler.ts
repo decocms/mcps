@@ -17,6 +17,7 @@ import {
   addReaction,
   removeReaction,
   deleteMessage,
+  getUserInfo,
 } from "../../lib/slack-client.ts";
 import type {
   SlackEvent,
@@ -845,8 +846,29 @@ async function handleDirectMessage(
     await removeReaction(channel, ts, "eyes");
   }
 
+  // Resolve sender name so the LLM knows who it's talking to
+  let senderText = text;
+  try {
+    const userInfo = await getUserInfo(user);
+    const senderName = userInfo
+      ? userInfo.profile?.display_name || userInfo.real_name || userInfo.name
+      : null;
+    if (senderName) {
+      senderText = `[Mensagem de ${senderName}]\n${text}`;
+      console.log(`[EventHandler] DM sender resolved: ${senderName}`);
+    }
+  } catch (err) {
+    console.warn(`[EventHandler] Failed to resolve DM sender name:`, err);
+  }
+
   console.log(`[EventHandler] Building LLM messages for DM...`);
-  const messages = await buildLLMMessages(channel, text, ts, undefined, media);
+  const messages = await buildLLMMessages(
+    channel,
+    senderText,
+    ts,
+    undefined,
+    media,
+  );
   console.log(`[EventHandler] LLM messages built: ${messages.length} messages`);
   messages.forEach((msg, i) => {
     console.log(

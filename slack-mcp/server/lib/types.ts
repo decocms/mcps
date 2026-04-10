@@ -141,6 +141,7 @@ export interface SlackChannel {
   is_member: boolean;
   created: number;
   creator: string;
+  user?: string;
   topic?: {
     value: string;
     creator: string;
