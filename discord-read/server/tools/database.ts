@@ -5,7 +5,7 @@
  * Only accesses data from the current connection/organization.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getSupabaseClient } from "../lib/supabase-client.ts";
@@ -16,7 +16,7 @@ import { invalidateAutoRespondCache } from "../discord/client.ts";
  * Query Discord messages (read-only, scoped to connection)
  */
 export const createQueryMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_QUERY_MESSAGES",
     description:
       "Query Discord messages from the database. Only returns messages from guilds this bot has access to. Useful for searching message history, deleted messages, edit history, etc.",
@@ -160,7 +160,7 @@ export const createQueryMessagesTool = (env: Env) =>
  * Query Discord guilds (read-only)
  */
 export const createQueryGuildsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_QUERY_GUILDS",
     description: "Query Discord guilds (servers) from the database.",
     annotations: { readOnlyHint: true },
@@ -183,7 +183,8 @@ export const createQueryGuildsTool = (env: Env) =>
         message: z.string().optional(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = getSupabaseClient();
       if (!client) {
         return {
@@ -229,7 +230,7 @@ export const createQueryGuildsTool = (env: Env) =>
  * Query message statistics
  */
 export const createMessageStatsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_MESSAGE_STATS",
     description:
       "Get statistics about Discord messages (total, by channel, by author, etc.)",
@@ -334,7 +335,7 @@ export const createMessageStatsTool = (env: Env) =>
  * Query channel contexts (custom prompts per channel)
  */
 export const createQueryChannelContextsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_QUERY_CHANNEL_CONTEXTS",
     description:
       "Query channel contexts (custom system prompts and auto-respond settings) from the database.",
@@ -426,7 +427,7 @@ export const createQueryChannelContextsTool = (env: Env) =>
  * Set channel auto-respond setting
  */
 export const createSetChannelAutoRespondTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_SET_CHANNEL_AUTO_RESPOND",
     description:
       "Enable or disable auto-respond for a channel. When enabled, the bot will respond to ALL messages in the channel without needing to be mentioned.",

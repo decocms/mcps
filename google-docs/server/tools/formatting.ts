@@ -2,14 +2,14 @@
  * Formatting Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DocsClient, getAccessToken } from "../lib/docs-client.ts";
 import { NAMED_STYLE_TYPE, BULLET_GLYPH_PRESET } from "../constants.ts";
 
 export const createFormatTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "format_text",
     description:
       "Apply text formatting (bold, italic, underline, font size) to a range.",
@@ -26,7 +26,8 @@ export const createFormatTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.formatText(
         context.documentId,
@@ -44,7 +45,7 @@ export const createFormatTextTool = (env: Env) =>
   });
 
 export const createInsertHeadingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_heading",
     description:
       "Insert a heading at a position. Inserts text and applies heading style.",
@@ -58,7 +59,8 @@ export const createInsertHeadingTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const headingText = context.text + "\n";
       await client.insertText(context.documentId, headingText, context.index);
@@ -75,7 +77,7 @@ export const createInsertHeadingTool = (env: Env) =>
   });
 
 export const createInsertListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_list",
     description: "Create a bullet or numbered list from existing paragraphs.",
     inputSchema: z.object({
@@ -88,7 +90,8 @@ export const createInsertListTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const preset =
         context.listType === "numbered"
@@ -105,7 +108,7 @@ export const createInsertListTool = (env: Env) =>
   });
 
 export const createRemoveListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "remove_list",
     description: "Remove bullet/numbered list formatting from paragraphs.",
     inputSchema: z.object({
@@ -117,7 +120,8 @@ export const createRemoveListTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.removeBulletList(
         context.documentId,

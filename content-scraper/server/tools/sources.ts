@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
 import type { Blog, LinkedInSource, RedditSource } from "../types/content.ts";
@@ -43,7 +43,7 @@ function createDbClient(env: Env): {
 // =============================================================================
 
 export const getListBlogSourcesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_BLOG_SOURCES",
     description: "Lists all blogs registered as content sources.",
     inputSchema: z.object({}),
@@ -63,7 +63,8 @@ export const getListBlogSourcesTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const { client, error: dbError } = createDbClient(env);
       if (!client) {
         return { success: false, error: dbError ?? "Database error" };
@@ -103,7 +104,7 @@ export const getListBlogSourcesTool = (env: Env) =>
 // =============================================================================
 
 export const getListLinkedInSourcesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_LINKEDIN_SOURCES",
     description: "Lists all LinkedIn profiles registered for monitoring.",
     inputSchema: z.object({
@@ -131,7 +132,8 @@ export const getListLinkedInSourcesTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { active_only } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -177,7 +179,7 @@ export const getListLinkedInSourcesTool = (env: Env) =>
 // =============================================================================
 
 export const getListRedditSourcesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_REDDIT_SOURCES",
     description: "Lists all subreddits registered for monitoring.",
     inputSchema: z.object({
@@ -205,7 +207,8 @@ export const getListRedditSourcesTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { active_only } = context;
 
       const { client, error: dbError } = createDbClient(env);

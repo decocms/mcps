@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   applyMiddlewares,
   withLogging,
@@ -34,14 +34,15 @@ export function createImageAnalyzerTools<
    * ANALYZE_IMAGE tool
    */
   const analyzeImage = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "ANALYZE_IMAGE",
       description:
         options.metadata.description ||
         `Analyzes images using ${options.metadata.provider}. Can describe content, identify objects, answer questions about the image.`,
       inputSchema: AnalyzeImageInputSchema,
       outputSchema: AnalyzeImageOutputSchema,
-      execute: async ({ context }: { context: AnalyzeImageInput }) => {
+      execute: async ({ context }: { context: AnalyzeImageInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async () => {
           const contractConfig = options.analyzeTool.getContract?.(env);
 
@@ -106,12 +107,16 @@ export function createImageAnalyzerTools<
    */
   const compareImages = options.compareTool
     ? (env: TEnv) =>
-        createPrivateTool({
+        createTool({
           id: "COMPARE_IMAGES",
           description: `Compares multiple images using ${options.metadata.provider}. Useful for identifying differences, similarities, or analyzing changes.`,
           inputSchema: CompareImagesInputSchema,
           outputSchema: CompareImagesOutputSchema,
-          execute: async ({ context }: { context: CompareImagesInput }) => {
+          execute: async (
+            { context }: { context: CompareImagesInput },
+            ctx,
+          ) => {
+            ensureAuthenticated(ctx!);
             const doExecute = async () => {
               const contractConfig = options.compareTool!.getContract?.(env);
 
@@ -177,12 +182,13 @@ export function createImageAnalyzerTools<
    */
   const extractTextFromImage = options.extractTextTool
     ? (env: TEnv) =>
-        createPrivateTool({
+        createTool({
           id: "EXTRACT_TEXT_FROM_IMAGE",
           description: `Extracts all visible text from an image using OCR from ${options.metadata.provider}. Useful for reading documents, signs, screenshots, etc.`,
           inputSchema: ExtractTextInputSchema,
           outputSchema: ExtractTextOutputSchema,
-          execute: async ({ context }: { context: ExtractTextInput }) => {
+          execute: async ({ context }: { context: ExtractTextInput }, ctx) => {
+            ensureAuthenticated(ctx!);
             const doExecute = async () => {
               const contractConfig =
                 options.extractTextTool!.getContract?.(env);

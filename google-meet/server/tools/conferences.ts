@@ -2,7 +2,7 @@
  * Conference Records and Participants Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { MeetClient, getAccessToken } from "../lib/meet-client.ts";
@@ -23,7 +23,7 @@ const ParticipantSchema = z.object({
 });
 
 export const createListConferenceRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_conference_records",
     description: "List conference records (past meetings).",
     inputSchema: z.object({
@@ -40,7 +40,8 @@ export const createListConferenceRecordsTool = (env: Env) =>
       conferences: z.array(ConferenceSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const records = await client.listConferenceRecords(
         context.filter,
@@ -59,7 +60,7 @@ export const createListConferenceRecordsTool = (env: Env) =>
   });
 
 export const createGetConferenceRecordTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_conference_record",
     description: "Get details about a specific conference record.",
     inputSchema: z.object({
@@ -70,7 +71,8 @@ export const createGetConferenceRecordTool = (env: Env) =>
     outputSchema: z.object({
       conference: ConferenceSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const record = await client.getConferenceRecord(context.name);
       return {
@@ -85,7 +87,7 @@ export const createGetConferenceRecordTool = (env: Env) =>
   });
 
 export const createListParticipantsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_participants",
     description: "List participants of a conference.",
     inputSchema: z.object({
@@ -96,7 +98,8 @@ export const createListParticipantsTool = (env: Env) =>
       participants: z.array(ParticipantSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const participants = await client.listParticipants(
         context.conferenceRecord,
@@ -125,7 +128,7 @@ export const createListParticipantsTool = (env: Env) =>
   });
 
 export const createGetParticipantSessionsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_participant_sessions",
     description:
       "Get session details for a participant (when they joined/left).",
@@ -141,7 +144,8 @@ export const createGetParticipantSessionsTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const sessions = await client.listParticipantSessions(
         context.participantName,

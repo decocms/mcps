@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getAccessToken } from "../lib/env.ts";
@@ -14,7 +14,7 @@ const SortSchema = z.object({
 });
 
 export const createListRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_list_records",
     description:
       "List records from an Airtable table with optional filtering, sorting, and field selection.",
@@ -50,7 +50,8 @@ export const createListRecordsTool = (env: Env) =>
         .optional()
         .describe("Pagination offset from a previous response."),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { baseId, tableIdOrName, ...options } = context;
       const client = new AirtableClient(getAccessToken(env));
       return await client.listRecords(baseId, tableIdOrName, options);
@@ -58,7 +59,7 @@ export const createListRecordsTool = (env: Env) =>
   });
 
 export const createGetRecordTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_get_record",
     description: "Retrieve a single record by its ID from an Airtable table.",
     inputSchema: z.object({
@@ -66,7 +67,8 @@ export const createGetRecordTool = (env: Env) =>
       tableIdOrName: z.string().describe("The ID or name of the table."),
       recordId: z.string().describe("The ID of the record to retrieve."),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.getRecord(
         context.baseId,
@@ -77,7 +79,7 @@ export const createGetRecordTool = (env: Env) =>
   });
 
 export const createSearchRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_search_records",
     description:
       "Search for records in an Airtable table by matching a term against specified fields.",
@@ -107,7 +109,8 @@ export const createSearchRecordsTool = (env: Env) =>
         .optional()
         .describe("Pagination offset from a previous response."),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { baseId, tableIdOrName, searchTerm, searchFields, ...options } =
         context;
 
@@ -126,7 +129,7 @@ export const createSearchRecordsTool = (env: Env) =>
   });
 
 export const createCreateRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_create_records",
     description: `Create one or more records in an Airtable table. Maximum ${MAX_BATCH_RECORDS} records per request.`,
     inputSchema: z.object({
@@ -150,7 +153,8 @@ export const createCreateRecordsTool = (env: Env) =>
           "If true, Airtable will auto-convert field values to the correct type.",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.createRecords(
         context.baseId,
@@ -162,7 +166,7 @@ export const createCreateRecordsTool = (env: Env) =>
   });
 
 export const createUpdateRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_update_records",
     description: `Update one or more records in an Airtable table. Maximum ${MAX_BATCH_RECORDS} records per request. Supports upsert via performUpsert.`,
     inputSchema: z.object({
@@ -198,7 +202,8 @@ export const createUpdateRecordsTool = (env: Env) =>
         .optional()
         .describe("If provided, performs an upsert instead of a plain update."),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.updateRecords(
         context.baseId,
@@ -211,7 +216,7 @@ export const createUpdateRecordsTool = (env: Env) =>
   });
 
 export const createDeleteRecordsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_delete_records",
     description: `Delete one or more records from an Airtable table. Maximum ${MAX_BATCH_RECORDS} records per request.`,
     inputSchema: z.object({
@@ -223,7 +228,8 @@ export const createDeleteRecordsTool = (env: Env) =>
         .max(MAX_BATCH_RECORDS)
         .describe(`Array of record IDs to delete (1-${MAX_BATCH_RECORDS}).`),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.deleteRecords(
         context.baseId,

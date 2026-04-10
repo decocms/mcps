@@ -2,13 +2,13 @@
  * Document Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DocsClient, getAccessToken } from "../lib/docs-client.ts";
 
 export const createCreateDocumentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_document",
     description: "Create a new empty Google Document.",
     inputSchema: z.object({
@@ -19,7 +19,8 @@ export const createCreateDocumentTool = (env: Env) =>
       title: z.string(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const doc = await client.createDocument(context.title);
       return { documentId: doc.documentId, title: doc.title, success: true };
@@ -27,7 +28,7 @@ export const createCreateDocumentTool = (env: Env) =>
   });
 
 export const createGetDocumentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_document",
     description: "Get document metadata and content.",
     inputSchema: z.object({
@@ -39,7 +40,8 @@ export const createGetDocumentTool = (env: Env) =>
       content: z.string(),
       endIndex: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const doc = await client.getDocument(context.documentId);
       return {

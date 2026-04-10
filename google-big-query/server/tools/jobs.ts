@@ -4,7 +4,7 @@
  * Tools for listing and getting job information
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { BigQueryClient, getAccessToken } from "../lib/bigquery-client.ts";
@@ -51,7 +51,7 @@ const JobSchema = z.object({
 // ============================================================================
 
 export const createListJobsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_list_jobs",
     description:
       "List BigQuery jobs in a project. Returns information about query jobs and their status. Useful for monitoring queries, checking job history, and debugging.",
@@ -88,7 +88,8 @@ export const createListJobsTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
@@ -121,7 +122,7 @@ export const createListJobsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetJobTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_get_job",
     description:
       "Get detailed information about a specific BigQuery job. Returns job status, configuration, statistics, and error information if any. Useful for monitoring query execution and debugging failures.",
@@ -152,7 +153,8 @@ export const createGetJobTool = (env: Env) =>
         .optional()
         .describe("Job configuration"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });

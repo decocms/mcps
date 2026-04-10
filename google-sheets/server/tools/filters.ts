@@ -2,7 +2,7 @@
  * Filter Operations Tools (Basic Filters, Filter Views, Slicers)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
@@ -18,7 +18,7 @@ const ColorSchema = z.object({
 // ============================================
 
 export const createSetBasicFilterTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "set_basic_filter",
     description:
       "Create or update a basic filter on a range. Basic filters add dropdown arrows to column headers for filtering data.",
@@ -50,7 +50,8 @@ export const createSetBasicFilterTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.setBasicFilter(
         context.spreadsheetId,
@@ -66,7 +67,7 @@ export const createSetBasicFilterTool = (env: Env) =>
   });
 
 export const createClearBasicFilterTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "clear_basic_filter",
     description: "Remove the basic filter from a sheet.",
     inputSchema: z.object({
@@ -77,7 +78,8 @@ export const createClearBasicFilterTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.clearBasicFilter(context.spreadsheetId, context.sheetId);
       return { success: true, message: "Basic filter cleared" };
@@ -89,7 +91,7 @@ export const createClearBasicFilterTool = (env: Env) =>
 // ============================================
 
 export const createAddFilterViewTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_filter_view",
     description:
       "Create a named filter view. Filter views are saved filter configurations that can be accessed from the Data menu.",
@@ -118,7 +120,8 @@ export const createAddFilterViewTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addFilterView(
         context.spreadsheetId,
@@ -138,7 +141,7 @@ export const createAddFilterViewTool = (env: Env) =>
   });
 
 export const createDeleteFilterViewTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_filter_view",
     description: "Delete a filter view by its ID.",
     inputSchema: z.object({
@@ -149,7 +152,8 @@ export const createDeleteFilterViewTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteFilterView(context.spreadsheetId, context.filterId);
       return {
@@ -164,7 +168,7 @@ export const createDeleteFilterViewTool = (env: Env) =>
 // ============================================
 
 export const createAddSlicerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_slicer",
     description:
       "Add a slicer (visual filter control) to the sheet. Slicers provide a visual way to filter data in tables and pivot tables.",
@@ -212,7 +216,8 @@ export const createAddSlicerTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addSlicer(
         context.spreadsheetId,

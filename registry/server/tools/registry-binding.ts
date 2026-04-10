@@ -6,7 +6,7 @@
  * Uses Supabase as the single source of truth for all MCP server data
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import {
   createSupabaseClient,
@@ -260,17 +260,21 @@ function parseServerId(id: string): { name: string; version?: string } {
  * COLLECTION_REGISTRY_LIST - Lists all servers from Supabase
  */
 export const createListRegistryTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_APP_LIST",
     description:
       "Lists MCP servers available in the registry with support for pagination, search, and filters (tags, categories, verified, hasRemote). Always returns the latest version of each server.",
     inputSchema: ListInputSchema,
     outputSchema: ListOutputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof ListInputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof ListInputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { limit = 30, cursor, where, tags, categories, verified } = context;
       try {
         // Get configuration from environment
@@ -337,17 +341,21 @@ export const createListRegistryTool = (_env: Env) =>
  * To get all versions of a server, use COLLECTION_REGISTRY_APP_VERSIONS.
  */
 export const createGetRegistryTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_APP_GET",
     description:
       "Gets the latest version of a specific MCP server from the registry by name (accepts 'name' or 'name@version', but always returns latest)",
     inputSchema: GetInputSchema,
     outputSchema: GetOutputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof GetInputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof GetInputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
       try {
         // Parse ID
@@ -387,7 +395,7 @@ export const createGetRegistryTool = (_env: Env) =>
  * COLLECTION_REGISTRY_APP_VERSIONS - Lists all versions of a specific server
  */
 export const createVersionsRegistryTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_APP_VERSIONS",
     description:
       "Lists all available versions of a specific MCP server from the registry",
@@ -398,11 +406,15 @@ export const createVersionsRegistryTool = (_env: Env) =>
         .describe("Array of all available versions for the server"),
       count: z.number().describe("Total number of versions available"),
     }),
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof VersionsInputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof VersionsInputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { name } = context;
       try {
         // Get configuration from environment
@@ -451,7 +463,7 @@ export const createVersionsRegistryTool = (_env: Env) =>
  * COLLECTION_REGISTRY_APP_FILTERS - Get available filter options
  */
 export const createFiltersRegistryTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_REGISTRY_APP_FILTERS",
     description:
       "Gets all available tags and categories that can be used to filter MCP servers, with counts showing how many servers use each filter value",
@@ -474,7 +486,8 @@ export const createFiltersRegistryTool = (_env: Env) =>
         )
         .describe("Available categories sorted by usage count (descending)"),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;

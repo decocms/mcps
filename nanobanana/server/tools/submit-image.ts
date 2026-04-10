@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { AspectRatioSchema } from "@decocms/mcps-shared/image-generators";
 import type { Env } from "server/main.ts";
 import { createGeminiClient, models, type Model } from "./utils/gemini.ts";
@@ -147,7 +147,7 @@ async function generateAndUpload(
 }
 
 const createSubmitImageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "submit_image",
     description:
       "Submit an image generation request using Gemini models via OpenRouter. Returns a request_id immediately — use get_image_result to poll for the result.",
@@ -160,7 +160,8 @@ const createSubmitImageTool = (env: Env) =>
         ),
       model: z.string().describe("The model used for generation"),
     }),
-    execute: async ({ context }: { context: SubmitImageInput }) => {
+    execute: async ({ context }: { context: SubmitImageInput }, ctx) => {
+      ensureAuthenticated(ctx!);
       const taskId = createTask();
       const modelToUse = context.model ?? "gemini-3.1-flash-image-preview";
 

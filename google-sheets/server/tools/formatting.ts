@@ -2,13 +2,13 @@
  * Formatting and Data Operations Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
 
 export const createFormatCellsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "format_cells",
     description:
       "Apply formatting to a range of cells (bold, italic, colors, font size).",
@@ -45,7 +45,8 @@ export const createFormatCellsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.formatCells(
         context.spreadsheetId,
@@ -67,7 +68,7 @@ export const createFormatCellsTool = (env: Env) =>
   });
 
 export const createAutoResizeColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "auto_resize_columns",
     description: "Auto-resize columns to fit their content.",
     inputSchema: z.object({
@@ -82,7 +83,8 @@ export const createAutoResizeColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.autoResizeColumns(
         context.spreadsheetId,
@@ -95,7 +97,7 @@ export const createAutoResizeColumnsTool = (env: Env) =>
   });
 
 export const createSortRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "sort_range",
     description: "Sort a range of data by a specific column.",
     inputSchema: z.object({
@@ -117,7 +119,8 @@ export const createSortRangeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.sortRange(
         context.spreadsheetId,
@@ -134,7 +137,7 @@ export const createSortRangeTool = (env: Env) =>
   });
 
 export const createFindReplaceTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "find_replace",
     description:
       "Find and replace text across a spreadsheet or specific sheet.",
@@ -158,7 +161,8 @@ export const createFindReplaceTool = (env: Env) =>
       sheetsChanged: z.number(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.findReplace(
         context.spreadsheetId,
@@ -186,7 +190,7 @@ export const createFindReplaceTool = (env: Env) =>
 // ============================================
 
 export const createMergeCellsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "merge_cells",
     description:
       "Merge multiple cells into one. Useful for creating titles or headers spanning multiple columns.",
@@ -208,7 +212,8 @@ export const createMergeCellsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.mergeCells(
         context.spreadsheetId,
@@ -224,7 +229,7 @@ export const createMergeCellsTool = (env: Env) =>
   });
 
 export const createUnmergeCellsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "unmerge_cells",
     description: "Unmerge previously merged cells.",
     inputSchema: z.object({
@@ -239,7 +244,8 @@ export const createUnmergeCellsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.unmergeCells(
         context.spreadsheetId,
@@ -277,7 +283,7 @@ const BorderSchema = z.object({
 });
 
 export const createSetBordersTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "set_borders",
     description: "Add or update borders around and within a range of cells.",
     inputSchema: z.object({
@@ -302,7 +308,8 @@ export const createSetBordersTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.updateBorders(
         context.spreadsheetId,
@@ -329,7 +336,7 @@ export const createSetBordersTool = (env: Env) =>
 // ============================================
 
 export const createAddBandingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_banding",
     description:
       "Add alternating row colors (banding) to a range. Great for making tables easier to read.",
@@ -349,7 +356,8 @@ export const createAddBandingTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addBanding(
         context.spreadsheetId,
@@ -377,7 +385,7 @@ export const createAddBandingTool = (env: Env) =>
 // ============================================
 
 export const createSetNumberFormatTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "set_number_format",
     description:
       "Set the number format for a range of cells (currency, percentage, date, etc.).",
@@ -411,7 +419,8 @@ export const createSetNumberFormatTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.setNumberFormat(
         context.spreadsheetId,
@@ -437,7 +446,7 @@ export const createSetNumberFormatTool = (env: Env) =>
 // ============================================
 
 export const createAddNoteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_note",
     description:
       "Add a note (comment) to a cell. Notes appear when hovering over the cell.",
@@ -452,7 +461,8 @@ export const createAddNoteTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addNote(
         context.spreadsheetId,

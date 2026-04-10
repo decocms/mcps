@@ -4,7 +4,7 @@
  * Tools for listing projects
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { BigQueryClient, getAccessToken } from "../lib/bigquery-client.ts";
@@ -25,7 +25,7 @@ const ProjectSchema = z.object({
 // ============================================================================
 
 export const createListProjectsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_list_projects",
     description:
       "List all Google Cloud projects accessible to the authenticated user. Returns project IDs and friendly names. Use this to discover which projects you can query.",
@@ -50,7 +50,8 @@ export const createListProjectsTool = (env: Env) =>
         .describe("Token for fetching next page"),
       totalItems: z.number().optional().describe("Total number of projects"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });

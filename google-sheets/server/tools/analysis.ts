@@ -2,7 +2,7 @@
  * Analysis Tools (Named Ranges, Pivot Tables)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
@@ -12,7 +12,7 @@ import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
 // ============================================
 
 export const createAddNamedRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_named_range",
     description:
       "Create a named range. Named ranges allow you to reference a range by a friendly name in formulas (e.g., =SUM(SalesData) instead of =SUM(A1:A100)).",
@@ -33,7 +33,8 @@ export const createAddNamedRangeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addNamedRange(
         context.spreadsheetId,
@@ -52,7 +53,7 @@ export const createAddNamedRangeTool = (env: Env) =>
   });
 
 export const createDeleteNamedRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_named_range",
     description: "Delete a named range by its ID.",
     inputSchema: z.object({
@@ -63,7 +64,8 @@ export const createDeleteNamedRangeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteNamedRange(
         context.spreadsheetId,
@@ -116,7 +118,7 @@ const PivotValueSchema = z.object({
 });
 
 export const createPivotTableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_pivot_table",
     description:
       "Create a pivot table to summarize and analyze data. Pivot tables can group, aggregate, and cross-tabulate data.",
@@ -165,7 +167,8 @@ export const createPivotTableTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.createPivotTable(
         context.spreadsheetId,

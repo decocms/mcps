@@ -4,7 +4,7 @@
  * Tools for managing GTM containers
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -48,7 +48,7 @@ const ContainerSchema = z.object({
 // ============================================================================
 
 export const createListContainersTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_containers",
     description:
       "List all containers in a GTM account. Returns container IDs, names, and usage contexts.",
@@ -66,7 +66,8 @@ export const createListContainersTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -100,7 +101,7 @@ export const createListContainersTool = (env: Env) =>
 // ============================================================================
 
 export const createGetContainerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_container",
     description: "Get detailed information about a specific GTM container.",
     inputSchema: z.object({
@@ -110,7 +111,8 @@ export const createGetContainerTool = (env: Env) =>
     outputSchema: z.object({
       container: ContainerSchema.describe("Container details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -143,7 +145,7 @@ export const createGetContainerTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateContainerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_container",
     description: "Create a new GTM container in an account.",
     inputSchema: z.object({
@@ -161,7 +163,8 @@ export const createCreateContainerTool = (env: Env) =>
     outputSchema: z.object({
       container: ContainerSchema.describe("Created container"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -196,7 +199,7 @@ export const createCreateContainerTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteContainerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_container",
     description:
       "Delete a GTM container. Warning: This action cannot be undone.",
@@ -208,7 +211,8 @@ export const createDeleteContainerTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

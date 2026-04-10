@@ -2,7 +2,7 @@
  * Element Insertion Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SlidesClient, getAccessToken } from "../lib/slides-client.ts";
@@ -24,7 +24,7 @@ const ShapeEnum = z.enum([
 ]);
 
 export const createInsertTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_text",
     description:
       "Insert a text box on a slide. Positions are in points (72 points = 1 inch).",
@@ -41,7 +41,8 @@ export const createInsertTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.insertTextBox(
         context.presentationId,
@@ -57,7 +58,7 @@ export const createInsertTextTool = (env: Env) =>
   });
 
 export const createInsertImageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_image",
     description: "Insert an image on a slide from URL.",
     inputSchema: z.object({
@@ -76,7 +77,8 @@ export const createInsertImageTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.insertImage(
         context.presentationId,
@@ -92,7 +94,7 @@ export const createInsertImageTool = (env: Env) =>
   });
 
 export const createInsertShapeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_shape",
     description: "Insert a shape on a slide.",
     inputSchema: z.object({
@@ -108,7 +110,8 @@ export const createInsertShapeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.insertShape(
         context.presentationId,
@@ -124,7 +127,7 @@ export const createInsertShapeTool = (env: Env) =>
   });
 
 export const createInsertTableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_table",
     description: "Insert a table on a slide.",
     inputSchema: z.object({
@@ -141,7 +144,8 @@ export const createInsertTableTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.insertTable(
         context.presentationId,
@@ -161,7 +165,7 @@ export const createInsertTableTool = (env: Env) =>
   });
 
 export const createDeleteElementTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_element",
     description: "Delete an element from a slide.",
     inputSchema: z.object({
@@ -172,7 +176,8 @@ export const createDeleteElementTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.deleteElement(context.presentationId, context.elementId);
       return { success: true, message: "Element deleted" };
@@ -180,7 +185,7 @@ export const createDeleteElementTool = (env: Env) =>
   });
 
 export const createReplaceTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "replace_text",
     description: "Find and replace text across all slides.",
     inputSchema: z.object({
@@ -193,7 +198,8 @@ export const createReplaceTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       const result = await client.replaceAllText(
         context.presentationId,

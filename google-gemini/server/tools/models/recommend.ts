@@ -3,7 +3,7 @@
  * Get AI model recommendations based on task requirements
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getGeminiApiKey } from "server/lib/env.ts";
 import { z } from "zod";
 import { GeminiClient } from "../../lib/gemini-client.ts";
@@ -11,7 +11,7 @@ import type { Env } from "../../main.ts";
 import { recommendModelsForTask } from "./utils.ts";
 
 export const createRecommendModelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "RECOMMEND_MODEL",
     description:
       "Get intelligent model recommendations based on your task description and requirements. " +
@@ -88,7 +88,8 @@ export const createRecommendModelTool = (env: Env) =>
         )
         .describe("Top recommended models ordered by score"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { taskDescription, requirements = {} } = context;
       const client = new GeminiClient({
         apiKey: getGeminiApiKey(env),

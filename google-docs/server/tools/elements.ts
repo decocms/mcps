@@ -2,13 +2,13 @@
  * Element Insertion Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DocsClient, getAccessToken } from "../lib/docs-client.ts";
 
 export const createInsertTableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_table",
     description: "Insert a table at a specific position.",
     inputSchema: z.object({
@@ -21,7 +21,8 @@ export const createInsertTableTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.insertTable(
         context.documentId,
@@ -37,7 +38,7 @@ export const createInsertTableTool = (env: Env) =>
   });
 
 export const createInsertImageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_image",
     description: "Insert an image from URL at a specific position.",
     inputSchema: z.object({
@@ -54,7 +55,8 @@ export const createInsertImageTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.insertImage(
         context.documentId,
@@ -68,7 +70,7 @@ export const createInsertImageTool = (env: Env) =>
   });
 
 export const createInsertPageBreakTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_page_break",
     description: "Insert a page break at a specific position.",
     inputSchema: z.object({
@@ -79,7 +81,8 @@ export const createInsertPageBreakTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.insertPageBreak(context.documentId, context.index);
       return { success: true, message: "Page break inserted" };

@@ -2,13 +2,13 @@
  * Question Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { FormsClient, getAccessToken } from "../lib/forms-client.ts";
 
 export const createAddQuestionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_question",
     description: "Add a question to the form.",
     inputSchema: z
@@ -66,7 +66,8 @@ export const createAddQuestionTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       await client.addQuestion(
         context.formId,
@@ -87,7 +88,7 @@ export const createAddQuestionTool = (env: Env) =>
   });
 
 export const createUpdateQuestionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_question",
     description: "Update a question's title or required status.",
     inputSchema: z
@@ -107,7 +108,8 @@ export const createUpdateQuestionTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       await client.updateQuestion(
         context.formId,
@@ -120,7 +122,7 @@ export const createUpdateQuestionTool = (env: Env) =>
   });
 
 export const createDeleteQuestionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_question",
     description: "Delete a question from the form.",
     inputSchema: z.object({
@@ -131,7 +133,8 @@ export const createDeleteQuestionTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       await client.deleteQuestion(context.formId, context.index);
       return { success: true, message: "Question deleted" };

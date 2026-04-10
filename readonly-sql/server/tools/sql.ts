@@ -4,7 +4,7 @@
  * Tools for executing read-only SQL queries against configured databases.
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
@@ -14,7 +14,7 @@ import { validateReadOnlyQuery } from "../lib/sql-validator.ts";
  * QUERY_SQL - Execute a read-only SQL query
  */
 export const createQuerySqlTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "QUERY_SQL",
     description:
       "Execute a read-only SQL query against the configured database. Only SELECT and other read operations are allowed. Supports standard SQL syntax including JOINs, WHERE clauses, aggregations, and CTEs.",
@@ -62,7 +62,8 @@ export const createQuerySqlTool = (env: Env) =>
         .boolean()
         .describe("Whether the results were truncated due to the limit"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { query, params = [], limit } = context;
       const state = env.DECO_CHAT_REQUEST_CONTEXT.state;
 

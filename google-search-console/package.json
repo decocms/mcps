@@ -12,7 +12,7 @@
     "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.5",
+    "@decocms/runtime": "1.4.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

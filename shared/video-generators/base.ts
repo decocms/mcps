@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { saveVideo } from "./storage";
 import { ObjectStorage } from "../storage";
 import {
@@ -202,14 +202,15 @@ export function createVideoGeneratorTools<
     : ExtendVideoInputSchema;
 
   const generateVideo = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "GENERATE_VIDEO",
       description:
         options.metadata.description ||
         `Generate videos using ${options.metadata.provider}`,
       inputSchema: generateVideoInputSchema,
       outputSchema: GenerateVideoOutputSchema,
-      execute: async ({ context }) => {
+      execute: async ({ context }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async () => {
           const contractConfig = options.generateTool.getContract?.(env);
 
@@ -293,12 +294,13 @@ export function createVideoGeneratorTools<
 
   const listVideos = options.listTool
     ? (env: TEnv) =>
-        createPrivateTool({
+        createTool({
           id: "LIST_VIDEOS",
           description: `List videos generated with ${options.metadata.provider}. Supports pagination to navigate through all videos.`,
           inputSchema: ListVideosInputSchema,
           outputSchema: ListVideosOutputSchema,
-          execute: async ({ context }: { context: ListVideosInput }) => {
+          execute: async ({ context }: { context: ListVideosInput }, ctx) => {
+            ensureAuthenticated(ctx!);
             const client = options.getClient?.(env) as TClient;
             return options.listTool!.execute({ env, input: context, client });
           },
@@ -307,12 +309,13 @@ export function createVideoGeneratorTools<
 
   const extendVideo = options.extendTool
     ? (env: TEnv) =>
-        createPrivateTool({
+        createTool({
           id: "EXTEND_VIDEO",
           description: `Extend or remix an existing video using ${options.metadata.provider}. Creates a new video based on an existing one with a new prompt.`,
           inputSchema: extendVideoInputSchema,
           outputSchema: ExtendVideoOutputSchema,
-          execute: async ({ context }) => {
+          execute: async ({ context }, ctx) => {
+            ensureAuthenticated(ctx!);
             const doExecute = async () => {
               const contractConfig = options.extendTool!.getContract?.(env);
 

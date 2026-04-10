@@ -4,7 +4,7 @@
  * Tool for checking availability across calendars
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
@@ -38,7 +38,7 @@ const CalendarFreeBusySchema = z.object({
 // ============================================================================
 
 export const createGetFreeBusyTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_freebusy",
     description:
       "Check free/busy information for one or more calendars within a time range. Useful for finding available meeting times or checking someone's availability.",
@@ -71,7 +71,8 @@ export const createGetFreeBusyTool = (env: Env) =>
         .array(CalendarFreeBusySchema)
         .describe("Free/busy information for each calendar"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });

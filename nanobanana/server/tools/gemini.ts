@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   AspectRatioSchema,
   GenerateImageOutputSchema,
@@ -115,12 +115,13 @@ function createStorageAdapter(objectStorage: ObjectStorageBinding) {
 }
 
 const createGenerateImageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GENERATE_IMAGE",
     description: "Generate images using Gemini models via OpenRouter",
     inputSchema: GenerateImageInputSchema,
     outputSchema: GenerateImageOutputSchema,
-    execute: async ({ context }: { context: GenerateImageInput }) => {
+    execute: async ({ context }: { context: GenerateImageInput }, ctx) => {
+      ensureAuthenticated(ctx!);
       const doExecute = async () => {
         console.log("[GENERATE_IMAGE] 🚀 INÍCIO da execução");
         console.log("[GENERATE_IMAGE] 📥 Context recebido:", {

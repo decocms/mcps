@@ -1,10 +1,10 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { searchIndexedRecordings } from "../db/queries.ts";
 import type { Env } from "../types/env.ts";
 
 export const createSearchIndexedRecordingsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SEARCH_INDEXED_RECORDINGS",
     description:
       "Search recordings indexed in Supabase via webhooks. " +
@@ -65,7 +65,8 @@ export const createSearchIndexedRecordingsTool = (env: Env) =>
       ),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       void env;
       const { query, start_date, end_date, tag, owner, limit = 10 } = context;
 

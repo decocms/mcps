@@ -3,7 +3,7 @@
  * Cancel a running prediction
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../main";
 import { createReplicateClient } from "../lib/replicate";
 import {
@@ -12,7 +12,7 @@ import {
 } from "../lib/types";
 
 export const createCancelPredictionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "CANCEL_PREDICTION",
     description:
       "Cancel a prediction that is currently starting or processing. " +
@@ -20,7 +20,8 @@ export const createCancelPredictionTool = (env: Env) =>
       "Returns the updated prediction status.",
     inputSchema: CancelPredictionInputSchema,
     outputSchema: CancelPredictionOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { predictionId } = context;
 
       const client = createReplicateClient(env);

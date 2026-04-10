@@ -16,7 +16,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createS3Client, getPresignedUrlExpiration } from "../lib/s3-client.ts";
@@ -25,7 +25,7 @@ import { createS3Client, getPresignedUrlExpiration } from "../lib/s3-client.ts";
  * LIST_OBJECTS - List objects in the bucket with pagination support
  */
 export const createListObjectsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_OBJECTS",
     description:
       "List objects in the S3 bucket. Supports prefix filtering and pagination for large buckets.",
@@ -75,7 +75,8 @@ export const createListObjectsTool = (env: Env) =>
           "Common prefixes (folders) when delimiter is specified (e.g., ['folder-a/', 'folder-b/'])",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { prefix, maxKeys, continuationToken, delimiter } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
@@ -110,7 +111,7 @@ export const createListObjectsTool = (env: Env) =>
  * GET_OBJECT_METADATA - Get object metadata using HEAD operation
  */
 export const createGetObjectMetadataTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_OBJECT_METADATA",
     description:
       "Get metadata for an object without downloading it (HEAD operation)",
@@ -127,7 +128,8 @@ export const createGetObjectMetadataTool = (env: Env) =>
         .optional()
         .describe("Custom metadata key-value pairs"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { key } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
@@ -153,7 +155,7 @@ export const createGetObjectMetadataTool = (env: Env) =>
  * GET_PRESIGNED_URL - Generate a presigned URL for downloading an object
  */
 export const createGetPresignedUrlTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_PRESIGNED_URL",
     description:
       "Generate a presigned URL for downloading an object. The URL allows temporary access without credentials.",
@@ -172,7 +174,8 @@ export const createGetPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { key, expiresIn } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
@@ -198,7 +201,7 @@ export const createGetPresignedUrlTool = (env: Env) =>
  * PUT_PRESIGNED_URL - Generate a presigned URL for uploading an object
  */
 export const createPutPresignedUrlTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "PUT_PRESIGNED_URL",
     description:
       "Generate a presigned URL for uploading an object. The URL allows temporary upload access without credentials.",
@@ -221,7 +224,8 @@ export const createPutPresignedUrlTool = (env: Env) =>
         .number()
         .describe("Expiration time in seconds that was used"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { key, expiresIn, contentType } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
@@ -248,7 +252,7 @@ export const createPutPresignedUrlTool = (env: Env) =>
  * DELETE_OBJECT - Delete a single object
  */
 export const createDeleteObjectTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DELETE_OBJECT",
     description: "Delete a single object from the bucket",
     inputSchema: z.object({
@@ -258,7 +262,8 @@ export const createDeleteObjectTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       key: z.string().describe("The key that was deleted"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { key } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;
@@ -281,7 +286,7 @@ export const createDeleteObjectTool = (env: Env) =>
  * DELETE_OBJECTS - Delete multiple objects in batch
  */
 export const createDeleteObjectsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DELETE_OBJECTS",
     description:
       "Delete multiple objects in a single batch operation (max 1000 objects)",
@@ -304,7 +309,8 @@ export const createDeleteObjectsTool = (env: Env) =>
         )
         .describe("Array of errors for failed deletions"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { keys } = context;
       const s3Client = createS3Client(env);
       const state = env.MESH_REQUEST_CONTEXT.state;

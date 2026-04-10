@@ -1,6 +1,6 @@
 import type { Env } from "server/main.ts";
 import { createVeoClient, VeoModels, type VeoModel } from "./utils/veo.ts";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   saveVideo,
   createGenerateVideoInputSchema,
@@ -127,13 +127,14 @@ const ExtendVideoOutputSchema = z.object({
 // Tool factories
 
 const createGenerateVideoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GENERATE_VIDEO",
     description:
       "Start generating a video using Google Veo. Returns an operation name immediately. Use GET_GENERATED_VIDEO with the operation name to check status and retrieve the video once ready.",
     inputSchema: generateVideoInputSchema,
     outputSchema: GenerateVideoOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = createVeoClient(env);
 
       const modelToUse = context.model ?? "veo-3.1-generate-preview";
@@ -166,13 +167,14 @@ const createGenerateVideoTool = (env: Env) =>
   });
 
 const createGetGeneratedVideoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_GENERATED_VIDEO",
     description:
       "Check the status of a video generation operation and retrieve the video URL when completed. Use the operationName returned by GENERATE_VIDEO or EXTEND_VIDEO.",
     inputSchema: GetGeneratedVideoInputSchema,
     outputSchema: GetGeneratedVideoOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = createVeoClient(env);
       const { operationName } = context;
 
@@ -236,13 +238,14 @@ const createGetGeneratedVideoTool = (env: Env) =>
   });
 
 const createExtendVideoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "EXTEND_VIDEO",
     description:
       "Start extending or remixing an existing video using Google Veo. Returns an operation name immediately. Use GET_GENERATED_VIDEO with the operation name to check status and retrieve the video once ready.",
     inputSchema: extendVideoInputSchema,
     outputSchema: ExtendVideoOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = createVeoClient(env);
 
       const modelToUse = context.model ?? "veo-3.1-generate-preview";

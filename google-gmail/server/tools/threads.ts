@@ -4,7 +4,7 @@
  * Tools for listing, getting, and managing email threads (conversations)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
@@ -40,7 +40,7 @@ const ThreadSchema = z.object({
 // ============================================================================
 
 export const createListThreadsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_list_conversations",
     description:
       "List email conversations (threads) from Gmail. A conversation groups all related emails together (replies, forwards, etc.).",
@@ -80,7 +80,8 @@ export const createListThreadsTool = (env: Env) =>
         .describe("List of threads"),
       nextPageToken: z.string().optional().describe("Token for next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -105,7 +106,7 @@ export const createListThreadsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_get_conversation",
     description:
       "Get a complete email conversation with all messages in the thread. Perfect for viewing entire email exchanges.",
@@ -119,7 +120,8 @@ export const createGetThreadTool = (env: Env) =>
     outputSchema: z.object({
       thread: ThreadSchema.describe("Thread with all messages"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -161,7 +163,7 @@ export const createGetThreadTool = (env: Env) =>
 // ============================================================================
 
 export const createTrashThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_move_conversation_to_trash",
     description:
       "Move an entire email conversation (all messages in the thread) to trash.",
@@ -172,7 +174,8 @@ export const createTrashThreadTool = (env: Env) =>
       success: z.boolean().describe("Whether operation was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -191,7 +194,7 @@ export const createTrashThreadTool = (env: Env) =>
 // ============================================================================
 
 export const createUntrashThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_restore_conversation_from_trash",
     description:
       "Restore an entire email conversation from trash back to inbox.",
@@ -202,7 +205,8 @@ export const createUntrashThreadTool = (env: Env) =>
       success: z.boolean().describe("Whether operation was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -221,7 +225,7 @@ export const createUntrashThreadTool = (env: Env) =>
 // ============================================================================
 
 export const createModifyThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_update_conversation_labels",
     description:
       "Add or remove labels from an entire email conversation. Use to archive, mark as read/unread, star, or organize conversations.",
@@ -242,7 +246,8 @@ export const createModifyThreadTool = (env: Env) =>
       success: z.boolean().describe("Whether operation was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -265,7 +270,7 @@ export const createModifyThreadTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteThreadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_permanently_delete_conversation",
     description:
       "PERMANENTLY delete an entire email conversation. WARNING: This cannot be undone! Use gmail_move_conversation_to_trash instead if you might need to recover later.",
@@ -276,7 +281,8 @@ export const createDeleteThreadTool = (env: Env) =>
       success: z.boolean().describe("Whether deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });

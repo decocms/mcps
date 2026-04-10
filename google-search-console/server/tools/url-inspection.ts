@@ -4,7 +4,7 @@
  * Tools for inspecting URL index status
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -138,7 +138,7 @@ const UrlInspectionResultSchema = z.object({
 // ============================================================================
 
 export const createInspectUrlTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "inspect_url",
     description:
       "Inspect a URL's Google index status, including indexing state, mobile usability, AMP status, and rich results",
@@ -157,7 +157,8 @@ export const createInspectUrlTool = (env: Env) =>
     outputSchema: z.object({
       inspectionResult: UrlInspectionResultSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });

@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
 import { scrapeAllBlogs } from "../lib/blog-scraper.ts";
@@ -65,7 +65,7 @@ function getApifyApiToken(env: Env): string | null {
 // =============================================================================
 
 export const getScrapeAllTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SCRAPE_ALL",
     description:
       "Executes scraping of ALL registered sources (blogs, LinkedIn and Reddit). May take several minutes.",
@@ -112,7 +112,8 @@ export const getScrapeAllTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { linkedin_max_posts, reddit_limit } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -233,7 +234,7 @@ export const getScrapeAllTool = (env: Env) =>
 // =============================================================================
 
 export const getScrapeBlogsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SCRAPE_BLOGS",
     description:
       "Executes scraping only of registered blogs. Searches for new articles about MCP.",
@@ -244,7 +245,8 @@ export const getScrapeBlogsTool = (env: Env) =>
       totalSaved: z.number().optional(),
       error: z.string().optional(),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const { client, error: dbError } = createDbClient(env);
       if (!client) {
         return { success: false, error: dbError ?? "Database error" };
@@ -275,7 +277,7 @@ export const getScrapeBlogsTool = (env: Env) =>
 // =============================================================================
 
 export const getScrapeLinkedInTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SCRAPE_LINKEDIN",
     description:
       "Executes scraping of registered LinkedIn profiles. Requires APIFY_API_TOKEN configured.",
@@ -305,7 +307,8 @@ export const getScrapeLinkedInTool = (env: Env) =>
       total_relevant: z.number().optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { max_posts, profile_url } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -372,7 +375,7 @@ export const getScrapeLinkedInTool = (env: Env) =>
 // =============================================================================
 
 export const getScrapeRedditTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SCRAPE_REDDIT",
     description:
       "Executes scraping of registered subreddits. Searches for relevant posts about MCP/AI.",
@@ -402,7 +405,8 @@ export const getScrapeRedditTool = (env: Env) =>
       total_relevant: z.number().optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { limit, subreddit } = context;
 
       const { client, error: dbError } = createDbClient(env);

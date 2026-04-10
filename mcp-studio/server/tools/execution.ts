@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { z } from "zod";
 import {
@@ -50,7 +50,7 @@ if (!CREATE_BINDING?.inputSchema || !CREATE_BINDING?.outputSchema) {
 }
 
 export const cancelExecutionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "CANCEL_EXECUTION",
     description:
       "Cancel a running or pending workflow execution. Currently executing steps will complete, but no new steps will start. The execution can be resumed later using RESUME_EXECUTION.",
@@ -60,7 +60,8 @@ export const cancelExecutionTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { executionId } = context;
 
       const result = await cancelExecution(env, executionId);
@@ -78,7 +79,7 @@ export const cancelExecutionTool = (env: Env) =>
   });
 
 export const resumeExecutionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "RESUME_EXECUTION",
     description:
       "Resume a cancelled workflow execution. The execution will be set back to pending and can be re-queued for processing.",
@@ -88,7 +89,8 @@ export const resumeExecutionTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { executionId } = context;
 
       const result = await resumeExecution(env, executionId);
@@ -111,7 +113,7 @@ export const resumeExecutionTool = (env: Env) =>
   });
 
 export const createCreateTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: CREATE_BINDING?.name,
     description: "Create a workflow execution and return the execution ID",
     inputSchema: z.object({
@@ -141,7 +143,8 @@ export const createCreateTool = (env: Env) =>
         id: z.string(),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         // Fetch the full workflow collection to get steps and input schema
         const workflowCollection = await getWorkflowCollection(
@@ -180,14 +183,15 @@ export const createCreateTool = (env: Env) =>
   });
 
 export const createGetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_EXECUTION_GET",
     description: "Get a single workflow execution by ID with step results.",
     inputSchema: z.object({
       id: z.string().describe("The ID of the workflow execution to get"),
     }),
     outputSchema: createCollectionGetOutputSchema(WorkflowExecutionSchema),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
       const result = await getExecutionFull(env, id);
       if (!result) {
@@ -207,7 +211,7 @@ export const createGetTool = (env: Env) =>
   });
 
 export const createGetExecutionWorkflowTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "WORKFLOW_EXECUTION_GET_WORKFLOW",
     description:
       "Get the immutable workflow associated with a workflow execution",
@@ -224,7 +228,8 @@ export const createGetExecutionWorkflowTool = (env: Env) =>
       id: z.string(),
       workflow_collection_id: z.string().nullish(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { executionId } = context;
       const execution = await getExecution(env, executionId);
       if (!execution) {
@@ -251,7 +256,7 @@ export const createGetExecutionWorkflowTool = (env: Env) =>
   });
 
 export const createGetStepResultTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_EXECUTION_GET_STEP_RESULT",
     description: "Get a single step result by execution ID and step ID",
     inputSchema: z.object({
@@ -264,7 +269,8 @@ export const createGetStepResultTool = (env: Env) =>
       output: z.unknown().optional(),
       error: z.string().nullable().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { executionId, stepId } = context;
       const result = await getStepResult(env, executionId, stepId);
       if (!result) {
@@ -284,17 +290,21 @@ export const createGetStepResultTool = (env: Env) =>
   });
 
 export const createListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_EXECUTION_LIST",
     description:
       "List workflow executions with filtering, sorting, and pagination",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof LIST_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof LIST_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { limit = 50, offset = 0 } = context;
 
       const itemsResult = await listExecutions(env, {

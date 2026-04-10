@@ -3,7 +3,7 @@
  * Compare multiple models side-by-side to help choose the best one
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getGeminiApiKey } from "server/lib/env.ts";
 import { z } from "zod";
 import { GeminiClient } from "../../lib/gemini-client.ts";
@@ -11,7 +11,7 @@ import type { Env } from "../../main.ts";
 import { compareModels } from "./utils.ts";
 
 export const createCompareModelsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COMPARE_MODELS",
     description:
       "Compare multiple Google Gemini models side-by-side to help choose the best model for a specific use case. " +
@@ -48,7 +48,8 @@ export const createCompareModelsTool = (env: Env) =>
         .optional()
         .describe("Automated recommendation based on comparison"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { modelIds, criteria } = context;
       const client = new GeminiClient({
         apiKey: getGeminiApiKey(env),

@@ -5,7 +5,7 @@
  * - META_ADS_GET_INSIGHTS: Get performance metrics for any object (account, campaign, adset, ad)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getMetaAccessToken } from "../main.ts";
@@ -24,7 +24,7 @@ const actionMetricSchema = z.array(
  * Get performance insights for any object
  */
 export const createGetInsightsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_INSIGHTS",
     description: `Get performance insights for a Meta Ads object (account, campaign, ad set, or ad). 
 Returns metrics like impressions, reach, clicks, CTR, CPC, CPM, spend, and conversions.
@@ -131,7 +131,8 @@ Use date_preset for common time ranges (last_7d, last_30d, etc) or time_range fo
         }),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 

@@ -3,7 +3,7 @@
  * List available models from a Replicate user/organization
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   assertEnvKey,
   makeApiRequest,
@@ -13,7 +13,7 @@ import { ListModelsInputSchema, ListModelsOutputSchema } from "../lib/types";
 import { REPLICATE_API_URL } from "../constants";
 
 export const createListModelsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_MODELS",
     description:
       "List available models from Replicate. " +
@@ -22,7 +22,8 @@ export const createListModelsTool = (env: Env) =>
       "Use the next_cursor from the response to paginate through results.",
     inputSchema: ListModelsInputSchema,
     outputSchema: ListModelsOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { owner, cursor } = context;
 
       // Use the search API to list models by owner

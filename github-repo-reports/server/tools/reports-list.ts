@@ -6,7 +6,7 @@
  * parses YAML frontmatter for metadata, and merges lifecycle statuses.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import {
@@ -25,7 +25,7 @@ import {
 const ReportStatusEnum = z.enum(["passing", "warning", "failing", "info"]);
 
 export const createReportsListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "REPORTS_LIST",
     description:
       "List available reports with optional filters. Returns report summaries (metadata only, no sections).",
@@ -53,7 +53,8 @@ export const createReportsListTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const config = getRepoConfig(env);
       const client = getGitHubClient(env);
 

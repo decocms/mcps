@@ -6,7 +6,7 @@
  * directory in the GitHub repository.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import {
@@ -21,7 +21,7 @@ import {
 } from "../lib/report-parser.ts";
 
 export const createReportsUpdateStatusTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "REPORTS_UPDATE_STATUS",
     description:
       "Update the lifecycle status of a report (unread, read, or dismissed).",
@@ -35,7 +35,8 @@ export const createReportsUpdateStatusTool = (env: Env) =>
       success: z.boolean(),
       message: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const config = getRepoConfig(env);
       const client = getGitHubClient(env);
 

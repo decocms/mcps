@@ -4,7 +4,7 @@
  * Tools for managing GTM triggers
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -80,7 +80,7 @@ const TriggerSchema = z.object({
 // ============================================================================
 
 export const createListTriggersTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_triggers",
     description:
       "List all triggers in a GTM workspace. Returns trigger IDs, names, types, and conditions.",
@@ -100,7 +100,8 @@ export const createListTriggersTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -140,7 +141,7 @@ export const createListTriggersTool = (env: Env) =>
 // ============================================================================
 
 export const createGetTriggerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_trigger",
     description: "Get detailed information about a specific GTM trigger.",
     inputSchema: z.object({
@@ -152,7 +153,8 @@ export const createGetTriggerTool = (env: Env) =>
     outputSchema: z.object({
       trigger: TriggerSchema.describe("Trigger details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -191,7 +193,7 @@ export const createGetTriggerTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateTriggerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_trigger",
     description:
       "Create a new trigger in a GTM workspace. Triggers determine when tags should fire.",
@@ -221,7 +223,8 @@ export const createCreateTriggerTool = (env: Env) =>
     outputSchema: z.object({
       trigger: TriggerSchema.describe("Created trigger"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -271,7 +274,7 @@ export const createCreateTriggerTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateTriggerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_trigger",
     description:
       "Update an existing GTM trigger. All fields from the original trigger must be provided.",
@@ -300,7 +303,8 @@ export const createUpdateTriggerTool = (env: Env) =>
     outputSchema: z.object({
       trigger: TriggerSchema.describe("Updated trigger"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -351,7 +355,7 @@ export const createUpdateTriggerTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteTriggerTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_trigger",
     description: "Delete a GTM trigger. Warning: This action cannot be undone.",
     inputSchema: z.object({
@@ -364,7 +368,8 @@ export const createDeleteTriggerTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

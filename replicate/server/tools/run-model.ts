@@ -3,7 +3,7 @@
  * Create and execute a prediction using a Replicate model
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Prediction } from "replicate";
 import type { Env } from "../main";
@@ -25,7 +25,7 @@ function isValidModelIdentifier(
 }
 
 export const createRunModelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "RUN_MODEL",
     description:
       "Execute a prediction using a Replicate model. " +
@@ -37,7 +37,8 @@ export const createRunModelTool = (env: Env) =>
       ...BasePredictionOutputSchema,
       status: PredictionStatusSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { model, input, wait = true, webhook } = context;
 
       const client = createReplicateClient(env);

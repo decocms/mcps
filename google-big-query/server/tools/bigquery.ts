@@ -4,7 +4,7 @@
  * Tools for querying, listing datasets/tables, and exploring schemas
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { BigQueryClient, getAccessToken } from "../lib/bigquery-client.ts";
@@ -68,7 +68,7 @@ const TableInfoSchema = z.object({
 // ============================================================================
 
 export const createQueryTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_query",
     description:
       "Execute a SQL query against Google BigQuery and return results with schema information. " +
@@ -135,7 +135,8 @@ export const createQueryTool = (env: Env) =>
           "Pass this as pageToken in the next call to fetch the next page. Absent on the last page.",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
@@ -222,7 +223,7 @@ export const createQueryTool = (env: Env) =>
 // ============================================================================
 
 export const createGetDatasetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_get_dataset",
     description:
       "Get detailed information about a specific BigQuery dataset. Returns dataset metadata including location, creation time, and description.",
@@ -238,7 +239,8 @@ export const createGetDatasetTool = (env: Env) =>
         .optional()
         .describe("Last modification time"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
@@ -268,7 +270,7 @@ export const createGetDatasetTool = (env: Env) =>
 // ============================================================================
 
 export const createListDatasetsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_list_datasets",
     description:
       "List all datasets in a Google BigQuery project. Returns dataset IDs, names, and metadata.",
@@ -297,7 +299,8 @@ export const createListDatasetsTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
@@ -329,7 +332,7 @@ export const createListDatasetsTool = (env: Env) =>
 // ============================================================================
 
 export const createListTablesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_list_tables",
     description:
       "List all tables in a Google BigQuery dataset. Returns table IDs, types, and metadata.",
@@ -356,7 +359,8 @@ export const createListTablesTool = (env: Env) =>
         .describe("Token for fetching next page"),
       totalItems: z.number().optional().describe("Total number of tables"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });
@@ -438,7 +442,7 @@ function parseTableRef(ref: string): {
 }
 
 export const createGetTableSchemaTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "bigquery_get_table_schema",
     description:
       "Get the schema of a specific BigQuery table. Returns all fields with their types, modes, and descriptions.",
@@ -518,7 +522,8 @@ export const createGetTableSchemaTool = (env: Env) =>
         })
         .describe("Table schema"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new BigQueryClient({
         accessToken: getAccessToken(env),
       });

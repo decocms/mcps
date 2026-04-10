@@ -4,7 +4,7 @@
  * Tools for listing, creating, and updating campaigns
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -61,7 +61,7 @@ const PageInfoSchema = z.object({
 // ============================================================================
 
 export const createListCampaignsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_campaigns",
     description:
       "List all campaigns for an advertiser with optional filters for name, objective, and status.",
@@ -99,7 +99,8 @@ export const createListCampaignsTool = (env: Env) =>
       campaigns: z.array(CampaignSchema).describe("List of campaigns"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -134,7 +135,7 @@ export const createListCampaignsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_campaign",
     description:
       "Get detailed information about a specific campaign by its ID.",
@@ -148,7 +149,8 @@ export const createGetCampaignTool = (env: Env) =>
     outputSchema: z.object({
       campaign: CampaignSchema.nullable().describe("Campaign details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -176,7 +178,7 @@ export const createGetCampaignTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_campaign",
     description:
       "Create a new advertising campaign. Requires advertiser ID, name, and objective type.",
@@ -206,7 +208,8 @@ export const createCreateCampaignTool = (env: Env) =>
       success: z.boolean().describe("Whether creation was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -240,7 +243,7 @@ export const createCreateCampaignTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_campaign",
     description:
       "Update an existing campaign. Only provided fields will be updated. At least one field to update must be provided.",
@@ -278,7 +281,8 @@ export const createUpdateCampaignTool = (env: Env) =>
       success: z.boolean().describe("Whether update was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(

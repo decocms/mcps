@@ -2,7 +2,7 @@
  * Spreadsheet and Sheet Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
@@ -23,7 +23,7 @@ const SpreadsheetSchema = z.object({
 });
 
 export const createCreateSpreadsheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_spreadsheet",
     description: "Create a new Google Spreadsheet.",
     inputSchema: z.object({
@@ -33,7 +33,8 @@ export const createCreateSpreadsheetTool = (env: Env) =>
       spreadsheet: SpreadsheetSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.createSpreadsheet(context.title);
       return {
@@ -55,7 +56,7 @@ export const createCreateSpreadsheetTool = (env: Env) =>
   });
 
 export const createGetSpreadsheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_spreadsheet",
     description: "Get metadata about a spreadsheet including all sheet names.",
     inputSchema: z.object({
@@ -64,7 +65,8 @@ export const createGetSpreadsheetTool = (env: Env) =>
     outputSchema: z.object({
       spreadsheet: SpreadsheetSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.getSpreadsheet(context.spreadsheetId);
       return {
@@ -85,7 +87,7 @@ export const createGetSpreadsheetTool = (env: Env) =>
   });
 
 export const createAddSheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_sheet",
     description: "Add a new sheet/tab to an existing spreadsheet.",
     inputSchema: z.object({
@@ -96,7 +98,8 @@ export const createAddSheetTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addSheet(context.spreadsheetId, context.title);
       return {
@@ -107,7 +110,7 @@ export const createAddSheetTool = (env: Env) =>
   });
 
 export const createDeleteSheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_sheet",
     description: "Delete a sheet/tab from a spreadsheet.",
     inputSchema: z.object({
@@ -120,7 +123,8 @@ export const createDeleteSheetTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteSheet(context.spreadsheetId, context.sheetId);
       return {
@@ -131,7 +135,7 @@ export const createDeleteSheetTool = (env: Env) =>
   });
 
 export const createRenameSheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "rename_sheet",
     description: "Rename a sheet/tab in a spreadsheet.",
     inputSchema: z.object({
@@ -143,7 +147,8 @@ export const createRenameSheetTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.renameSheet(
         context.spreadsheetId,
@@ -162,7 +167,7 @@ export const createRenameSheetTool = (env: Env) =>
 // ============================================
 
 export const createDuplicateSheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "duplicate_sheet",
     description:
       "Create a copy of an existing sheet within the same spreadsheet.",
@@ -186,7 +191,8 @@ export const createDuplicateSheetTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.duplicateSheet(
         context.spreadsheetId,
@@ -208,7 +214,7 @@ export const createDuplicateSheetTool = (env: Env) =>
 // ============================================
 
 export const createFreezeRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "freeze_rows",
     description:
       "Freeze rows at the top of a sheet. Frozen rows stay visible when scrolling down. Useful for keeping headers visible.",
@@ -225,7 +231,8 @@ export const createFreezeRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.freezeRows(
         context.spreadsheetId,
@@ -243,7 +250,7 @@ export const createFreezeRowsTool = (env: Env) =>
   });
 
 export const createFreezeColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "freeze_columns",
     description:
       "Freeze columns at the left of a sheet. Frozen columns stay visible when scrolling right. Useful for keeping row labels visible.",
@@ -260,7 +267,8 @@ export const createFreezeColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.freezeColumns(
         context.spreadsheetId,
@@ -282,7 +290,7 @@ export const createFreezeColumnsTool = (env: Env) =>
 // ============================================
 
 export const createGetSpreadsheetMetadataTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_spreadsheet_metadata",
     description:
       "Get enhanced metadata about a spreadsheet including actual data ranges and filled cell counts for each sheet. More detailed than get_spreadsheet - shows where data actually exists.",
@@ -305,7 +313,8 @@ export const createGetSpreadsheetMetadataTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const { spreadsheet, dataRanges } =
         await client.getSpreadsheetWithDataRanges(context.spreadsheetId);
@@ -337,7 +346,7 @@ export const createGetSpreadsheetMetadataTool = (env: Env) =>
 // ============================================
 
 export const createCopySheetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "copy_sheet",
     description:
       "Copy a sheet to the same spreadsheet or to a different spreadsheet. Uses the native copyTo API endpoint.",
@@ -359,7 +368,8 @@ export const createCopySheetTool = (env: Env) =>
       newSheetTitle: z.string(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.copySheetTo(
         context.spreadsheetId,

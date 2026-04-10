@@ -1,7 +1,7 @@
 /**
  * Google Apps Script Projects Tools
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
@@ -10,7 +10,7 @@ import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
 // Create Project Tool
 // ============================================
 export const createCreateProjectTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_project",
     description:
       "Creates a new, empty Apps Script project with no script files and a base manifest file.",
@@ -30,7 +30,8 @@ export const createCreateProjectTool = (env: Env) =>
       createTime: z.string().optional(),
       updateTime: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -52,7 +53,7 @@ export const createCreateProjectTool = (env: Env) =>
 // Get Project Tool
 // ============================================
 export const createGetProjectTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_project",
     description:
       "Gets a script project's metadata including title, creator, and timestamps.",
@@ -68,7 +69,8 @@ export const createGetProjectTool = (env: Env) =>
       creatorEmail: z.string().optional(),
       lastModifyUserEmail: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -89,7 +91,7 @@ export const createGetProjectTool = (env: Env) =>
 // Get Project Content Tool
 // ============================================
 export const createGetProjectContentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_project_content",
     description:
       "Gets the content of the script project, including the code source and metadata for each script file.",
@@ -109,7 +111,8 @@ export const createGetProjectContentTool = (env: Env) =>
       ),
       fileCount: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -134,7 +137,7 @@ export const createGetProjectContentTool = (env: Env) =>
 // Update Project Content Tool
 // ============================================
 export const createUpdateProjectContentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_project_content",
     description:
       "Updates the content of the specified script project. This replaces all script files with the provided files.",
@@ -162,7 +165,8 @@ export const createUpdateProjectContentTool = (env: Env) =>
       fileCount: z.number(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -182,7 +186,7 @@ export const createUpdateProjectContentTool = (env: Env) =>
 // Get Project Metrics Tool
 // ============================================
 export const createGetProjectMetricsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_project_metrics",
     description:
       "Get metrics data for a script project including active users, total executions, and failed executions.",
@@ -220,7 +224,8 @@ export const createGetProjectMetricsTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });

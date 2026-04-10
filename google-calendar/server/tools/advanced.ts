@@ -7,7 +7,7 @@
  * - duplicate_event: Create a copy of an existing event
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
@@ -63,7 +63,7 @@ const EventSchema = z.object({
 // ============================================================================
 
 export const createMoveEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "move_event",
     description:
       "Move an event from one calendar to another. The event will be removed from the source calendar and added to the destination calendar.",
@@ -84,7 +84,8 @@ export const createMoveEventTool = (env: Env) =>
       event: EventSchema.describe("The moved event with its new details"),
       message: z.string().describe("Success message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -120,7 +121,7 @@ export const createMoveEventTool = (env: Env) =>
 // ============================================================================
 
 export const createFindAvailableSlotsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "find_available_slots",
     description:
       "Find available time slots across one or more calendars. Useful for scheduling meetings by finding times when all participants are free.",
@@ -169,7 +170,8 @@ export const createFindAvailableSlotsTool = (env: Env) =>
         end: z.string().describe("End of search range"),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -203,7 +205,7 @@ export const createFindAvailableSlotsTool = (env: Env) =>
 // ============================================================================
 
 export const createDuplicateEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "duplicate_event",
     description:
       "Create a copy of an existing event. You can optionally change the date/time and target calendar.",
@@ -240,7 +242,8 @@ export const createDuplicateEventTool = (env: Env) =>
       originalEvent: EventSchema.describe("The original event"),
       newEvent: EventSchema.describe("The newly created duplicate event"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -341,7 +344,7 @@ export const createDuplicateEventTool = (env: Env) =>
 // ============================================================================
 
 export const createWatchCalendarTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "watch_calendar",
     description:
       "Set up push notifications (webhook) to receive real-time updates when events in a calendar change. The webhook URL will receive POST requests when events are created, updated, or deleted.",
@@ -382,7 +385,8 @@ export const createWatchCalendarTool = (env: Env) =>
         .optional()
         .describe("When the watch expires (ISO 8601 timestamp)"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -415,7 +419,7 @@ export const createWatchCalendarTool = (env: Env) =>
 // ============================================================================
 
 export const createStopWatchTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "stop_watch",
     description:
       "Stop receiving push notifications for a previously created watch channel. Use the channelId and resourceId returned by watch_calendar.",
@@ -427,7 +431,8 @@ export const createStopWatchTool = (env: Env) =>
       success: z.boolean().describe("Whether the watch was stopped"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });

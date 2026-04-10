@@ -26,7 +26,7 @@ export const tools = [
 // import { z } from "zod";
 //
 // export const myToolFactory = (env: Env) =>
-//   createPrivateTool({
+//   createTool({
 //     id: "my_tool",
 //     description: "Does something useful",
 //     inputSchema: z.object({
@@ -35,7 +35,8 @@ export const tools = [
 //     outputSchema: z.object({
 //       result: z.string().describe("Output result"),
 //     }),
-//     execute: async ({ input }) => {
+//     execute: async ({ input }, ctx) => {
+ensureAuthenticated(ctx!);
 //       // Your implementation here
 //       return { result: `Processed: ${input.param}` };
 //     },

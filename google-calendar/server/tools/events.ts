@@ -4,7 +4,7 @@
  * Tools for listing, getting, creating, updating, and deleting events
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
@@ -181,7 +181,7 @@ function mapEvent(event: import("../lib/types.ts").Event) {
 // ============================================================================
 
 export const createListEventsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_events",
     description:
       "List events from a calendar with optional filters for date range, search query, and pagination.",
@@ -229,7 +229,8 @@ export const createListEventsTool = (env: Env) =>
         .optional()
         .describe("Total deduplicated events (set by service-account fan-out)"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -268,7 +269,7 @@ export const createListEventsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_event",
     description: "Get detailed information about a specific event by its ID.",
     inputSchema: z.object({
@@ -281,7 +282,8 @@ export const createGetEventTool = (env: Env) =>
     outputSchema: z.object({
       event: EventSchema.describe("Event details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -300,7 +302,7 @@ export const createGetEventTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_event",
     description:
       "Create a new event in a calendar. Supports attendees, reminders, and all-day or timed events.",
@@ -368,7 +370,8 @@ export const createCreateEventTool = (env: Env) =>
     outputSchema: z.object({
       event: EventSchema.describe("Created event"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -412,7 +415,7 @@ export const createCreateEventTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_event",
     description:
       "Update an existing event. Only provided fields will be updated.",
@@ -458,7 +461,8 @@ export const createUpdateEventTool = (env: Env) =>
     outputSchema: z.object({
       event: EventSchema.describe("Updated event"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -491,7 +495,7 @@ export const createUpdateEventTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_event",
     description: "Delete an event from a calendar.",
     inputSchema: z.object({
@@ -509,7 +513,8 @@ export const createDeleteEventTool = (env: Env) =>
       success: z.boolean().describe("Whether deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -535,7 +540,7 @@ export const createDeleteEventTool = (env: Env) =>
 // ============================================================================
 
 export const createQuickAddEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "quick_add_event",
     description:
       "Create an event using natural language text. Google Calendar will parse the text to extract event details like date, time, and title. Examples: 'Meeting with John tomorrow at 3pm', 'Dentist appointment on Friday at 10am'",
@@ -557,7 +562,8 @@ export const createQuickAddEventTool = (env: Env) =>
     outputSchema: z.object({
       event: EventSchema.describe("Created event"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -580,7 +586,7 @@ export const createQuickAddEventTool = (env: Env) =>
 // ============================================================================
 
 export const createRespondToEventTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "respond_to_event",
     description:
       "Respond to an event invitation (accept, decline, or tentative). Updates your RSVP status for the event.",
@@ -605,7 +611,8 @@ export const createRespondToEventTool = (env: Env) =>
         .optional()
         .describe("Your previous response status"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -665,7 +672,7 @@ export const createRespondToEventTool = (env: Env) =>
 // ============================================================================
 
 export const createListEventInstancesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_event_instances",
     description:
       "List individual instances of a recurring event. Useful for seeing when a weekly meeting occurs, modifying specific instances, etc.",
@@ -698,7 +705,8 @@ export const createListEventInstancesTool = (env: Env) =>
       instances: z.array(EventSchema).describe("List of event instances"),
       nextPageToken: z.string().optional().describe("Token for next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -724,7 +732,7 @@ export const createListEventInstancesTool = (env: Env) =>
 // ============================================================================
 
 export const createCheckUpcomingEventsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "check_upcoming_events",
     description:
       "Check for calendar events starting within the next N minutes and emit them to the event bus. Designed to be called periodically by the mesh.",
@@ -791,7 +799,8 @@ export const createCheckUpcomingEventsTool = (env: Env) =>
         .optional()
         .describe("Total deduplicated events (set by service-account fan-out)"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });

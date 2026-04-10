@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
 
@@ -109,7 +109,7 @@ function getDbClient(env: Env): {
  * LIST_WEEKLY_DIGEST - Lists articles from the weekly digest
  */
 export const listWeeklyDigestTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_WEEKLY_DIGEST",
     description:
       "Lists articles from the deco weekly digest. " +
@@ -148,7 +148,8 @@ export const listWeeklyDigestTool = (env: Env) =>
       totalCount: z.number().optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const {
         limit,
         offset,
@@ -227,7 +228,7 @@ export const listWeeklyDigestTool = (env: Env) =>
  * SAVE_WEEKLY_DIGEST_ARTICLE - Creates a new article in the weekly digest
  */
 export const saveWeeklyDigestArticleTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SAVE_WEEKLY_DIGEST_ARTICLE",
     description:
       "Saves a new article to the deco weekly digest. " +
@@ -278,7 +279,8 @@ export const saveWeeklyDigestArticleTool = (env: Env) =>
       article: ArticleSchema.optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { client, error } = getDbClient(env);
       if (!client) {
         return { success: false, error: error! };
@@ -364,7 +366,7 @@ export const saveWeeklyDigestArticleTool = (env: Env) =>
  * UPDATE_WEEKLY_DIGEST_ARTICLE - Updates an existing article
  */
 export const updateWeeklyDigestArticleTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "UPDATE_WEEKLY_DIGEST_ARTICLE",
     description:
       "Updates an existing article in the deco weekly digest. " +
@@ -399,7 +401,8 @@ export const updateWeeklyDigestArticleTool = (env: Env) =>
       article: ArticleSchema.optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id, url, updates } = context;
 
       if (!id && !url) {
@@ -482,7 +485,7 @@ export const updateWeeklyDigestArticleTool = (env: Env) =>
  * GET_WEEKLY_DIGEST_ARTICLE - Gets a single article by ID, URL, or slug
  */
 export const getWeeklyDigestArticleTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_WEEKLY_DIGEST_ARTICLE",
     description:
       "Gets a single article from the deco weekly digest by ID, URL, or slug.",
@@ -496,7 +499,8 @@ export const getWeeklyDigestArticleTool = (env: Env) =>
       article: ArticleSchema.optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id, url, slug } = context;
 
       if (!id && !url && !slug) {
@@ -558,7 +562,7 @@ export const getWeeklyDigestArticleTool = (env: Env) =>
  * DELETE_WEEKLY_DIGEST_ARTICLE - Deletes an article by ID or URL
  */
 export const deleteWeeklyDigestArticleTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DELETE_WEEKLY_DIGEST_ARTICLE",
     description: "Deletes an article from the deco weekly digest by ID or URL.",
     inputSchema: z.object({
@@ -570,7 +574,8 @@ export const deleteWeeklyDigestArticleTool = (env: Env) =>
       message: z.string().optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id, url } = context;
 
       if (!id && !url) {
@@ -629,7 +634,7 @@ export const deleteWeeklyDigestArticleTool = (env: Env) =>
  * PUBLISH_WEEKLY_DIGEST_ARTICLE - Publishes an article (changes status to published)
  */
 export const publishWeeklyDigestArticleTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "PUBLISH_WEEKLY_DIGEST_ARTICLE",
     description:
       "Publishes an article in the deco weekly digest. " +
@@ -643,7 +648,8 @@ export const publishWeeklyDigestArticleTool = (env: Env) =>
       article: ArticleSchema.optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id, url } = context;
 
       if (!id && !url) {

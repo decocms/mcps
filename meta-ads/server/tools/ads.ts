@@ -11,7 +11,7 @@
  * - META_ADS_CREATE_AD_CREATIVE: Create a new ad creative
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getMetaAccessToken } from "../main.ts";
@@ -22,7 +22,7 @@ import type { AdStatus, UpdateAdParams } from "../lib/types.ts";
  * Get ads for an ad account
  */
 export const createGetAdsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_ADS",
     description:
       "Get ads for a Meta Ads account. Can filter by campaign ID or ad set ID. Returns ad details including status and creative reference.",
@@ -54,7 +54,8 @@ export const createGetAdsTool = (env: Env) =>
       ),
       count: z.number().describe("Number of ads returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -85,7 +86,7 @@ export const createGetAdsTool = (env: Env) =>
  * Get details of a specific ad
  */
 export const createGetAdDetailsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_AD_DETAILS",
     description:
       "Get detailed information about a specific Meta Ads ad including status, creative reference, and tracking configuration.",
@@ -105,7 +106,8 @@ export const createGetAdDetailsTool = (env: Env) =>
       tracking_specs: z.array(z.record(z.string(), z.unknown())).optional(),
       conversion_specs: z.array(z.record(z.string(), z.unknown())).optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -131,7 +133,7 @@ export const createGetAdDetailsTool = (env: Env) =>
  * Get creative details for an ad
  */
 export const createGetAdCreativesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_AD_CREATIVES",
     description:
       "Get creative details for a specific Meta Ads ad including text, images, videos, and call-to-action configuration.",
@@ -151,7 +153,8 @@ export const createGetAdCreativesTool = (env: Env) =>
       thumbnail_url: z.string().optional(),
       effective_object_story_id: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -177,7 +180,7 @@ export const createGetAdCreativesTool = (env: Env) =>
  * Create a new ad
  */
 export const createCreateAdTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_CREATE_AD",
     description:
       "Create a new Meta Ads ad. This is STEP 4 (final step) to create ads. REQUIRES: adset_id from CREATE_ADSET AND creative_id from CREATE_AD_CREATIVE. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. If you don't have these IDs, go back and create them first.",
@@ -206,7 +209,8 @@ export const createCreateAdTool = (env: Env) =>
       id: z.string().describe("ID of the created ad"),
       success: z.boolean().describe("Whether the ad was created successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -231,7 +235,7 @@ export const createCreateAdTool = (env: Env) =>
  * Update an existing ad
  */
 export const createUpdateAdTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_UPDATE_AD",
     description:
       "Update an existing Meta Ads ad. Can change name, status, or creative.",
@@ -247,7 +251,8 @@ export const createUpdateAdTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the update was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -271,7 +276,7 @@ export const createUpdateAdTool = (env: Env) =>
  * Delete an ad
  */
 export const createDeleteAdTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_DELETE_AD",
     description: "Delete a Meta Ads ad. This action cannot be undone.",
     inputSchema: z.object({
@@ -280,7 +285,8 @@ export const createDeleteAdTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the deletion was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -328,7 +334,7 @@ const callToActionTypeSchema = z.enum([
  * Create an ad creative
  */
 export const createCreateAdCreativeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_CREATE_AD_CREATIVE",
     description:
       "Create an ad creative with text and CTA. This is STEP 3 in the ad creation flow. REQUIRES: page_id (Facebook Page) and link URL, OR use effective_object_story_id to promote an existing Facebook/Instagram post. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) CREATE_AD_CREATIVE → 4) CREATE_AD. Returns creative_id to use in CREATE_AD.",
@@ -398,7 +404,8 @@ export const createCreateAdCreativeTool = (env: Env) =>
         .boolean()
         .describe("Whether the creative was created successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 

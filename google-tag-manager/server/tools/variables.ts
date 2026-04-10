@@ -4,7 +4,7 @@
  * Tools for managing GTM variables
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -74,7 +74,7 @@ const VariableSchema = z.object({
 // ============================================================================
 
 export const createListVariablesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_variables",
     description:
       "List all variables in a GTM workspace. Returns variable IDs, names, types, and configurations.",
@@ -94,7 +94,8 @@ export const createListVariablesTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -136,7 +137,7 @@ export const createListVariablesTool = (env: Env) =>
 // ============================================================================
 
 export const createGetVariableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_variable",
     description: "Get detailed information about a specific GTM variable.",
     inputSchema: z.object({
@@ -148,7 +149,8 @@ export const createGetVariableTool = (env: Env) =>
     outputSchema: z.object({
       variable: VariableSchema.describe("Variable details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -189,7 +191,7 @@ export const createGetVariableTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateVariableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_variable",
     description:
       "Create a new variable in a GTM workspace. Variables store reusable values.",
@@ -221,7 +223,8 @@ export const createCreateVariableTool = (env: Env) =>
     outputSchema: z.object({
       variable: VariableSchema.describe("Created variable"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -270,7 +273,7 @@ export const createCreateVariableTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateVariableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_variable",
     description:
       "Update an existing GTM variable. All fields from the original variable must be provided.",
@@ -301,7 +304,8 @@ export const createUpdateVariableTool = (env: Env) =>
     outputSchema: z.object({
       variable: VariableSchema.describe("Updated variable"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -351,7 +355,7 @@ export const createUpdateVariableTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteVariableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_variable",
     description:
       "Delete a GTM variable. Warning: This action cannot be undone.",
@@ -365,7 +369,8 @@ export const createDeleteVariableTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

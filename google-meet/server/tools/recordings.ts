@@ -2,7 +2,7 @@
  * Recordings and Transcripts Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { MeetClient, getAccessToken } from "../lib/meet-client.ts";
@@ -26,7 +26,7 @@ const TranscriptSchema = z.object({
 });
 
 export const createListRecordingsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_recordings",
     description: "List recordings for a conference.",
     inputSchema: z.object({
@@ -36,7 +36,8 @@ export const createListRecordingsTool = (env: Env) =>
       recordings: z.array(RecordingSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const recordings = await client.listRecordings(context.conferenceRecord);
       return {
@@ -54,7 +55,7 @@ export const createListRecordingsTool = (env: Env) =>
   });
 
 export const createGetRecordingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_recording",
     description: "Get details about a specific recording.",
     inputSchema: z.object({
@@ -63,7 +64,8 @@ export const createGetRecordingTool = (env: Env) =>
     outputSchema: z.object({
       recording: RecordingSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const recording = await client.getRecording(context.name);
       return {
@@ -80,7 +82,7 @@ export const createGetRecordingTool = (env: Env) =>
   });
 
 export const createListTranscriptsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_transcripts",
     description: "List transcripts for a conference.",
     inputSchema: z.object({
@@ -90,7 +92,8 @@ export const createListTranscriptsTool = (env: Env) =>
       transcripts: z.array(TranscriptSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const transcripts = await client.listTranscripts(
         context.conferenceRecord,
@@ -110,7 +113,7 @@ export const createListTranscriptsTool = (env: Env) =>
   });
 
 export const createListTranscriptEntriesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_transcript_entries",
     description: "Get transcript entries (what was said during the meeting).",
     inputSchema: z.object({
@@ -130,7 +133,8 @@ export const createListTranscriptEntriesTool = (env: Env) =>
       ),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const entries = await client.listTranscriptEntries(
         context.transcriptName,

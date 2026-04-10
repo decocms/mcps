@@ -4,7 +4,7 @@
  * Tools for managing GTM workspaces
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -29,7 +29,7 @@ const WorkspaceSchema = z.object({
 // ============================================================================
 
 export const createListWorkspacesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_workspaces",
     description:
       "List all workspaces in a GTM container. Returns workspace IDs, names, and descriptions.",
@@ -48,7 +48,8 @@ export const createListWorkspacesTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -80,7 +81,7 @@ export const createListWorkspacesTool = (env: Env) =>
 // ============================================================================
 
 export const createGetWorkspaceTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_workspace",
     description: "Get detailed information about a specific GTM workspace.",
     inputSchema: z.object({
@@ -91,7 +92,8 @@ export const createGetWorkspaceTool = (env: Env) =>
     outputSchema: z.object({
       workspace: WorkspaceSchema.describe("Workspace details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -122,7 +124,7 @@ export const createGetWorkspaceTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateWorkspaceTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_workspace",
     description:
       "Create a new workspace in a GTM container. Workspaces allow you to work on container changes without affecting the live version.",
@@ -135,7 +137,8 @@ export const createCreateWorkspaceTool = (env: Env) =>
     outputSchema: z.object({
       workspace: WorkspaceSchema.describe("Created workspace"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

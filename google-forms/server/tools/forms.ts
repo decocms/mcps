@@ -2,7 +2,7 @@
  * Form Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { FormsClient, getAccessToken } from "../lib/forms-client.ts";
@@ -16,7 +16,7 @@ const FormSchema = z.object({
 });
 
 export const createCreateFormTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_form",
     description: "Create a new Google Form.",
     inputSchema: z.object({
@@ -27,7 +27,8 @@ export const createCreateFormTool = (env: Env) =>
       formLink: z.string(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       const form = await client.createForm(context.title);
       return {
@@ -45,7 +46,7 @@ export const createCreateFormTool = (env: Env) =>
   });
 
 export const createGetFormTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_form",
     description: "Get form details and questions.",
     inputSchema: z.object({
@@ -63,7 +64,8 @@ export const createGetFormTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       const form = await client.getForm(context.formId);
       return {
@@ -105,7 +107,7 @@ export const createGetFormTool = (env: Env) =>
   });
 
 export const createUpdateFormTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_form",
     description: "Update form title or description.",
     inputSchema: z.object({
@@ -117,7 +119,8 @@ export const createUpdateFormTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       await client.updateFormInfo(
         context.formId,
@@ -129,7 +132,7 @@ export const createUpdateFormTool = (env: Env) =>
   });
 
 export const createGetResponderUrlTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_responder_url",
     description: "Get the URL where users can fill out the form.",
     inputSchema: z.object({
@@ -138,7 +141,8 @@ export const createGetResponderUrlTool = (env: Env) =>
     outputSchema: z.object({
       responderUrl: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       const form = await client.getForm(context.formId);
       return { responderUrl: form.responderUri || "" };

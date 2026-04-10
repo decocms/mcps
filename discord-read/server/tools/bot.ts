@@ -6,7 +6,7 @@
  * All operations are scoped to the calling connection (multi-tenant).
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { isBotRunning, shutdownBot } from "../bot-manager.ts";
@@ -16,7 +16,7 @@ import { getDiscordClient } from "../discord/client.ts";
  * Stop the Discord bot
  */
 export const createStopBotTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_BOT_STOP",
     description: "Stop the Discord bot and disconnect from Discord Gateway.",
     annotations: { destructiveHint: true },
@@ -52,7 +52,7 @@ export const createStopBotTool = (env: Env) =>
  * Get bot status
  */
 export const createBotStatusTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_BOT_STATUS",
     description:
       "Get the current status of the Discord bot (running, stopped, guilds, etc.)",

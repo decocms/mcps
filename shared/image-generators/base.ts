@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { saveImage } from "./storage";
 import { ObjectStorage } from "../storage";
 import {
@@ -131,14 +131,15 @@ export function createImageGeneratorTools<
   type Input = z.infer<typeof inputSchema>;
 
   const generateImage = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "GENERATE_IMAGE",
       description:
         options.metadata.description ||
         `Generate images using ${options.metadata.provider}`,
       inputSchema,
       outputSchema: GenerateImageOutputSchema,
-      execute: async ({ context }: { context: Input }) => {
+      execute: async ({ context }: { context: Input }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async () => {
           const contract = options.getContract(env);
 

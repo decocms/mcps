@@ -4,7 +4,7 @@
  * Tools for managing GTM tags
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -78,7 +78,7 @@ const TagSchema = z.object({
 // ============================================================================
 
 export const createListTagsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_tags",
     description:
       "List all tags in a GTM workspace. Returns tag IDs, names, types, and configurations.",
@@ -98,7 +98,8 @@ export const createListTagsTool = (env: Env) =>
         .optional()
         .describe("Token for fetching next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -142,7 +143,7 @@ export const createListTagsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetTagTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_tag",
     description: "Get detailed information about a specific GTM tag.",
     inputSchema: z.object({
@@ -154,7 +155,8 @@ export const createGetTagTool = (env: Env) =>
     outputSchema: z.object({
       tag: TagSchema.describe("Tag details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -197,7 +199,7 @@ export const createGetTagTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateTagTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_tag",
     description:
       "Create a new tag in a GTM workspace. Tags fire based on triggers and execute tracking code or other functionality.",
@@ -232,7 +234,8 @@ export const createCreateTagTool = (env: Env) =>
     outputSchema: z.object({
       tag: TagSchema.describe("Created tag"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -286,7 +289,7 @@ export const createCreateTagTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateTagTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_tag",
     description:
       "Update an existing GTM tag. All fields from the original tag must be provided.",
@@ -322,7 +325,8 @@ export const createUpdateTagTool = (env: Env) =>
     outputSchema: z.object({
       tag: TagSchema.describe("Updated tag"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -377,7 +381,7 @@ export const createUpdateTagTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteTagTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_tag",
     description: "Delete a GTM tag. Warning: This action cannot be undone.",
     inputSchema: z.object({
@@ -390,7 +394,8 @@ export const createDeleteTagTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

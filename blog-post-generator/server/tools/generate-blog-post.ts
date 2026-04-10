@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 
 /**
@@ -63,7 +63,7 @@ const BlogPostRecommendationSchema = z.object({
  * Generate blog post tool - generates blog posts from context and tone of voice
  */
 export const generateBlogPostTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "generate_blog_post",
     description:
       "Generate blog post suggestions from context and tone of voice. " +
@@ -127,7 +127,8 @@ export const generateBlogPostTool = (env: Env) =>
         .describe("Raw response from webhook for additional details"),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const {
         contextText,
         contextJson,

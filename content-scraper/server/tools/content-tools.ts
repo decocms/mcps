@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import {
   createDatabaseClient,
@@ -47,7 +47,7 @@ function createDbClient(env: Env): {
 // =============================================================================
 
 export const getListArticlesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_ARTICLES",
     description: "Lists scraped blog articles, ordered by score.",
     inputSchema: z.object({
@@ -88,7 +88,8 @@ export const getListArticlesTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { limit, include_blog_info } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -184,7 +185,7 @@ export const getListArticlesTool = (env: Env) =>
 // =============================================================================
 
 export const getListLinkedInPostsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_LINKEDIN_POSTS",
     description: "Lists scraped LinkedIn posts, ordered by relevance score.",
     inputSchema: z.object({
@@ -227,7 +228,8 @@ export const getListLinkedInPostsTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { limit, week } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -296,7 +298,7 @@ export const getListLinkedInPostsTool = (env: Env) =>
 // =============================================================================
 
 export const getListRedditPostsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_REDDIT_POSTS",
     description: "Lists scraped Reddit posts, ordered by relevance score.",
     inputSchema: z.object({
@@ -336,7 +338,8 @@ export const getListRedditPostsTool = (env: Env) =>
         .optional(),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { limit, subreddit } = context;
 
       const { client, error: dbError } = createDbClient(env);
@@ -400,7 +403,7 @@ export const getListRedditPostsTool = (env: Env) =>
 // =============================================================================
 
 export const getGetStatsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_STATS",
     description:
       "Returns general system statistics: total sources, scraped posts, etc.",
@@ -426,7 +429,8 @@ export const getGetStatsTool = (env: Env) =>
       averageAuthority: z.string().optional(),
       error: z.string().optional(),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const { client, error: dbError } = createDbClient(env);
       if (!client) {
         return { success: false, error: dbError ?? "Database error" };

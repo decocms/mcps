@@ -5,7 +5,7 @@
  * search AI providers like Perplexity, ChatGPT Search, Google Gemini, etc.
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   AskInputSchema,
   ChatInputSchema,
@@ -130,14 +130,15 @@ export function createSearchAITools<
   const ask = (env: TEnv) => {
     type AskInputType = z.infer<typeof askInputSchema>;
 
-    return createPrivateTool({
+    return createTool({
       id: "ASK",
       description:
         options.metadata.description ||
         `Ask a question to ${options.metadata.provider} and get web-backed answers`,
       inputSchema: askInputSchema,
       outputSchema: SearchAIOutputSchema,
-      execute: async ({ context }: { context: AskInputType }) => {
+      execute: async ({ context }: { context: AskInputType }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async (): Promise<SearchAIOutput> => {
           // Handle contract if provided
           let transactionId: string | undefined;
@@ -217,14 +218,15 @@ export function createSearchAITools<
   const chat = (env: TEnv) => {
     type ChatInputType = z.infer<typeof chatInputSchema>;
 
-    return createPrivateTool({
+    return createTool({
       id: "CHAT",
       description:
         `Have a multi-turn conversation with ${options.metadata.provider}. ` +
         `This allows you to provide message history for more contextual responses.`,
       inputSchema: chatInputSchema,
       outputSchema: SearchAIOutputSchema,
-      execute: async ({ context }: { context: ChatInputType }) => {
+      execute: async ({ context }: { context: ChatInputType }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async (): Promise<SearchAIOutput> => {
           // Handle contract if provided
           let transactionId: string | undefined;

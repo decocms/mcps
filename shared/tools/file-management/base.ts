@@ -6,7 +6,7 @@
  * It standardizes the creation of file upload, list, get, delete, and search tools.
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   fileUploadInputSchema,
   fileUploadOutputSchema,
@@ -230,14 +230,15 @@ export function createFileManagementTools<
   TClient extends FileManagementClient,
 >(options: CreateFileManagementOptions<TEnv, TClient>) {
   const uploadFile = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "upload_file",
       description:
         options.metadata.description ||
         `Uploads a file to ${options.metadata.provider}. You can provide either a file URL or file content. The file will be processed and made available for context retrieval.`,
       inputSchema: fileUploadInputSchema,
       outputSchema: fileUploadOutputSchema,
-      execute: async ({ context }: { context: FileUploadInput }) => {
+      execute: async ({ context }: { context: FileUploadInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         return await withFileOperationErrorHandling(async () => {
           const contractConfig = options.uploadTool.getContract?.(env);
           let transactionId: string | undefined;
@@ -302,12 +303,13 @@ export function createFileManagementTools<
     });
 
   const listFiles = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "list_files",
       description: `Lists all files in ${options.metadata.provider}`,
       inputSchema: fileListInputSchema,
       outputSchema: fileListOutputSchema,
-      execute: async ({ context }: { context: FileListInput }) => {
+      execute: async ({ context }: { context: FileListInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         try {
           const client = options.getClient(env);
           const result = await options.listTool.execute({
@@ -330,12 +332,13 @@ export function createFileManagementTools<
     });
 
   const getFile = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "get_file",
       description: `Gets details of a specific file from ${options.metadata.provider}`,
       inputSchema: fileGetInputSchema,
       outputSchema: fileGetOutputSchema,
-      execute: async ({ context }: { context: FileGetInput }) => {
+      execute: async ({ context }: { context: FileGetInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         return await withFileOperationErrorHandling(async () => {
           const contractConfig = options.getTool.getContract?.(env);
           let transactionId: string | undefined;
@@ -398,12 +401,13 @@ export function createFileManagementTools<
     });
 
   const deleteFile = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "delete_file",
       description: `Deletes a file from ${options.metadata.provider}`,
       inputSchema: fileDeleteInputSchema,
       outputSchema: fileDeleteOutputSchema,
-      execute: async ({ context }: { context: FileDeleteInput }) => {
+      execute: async ({ context }: { context: FileDeleteInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         return await withFileOperationErrorHandling(async () => {
           const contractConfig = options.deleteTool.getContract?.(env);
           let transactionId: string | undefined;
@@ -453,14 +457,15 @@ export function createFileManagementTools<
   const searchContext = options.searchTool
     ? (env: TEnv) => {
         const searchToolConfig = options.searchTool!;
-        return createPrivateTool({
+        return createTool({
           id: "search_context",
           description:
             searchToolConfig.description ||
             `Retrieves relevant document snippets from ${options.metadata.provider}'s knowledge base.`,
           inputSchema: searchToolConfig.inputSchema,
           outputSchema: searchToolConfig.outputSchema,
-          execute: async ({ context }: { context: any }) => {
+          execute: async ({ context }: { context: any }, ctx) => {
+            ensureAuthenticated(ctx!);
             const contractConfig = searchToolConfig.getContract?.(env);
             let transactionId: string | undefined;
 

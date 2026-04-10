@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { GrainAPIError, GrainClient } from "../lib/grain-client.ts";
 import { getGrainApiKey } from "../lib/env.ts";
@@ -7,7 +7,7 @@ import type { Env } from "../types/env.ts";
 const TranscriptFormatSchema = z.enum(["json", "txt", "srt", "vtt"]);
 
 export const createGetTranscriptTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_TRANSCRIPT",
     description:
       "Get transcript content for a Grain recording. " +
@@ -37,7 +37,8 @@ export const createGetTranscriptTool = (env: Env) =>
         ),
       ]),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         const client = new GrainClient({ apiKey: getGrainApiKey(env) });
         const format = context.format ?? "txt";

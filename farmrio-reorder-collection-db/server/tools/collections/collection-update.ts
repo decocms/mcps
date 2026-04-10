@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { CollectionUpdate } from "../../database/schema.ts";
@@ -35,13 +35,14 @@ const outputSchema = z
   .strict();
 
 export const collectionUpdateTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "collection_update",
     description:
       "Atualiza uma collection existente pelo farm_collection_id (identificador VTEX/Farm).",
     inputSchema,
     outputSchema,
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         validateToken(env);
         const input = inputSchema.parse(context);

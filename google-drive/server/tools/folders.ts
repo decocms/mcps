@@ -2,7 +2,7 @@
  * Folder Operations Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
@@ -29,7 +29,7 @@ const FileSchema = z.object({
 });
 
 export const createCreateFolderTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_folder",
     description: "Create a new folder in Google Drive.",
     inputSchema: z.object({
@@ -43,7 +43,8 @@ export const createCreateFolderTool = (env: Env) =>
       folder: FileSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const folder = await client.createFolder(context.name, context.parentId);
       return { folder, success: true };
@@ -51,7 +52,7 @@ export const createCreateFolderTool = (env: Env) =>
   });
 
 export const createListFolderContentsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_folder_contents",
     description: "List all files and folders inside a specific folder.",
     inputSchema: z.object({
@@ -69,7 +70,8 @@ export const createListFolderContentsTool = (env: Env) =>
       folders: z.array(FileSchema),
       totalCount: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       // Escape single quotes in folderId to prevent query injection
       const safeFolderId = context.folderId.replace(/'/g, "\\'");
