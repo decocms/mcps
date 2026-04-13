@@ -40,7 +40,7 @@ const wrappedUserTools = userTools.map(wrapWithClientInit);
 const wrappedSetupTools = setupTools.map(wrapWithClientInit);
 const wrappedFileTools = fileTools.map(wrapWithClientInit);
 
-export const tools: ToolCollection<Env> = [
+export const tools = [
   ...wrappedMessageTools,
   ...wrappedChannelTools,
   ...wrappedUserTools,
@@ -49,5 +49,5 @@ export const tools: ToolCollection<Env> = [
   // Admin/system tools (no Slack client needed)
   () => syncCacheTool,
   // Trigger tools (register/unregister event triggers)
-  ...triggers.tools(),
+  () => triggers.tools(),
 ];

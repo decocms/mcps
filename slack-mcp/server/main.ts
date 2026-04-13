@@ -41,7 +41,6 @@ import {
   getSupabaseClient,
 } from "./lib/supabase-client.ts";
 import { initializeConfigCacheCount } from "./lib/config-cache.ts";
-import { triggers } from "./lib/trigger-store.ts";
 import { loadAllTriggerCredentials } from "./lib/supabase-client.ts";
 
 export { StateSchema };
@@ -241,8 +240,9 @@ if (isSupabaseConfigured()) {
   try {
     const allCreds = await loadAllTriggerCredentials();
     for (const { connectionId, state } of allCreds) {
-      await triggers.bootstrap(connectionId, state);
-      console.log(`[BOOTSTRAP] Trigger credentials loaded for ${connectionId}`);
+      console.log(
+        `[BOOTSTRAP] Trigger credentials found for ${connectionId}: ${state.activeTriggerTypes.length} type(s)`,
+      );
     }
     console.log(
       `[BOOTSTRAP] Loaded trigger credentials for ${allCreds.length} connections`,

@@ -19,7 +19,8 @@ export function publishMessageReceived(
     text: event.text ?? "",
     ts: event.ts,
     thread_ts: event.thread_ts,
-    is_dm: event.channel?.startsWith("D") || event.channel_type === "im",
+    is_dm:
+      event.channel?.startsWith("D") || (event as any).channel_type === "im",
     has_files: !!(event as any).files?.length,
     timestamp: new Date().toISOString(),
   });
