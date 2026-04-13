@@ -69,14 +69,12 @@ function toUIMessages(messages: SlackChatMessage[]) {
     role: m.role as "system" | "user" | "assistant",
     parts: [
       { type: "text" as const, text: m.content },
-      ...(m.images
-        ?.filter((img) => img.type === "image")
-        .map((img) => ({
-          type: "file" as const,
-          url: `data:${img.mimeType};base64,${img.data}`,
-          filename: img.name ?? "image",
-          mediaType: img.mimeType,
-        })) ?? []),
+      ...(m.images?.map((img) => ({
+        type: "file" as const,
+        url: `data:${img.mimeType};base64,${img.data}`,
+        filename: img.name ?? "image",
+        mediaType: img.mimeType,
+      })) ?? []),
     ],
   }));
 }

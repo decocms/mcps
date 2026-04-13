@@ -52,17 +52,16 @@ export function publishReactionAdded(
   connectionId: string,
   event: SlackEvent,
 ): void {
+  const channelId = (event as any).item?.channel ?? event.channel;
   triggers.notify(connectionId, "slack.reaction.added", {
     event: "slack.reaction.added",
-    channel_id: event.channel,
+    channel_id: channelId,
     user_id: event.user,
     reaction: (event as any).reaction,
     item_ts: (event as any).item?.ts,
     timestamp: new Date().toISOString(),
   });
-  console.log(
-    `[Triggers] Notified slack.reaction.added: channel=${event.channel}`,
-  );
+  console.log(`[Triggers] Notified slack.reaction.added: channel=${channelId}`);
 }
 
 export function publishChannelCreated(

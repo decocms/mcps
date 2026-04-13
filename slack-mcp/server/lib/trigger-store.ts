@@ -13,31 +13,16 @@ import { z } from "zod";
  */
 class SupabaseTriggerStorage implements TriggerStorage {
   async get(connectionId: string) {
-    try {
-      const result = await loadTriggerCredentials(connectionId);
-      console.log(
-        `[TriggerStorage] GET ${connectionId}: ${result ? "found credentials" : "empty"}`,
-      );
-      return result;
-    } catch (error) {
-      console.error(
-        `[TriggerStorage] GET ${connectionId} failed:`,
-        error instanceof Error ? error.message : String(error),
-      );
-      return null;
-    }
+    const result = await loadTriggerCredentials(connectionId);
+    console.log(
+      `[TriggerStorage] GET ${connectionId}: ${result ? "found credentials" : "empty"}`,
+    );
+    return result;
   }
 
   async set(connectionId: string, state: any) {
-    try {
-      console.log(`[TriggerStorage] SET ${connectionId}: saving credentials`);
-      await saveTriggerCredentials(connectionId, state);
-    } catch (error) {
-      console.error(
-        `[TriggerStorage] SET ${connectionId} failed:`,
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    console.log(`[TriggerStorage] SET ${connectionId}: saving credentials`);
+    await saveTriggerCredentials(connectionId, state);
   }
 
   async delete(connectionId: string) {
