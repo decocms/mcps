@@ -8,6 +8,7 @@
  * - Webhooks received at /slack/events/:connectionId
  * - Configs stored in KV store (connectionId -> config)
  * - Each Mesh connection maps to a Slack workspace
+ * - Agent binding (AgentOf) resolved per-connection via env
  */
 
 import { serve } from "@decocms/mcps-shared/serve";
@@ -22,21 +23,17 @@ import {
 } from "./lib/slack-client.ts";
 import { configureThreadManager } from "./lib/thread.ts";
 import {
-  configureLLM,
   configureContext,
-  configureStreaming,
-  configureWhisper,
   setBotUserId as setBotUserIdInHandler,
 } from "./slack/handlers/eventHandler.ts";
 import {
   cacheConnectionConfig,
-  getCachedConnectionConfig,
   type ConnectionConfig,
 } from "./lib/config-cache.ts";
 import { logger } from "./lib/logger.ts";
 import { setBotUserIdForConnection, app as webhookRouter } from "./router.ts";
 import { setServerBaseUrl } from "./lib/serverConfig.ts";
-import { getOrCreatePersistentApiKey } from "@decocms/mcps-shared/api-key-manager";
+import { getOrCreateInstance } from "./connection-instance.ts";
 import { initializeKvStore } from "./lib/kv.ts";
 import { initializeRedisStore, isRedisInitialized } from "./lib/redis-store.ts";
 import {
@@ -44,97 +41,29 @@ import {
   getSupabaseClient,
 } from "./lib/supabase-client.ts";
 import { initializeConfigCacheCount } from "./lib/config-cache.ts";
+import { triggers } from "./lib/trigger-store.ts";
+import { loadAllTriggerCredentials } from "./lib/supabase-client.ts";
 
 export { StateSchema };
 
-/** Hardcoded fallback model used when LANGUAGE_MODEL binding is not configured */
-const FALLBACK_MODEL_ID = "anthropic/claude-sonnet-4-5";
-
-/**
- * Fetch agent's system_prompt from Mesh API via MCP protocol
- */
-async function fetchAgentSystemPrompt(
-  meshUrl: string,
-  _organizationId: string,
-  agentId: string,
-  token: string,
-): Promise<string | undefined> {
-  try {
-    // Use localhost for LOCAL tunnel URLs only (not production)
-    const isLocalTunnel =
-      meshUrl.includes("localhost") && meshUrl.includes(".deco.host");
-    const effectiveMeshUrl = isLocalTunnel ? "http://localhost:3000" : meshUrl;
-
-    const response = await fetch(`${effectiveMeshUrl}/mcp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: {
-          name: "COLLECTION_VIRTUAL_MCP_GET",
-          arguments: { id: agentId },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const result = (await response.json()) as {
-      result?: {
-        structuredContent?: {
-          item?: { title?: string; system_prompt?: string };
-        };
-      };
-    };
-    const agent = result?.result?.structuredContent?.item;
-
-    return agent?.system_prompt ?? undefined;
-  } catch (_error) {
-    return undefined;
-  }
-}
-
-// Define onChange separately to ensure it's not undefined
 const onChangeHandler = async (env: Env, config: any) => {
   try {
-    // Use state from config callback (this is the correct source!)
     const state = config?.state ?? env.MESH_REQUEST_CONTEXT?.state;
     const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
     const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-    const temporaryToken = env.MESH_REQUEST_CONTEXT?.token;
     const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
 
     // Get Slack credentials from state
     const botToken = state?.SLACK_CREDENTIALS?.BOT_TOKEN;
     const signingSecret = state?.SLACK_CREDENTIALS?.SIGNING_SECRET;
 
-    // Get LLM configuration (bindings)
-    const agent = state?.AGENT;
-    const whisper = state?.WHISPER;
-
-    const agentId: string | undefined =
-      typeof agent?.value === "string" ? agent.value : undefined;
-    const agentMode = state?.AGENT_MODE ?? "smart_tool_selection";
-
     // Get context configuration (with defaults from schema)
     const contextConfig = state?.CONTEXT_CONFIG;
-    const maxMessagesBeforeSummary = contextConfig?.MAX_MESSAGES_BEFORE_SUMMARY;
-    const recentMessagesToKeep = contextConfig?.RECENT_MESSAGES_TO_KEEP;
-    const maxMessagesToFetch = contextConfig?.MAX_MESSAGES_TO_FETCH;
     const threadTimeoutMin = contextConfig?.THREAD_TIMEOUT_MIN ?? 10;
 
     // Get response configuration (with defaults)
     const showOnlyFinalResponse =
       state?.RESPONSE_CONFIG?.SHOW_ONLY_FINAL_RESPONSE ?? false;
-
-    // If SHOW_ONLY_FINAL_RESPONSE is enabled, override other settings
     const enableStreaming = showOnlyFinalResponse
       ? false
       : (state?.RESPONSE_CONFIG?.ENABLE_STREAMING ?? true);
@@ -143,17 +72,12 @@ const onChangeHandler = async (env: Env, config: any) => {
       : (state?.RESPONSE_CONFIG?.SHOW_THINKING_MESSAGE ?? true);
 
     // Configure server base URL for temp file serving
-    // Priority: SERVER_PUBLIC_URL env var > WEBHOOK_URL from state > default
     const serverPublicUrl = process.env.SERVER_PUBLIC_URL;
     if (serverPublicUrl) {
-      // Use environment variable (for local tunnel URLs like https://localhost-xxx.deco.host)
       setServerBaseUrl(serverPublicUrl);
     } else {
-      // Extract base URL from webhook URL for production
       const webhookUrl = state?.WEBHOOK_URL;
       if (webhookUrl) {
-        // e.g., "https://sites-slack-mcp.decocache.com/slack/events/{connectionId}"
-        //    -> "https://sites-slack-mcp.decocache.com"
         const baseUrl = webhookUrl.split("/slack/events")[0];
         setServerBaseUrl(baseUrl);
       }
@@ -176,83 +100,16 @@ const onChangeHandler = async (env: Env, config: any) => {
       return;
     }
 
-    // Get or create persistent API Key (to avoid 5-minute JWT expiration)
-    // The temporary token from Mesh expires in 5 minutes, but Slack webhooks
-    // can arrive at any time. We create a persistent API Key using the
-    // temporary token, which can then be used for all subsequent LLM calls.
-    let persistentToken = temporaryToken;
-    if (temporaryToken) {
-      // Try to load existing API key from KV cache (survives restarts)
-      const cachedConfig = await getCachedConnectionConfig(connectionId);
-      let apiKey: string | undefined = cachedConfig?.meshToken;
+    // Store env per-connection (critical for webhook access to AgentOf())
+    const instance = getOrCreateInstance(connectionId, env);
+    instance.env = env;
 
-      // If not found in KV, create a new one
-      if (!apiKey) {
-        const newApiKey = await getOrCreatePersistentApiKey({
-          meshUrl,
-          organizationId,
-          connectionId,
-          temporaryToken,
-        });
-        if (newApiKey) {
-          apiKey = newApiKey;
-        }
-      }
-
-      if (apiKey) {
-        persistentToken = apiKey;
-      }
-    }
-
-    // Fetch agent's system_prompt if agentId is set
-    let systemPrompt: string | undefined;
-    if (agentId && persistentToken) {
-      systemPrompt = await fetchAgentSystemPrompt(
-        meshUrl,
-        organizationId,
-        agentId,
-        persistentToken,
-      );
-    }
-
-    // Configure LLM if we have a token (modelProviderId is optional)
-    // Falls back to FALLBACK_MODEL_ID when LANGUAGE_MODEL binding is not set
-    if (persistentToken) {
-      const modelId = FALLBACK_MODEL_ID;
-      configureLLM({
-        meshUrl,
-        organizationId,
-        token: persistentToken,
-        modelId,
-        agentId,
-        agentMode,
-        systemPrompt,
-      });
-    }
-
-    // Configure Whisper for audio transcription if set
-    if (whisper && persistentToken) {
-      const whisperConnectionId =
-        typeof whisper.value === "string" ? whisper.value : undefined;
-      if (whisperConnectionId) {
-        configureWhisper({
-          meshUrl,
-          organizationId,
-          token: persistentToken,
-          whisperConnectionId,
-        });
-      }
-    }
-
-    // Configure context settings (uses defaults if not provided)
+    // Configure context settings
     configureContext({
-      maxMessagesBeforeSummary,
-      recentMessagesToKeep,
-      maxMessagesToFetch,
+      maxMessagesBeforeSummary: contextConfig?.MAX_MESSAGES_BEFORE_SUMMARY,
+      recentMessagesToKeep: contextConfig?.RECENT_MESSAGES_TO_KEEP,
+      maxMessagesToFetch: contextConfig?.MAX_MESSAGES_TO_FETCH,
     });
-
-    // Configure streaming behavior
-    configureStreaming(enableStreaming);
 
     // Configure thread manager
     configureThreadManager({ timeoutMinutes: threadTimeoutMin });
@@ -261,10 +118,6 @@ const onChangeHandler = async (env: Env, config: any) => {
       connectionId,
       organizationId,
       meshUrl,
-      meshToken: persistentToken,
-      modelId: FALLBACK_MODEL_ID,
-      agentId,
-      systemPrompt,
       botToken,
       signingSecret,
       responseConfig: {
@@ -281,18 +134,15 @@ const onChangeHandler = async (env: Env, config: any) => {
     try {
       initializeSlackClient({ botToken });
 
-      // Get bot info (includes teamId)
       const botInfo = await getBotInfo();
-      // Get team info (includes workspace name)
       const teamInfo = await getTeamInfo();
 
-      // Cache bot user ID for event filtering
       if (botInfo?.userId) {
+        instance.botUserId = botInfo.userId;
         setBotUserIdForConnection(connectionId, botInfo.userId);
         setBotUserIdInHandler(botInfo.userId);
       }
 
-      // Update config with Slack info and save to KV
       const connectionName = config.CONNECTION_NAME || undefined;
       const updatedConfig: ConnectionConfig = {
         ...configToSave,
@@ -302,10 +152,7 @@ const onChangeHandler = async (env: Env, config: any) => {
         connectionName,
       };
       await cacheConnectionConfig(updatedConfig);
-
-      // HyperDX API key is read from process.env.HYPERDX_API_KEY in logger constructor
     } catch (error) {
-      // Config is already saved, just log the error
       await logger.error("Failed to get Slack info", {
         error: String(error),
       });
@@ -322,10 +169,9 @@ const onChangeHandler = async (env: Env, config: any) => {
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: onChangeHandler,
-    scopes: ["EVENT_BUS::*", "*"],
+    scopes: ["*"],
     state: StateSchema,
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools: tools as any,
   prompts: [],
 });
@@ -335,9 +181,7 @@ const PORT = process.env.PORT ?? 8080;
 // ============================================================================
 // Initialize Storage Layer for Config Persistence
 // ============================================================================
-// Priority: Supabase (SUPABASE_URL + SUPABASE_ANON_KEY) > Redis > KV Store
 
-// 1. Initialize Supabase (recommended for production)
 if (isSupabaseConfigured()) {
   try {
     console.log("[Supabase] Initializing client...");
@@ -348,16 +192,15 @@ if (isSupabaseConfigured()) {
       );
     } else {
       console.log(
-        "[Supabase] ⚠️ Client initialization failed, falling back to Redis/KV",
+        "[Supabase] Client initialization failed, falling back to Redis/KV",
       );
     }
   } catch (error) {
-    console.error("[Supabase] ❌ Initialization error:", error);
+    console.error("[Supabase] Initialization error:", error);
     console.log("[Supabase] Falling back to Redis/KV...");
   }
 }
 
-// 2. Initialize Redis (alternative for multi-pod)
 const redisUrl = process.env.REDIS_URL;
 if (redisUrl) {
   try {
@@ -371,19 +214,18 @@ if (redisUrl) {
         ? Number.parseInt(process.env.REDIS_TTL_SECONDS)
         : undefined,
     });
-    console.log("[Redis] ✅ Initialized successfully from environment");
+    console.log("[Redis] Initialized successfully from environment");
     if (!isSupabaseConfigured()) {
       console.log(
         "[Storage] Using Redis for config persistence (multi-pod ready)",
       );
     }
   } catch (error) {
-    console.error("[Redis] ❌ Failed to initialize from environment:", error);
+    console.error("[Redis] Failed to initialize from environment:", error);
     console.log("[Redis] Falling back to KV Store...");
   }
 }
 
-// 3. Initialize KV Store (fallback for single-pod/dev)
 await initializeKvStore("./data/slack-kv.json");
 
 if (!isSupabaseConfigured() && !isRedisInitialized()) {
@@ -392,19 +234,27 @@ if (!isSupabaseConfigured() && !isRedisInitialized()) {
   );
 }
 
-// Initialize config cache count from storage
 await initializeConfigCacheCount();
 
-/**
- * Serve requests:
- * - Webhook routes handled by webhookRouter (/slack/events, /slack/commands, etc.)
- * - MCP requests handled by runtime
- */
+// Bootstrap trigger credentials from Supabase
+if (isSupabaseConfigured()) {
+  try {
+    const allCreds = await loadAllTriggerCredentials();
+    for (const { connectionId, state } of allCreds) {
+      await triggers.bootstrap(connectionId, state);
+      console.log(`[BOOTSTRAP] Trigger credentials loaded for ${connectionId}`);
+    }
+    console.log(
+      `[BOOTSTRAP] Loaded trigger credentials for ${allCreds.length} connections`,
+    );
+  } catch (error) {
+    console.error("[BOOTSTRAP] Failed to load trigger credentials:", error);
+  }
+}
+
 serve(async (req, env, ctx) => {
-  // Try webhook router first
   const webhookResponse = await webhookRouter.fetch(req, env, ctx);
 
-  // If webhook router returned 404, fall back to MCP runtime
   if (webhookResponse.status === 404) {
     return runtime.fetch(req, env, ctx);
   }
