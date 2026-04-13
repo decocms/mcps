@@ -111,17 +111,39 @@ export async function streamAgentResponse(
  * Convenience helper for non-streaming mode.
  */
 export async function collectStreamText(
-  stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
+  stream: AsyncIterable<{
+    role?: string;
+    parts: Array<{ type: string; text?: string }>;
+  }>,
 ): Promise<string> {
   let text = "";
+  let messageIndex = 0;
   for await (const message of stream) {
-    // Each streamed message contains the full accumulated text so far,
-    // not a delta. We always take the latest snapshot.
-    for (const part of message.parts) {
-      if (part.type === "text" && part.text) {
-        text = part.text;
+    const role = (message as any).role ?? "unknown";
+    const textParts = message.parts
+      .filter((p) => p.type === "text" && p.text)
+      .map((p) => p.text!);
+    console.log(
+      `[STREAM DEBUG] msg[${messageIndex}] role=${role} parts=${message.parts.length} textLen=${textParts.join("").length}`,
+    );
+    if (textParts.length > 0) {
+      console.log(
+        `[STREAM DEBUG] msg[${messageIndex}] preview: ${textParts.join("").slice(0, 150)}...`,
+      );
+    }
+    // Only collect text from assistant messages (skip system/thinking)
+    // If role is unknown, assume it's the assistant response
+    if (role === "assistant" || role === "unknown") {
+      for (const part of message.parts) {
+        if (part.type === "text" && part.text) {
+          text = part.text;
+        }
       }
     }
+    messageIndex++;
   }
+  console.log(
+    `[STREAM DEBUG] Final: ${messageIndex} messages, textLen=${text.length}`,
+  );
   return text;
 }
