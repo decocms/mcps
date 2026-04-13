@@ -89,6 +89,15 @@ async function callWithStreaming(
 
     animation.stop();
 
+    if (!text.trim()) {
+      await updateThinkingMessage(
+        channel,
+        thinkingMessageTs,
+        ERROR_MESSAGES.GENERATION_FAILED,
+      );
+      return "";
+    }
+
     const formattedText = formatForSlack(text);
     const blocks =
       useBlocks && text.length > 500
@@ -120,6 +129,18 @@ async function callWithoutStreaming(
 
   const stream = await streamAgentResponse(connectionId, messages);
   const response = await collectStreamText(stream);
+
+  if (!response.trim()) {
+    const fallback = ERROR_MESSAGES.GENERATION_FAILED;
+    if (thinkingMessageTs) {
+      await updateThinkingMessage(channel, thinkingMessageTs, fallback);
+    } else if (replyTo) {
+      await replyInThread(channel, replyTo, fallback);
+    } else {
+      await sendMessage({ channel, text: fallback });
+    }
+    return "";
+  }
 
   const formattedResponse = formatForSlack(response);
   const blocks =
