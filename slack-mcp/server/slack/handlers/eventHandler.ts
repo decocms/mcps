@@ -5,7 +5,13 @@
  * Uses modular handlers for context building and LLM calls.
  */
 
-import { publishEvent } from "../../events.ts";
+import {
+  publishMessageReceived,
+  publishAppMention,
+  publishReactionAdded,
+  publishChannelCreated,
+  publishMemberJoined,
+} from "../../lib/event-publisher.ts";
 import { appendAssistantMessage } from "../../lib/thread.ts";
 import {
   sendMessage,
@@ -24,21 +30,6 @@ import type {
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";
-// SlackTeamConfig type for compatibility
-type SlackTeamConfig = {
-  teamId: string;
-  organizationId: string;
-  meshUrl: string;
-  botToken: string;
-  signingSecret: string;
-  botUserId?: string;
-  configuredAt?: string;
-  responseConfig?: {
-    showOnlyFinalResponse?: boolean;
-    enableStreaming?: boolean;
-    showThinkingMessage?: boolean;
-  };
-};
 import { logger } from "../../lib/logger.ts";
 import { shouldIgnoreEvent } from "../../webhook.ts";
 
@@ -52,13 +43,7 @@ import {
   isContextEnabled,
   type ContextConfig,
 } from "./context-builder.ts";
-import {
-  configureLLM as setLLMConfig,
-  clearLLMConfig as clearLLMConfigInternal,
-  configureStreaming as setStreamingConfig,
-  isLLMConfigured,
-  handleLLMCall,
-} from "./llm-handler.ts";
+import { isLLMConfigured, handleLLMCall } from "./llm-handler.ts";
 
 // Whisper configuration
 interface WhisperConfig {
@@ -95,9 +80,7 @@ async function transcribeAudio(
 
   try {
     console.log(`[Whisper] Transcribing audio: ${filename} (${mimeType})`);
-    console.log(`[Whisper] Audio URL: ${audioUrl.substring(0, 50)}...`);
 
-    // Use localhost for LOCAL tunnel URLs only (not production)
     const isLocalTunnel =
       whisperConfig.meshUrl.includes("localhost") &&
       whisperConfig.meshUrl.includes(".deco.host");
@@ -105,10 +88,7 @@ async function transcribeAudio(
       ? "http://localhost:3000"
       : whisperConfig.meshUrl;
 
-    // Call Whisper via MCP proxy endpoint
     const url = `${effectiveMeshUrl}/mcp/${whisperConfig.whisperConnectionId}`;
-
-    console.log(`[Whisper] Calling MCP proxy: ${url}`);
 
     const response = await fetch(url, {
       method: "POST",
@@ -125,7 +105,7 @@ async function transcribeAudio(
           name: "TRANSCRIBE_AUDIO",
           arguments: {
             audioUrl: audioUrl,
-            language: undefined, // Auto-detect
+            language: undefined,
             responseFormat: "text",
           },
         },
@@ -144,24 +124,20 @@ async function transcribeAudio(
     const result = (await response.json()) as {
       result?: {
         content?: Array<{ type: string; text?: string }>;
-        text?: string; // Direct text response format
+        text?: string;
       };
     };
 
-    // Try to extract transcription from different response formats
     let transcription: string | undefined;
 
-    // Format 1: MCP content array format
     if (result?.result?.content) {
       transcription = result.result.content.find(
         (c) => c.type === "text",
       )?.text;
     }
 
-    // Format 2: Direct text field (when responseFormat: "text")
     if (!transcription && result?.result?.text) {
       const textResult = result.result.text;
-      // Check if it's JSON string like {"text":"..."}
       if (typeof textResult === "string" && textResult.trim().startsWith("{")) {
         try {
           const parsed = JSON.parse(textResult);
@@ -176,7 +152,7 @@ async function transcribeAudio(
 
     if (transcription) {
       console.log(
-        `[Whisper] ✅ Transcription successful (${transcription.length} chars): ${transcription.substring(0, 100)}...`,
+        `[Whisper] Transcription successful (${transcription.length} chars)`,
       );
       return transcription.trim();
     }
@@ -193,43 +169,36 @@ import {
   SLACK_EVENT_TYPES,
   type SlackEventContext,
   type SlackWebhookPayload,
-  type MeshConfig,
 } from "./types.ts";
 
 // Re-export for external use
 export { SLACK_EVENT_TYPES };
 export type { SlackEventContext, ContextConfig };
-export { type LLMConfig } from "../../lib/llm.ts";
+
+// SlackTeamConfig type for compatibility
+type SlackTeamConfig = {
+  teamId: string;
+  organizationId: string;
+  meshUrl: string;
+  botToken: string;
+  signingSecret: string;
+  botUserId?: string;
+  configuredAt?: string;
+  responseConfig?: {
+    showOnlyFinalResponse?: boolean;
+    enableStreaming?: boolean;
+    showThinkingMessage?: boolean;
+  };
+};
 
 // Global bot user ID for thread participation check
 let globalBotUserId: string | null = null;
-
-/**
- * Configure LLM settings
- */
-export function configureLLM(config: Parameters<typeof setLLMConfig>[0]): void {
-  setLLMConfig(config);
-}
-
-/**
- * Clear LLM configuration (prevents cross-tenant config leakage)
- */
-export function clearLLMConfig(): void {
-  clearLLMConfigInternal();
-}
 
 /**
  * Configure context building settings
  */
 export function configureContext(config: ContextConfig): void {
   setContextConfig(config);
-}
-
-/**
- * Configure streaming behavior
- */
-export function configureStreaming(enabled: boolean): void {
-  setStreamingConfig(enabled);
 }
 
 /**
@@ -256,7 +225,6 @@ async function botParticipatedInThread(
 
 /**
  * Process attached files and return media (images and audio)
- * Also returns transcriptions for audio files and warning if Whisper is needed
  */
 async function processAttachedFiles(
   files: SlackAppMentionEvent["files"],
@@ -281,34 +249,8 @@ async function processAttachedFiles(
 
   console.log(`[EventHandler] Processing ${files.length} attached files`);
 
-  // Log detailed file information
-  files.forEach((file, index) => {
-    console.log(`[EventHandler] File ${index + 1}:`, {
-      name: file.name,
-      mimetype: file.mimetype,
-      filetype: file.filetype,
-      size: file.size,
-      mode: file.mode,
-      url_private: file.url_private ? "present" : "missing",
-      // Audio-specific fields
-      duration_ms: (file as any).duration_ms,
-      transcription: (file as any).transcription,
-      // Log all keys to see what's available
-      allKeys: Object.keys(file),
-    });
-
-    // If it's audio with transcription, log it
-    if (file.mimetype.startsWith("audio/") && (file as any).transcription) {
-      console.log(
-        `[EventHandler] 🎤 Audio transcription:`,
-        (file as any).transcription,
-      );
-    }
-  });
-
   const processedFiles = await processSlackFiles(files);
 
-  // Separate text files from media files
   const textFiles: Array<{ name: string; content: string; mimeType: string }> =
     [];
   const mediaFiles: Array<{
@@ -337,14 +279,12 @@ async function processAttachedFiles(
     }
   }
 
-  // Check if there are audio files
   const hasAudio = mediaFiles.some((f) => f.type === "audio");
   const whisperConfigured = whisperConfig !== null;
 
-  // If audio without Whisper, return only images and set warning flag
   if (hasAudio && !whisperConfigured) {
     console.warn(
-      "[EventHandler] ⚠️ Audio files detected but Whisper not configured - skipping audio",
+      "[EventHandler] Audio files detected but Whisper not configured - skipping audio",
     );
     const onlyImages = mediaFiles.filter((f) => f.type === "image");
     return {
@@ -355,34 +295,21 @@ async function processAttachedFiles(
     };
   }
 
-  // Transcribe audio files if Whisper is configured
   const transcriptions: string[] = [];
   if (whisperConfigured) {
     const { storeTempFile } = await import("../../lib/tempFileStore.ts");
     const { getServerBaseUrl } = await import("../../lib/serverConfig.ts");
 
-    // Store audio files temporarily and transcribe
     for (const processedFile of mediaFiles) {
       if (processedFile.type === "audio") {
-        // Store file in temp store
         const tempFileId = storeTempFile(
           processedFile.data,
           processedFile.mimeType,
           processedFile.name,
         );
 
-        // Build public URL that Whisper can access (no auth needed)
-        // Uses the configured server base URL (from WEBHOOK_URL)
         const serverBaseUrl = getServerBaseUrl();
         const tempFileUrl = `${serverBaseUrl}/temp-files/${tempFileId}`;
-
-        console.log(`[EventHandler] Audio file for transcription:`, {
-          name: processedFile.name,
-          mimeType: processedFile.mimeType,
-          tempFileId,
-          serverBaseUrl,
-          tempFileUrl: tempFileUrl.substring(0, 80) + "...",
-        });
 
         const transcription = await transcribeAudio(
           tempFileUrl,
@@ -391,10 +318,6 @@ async function processAttachedFiles(
         );
 
         if (transcription) {
-          console.log(
-            `[EventHandler] ✅ Transcription received:`,
-            transcription,
-          );
           transcriptions.push(
             `[Audio: ${processedFile.name}]\n${transcription}`,
           );
@@ -402,13 +325,6 @@ async function processAttachedFiles(
       }
     }
   }
-
-  console.log(`[EventHandler] ${processedFiles.length} files ready for LLM:`, {
-    images: mediaFiles.filter((f) => f.type === "image").length,
-    audio: mediaFiles.filter((f) => f.type === "audio").length,
-    textFiles: textFiles.length,
-    transcriptions: transcriptions.length,
-  });
 
   return {
     media: mediaFiles,
@@ -434,23 +350,15 @@ async function buildLLMMessages(
   }>,
   cleanMention: boolean = false,
 ) {
-  // Build context from previous messages (if configured)
   let contextMessages: Array<{ role: "user" | "assistant"; content: string }> =
     [];
 
   if (isContextEnabled()) {
     contextMessages = await buildContextMessages(channel, threadTs, ts);
-    console.log(
-      `[EventHandler] Context: ${contextMessages.length} previous messages`,
-    );
-  } else {
-    console.log("[EventHandler] Context disabled");
   }
 
-  // Build current content
   const currentContent = buildCurrentContent(text, media.length, cleanMention);
 
-  // Format messages with context/request separation
   return formatMessagesForLLM(
     contextMessages,
     currentContent,
@@ -468,43 +376,35 @@ async function buildLLMMessages(
 export async function handleSlackEvent(
   context: SlackEventContext,
   teamConfig: SlackTeamConfig,
+  connectionId: string,
 ): Promise<void> {
   const { type, payload } = context;
 
-  console.log(`[EventHandler] ========== handleSlackEvent ==========`);
-  console.log(`[EventHandler] Event type: ${type}`);
-  console.log(
-    `[EventHandler] Channel: ${payload.channel}, User: ${payload.user}, TS: ${payload.ts}`,
-  );
-  console.log(
-    `[EventHandler] Thread TS: ${payload.thread_ts ?? "none"}, Team: ${teamConfig.teamId}`,
-  );
-  console.log(`[EventHandler] Text length: ${(payload.text ?? "").length}`);
-  console.log(
-    `[EventHandler] Has files: ${!!(payload as any).files}, Channel type: ${(payload as any).channel_type ?? "unknown"}`,
-  );
-  console.log(
-    `[EventHandler] Bot user ID (global): ${globalBotUserId ?? "not set"}, Bot user ID (team): ${teamConfig.botUserId ?? "not set"}`,
-  );
-  console.log(
-    `[EventHandler] Response config: showOnlyFinal=${teamConfig.responseConfig?.showOnlyFinalResponse ?? false}, streaming=${teamConfig.responseConfig?.enableStreaming ?? "default"}, thinking=${teamConfig.responseConfig?.showThinkingMessage ?? "default"}`,
-  );
-
   switch (type) {
     case "app_mention":
-      await handleAppMention(payload as SlackAppMentionEvent, teamConfig);
+      publishAppMention(connectionId, payload);
+      await handleAppMention(
+        payload as SlackAppMentionEvent,
+        teamConfig,
+        connectionId,
+      );
       break;
     case "message":
-      await handleMessage(payload as SlackMessageEvent, teamConfig);
+      publishMessageReceived(connectionId, payload);
+      await handleMessage(
+        payload as SlackMessageEvent,
+        teamConfig,
+        connectionId,
+      );
       break;
     case "reaction_added":
-      await handleReactionAdded(payload, teamConfig);
+      publishReactionAdded(connectionId, payload);
       break;
     case "channel_created":
-      await handleChannelCreated(payload, teamConfig);
+      publishChannelCreated(connectionId, payload);
       break;
     case "member_joined_channel":
-      await handleMemberJoined(payload, teamConfig);
+      publishMemberJoined(connectionId, payload);
       break;
     default:
       console.log(`[EventHandler] Unhandled event type: ${type}`);
@@ -517,26 +417,17 @@ export async function handleSlackEvent(
 async function handleAppMention(
   event: SlackAppMentionEvent,
   teamConfig: SlackTeamConfig,
+  connectionId: string,
 ): Promise<void> {
   const { channel, user, text, ts, thread_ts, files } = event;
-  console.log(`[EventHandler] ========== handleAppMention ==========`);
-  console.log(
-    `[EventHandler] From user: ${user}, Channel: ${channel}, TS: ${ts}`,
-  );
-  console.log(`[EventHandler] Thread TS: ${thread_ts ?? "new thread"}`);
-  console.log(`[EventHandler] Text length: ${text.length}`);
-  console.log(`[EventHandler] Files attached: ${files?.length ?? 0}`);
 
-  // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  // Add eyes reaction immediately for quick feedback (unless in silent mode)
   if (!showOnlyFinal) {
     await addReaction(channel, ts, "eyes");
   }
 
-  // Send thinking message if enabled (respects showOnlyFinal override)
   const replyTo = thread_ts ?? ts;
   const showThinking = showOnlyFinal
     ? false
@@ -545,31 +436,20 @@ async function handleAppMention(
     ? await sendThinkingMessage(channel, replyTo)
     : null;
 
-  // Remove eyes reaction when we start processing (unless in silent mode)
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
-  // Process attached files (images, audio, and text files)
   const { media, textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
-  // If audio was sent without Whisper configured, inform the user
   if (audioWithoutWhisper) {
     const warningMsg =
-      "🎤 Áudio detectado! Para processar arquivos de áudio, é necessário ativar a integração **Whisper** no Mesh.\n\n" +
-      "Entre em contato com o administrador para configurar o Whisper e habilitar transcrição automática de áudios.";
-
-    if (thread_ts) {
-      await replyInThread(channel, thread_ts, warningMsg);
-    } else {
-      await replyInThread(channel, ts, warningMsg);
-    }
-    console.log("[EventHandler] Sent Whisper configuration warning to user");
+      "Audio detectado! Para processar arquivos de audio, e necessario ativar a integracao **Whisper** no Mesh.";
+    await replyInThread(channel, replyTo, warningMsg);
     return;
   }
 
-  // Format text files for LLM
   const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
   const textFileContent = textFiles
     .map((file) => {
@@ -578,7 +458,6 @@ async function handleAppMention(
     })
     .join("\n\n");
 
-  // Add transcriptions and text files to the message text
   let fullText = text;
   if (transcriptions.length > 0) {
     fullText += `\n\n${transcriptions.join("\n\n")}`;
@@ -587,71 +466,36 @@ async function handleAppMention(
     fullText += `\n\n${textFileContent}`;
   }
 
-  // When we have transcriptions, remove audio files from media array
-  // (send only transcribed text, not the audio file itself)
-  // Keep images as they can be processed by the LLM
   const mediaForLLM =
     transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
-  if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
-    console.log(
-      `[EventHandler] Filtered ${media.length - mediaForLLM.length} audio files from LLM prompt (using transcriptions instead)`,
-    );
-  }
-
-  // Build messages for LLM
-  console.log(
-    `[EventHandler] Building LLM messages for app_mention. Full text length: ${fullText.length}, media count: ${mediaForLLM.length}`,
-  );
   const messages = await buildLLMMessages(
     channel,
     fullText,
     ts,
     thread_ts,
     mediaForLLM,
-    true, // Clean bot mention
+    true,
   );
-  console.log(
-    `[EventHandler] LLM messages built: ${messages.length} messages total`,
-  );
-  messages.forEach((msg, i) => {
-    console.log(
-      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
-    );
-  });
 
-  // Check if LLM is configured
-  if (!isLLMConfigured()) {
-    const warningMsg =
-      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
-      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
-
+  if (!isLLMConfigured(connectionId)) {
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await replyInThread(channel, replyTo, warningMsg);
-    console.log(
-      "[EventHandler] LLM not configured - sent configuration warning",
-    );
     return;
   }
 
-  // Call LLM
-  console.log(
-    `[EventHandler] Calling LLM for app_mention. Channel: ${channel}, replyTo: ${replyTo}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
-  );
-  const llmStartTime = Date.now();
+  const enableStreaming = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.enableStreaming ?? true);
+
   try {
-    await handleLLMCall(messages, {
+    await handleLLMCall(connectionId, messages, {
       channel,
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
+      streamingEnabled: enableStreaming,
     });
-    console.log(
-      `[EventHandler] LLM call completed for app_mention in ${Date.now() - llmStartTime}ms`,
-    );
   } catch (error) {
-    console.error(
-      `[EventHandler] LLM call FAILED for app_mention after ${Date.now() - llmStartTime}ms:`,
-      error,
-    );
     logger.error("App mention LLM error", {
       channel,
       userId: user,
@@ -666,72 +510,43 @@ async function handleAppMention(
 async function handleMessage(
   event: SlackMessageEvent,
   teamConfig: SlackTeamConfig,
+  connectionId: string,
 ): Promise<void> {
   const { channel, user, text, ts, thread_ts, channel_type, files } = event;
   const isDM = channel_type === "im" || channel?.startsWith("D");
   const botUserId = globalBotUserId ?? teamConfig.botUserId;
 
-  console.log(`[EventHandler] ========== handleMessage ==========`);
-  console.log(
-    `[EventHandler] From user: ${user}, Channel: ${channel}, TS: ${ts}`,
-  );
-  console.log(
-    `[EventHandler] isDM: ${isDM}, channel_type: ${channel_type ?? "unknown"}, thread_ts: ${thread_ts ?? "none"}`,
-  );
-  console.log(`[EventHandler] Text length: ${(text ?? "").length}`);
-  console.log(
-    `[EventHandler] Files: ${files?.length ?? 0}, botUserId: ${botUserId ?? "not set"}`,
-  );
-
   // Skip messages with bot mention in channels (handled by app_mention)
   if (!isDM && botUserId && text?.includes(`<@${botUserId}>`)) {
-    console.log(
-      "[EventHandler] Skipping message - will be handled by app_mention event instead",
-    );
     return;
   }
 
   // For threads, check if bot participated
   if (thread_ts && !isDM) {
-    console.log(
-      `[EventHandler] Checking bot participation in thread ${thread_ts}...`,
-    );
     const botParticipated = await botParticipatedInThread(
       channel,
       thread_ts,
       botUserId ?? null,
     );
-    console.log(
-      `[EventHandler] Bot participated in thread: ${botParticipated}`,
-    );
     if (!botParticipated) {
-      console.log(
-        `[EventHandler] Ignoring thread reply - bot not in thread ${thread_ts}`,
-      );
       return;
     }
   }
 
-  // Process attached files (images, audio, and text files)
   const { media, textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
-  // If audio was sent without Whisper configured, inform the user
   if (audioWithoutWhisper) {
     const warningMsg =
-      "🎤 Áudio detectado! Para processar arquivos de áudio, é necessário ativar a integração **Whisper** no Mesh.\n\n" +
-      "Entre em contato com o administrador para configurar o Whisper e habilitar transcrição automática de áudios.";
-
+      "Audio detectado! Para processar arquivos de audio, e necessario ativar a integracao **Whisper** no Mesh.";
     if (isDM) {
       await sendMessage({ channel, text: warningMsg });
     } else if (thread_ts) {
       await replyInThread(channel, thread_ts, warningMsg);
     }
-    console.log("[EventHandler] Sent Whisper configuration warning to user");
     return;
   }
 
-  // Format text files for LLM
   const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
   const textFileContent = textFiles
     .map((file) => {
@@ -740,7 +555,6 @@ async function handleMessage(
     })
     .join("\n\n");
 
-  // Add transcriptions and text files to the message text
   let fullText = text;
   if (transcriptions.length > 0) {
     fullText += `\n\n${transcriptions.join("\n\n")}`;
@@ -749,40 +563,20 @@ async function handleMessage(
     fullText += `\n\n${textFileContent}`;
   }
 
-  // When we have transcriptions, remove audio files from media array
-  // (send only transcribed text, not the audio file itself)
-  // Keep images as they can be processed by the LLM
   const mediaForLLM =
     transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
-  if (transcriptions.length > 0 && mediaForLLM.length < media.length) {
-    console.log(
-      `[EventHandler] Filtered ${media.length - mediaForLLM.length} audio files from LLM prompt (using transcriptions instead)`,
-    );
-  }
-
-  const meshConfig = {
-    meshUrl: teamConfig.meshUrl,
-    organizationId: teamConfig.organizationId,
-  };
-
   if (isDM) {
-    console.log(
-      `[EventHandler] Routing to handleDirectMessage. Text length: ${fullText.length}, media: ${mediaForLLM.length}`,
-    );
     await handleDirectMessage(
       channel,
       user,
       fullText,
       ts,
       mediaForLLM,
-      meshConfig,
       teamConfig,
+      connectionId,
     );
   } else if (thread_ts) {
-    console.log(
-      `[EventHandler] Routing to handleThreadReply. Thread: ${thread_ts}, text length: ${fullText.length}, media: ${mediaForLLM.length}`,
-    );
     await handleThreadReply(
       channel,
       user,
@@ -790,11 +584,10 @@ async function handleMessage(
       ts,
       thread_ts,
       mediaForLLM,
-      meshConfig,
       teamConfig,
+      connectionId,
     );
   }
-  // Regular channel messages without mention are ignored
 }
 
 /**
@@ -811,42 +604,26 @@ async function handleDirectMessage(
     mimeType: string;
     name: string;
   }>,
-  meshConfig: MeshConfig,
   teamConfig: SlackTeamConfig,
+  connectionId: string,
 ): Promise<void> {
-  console.log(`[EventHandler] ========== handleDirectMessage ==========`);
-  console.log(
-    `[EventHandler] DM from user: ${user}, Channel: ${channel}, TS: ${ts}`,
-  );
-  console.log(`[EventHandler] Text length: ${text.length}`);
-  console.log(`[EventHandler] Media count: ${media.length}`);
-
-  // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  // Add eyes reaction immediately for quick feedback (unless in silent mode)
   if (!showOnlyFinal) {
-    console.log(`[EventHandler] Adding eyes reaction to ${ts}`);
     await addReaction(channel, ts, "eyes");
   }
 
-  // Send thinking message if enabled (respects showOnlyFinal override)
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  console.log(`[EventHandler] Sending thinking message: ${showThinking}`);
   const thinkingMsg = showThinking ? await sendThinkingMessage(channel) : null;
-  console.log(
-    `[EventHandler] Thinking message TS: ${thinkingMsg?.ts ?? "not sent"}`,
-  );
 
-  // Remove eyes reaction when we start processing (unless in silent mode)
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
-  // Resolve sender name so the LLM knows who it's talking to
+  // Resolve sender name
   let senderText = text;
   try {
     const userInfo = await getUserInfo(user);
@@ -855,13 +632,11 @@ async function handleDirectMessage(
       : null;
     if (senderName) {
       senderText = `[Mensagem de ${senderName}]\n${text}`;
-      console.log(`[EventHandler] DM sender resolved: ${senderName}`);
     }
   } catch (err) {
     console.warn(`[EventHandler] Failed to resolve DM sender name:`, err);
   }
 
-  console.log(`[EventHandler] Building LLM messages for DM...`);
   const messages = await buildLLMMessages(
     channel,
     senderText,
@@ -869,48 +644,27 @@ async function handleDirectMessage(
     undefined,
     media,
   );
-  console.log(`[EventHandler] LLM messages built: ${messages.length} messages`);
-  messages.forEach((msg, i) => {
-    console.log(
-      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
-    );
-  });
 
-  if (!isLLMConfigured()) {
-    const warningMsg =
-      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
-      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
-
+  if (!isLLMConfigured(connectionId)) {
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await sendMessage({ channel, text: warningMsg });
-
-    // Delete the thinking message if it exists
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
     }
-
-    console.log(
-      "[EventHandler] LLM not configured - sent configuration warning",
-    );
     return;
   }
 
-  console.log(
-    `[EventHandler] Calling LLM for DM. Channel: ${channel}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
-  );
-  const dmLlmStartTime = Date.now();
+  const enableStreaming = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.enableStreaming ?? true);
+
   try {
-    await handleLLMCall(messages, {
+    await handleLLMCall(connectionId, messages, {
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
+      streamingEnabled: enableStreaming,
     });
-    console.log(
-      `[EventHandler] LLM call completed for DM in ${Date.now() - dmLlmStartTime}ms`,
-    );
   } catch (error) {
-    console.error(
-      `[EventHandler] LLM call FAILED for DM after ${Date.now() - dmLlmStartTime}ms:`,
-      error,
-    );
     logger.error("Direct message LLM error", {
       channel,
       userId: user,
@@ -937,90 +691,50 @@ async function handleThreadReply(
     mimeType: string;
     name: string;
   }>,
-  meshConfig: MeshConfig,
   teamConfig: SlackTeamConfig,
+  connectionId: string,
 ): Promise<void> {
-  console.log(`[EventHandler] ========== handleThreadReply ==========`);
-  console.log(
-    `[EventHandler] Thread reply from user: ${user}, Channel: ${channel}, TS: ${ts}, ThreadTS: ${threadTs}`,
-  );
-  console.log(`[EventHandler] Text length: ${text.length}`);
-  console.log(`[EventHandler] Media count: ${media.length}`);
-
-  // Check if we're in "show only final response" mode
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  // Add eyes reaction immediately for quick feedback (unless in silent mode)
   if (!showOnlyFinal) {
-    console.log(`[EventHandler] Adding eyes reaction to ${ts}`);
     await addReaction(channel, ts, "eyes");
   }
 
-  // Send thinking message if enabled (respects showOnlyFinal override)
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  console.log(
-    `[EventHandler] Sending thinking message in thread ${threadTs}: ${showThinking}`,
-  );
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, threadTs)
     : null;
-  console.log(
-    `[EventHandler] Thinking message TS: ${thinkingMsg?.ts ?? "not sent"}`,
-  );
 
-  // Remove eyes reaction when we start processing (unless in silent mode)
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
-  console.log(`[EventHandler] Building LLM messages for thread reply...`);
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
-  console.log(`[EventHandler] LLM messages built: ${messages.length} messages`);
-  messages.forEach((msg, i) => {
-    console.log(
-      `[EventHandler]   Message[${i}]: role=${msg.role}, content length=${msg.content.length}, has images=${!!msg.images}`,
-    );
-  });
 
-  if (!isLLMConfigured()) {
-    const warningMsg =
-      "⚠️ Por favor, configure um LLM (Language Model) no Mesh para usar o bot.\n\n" +
-      "Acesse as configurações da conexão no Mesh e selecione um provedor de modelo (como OpenAI, Anthropic, etc.).";
-
+  if (!isLLMConfigured(connectionId)) {
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await replyInThread(channel, threadTs, warningMsg);
-
-    // Delete the thinking message if it exists
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
     }
-
-    console.log(
-      "[EventHandler] LLM not configured - sent configuration warning",
-    );
     return;
   }
 
-  console.log(
-    `[EventHandler] Calling LLM for thread reply. Channel: ${channel}, threadTs: ${threadTs}, thinkingTs: ${thinkingMsg?.ts ?? "none"}`,
-  );
-  const threadLlmStartTime = Date.now();
+  const enableStreaming = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.enableStreaming ?? true);
+
   try {
-    await handleLLMCall(messages, {
+    await handleLLMCall(connectionId, messages, {
       channel,
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
+      streamingEnabled: enableStreaming,
     });
-    console.log(
-      `[EventHandler] LLM call completed for thread reply in ${Date.now() - threadLlmStartTime}ms`,
-    );
   } catch (error) {
-    console.error(
-      `[EventHandler] LLM call FAILED for thread reply after ${Date.now() - threadLlmStartTime}ms:`,
-      error,
-    );
     logger.error("Thread reply LLM error", {
       channel,
       userId: user,
@@ -1030,55 +744,8 @@ async function handleThreadReply(
   }
 }
 
-/**
- * Handle reaction added events
- */
-async function handleReactionAdded(
-  event: SlackEvent,
-  teamConfig: SlackTeamConfig,
-): Promise<void> {
-  await publishEvent(
-    {
-      type: SLACK_EVENT_TYPES.REACTION_ADDED,
-      data: event,
-      subject: event.user,
-    },
-    { meshUrl: teamConfig.meshUrl, organizationId: teamConfig.organizationId },
-  );
-}
-
-/**
- * Handle channel created events
- */
-async function handleChannelCreated(
-  event: SlackEvent,
-  teamConfig: SlackTeamConfig,
-): Promise<void> {
-  await publishEvent(
-    { type: SLACK_EVENT_TYPES.CHANNEL_CREATED, data: event },
-    { meshUrl: teamConfig.meshUrl, organizationId: teamConfig.organizationId },
-  );
-}
-
-/**
- * Handle member joined channel events
- */
-async function handleMemberJoined(
-  event: SlackEvent,
-  teamConfig: SlackTeamConfig,
-): Promise<void> {
-  await publishEvent(
-    {
-      type: SLACK_EVENT_TYPES.MEMBER_JOINED,
-      data: event,
-      subject: event.user,
-    },
-    { meshUrl: teamConfig.meshUrl, organizationId: teamConfig.organizationId },
-  );
-}
-
 // ============================================================================
-// Event Bus Response Handlers
+// Event Bus Response Handlers (kept for backwards compatibility)
 // ============================================================================
 
 /**
@@ -1105,80 +772,41 @@ export async function handleLLMResponse(
     }
 
     if (responseTs) {
-      logger.info("Message sent", {
-        channel,
-        hasText: !!text,
-        textLength: text?.length || 0,
-      });
       const threadIdentifier = threadTs ?? messageTs ?? responseTs;
       await appendAssistantMessage(channel, threadIdentifier, text, responseTs);
     }
   } catch (error) {
-    // Handle specific Slack API errors
     const errorMessage = String(error);
 
-    if (errorMessage.includes("channel_not_found")) {
-      await logger.warn("Channel not found - bot may not be in this channel", {
-        channel,
-        error: "channel_not_found",
-        help: "Add the bot to the channel or check if channel exists",
-      });
+    if (
+      errorMessage.includes("channel_not_found") ||
+      errorMessage.includes("not_in_channel")
+    ) {
       console.warn(
-        `[Event Handler] ⚠️ Cannot send message - channel ${channel} not found or bot not added`,
+        `[Event Handler] Cannot send message - channel ${channel} issue: ${errorMessage}`,
       );
-      return; // Don't throw, just log and continue
+      return;
     }
 
-    if (errorMessage.includes("not_in_channel")) {
-      await logger.warn("Bot not in channel", {
-        channel,
-        error: "not_in_channel",
-        help: "Invite the bot to the channel with /invite @bot",
-      });
-      console.warn(
-        `[Event Handler] ⚠️ Cannot send message - bot not in channel ${channel}`,
-      );
-      return; // Don't throw, just log and continue
-    }
-
-    // For other errors, log and throw
     await logger.error("Failed to send message", { error: errorMessage });
     throw error;
   }
-
-  // Try to get bot info for cleanup
-  if (messageTs) {
-    try {
-      await getBotInfo();
-    } catch {
-      // Ignore reaction removal errors
-    }
-  }
 }
-
-// ============================================================================
-// Webhook Handler (Multi-tenant entry point)
-// ============================================================================
 
 /**
  * Handle Slack webhook events from Mesh Event Bus
  */
 export async function handleSlackWebhookEvent(
   payload: unknown,
-  config: MeshConfig,
+  config: { organizationId: string; meshUrl: string },
 ): Promise<void> {
   try {
-    console.log("[EventHandler] ========================================");
-    console.log("[EventHandler] Processing webhook from Mesh");
-
-    // Validate payload
     if (!payload || typeof payload !== "object") {
       throw new Error("Invalid webhook payload - expected object");
     }
 
     const slackPayload = payload as SlackWebhookPayload;
 
-    // Handle URL verification
     if (slackPayload.type === "url_verification") {
       return;
     }
@@ -1187,9 +815,43 @@ export async function handleSlackWebhookEvent(
       throw new Error("Invalid webhook payload - missing type");
     }
 
-    // Handle event callbacks
     if (slackPayload.type === "event_callback") {
-      await handleEventCallback(slackPayload, config);
+      if (!slackPayload.event) {
+        throw new Error("Invalid event_callback - missing event");
+      }
+
+      const event = slackPayload.event;
+      const eventType = event.type;
+      const teamId = slackPayload.team_id ?? "unknown";
+
+      if (
+        shouldIgnoreEvent(
+          slackPayload as Parameters<typeof shouldIgnoreEvent>[0],
+          undefined,
+        )
+      ) {
+        return;
+      }
+
+      const teamConfig: SlackTeamConfig = {
+        teamId,
+        organizationId: config.organizationId,
+        meshUrl: config.meshUrl,
+        botToken: "",
+        signingSecret: "",
+        configuredAt: new Date().toISOString(),
+      };
+
+      // Note: connectionId not available in legacy webhook path
+      await handleSlackEvent(
+        {
+          type: eventType,
+          payload: event,
+          teamId,
+        },
+        teamConfig,
+        "unknown",
+      );
       return;
     }
 
@@ -1199,89 +861,5 @@ export async function handleSlackWebhookEvent(
       error: String(error),
     });
     throw error;
-  }
-}
-
-/**
- * Handle event_callback payload type
- */
-async function handleEventCallback(
-  slackPayload: SlackWebhookPayload,
-  config: MeshConfig,
-): Promise<void> {
-  if (!slackPayload.event) {
-    throw new Error("Invalid event_callback - missing event");
-  }
-
-  const event = slackPayload.event;
-  const eventType = event.type;
-  const teamId = slackPayload.team_id ?? "unknown";
-
-  // Check if we should ignore this event (bot messages)
-  if (
-    shouldIgnoreEvent(
-      slackPayload as Parameters<typeof shouldIgnoreEvent>[0],
-      undefined,
-    )
-  ) {
-    console.log("[EventHandler] Ignoring bot/ignored event");
-    return;
-  }
-
-  // Create team config from current context
-  const teamConfig: SlackTeamConfig = {
-    teamId,
-    organizationId: config.organizationId,
-    meshUrl: config.meshUrl,
-    botToken: "",
-    signingSecret: "",
-    configuredAt: new Date().toISOString(),
-  };
-
-  // Route to handler
-  try {
-    await routeEventToHandler(event, eventType, teamConfig);
-  } catch (error) {
-    logger.error("Event handling failed", {
-      eventType,
-      error: String(error),
-    });
-    throw error;
-  }
-}
-
-/**
- * Route event to appropriate handler
- */
-async function routeEventToHandler(
-  event: SlackEvent,
-  eventType: string,
-  teamConfig: SlackTeamConfig,
-): Promise<void> {
-  // context is kept for future use (e.g., event logging)
-
-  switch (eventType) {
-    case "app_mention":
-      await handleAppMention(event as SlackAppMentionEvent, teamConfig);
-      break;
-
-    case "message":
-      await handleMessage(event as SlackMessageEvent, teamConfig);
-      break;
-
-    case "reaction_added":
-      await handleReactionAdded(event, teamConfig);
-      break;
-
-    case "channel_created":
-      await handleChannelCreated(event, teamConfig);
-      break;
-
-    case "member_joined_channel":
-      await handleMemberJoined(event, teamConfig);
-      break;
-
-    default:
-      await logger.warn(`Unhandled event type: ${eventType}`);
   }
 }

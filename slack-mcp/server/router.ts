@@ -14,18 +14,12 @@ import {
   isBotMentioned,
   removeBotMention,
 } from "./webhook.ts";
-import {
-  handleSlackEvent,
-  configureLLM,
-  clearLLMConfig,
-  configureStreaming,
-} from "./slack/handlers/eventHandler.ts";
+import { handleSlackEvent } from "./slack/handlers/eventHandler.ts";
 import type { SlackWebhookPayload } from "./lib/types.ts";
 import type { ConnectionConfig } from "./lib/config-cache.ts";
 import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 import { logger, HyperDXLogger } from "./lib/logger.ts";
 
-// Legacy types for backwards compatibility
 type SlackConnectionConfig = ConnectionConfig;
 type SlackTeamConfig = {
   teamId: string;
@@ -50,7 +44,6 @@ import { getHealthStatus } from "./health.ts";
 const botUserIdCache = new Map<string, string>();
 
 export function setBotUserId(_userId: string): void {
-  // This is called from main.ts with the current connection's bot user ID
   // For multi-tenant, we store in cache when connection config is loaded
 }
 
@@ -61,29 +54,18 @@ export function setBotUserIdForConnection(
   botUserIdCache.set(connectionId, userId);
 }
 
-// Legacy: Keep for backwards compatibility
 export function setBotUserIdForTeam(teamId: string, userId: string): void {
   botUserIdCache.set(`team:${teamId}`, userId);
 }
 
-/** Hardcoded fallback model used when LANGUAGE_MODEL binding is not configured */
-const FALLBACK_MODEL_ID = "anthropic/claude-sonnet-4-5";
-
 export const app = new Hono();
 
-/**
- * Health check endpoint with system metrics
- */
 app.get("/health", async (c) => {
   const health = await getHealthStatus();
   const statusCode = health.status === "ok" ? 200 : 503;
   return c.json(health, statusCode);
 });
 
-/**
- * Temporary file serving endpoint (for Whisper transcription)
- * URL: /temp-files/:id
- */
 app.get("/temp-files/:id", async (c) => {
   const { getTempFile } = await import("./lib/tempFileStore.ts");
   const id = c.req.param("id");
@@ -93,10 +75,8 @@ app.get("/temp-files/:id", async (c) => {
     return c.json({ error: "File not found or expired" }, 404);
   }
 
-  // Convert base64 to buffer
   const buffer = Buffer.from(file.data, "base64");
 
-  // Return the file with correct content type
   return new Response(buffer, {
     headers: {
       "Content-Type": file.mimeType,
@@ -107,19 +87,14 @@ app.get("/temp-files/:id", async (c) => {
 });
 
 // ============================================================================
-// Primary Route: /slack/events/:connectionId (uses connectionId as key)
+// Primary Route: /slack/events/:connectionId
 // ============================================================================
 
-/**
- * Main Slack events endpoint with connectionId in URL
- * URL: /slack/events/:connectionId
- */
 app.post("/slack/events/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
   const traceId = HyperDXLogger.generateTraceId();
   const rawBody = await c.req.text();
 
-  // 1. Log webhook arrival
   const signature = c.req.header("x-slack-signature");
   const timestamp = c.req.header("x-slack-request-timestamp");
   logger.info("Webhook received", {
@@ -133,7 +108,6 @@ app.post("/slack/events/:connectionId", async (c) => {
     userAgent: c.req.header("user-agent"),
   });
 
-  // Parse payload
   let parsedPayload: SlackWebhookPayload;
   try {
     parsedPayload = JSON.parse(rawBody);
@@ -146,7 +120,6 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
-  // Handle URL verification challenge (doesn't need connection config)
   if (parsedPayload.type === "url_verification") {
     return new Response(parsedPayload.challenge, {
       status: 200,
@@ -154,15 +127,12 @@ app.post("/slack/events/:connectionId", async (c) => {
     });
   }
 
-  // 3. Lookup connection configuration from persistent KV cache
   let connectionConfig = await logger.measure(
     () => getCachedConnectionConfig(connectionId),
     "Cache lookup",
     { connectionId, trace_id: traceId },
   );
 
-  // LAZY LOADING: If cache miss, try to fetch from DATABASE
-  // This handles new K8s pods that start with empty cache
   if (!connectionConfig) {
     logger.error("Connection config not found", {
       connectionId,
@@ -175,13 +145,11 @@ app.post("/slack/events/:connectionId", async (c) => {
         error:
           "Connection cache miss - pod may need warm-up. Call SYNC_CONFIG_CACHE tool or save config in Mesh UI.",
         connectionId,
-        hint: "This typically happens on new K8s pods. The cache will be populated automatically within a few seconds.",
       },
-      503, // Service Unavailable (temporary)
+      503,
     );
   }
 
-  // Verify the request with connection's signing secret
   const { verified, payload } = await logger.measure(
     () =>
       verifySlackRequest(
@@ -204,14 +172,12 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ error: "Invalid signature" }, 401);
   }
 
-  // Check if we should ignore this event
   const botUserId =
     connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
   if (shouldIgnoreEvent(payload, botUserId)) {
     return c.json({ ok: true });
   }
 
-  // Process the event asynchronously
   processConnectionEventAsync(payload, connectionConfig, traceId).catch(
     (error) => {
       logger.error("Event processing failed", {
@@ -221,42 +187,24 @@ app.post("/slack/events/:connectionId", async (c) => {
       });
     },
   );
-  // Acknowledge immediately (Slack expects response within 3 seconds)
+
   return c.json({ ok: true });
 });
 
 // ============================================================================
-// Legacy Routes: Use team_id from payload (backwards compatibility)
+// Legacy Routes
 // ============================================================================
 
-/**
- * Debug endpoint - check configuration and send test message
- * Access: GET /debug?channel=C0A9RBGTTS9
- */
 app.get("/debug", async (c) => {
-  // Debug endpoint for testing (currently unused)
   await import("./lib/slack-client.ts");
-
-  const testChannel = c.req.query("channel");
-  const results: Record<string, unknown> = {
-    timestamp: new Date().toISOString(),
-    testChannel,
-    note: "Legacy debug endpoint - now using DATABASE binding",
-  };
-
-  // Note: Can't list all teams without env context in GET route
-  // For debugging, check logs or use Mesh UI
-
-  return c.json(results, 200);
+  return c.json(
+    { timestamp: new Date().toISOString(), note: "Legacy debug endpoint" },
+    200,
+  );
 });
 
-/**
- * Main Slack events endpoint (Multi-tenant)
- */
 app.post("/slack/events", async (c) => {
   const rawBody = await c.req.text();
-
-  // Parse payload to get team_id for config lookup
   let parsedPayload: SlackWebhookPayload;
   try {
     parsedPayload = JSON.parse(rawBody);
@@ -264,7 +212,6 @@ app.post("/slack/events", async (c) => {
     return c.json({ error: "Invalid JSON" }, 400);
   }
 
-  // Handle URL verification challenge (doesn't need team config)
   if (parsedPayload.type === "url_verification") {
     return new Response(parsedPayload.challenge, {
       status: 200,
@@ -272,14 +219,6 @@ app.post("/slack/events", async (c) => {
     });
   }
 
-  // Get team_id from payload
-  const teamId = parsedPayload.team_id;
-  if (!teamId) {
-    return c.json({ error: "Missing team_id" }, 400);
-  }
-
-  // Legacy route - team-based lookup not supported with DATABASE binding
-  // Please use /slack/events/:connectionId instead
   return c.json(
     {
       error:
@@ -289,43 +228,27 @@ app.post("/slack/events", async (c) => {
   );
 });
 
-/**
- * Slack slash commands endpoint (Multi-tenant)
- */
 app.post("/slack/commands", async (c) => {
   const rawBody = await c.req.text();
   const command = parseSlashCommand(rawBody);
-
   if (!command) {
     return c.json({ error: "Invalid command" }, 400);
   }
-
-  // Legacy route - team-based lookup not supported with DATABASE binding
   return c.json({ error: "Legacy team-based route deprecated" }, 410);
 });
 
-/**
- * Slack interactivity endpoint (Multi-tenant)
- */
 app.post("/slack/interactive", async (c) => {
   const rawBody = await c.req.text();
-
-  // Parse the payload (it's URL-encoded with a 'payload' field containing JSON)
   const params = new URLSearchParams(rawBody);
   const payloadStr = params.get("payload");
-
   if (!payloadStr) {
     return c.json({ error: "Missing payload" }, 400);
   }
-
-  let _interactivePayload: { type: string; team?: { id: string } };
   try {
-    _interactivePayload = JSON.parse(payloadStr);
+    JSON.parse(payloadStr);
   } catch {
     return c.json({ error: "Invalid payload" }, 400);
   }
-
-  // Legacy route - team-based lookup not supported with DATABASE binding
   return c.json({ error: "Legacy team-based route deprecated" }, 410);
 });
 
@@ -338,88 +261,18 @@ async function processConnectionEventAsync(
   traceId: string,
 ): Promise<void> {
   if (!payload.event) {
-    console.log(`[Router] [${traceId}] No event in payload, skipping`);
     return;
   }
 
-  console.log(
-    `[Router] [${traceId}] ========== START processConnectionEventAsync ==========`,
-  );
-  console.log(
-    `[Router] [${traceId}] Event type: ${payload.event.type}, subtype: ${payload.event.subtype ?? "none"}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Channel: ${payload.event.channel}, User: ${payload.event.user}, TS: ${payload.event.ts}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Thread TS: ${payload.event.thread_ts ?? "none"}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Text length: ${(payload.event.text ?? "").length}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Connection: ${connectionConfig.connectionId}, Team: ${connectionConfig.teamId}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Has files: ${!!(payload.event as any).files}, File count: ${(payload.event as any).files?.length ?? 0}`,
-  );
-  console.log(
-    `[Router] [${traceId}] Bot user ID from config: ${connectionConfig.botUserId ?? "not set"}`,
-  );
-
-  // IMPORTANT: Initialize Slack client with this connection's token
-  // Each connection has its own Slack workspace credentials
+  // Initialize Slack client with this connection's token
   initializeSlackClient({ botToken: connectionConfig.botToken });
-
-  // Configure LLM with this connection's settings (modelProviderId is optional)
-  // Falls back to FALLBACK_MODEL_ID when modelId is not configured
-  if (connectionConfig.meshToken) {
-    const modelId = connectionConfig.modelId ?? FALLBACK_MODEL_ID;
-    console.log(
-      `[Router] [${traceId}] Configuring LLM: model=${modelId}, agentId=${connectionConfig.agentId ?? "none"}, meshUrl=${connectionConfig.meshUrl}`,
-    );
-    console.log(
-      `[Router] [${traceId}] Has system prompt: ${!!connectionConfig.systemPrompt}, prompt length: ${connectionConfig.systemPrompt?.length ?? 0}`,
-    );
-    configureLLM({
-      meshUrl: connectionConfig.meshUrl,
-      organizationId: connectionConfig.organizationId,
-      token: connectionConfig.meshToken,
-      modelProviderId: connectionConfig.modelProviderId,
-      modelId,
-      agentId: connectionConfig.agentId,
-      systemPrompt: connectionConfig.systemPrompt,
-    });
-  } else {
-    // Clear LLM config to prevent cross-tenant configuration leakage
-    clearLLMConfig();
-    console.log(
-      `[Router] [${traceId}] LLM NOT configured - missing meshToken for connection ${connectionConfig.connectionId}`,
-    );
-    logger.warn("LLM not configured - missing meshToken", {
-      connectionId: connectionConfig.connectionId,
-      trace_id: traceId,
-    });
-  }
-
-  // Configure streaming based on connection's responseConfig
-  const showOnlyFinal =
-    connectionConfig.responseConfig?.showOnlyFinalResponse ?? false;
-  const enableStreaming = showOnlyFinal
-    ? false
-    : (connectionConfig.responseConfig?.enableStreaming ?? true);
-  console.log(
-    `[Router] [${traceId}] Response config: showOnlyFinal=${showOnlyFinal}, streaming=${enableStreaming}, showThinking=${connectionConfig.responseConfig?.showThinkingMessage ?? "default(true)"}`,
-  );
-  configureStreaming(enableStreaming);
 
   const event = payload.event;
   const eventType = event.type;
+  const connectionId = connectionConfig.connectionId;
   const botUserId =
-    connectionConfig.botUserId ??
-    botUserIdCache.get(connectionConfig.connectionId);
+    connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
 
-  // Determine if bot was mentioned (for app_mention or message events)
   let shouldProcess = false;
   let cleanText = event.text ?? "";
 
@@ -428,35 +281,19 @@ async function processConnectionEventAsync(
     if (botUserId) {
       cleanText = removeBotMention(cleanText, botUserId);
     }
-    console.log(
-      `[Router] [${traceId}] Event is app_mention, will process. Clean text length: ${cleanText.length}`,
-    );
   } else if (eventType === "message") {
     const isDM = event.channel?.startsWith("D");
     if (isDM) {
       shouldProcess = true;
-      console.log(`[Router] [${traceId}] Event is DM message, will process`);
     } else if (botUserId && isBotMentioned(event.text ?? "", botUserId)) {
       shouldProcess = true;
       cleanText = removeBotMention(event.text ?? "", botUserId);
-      console.log(
-        `[Router] [${traceId}] Event is channel message with bot mention, will process`,
-      );
-    } else {
-      console.log(
-        `[Router] [${traceId}] Event is channel message without bot mention, checking if should skip. botUserId=${botUserId}, text contains mention: ${botUserId ? (event.text ?? "").includes(`<@${botUserId}>`) : "N/A"}`,
-      );
     }
   } else {
     shouldProcess = true;
-    console.log(
-      `[Router] [${traceId}] Event type ${eventType} will be processed`,
-    );
   }
 
   if (shouldProcess) {
-    console.log(`[Router] [${traceId}] Dispatching to handleSlackEvent...`);
-    // Convert to team config format for compatibility with handleSlackEvent
     const teamConfig: SlackTeamConfig = {
       teamId: connectionConfig.teamId ?? payload.team_id ?? "",
       organizationId: connectionConfig.organizationId,
@@ -480,19 +317,7 @@ async function processConnectionEventAsync(
         apiAppId: payload.api_app_id,
       },
       teamConfig,
-    );
-    console.log(
-      `[Router] [${traceId}] ========== END processConnectionEventAsync (success) ==========`,
-    );
-  } else {
-    console.log(
-      `[Router] [${traceId}] Event NOT processed (shouldProcess=false)`,
-    );
-    console.log(
-      `[Router] [${traceId}] ========== END processConnectionEventAsync (skipped) ==========`,
+      connectionId,
     );
   }
 }
-
-// Legacy functions removed - team-based routes are now deprecated
-// All event processing now uses connection-based routing via /slack/events/:connectionId

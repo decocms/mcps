@@ -15,11 +15,6 @@ export interface SlackConnectionRow {
   connection_id: string;
   organization_id: string;
   mesh_url: string;
-  mesh_token: string | null;
-  model_provider_id: string | null;
-  model_id: string | null;
-  agent_id: string | null;
-  system_prompt: string | null;
   bot_token: string;
   signing_secret: string;
   team_id: string | null;
@@ -88,11 +83,6 @@ export async function saveConnectionConfig(
     connection_id: config.connectionId,
     organization_id: config.organizationId,
     mesh_url: config.meshUrl,
-    mesh_token: config.meshToken || null,
-    model_provider_id: config.modelProviderId || null,
-    model_id: config.modelId || null,
-    agent_id: config.agentId || null,
-    system_prompt: config.systemPrompt || null,
     bot_token: config.botToken,
     signing_secret: config.signingSecret,
     team_id: config.teamId || null,
@@ -147,11 +137,6 @@ export async function loadConnectionConfig(
     connectionId: row.connection_id,
     organizationId: row.organization_id,
     meshUrl: row.mesh_url,
-    meshToken: row.mesh_token || undefined,
-    modelProviderId: row.model_provider_id || undefined,
-    modelId: row.model_id || undefined,
-    agentId: row.agent_id || undefined,
-    systemPrompt: row.system_prompt || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
@@ -182,11 +167,6 @@ export async function loadAllConnectionConfigs(): Promise<ConnectionConfig[]> {
       connectionId: row.connection_id,
       organizationId: row.organization_id,
       meshUrl: row.mesh_url,
-      meshToken: row.mesh_token || undefined,
-      modelProviderId: row.model_provider_id || undefined,
-      modelId: row.model_id || undefined,
-      agentId: row.agent_id || undefined,
-      systemPrompt: row.system_prompt || undefined,
       botToken: row.bot_token,
       signingSecret: row.signing_secret,
       teamId: row.team_id || undefined,
@@ -275,11 +255,6 @@ export async function loadConnectionByTeamId(
     connectionId: row.connection_id,
     organizationId: row.organization_id,
     meshUrl: row.mesh_url,
-    meshToken: row.mesh_token || undefined,
-    modelProviderId: row.model_provider_id || undefined,
-    modelId: row.model_id || undefined,
-    agentId: row.agent_id || undefined,
-    systemPrompt: row.system_prompt || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
@@ -287,4 +262,142 @@ export async function loadConnectionByTeamId(
     configuredAt: row.configured_at,
     updatedAt: row.updated_at,
   };
+}
+
+// ============================================================================
+// TRIGGER CREDENTIALS (slack_trigger_credentials table)
+// ============================================================================
+
+interface TriggerCredentialsRow {
+  connection_id: string;
+  callback_url: string;
+  callback_token: string;
+  active_trigger_types: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface TriggerState {
+  credentials: { callbackUrl: string; callbackToken: string };
+  activeTriggerTypes: string[];
+}
+
+/**
+ * Save or update trigger credentials in Supabase
+ */
+export async function saveTriggerCredentials(
+  connectionId: string,
+  state: TriggerState,
+): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { error } = await client.from("slack_trigger_credentials").upsert(
+    {
+      connection_id: connectionId,
+      callback_url: state.credentials.callbackUrl,
+      callback_token: state.credentials.callbackToken,
+      active_trigger_types: state.activeTriggerTypes,
+      updated_at: new Date().toISOString(),
+    } as any,
+    { onConflict: "connection_id" },
+  );
+
+  if (error) {
+    throw new Error(`Failed to save trigger credentials: ${error.message}`);
+  }
+
+  console.log(
+    `[Supabase] Saved trigger credentials for ${connectionId} (${state.activeTriggerTypes.length} types)`,
+  );
+}
+
+/**
+ * Load trigger credentials from Supabase
+ */
+export async function loadTriggerCredentials(
+  connectionId: string,
+): Promise<TriggerState | null> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { data, error } = await client
+    .from("slack_trigger_credentials")
+    .select("*")
+    .eq("connection_id", connectionId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null;
+    }
+    throw new Error(`Failed to load trigger credentials: ${error.message}`);
+  }
+
+  const row = data as TriggerCredentialsRow;
+  return {
+    credentials: {
+      callbackUrl: row.callback_url,
+      callbackToken: row.callback_token,
+    },
+    activeTriggerTypes: row.active_trigger_types,
+  };
+}
+
+/**
+ * Delete trigger credentials from Supabase
+ */
+export async function deleteTriggerCredentials(
+  connectionId: string,
+): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { error } = await client
+    .from("slack_trigger_credentials")
+    .delete()
+    .eq("connection_id", connectionId);
+
+  if (error) {
+    throw new Error(`Failed to delete trigger credentials: ${error.message}`);
+  }
+
+  console.log(`[Supabase] Deleted trigger credentials for ${connectionId}`);
+}
+
+/**
+ * Load all trigger credentials from Supabase (for bootstrap on startup)
+ */
+export async function loadAllTriggerCredentials(): Promise<
+  Array<{ connectionId: string; state: TriggerState }>
+> {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error("Supabase client not initialized");
+  }
+
+  const { data, error } = await client
+    .from("slack_trigger_credentials")
+    .select("*");
+
+  if (error) {
+    throw new Error(`Failed to load trigger credentials: ${error.message}`);
+  }
+
+  return ((data || []) as TriggerCredentialsRow[]).map((row) => ({
+    connectionId: row.connection_id,
+    state: {
+      credentials: {
+        callbackUrl: row.callback_url,
+        callbackToken: row.callback_token,
+      },
+      activeTriggerTypes: row.active_trigger_types,
+    },
+  }));
 }

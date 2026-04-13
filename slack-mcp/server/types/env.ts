@@ -3,42 +3,18 @@
  */
 
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { AgentOf, BindingOf, type DefaultEnv } from "@decocms/runtime";
 import z from "zod";
 
 export const StateSchema = z.object({
-  // Bindings (AI connections)
-  EVENT_BUS: BindingOf("@deco/event-bus").optional(),
-  AGENT: BindingOf("@deco/agent")
-    .optional()
-    .describe("Agent with tools, resources and prompts"),
-  MODEL_PROVIDER: z
-    .object({
-      __type: z.literal("@deco/llm"),
-      value: z
-        .object({
-          id: z.string(),
-        })
-        .loose()
-        .describe("The language model to use for agent responses."),
-    })
-    .optional()
-    .describe(
-      "Language model for generating responses. Optional if you only want to use Slack tools without LLM.",
-    ),
+  // AI Configuration — AgentOf() resolves to a client with .STREAM()
+  AGENT: AgentOf(),
+
+  // Whisper binding for audio transcription
   WHISPER: BindingOf("@deco/whisper")
     .optional()
     .describe(
       "OpenAI Whisper for audio transcription. If not set, audio files will be sent directly to LLM.",
-    ),
-
-  // Agent Mode Configuration
-  AGENT_MODE: z
-    .enum(["passthrough", "smart_tool_selection", "code_execution"])
-    .default("smart_tool_selection")
-    .optional()
-    .describe(
-      "Agent execution mode: 'passthrough' (no tool filtering), 'smart_tool_selection' (AI decides tools), 'code_execution' (full code execution)",
     ),
 
   // Webhook URL (read-only template)
@@ -121,7 +97,7 @@ export const StateSchema = z.object({
         .boolean()
         .default(false)
         .describe(
-          "🎯 MODO SILENCIOSO: Apenas resposta final sem mensagens intermediárias. Quando ativo, desabilita streaming e mensagem de 'pensando'.",
+          "MODO SILENCIOSO: Apenas resposta final sem mensagens intermediarias. Quando ativo, desabilita streaming e mensagem de 'pensando'.",
         ),
       ENABLE_STREAMING: z
         .boolean()
@@ -133,7 +109,7 @@ export const StateSchema = z.object({
         .boolean()
         .default(true)
         .describe(
-          'Show "🤔 Thinking..." message while processing. Disable for faster perceived response time.',
+          'Show "Thinking..." message while processing. Disable for faster perceived response time.',
         ),
     })
     .optional()
@@ -144,7 +120,7 @@ export const StateSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Friendly name for this connection (e.g., 'Cliente Acme - Produção'). Used in logs for easy identification.",
+      "Friendly name for this connection (e.g., 'Cliente Acme - Producao'). Used in logs for easy identification.",
     ),
 });
 

@@ -34,11 +34,6 @@ export interface ConnectionConfig {
   connectionId: string;
   organizationId: string;
   meshUrl: string;
-  meshToken?: string;
-  modelProviderId?: string;
-  modelId?: string;
-  agentId?: string;
-  systemPrompt?: string;
   botToken: string;
   signingSecret: string;
   teamId?: string;
