@@ -25,6 +25,16 @@ const ERROR_MESSAGES = {
   GENERATION_FAILED: "Sorry, I couldn't generate a response.",
 } as const;
 
+/**
+ * Strip leaked tool-call patterns from agent text responses.
+ * Some agents output tool calls as plain text (e.g. TOOL_NAME(arg: value, ...))
+ * instead of using the proper tool-calling format.
+ */
+function stripLeakedToolCalls(text: string): string {
+  // Match UPPER_CASE_NAME(...) patterns that look like tool calls
+  return text.replace(/\s*[A-Z][A-Z_]{2,}\([^)]*\)\s*/g, " ").trim();
+}
+
 export interface LLMResponseOptions {
   channel: string;
   replyTo?: string;
@@ -85,9 +95,11 @@ async function callWithStreaming(
 
   try {
     const stream = await streamAgentResponse(connectionId, messages);
-    const text = await collectStreamText(stream);
+    const rawText = await collectStreamText(stream);
 
     animation.stop();
+
+    const text = stripLeakedToolCalls(rawText);
 
     if (!text.trim()) {
       await updateThinkingMessage(
@@ -128,7 +140,7 @@ async function callWithoutStreaming(
   const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
 
   const stream = await streamAgentResponse(connectionId, messages);
-  const response = await collectStreamText(stream);
+  const response = stripLeakedToolCalls(await collectStreamText(stream));
 
   if (!response.trim()) {
     const fallback = ERROR_MESSAGES.GENERATION_FAILED;
