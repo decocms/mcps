@@ -178,17 +178,15 @@ app.post("/slack/events/:connectionId", async (c) => {
     return c.json({ ok: true });
   }
 
-  processConnectionEventAsync(
-    payload,
-    connectionConfig,
-    traceId,
-  ).catch((error) => {
-    logger.error("Event processing failed", {
-      connectionId,
-      trace_id: traceId,
-      error: String(error),
-    });
-  });
+  processConnectionEventAsync(payload, connectionConfig, traceId).catch(
+    (error) => {
+      logger.error("Event processing failed", {
+        connectionId,
+        trace_id: traceId,
+        error: String(error),
+      });
+    },
+  );
 
   return c.json({ ok: true });
 });
@@ -273,8 +271,7 @@ async function processConnectionEventAsync(
   const eventType = event.type;
   const connectionId = connectionConfig.connectionId;
   const botUserId =
-    connectionConfig.botUserId ??
-    botUserIdCache.get(connectionId);
+    connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
 
   let shouldProcess = false;
   let cleanText = event.text ?? "";

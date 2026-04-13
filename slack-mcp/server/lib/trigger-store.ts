@@ -59,8 +59,7 @@ export const triggers = createTriggers({
   definitions: [
     {
       type: "slack.message.received",
-      description:
-        "Triggered when a message is sent in a Slack channel or DM",
+      description: "Triggered when a message is sent in a Slack channel or DM",
       params: z.object({
         channel_id: z
           .string()

@@ -33,12 +33,7 @@ export interface LLMResponseOptions {
   streamingEnabled?: boolean;
 }
 
-const THINKING_FRAMES = [
-  "Pensando",
-  "Pensando.",
-  "Pensando..",
-  "Pensando...",
-];
+const THINKING_FRAMES = ["Pensando", "Pensando.", "Pensando..", "Pensando..."];
 const THINKING_INTERVAL_MS = 800;
 
 function startThinkingAnimation(
@@ -157,7 +152,12 @@ export async function handleLLMCall(
   messages: MessageWithImages[],
   options: LLMResponseOptions,
 ): Promise<void> {
-  const { channel, replyTo, thinkingMessageTs, streamingEnabled = true } = options;
+  const {
+    channel,
+    replyTo,
+    thinkingMessageTs,
+    streamingEnabled = true,
+  } = options;
 
   try {
     const useStreaming = streamingEnabled && !!thinkingMessageTs;

@@ -479,8 +479,7 @@ async function handleAppMention(
   );
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg =
-      "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await replyInThread(channel, replyTo, warningMsg);
     return;
   }
@@ -647,8 +646,7 @@ async function handleDirectMessage(
   );
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg =
-      "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await sendMessage({ channel, text: warningMsg });
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
@@ -717,8 +715,7 @@ async function handleThreadReply(
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg =
-      "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
     await replyInThread(channel, threadTs, warningMsg);
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
