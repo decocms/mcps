@@ -6,7 +6,7 @@
  * that returns an async iterable of UIMessage objects.
  */
 
-import { getInstance, getAllInstances } from "./connection-instance.ts";
+import { getInstance } from "./connection-instance.ts";
 
 // ============================================================================
 // Types
@@ -44,21 +44,10 @@ interface AgentClient {
 
 function getAgent(connectionId: string): AgentClient | null {
   const instance = getInstance(connectionId);
-  if (!instance) {
-    console.log(
-      `[LLM DEBUG] getAgent(${connectionId}): no instance found. Instances: [${getAllInstances()
-        .map((i) => i.connectionId)
-        .join(", ")}]`,
-    );
-    return null;
-  }
-  const state = instance.env.MESH_REQUEST_CONTEXT?.state as
-    | Record<string, unknown>
-    | undefined;
-  const agent = state?.AGENT;
-  console.log(
-    `[LLM DEBUG] getAgent(${connectionId}): instance found, hasState=${!!state}, hasAgent=${!!agent}, agentType=${typeof agent}, hasSTREAM=${agent ? typeof (agent as any).STREAM : "N/A"}, stateKeys=${state ? Object.keys(state).join(",") : "none"}`,
-  );
+  if (!instance) return null;
+  const agent = (
+    instance.env.MESH_REQUEST_CONTEXT?.state as Record<string, unknown>
+  )?.AGENT;
   if (agent && typeof (agent as AgentClient).STREAM === "function") {
     return agent as AgentClient;
   }
@@ -122,39 +111,15 @@ export async function streamAgentResponse(
  * Convenience helper for non-streaming mode.
  */
 export async function collectStreamText(
-  stream: AsyncIterable<{
-    role?: string;
-    parts: Array<{ type: string; text?: string }>;
-  }>,
+  stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
 ): Promise<string> {
   let text = "";
-  let messageIndex = 0;
   for await (const message of stream) {
-    const role = (message as any).role ?? "unknown";
-    const textParts = message.parts
-      .filter((p) => p.type === "text" && p.text)
-      .map((p) => p.text!);
-    console.log(
-      `[STREAM DEBUG] msg[${messageIndex}] role=${role} parts=${message.parts.length} textLen=${textParts.join("").length}`,
-    );
-    if (textParts.length > 0) {
-      console.log(
-        `[STREAM DEBUG] msg[${messageIndex}] preview: ${textParts.join("").slice(0, 150)}...`,
-      );
-    }
-    // Only collect text from assistant messages (skip system/thinking)
-    // If role is unknown, assume it's the assistant response
-    if (role === "assistant" || role === "unknown") {
-      for (const part of message.parts) {
-        if (part.type === "text" && part.text) {
-          text = part.text;
-        }
+    for (const part of message.parts) {
+      if (part.type === "text" && part.text) {
+        text = part.text;
       }
     }
-    messageIndex++;
   }
-  console.log(
-    `[STREAM DEBUG] Final: ${messageIndex} messages, textLen=${text.length}`,
-  );
   return text;
 }

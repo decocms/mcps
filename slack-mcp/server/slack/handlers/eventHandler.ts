@@ -479,7 +479,8 @@ async function handleAppMention(
   );
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg =
+      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, replyTo, warningMsg);
     return;
   }
@@ -646,7 +647,8 @@ async function handleDirectMessage(
   );
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg =
+      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await sendMessage({ channel, text: warningMsg });
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
@@ -715,7 +717,8 @@ async function handleThreadReply(
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
 
   if (!isLLMConfigured(connectionId)) {
-    const warningMsg = "Por favor, configure um AGENT no Mesh para usar o bot.";
+    const warningMsg =
+      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, threadTs, warningMsg);
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);

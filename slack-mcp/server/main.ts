@@ -102,10 +102,6 @@ const onChangeHandler = async (env: Env, config: any) => {
     // Store env per-connection (critical for webhook access to AgentOf())
     const instance = getOrCreateInstance(connectionId, env);
     instance.env = env;
-    const agentBinding = (state as Record<string, unknown>)?.AGENT;
-    console.log(
-      `[onChange DEBUG] connectionId=${connectionId}, hasAgent=${!!agentBinding}, agentType=${typeof agentBinding}, hasSTREAM=${agentBinding ? typeof (agentBinding as any).STREAM : "N/A"}, keys=${agentBinding ? Object.keys(agentBinding as any).join(",") : "none"}, methods=${agentBinding ? Object.getOwnPropertyNames(Object.getPrototypeOf(agentBinding) ?? {}).join(",") : "none"}`,
-    );
 
     // Configure context settings
     configureContext({
