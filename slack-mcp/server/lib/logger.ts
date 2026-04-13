@@ -185,7 +185,7 @@ export class HyperDXLogger {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: this.apiKey!,
         },
         body: JSON.stringify({
           resourceLogs: [
@@ -204,6 +204,12 @@ export class HyperDXLogger {
                   logRecords: [
                     {
                       timeUnixNano: `${Date.now() * 1000000}`,
+                      severityNumber: ({
+                        debug: 5,
+                        info: 9,
+                        warn: 13,
+                        error: 17,
+                      } as Record<string, number>)[String(logEntry.level || "info")] ?? 9,
                       severityText: String(
                         logEntry.level || "info",
                       ).toUpperCase(),
