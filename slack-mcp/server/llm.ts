@@ -37,6 +37,7 @@ interface AgentClient {
       parts: Array<Record<string, unknown>>;
     }>;
     thread_id?: string;
+    toolApprovalLevel?: "auto" | "readonly" | "plan";
   }) => Promise<
     AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>
   >;
@@ -102,6 +103,7 @@ export async function streamAgentResponse(
 
   return agent.STREAM({
     messages: toUIMessages(messages),
+    toolApprovalLevel: "auto",
     ...(threadId ? { thread_id: threadId } : {}),
   });
 }
