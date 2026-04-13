@@ -6,7 +6,7 @@
  * that returns an async iterable of UIMessage objects.
  */
 
-import { getInstance } from "./connection-instance.ts";
+import { getInstance, getAllInstances } from "./connection-instance.ts";
 
 // ============================================================================
 // Types
@@ -44,10 +44,21 @@ interface AgentClient {
 
 function getAgent(connectionId: string): AgentClient | null {
   const instance = getInstance(connectionId);
-  if (!instance) return null;
-  const agent = (
-    instance.env.MESH_REQUEST_CONTEXT?.state as Record<string, unknown>
-  )?.AGENT;
+  if (!instance) {
+    console.log(
+      `[LLM DEBUG] getAgent(${connectionId}): no instance found. Instances: [${getAllInstances()
+        .map((i) => i.connectionId)
+        .join(", ")}]`,
+    );
+    return null;
+  }
+  const state = instance.env.MESH_REQUEST_CONTEXT?.state as
+    | Record<string, unknown>
+    | undefined;
+  const agent = state?.AGENT;
+  console.log(
+    `[LLM DEBUG] getAgent(${connectionId}): instance found, hasState=${!!state}, hasAgent=${!!agent}, agentType=${typeof agent}, hasSTREAM=${agent ? typeof (agent as any).STREAM : "N/A"}, stateKeys=${state ? Object.keys(state).join(",") : "none"}`,
+  );
   if (agent && typeof (agent as AgentClient).STREAM === "function") {
     return agent as AgentClient;
   }
