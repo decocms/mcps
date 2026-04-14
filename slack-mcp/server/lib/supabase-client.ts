@@ -23,6 +23,9 @@ export interface SlackConnectionRow {
   signing_secret: string;
   team_id: string | null;
   bot_user_id: string | null;
+  team_name: string | null;
+  connection_name: string | null;
+  response_config: Record<string, unknown> | null;
   configured_at: string;
   updated_at: string;
 }
@@ -95,6 +98,9 @@ export async function saveConnectionConfig(
     signing_secret: config.signingSecret,
     team_id: config.teamId || null,
     bot_user_id: config.botUserId || null,
+    team_name: config.teamName || null,
+    connection_name: config.connectionName || null,
+    response_config: config.responseConfig || null,
     configured_at: now,
     updated_at: now,
   };
@@ -141,6 +147,10 @@ export async function loadConnectionConfig(
 
   const row = data as SlackConnectionRow;
 
+  const responseConfig = row.response_config as
+    | ConnectionConfig["responseConfig"]
+    | null;
+
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
@@ -153,6 +163,9 @@ export async function loadConnectionConfig(
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
     botUserId: row.bot_user_id || undefined,
+    teamName: row.team_name || undefined,
+    connectionName: row.connection_name || undefined,
+    responseConfig: responseConfig || undefined,
     configuredAt: row.configured_at,
     updatedAt: row.updated_at,
   };
@@ -175,16 +188,24 @@ export async function loadAllConnectionConfigs(): Promise<ConnectionConfig[]> {
 
   return (data || []).map((item) => {
     const row = item as SlackConnectionRow;
+    const responseConfig = row.response_config as
+      | ConnectionConfig["responseConfig"]
+      | null;
     return {
       connectionId: row.connection_id,
       organizationId: row.organization_id,
       organizationSlug: row.organization_slug || undefined,
       meshUrl: row.mesh_url,
       meshToken: row.mesh_token || undefined,
+      meshApiKey: row.mesh_api_key || undefined,
+      agentId: row.agent_id || undefined,
       botToken: row.bot_token,
       signingSecret: row.signing_secret,
       teamId: row.team_id || undefined,
       botUserId: row.bot_user_id || undefined,
+      teamName: row.team_name || undefined,
+      connectionName: row.connection_name || undefined,
+      responseConfig: responseConfig || undefined,
       configuredAt: row.configured_at,
       updatedAt: row.updated_at,
     };
@@ -265,6 +286,10 @@ export async function loadConnectionByTeamId(
 
   const row = data as SlackConnectionRow;
 
+  const responseConfig = row.response_config as
+    | ConnectionConfig["responseConfig"]
+    | null;
+
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
@@ -277,6 +302,9 @@ export async function loadConnectionByTeamId(
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
     botUserId: row.bot_user_id || undefined,
+    teamName: row.team_name || undefined,
+    connectionName: row.connection_name || undefined,
+    responseConfig: responseConfig || undefined,
     configuredAt: row.configured_at,
     updatedAt: row.updated_at,
   };

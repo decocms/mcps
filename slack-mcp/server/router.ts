@@ -32,6 +32,7 @@ type SlackTeamConfig = {
   connectionName?: string;
   configuredAt?: string;
   responseConfig?: {
+    triggerOnly?: boolean;
     showOnlyFinalResponse?: boolean;
     enableStreaming?: boolean;
     showThinkingMessage?: boolean;
