@@ -109,20 +109,16 @@ async function getDirectHttpAgent(
 ): Promise<AgentClient | null> {
   const config = await getCachedConnectionConfig(connectionId);
   const token = config?.meshApiKey || config?.meshToken;
-  if (
-    !token ||
-    !config?.organizationId ||
-    !config?.meshUrl ||
-    !config?.agentId
-  ) {
+  const orgPath = config?.organizationSlug || config?.organizationId;
+  if (!token || !orgPath || !config?.meshUrl || !config?.agentId) {
     return null;
   }
 
-  const { meshUrl, organizationId, agentId } = config;
+  const { meshUrl, agentId } = config;
 
   return {
     STREAM: async (params) => {
-      const url = `${meshUrl}/api/${organizationId}/decopilot/stream`;
+      const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
       console.log(`[LLM] Direct HTTP call to ${url}`);
 
       const response = await fetch(url, {
