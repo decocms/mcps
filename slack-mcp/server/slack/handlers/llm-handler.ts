@@ -127,12 +127,7 @@ async function callWithStreaming(
     const text = cleanAgentResponse(rawText);
 
     if (!text.trim()) {
-      await updateThinkingMessage(
-        channel,
-        thinkingMessageTs,
-        ERROR_MESSAGES.GENERATION_FAILED,
-      );
-      return "";
+      throw new Error("Agent returned empty response");
     }
 
     const formattedText = formatForSlack(text);
@@ -168,15 +163,7 @@ async function callWithoutStreaming(
   const response = cleanAgentResponse(await collectStreamText(stream));
 
   if (!response.trim()) {
-    const fallback = ERROR_MESSAGES.GENERATION_FAILED;
-    if (thinkingMessageTs) {
-      await updateThinkingMessage(channel, thinkingMessageTs, fallback);
-    } else if (replyTo) {
-      await replyInThread(channel, replyTo, fallback);
-    } else {
-      await sendMessage({ channel, text: fallback });
-    }
-    return "";
+    throw new Error("Agent returned empty response");
   }
 
   const formattedResponse = formatForSlack(response);
