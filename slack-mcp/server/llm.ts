@@ -100,6 +100,112 @@ async function getFallbackAgent(
 }
 
 /**
+ * Direct HTTP fallback when createDecopilotClient fails due to missing
+ * organization context in the runtime. Calls the Mesh Decopilot API
+ * directly and converts the SSE response into the AgentClient async iterable.
+ */
+async function getDirectHttpAgent(
+  connectionId: string,
+): Promise<AgentClient | null> {
+  const config = await getCachedConnectionConfig(connectionId);
+  const token = config?.meshApiKey || config?.meshToken;
+  if (
+    !token ||
+    !config?.organizationId ||
+    !config?.meshUrl ||
+    !config?.agentId
+  ) {
+    return null;
+  }
+
+  const { meshUrl, organizationId, agentId } = config;
+
+  return {
+    STREAM: async (params) => {
+      const url = `${meshUrl}/api/${organizationId}/decopilot/stream`;
+      console.log(`[LLM] Direct HTTP call to ${url}`);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          messages: params.messages,
+          agent: { id: agentId },
+          stream: true,
+          toolApprovalLevel: params.toolApprovalLevel ?? "auto",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Direct HTTP decopilot call failed (${response.status}): ${errorText}`,
+        );
+      }
+
+      return sseResponseToAsyncIterable(response);
+    },
+  };
+}
+
+/**
+ * Convert an SSE Response into an async iterable of message objects
+ * compatible with the AgentClient STREAM interface.
+ */
+async function* sseResponseToAsyncIterable(
+  response: Response,
+): AsyncGenerator<{ parts: Array<{ type: string; text?: string }> }> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let textContent = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data:")) continue;
+        const data = trimmed.slice("data:".length).trim();
+        if (!data || data === "[DONE]") continue;
+
+        try {
+          const event = JSON.parse(data);
+          if (event.type === "text-delta" && event.delta) {
+            textContent += event.delta;
+          } else if (event.type === "text" && event.text) {
+            textContent += event.text;
+          } else if (
+            event.type === "tool-call" ||
+            event.type === "tool-input-start"
+          ) {
+            textContent = "";
+          } else if (event.type === "finish") {
+            break;
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  yield { parts: [{ type: "text", text: textContent }] };
+}
+
+/**
  * Check if the agent binding is available and configured.
  */
 export function isAgentAvailable(connectionId: string): boolean {
@@ -167,7 +273,25 @@ export async function streamAgentResponse(
   console.log(`[LLM] Using fallback client for ${connectionId}`);
   const fallback = await getFallbackAgent(connectionId);
   if (fallback) {
-    return fallback.STREAM(streamParams);
+    try {
+      return await fallback.STREAM(streamParams);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(
+        `[LLM] Fallback client failed for ${connectionId}: ${msg}, trying direct HTTP`,
+      );
+
+      // Workaround: runtime's createDecopilotClient may fail with
+      // "Organization context is required" — bypass it with a direct HTTP call
+      if (msg.includes("Organization context is required")) {
+        const directAgent = await getDirectHttpAgent(connectionId);
+        if (directAgent) {
+          return await directAgent.STREAM(streamParams);
+        }
+      }
+
+      throw err;
+    }
   }
 
   throw new Error(
