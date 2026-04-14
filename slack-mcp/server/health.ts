@@ -1,8 +1,14 @@
 /**
  * Health Check Endpoint
  *
- * Provides system health, monitoring metrics, and per-connection
- * diagnostics that simulate the full webhook flow.
+ * /health is called by PagerDuty every minute.
+ *
+ * - On minutes divisible by 10 (xx:00, xx:10, xx:20, …) it runs the full
+ *   deep check: Supabase, config cache, Slack API, Mesh Studio STREAM,
+ *   triggers, and agent availability. The result is cached in memory.
+ *
+ * - On the other 9 calls it returns lightweight system metrics plus the
+ *   cached deep-check result (if any). Zero external calls.
  */
 
 import { getApiKeysCount } from "@decocms/mcps-shared/api-key-manager";
@@ -42,6 +48,7 @@ interface ConnectionHealth {
 interface HealthStatus {
   status: "ok" | "degraded" | "error";
   timestamp: string;
+  deepCheckAt?: string;
   uptime: number;
   memory: {
     heapUsed: number;
@@ -58,30 +65,43 @@ interface HealthStatus {
 }
 
 // ============================================================================
-// Health Check
+// Deep-check cache
 // ============================================================================
 
-/**
- * Get health status with per-connection diagnostics.
- *
- * Tests each layer of the webhook flow:
- * 1. config_cache — connection config accessible?
- * 2. slack_api    — bot token valid? (auth.test)
- * 3. triggers     — credentials exist, callback reachable?
- * 4. agent        — binding or fallback available? (stream mode only)
- */
+let cachedDeepResult: {
+  status: "ok" | "degraded" | "error";
+  timestamp: string;
+  connections: ConnectionHealth[];
+} | null = null;
+
+// ============================================================================
+// Public API
+// ============================================================================
+
 export async function getHealthStatus(): Promise<HealthStatus> {
+  const now = new Date();
+  const minute = now.getMinutes();
+  const isDeepMinute = minute % 10 === 0;
+
+  // Run deep check on multiples of 10, or if we never ran one
+  if (isDeepMinute || !cachedDeepResult) {
+    const connections = await runDeepCheck();
+    const hasError = connections.some((c) => c.overall === "error");
+    const hasWarn = connections.some((c) => c.overall === "degraded");
+
+    cachedDeepResult = {
+      status: hasError ? "error" : hasWarn ? "degraded" : "ok",
+      timestamp: now.toISOString(),
+      connections,
+    };
+  }
+
   const memUsage = process.memoryUsage();
-  const cacheSize = getConfigCacheSize();
-
-  const connections = await checkAllConnections();
-
-  const hasError = connections.some((c) => c.overall === "error");
-  const hasWarn = connections.some((c) => c.overall === "degraded");
 
   return {
-    status: hasError ? "error" : hasWarn ? "degraded" : "ok",
-    timestamp: new Date().toISOString(),
+    status: cachedDeepResult.status,
+    timestamp: now.toISOString(),
+    deepCheckAt: cachedDeepResult.timestamp,
     uptime: process.uptime(),
     memory: {
       heapUsed: memUsage.heapUsed,
@@ -92,17 +112,17 @@ export async function getHealthStatus(): Promise<HealthStatus> {
     metrics: {
       apiKeysCount: getApiKeysCount(),
       kvStoreSize: getKvStoreSize(),
-      configCacheSize: cacheSize,
+      configCacheSize: getConfigCacheSize(),
     },
-    connections,
+    connections: cachedDeepResult.connections,
   };
 }
 
 // ============================================================================
-// Per-connection diagnostics
+// Deep check — runs all layers
 // ============================================================================
 
-async function checkAllConnections(): Promise<ConnectionHealth[]> {
+async function runDeepCheck(): Promise<ConnectionHealth[]> {
   let allConfigs: Awaited<ReturnType<typeof loadAllConnectionConfigs>>;
   try {
     allConfigs = await loadAllConnectionConfigs();
@@ -199,7 +219,7 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
       });
     }
 
-    // Layer 3: Mesh Studio — send a real STREAM message and wait for response
+    // Layer 3: Mesh Studio — real STREAM to the agent
     const meshStart = Date.now();
     try {
       const token = config.meshApiKey || config.meshToken;
@@ -255,7 +275,6 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
             detail: `STREAM ${resp.status}: ${errorText.slice(0, 200)}`,
           });
         } else {
-          // Read SSE stream to confirm agent responded
           const reader = resp.body!.getReader();
           const decoder = new TextDecoder();
           let gotText = false;
@@ -289,7 +308,6 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
                 }
               }
 
-              // Got text — don't need to read the entire response
               if (gotText) break;
             }
           } finally {
@@ -318,7 +336,6 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
     }
 
     // Layer 4: Triggers
-
     const triggerStart = Date.now();
     try {
       const triggerState = await loadTriggerCredentials(config.connectionId);
