@@ -51,6 +51,26 @@ const onChangeHandler = async (env: Env, config: any) => {
     const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
     const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
     const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
+    const organizationSlug = (env.MESH_REQUEST_CONTEXT as any)
+      ?.organizationSlug as string | undefined;
+    const meshToken = env.MESH_REQUEST_CONTEXT?.token;
+
+    // Get agent ID from raw config (before binding resolution)
+    const rawAgent = config?.state?.AGENT as
+      | { id?: string; value?: string }
+      | undefined;
+    // Also check resolved state (proxy may have id/value from config)
+    const resolvedAgent = state?.AGENT as
+      | { id?: string; value?: string }
+      | undefined;
+    const agentId =
+      rawAgent?.value ??
+      rawAgent?.id ??
+      resolvedAgent?.value ??
+      resolvedAgent?.id;
+    if (agentId) {
+      console.log(`[onChange] Agent ID: ${agentId}`);
+    }
 
     // Get Slack credentials from state
     const botToken = state?.SLACK_CREDENTIALS?.BOT_TOKEN;
@@ -116,7 +136,10 @@ const onChangeHandler = async (env: Env, config: any) => {
     const configToSave: ConnectionConfig = {
       connectionId,
       organizationId,
+      organizationSlug,
       meshUrl,
+      meshToken,
+      agentId,
       botToken,
       signingSecret,
       responseConfig: {

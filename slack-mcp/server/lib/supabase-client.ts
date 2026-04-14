@@ -14,7 +14,10 @@ import type { ConnectionConfig } from "./config-cache.ts";
 export interface SlackConnectionRow {
   connection_id: string;
   organization_id: string;
+  organization_slug: string | null;
   mesh_url: string;
+  mesh_token: string | null;
+  agent_id: string | null;
   bot_token: string;
   signing_secret: string;
   team_id: string | null;
@@ -82,7 +85,10 @@ export async function saveConnectionConfig(
   const row: Partial<SlackConnectionRow> = {
     connection_id: config.connectionId,
     organization_id: config.organizationId,
+    organization_slug: config.organizationSlug || null,
     mesh_url: config.meshUrl,
+    mesh_token: config.meshToken || null,
+    agent_id: config.agentId || null,
     bot_token: config.botToken,
     signing_secret: config.signingSecret,
     team_id: config.teamId || null,
@@ -136,7 +142,10 @@ export async function loadConnectionConfig(
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
+    organizationSlug: row.organization_slug || undefined,
     meshUrl: row.mesh_url,
+    meshToken: row.mesh_token || undefined,
+    agentId: row.agent_id || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,
@@ -166,7 +175,9 @@ export async function loadAllConnectionConfigs(): Promise<ConnectionConfig[]> {
     return {
       connectionId: row.connection_id,
       organizationId: row.organization_id,
+      organizationSlug: row.organization_slug || undefined,
       meshUrl: row.mesh_url,
+      meshToken: row.mesh_token || undefined,
       botToken: row.bot_token,
       signingSecret: row.signing_secret,
       teamId: row.team_id || undefined,
@@ -254,7 +265,10 @@ export async function loadConnectionByTeamId(
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
+    organizationSlug: row.organization_slug || undefined,
     meshUrl: row.mesh_url,
+    meshToken: row.mesh_token || undefined,
+    agentId: row.agent_id || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
     teamId: row.team_id || undefined,

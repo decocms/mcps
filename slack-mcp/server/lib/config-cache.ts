@@ -33,7 +33,10 @@ const CONFIG_PREFIX = "config:";
 export interface ConnectionConfig {
   connectionId: string;
   organizationId: string;
+  organizationSlug?: string;
   meshUrl: string;
+  meshToken?: string;
+  agentId?: string;
   botToken: string;
   signingSecret: string;
   teamId?: string;

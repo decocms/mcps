@@ -4,9 +4,14 @@
  * Uses the official AgentOf() binding from @decocms/runtime.
  * The agent binding resolves to a client with a STREAM() method
  * that returns an async iterable of UIMessage objects.
+ *
+ * Fallback: when AgentOf() is not available (e.g. pod restart before
+ * onChange fires), creates a standalone decopilot client using
+ * persisted meshToken + organizationSlug from Supabase.
  */
 
 import { getInstance } from "./connection-instance.ts";
+import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 
 // ============================================================================
 // Types
@@ -56,10 +61,58 @@ function getAgent(connectionId: string): AgentClient | null {
 }
 
 /**
+ * Create a fallback agent client using persisted config from Supabase.
+ * Used when AgentOf() binding is not available (pod restart, stale token).
+ */
+async function getFallbackAgent(
+  connectionId: string,
+): Promise<AgentClient | null> {
+  const config = await getCachedConnectionConfig(connectionId);
+  if (
+    !config?.meshToken ||
+    !config?.organizationSlug ||
+    !config?.meshUrl ||
+    !config?.agentId
+  ) {
+    return null;
+  }
+
+  const { createDecopilotClient } = await import("@decocms/runtime/decopilot");
+  const client = createDecopilotClient({
+    baseUrl: `${config.meshUrl}/api`,
+    orgSlug: config.organizationSlug,
+    token: config.meshToken,
+  });
+
+  const agentId = config.agentId;
+
+  return {
+    STREAM: async (params) => {
+      return client.stream({
+        ...(params as any),
+        agent: { id: agentId },
+        toolApprovalLevel: params.toolApprovalLevel,
+      });
+    },
+  };
+}
+
+/**
  * Check if the agent binding is available and configured.
  */
 export function isAgentAvailable(connectionId: string): boolean {
   return getAgent(connectionId) !== null;
+}
+
+/**
+ * Check if agent is available (binding or fallback).
+ */
+export async function isAgentAvailableAsync(
+  connectionId: string,
+): Promise<boolean> {
+  if (getAgent(connectionId)) return true;
+  const fallback = await getFallbackAgent(connectionId);
+  return fallback !== null;
 }
 
 /**
@@ -82,6 +135,7 @@ function toUIMessages(messages: SlackChatMessage[]) {
 
 /**
  * Stream an agent response using the AgentOf() STREAM binding.
+ * Falls back to standalone decopilot client if binding is not available.
  * Returns an async iterable of messages with parts.
  */
 export async function streamAgentResponse(
@@ -89,7 +143,15 @@ export async function streamAgentResponse(
   messages: SlackChatMessage[],
   threadId?: string,
 ) {
-  const agent = getAgent(connectionId);
+  let agent = getAgent(connectionId);
+
+  if (!agent) {
+    console.log(
+      `[LLM] AgentOf() not available for ${connectionId}, trying fallback client`,
+    );
+    agent = await getFallbackAgent(connectionId);
+  }
+
   if (!agent) {
     throw new Error(
       "Agent not configured.\n\n" +
