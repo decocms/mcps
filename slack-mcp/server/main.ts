@@ -40,10 +40,69 @@ import {
   isSupabaseConfigured,
   getSupabaseClient,
 } from "./lib/supabase-client.ts";
+import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 import { initializeConfigCacheCount } from "./lib/config-cache.ts";
 import { loadAllTriggerCredentials } from "./lib/supabase-client.ts";
 
 export { StateSchema };
+
+/**
+ * Create a persistent Mesh API key via the /mcp/self endpoint.
+ * Returns the key string or null on failure.
+ */
+async function generateMeshApiKey(
+  meshUrl: string,
+  sessionToken: string,
+  connectionId: string,
+): Promise<string | null> {
+  const response = await fetch(`${meshUrl}/mcp/self`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionToken}`,
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "tools/call",
+      params: {
+        name: "API_KEY_CREATE",
+        arguments: {
+          name: `Slack Bot - ${connectionId}`,
+          permissions: {
+            self: ["*"],
+            [`conn_${connectionId}`]: ["*"],
+          },
+          metadata: {
+            createdFor: "slack-mcp",
+            connectionId,
+          },
+        },
+      },
+      id: Date.now(),
+    }),
+  });
+
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as {
+    error?: { message: string };
+    result?: {
+      structuredContent?: { key?: string };
+      content?: Array<{ type: string; text: string }>;
+    };
+  };
+
+  if (data.error) return null;
+
+  const result =
+    data.result?.structuredContent ||
+    (data.result?.content?.[0]?.text
+      ? (JSON.parse(data.result.content[0].text) as { key?: string })
+      : null);
+
+  return result?.key ?? null;
+}
 
 const onChangeHandler = async (env: Env, config: any) => {
   try {
@@ -151,6 +210,33 @@ const onChangeHandler = async (env: Env, config: any) => {
 
     // Save config to KV store (persists to disk)
     await cacheConnectionConfig(configToSave);
+
+    // Generate persistent API key if we don't have one yet
+    // (session token expires in ~5min, API key never expires)
+    if (meshToken && meshUrl && connectionId) {
+      const existing = await getCachedConnectionConfig(connectionId);
+      if (!existing?.meshApiKey) {
+        try {
+          const apiKey = await generateMeshApiKey(
+            meshUrl,
+            meshToken,
+            connectionId,
+          );
+          if (apiKey) {
+            configToSave.meshApiKey = apiKey;
+            await cacheConnectionConfig(configToSave);
+            console.log(
+              `[onChange] Generated persistent API key for ${connectionId}`,
+            );
+          }
+        } catch (error) {
+          console.log(`[onChange] Could not generate API key: ${error}`);
+        }
+      } else {
+        configToSave.meshApiKey = existing.meshApiKey;
+        await cacheConnectionConfig(configToSave);
+      }
+    }
 
     // Initialize Slack client to get additional info (teamId, botUserId, teamName)
     try {

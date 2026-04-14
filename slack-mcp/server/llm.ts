@@ -68,8 +68,10 @@ async function getFallbackAgent(
   connectionId: string,
 ): Promise<AgentClient | null> {
   const config = await getCachedConnectionConfig(connectionId);
+  // Prefer persistent API key over session token
+  const token = config?.meshApiKey || config?.meshToken;
   if (
-    !config?.meshToken ||
+    !token ||
     !config?.organizationSlug ||
     !config?.meshUrl ||
     !config?.agentId
@@ -81,7 +83,7 @@ async function getFallbackAgent(
   const client = createDecopilotClient({
     baseUrl: `${config.meshUrl}/api`,
     orgSlug: config.organizationSlug,
-    token: config.meshToken,
+    token,
   });
 
   const agentId = config.agentId;

@@ -17,6 +17,7 @@ export interface SlackConnectionRow {
   organization_slug: string | null;
   mesh_url: string;
   mesh_token: string | null;
+  mesh_api_key: string | null;
   agent_id: string | null;
   bot_token: string;
   signing_secret: string;
@@ -88,6 +89,7 @@ export async function saveConnectionConfig(
     organization_slug: config.organizationSlug || null,
     mesh_url: config.meshUrl,
     mesh_token: config.meshToken || null,
+    mesh_api_key: config.meshApiKey || null,
     agent_id: config.agentId || null,
     bot_token: config.botToken,
     signing_secret: config.signingSecret,
@@ -145,6 +147,7 @@ export async function loadConnectionConfig(
     organizationSlug: row.organization_slug || undefined,
     meshUrl: row.mesh_url,
     meshToken: row.mesh_token || undefined,
+    meshApiKey: row.mesh_api_key || undefined,
     agentId: row.agent_id || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,
@@ -268,6 +271,7 @@ export async function loadConnectionByTeamId(
     organizationSlug: row.organization_slug || undefined,
     meshUrl: row.mesh_url,
     meshToken: row.mesh_token || undefined,
+    meshApiKey: row.mesh_api_key || undefined,
     agentId: row.agent_id || undefined,
     botToken: row.bot_token,
     signingSecret: row.signing_secret,

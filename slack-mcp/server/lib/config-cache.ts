@@ -36,6 +36,7 @@ export interface ConnectionConfig {
   organizationSlug?: string;
   meshUrl: string;
   meshToken?: string;
+  meshApiKey?: string;
   agentId?: string;
   botToken: string;
   signingSecret: string;
