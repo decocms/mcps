@@ -207,6 +207,24 @@ export function createUpstreamToolsProvider(): (
               arguments: context as Record<string, unknown>,
             });
 
+            // The MCP SDK callTool returns { content: [{ type, text }] }.
+            // The deco runtime wraps execute's return in JSON.stringify,
+            // so we need to extract and parse the text to avoid double encoding.
+            const contents = result.content as
+              | Array<{ type: string; text?: string }>
+              | undefined;
+            const textContent = contents?.find(
+              (c): c is { type: "text"; text: string } =>
+                c.type === "text" && typeof c.text === "string",
+            );
+            if (textContent?.text) {
+              try {
+                return JSON.parse(textContent.text);
+              } catch {
+                return textContent.text;
+              }
+            }
+
             return result;
           },
         }),
