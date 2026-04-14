@@ -16,17 +16,18 @@ export function markdownToSlack(markdown: string): string {
   let result = markdown;
 
   // Preserve code blocks first (we'll restore them later)
+  // Use \x00 delimiters to avoid conflicts with markdown conversions
   const codeBlocks: string[] = [];
   result = result.replace(/```[\s\S]*?```/g, (match) => {
     codeBlocks.push(match);
-    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+    return `\x00CB${codeBlocks.length - 1}\x00`;
   });
 
   // Preserve inline code
   const inlineCode: string[] = [];
   result = result.replace(/`[^`]+`/g, (match) => {
     inlineCode.push(match);
-    return `__INLINE_CODE_${inlineCode.length - 1}__`;
+    return `\x00IC${inlineCode.length - 1}\x00`;
   });
 
   // Convert headers (# Header → *Header*)
@@ -60,12 +61,12 @@ export function markdownToSlack(markdown: string): string {
 
   // Restore inline code
   for (let i = 0; i < inlineCode.length; i++) {
-    result = result.replace(`__INLINE_CODE_${i}__`, inlineCode[i]);
+    result = result.replace(`\x00IC${i}\x00`, inlineCode[i]);
   }
 
   // Restore code blocks
   for (let i = 0; i < codeBlocks.length; i++) {
-    result = result.replace(`__CODE_BLOCK_${i}__`, codeBlocks[i]);
+    result = result.replace(`\x00CB${i}\x00`, codeBlocks[i]);
   }
 
   return result;
