@@ -1,13 +1,12 @@
 /**
  * LLM Module - AI Agent Integration for Slack MCP
  *
- * Uses the official AgentOf() binding from @decocms/runtime.
- * The agent binding resolves to a client with a STREAM() method
- * that returns an async iterable of UIMessage objects.
+ * Resolution order:
+ * 1. AgentOf() binding (fast, in-process — but depends on onChange)
+ * 2. Direct HTTP to Mesh Decopilot API (reliable, same as health check)
  *
- * Fallback: when AgentOf() is not available (e.g. pod restart before
- * onChange fires), creates a standalone decopilot client using
- * persisted meshToken + organizationSlug from Supabase.
+ * The direct HTTP path uses the persisted meshApiKey + organizationSlug
+ * from Supabase, bypassing the runtime entirely.
  */
 
 import { getInstance } from "./connection-instance.ts";
@@ -61,48 +60,9 @@ function getAgent(connectionId: string): AgentClient | null {
 }
 
 /**
- * Create a fallback agent client using persisted config from Supabase.
- * Used when AgentOf() binding is not available (pod restart, stale token).
- */
-async function getFallbackAgent(
-  connectionId: string,
-): Promise<AgentClient | null> {
-  const config = await getCachedConnectionConfig(connectionId);
-  // Prefer persistent API key over session token
-  const token = config?.meshApiKey || config?.meshToken;
-  if (
-    !token ||
-    !config?.organizationSlug ||
-    !config?.meshUrl ||
-    !config?.agentId
-  ) {
-    return null;
-  }
-
-  const { createDecopilotClient } = await import("@decocms/runtime/decopilot");
-  const client = createDecopilotClient({
-    baseUrl: `${config.meshUrl}/api`,
-    orgSlug: config.organizationSlug,
-    token,
-  });
-
-  const agentId = config.agentId;
-
-  return {
-    STREAM: async (params) => {
-      return client.stream({
-        ...(params as any),
-        agent: { id: agentId },
-        toolApprovalLevel: params.toolApprovalLevel,
-      });
-    },
-  };
-}
-
-/**
- * Direct HTTP fallback when createDecopilotClient fails due to missing
- * organization context in the runtime. Calls the Mesh Decopilot API
- * directly and converts the SSE response into the AgentClient async iterable.
+ * Direct HTTP agent — calls the Mesh Decopilot API directly.
+ * Same approach as the /health check: fetch + SSE parsing.
+ * Uses persisted meshApiKey (never expires) from Supabase.
  */
 async function getDirectHttpAgent(
   connectionId: string,
@@ -209,14 +169,14 @@ export function isAgentAvailable(connectionId: string): boolean {
 }
 
 /**
- * Check if agent is available (binding or fallback).
+ * Check if agent is available (binding or direct HTTP fallback).
  */
 export async function isAgentAvailableAsync(
   connectionId: string,
 ): Promise<boolean> {
   if (getAgent(connectionId)) return true;
-  const fallback = await getFallbackAgent(connectionId);
-  return fallback !== null;
+  const direct = await getDirectHttpAgent(connectionId);
+  return direct !== null;
 }
 
 /**
@@ -238,9 +198,10 @@ function toUIMessages(messages: SlackChatMessage[]) {
 }
 
 /**
- * Stream an agent response using the AgentOf() STREAM binding.
- * Falls back to standalone decopilot client if binding is not available.
- * Returns an async iterable of messages with parts.
+ * Stream an agent response.
+ *
+ * 1. Try AgentOf() binding (fast, in-process)
+ * 2. Fall back to direct HTTP (same path as health check — always works)
  */
 export async function streamAgentResponse(
   connectionId: string,
@@ -253,41 +214,23 @@ export async function streamAgentResponse(
     ...(threadId ? { thread_id: threadId } : {}),
   };
 
-  // Try AgentOf() binding first
+  // 1. Try AgentOf() binding
   const bindingAgent = getAgent(connectionId);
   if (bindingAgent) {
     try {
       return await bindingAgent.STREAM(streamParams);
     } catch (err) {
       console.log(
-        `[LLM] AgentOf() STREAM failed for ${connectionId}: ${err}, trying fallback`,
+        `[LLM] AgentOf() STREAM failed for ${connectionId}: ${err}, trying direct HTTP`,
       );
     }
   }
 
-  // Fallback: standalone decopilot client with persisted credentials
-  console.log(`[LLM] Using fallback client for ${connectionId}`);
-  const fallback = await getFallbackAgent(connectionId);
-  if (fallback) {
-    try {
-      return await fallback.STREAM(streamParams);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.log(
-        `[LLM] Fallback client failed for ${connectionId}: ${msg}, trying direct HTTP`,
-      );
-
-      // Workaround: runtime's createDecopilotClient may fail with
-      // "Organization context is required" — bypass it with a direct HTTP call
-      if (msg.includes("Organization context is required")) {
-        const directAgent = await getDirectHttpAgent(connectionId);
-        if (directAgent) {
-          return await directAgent.STREAM(streamParams);
-        }
-      }
-
-      throw err;
-    }
+  // 2. Direct HTTP — same reliable path as /health check
+  console.log(`[LLM] Using direct HTTP for ${connectionId}`);
+  const directAgent = await getDirectHttpAgent(connectionId);
+  if (directAgent) {
+    return await directAgent.STREAM(streamParams);
   }
 
   throw new Error(
