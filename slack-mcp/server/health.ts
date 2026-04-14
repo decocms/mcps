@@ -199,7 +199,59 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
       });
     }
 
-    // Layer 3: Triggers
+    // Layer 3: Mesh Studio — API reachable?
+    const meshStart = Date.now();
+    try {
+      const token = config.meshApiKey || config.meshToken;
+      if (!config.meshUrl || !token) {
+        layers.push({
+          layer: "mesh_studio",
+          status: "error",
+          latencyMs: 0,
+          detail: !config.meshUrl
+            ? "No meshUrl configured"
+            : "No meshApiKey or meshToken",
+        });
+      } else {
+        const orgPath = config.organizationSlug || config.organizationId;
+        const pingUrl = `${config.meshUrl}/api/${orgPath}/decopilot/health`;
+        const resp = await fetch(pingUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (resp.ok) {
+          layers.push({
+            layer: "mesh_studio",
+            status: "ok",
+            latencyMs: Date.now() - meshStart,
+            detail: `${pingUrl} → ${resp.status}`,
+          });
+        } else {
+          // Even non-200 means the server is up, just check if it's a 5xx
+          const is5xx = resp.status >= 500;
+          layers.push({
+            layer: "mesh_studio",
+            status: is5xx ? "error" : "ok",
+            latencyMs: Date.now() - meshStart,
+            detail: `${pingUrl} → ${resp.status}`,
+          });
+        }
+      }
+    } catch (err) {
+      layers.push({
+        layer: "mesh_studio",
+        status: "error",
+        latencyMs: Date.now() - meshStart,
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Layer 4: Triggers
+
     const triggerStart = Date.now();
     try {
       const triggerState = await loadTriggerCredentials(config.connectionId);
@@ -243,7 +295,7 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
       });
     }
 
-    // Layer 4: Agent (only if NOT trigger_only)
+    // Layer 5: Agent (only if NOT trigger_only)
     if (mode === "stream") {
       const agentStart = Date.now();
       try {
