@@ -47,6 +47,7 @@ interface ConnectionHealth {
 
 interface HealthStatus {
   status: "ok" | "degraded" | "error";
+  summary: string;
   timestamp: string;
   deepCheckAt?: string;
   uptime: number;
@@ -75,6 +76,35 @@ let cachedDeepResult: {
 } | null = null;
 
 // ============================================================================
+// Summary builder — one-line description for PagerDuty alerts
+// ============================================================================
+
+function buildSummary(
+  status: "ok" | "degraded" | "error",
+  connections: ConnectionHealth[],
+): string {
+  if (status === "ok") {
+    return `All ${connections.length} connection(s) healthy`;
+  }
+
+  const failing = connections.filter(
+    (c) => c.overall === "error" || c.overall === "degraded",
+  );
+
+  const parts: string[] = [];
+  for (const conn of failing) {
+    const name = conn.connectionName || conn.teamName || conn.connectionId;
+    const brokenLayers = conn.layers
+      .filter((l) => l.status === "error" || l.status === "warn")
+      .map((l) => `${l.layer}: ${l.detail?.slice(0, 80) ?? l.status}`)
+      .join("; ");
+    parts.push(`[${name}] ${brokenLayers}`);
+  }
+
+  return `${failing.length}/${connections.length} connection(s) ${status}: ${parts.join(" | ")}`;
+}
+
+// ============================================================================
 // Public API
 // ============================================================================
 
@@ -100,6 +130,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
 
   return {
     status: cachedDeepResult.status,
+    summary: buildSummary(cachedDeepResult.status, cachedDeepResult.connections),
     timestamp: now.toISOString(),
     deepCheckAt: cachedDeepResult.timestamp,
     uptime: process.uptime(),
@@ -207,7 +238,7 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
           layer: "slack_api",
           status: "ok",
           latencyMs: Date.now() - slackStart,
-          detail: `bot=${authResult.user_id}, team=${authResult.team}`,
+          detail: "authenticated",
         });
       }
     } catch (err) {
@@ -315,13 +346,12 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
             reader.releaseLock();
           }
 
-          const preview = responsePreview.trim().slice(0, 80);
           layers.push({
             layer: "mesh_studio",
             status: gotText ? "ok" : "error",
             latencyMs: Date.now() - meshStart,
             detail: gotText
-              ? `agent responded (${Date.now() - meshStart}ms): "${preview}"`
+              ? `agent responded (${Date.now() - meshStart}ms)`
               : "STREAM connected but agent returned no text",
           });
         }
@@ -351,9 +381,9 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
             signal: AbortSignal.timeout(5000),
           });
           callbackReachable = resp.status < 500;
-          callbackDetail = `callback=${resp.status}, types=[${triggerState.activeTriggerTypes.join(",")}]`;
+          callbackDetail = `callback=${resp.status}, triggers=${triggerState.activeTriggerTypes.length}`;
         } catch (fetchErr) {
-          callbackDetail = `callback unreachable: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}, types=[${triggerState.activeTriggerTypes.join(",")}]`;
+          callbackDetail = `callback unreachable, triggers=${triggerState.activeTriggerTypes.length}`;
         }
 
         layers.push({
@@ -398,9 +428,9 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
         } else if (fallbackAvailable) {
           layers.push({
             layer: "agent",
-            status: "warn",
+            status: "ok",
             latencyMs: Date.now() - agentStart,
-            detail: "Using fallback client (meshApiKey/meshToken)",
+            detail: "fallback client active (direct HTTP)",
           });
         } else {
           layers.push({
@@ -433,8 +463,8 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
     const overall = hasError ? "error" : hasWarn ? "degraded" : "ok";
 
     results.push({
-      connectionId: config.connectionId,
-      teamName: config.teamName,
+      connectionId: config.connectionId.slice(0, 8) + "…",
+      teamName: config.teamName ? config.teamName.slice(0, 1) + "***" : undefined,
       connectionName: config.connectionName,
       mode,
       overall,

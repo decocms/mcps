@@ -201,7 +201,9 @@ function toUIMessages(messages: SlackChatMessage[]) {
  * Stream an agent response.
  *
  * 1. Try AgentOf() binding (fast, in-process)
+ *    - If it returns empty text, retry with Direct HTTP
  * 2. Fall back to direct HTTP (same path as health check — always works)
+ * 3. If both fail, caller publishes a trigger as last resort
  */
 export async function streamAgentResponse(
   connectionId: string,
@@ -218,7 +220,16 @@ export async function streamAgentResponse(
   const bindingAgent = getAgent(connectionId);
   if (bindingAgent) {
     try {
-      return await bindingAgent.STREAM(streamParams);
+      const stream = await bindingAgent.STREAM(streamParams);
+      // Consume the stream and check if it has text
+      const text = await collectStreamTextInternal(stream);
+      if (text.trim()) {
+        // Re-wrap as async iterable with the collected text
+        return textToAsyncIterable(text);
+      }
+      console.log(
+        `[LLM] AgentOf() binding returned empty for ${connectionId}, trying direct HTTP`,
+      );
     } catch (err) {
       console.log(
         `[LLM] AgentOf() STREAM failed for ${connectionId}: ${err}, trying direct HTTP`,
@@ -241,6 +252,32 @@ export async function streamAgentResponse(
       "3. Configure AGENT binding\n" +
       "4. Click Save to apply",
   );
+}
+
+/**
+ * Internal helper to collect text from a stream (same as collectStreamText).
+ */
+async function collectStreamTextInternal(
+  stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
+): Promise<string> {
+  let text = "";
+  for await (const message of stream) {
+    for (const part of message.parts) {
+      if (part.type === "text" && part.text) {
+        text = part.text;
+      }
+    }
+  }
+  return text;
+}
+
+/**
+ * Wrap already-collected text back into the async iterable format.
+ */
+async function* textToAsyncIterable(
+  text: string,
+): AsyncGenerator<{ parts: Array<{ type: string; text?: string }> }> {
+  yield { parts: [{ type: "text", text }] };
 }
 
 /**

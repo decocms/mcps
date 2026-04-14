@@ -63,7 +63,10 @@ export const app = new Hono();
 
 app.get("/health", async (c) => {
   const health = await getHealthStatus();
-  const statusCode = health.status === "ok" ? 200 : 503;
+  // Only return 503 for hard errors — "degraded" (warnings) returns 200
+  // so PagerDuty only pages on real outages
+  const statusCode = health.status === "error" ? 503 : 200;
+  c.header("X-Health-Summary", health.summary);
   return c.json(health, statusCode);
 });
 
