@@ -18,7 +18,7 @@
  *     description: "Uploads a file",
  *     inputSchema: fileUploadInputSchema,
  *     execute: async ({ input }, ctx) => {
-      ensureAuthenticated(ctx!);
+ *       ensureAuthenticated(ctx!);
  *       const file = await createFileFromInput(input);
  *       // ... use file
  *     },

@@ -35,8 +35,8 @@ export const tools = [
 //     outputSchema: z.object({
 //       result: z.string().describe("Output result"),
 //     }),
-//     execute: async ({ input }, ctx) => {
-ensureAuthenticated(ctx!);
+// //     execute: async ({ input }, ctx) => {
+//       ensureAuthenticated(ctx!);
 //       // Your implementation here
 //       return { result: `Processed: ${input.param}` };
 //     },

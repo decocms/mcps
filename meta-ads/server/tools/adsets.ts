@@ -177,6 +177,7 @@ export const createGetAdSetDetailsTool = (env: Env) =>
         .optional(),
       promoted_object: z.record(z.string(), z.unknown()).optional(),
     }),
+    // @ts-expect-error: ctx is always passed by runtime
     execute: async ({ context }, ctx) => {
       ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
