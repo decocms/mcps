@@ -26,13 +26,20 @@ const ERROR_MESSAGES = {
 } as const;
 
 /**
- * Strip leaked tool-call patterns from agent text responses.
- * Some agents output tool calls as plain text (e.g. TOOL_NAME(arg: value, ...))
- * instead of using the proper tool-calling format.
+ * Clean up agent text responses by removing leaked artifacts:
+ * - Tool call patterns: TOOL_NAME(arg: value, ...)
+ * - Leaked LLM instructions: :please enclose..., :format as..., etc.
+ * - Section labels the agent was told to use internally: Resumo, Detalhamento, Referências
  */
-function stripLeakedToolCalls(text: string): string {
-  // Match UPPER_CASE_NAME(...) patterns that look like tool calls
-  return text.replace(/\s*[A-Z][A-Z_]{2,}\([^)]*\)\s*/g, " ").trim();
+function cleanAgentResponse(text: string): string {
+  let cleaned = text;
+  // Strip UPPER_CASE_TOOL(args) patterns
+  cleaned = cleaned.replace(/\s*[A-Z][A-Z_]{2,}\([^)]*\)\s*/g, " ");
+  // Strip leaked LLM formatting instructions (e.g. ":please enclose this text in asterisks")
+  cleaned = cleaned.replace(/\s*:[\w\s]{5,50}\s*$/g, "");
+  // Strip trailing "(editado)" from Slack edit markers
+  cleaned = cleaned.replace(/\s*\(editado\)\s*$/gi, "");
+  return cleaned.trim();
 }
 
 export interface LLMResponseOptions {
@@ -99,7 +106,7 @@ async function callWithStreaming(
 
     animation.stop();
 
-    const text = stripLeakedToolCalls(rawText);
+    const text = cleanAgentResponse(rawText);
 
     if (!text.trim()) {
       await updateThinkingMessage(
@@ -140,7 +147,7 @@ async function callWithoutStreaming(
   const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
 
   const stream = await streamAgentResponse(connectionId, messages);
-  const response = stripLeakedToolCalls(await collectStreamText(stream));
+  const response = cleanAgentResponse(await collectStreamText(stream));
 
   if (!response.trim()) {
     const fallback = ERROR_MESSAGES.GENERATION_FAILED;

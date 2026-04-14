@@ -92,16 +92,14 @@ export function ensureParagraphBreaks(text: string): string {
 
   // Fix cases where sentences end with punctuation and immediately start a new sentence
   // e.g., "something.Something" → "something.\n\nSomething"
-  // e.g., "something!Something" → "something!\n\nSomething"
-  // e.g., "something?Something" → "something?\n\nSomething"
-  result = result.replace(/([.!?])([A-Z])/g, "$1\n\n$2");
+  // Also handle underscore/asterisk boundaries: "sentence._Next" or "sentence.*Next"
+  result = result.replace(/([.!?])([A-ZÀ-ÚÇ_*])/g, "$1\n\n$2");
 
   // Fix cases where there's only one newline between paragraphs
-  // Ensure double newlines for paragraph separation
-  result = result.replace(/([.!?])\n([A-Z])/g, "$1\n\n$2");
+  result = result.replace(/([.!?])\n([A-ZÀ-ÚÇ])/g, "$1\n\n$2");
 
   // Fix colon followed directly by capital letter (like "canais:Parece")
-  result = result.replace(/:([A-Z])/g, ":\n\n$1");
+  result = result.replace(/:([A-ZÀ-ÚÇ])/g, ":\n\n$1");
 
   // Normalize multiple newlines to exactly two (for clean paragraphs)
   result = result.replace(/\n{3,}/g, "\n\n");
