@@ -15,8 +15,10 @@ import {
   replyInThread,
   sendMessage,
   updateThinkingMessage,
+  deleteMessage,
 } from "../../lib/slack-client.ts";
 import { formatForSlack, buildResponseBlocks } from "../../lib/format.ts";
+import { triggers } from "../../lib/trigger-store.ts";
 import type { MessageWithImages } from "./context-builder.ts";
 import { logger } from "../../lib/logger.ts";
 
@@ -49,6 +51,14 @@ export interface LLMResponseOptions {
   thinkingMessageTs?: string;
   useBlocks?: boolean;
   streamingEnabled?: boolean;
+  /** Original Slack event context — used for trigger fallback when STREAM fails */
+  slackEvent?: {
+    text: string;
+    user: string;
+    ts: string;
+    thread_ts?: string;
+    channel_type?: string;
+  };
 }
 
 const THINKING_FRAMES = ["Pensando", "Pensando.", "Pensando..", "Pensando..."];
@@ -216,7 +226,7 @@ export async function handleLLMCall(
       await callWithoutStreaming(connectionId, messages, options);
     }
   } catch (error) {
-    logger.error("LLM response failed", {
+    logger.error("LLM response failed, trying trigger fallback", {
       channel,
       error: String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -224,14 +234,46 @@ export async function handleLLMCall(
       messagesCount: messages.length,
     });
 
-    const errorMsg = `${ERROR_MESSAGES.PROCESSING_ERROR}`;
+    // 3. Last resort: publish trigger so the agent responds via automation
+    const slackEvent = options.slackEvent;
+    if (slackEvent) {
+      console.log(
+        `[LLM] Fallback: publishing trigger for ${connectionId} channel=${channel}`,
+      );
+
+      // Remove thinking message — the trigger response will come separately
+      if (thinkingMessageTs) {
+        await deleteMessage(channel, thinkingMessageTs).catch(() => {});
+      }
+
+      const isDM = channel.startsWith("D") || slackEvent.channel_type === "im";
+
+      triggers.notify(connectionId, "slack.message.received", {
+        event: "slack.message.received",
+        channel_id: channel,
+        user_id: slackEvent.user,
+        text: slackEvent.text,
+        ts: slackEvent.ts,
+        thread_ts: slackEvent.thread_ts,
+        is_dm: isDM,
+        has_files: false,
+        timestamp: new Date().toISOString(),
+        fallback: true,
+      });
+
+      // Don't throw — the trigger will handle the response
+      return;
+    }
+
+    // No slackEvent context — can't publish trigger, show error
+    const errorMsg = ERROR_MESSAGES.PROCESSING_ERROR;
 
     if (thinkingMessageTs) {
       await updateThinkingMessage(channel, thinkingMessageTs, errorMsg);
     } else if (replyTo) {
-      await replyInThread(channel, replyTo, ERROR_MESSAGES.PROCESSING_ERROR);
+      await replyInThread(channel, replyTo, errorMsg);
     } else {
-      await sendMessage({ channel, text: ERROR_MESSAGES.PROCESSING_ERROR });
+      await sendMessage({ channel, text: errorMsg });
     }
 
     throw error;

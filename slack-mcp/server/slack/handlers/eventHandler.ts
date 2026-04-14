@@ -502,6 +502,7 @@ async function handleAppMention(
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      slackEvent: { text: fullText, user, ts, thread_ts },
     });
   } catch (error) {
     logger.error("App mention LLM error", {
@@ -672,6 +673,7 @@ async function handleDirectMessage(
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      slackEvent: { text, user, ts, channel_type: "im" },
     });
   } catch (error) {
     logger.error("Direct message LLM error", {
@@ -743,6 +745,7 @@ async function handleThreadReply(
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      slackEvent: { text, user, ts, thread_ts: threadTs },
     });
   } catch (error) {
     logger.error("Thread reply LLM error", {
