@@ -1,8 +1,8 @@
 /**
  * Health Check Endpoint
  *
- * Provides system health and monitoring metrics for production environments.
- * Includes a deep health check that simulates the full webhook flow.
+ * Provides system health, monitoring metrics, and per-connection
+ * diagnostics that simulate the full webhook flow.
  */
 
 import { getApiKeysCount } from "@decocms/mcps-shared/api-key-manager";
@@ -11,63 +11,14 @@ import {
   getConfigCacheSize,
   getCachedConnectionConfig,
 } from "./lib/config-cache.ts";
-import { loadAllConnectionConfigs } from "./lib/supabase-client.ts";
+import {
+  loadAllConnectionConfigs,
+  loadTriggerCredentials,
+} from "./lib/supabase-client.ts";
 import { isAgentAvailable, isAgentAvailableAsync } from "./llm.ts";
 
-interface HealthStatus {
-  status: "ok" | "degraded" | "error";
-  uptime: number;
-  memory: {
-    heapUsed: number;
-    heapTotal: number;
-    external: number;
-    rss: number;
-  };
-  metrics: {
-    apiKeysCount: number;
-    kvStoreSize: number;
-    configCacheSize: number;
-  };
-  note: string;
-  actions?: {
-    syncCache?: string;
-  };
-}
-
-/**
- * Get current health status
- */
-export async function getHealthStatus(): Promise<HealthStatus> {
-  const memUsage = process.memoryUsage();
-  const cacheSize = getConfigCacheSize();
-
-  return {
-    status: "ok",
-    uptime: process.uptime(),
-    memory: {
-      heapUsed: memUsage.heapUsed,
-      heapTotal: memUsage.heapTotal,
-      external: memUsage.external,
-      rss: memUsage.rss,
-    },
-    metrics: {
-      apiKeysCount: getApiKeysCount(),
-      kvStoreSize: getKvStoreSize(),
-      configCacheSize: cacheSize,
-    },
-    note: "Database uses @deco/postgres binding,  configs cached for webhooks",
-    actions:
-      cacheSize === 0
-        ? {
-            syncCache:
-              "POST /mcp with tools/call SYNC_CONFIG_CACHE to warm-up cache",
-          }
-        : undefined,
-  };
-}
-
 // ============================================================================
-// Deep Health Check — simulates the full webhook flow per connection
+// Types
 // ============================================================================
 
 type LayerStatus = "ok" | "error" | "warn" | "skip";
@@ -88,82 +39,116 @@ interface ConnectionHealth {
   layers: LayerCheck[];
 }
 
-export interface DeepHealthResult {
+interface HealthStatus {
   status: "ok" | "degraded" | "error";
   timestamp: string;
-  uptimeSeconds: number;
+  uptime: number;
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    rss: number;
+  };
+  metrics: {
+    apiKeysCount: number;
+    kvStoreSize: number;
+    configCacheSize: number;
+  };
   connections: ConnectionHealth[];
 }
 
-/**
- * Run deep health check — tests every layer of the webhook flow:
- *
- * 1. supabase     — can we load configs from Supabase?
- * 2. config_cache — does getCachedConnectionConfig return data?
- * 3. slack_api    — does the bot token work? (auth.test)
- * 4. triggers     — do trigger credentials exist in Supabase?
- * 5. agent        — is the agent binding or fallback available? (only if NOT trigger_only)
- */
-export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
-  const connections: ConnectionHealth[] = [];
-  let globalStatus: "ok" | "degraded" | "error" = "ok";
+// ============================================================================
+// Health Check
+// ============================================================================
 
-  // Layer 1: Supabase — load all connections
-  let allConfigs: Awaited<ReturnType<typeof loadAllConnectionConfigs>> = [];
+/**
+ * Get health status with per-connection diagnostics.
+ *
+ * Tests each layer of the webhook flow:
+ * 1. config_cache — connection config accessible?
+ * 2. slack_api    — bot token valid? (auth.test)
+ * 3. triggers     — credentials exist, callback reachable?
+ * 4. agent        — binding or fallback available? (stream mode only)
+ */
+export async function getHealthStatus(): Promise<HealthStatus> {
+  const memUsage = process.memoryUsage();
+  const cacheSize = getConfigCacheSize();
+
+  const connections = await checkAllConnections();
+
+  const hasError = connections.some((c) => c.overall === "error");
+  const hasWarn = connections.some((c) => c.overall === "degraded");
+
+  return {
+    status: hasError ? "error" : hasWarn ? "degraded" : "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: {
+      heapUsed: memUsage.heapUsed,
+      heapTotal: memUsage.heapTotal,
+      external: memUsage.external,
+      rss: memUsage.rss,
+    },
+    metrics: {
+      apiKeysCount: getApiKeysCount(),
+      kvStoreSize: getKvStoreSize(),
+      configCacheSize: cacheSize,
+    },
+    connections,
+  };
+}
+
+// ============================================================================
+// Per-connection diagnostics
+// ============================================================================
+
+async function checkAllConnections(): Promise<ConnectionHealth[]> {
+  let allConfigs: Awaited<ReturnType<typeof loadAllConnectionConfigs>>;
   try {
     allConfigs = await loadAllConnectionConfigs();
   } catch (err) {
-    return {
-      status: "error",
-      timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.floor(process.uptime()),
-      connections: [
-        {
-          connectionId: "_global",
-          mode: "unknown",
-          overall: "error",
-          layers: [
-            {
-              layer: "supabase",
-              status: "error",
-              latencyMs: 0,
-              detail: `Failed to load connections: ${err instanceof Error ? err.message : String(err)}`,
-            },
-          ],
-        },
-      ],
-    };
+    return [
+      {
+        connectionId: "_global",
+        mode: "unknown",
+        overall: "error",
+        layers: [
+          {
+            layer: "supabase",
+            status: "error",
+            latencyMs: 0,
+            detail: `Failed to load connections: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+      },
+    ];
   }
 
   if (allConfigs.length === 0) {
-    return {
-      status: "error",
-      timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.floor(process.uptime()),
-      connections: [
-        {
-          connectionId: "_global",
-          mode: "unknown",
-          overall: "error",
-          layers: [
-            {
-              layer: "supabase",
-              status: "error",
-              latencyMs: 0,
-              detail: "No connections found in Supabase",
-            },
-          ],
-        },
-      ],
-    };
+    return [
+      {
+        connectionId: "_global",
+        mode: "unknown",
+        overall: "error",
+        layers: [
+          {
+            layer: "supabase",
+            status: "error",
+            latencyMs: 0,
+            detail: "No connections found in Supabase",
+          },
+        ],
+      },
+    ];
   }
 
-  // Check each connection
+  const results: ConnectionHealth[] = [];
+
   for (const config of allConfigs) {
     const layers: LayerCheck[] = [];
     const mode = config.responseConfig?.triggerOnly ? "trigger_only" : "stream";
 
-    // Layer 2: Config cache — can the webhook router find this connection?
+    // Layer 1: Config cache
     const cacheStart = Date.now();
     try {
       const cached = await getCachedConnectionConfig(config.connectionId);
@@ -184,7 +169,7 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
       });
     }
 
-    // Layer 3: Slack API — bot token valid?
+    // Layer 2: Slack API
     const slackStart = Date.now();
     try {
       if (!config.botToken) {
@@ -214,15 +199,11 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
       });
     }
 
-    // Layer 4: Triggers — credentials exist?
+    // Layer 3: Triggers
     const triggerStart = Date.now();
     try {
-      const { loadTriggerCredentials } = await import(
-        "./lib/supabase-client.ts"
-      );
       const triggerState = await loadTriggerCredentials(config.connectionId);
       if (triggerState) {
-        // Try a HEAD request to the callback URL to verify it's reachable
         let callbackReachable = false;
         let callbackDetail = "";
         try {
@@ -262,7 +243,7 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
       });
     }
 
-    // Layer 5: Agent — available? (only relevant if NOT trigger_only)
+    // Layer 4: Agent (only if NOT trigger_only)
     if (mode === "stream") {
       const agentStart = Date.now();
       try {
@@ -283,8 +264,7 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
             layer: "agent",
             status: "warn",
             latencyMs: Date.now() - agentStart,
-            detail:
-              "Using fallback client (binding not available, using meshApiKey/meshToken)",
+            detail: "Using fallback client (meshApiKey/meshToken)",
           });
         } else {
           layers.push({
@@ -292,7 +272,7 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
             status: "error",
             latencyMs: Date.now() - agentStart,
             detail:
-              "No agent available — binding missing and no fallback credentials",
+              "No agent available — no binding and no fallback credentials",
           });
         }
       } catch (err) {
@@ -312,16 +292,11 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
       });
     }
 
-    // Determine overall status for this connection
     const hasError = layers.some((l) => l.status === "error");
     const hasWarn = layers.some((l) => l.status === "warn");
     const overall = hasError ? "error" : hasWarn ? "degraded" : "ok";
 
-    if (overall === "error") globalStatus = "error";
-    else if (overall === "degraded" && globalStatus === "ok")
-      globalStatus = "degraded";
-
-    connections.push({
+    results.push({
       connectionId: config.connectionId,
       teamName: config.teamName,
       connectionName: config.connectionName,
@@ -331,10 +306,5 @@ export async function getDeepHealthStatus(): Promise<DeepHealthResult> {
     });
   }
 
-  return {
-    status: globalStatus,
-    timestamp: new Date().toISOString(),
-    uptimeSeconds: Math.floor(process.uptime()),
-    connections,
-  };
+  return results;
 }

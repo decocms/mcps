@@ -39,7 +39,7 @@ type SlackTeamConfig = {
   };
 };
 import { initializeSlackClient } from "./lib/slack-client.ts";
-import { getHealthStatus, getDeepHealthStatus } from "./health.ts";
+import { getHealthStatus } from "./health.ts";
 
 // Cache for bot user IDs (connectionId -> botUserId)
 const botUserIdCache = new Map<string, string>();
@@ -64,13 +64,6 @@ export const app = new Hono();
 app.get("/health", async (c) => {
   const health = await getHealthStatus();
   const statusCode = health.status === "ok" ? 200 : 503;
-  return c.json(health, statusCode);
-});
-
-app.get("/health/deep", async (c) => {
-  const health = await getDeepHealthStatus();
-  const statusCode =
-    health.status === "ok" ? 200 : health.status === "degraded" ? 200 : 503;
   return c.json(health, statusCode);
 });
 
