@@ -199,45 +199,112 @@ async function checkAllConnections(): Promise<ConnectionHealth[]> {
       });
     }
 
-    // Layer 3: Mesh Studio — API reachable?
+    // Layer 3: Mesh Studio — send a real STREAM message and wait for response
     const meshStart = Date.now();
     try {
       const token = config.meshApiKey || config.meshToken;
-      if (!config.meshUrl || !token) {
+      const orgPath = config.organizationSlug || config.organizationId;
+      if (!config.meshUrl || !token || !orgPath || !config.agentId) {
         layers.push({
           layer: "mesh_studio",
           status: "error",
           latencyMs: 0,
-          detail: !config.meshUrl
-            ? "No meshUrl configured"
-            : "No meshApiKey or meshToken",
+          detail: [
+            !config.meshUrl && "no meshUrl",
+            !token && "no token",
+            !orgPath && "no org",
+            !config.agentId && "no agentId",
+          ]
+            .filter(Boolean)
+            .join(", "),
         });
       } else {
-        const orgPath = config.organizationSlug || config.organizationId;
-        const pingUrl = `${config.meshUrl}/api/${orgPath}/decopilot/health`;
-        const resp = await fetch(pingUrl, {
-          method: "GET",
+        const streamUrl = `${config.meshUrl}/api/${orgPath}/decopilot/stream`;
+        const resp = await fetch(streamUrl, {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            Accept: "application/json",
+            Accept: "application/json, text/event-stream",
           },
-          signal: AbortSignal.timeout(5000),
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    type: "text",
+                    text: "health check: responda apenas 'ok'",
+                  },
+                ],
+              },
+            ],
+            agent: { id: config.agentId },
+            stream: true,
+            toolApprovalLevel: "auto",
+          }),
+          signal: AbortSignal.timeout(30000),
         });
-        if (resp.ok) {
+
+        if (!resp.ok) {
+          const errorText = await resp.text().catch(() => "");
           layers.push({
             layer: "mesh_studio",
-            status: "ok",
+            status: "error",
             latencyMs: Date.now() - meshStart,
-            detail: `${pingUrl} → ${resp.status}`,
+            detail: `STREAM ${resp.status}: ${errorText.slice(0, 200)}`,
           });
         } else {
-          // Even non-200 means the server is up, just check if it's a 5xx
-          const is5xx = resp.status >= 500;
+          // Read SSE stream to confirm agent responded
+          const reader = resp.body!.getReader();
+          const decoder = new TextDecoder();
+          let gotText = false;
+          let responsePreview = "";
+
+          try {
+            let buffer = "";
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
+
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith("data:")) continue;
+                const data = trimmed.slice(5).trim();
+                if (!data || data === "[DONE]") continue;
+                try {
+                  const event = JSON.parse(data);
+                  if (
+                    (event.type === "text-delta" && event.delta) ||
+                    (event.type === "text" && event.text)
+                  ) {
+                    gotText = true;
+                    responsePreview += event.delta || event.text || "";
+                  }
+                } catch {
+                  // ignore parse errors
+                }
+              }
+
+              // Got text — don't need to read the entire response
+              if (gotText) break;
+            }
+          } finally {
+            reader.cancel().catch(() => {});
+            reader.releaseLock();
+          }
+
+          const preview = responsePreview.trim().slice(0, 80);
           layers.push({
             layer: "mesh_studio",
-            status: is5xx ? "error" : "ok",
+            status: gotText ? "ok" : "error",
             latencyMs: Date.now() - meshStart,
-            detail: `${pingUrl} → ${resp.status}`,
+            detail: gotText
+              ? `agent responded (${Date.now() - meshStart}ms): "${preview}"`
+              : "STREAM connected but agent returned no text",
           });
         }
       }
