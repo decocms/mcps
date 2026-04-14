@@ -99,6 +99,12 @@ export const StateSchema = z.object({
         .describe(
           "MODO SILENCIOSO: Apenas resposta final sem mensagens intermediarias. Quando ativo, desabilita streaming e mensagem de 'pensando'.",
         ),
+      TRIGGER_ONLY: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Modo Trigger: o bot apenas publica eventos via trigger e NÃO chama o agente diretamente. O agente responde via automação do Mesh usando as tools do MCP.",
+        ),
       ENABLE_STREAMING: z
         .boolean()
         .default(true)

@@ -140,6 +140,7 @@ const onChangeHandler = async (env: Env, config: any) => {
     const threadTimeoutMin = contextConfig?.THREAD_TIMEOUT_MIN ?? 10;
 
     // Get response configuration (with defaults)
+    const triggerOnly = state?.RESPONSE_CONFIG?.TRIGGER_ONLY ?? false;
     const showOnlyFinalResponse =
       state?.RESPONSE_CONFIG?.SHOW_ONLY_FINAL_RESPONSE ?? false;
     const enableStreaming = showOnlyFinalResponse
@@ -202,6 +203,7 @@ const onChangeHandler = async (env: Env, config: any) => {
       botToken,
       signingSecret,
       responseConfig: {
+        triggerOnly,
         showOnlyFinalResponse,
         enableStreaming,
         showThinkingMessage,

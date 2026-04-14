@@ -45,6 +45,7 @@ export interface ConnectionConfig {
   botUserId?: string;
   connectionName?: string;
   responseConfig?: {
+    triggerOnly?: boolean;
     showOnlyFinalResponse?: boolean;
     enableStreaming?: boolean;
     showThinkingMessage?: boolean;

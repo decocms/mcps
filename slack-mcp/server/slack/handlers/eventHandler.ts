@@ -185,6 +185,7 @@ type SlackTeamConfig = {
   botUserId?: string;
   configuredAt?: string;
   responseConfig?: {
+    triggerOnly?: boolean;
     showOnlyFinalResponse?: boolean;
     enableStreaming?: boolean;
     showThinkingMessage?: boolean;
@@ -380,22 +381,28 @@ export async function handleSlackEvent(
 ): Promise<void> {
   const { type, payload } = context;
 
+  const triggerOnly = teamConfig.responseConfig?.triggerOnly ?? false;
+
   switch (type) {
     case "app_mention":
       publishAppMention(connectionId, payload);
-      await handleAppMention(
-        payload as SlackAppMentionEvent,
-        teamConfig,
-        connectionId,
-      );
+      if (!triggerOnly) {
+        await handleAppMention(
+          payload as SlackAppMentionEvent,
+          teamConfig,
+          connectionId,
+        );
+      }
       break;
     case "message":
       publishMessageReceived(connectionId, payload);
-      await handleMessage(
-        payload as SlackMessageEvent,
-        teamConfig,
-        connectionId,
-      );
+      if (!triggerOnly) {
+        await handleMessage(
+          payload as SlackMessageEvent,
+          teamConfig,
+          connectionId,
+        );
+      }
       break;
     case "reaction_added":
       publishReactionAdded(connectionId, payload);
