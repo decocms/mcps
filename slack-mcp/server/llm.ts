@@ -143,31 +143,39 @@ export async function streamAgentResponse(
   messages: SlackChatMessage[],
   threadId?: string,
 ) {
-  let agent = getAgent(connectionId);
-
-  if (!agent) {
-    console.log(
-      `[LLM] AgentOf() not available for ${connectionId}, trying fallback client`,
-    );
-    agent = await getFallbackAgent(connectionId);
-  }
-
-  if (!agent) {
-    throw new Error(
-      "Agent not configured.\n\n" +
-        "How to fix:\n" +
-        "1. Open Mesh Dashboard\n" +
-        "2. Go to this MCP's configuration\n" +
-        "3. Configure AGENT binding\n" +
-        "4. Click Save to apply",
-    );
-  }
-
-  return agent.STREAM({
+  const streamParams = {
     messages: toUIMessages(messages),
-    toolApprovalLevel: "auto",
+    toolApprovalLevel: "auto" as const,
     ...(threadId ? { thread_id: threadId } : {}),
-  });
+  };
+
+  // Try AgentOf() binding first
+  const bindingAgent = getAgent(connectionId);
+  if (bindingAgent) {
+    try {
+      return await bindingAgent.STREAM(streamParams);
+    } catch (err) {
+      console.log(
+        `[LLM] AgentOf() STREAM failed for ${connectionId}: ${err}, trying fallback`,
+      );
+    }
+  }
+
+  // Fallback: standalone decopilot client with persisted credentials
+  console.log(`[LLM] Using fallback client for ${connectionId}`);
+  const fallback = await getFallbackAgent(connectionId);
+  if (fallback) {
+    return fallback.STREAM(streamParams);
+  }
+
+  throw new Error(
+    "Agent not configured.\n\n" +
+      "How to fix:\n" +
+      "1. Open Mesh Dashboard\n" +
+      "2. Go to this MCP's configuration\n" +
+      "3. Configure AGENT binding\n" +
+      "4. Click Save to apply",
+  );
 }
 
 /**

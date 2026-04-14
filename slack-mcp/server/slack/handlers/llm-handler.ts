@@ -7,6 +7,7 @@
 
 import {
   isAgentAvailable,
+  isAgentAvailableAsync,
   streamAgentResponse,
   collectStreamText,
 } from "../../llm.ts";
@@ -77,10 +78,17 @@ function startThinkingAnimation(
 }
 
 /**
- * Check if the agent is configured for a connection
+ * Check if the agent is configured for a connection (sync — binding only)
  */
 export function isLLMConfigured(connectionId: string): boolean {
   return isAgentAvailable(connectionId);
+}
+
+/**
+ * Check if the agent is available (binding or fallback from Supabase)
+ */
+export async function isLLMAvailable(connectionId: string): Promise<boolean> {
+  return isAgentAvailableAsync(connectionId);
 }
 
 /**

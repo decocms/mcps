@@ -43,7 +43,7 @@ import {
   isContextEnabled,
   type ContextConfig,
 } from "./context-builder.ts";
-import { isLLMConfigured, handleLLMCall } from "./llm-handler.ts";
+import { isLLMAvailable, handleLLMCall } from "./llm-handler.ts";
 
 // Whisper configuration
 interface WhisperConfig {
@@ -478,7 +478,7 @@ async function handleAppMention(
     true,
   );
 
-  if (!isLLMConfigured(connectionId)) {
+  if (!(await isLLMAvailable(connectionId))) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, replyTo, warningMsg);
@@ -646,7 +646,7 @@ async function handleDirectMessage(
     media,
   );
 
-  if (!isLLMConfigured(connectionId)) {
+  if (!(await isLLMAvailable(connectionId))) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await sendMessage({ channel, text: warningMsg });
@@ -716,7 +716,7 @@ async function handleThreadReply(
 
   const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
 
-  if (!isLLMConfigured(connectionId)) {
+  if (!(await isLLMAvailable(connectionId))) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, threadTs, warningMsg);
