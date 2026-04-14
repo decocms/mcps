@@ -20,13 +20,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    /* Path Aliases */
-    "baseUrl": ".",
-    "paths": {
-      "server/*": ["./server/*"]
-    }
+    "noUncheckedSideEffectImports": true
   },
   "include": ["server"]
 }
