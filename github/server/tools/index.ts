@@ -1,11 +1,14 @@
 /**
  * GitHub MCP Tools
  *
- * All tools come from the upstream MCP server via the proxy,
- * plus trigger tools from the @decocms/runtime triggers SDK.
+ * Upstream tools are discovered at startup via GitHub App auth.
+ * Trigger tools come from the @decocms/runtime triggers SDK.
+ * Both are resolved before the server starts accepting requests.
  */
 
-import { createUpstreamToolsProvider } from "../lib/mcp-proxy.ts";
+import { upstreamToolDefsReady, buildUpstreamTools } from "../lib/mcp-proxy.ts";
 import { triggers } from "../lib/trigger-store.ts";
 
-export const tools = [createUpstreamToolsProvider(), () => triggers.tools()];
+const toolDefs = await upstreamToolDefsReady;
+
+export const tools = [...buildUpstreamTools(toolDefs), ...triggers.tools()];

@@ -10,10 +10,7 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { exchangeCodeForToken } from "./lib/github-client.ts";
 import { captureInstallationMappings } from "./lib/installation-map.ts";
-import {
-  handleProxiedRequest,
-  invalidateUpstreamCache,
-} from "./lib/mcp-proxy.ts";
+import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 import { handleGitHubWebhook } from "./webhook.ts";
@@ -70,8 +67,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
 
   configuration: {
     onChange: async (env) => {
-      invalidateUpstreamCache();
-
       const token = env.MESH_REQUEST_CONTEXT?.authorization;
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       if (token && connectionId) {
@@ -126,6 +121,8 @@ console.log(`
 🚀 Server listening on http://localhost:${port}/mcp
 
 📋 Environment Variables:
-   GITHUB_CLIENT_ID      - GitHub App Client ID
-   GITHUB_CLIENT_SECRET  - GitHub App Client Secret
+   GITHUB_APP_ID         - GitHub App ID
+   GITHUB_PRIVATE_KEY    - GitHub App private key (PEM)
+   GITHUB_CLIENT_ID      - GitHub App Client ID (OAuth)
+   GITHUB_CLIENT_SECRET  - GitHub App Client Secret (OAuth)
 `);
