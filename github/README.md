@@ -42,10 +42,14 @@ This MCP requires a **GitHub App** (not a plain OAuth App) because webhook routi
 ### Environment Variables
 
 ```bash
+GITHUB_APP_ID=<github-app-id>
+GITHUB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 GITHUB_CLIENT_ID=<github-app-client-id>
 GITHUB_CLIENT_SECRET=<github-app-client-secret>
 GITHUB_WEBHOOK_SECRET=<webhook-secret>  # Required for webhook signature verification
 ```
+
+`GITHUB_PRIVATE_KEY` accepts raw PEM, a single-line env value with `\n` escapes, or base64-encoded PEM.
 
 ### Running locally
 

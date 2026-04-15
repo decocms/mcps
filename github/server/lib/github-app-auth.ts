@@ -9,9 +9,53 @@
 import crypto from "node:crypto";
 
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || "";
-const GITHUB_PRIVATE_KEY = (process.env.GITHUB_PRIVATE_KEY || "").replace(
-  /\\n/g,
-  "\n",
+
+function normalizePrivateKey(rawKey: string): string {
+  let key = rawKey.trim();
+
+  if (!key) return "";
+
+  // Support values copied from env files, secret managers, or JSON strings.
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  key = key.replace(/\\r/g, "\r").replace(/\\n/g, "\n").trim();
+
+  if (!key.includes("-----BEGIN") && key.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(key) as {
+        privateKey?: string;
+        private_key?: string;
+      };
+      const nestedKey = parsed.privateKey || parsed.private_key;
+      if (nestedKey) {
+        key = normalizePrivateKey(nestedKey);
+      }
+    } catch {
+      // Ignore invalid JSON and continue with other heuristics.
+    }
+  }
+
+  if (!key.includes("-----BEGIN")) {
+    try {
+      const decoded = Buffer.from(key, "base64").toString("utf8").trim();
+      if (decoded.includes("-----BEGIN")) {
+        key = normalizePrivateKey(decoded);
+      }
+    } catch {
+      // Ignore invalid base64 and let validation fail below.
+    }
+  }
+
+  return key;
+}
+
+const GITHUB_PRIVATE_KEY = normalizePrivateKey(
+  process.env.GITHUB_PRIVATE_KEY || "",
 );
 
 function base64url(data: Buffer | string): string {
@@ -42,10 +86,24 @@ function createAppJWT(): string {
   );
 
   const signingInput = `${header}.${payload}`;
-  const signature = crypto
-    .createSign("RSA-SHA256")
-    .update(signingInput)
-    .sign(GITHUB_PRIVATE_KEY, "base64url");
+  let signature: string;
+
+  try {
+    const signingKey = crypto.createPrivateKey({
+      key: GITHUB_PRIVATE_KEY,
+      format: "pem",
+    });
+    signature = crypto
+      .createSign("RSA-SHA256")
+      .update(signingInput)
+      .sign(signingKey, "base64url");
+  } catch (error) {
+    throw new Error(
+      "Invalid GITHUB_PRIVATE_KEY. Expected a GitHub App PEM private key, " +
+        "either as raw PEM, a single-line value with \\n escapes, or base64-encoded PEM.",
+      { cause: error },
+    );
+  }
 
   return `${signingInput}.${signature}`;
 }
