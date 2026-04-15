@@ -32,8 +32,8 @@ export function getDatabaseEnv(): Env | null {
  * For now, we'll use direct table operations instead
  */
 export async function runSQL<T = unknown>(
-  sql: string,
-  params: unknown[] = [],
+  _sql: string,
+  _params: unknown[] = [],
 ): Promise<T[]> {
   const client = getSupabaseClient();
   if (!client) {

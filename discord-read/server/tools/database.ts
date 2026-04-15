@@ -15,7 +15,7 @@ import { invalidateAutoRespondCache } from "../discord/client.ts";
 /**
  * Query Discord messages (read-only, scoped to connection)
  */
-export const createQueryMessagesTool = (env: Env) =>
+export const createQueryMessagesTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_QUERY_MESSAGES",
     description:
@@ -159,7 +159,7 @@ export const createQueryMessagesTool = (env: Env) =>
 /**
  * Query Discord guilds (read-only)
  */
-export const createQueryGuildsTool = (env: Env) =>
+export const createQueryGuildsTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_QUERY_GUILDS",
     description: "Query Discord guilds (servers) from the database.",
@@ -228,7 +228,7 @@ export const createQueryGuildsTool = (env: Env) =>
 /**
  * Query message statistics
  */
-export const createMessageStatsTool = (env: Env) =>
+export const createMessageStatsTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_MESSAGE_STATS",
     description:
@@ -333,7 +333,7 @@ export const createMessageStatsTool = (env: Env) =>
 /**
  * Query channel contexts (custom prompts per channel)
  */
-export const createQueryChannelContextsTool = (env: Env) =>
+export const createQueryChannelContextsTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_QUERY_CHANNEL_CONTEXTS",
     description:

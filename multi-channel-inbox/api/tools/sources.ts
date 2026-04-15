@@ -108,7 +108,7 @@ export const listSourcesTool = (env: Env) =>
       ),
     }),
     annotations: { readOnlyHint: true },
-    execute: async ({}) => {
+    execute: async () => {
       const sources = await runSQL<{
         id: string;
         source_type: string;

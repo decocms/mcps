@@ -47,8 +47,10 @@ export function escapeSqlValue(value: SqlValue): string {
   // String escaping
   const escaped = value
     // Remove null bytes (can cause truncation attacks)
+    // oxlint-disable-next-line no-control-regex
     .replace(/\0/g, "")
     // Remove other control characters (except newlines and tabs)
+    // oxlint-disable-next-line no-control-regex
     .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
     // Escape backslashes first
     .replace(/\\/g, "\\\\")

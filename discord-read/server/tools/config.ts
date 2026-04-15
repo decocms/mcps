@@ -20,7 +20,7 @@ import { isSupabaseConfigured } from "../lib/supabase-client.ts";
 /**
  * Save Discord bot configuration
  */
-export const createSaveConfigTool = (env: Env) =>
+export const createSaveConfigTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_SAVE_CONFIG",
     description:
@@ -159,7 +159,7 @@ export const createSaveConfigTool = (env: Env) =>
 /**
  * Update Discord bot configuration (partial update)
  */
-export const createUpdateConfigTool = (env: Env) =>
+export const createUpdateConfigTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_UPDATE_CONFIG",
     description:
@@ -281,7 +281,7 @@ export const createUpdateConfigTool = (env: Env) =>
 /**
  * Load Discord bot configuration
  */
-export const createLoadConfigTool = (env: Env) =>
+export const createLoadConfigTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_LOAD_CONFIG",
     description:
@@ -364,7 +364,7 @@ export const createLoadConfigTool = (env: Env) =>
 /**
  * Delete Discord bot configuration
  */
-export const createDeleteConfigTool = (env: Env) =>
+export const createDeleteConfigTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_DELETE_CONFIG",
     description:
@@ -408,7 +408,7 @@ export const createDeleteConfigTool = (env: Env) =>
 /**
  * Get cache statistics
  */
-export const createCacheStatsTool = (env: Env) =>
+export const createCacheStatsTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_CONFIG_CACHE_STATS",
     description: "Get Discord configuration cache statistics",
@@ -430,7 +430,7 @@ export const createCacheStatsTool = (env: Env) =>
 /**
  * Clear configuration cache
  */
-export const createClearCacheTool = (env: Env) =>
+export const createClearCacheTool = (_env: Env) =>
   createPrivateTool({
     id: "DISCORD_CONFIG_CLEAR_CACHE",
     description:

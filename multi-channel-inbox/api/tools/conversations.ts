@@ -268,7 +268,7 @@ export const statsTool = (env: Env) =>
       total_conversations: z.number(),
     }),
     annotations: { readOnlyHint: true },
-    execute: async ({}) => {
+    execute: async () => {
       const byStatus = await runSQL<{
         status: string;
         count: number;

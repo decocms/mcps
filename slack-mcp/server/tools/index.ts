@@ -16,7 +16,6 @@ import { syncCacheTool } from "./sync-cache.ts";
 import { triggers } from "../lib/trigger-store.ts";
 
 type ToolFactory<E> = (env: E) => unknown;
-type ToolCollection<E> = ToolFactory<E>[];
 
 /**
  * Wrap tool factory to ensure Slack client is initialized

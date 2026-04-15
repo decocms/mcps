@@ -4,7 +4,6 @@
  * Registry tools are auto-generated from OpenAPI specs via hey-api.
  * Custom tools handle complex multi-step operations.
  */
-import type { Env } from "../types/env.ts";
 import {
   brandTools,
   categoryTools,

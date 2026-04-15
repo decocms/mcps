@@ -148,7 +148,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         }
 
         const configToSave: DiscordConfig = {
-          ...(existingConfig || {}),
+          ...existingConfig,
           connectionId: mergedConnectionId,
           organizationId: mergedOrgId,
           meshUrl: mergedMeshUrl,

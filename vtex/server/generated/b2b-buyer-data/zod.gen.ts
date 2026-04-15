@@ -49,7 +49,7 @@ export const zBuyerSchemaResponse = z.object({
                         })),
                         cardNumber: z.optional(z.object({
                             type: z.optional(z.string()),
-                            pattern: z.optional(z.string().regex(/^[\*]{12}[0-9]{4}$/))
+                            pattern: z.optional(z.string().regex(/^[*]{12}[0-9]{4}$/))
                         })),
                         bin: z.optional(z.object({
                             type: z.optional(z.string())

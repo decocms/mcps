@@ -55,7 +55,7 @@ const AlertChannelSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-const AlertResponseSchema = z.object({
+const _AlertResponseSchema = z.object({
   id: z.string(),
   interval: AlertIntervalSchema,
   threshold: z.number(),
