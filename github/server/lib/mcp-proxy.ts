@@ -185,10 +185,11 @@ export function buildUpstreamTools(
           }
 
           const parsed = safeJsonParse(msg);
-          if (!parsed) {
-            throw new Error(`Failed to parse: ${msg}`);
+          if (parsed) {
+            return parsed;
           }
-          return parsed;
+
+          return msg ?? null;
         } finally {
           client.close().catch(() => {});
         }
