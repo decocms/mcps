@@ -15,6 +15,15 @@ import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getAppInstallationToken } from "./github-app-auth.ts";
 
+function safeJsonParse(text: string | undefined): unknown | null {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 const DEFAULT_UPSTREAM_URL = "https://api.githubcopilot.com/mcp/";
 
 /**
@@ -159,30 +168,27 @@ export function buildUpstreamTools(
             name: toolDef.name,
             arguments: context as Record<string, unknown>,
           });
-          console.log(
-            `[mcp-proxy] callTool ${toolDef.name} result:`,
-            JSON.stringify(result),
-          );
-
-          // The MCP SDK callTool returns { content: [{ type, text }] }.
-          // The deco runtime wraps execute's return in JSON.stringify,
-          // so we need to extract and parse the text to avoid double encoding.
           const contents = result.content as
             | Array<{ type: string; text?: string }>
             | undefined;
-          const textContent = contents?.find(
+          const msg = contents?.find(
             (c): c is { type: "text"; text: string } =>
               c.type === "text" && typeof c.text === "string",
-          );
-          if (textContent?.text) {
-            try {
-              return JSON.parse(textContent.text);
-            } catch {
-              return textContent.text;
-            }
+          )?.text;
+
+          if (result.isError) {
+            throw new Error(msg || "Something went wrong");
           }
 
-          return result;
+          if (result.structuredContent) {
+            return result.structuredContent;
+          }
+
+          const parsed = safeJsonParse(msg);
+          if (!parsed) {
+            throw new Error(`Failed to parse: ${msg}`);
+          }
+          return parsed;
         } finally {
           client.close().catch(() => {});
         }
