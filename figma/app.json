@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "figma",
+  "friendlyName": "Figma",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-figma.decocache.com/mcp"
+  },
+  "description": "Access Figma design files, comments, components, and styles via the Figma REST API.",
+  "icon": "https://static.figma.com/app/icon/1/favicon.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Design", "Developer Tools"],
+    "official": false,
+    "tags": ["figma", "design", "ui", "components", "styles", "prototyping", "collaboration", "design-systems"],
+    "short_description": "Access Figma design files, comments, components, and styles via the Figma REST API.",
+    "mesh_description": "The Figma MCP provides comprehensive read and comment access to Figma design files through the Figma REST API. It enables AI agents to retrieve file structures and node trees, export rendered images in multiple formats, read and post comments on designs, browse version history, list team projects and files, and access published component and style libraries."
+  }
+}
