@@ -9,7 +9,10 @@
 import crypto from "node:crypto";
 
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || "";
-const GITHUB_PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY || "";
+const GITHUB_PRIVATE_KEY = (process.env.GITHUB_PRIVATE_KEY || "").replace(
+  /\\n/g,
+  "\n",
+);
 
 function base64url(data: Buffer | string): string {
   const buf = typeof data === "string" ? Buffer.from(data) : data;
