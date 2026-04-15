@@ -159,6 +159,10 @@ export function buildUpstreamTools(
             name: toolDef.name,
             arguments: context as Record<string, unknown>,
           });
+          console.log(
+            `[mcp-proxy] callTool ${toolDef.name} result:`,
+            JSON.stringify(result),
+          );
 
           // The MCP SDK callTool returns { content: [{ type, text }] }.
           // The deco runtime wraps execute's return in JSON.stringify,
