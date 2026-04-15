@@ -23,9 +23,8 @@ function normalizePrivateKey(rawKey: string): string {
     key = key.slice(1, -1);
   }
 
-  key = key.replace(/\\r/g, "\r").replace(/\\n/g, "\n").trim();
-
-  if (!key.includes("-----BEGIN") && key.startsWith("{")) {
+  // Try JSON extraction before \\n replacement (which would break JSON strings).
+  if (key.startsWith("{")) {
     try {
       const parsed = JSON.parse(key) as {
         privateKey?: string;
@@ -33,12 +32,14 @@ function normalizePrivateKey(rawKey: string): string {
       };
       const nestedKey = parsed.privateKey || parsed.private_key;
       if (nestedKey) {
-        key = normalizePrivateKey(nestedKey);
+        return normalizePrivateKey(nestedKey);
       }
     } catch {
       // Ignore invalid JSON and continue with other heuristics.
     }
   }
+
+  key = key.replace(/\\r/g, "\r").replace(/\\n/g, "\n").trim();
 
   if (!key.includes("-----BEGIN")) {
     try {
@@ -47,8 +48,35 @@ function normalizePrivateKey(rawKey: string): string {
         key = normalizePrivateKey(decoded);
       }
     } catch {
-      // Ignore invalid base64 and let validation fail below.
+      // Ignore invalid base64 and continue with other heuristics.
     }
+  }
+
+  // Raw base64 DER data without PEM headers (e.g. copied from a PEM file
+  // without the -----BEGIN/END----- markers, or stored by a secret manager).
+  if (!key.includes("-----BEGIN")) {
+    const cleaned = key.replace(/[\s\r\n]/g, "");
+    if (cleaned.length > 100 && /^[A-Za-z0-9+/=_-]+$/.test(cleaned)) {
+      const standard = cleaned.replace(/-/g, "+").replace(/_/g, "/");
+      const lines = standard.match(/.{1,64}/g)!.join("\n");
+      for (const label of ["PRIVATE KEY", "RSA PRIVATE KEY"]) {
+        const pem = `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----`;
+        try {
+          crypto.createPrivateKey({ key: pem, format: "pem" });
+          return pem;
+        } catch {
+          continue;
+        }
+      }
+    }
+  }
+
+  // Ensure PEM headers/footers are on their own lines (handles cases where
+  // newlines between the header and base64 data were stripped).
+  if (key.includes("-----BEGIN")) {
+    key = key
+      .replace(/(-----BEGIN [A-Z ]+-----)([^\n\r])/g, "$1\n$2")
+      .replace(/([^\n\r])(-----END [A-Z ]+-----)/g, "$1\n$2");
   }
 
   return key;
@@ -98,9 +126,13 @@ function createAppJWT(): string {
       .update(signingInput)
       .sign(signingKey, "base64url");
   } catch (error) {
+    const hasPemHeader = GITHUB_PRIVATE_KEY.includes("-----BEGIN");
+    const keyLen = GITHUB_PRIVATE_KEY.length;
     throw new Error(
-      "Invalid GITHUB_PRIVATE_KEY. Expected a GitHub App PEM private key, " +
-        "either as raw PEM, a single-line value with \\n escapes, or base64-encoded PEM.",
+      `Invalid GITHUB_PRIVATE_KEY (length=${keyLen}, hasPemHeader=${hasPemHeader}). ` +
+        "Expected a GitHub App PEM private key, " +
+        "either as raw PEM, a single-line value with \\n escapes, base64-encoded PEM, " +
+        "or raw base64 DER data.",
       { cause: error },
     );
   }
