@@ -3,86 +3,44 @@
  *
  * Uses the official MCP TypeScript SDK Client to connect to an upstream
  * MCP server and proxy tools and resources through our OAuth flow.
+ *
+ * Tool definitions are fetched once at startup using a GitHub App installation
+ * token. Tool execution uses the per-request user token from ctx.
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { CreatedTool } from "@decocms/runtime/tools";
+import { createTool, type AppContext } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-
-/** Cached client per upstream URL + token combo */
-let cachedClient: Client | null = null;
-let cachedClientKey = "";
-let cachedClientConnected = false;
+import { getAppInstallationToken } from "./github-app-auth.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://api.githubcopilot.com/mcp/";
 
 /**
- * Get or create an MCP client connected to the upstream server.
- * Caches the client to avoid reconnecting on every request.
+ * Create a fresh MCP client connected to the upstream server.
  */
-async function getUpstreamClient(
-  upstreamUrl: string,
-  token: string,
-): Promise<Client> {
-  const key = `${upstreamUrl}::${token}`;
-
-  if (cachedClient && cachedClientKey === key && cachedClientConnected) {
-    return cachedClient;
-  }
-
-  // Close previous client if exists
-  if (cachedClient) {
-    try {
-      await cachedClient.close();
-    } catch {
-      // Ignore close errors
-    }
-  }
-
-  console.log(`[MCP Proxy] Connecting to upstream: ${upstreamUrl}`);
-
+function connectUpstreamClient(token: string): Promise<Client> {
   const client = new Client({ name: "github-mcp-proxy", version: "1.0.0" });
 
-  const transport = new StreamableHTTPClientTransport(new URL(upstreamUrl), {
-    requestInit: {
-      headers: {
-        Authorization: `Bearer ${token}`,
+  const transport = new StreamableHTTPClientTransport(
+    new URL(DEFAULT_UPSTREAM_URL),
+    {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
     },
-  });
+  );
 
-  await client.connect(transport);
-
-  cachedClient = client;
-  cachedClientKey = key;
-  cachedClientConnected = true;
-
-  console.log("[MCP Proxy] Connected to upstream server");
-
-  return client;
+  return client.connect(transport).then(() => client);
 }
 
-/** Cached upstream tool definitions, keyed by token */
-type ToolsDef = Awaited<ReturnType<Client["listTools"]>>["tools"];
-const toolsCache = new Map<string, { tools: ToolsDef; timestamp: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_ENTRIES = 50;
+// ============================================================================
+// JSON Schema → Zod conversion
+// ============================================================================
 
-/** Evict expired entries from the tools cache */
-function evictExpiredToolsCache(): void {
-  const now = Date.now();
-  for (const [key, entry] of toolsCache) {
-    if (now - entry.timestamp > CACHE_TTL_MS) {
-      toolsCache.delete(key);
-    }
-  }
-}
-
-/**
- * Convert a JSON Schema property to a Zod schema.
- */
 function jsonSchemaPropertyToZod(
   prop: { type?: string; description?: string; [key: string]: unknown },
   required: boolean,
@@ -121,9 +79,6 @@ function jsonSchemaPropertyToZod(
   return schema;
 }
 
-/**
- * Convert a JSON Schema object to a Zod z.object() schema.
- */
 function jsonSchemaToZod(inputSchema?: {
   properties?: Record<string, any>;
   required?: string[];
@@ -143,112 +98,98 @@ function jsonSchemaToZod(inputSchema?: {
   return z.object(shape);
 }
 
-/**
- * Create a tool provider that fetches upstream tools via the SDK Client
- * and wraps them as CreatedTool[] for the Deco runtime.
- */
-export function createUpstreamToolsProvider(): (
-  env: Env,
-) => Promise<CreatedTool[]> {
-  return async (env: Env): Promise<CreatedTool[]> => {
-    const token = env.MESH_REQUEST_CONTEXT?.authorization;
-    const upstreamUrl = DEFAULT_UPSTREAM_URL;
+// ============================================================================
+// Startup tool discovery
+// ============================================================================
 
-    if (!token) {
-      console.log(
-        "[MCP Proxy] No auth token available, skipping upstream tools",
-      );
-      return [];
-    }
-
-    try {
-      const client = await getUpstreamClient(upstreamUrl, token);
-
-      // Check cache (keyed by token to avoid leaking between users)
-      const now = Date.now();
-      const cached = toolsCache.get(token);
-      let tools: ToolsDef;
-      if (cached && now - cached.timestamp < CACHE_TTL_MS) {
-        tools = cached.tools;
-      } else {
-        // Evict expired entries; if still at cap, drop oldest
-        evictExpiredToolsCache();
-        if (toolsCache.size >= MAX_CACHE_ENTRIES) {
-          const oldest = [...toolsCache.entries()].sort(
-            (a, b) => a[1].timestamp - b[1].timestamp,
-          )[0];
-          if (oldest) toolsCache.delete(oldest[0]);
-        }
-        const result = await client.listTools();
-        tools = result.tools;
-        toolsCache.set(token, { tools, timestamp: now });
-        console.log(`[MCP Proxy] Found ${tools.length} upstream tools`);
-      }
-
-      return tools.map(
-        (toolDef): CreatedTool => ({
-          id: toolDef.name,
-          description: toolDef.description || `GitHub tool: ${toolDef.name}`,
-          inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
-          execute: async ({ context }) => {
-            const currentToken = env.MESH_REQUEST_CONTEXT?.authorization;
-            if (!currentToken) {
-              throw new Error("GitHub authorization token not found");
-            }
-
-            const currentUrl = DEFAULT_UPSTREAM_URL;
-
-            const upstreamClient = await getUpstreamClient(
-              currentUrl,
-              currentToken,
-            );
-            const result = await upstreamClient.callTool({
-              name: toolDef.name,
-              arguments: context as Record<string, unknown>,
-            });
-
-            // The MCP SDK callTool returns { content: [{ type, text }] }.
-            // The deco runtime wraps execute's return in JSON.stringify,
-            // so we need to extract and parse the text to avoid double encoding.
-            const contents = result.content as
-              | Array<{ type: string; text?: string }>
-              | undefined;
-            const textContent = contents?.find(
-              (c): c is { type: "text"; text: string } =>
-                c.type === "text" && typeof c.text === "string",
-            );
-            if (textContent?.text) {
-              try {
-                return JSON.parse(textContent.text);
-              } catch {
-                return textContent.text;
-              }
-            }
-
-            return result;
-          },
-        }),
-      );
-    } catch (error) {
-      console.error("[MCP Proxy] Failed to fetch upstream tools:", error);
-      return [];
-    }
-  };
-}
+type ToolsDef = Awaited<ReturnType<Client["listTools"]>>["tools"];
 
 /**
- * Invalidate the upstream tools cache and disconnect client.
+ * Discover upstream tool definitions at startup using a GitHub App
+ * installation token. Throws on failure — the server should not boot
+ * if tool discovery fails.
  */
-export function invalidateUpstreamCache(): void {
-  toolsCache.clear();
-
-  if (cachedClient) {
-    cachedClient.close().catch(() => {});
-    cachedClient = null;
-    cachedClientKey = "";
-    cachedClientConnected = false;
+async function discoverUpstreamToolDefs(): Promise<ToolsDef> {
+  console.log("[MCP Proxy] Discovering upstream tools at startup...");
+  const token = await getAppInstallationToken();
+  const client = await connectUpstreamClient(token);
+  try {
+    const result = await client.listTools();
+    console.log(`[MCP Proxy] Discovered ${result.tools.length} upstream tools`);
+    return result.tools;
+  } finally {
+    client.close().catch(() => {});
   }
 }
+
+/**
+ * Top-level promise that resolves to the upstream tool definitions.
+ * Awaited in tools/index.ts before the server starts accepting requests.
+ * If this fails, the server process crashes — by design.
+ */
+export const upstreamToolDefsReady: Promise<ToolsDef> =
+  discoverUpstreamToolDefs();
+
+// ============================================================================
+// Upstream tool creation
+// ============================================================================
+
+/**
+ * Build createTool() instances from pre-discovered tool definitions.
+ * Execution uses the per-request user token from ctx.
+ */
+export function buildUpstreamTools(
+  toolDefs: ToolsDef,
+): ReturnType<typeof createTool>[] {
+  return toolDefs.map((toolDef) =>
+    createTool({
+      id: toolDef.name,
+      description: toolDef.description || `GitHub tool: ${toolDef.name}`,
+      inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
+      execute: async ({ context }, ctx) => {
+        const currentToken = (ctx as AppContext<Env>).env.MESH_REQUEST_CONTEXT
+          ?.authorization;
+        if (!currentToken) {
+          throw new Error("GitHub authorization token not found");
+        }
+
+        const client = await connectUpstreamClient(currentToken);
+        try {
+          const result = await client.callTool({
+            name: toolDef.name,
+            arguments: context as Record<string, unknown>,
+          });
+
+          // The MCP SDK callTool returns { content: [{ type, text }] }.
+          // The deco runtime wraps execute's return in JSON.stringify,
+          // so we need to extract and parse the text to avoid double encoding.
+          const contents = result.content as
+            | Array<{ type: string; text?: string }>
+            | undefined;
+          const textContent = contents?.find(
+            (c): c is { type: "text"; text: string } =>
+              c.type === "text" && typeof c.text === "string",
+          );
+          if (textContent?.text) {
+            try {
+              return JSON.parse(textContent.text);
+            } catch {
+              return textContent.text;
+            }
+          }
+
+          return result;
+        } finally {
+          client.close().catch(() => {});
+        }
+      },
+    }),
+  );
+}
+
+// ============================================================================
+// Resource proxying (pass-through to upstream)
+// ============================================================================
 
 /** Methods that should be forwarded to the upstream server */
 const PROXY_METHODS = new Set([
@@ -287,8 +228,8 @@ export async function handleProxiedRequest(
 
   console.log(`[MCP Proxy] Forwarding ${body.method} to upstream`);
 
+  const client = await connectUpstreamClient(token);
   try {
-    const client = await getUpstreamClient(upstreamUrl, token);
     let result: unknown;
 
     switch (body.method) {
@@ -328,5 +269,7 @@ export async function handleProxiedRequest(
       },
       { headers: { "Content-Type": "application/json" } },
     );
+  } finally {
+    client.close().catch(() => {});
   }
 }
