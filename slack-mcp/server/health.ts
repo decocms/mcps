@@ -130,7 +130,10 @@ export async function getHealthStatus(): Promise<HealthStatus> {
 
   return {
     status: cachedDeepResult.status,
-    summary: buildSummary(cachedDeepResult.status, cachedDeepResult.connections),
+    summary: buildSummary(
+      cachedDeepResult.status,
+      cachedDeepResult.connections,
+    ),
     timestamp: now.toISOString(),
     deepCheckAt: cachedDeepResult.timestamp,
     uptime: process.uptime(),
@@ -464,7 +467,9 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
 
     results.push({
       connectionId: config.connectionId.slice(0, 8) + "…",
-      teamName: config.teamName ? config.teamName.slice(0, 1) + "***" : undefined,
+      teamName: config.teamName
+        ? config.teamName.slice(0, 1) + "***"
+        : undefined,
       connectionName: config.connectionName,
       mode,
       overall,
