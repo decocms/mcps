@@ -23,13 +23,16 @@ const DEFAULT_UPSTREAM_URL = "https://api.githubcopilot.com/mcp/";
 function connectUpstreamClient(token: string): Promise<Client> {
   const client = new Client({ name: "github-mcp-proxy", version: "1.0.0" });
 
-  const transport = new StreamableHTTPClientTransport(new URL(DEFAULT_UPSTREAM_URL), {
-    requestInit: {
-      headers: {
-        Authorization: `Bearer ${token}`,
+  const transport = new StreamableHTTPClientTransport(
+    new URL(DEFAULT_UPSTREAM_URL),
+    {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
     },
-  });
+  );
 
   return client.connect(transport).then(() => client);
 }
@@ -124,7 +127,8 @@ async function discoverUpstreamToolDefs(): Promise<ToolsDef> {
  * Awaited in tools/index.ts before the server starts accepting requests.
  * If this fails, the server process crashes — by design.
  */
-export const upstreamToolDefsReady: Promise<ToolsDef> = discoverUpstreamToolDefs();
+export const upstreamToolDefsReady: Promise<ToolsDef> =
+  discoverUpstreamToolDefs();
 
 // ============================================================================
 // Upstream tool creation
@@ -134,14 +138,17 @@ export const upstreamToolDefsReady: Promise<ToolsDef> = discoverUpstreamToolDefs
  * Build createTool() instances from pre-discovered tool definitions.
  * Execution uses the per-request user token from ctx.
  */
-export function buildUpstreamTools(toolDefs: ToolsDef): ReturnType<typeof createTool>[] {
+export function buildUpstreamTools(
+  toolDefs: ToolsDef,
+): ReturnType<typeof createTool>[] {
   return toolDefs.map((toolDef) =>
     createTool({
       id: toolDef.name,
       description: toolDef.description || `GitHub tool: ${toolDef.name}`,
       inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
       execute: async ({ context }, ctx) => {
-        const currentToken = (ctx as AppContext<Env>).env.MESH_REQUEST_CONTEXT?.authorization;
+        const currentToken = (ctx as AppContext<Env>).env.MESH_REQUEST_CONTEXT
+          ?.authorization;
         if (!currentToken) {
           throw new Error("GitHub authorization token not found");
         }
