@@ -2,7 +2,7 @@
  * File Operations Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
@@ -28,7 +28,7 @@ const FileSchema = z.object({
 });
 
 export const createListFilesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_files",
     description: "List files in Google Drive. Can filter with query syntax.",
     inputSchema: z.object({
@@ -51,7 +51,8 @@ export const createListFilesTool = (env: Env) =>
       files: z.array(FileSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const result = await client.listFiles({
         q: context.query,
@@ -63,7 +64,7 @@ export const createListFilesTool = (env: Env) =>
   });
 
 export const createGetFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_file",
     description: "Get metadata about a specific file.",
     inputSchema: z.object({
@@ -72,7 +73,8 @@ export const createGetFileTool = (env: Env) =>
     outputSchema: z.object({
       file: FileSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const file = await client.getFile(context.fileId);
       return { file };
@@ -80,7 +82,7 @@ export const createGetFileTool = (env: Env) =>
   });
 
 export const createCreateFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_file",
     description:
       "Create a new file (empty). Use specific MIME types for Google Docs/Sheets/Slides.",
@@ -99,7 +101,8 @@ export const createCreateFileTool = (env: Env) =>
       file: FileSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const file = await client.createFile({
         name: context.name,
@@ -112,7 +115,7 @@ export const createCreateFileTool = (env: Env) =>
   });
 
 export const createUpdateFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_file",
     description:
       "Update file metadata (name, description, move to folder, star/trash).",
@@ -135,7 +138,8 @@ export const createUpdateFileTool = (env: Env) =>
       file: FileSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const file = await client.updateFile(
         context.fileId,
@@ -153,7 +157,7 @@ export const createUpdateFileTool = (env: Env) =>
   });
 
 export const createDeleteFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_file",
     description: "Permanently delete a file. WARNING: This cannot be undone.",
     inputSchema: z.object({
@@ -163,7 +167,8 @@ export const createDeleteFileTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       await client.deleteFile(context.fileId);
       return { success: true, message: "File deleted permanently" };
@@ -171,7 +176,7 @@ export const createDeleteFileTool = (env: Env) =>
   });
 
 export const createCopyFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "copy_file",
     description: "Create a copy of a file.",
     inputSchema: z.object({
@@ -183,7 +188,8 @@ export const createCopyFileTool = (env: Env) =>
       file: FileSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const file = await client.copyFile(
         context.fileId,
@@ -195,7 +201,7 @@ export const createCopyFileTool = (env: Env) =>
   });
 
 export const createSearchFilesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "search_files",
     description:
       "Search files using Drive query syntax. Supports name, type, content, owner filters.",
@@ -214,7 +220,8 @@ export const createSearchFilesTool = (env: Env) =>
       files: z.array(FileSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const files = await client.searchFiles(
         context.query,
@@ -233,7 +240,7 @@ const GOOGLE_EXPORT_MAP: Record<string, { mimeType: string; label: string }> = {
 };
 
 export const createReadFileContentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "read_file_content",
     description:
       "Read the text content of a file. For Google Docs/Sheets/Slides, exports as text/CSV. For regular files (txt, json, csv, etc.), downloads the content directly.",
@@ -252,7 +259,8 @@ export const createReadFileContentTool = (env: Env) =>
       mimeType: z.string(),
       exportedAs: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const file = await client.getFile(context.fileId);
 

@@ -4,7 +4,7 @@
  * Tools for listing, getting, adding, and removing sites
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -33,7 +33,7 @@ const SiteEntrySchema = z.object({
 // ============================================================================
 
 export const createListSitesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_sites",
     description:
       "List all sites in Google Search Console for the authenticated user",
@@ -41,7 +41,8 @@ export const createListSitesTool = (env: Env) =>
     outputSchema: z.object({
       sites: z.array(SiteEntrySchema).describe("List of sites"),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -63,7 +64,7 @@ export const createListSitesTool = (env: Env) =>
 // ============================================================================
 
 export const createGetSiteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_site",
     description: "Get information about a specific site",
     inputSchema: z.object({
@@ -76,7 +77,8 @@ export const createGetSiteTool = (env: Env) =>
     outputSchema: z.object({
       site: SiteEntrySchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -97,7 +99,7 @@ export const createGetSiteTool = (env: Env) =>
 // ============================================================================
 
 export const createAddSiteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_site",
     description: "Add a new site to Google Search Console",
     inputSchema: z.object({
@@ -111,7 +113,8 @@ export const createAddSiteTool = (env: Env) =>
       success: z.boolean().describe("Whether the site was added successfully"),
       siteUrl: z.string().describe("The site URL that was added"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -130,7 +133,7 @@ export const createAddSiteTool = (env: Env) =>
 // ============================================================================
 
 export const createRemoveSiteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "remove_site",
     description: "Remove a site from Google Search Console",
     inputSchema: z.object({
@@ -146,7 +149,8 @@ export const createRemoveSiteTool = (env: Env) =>
         .describe("Whether the site was removed successfully"),
       siteUrl: z.string().describe("The site URL that was removed"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });

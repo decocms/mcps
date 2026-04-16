@@ -4,7 +4,7 @@
  * Tools for listing, getting, sending, searching, and managing messages
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
@@ -44,7 +44,7 @@ const ParsedMessageSchema = z.object({
 // ============================================================================
 
 export const createListMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_list_emails",
     description:
       "List emails from Gmail inbox with subject, sender, and recipient information. Perfect for checking recent emails or filtering by labels.",
@@ -93,7 +93,8 @@ export const createListMessagesTool = (env: Env) =>
         .describe("Token for fetching the next page"),
       totalEmails: z.number().describe("Number of emails returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -139,7 +140,7 @@ export const createListMessagesTool = (env: Env) =>
 // ============================================================================
 
 export const createGetMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_get_email_details",
     description:
       "Get the full content of a specific email including subject, body text, HTML, sender, recipients, and attachments. Use the email ID from gmail_list_emails.",
@@ -157,7 +158,8 @@ export const createGetMessageTool = (env: Env) =>
         "Full email details including body and attachments",
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -178,7 +180,7 @@ export const createGetMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createSendMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_send_email",
     description:
       "Send a new email from Gmail. Supports HTML content, CC, BCC, and replies to existing conversations.",
@@ -214,7 +216,8 @@ export const createSendMessageTool = (env: Env) =>
       success: z.boolean().describe("Whether the email was sent successfully"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -244,7 +247,7 @@ export const createSendMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createSearchMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_search_emails",
     description: `Search emails in Gmail using powerful query syntax. Returns full email details including subject, sender, body, and attachments.
 
@@ -282,7 +285,8 @@ Search Examples:
       nextPageToken: z.string().optional().describe("Token for next page"),
       totalResults: z.number().describe("Number of emails found"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -315,7 +319,7 @@ Search Examples:
 // ============================================================================
 
 export const createTrashMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_move_email_to_trash",
     description:
       "Move an email to the Gmail trash. The email can be recovered later from trash.",
@@ -326,7 +330,8 @@ export const createTrashMessageTool = (env: Env) =>
       success: z.boolean().describe("Whether the email was moved to trash"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -345,7 +350,7 @@ export const createTrashMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createUntrashMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_restore_email_from_trash",
     description: "Restore an email from Gmail trash back to the inbox.",
     inputSchema: z.object({
@@ -355,7 +360,8 @@ export const createUntrashMessageTool = (env: Env) =>
       success: z.boolean().describe("Whether the email was restored"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -374,7 +380,7 @@ export const createUntrashMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_permanently_delete_email",
     description:
       "PERMANENTLY delete an email from Gmail. WARNING: This cannot be undone! Use gmail_move_email_to_trash instead if you might need to recover the email later.",
@@ -385,7 +391,8 @@ export const createDeleteMessageTool = (env: Env) =>
       success: z.boolean().describe("Whether the email was deleted"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -404,7 +411,7 @@ export const createDeleteMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createModifyMessageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_update_email_labels",
     description: `Add or remove labels from an email. Use this to:
 - Mark as read: remove 'UNREAD' label
@@ -432,7 +439,8 @@ export const createModifyMessageTool = (env: Env) =>
         .describe("Updated list of labels on the email"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -456,7 +464,7 @@ export const createModifyMessageTool = (env: Env) =>
 // ============================================================================
 
 export const createBatchModifyMessagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_batch_update_email_labels",
     description: `Add or remove labels from multiple emails at once in a single API call. Much more efficient than updating one email at a time. Use this to:
 - Mark multiple emails as read: remove 'UNREAD' label
@@ -490,7 +498,8 @@ Supports up to 1000 email IDs per call.`,
       count: z.number().describe("Number of emails modified"),
       message: z.string().describe("Confirmation message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });

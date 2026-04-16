@@ -1,11 +1,11 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
 import { GrainClient, GrainAPIError } from "../lib/grain-client.ts";
 import type { Env } from "../types/env.ts";
 
 export const createGetRecordingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_RECORDING",
     description:
       "Get detailed information about a specific Grain recording. " +
@@ -70,7 +70,8 @@ export const createGetRecordingTool = (env: Env) =>
         .optional(),
       intelligence_notes_md: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         const client = new GrainClient({ apiKey: getGrainApiKey(env) });
 

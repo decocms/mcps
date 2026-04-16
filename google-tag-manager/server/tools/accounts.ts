@@ -4,7 +4,7 @@
  * Tools for listing and getting GTM accounts
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
@@ -14,7 +14,7 @@ import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
 // ============================================================================
 
 export const createListAccountsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_accounts",
     description:
       "List all GTM accounts accessible by the authenticated user. Returns account IDs, names, and metadata.",
@@ -43,7 +43,8 @@ export const createListAccountsTool = (env: Env) =>
       ),
       nextPageToken: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });
@@ -74,7 +75,7 @@ export const createListAccountsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetAccountTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_account",
     description:
       "Get detailed information about a specific GTM account by its ID.",
@@ -97,7 +98,8 @@ export const createGetAccountTool = (env: Env) =>
           .optional(),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GTMClient({
         accessToken: getAccessToken(env),
       });

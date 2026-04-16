@@ -6,7 +6,7 @@ import {
   WORKFLOW_BINDING,
   WorkflowSchema,
 } from "@decocms/bindings/workflow";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { runSQL } from "../db/postgres.ts";
 import type { Env } from "../types/env.ts";
@@ -79,17 +79,21 @@ function transformDbRowToWorkflowCollectionItem(row: unknown): Workflow {
 }
 
 export const createListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_LIST",
     description:
       "List workflows with filtering, sorting, and pagination. This does not include the steps of the workflows, use the GET tool to check the list of steps.",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: createCollectionListOutputSchema(WorkflowSchema),
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof LIST_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof LIST_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       let whereClause = "";
@@ -147,16 +151,20 @@ export async function getWorkflowCollection(
 }
 
 export const createGetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_GET",
     description: "Get a single workflow by ID",
     inputSchema: GET_BINDING.inputSchema,
     outputSchema: GET_BINDING.outputSchema,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof GET_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof GET_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
 
       const workflow = await getWorkflowCollection(env, id);
@@ -210,7 +218,7 @@ export async function insertWorkflowCollectionItem(
 }
 
 export const createInsertTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: CREATE_BINDING.name,
     description: `Creates a template/definition for a workflow. This entity is not executable, but can be used to create executions.
     This is ideal for storing and reusing workflows. You may also want to use this tool to iterate on a workflow before creating executions. You may start with an empty array of steps and add steps gradually.
@@ -258,7 +266,8 @@ Example workflow with a step that references the output of another step:
       }),
     }),
     // outputSchema: CREATE_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       validateConnectionState(env);
       const { data } = context;
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
@@ -381,7 +390,7 @@ async function updateWorkflowCollection(
 }
 
 export const createUpdateTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_UPDATE",
     description: "Update an existing workflow",
     inputSchema: z.object({
@@ -395,7 +404,8 @@ export const createUpdateTool = (env: Env) =>
         description: z.string().optional(),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         await updateWorkflowCollection(env, context);
         return {
@@ -411,7 +421,7 @@ export const createUpdateTool = (env: Env) =>
   });
 
 export const createAppendStepTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_APPEND_STEP",
     description: "Append a new step to an existing workflow",
     inputSchema: z.object({
@@ -425,7 +435,8 @@ export const createAppendStepTool = (env: Env) =>
         .boolean()
         .describe("Whether the step was appended successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id, step } = context;
 
       const workflow = await getWorkflowCollection(env, id as string);
@@ -455,7 +466,7 @@ export const createAppendStepTool = (env: Env) =>
   });
 
 export const createUpdateStepsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_UPDATE_STEPS",
     description: "Update one or more steps of a workflow",
     inputSchema: z.object({
@@ -472,7 +483,8 @@ export const createUpdateStepsTool = (env: Env) =>
         .boolean()
         .describe("Whether the step was updated successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { steps, id } = context;
 
       if (!steps) {
@@ -526,12 +538,13 @@ export const createUpdateStepsTool = (env: Env) =>
   });
 
 export const createDeleteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_WORKFLOW_DELETE",
     description: "Delete a workflow by ID",
     inputSchema: DELETE_BINDING.inputSchema,
     outputSchema: DELETE_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
 
       const result = await runSQL<Record<string, unknown>>(

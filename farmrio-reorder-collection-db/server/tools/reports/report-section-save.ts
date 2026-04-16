@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { Env } from "../../types/env.ts";
@@ -26,13 +26,14 @@ const outputSchema = z
   .strict();
 
 export const reportSectionSaveTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "report_section_save",
     description:
       "Substitui todas as seções de um report. Apaga as seções existentes e insere as novas com seus itens (criteria, metrics, ranked-list ou note).",
     inputSchema,
     outputSchema,
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         validateToken(env);
         const input = inputSchema.parse(context);

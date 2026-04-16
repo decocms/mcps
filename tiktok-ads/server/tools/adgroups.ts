@@ -4,7 +4,7 @@
  * Tools for listing, creating, and updating ad groups
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -84,7 +84,7 @@ const PageInfoSchema = z.object({
 // ============================================================================
 
 export const createListAdGroupsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_adgroups",
     description:
       "List all ad groups for an advertiser with optional filters for campaign, name, and status.",
@@ -123,7 +123,8 @@ export const createListAdGroupsTool = (env: Env) =>
       adgroups: z.array(AdGroupSchema).describe("List of ad groups"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -158,7 +159,7 @@ export const createListAdGroupsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetAdGroupTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_adgroup",
     description:
       "Get detailed information about a specific ad group by its ID.",
@@ -172,7 +173,8 @@ export const createGetAdGroupTool = (env: Env) =>
     outputSchema: z.object({
       adgroup: AdGroupSchema.nullable().describe("Ad Group details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -200,7 +202,7 @@ export const createGetAdGroupTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateAdGroupTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_adgroup",
     description:
       "Create a new ad group within a campaign. Requires advertiser ID, campaign ID, name, and optimization goal.",
@@ -257,7 +259,8 @@ export const createCreateAdGroupTool = (env: Env) =>
       success: z.boolean().describe("Whether creation was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -302,7 +305,7 @@ export const createCreateAdGroupTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateAdGroupTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_adgroup",
     description:
       "Update an existing ad group. Only provided fields will be updated. At least one field to update must be provided.",
@@ -349,7 +352,8 @@ export const createUpdateAdGroupTool = (env: Env) =>
       success: z.boolean().describe("Whether update was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(

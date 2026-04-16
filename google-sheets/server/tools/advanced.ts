@@ -2,7 +2,7 @@
  * Advanced Tools (Charts, Data Validation, Conditional Formatting, Protected Ranges)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
@@ -18,7 +18,7 @@ const ColorSchema = z.object({
 // ============================================
 
 export const createCreateChartTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_chart",
     description:
       "Create a chart (bar, line, column, area, or pie) from spreadsheet data.",
@@ -62,7 +62,8 @@ export const createCreateChartTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addChart(
         context.spreadsheetId,
@@ -93,7 +94,7 @@ export const createCreateChartTool = (env: Env) =>
   });
 
 export const createDeleteChartTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_chart",
     description: "Delete a chart from a spreadsheet by its ID.",
     inputSchema: z.object({
@@ -104,7 +105,8 @@ export const createDeleteChartTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteChart(context.spreadsheetId, context.chartId);
       return { success: true, message: `Chart ${context.chartId} deleted` };
@@ -116,7 +118,7 @@ export const createDeleteChartTool = (env: Env) =>
 // ============================================
 
 export const createAddDataValidationTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_data_validation",
     description:
       "Add data validation (dropdown list, checkbox, number constraints, etc.) to a cell range.",
@@ -162,7 +164,8 @@ export const createAddDataValidationTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.setDataValidation(
         context.spreadsheetId,
@@ -187,7 +190,7 @@ export const createAddDataValidationTool = (env: Env) =>
   });
 
 export const createClearDataValidationTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "clear_data_validation",
     description: "Remove data validation from a cell range.",
     inputSchema: z.object({
@@ -202,7 +205,8 @@ export const createClearDataValidationTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.clearDataValidation(
         context.spreadsheetId,
@@ -221,7 +225,7 @@ export const createClearDataValidationTool = (env: Env) =>
 // ============================================
 
 export const createAddConditionalFormattingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_conditional_formatting",
     description:
       "Add a conditional formatting rule that applies formatting when a condition is met.",
@@ -287,7 +291,8 @@ export const createAddConditionalFormattingTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addConditionalFormatRule(
         context.spreadsheetId,
@@ -316,7 +321,7 @@ export const createAddConditionalFormattingTool = (env: Env) =>
   });
 
 export const createClearConditionalFormattingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "clear_conditional_formatting",
     description: "Remove a conditional formatting rule by its index.",
     inputSchema: z.object({
@@ -330,7 +335,8 @@ export const createClearConditionalFormattingTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteConditionalFormatRule(
         context.spreadsheetId,
@@ -349,7 +355,7 @@ export const createClearConditionalFormattingTool = (env: Env) =>
 // ============================================
 
 export const createProtectRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "protect_range",
     description:
       "Protect a range of cells from editing. Use this to prevent accidental changes to formulas or important data.",
@@ -375,7 +381,8 @@ export const createProtectRangeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.addProtectedRange(
         context.spreadsheetId,
@@ -394,7 +401,7 @@ export const createProtectRangeTool = (env: Env) =>
   });
 
 export const createUnprotectRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "unprotect_range",
     description: "Remove protection from a range by its protected range ID.",
     inputSchema: z.object({
@@ -407,7 +414,8 @@ export const createUnprotectRangeTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteProtectedRange(
         context.spreadsheetId,

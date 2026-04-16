@@ -1,7 +1,7 @@
 /**
  * Google Apps Script Deployments Tools
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
@@ -10,7 +10,7 @@ import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
 // Create Deployment Tool
 // ============================================
 export const createCreateDeploymentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_deployment",
     description:
       "Creates a deployment of an Apps Script project. A deployment makes a specific version accessible as a web app, API executable, or add-on.",
@@ -44,7 +44,8 @@ export const createCreateDeploymentTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -71,7 +72,7 @@ export const createCreateDeploymentTool = (env: Env) =>
 // Get Deployment Tool
 // ============================================
 export const createGetDeploymentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_deployment",
     description:
       "Gets a specific deployment of an Apps Script project by deployment ID.",
@@ -91,7 +92,8 @@ export const createGetDeploymentTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -117,7 +119,7 @@ export const createGetDeploymentTool = (env: Env) =>
 // List Deployments Tool
 // ============================================
 export const createListDeploymentsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_deployments",
     description:
       "Lists all deployments of an Apps Script project. Returns deployment IDs, versions, and entry point URLs.",
@@ -150,7 +152,8 @@ export const createListDeploymentsTool = (env: Env) =>
       deploymentCount: z.number(),
       nextPageToken: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -179,7 +182,7 @@ export const createListDeploymentsTool = (env: Env) =>
 // Update Deployment Tool
 // ============================================
 export const createUpdateDeploymentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_deployment",
     description:
       "Updates a deployment of an Apps Script project. Can change the version number, description, or manifest file.",
@@ -208,7 +211,8 @@ export const createUpdateDeploymentTool = (env: Env) =>
       updateTime: z.string().optional(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -238,7 +242,7 @@ export const createUpdateDeploymentTool = (env: Env) =>
 // Delete Deployment Tool
 // ============================================
 export const createDeleteDeploymentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_deployment",
     description: "Deletes a deployment of an Apps Script project.",
     inputSchema: z.object({
@@ -249,7 +253,8 @@ export const createDeleteDeploymentTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });

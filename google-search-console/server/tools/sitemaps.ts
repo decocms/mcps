@@ -4,7 +4,7 @@
  * Tools for listing, getting, submitting, and deleting sitemaps
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -43,7 +43,7 @@ const SitemapSchema = z.object({
 // ============================================================================
 
 export const createListSitemapsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_sitemaps",
     description: "List all sitemaps for a site",
     inputSchema: z.object({
@@ -56,7 +56,8 @@ export const createListSitemapsTool = (env: Env) =>
     outputSchema: z.object({
       sitemaps: z.array(SitemapSchema).describe("List of sitemaps"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -87,7 +88,7 @@ export const createListSitemapsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetSitemapTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_sitemap",
     description: "Get information about a specific sitemap",
     inputSchema: z.object({
@@ -101,7 +102,8 @@ export const createGetSitemapTool = (env: Env) =>
     outputSchema: z.object({
       sitemap: SitemapSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -134,7 +136,7 @@ export const createGetSitemapTool = (env: Env) =>
 // ============================================================================
 
 export const createSubmitSitemapTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "submit_sitemap",
     description: "Submit a sitemap to Google Search Console",
     inputSchema: z.object({
@@ -152,7 +154,8 @@ export const createSubmitSitemapTool = (env: Env) =>
       siteUrl: z.string().describe("The site URL"),
       feedpath: z.string().describe("The sitemap feedpath that was submitted"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });
@@ -172,7 +175,7 @@ export const createSubmitSitemapTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteSitemapTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_sitemap",
     description: "Delete a sitemap from Google Search Console",
     inputSchema: z.object({
@@ -190,7 +193,8 @@ export const createDeleteSitemapTool = (env: Env) =>
       siteUrl: z.string().describe("The site URL"),
       feedpath: z.string().describe("The sitemap feedpath that was deleted"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });

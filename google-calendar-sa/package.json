@@ -12,7 +12,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@decocms/runtime": "^1.2.6",
+    "@decocms/runtime": "1.4.0",
     "google-calendar": "workspace:*",
     "zod": "^4.0.0"
   },

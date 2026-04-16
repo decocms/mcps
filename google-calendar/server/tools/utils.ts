@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -19,7 +19,7 @@ function formatInTimeZone(date: Date, timeZone: string): string {
 }
 
 export const createGetCurrentTimeTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_current_time",
     description:
       "Get the current date and time. If a timezone is provided, returns the time in that timezone. If no timezone is provided, returns UTC and a list of common timezones with their current times.",
@@ -48,7 +48,8 @@ export const createGetCurrentTimeTool = (_env: Env) =>
         .optional()
         .describe("List of common timezones with current times"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const now = new Date();
       const utc = now.toISOString();
 

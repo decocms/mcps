@@ -2,7 +2,7 @@
  * Slide Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SlidesClient, getAccessToken } from "../lib/slides-client.ts";
@@ -23,7 +23,7 @@ const LayoutEnum = z.enum([
 ]);
 
 export const createAddSlideTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "add_slide",
     description: "Add a new slide to the presentation.",
     inputSchema: z.object({
@@ -39,7 +39,8 @@ export const createAddSlideTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       const result = await client.addSlide(
         context.presentationId,
@@ -52,7 +53,7 @@ export const createAddSlideTool = (env: Env) =>
   });
 
 export const createDeleteSlideTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_slide",
     description: "Delete a slide from the presentation.",
     inputSchema: z.object({
@@ -63,7 +64,8 @@ export const createDeleteSlideTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.deleteSlide(context.presentationId, context.slideId);
       return { success: true, message: "Slide deleted" };
@@ -71,7 +73,7 @@ export const createDeleteSlideTool = (env: Env) =>
   });
 
 export const createDuplicateSlideTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "duplicate_slide",
     description: "Create a copy of an existing slide.",
     inputSchema: z.object({
@@ -82,7 +84,8 @@ export const createDuplicateSlideTool = (env: Env) =>
       newSlideId: z.string().optional(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       const result = await client.duplicateSlide(
         context.presentationId,
@@ -94,7 +97,7 @@ export const createDuplicateSlideTool = (env: Env) =>
   });
 
 export const createMoveSlideTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "move_slide",
     description: "Move a slide to a different position.",
     inputSchema: z.object({
@@ -106,7 +109,8 @@ export const createMoveSlideTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       await client.moveSlide(
         context.presentationId,

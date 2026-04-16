@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getAccessToken } from "../lib/env.ts";
@@ -9,7 +9,7 @@ const FieldOptionSchema = z
   .describe("Field-type-specific options (e.g., choices for select fields).");
 
 export const createCreateTableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_create_table",
     description:
       "Create a new table in an Airtable base with specified fields.",
@@ -37,7 +37,8 @@ export const createCreateTableTool = (env: Env) =>
           "Array of fields for the table. At least one field is required.",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.createTable(context.baseId, {
         name: context.name,
@@ -48,7 +49,7 @@ export const createCreateTableTool = (env: Env) =>
   });
 
 export const createUpdateTableTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "airtable_update_table",
     description:
       "Update the name or description of an existing Airtable table.",
@@ -70,7 +71,8 @@ export const createUpdateTableTool = (env: Env) =>
             "Provide at least one field to update (name or description).",
         },
       ),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AirtableClient(getAccessToken(env));
       return await client.updateTable(context.baseId, context.tableId, {
         name: context.name,

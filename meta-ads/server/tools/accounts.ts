@@ -7,7 +7,7 @@
  * - META_ADS_GET_ACCOUNT_PAGES: Get pages associated with an account
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getMetaAccessToken } from "../main.ts";
@@ -18,7 +18,7 @@ import { ACCOUNT_STATUSES } from "../constants.ts";
  * Get all ad accounts accessible by the current user (User Token only)
  */
 export const createGetUserAdAccountsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_USER_AD_ACCOUNTS",
     description:
       "Get all ad accounts accessible by the current authenticated user (requires User Access Token). Returns account ID, name, status, currency, timezone, and amount spent.",
@@ -49,7 +49,8 @@ export const createGetUserAdAccountsTool = (env: Env) =>
       ),
       count: z.number().describe("Number of accounts returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -81,7 +82,7 @@ export const createGetUserAdAccountsTool = (env: Env) =>
  * Get all ad accounts associated with the current page (Page Token only)
  */
 export const createGetPageAdAccountsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_PAGE_AD_ACCOUNTS",
     description:
       "Get all ad accounts associated with the current page (requires Page Access Token). Returns account ID, name, status, currency, timezone, and amount spent.",
@@ -107,7 +108,8 @@ export const createGetPageAdAccountsTool = (env: Env) =>
       ),
       count: z.number().describe("Number of accounts returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -136,7 +138,7 @@ export const createGetPageAdAccountsTool = (env: Env) =>
  * Get detailed information about a specific ad account
  */
 export const createGetAccountInfoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_ACCOUNT_INFO",
     description:
       "Get detailed information about a specific Meta Ads account including currency, timezone, spending limits, and balance.",
@@ -159,7 +161,8 @@ export const createGetAccountInfoTool = (env: Env) =>
       balance: z.string().optional(),
       min_daily_budget: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -191,7 +194,7 @@ export const createGetAccountInfoTool = (env: Env) =>
  * Get information about the authenticated user
  */
 export const createGetUserInfoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_USER_INFO",
     description:
       "Get information about the currently authenticated Meta user including user ID and name. Use this to get the user_id needed for other operations.",
@@ -200,7 +203,8 @@ export const createGetUserInfoTool = (env: Env) =>
       id: z.string().describe("Meta user ID"),
       name: z.string().optional().describe("User's display name"),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -217,7 +221,7 @@ export const createGetUserInfoTool = (env: Env) =>
  * Get pages associated with the current user (User Token only)
  */
 export const createGetUserAccountPagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_USER_ACCOUNT_PAGES",
     description:
       "Get Facebook/Instagram pages associated with the current authenticated user (requires User Access Token). Useful for understanding which pages can be used for advertising.",
@@ -239,7 +243,8 @@ export const createGetUserAccountPagesTool = (env: Env) =>
       ),
       count: z.number().describe("Number of pages returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -261,7 +266,7 @@ export const createGetUserAccountPagesTool = (env: Env) =>
  * Get information about the current page (Page Token only)
  */
 export const createGetPageInfoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_PAGE_INFO",
     description:
       "Get information about the currently authenticated page (requires Page Access Token). Returns page ID, name, category, and tasks.",
@@ -275,7 +280,8 @@ export const createGetPageInfoTool = (env: Env) =>
       website: z.string().optional().describe("Page website"),
       phone: z.string().optional().describe("Page phone number"),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -298,7 +304,7 @@ export const createGetPageInfoTool = (env: Env) =>
  * This is an alias for META_ADS_GET_PAGE_INFO but returns in pages array format for consistency
  */
 export const createGetPageAccountPagesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_PAGE_ACCOUNT_PAGES",
     description:
       "Get information about the currently authenticated page (requires Page Access Token). Returns page details in a consistent format.",
@@ -316,7 +322,8 @@ export const createGetPageAccountPagesTool = (env: Env) =>
         .number()
         .describe("Number of pages returned (always 1 for Page Token)"),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 

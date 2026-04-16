@@ -13,11 +13,12 @@
  * import { createFileFromInput, fileUploadInputSchema } from '@decocms/mcps-shared/tools/file-management';
  *
  * export const createUploadFileTool = (env: Env) =>
- *   createPrivateTool({
+ *   createTool({
  *     id: "upload_file",
  *     description: "Uploads a file",
  *     inputSchema: fileUploadInputSchema,
- *     execute: async ({ input }) => {
+ *     execute: async ({ input }, ctx) => {
+ *       ensureAuthenticated(ctx!);
  *       const file = await createFileFromInput(input);
  *       // ... use file
  *     },

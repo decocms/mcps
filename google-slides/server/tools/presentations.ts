@@ -2,7 +2,7 @@
  * Presentation Management Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SlidesClient, getAccessToken } from "../lib/slides-client.ts";
@@ -20,7 +20,7 @@ const SlideSchema = z.object({
 });
 
 export const createCreatePresentationTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_presentation",
     description: "Create a new Google Slides presentation.",
     inputSchema: z.object({
@@ -30,7 +30,8 @@ export const createCreatePresentationTool = (env: Env) =>
       presentation: PresentationSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       const pres = await client.createPresentation(context.title);
       return {
@@ -45,7 +46,7 @@ export const createCreatePresentationTool = (env: Env) =>
   });
 
 export const createGetPresentationTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_presentation",
     description: "Get presentation details and slide list.",
     inputSchema: z.object({
@@ -55,7 +56,8 @@ export const createGetPresentationTool = (env: Env) =>
       presentation: PresentationSchema,
       slides: z.array(SlideSchema),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SlidesClient({ accessToken: getAccessToken(env) });
       const pres = await client.getPresentation(context.presentationId);
       return {

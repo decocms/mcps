@@ -2,7 +2,7 @@
  * Meeting Space Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { MeetClient, getAccessToken } from "../lib/meet-client.ts";
@@ -17,7 +17,7 @@ const SpaceSchema = z.object({
 });
 
 export const createCreateMeetingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_meeting",
     description: "Create a new Google Meet meeting space.",
     inputSchema: z.object({
@@ -37,7 +37,8 @@ export const createCreateMeetingTool = (env: Env) =>
       meetingLink: z.string(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const space = await client.createSpace({
         accessType: context.accessType,
@@ -59,7 +60,7 @@ export const createCreateMeetingTool = (env: Env) =>
   });
 
 export const createGetMeetingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_meeting",
     description: "Get details about a meeting space.",
     inputSchema: z.object({
@@ -68,7 +69,8 @@ export const createGetMeetingTool = (env: Env) =>
     outputSchema: z.object({
       meeting: SpaceSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const space = await client.getSpace(context.spaceName);
       return {
@@ -85,7 +87,7 @@ export const createGetMeetingTool = (env: Env) =>
   });
 
 export const createEndMeetingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "end_meeting",
     description: "End an active conference in a meeting space.",
     inputSchema: z.object({
@@ -95,7 +97,8 @@ export const createEndMeetingTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       await client.endActiveConference(context.spaceName);
       return { success: true, message: "Conference ended" };
@@ -103,7 +106,7 @@ export const createEndMeetingTool = (env: Env) =>
   });
 
 export const createUpdateMeetingTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "update_meeting",
     description: "Update meeting space settings.",
     inputSchema: z.object({
@@ -121,7 +124,8 @@ export const createUpdateMeetingTool = (env: Env) =>
       meeting: SpaceSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new MeetClient({ accessToken: getAccessToken(env) });
       const space = await client.updateSpace(context.spaceName, {
         accessType: context.accessType,

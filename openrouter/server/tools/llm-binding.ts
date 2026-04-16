@@ -15,10 +15,7 @@ import {
   type ModelCollectionEntitySchema,
 } from "@decocms/bindings/llm";
 import { streamToResponse } from "@decocms/runtime/bindings";
-import {
-  createPrivateTool,
-  createStreamableTool,
-} from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { getOpenRouterApiKey } from "../lib/env.ts";
 import { logger } from "../lib/logger.ts";
@@ -399,14 +396,15 @@ function sortModelsByWellKnown(models: ListedModel[]): ListedModel[] {
  * COLLECTION_LLM_LIST - Lists all available models with filtering and pagination
  */
 export const createListLLMTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_LLM_LIST",
     description:
       "List all available models from OpenRouter with filtering and pagination support. " +
       "Returns comprehensive information about each model including capabilities, pricing, and limits.",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { where, orderBy, limit = 50, offset = 0 } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -451,14 +449,15 @@ export const createListLLMTool = (env: Env) =>
  * COLLECTION_LLM_GET - Retrieves a single model by its ID
  */
 export const createGetLLMTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_LLM_GET",
     description:
       "Get detailed information about a specific OpenRouter model including " +
       "pricing, capabilities, context length, and provider information.",
     inputSchema: GET_BINDING.inputSchema,
     outputSchema: GET_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -484,14 +483,15 @@ export const createGetLLMTool = (env: Env) =>
  * LLM_METADATA - Returns metadata about a specific model's capabilities
  */
 export const createLLMMetadataTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LLM_METADATA",
     description:
       "Get metadata about a specific model's capabilities including supported URL patterns " +
       "for different media types (images, files, etc.).",
     inputSchema: METADATA_BINDING.inputSchema,
     outputSchema: METADATA_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { modelId } = context;
       const client = new OpenRouterClient({
         apiKey: getOpenRouterApiKey(env),
@@ -578,13 +578,14 @@ const findApiCallError = (error: unknown, depth = 0): APICallError | null => {
  * LLM_DO_STREAM - Streams a language model response in real-time
  */
 export const createLLMStreamTool = (usageHooks?: UsageHooks) => (env: Env) =>
-  createStreamableTool({
+  createTool({
     id: "LLM_DO_STREAM",
     description:
       "Stream a language model response in real-time using OpenRouter. " +
       "Returns a streaming response for interactive chat experiences.",
     inputSchema: STREAM_BINDING.inputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const {
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },
@@ -792,14 +793,15 @@ function transformGenerateResult(result: unknown): Record<string, unknown> {
  * LLM_DO_GENERATE - Generates a complete response in a single call (non-streaming)
  */
 export const createLLMGenerateTool = (usageHooks?: UsageHooks) => (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LLM_DO_GENERATE",
     description:
       "Generate a complete language model response using OpenRouter (non-streaming). " +
       "Returns the full response with usage statistics and cost information.",
     inputSchema: GENERATE_BINDING.inputSchema,
     outputSchema: GENERATE_BINDING.outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const {
         modelId,
         callOptions: { abortSignal: _abortSignal, ...callOptions },

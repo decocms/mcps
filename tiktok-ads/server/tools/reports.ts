@@ -4,7 +4,7 @@
  * Tools for getting performance reports at different levels
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -78,7 +78,7 @@ const PageInfoSchema = z.object({
 // ============================================================================
 
 export const createGetReportTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_report",
     description:
       "Get performance report data for campaigns, ad groups, or ads. Supports custom date ranges, dimensions, and metrics.",
@@ -133,7 +133,8 @@ export const createGetReportTool = (env: Env) =>
       rows: z.array(ReportRowSchema).describe("Report data rows"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -205,7 +206,7 @@ export const createGetReportTool = (env: Env) =>
 // ============================================================================
 
 export const createGetCampaignReportTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_campaign_report",
     description:
       "Get performance report for campaigns. Returns spend, impressions, clicks, conversions and other metrics by day.",
@@ -240,7 +241,8 @@ export const createGetCampaignReportTool = (env: Env) =>
       rows: z.array(ReportRowSchema).describe("Campaign report data"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -288,7 +290,7 @@ export const createGetCampaignReportTool = (env: Env) =>
 // ============================================================================
 
 export const createGetAdGroupReportTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_adgroup_report",
     description:
       "Get performance report for ad groups. Returns spend, impressions, clicks, conversions and other metrics by day.",
@@ -327,7 +329,8 @@ export const createGetAdGroupReportTool = (env: Env) =>
       rows: z.array(ReportRowSchema).describe("Ad group report data"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -376,7 +379,7 @@ export const createGetAdGroupReportTool = (env: Env) =>
 // ============================================================================
 
 export const createGetAdReportTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_ad_report",
     description:
       "Get performance report for individual ads. Returns spend, impressions, clicks, conversions and other metrics by day.",
@@ -419,7 +422,8 @@ export const createGetAdReportTool = (env: Env) =>
       rows: z.array(ReportRowSchema).describe("Ad report data"),
       page_info: PageInfoSchema.describe("Pagination info"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const advertiserId = context.advertiser_id || getDefaultAdvertiserId(env);
       if (!advertiserId) {
         throw new Error(
@@ -475,7 +479,7 @@ export const createGetAdReportTool = (env: Env) =>
 // ============================================================================
 
 export const createGetAdvertiserInfoTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_advertiser_info",
     description:
       "Get information about one or more advertisers, including name, status, balance, and timezone.",
@@ -503,7 +507,8 @@ export const createGetAdvertiserInfoTool = (env: Env) =>
         )
         .describe("List of advertiser information"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       let advertiserIds = context.advertiser_ids;
       if (!advertiserIds || advertiserIds.length === 0) {
         const defaultId = getDefaultAdvertiserId(env);

@@ -3,7 +3,7 @@
  * Returns all available embeddings models and their properties
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
 import type { Env } from "../../main.ts";
@@ -36,7 +36,7 @@ if (!LIST_BINDING?.inputSchema || !LIST_BINDING?.outputSchema) {
 }
 
 export const createListEmbeddingModelsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_EMBEDDING_MODELS_LIST",
     description:
       "List all available embeddings models on OpenRouter with their properties. " +
@@ -47,7 +47,8 @@ export const createListEmbeddingModelsTool = (env: Env) =>
     outputSchema: z.object({
       items: z.unknown(),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const sdk = new OpenRouter({ apiKey: getOpenRouterApiKey(env) });
       const models = (await sdk.embeddings.listModels()).data;
 

@@ -4,7 +4,7 @@
  * Tools for listing, getting, creating, and deleting calendars
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GoogleCalendarClient, getAccessToken } from "../lib/google-client.ts";
@@ -33,7 +33,7 @@ const CalendarSchema = z.object({
 // ============================================================================
 
 export const createListCalendarsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_calendars",
     description:
       "List all calendars accessible by the authenticated user. Returns calendar IDs, names, colors, and access roles.",
@@ -63,7 +63,8 @@ export const createListCalendarsTool = (env: Env) =>
           "Total deduplicated calendars (set by service-account fan-out)",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -95,7 +96,7 @@ export const createListCalendarsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetCalendarTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_calendar",
     description:
       "Get detailed information about a specific calendar by its ID.",
@@ -109,7 +110,8 @@ export const createGetCalendarTool = (env: Env) =>
     outputSchema: z.object({
       calendar: CalendarSchema.describe("Calendar details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -137,7 +139,7 @@ export const createGetCalendarTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateCalendarTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_calendar",
     description:
       "Create a new secondary calendar. Note: You cannot create a new primary calendar.",
@@ -165,7 +167,8 @@ export const createCreateCalendarTool = (env: Env) =>
         timeZone: z.string().optional(),
       }),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GoogleCalendarClient({
         accessToken: getAccessToken(env),
       });
@@ -194,7 +197,7 @@ export const createCreateCalendarTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteCalendarTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_calendar",
     description:
       "Delete a secondary calendar. Note: You cannot delete the primary calendar.",
@@ -207,7 +210,8 @@ export const createDeleteCalendarTool = (env: Env) =>
       success: z.boolean().describe("Whether the deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       if (context.calendarId === "primary") {
         throw new Error("Cannot delete the primary calendar");
       }

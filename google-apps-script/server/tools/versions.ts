@@ -1,7 +1,7 @@
 /**
  * Google Apps Script Versions Tools
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
@@ -10,7 +10,7 @@ import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
 // Create Version Tool
 // ============================================
 export const createCreateVersionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_version",
     description:
       "Creates a new immutable version using the current code. Versions are snapshots of the script that can be deployed.",
@@ -27,7 +27,8 @@ export const createCreateVersionTool = (env: Env) =>
       description: z.string().optional(),
       createTime: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -47,7 +48,7 @@ export const createCreateVersionTool = (env: Env) =>
 // Get Version Tool
 // ============================================
 export const createGetVersionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_version",
     description:
       "Gets a specific version of a script project by version number.",
@@ -65,7 +66,8 @@ export const createGetVersionTool = (env: Env) =>
       description: z.string().optional(),
       createTime: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -86,7 +88,7 @@ export const createGetVersionTool = (env: Env) =>
 // List Versions Tool
 // ============================================
 export const createListVersionsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_versions",
     description:
       "Lists all versions of a script project. Returns version numbers, descriptions, and creation times.",
@@ -115,7 +117,8 @@ export const createListVersionsTool = (env: Env) =>
       versionCount: z.number(),
       nextPageToken: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });

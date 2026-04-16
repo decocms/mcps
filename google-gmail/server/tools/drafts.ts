@@ -4,7 +4,7 @@
  * Tools for listing, creating, updating, sending, and deleting drafts
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
@@ -38,7 +38,7 @@ const ParsedDraftSchema = z.object({
 // ============================================================================
 
 export const createListDraftsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_list_drafts",
     description:
       "List all draft emails saved in Gmail. Drafts are unsent emails that can be edited or sent later.",
@@ -57,7 +57,8 @@ export const createListDraftsTool = (env: Env) =>
       drafts: z.array(DraftSchema).describe("List of drafts"),
       nextPageToken: z.string().optional().describe("Token for next page"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -83,7 +84,7 @@ export const createListDraftsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetDraftTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_get_draft",
     description:
       "Get a specific draft email with its full content including recipient, subject, and body.",
@@ -93,7 +94,8 @@ export const createGetDraftTool = (env: Env) =>
     outputSchema: z.object({
       draft: ParsedDraftSchema.describe("Draft details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -120,7 +122,7 @@ export const createGetDraftTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateDraftTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_create_draft",
     description:
       "Create a new draft email in Gmail. The draft will be saved but not sent until you use gmail_send_draft.",
@@ -139,7 +141,8 @@ export const createCreateDraftTool = (env: Env) =>
       draft: DraftSchema.describe("Created draft"),
       success: z.boolean().describe("Whether creation was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -172,7 +175,7 @@ export const createCreateDraftTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateDraftTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_update_draft",
     description:
       "Update an existing draft email's content including recipient, subject, and body.",
@@ -188,7 +191,8 @@ export const createUpdateDraftTool = (env: Env) =>
       draft: DraftSchema.describe("Updated draft"),
       success: z.boolean().describe("Whether update was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -219,7 +223,7 @@ export const createUpdateDraftTool = (env: Env) =>
 // ============================================================================
 
 export const createSendDraftTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_send_draft",
     description:
       "Send an existing draft email. The draft will be sent and moved from Drafts folder to Sent folder.",
@@ -231,7 +235,8 @@ export const createSendDraftTool = (env: Env) =>
       threadId: z.string().describe("Thread ID of the sent message"),
       success: z.boolean().describe("Whether sending was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -251,7 +256,7 @@ export const createSendDraftTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteDraftTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_delete_draft",
     description:
       "Permanently delete a draft email from Gmail. This cannot be undone.",
@@ -262,7 +267,8 @@ export const createDeleteDraftTool = (env: Env) =>
       success: z.boolean().describe("Whether deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });

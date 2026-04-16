@@ -5,7 +5,7 @@
  * - Getting current user information
  * - User authentication checks
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 
 /**
@@ -38,7 +38,7 @@ export interface UserToolsEnv {
  * to get the user object.
  */
 export const createGetUserTool = <TEnv extends UserToolsEnv>(env: TEnv) =>
-  createPrivateTool({
+  createTool({
     id: "GET_USER",
     description: "Get the current logged in user",
     inputSchema: z.object({}),
@@ -48,7 +48,8 @@ export const createGetUserTool = <TEnv extends UserToolsEnv>(env: TEnv) =>
       avatar: z.string().nullable(),
       email: z.string(),
     }),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       const user = env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
 
       if (!user) {

@@ -6,7 +6,7 @@
  * and merges lifecycle status.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import {
@@ -78,7 +78,7 @@ const ReportSectionSchema = z.discriminatedUnion("type", [
 ]);
 
 export const createReportsGetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "REPORTS_GET",
     description:
       "Get a specific report with full content including all sections.",
@@ -99,7 +99,8 @@ export const createReportsGetTool = (env: Env) =>
       lifecycleStatus: z.enum(["unread", "read", "dismissed"]).optional(),
       sections: z.array(ReportSectionSchema),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const config = getRepoConfig(env);
       const client = getGitHubClient(env);
 

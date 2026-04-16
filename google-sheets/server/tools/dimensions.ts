@@ -2,14 +2,14 @@
  * Dimension Operations Tools (Insert/Delete/Move/Hide/Resize Rows and Columns)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
 
 // Insert Rows
 export const createInsertRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_rows",
     description: "Insert empty rows at a specific position in a sheet.",
     inputSchema: z.object({
@@ -28,7 +28,8 @@ export const createInsertRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.insertDimension(
         context.spreadsheetId,
@@ -47,7 +48,7 @@ export const createInsertRowsTool = (env: Env) =>
 
 // Insert Columns
 export const createInsertColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_columns",
     description: "Insert empty columns at a specific position in a sheet.",
     inputSchema: z.object({
@@ -68,7 +69,8 @@ export const createInsertColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.insertDimension(
         context.spreadsheetId,
@@ -87,7 +89,7 @@ export const createInsertColumnsTool = (env: Env) =>
 
 // Delete Rows
 export const createDeleteRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_rows",
     description: "Delete rows from a sheet.",
     inputSchema: z.object({
@@ -100,7 +102,8 @@ export const createDeleteRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteDimension(
         context.spreadsheetId,
@@ -118,7 +121,7 @@ export const createDeleteRowsTool = (env: Env) =>
 
 // Delete Columns
 export const createDeleteColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_columns",
     description: "Delete columns from a sheet.",
     inputSchema: z.object({
@@ -133,7 +136,8 @@ export const createDeleteColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.deleteDimension(
         context.spreadsheetId,
@@ -151,7 +155,7 @@ export const createDeleteColumnsTool = (env: Env) =>
 
 // Move Rows
 export const createMoveRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "move_rows",
     description: "Move rows to a different position in the sheet.",
     inputSchema: z.object({
@@ -169,7 +173,8 @@ export const createMoveRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.moveDimension(
         context.spreadsheetId,
@@ -188,7 +193,7 @@ export const createMoveRowsTool = (env: Env) =>
 
 // Move Columns
 export const createMoveColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "move_columns",
     description: "Move columns to a different position in the sheet.",
     inputSchema: z.object({
@@ -206,7 +211,8 @@ export const createMoveColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.moveDimension(
         context.spreadsheetId,
@@ -225,7 +231,7 @@ export const createMoveColumnsTool = (env: Env) =>
 
 // Hide Rows
 export const createHideRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "hide_rows",
     description: "Hide rows in a sheet.",
     inputSchema: z.object({
@@ -242,7 +248,8 @@ export const createHideRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const hidden = context.hidden ?? true;
       await client.updateDimensionProperties(
@@ -262,7 +269,7 @@ export const createHideRowsTool = (env: Env) =>
 
 // Hide Columns
 export const createHideColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "hide_columns",
     description: "Hide columns in a sheet.",
     inputSchema: z.object({
@@ -281,7 +288,8 @@ export const createHideColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const hidden = context.hidden ?? true;
       await client.updateDimensionProperties(
@@ -301,7 +309,7 @@ export const createHideColumnsTool = (env: Env) =>
 
 // Resize Rows
 export const createResizeRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "resize_rows",
     description: "Set the height of rows in pixels.",
     inputSchema: z.object({
@@ -315,7 +323,8 @@ export const createResizeRowsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.updateDimensionProperties(
         context.spreadsheetId,
@@ -334,7 +343,7 @@ export const createResizeRowsTool = (env: Env) =>
 
 // Resize Columns
 export const createResizeColumnsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "resize_columns",
     description: "Set the width of columns in pixels.",
     inputSchema: z.object({
@@ -350,7 +359,8 @@ export const createResizeColumnsTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       await client.updateDimensionProperties(
         context.spreadsheetId,

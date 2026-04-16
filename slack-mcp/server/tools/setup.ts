@@ -4,7 +4,7 @@
  * Tools for bot status and thread management.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../types/env.ts";
 import { getBotInfo, ensureSlackClient } from "../lib/slack-client.ts";
@@ -18,7 +18,7 @@ import {
  * Get bot status
  */
 export const createGetBotStatusTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SLACK_GET_BOT_STATUS",
     description: "Get the current status of the Slack bot",
     annotations: { readOnlyHint: true },
@@ -36,7 +36,8 @@ export const createGetBotStatusTool = (env: Env) =>
         error: z.string().optional(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         const botToken =
           env.MESH_REQUEST_CONTEXT?.state?.SLACK_CREDENTIALS?.BOT_TOKEN;
@@ -83,7 +84,7 @@ export const createGetBotStatusTool = (env: Env) =>
  * Get thread info
  */
 export const createGetThreadInfoTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SLACK_GET_THREAD_INFO",
     description:
       "Get information about a logical conversation thread (used for context management)",
@@ -110,7 +111,8 @@ export const createGetThreadInfoTool = (_env: Env) =>
         error: z.string().optional(),
       })
       .strict(),
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       const input = context as {
         channel: string;
         thread_identifier: string;
@@ -151,7 +153,7 @@ export const createGetThreadInfoTool = (_env: Env) =>
  * Reset thread context
  */
 export const createResetThreadTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SLACK_RESET_THREAD",
     description:
       "Reset a conversation thread context (clears message history for the thread)",
@@ -169,7 +171,8 @@ export const createResetThreadTool = (_env: Env) =>
         error: z.string().optional(),
       })
       .strict(),
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       const input = context as {
         channel: string;
         thread_identifier: string;
@@ -195,7 +198,7 @@ export const createResetThreadTool = (_env: Env) =>
  * Get thread conversation history
  */
 export const createGetThreadHistoryTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SLACK_GET_THREAD_HISTORY",
     description:
       "Get the conversation history for a logical thread (internal context, not Slack messages)",
@@ -225,7 +228,8 @@ export const createGetThreadHistoryTool = (_env: Env) =>
         error: z.string().optional(),
       })
       .strict(),
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       const input = context as {
         channel: string;
         thread_identifier: string;

@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "server/main.ts";
 import { getTask } from "./utils/task-store.ts";
 
 const createGetImageResultTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_image_result",
     description:
       "Check the status of an image generation request. Returns the current status and, when ready, the image URL. Poll this tool until status is 'Ready'. Stop polling if status is 'Error' or 'Task not found' — these are terminal failures.",
@@ -30,7 +30,8 @@ const createGetImageResultTool = (_env: Env) =>
         .optional()
         .describe("Error message (only present when status is Error)"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const task = getTask(context.request_id);
 
       if (!task) {

@@ -17,7 +17,7 @@ import {
   PROMPTS_COLLECTION_BINDING,
   PromptSchema,
 } from "@decocms/bindings/prompt";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { ZodType, z } from "zod";
 import { runSQL } from "../db/postgres.ts";
 import {
@@ -95,12 +95,13 @@ function parsePromptRow(
  * COLLECTION_PROMPT_LIST - Query prompts with filtering, sorting, and pagination
  */
 export const createListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_PROMPT_LIST",
     description: "List prompts with filtering, sorting, and pagination",
     inputSchema: LIST_BINDING.inputSchema,
     outputSchema: LIST_BINDING.outputSchema as ZodType,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { where, orderBy, limit = 50, offset = 0 } = context;
 
       // Build WHERE clause
@@ -148,12 +149,13 @@ export const createListTool = (env: Env) =>
  * COLLECTION_PROMPT_GET - Fetch a single prompt by ID
  */
 export const createGetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_PROMPT_GET",
     description: "Get a single prompt by ID",
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(PromptSchema),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
 
       const result = await runSQL(
@@ -174,16 +176,20 @@ export const createGetTool = (env: Env) =>
  * COLLECTION_PROMPT_CREATE - Create a new prompt
  */
 export const createInsertTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_PROMPT_CREATE",
     description: "Create a new prompt",
     inputSchema: CREATE_BINDING.inputSchema,
     outputSchema: CREATE_BINDING.outputSchema as ZodType,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof CREATE_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof CREATE_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
       const now = new Date().toISOString();
 
@@ -235,16 +241,20 @@ export const createInsertTool = (env: Env) =>
  * COLLECTION_PROMPT_UPDATE - Update an existing prompt
  */
 export const createUpdateTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_PROMPT_UPDATE",
     description: "Update an existing prompt",
     inputSchema: UPDATE_BINDING.inputSchema,
     outputSchema: UPDATE_BINDING.outputSchema as ZodType,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof UPDATE_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof UPDATE_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const user = env.MESH_REQUEST_CONTEXT?.ensureAuthenticated?.();
 
       const now = new Date().toISOString();
@@ -306,16 +316,20 @@ export const createUpdateTool = (env: Env) =>
  * COLLECTION_PROMPT_DELETE - Delete a prompt by ID
  */
 export const createDeleteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "COLLECTION_PROMPT_DELETE",
     description: "Delete a prompt by ID",
     inputSchema: DELETE_BINDING.inputSchema,
     outputSchema: DELETE_BINDING.outputSchema as ZodType,
-    execute: async ({
-      context,
-    }: {
-      context: z.infer<typeof DELETE_BINDING.inputSchema>;
-    }) => {
+    execute: async (
+      {
+        context,
+      }: {
+        context: z.infer<typeof DELETE_BINDING.inputSchema>;
+      },
+      ctx,
+    ) => {
+      ensureAuthenticated(ctx!);
       const { id } = context;
 
       // Get the prompt before deleting

@@ -9,7 +9,7 @@
  * - META_ADS_DELETE_CAMPAIGN: Delete a campaign
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getMetaAccessToken } from "../main.ts";
@@ -19,7 +19,7 @@ import { createMetaAdsClient } from "../lib/meta-client.ts";
  * Get campaigns for an ad account
  */
 export const createGetCampaignsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_CAMPAIGNS",
     description:
       "Get campaigns for a Meta Ads account. Can filter by status (ACTIVE, PAUSED, etc). Returns campaign details including objective, budget, and status.",
@@ -58,7 +58,8 @@ export const createGetCampaignsTool = (env: Env) =>
       ),
       count: z.number().describe("Number of campaigns returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -91,7 +92,7 @@ export const createGetCampaignsTool = (env: Env) =>
  * Get details of a specific campaign
  */
 export const createGetCampaignDetailsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_CAMPAIGN_DETAILS",
     description:
       "Get detailed information about a specific Meta Ads campaign including objective, budget, schedule, and status.",
@@ -114,7 +115,8 @@ export const createGetCampaignDetailsTool = (env: Env) =>
       buying_type: z.string().optional(),
       special_ad_categories: z.array(z.string()).optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -143,7 +145,7 @@ export const createGetCampaignDetailsTool = (env: Env) =>
  * Create a new campaign
  */
 export const createCreateCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_CREATE_CAMPAIGN",
     description:
       "Create a new Meta Ads campaign. This is STEP 1 of 5 to create ads. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE (optional) → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. Requires account ID, name, and objective. Budget can be set at campaign or ad set level.",
@@ -226,7 +228,8 @@ export const createCreateCampaignTool = (env: Env) =>
         .boolean()
         .describe("Whether the campaign was created successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -254,7 +257,7 @@ export const createCreateCampaignTool = (env: Env) =>
  * Update an existing campaign
  */
 export const createUpdateCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_UPDATE_CAMPAIGN",
     description:
       "Update an existing Meta Ads campaign. Can change name, status, budget, or schedule. Use this to pause/activate campaigns.",
@@ -292,7 +295,8 @@ export const createUpdateCampaignTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the update was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -316,7 +320,7 @@ export const createUpdateCampaignTool = (env: Env) =>
  * Delete a campaign
  */
 export const createDeleteCampaignTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_DELETE_CAMPAIGN",
     description:
       "Delete a Meta Ads campaign. This action cannot be undone. The campaign and all its ad sets and ads will be deleted.",
@@ -326,7 +330,8 @@ export const createDeleteCampaignTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the deletion was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 

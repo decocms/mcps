@@ -11,7 +11,7 @@
     "build": "bun run build:server"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.5",
+    "@decocms/runtime": "1.4.0",
     "kysely": "^0.28.11",
     "pg": "^8.19.0",
     "zod": "^4.0.0"

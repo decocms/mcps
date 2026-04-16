@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getFluxApiKey } from "../lib/env.ts";
@@ -17,7 +17,7 @@ const FluxModels = [
 ] as const;
 
 export const createSubmitImageTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "submit_image",
     description:
       "Submit an image generation request using FLUX models from Black Forest Labs. Returns a request_id immediately — use get_image_result to poll for the result.",
@@ -98,7 +98,8 @@ export const createSubmitImageTool = (env: Env) =>
         ),
       model: z.string().describe("The model used for generation"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getFluxApiKey(env);
       const client = createFluxClient({ apiKey });
       const model = context.model ?? "flux-kontext-max";
@@ -135,7 +136,7 @@ export const createSubmitImageTool = (env: Env) =>
   });
 
 export const createGetImageResultTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_image_result",
     description:
       "Check the status of a FLUX image generation request. Returns the current status and, when ready, the image URL (valid for 10 minutes — download it promptly). Poll this tool until status is 'Ready'. Stop polling if status is 'Error', 'Task not found', 'Request Moderated', or 'Content Moderated' — these are terminal failures.",
@@ -161,7 +162,8 @@ export const createGetImageResultTool = (env: Env) =>
         .optional()
         .describe("Generation progress (0-1), available while Pending"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getFluxApiKey(env);
       const client = createFluxClient({ apiKey });
 

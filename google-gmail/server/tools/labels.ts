@@ -4,7 +4,7 @@
  * Tools for listing, creating, updating, and deleting labels
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
@@ -42,7 +42,7 @@ const LabelSchema = z.object({
 // ============================================================================
 
 export const createListLabelsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_list_labels",
     description:
       "List all Gmail labels including system labels (INBOX, SENT, TRASH, etc.) and custom user-created labels.",
@@ -54,7 +54,8 @@ export const createListLabelsTool = (env: Env) =>
         .describe("System labels (INBOX, SENT, etc.)"),
       userLabels: z.array(LabelSchema).describe("User-created labels"),
     }),
-    execute: async ({ context: _context }) => {
+    execute: async ({ context: _context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -77,7 +78,7 @@ export const createListLabelsTool = (env: Env) =>
 // ============================================================================
 
 export const createGetLabelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_get_label_details",
     description:
       "Get details of a specific Gmail label including message counts, unread counts, and visibility settings.",
@@ -87,7 +88,8 @@ export const createGetLabelTool = (env: Env) =>
     outputSchema: z.object({
       label: LabelSchema.describe("Label details"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -103,7 +105,7 @@ export const createGetLabelTool = (env: Env) =>
 // ============================================================================
 
 export const createCreateLabelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_create_label",
     description:
       "Create a new custom Gmail label for organizing emails. You can set colors and visibility options.",
@@ -130,7 +132,8 @@ export const createCreateLabelTool = (env: Env) =>
       label: LabelSchema.describe("Created label"),
       success: z.boolean().describe("Whether creation was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -163,7 +166,7 @@ export const createCreateLabelTool = (env: Env) =>
 // ============================================================================
 
 export const createUpdateLabelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_update_label",
     description:
       "Update a Gmail label's name, color, or visibility settings. Note: Only custom user-created labels can be modified, not system labels.",
@@ -185,7 +188,8 @@ export const createUpdateLabelTool = (env: Env) =>
       label: LabelSchema.describe("Updated label"),
       success: z.boolean().describe("Whether update was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });
@@ -219,7 +223,7 @@ export const createUpdateLabelTool = (env: Env) =>
 // ============================================================================
 
 export const createDeleteLabelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "gmail_delete_label",
     description:
       "Delete a custom Gmail label. Note: System labels (INBOX, SENT, etc.) cannot be deleted. Emails with this label will keep their content but lose the label.",
@@ -230,7 +234,8 @@ export const createDeleteLabelTool = (env: Env) =>
       success: z.boolean().describe("Whether deletion was successful"),
       message: z.string().describe("Result message"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new GmailClient({
         accessToken: getAccessToken(env),
       });

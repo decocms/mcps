@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { ReportUpdate } from "../../database/schema.ts";
@@ -41,12 +41,13 @@ const outputSchema = z
   .strict();
 
 export const reportUpdateTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "report_update",
     description: "Atualiza campos de um report existente.",
     inputSchema,
     outputSchema,
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         validateToken(env);
         const input = inputSchema.parse(context);

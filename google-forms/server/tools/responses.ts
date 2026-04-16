@@ -2,7 +2,7 @@
  * Response Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { FormsClient, getAccessToken } from "../lib/forms-client.ts";
@@ -16,7 +16,7 @@ const ResponseSchema = z.object({
 });
 
 export const createListResponsesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_responses",
     description: "List all responses for a form.",
     inputSchema: z.object({
@@ -26,7 +26,8 @@ export const createListResponsesTool = (env: Env) =>
       responses: z.array(ResponseSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       const responses = await client.listResponses(context.formId);
       return {
@@ -48,7 +49,7 @@ export const createListResponsesTool = (env: Env) =>
   });
 
 export const createGetResponseTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_response",
     description: "Get a specific response by ID.",
     inputSchema: z.object({
@@ -58,7 +59,8 @@ export const createGetResponseTool = (env: Env) =>
     outputSchema: z.object({
       response: ResponseSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new FormsClient({ accessToken: getAccessToken(env) });
       const r = await client.getResponse(context.formId, context.responseId);
       return {

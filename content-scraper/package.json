@@ -16,7 +16,7 @@
     "cli": "bun cli.ts"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.6",
+    "@decocms/runtime": "1.4.0",
     "@supabase/supabase-js": "^2.49.0",
     "zod": "^4.0.0"
   },

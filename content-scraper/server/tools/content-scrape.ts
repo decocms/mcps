@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { createDatabaseClient, type DatabaseClient } from "../lib/db-client.ts";
 
@@ -115,7 +115,7 @@ async function queryTable(
  * Get content scrape tool - fetches scraped content from database tables
  */
 export const getContentScrapeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_SCRAPED_CONTENT",
     description:
       "Lists content that has been collected and saved to the database. " +
@@ -183,7 +183,8 @@ export const getContentScrapeTool = (env: Env) =>
         .describe("Whether high score filter (>85%) was applied"),
       error: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { table, startIndex, endIndex, onlyThisWeek, highScoreOnly } =
         context;
 

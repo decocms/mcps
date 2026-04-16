@@ -5,7 +5,7 @@
  * Commands are stored in Supabase and registered with Discord API.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import type { Env } from "../types/env.ts";
 import { getSupabaseClient } from "../lib/supabase-client.ts";
@@ -240,7 +240,7 @@ async function deleteCommandFromDiscord(params: {
 // ============================================================================
 
 export const createListSlashCommandsTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_LIST_SLASH_COMMANDS",
     description:
       "List slash commands from database, Discord API, or both. Use 'source' parameter to choose.",
@@ -509,7 +509,7 @@ export const createListSlashCommandsTool = (_env: Env) =>
 // ============================================================================
 
 export const createRegisterSlashCommandTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_REGISTER_SLASH_COMMAND",
     description:
       "Register a new slash command with Discord. The command will be saved to database and registered with Discord API.",
@@ -651,7 +651,7 @@ export const createRegisterSlashCommandTool = (_env: Env) =>
 // ============================================================================
 
 export const createDeleteSlashCommandTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_DELETE_SLASH_COMMAND",
     description:
       "Delete a slash command from Discord and database. Use the command ID from DISCORD_LIST_SLASH_COMMANDS.",
@@ -761,7 +761,7 @@ export const createDeleteSlashCommandTool = (_env: Env) =>
 // ============================================================================
 
 export const createToggleSlashCommandTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_TOGGLE_SLASH_COMMAND",
     description:
       "Enable or disable a slash command. Disabled commands are not deleted but won't be processed.",
@@ -834,7 +834,7 @@ export const createToggleSlashCommandTool = (_env: Env) =>
 // ============================================================================
 
 export const createSyncSlashCommandsTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_SYNC_SLASH_COMMANDS",
     description:
       "Sync slash commands between Discord API and database. Can import missing commands from Discord to DB, or clean orphaned commands from DB.",

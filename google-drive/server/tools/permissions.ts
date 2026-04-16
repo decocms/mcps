@@ -2,7 +2,7 @@
  * Permission and Sharing Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DriveClient, getAccessToken } from "../lib/drive-client.ts";
@@ -24,7 +24,7 @@ const PermissionSchema = z.object({
 });
 
 export const createListPermissionsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_permissions",
     description: "List all permissions for a file/folder.",
     inputSchema: z.object({
@@ -34,7 +34,8 @@ export const createListPermissionsTool = (env: Env) =>
       permissions: z.array(PermissionSchema),
       count: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const permissions = await client.listPermissions(context.fileId);
       return { permissions, count: permissions.length };
@@ -42,7 +43,7 @@ export const createListPermissionsTool = (env: Env) =>
   });
 
 export const createCreatePermissionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "create_permission",
     description:
       "Share a file/folder with a user, group, domain, or make it public.",
@@ -98,7 +99,8 @@ export const createCreatePermissionTool = (env: Env) =>
       permission: PermissionSchema,
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       const permission = await client.createPermission(
         context.fileId,
@@ -116,7 +118,7 @@ export const createCreatePermissionTool = (env: Env) =>
   });
 
 export const createDeletePermissionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_permission",
     description: "Remove a permission from a file/folder (unshare).",
     inputSchema: z.object({
@@ -127,7 +129,8 @@ export const createDeletePermissionTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       await client.deletePermission(context.fileId, context.permissionId);
       return { success: true, message: "Permission removed" };
@@ -135,7 +138,7 @@ export const createDeletePermissionTool = (env: Env) =>
   });
 
 export const createShareFileTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "share_file",
     description: "Quick share: share a file with a user by email.",
     inputSchema: z.object({
@@ -154,7 +157,8 @@ export const createShareFileTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       await client.createPermission(
         context.fileId,
@@ -170,7 +174,7 @@ export const createShareFileTool = (env: Env) =>
   });
 
 export const createGetSharingLinkTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_sharing_link",
     description:
       "Get the sharing link for a file (optionally make it public first).",
@@ -186,7 +190,8 @@ export const createGetSharingLinkTool = (env: Env) =>
       webContentLink: z.string().optional(),
       isPublic: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DriveClient({ accessToken: getAccessToken(env) });
       if (context.makePublic) {
         await client.createPermission(

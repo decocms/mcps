@@ -1,7 +1,7 @@
 /**
  * Google Apps Script Execution Tools
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
@@ -10,7 +10,7 @@ import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
 // Run Script Tool
 // ============================================
 export const createRunScriptTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "run_script",
     description:
       "Runs a function in an Apps Script project. The script must be deployed as an API executable. Returns the function's return value.",
@@ -36,7 +36,8 @@ export const createRunScriptTool = (env: Env) =>
         })
         .optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -64,7 +65,7 @@ export const createRunScriptTool = (env: Env) =>
 // Run Script in Dev Mode Tool
 // ============================================
 export const createRunScriptDevModeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "run_script_dev_mode",
     description:
       "Runs a function in an Apps Script project in development mode. Uses the most recently saved code instead of a deployed version. Only works if the user is an owner of the script.",
@@ -90,7 +91,8 @@ export const createRunScriptDevModeTool = (env: Env) =>
         })
         .optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });

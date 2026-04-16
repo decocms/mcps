@@ -11,7 +11,7 @@
     "build": "bun run build:server"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.5",
+    "@decocms/runtime": "1.4.0",
     "@octokit/rest": "^22.0.1",
     "yaml": "^2.8.2",
     "zod": "^4.0.0"

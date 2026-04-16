@@ -4,7 +4,7 @@
  * Tools for querying search analytics data
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import {
@@ -34,7 +34,7 @@ const SearchAnalyticsRowSchema = z.object({
 // ============================================================================
 
 export const createQuerySearchAnalyticsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "query_search_analytics",
     description:
       "Query search analytics data (clicks, impressions, CTR, position) with filters by date, query, page, country, device, and search type",
@@ -136,7 +136,8 @@ export const createQuerySearchAnalyticsTool = (env: Env) =>
         .array(SearchAnalyticsRowSchema)
         .describe("Search analytics data rows"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SearchConsoleClient({
         accessToken: getAccessToken(env),
       });

@@ -1,7 +1,7 @@
 /**
  * Google Apps Script Processes Tools (Monitoring)
  */
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../shared/deco.gen.ts";
 import { AppsScriptClient, getAccessToken } from "../lib/apps-script-client.ts";
@@ -35,7 +35,7 @@ const ProcessStatusEnum = z.enum([
 // List User Processes Tool
 // ============================================
 export const createListUserProcessesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_user_processes",
     description:
       "Lists information about processes (script executions) made by or on behalf of the authenticated user across all scripts.",
@@ -87,7 +87,8 @@ export const createListUserProcessesTool = (env: Env) =>
       processCount: z.number(),
       nextPageToken: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -124,7 +125,7 @@ export const createListUserProcessesTool = (env: Env) =>
 // List Script Processes Tool
 // ============================================
 export const createListScriptProcessesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "list_script_processes",
     description:
       "Lists information about processes (script executions) for a specific script project.",
@@ -173,7 +174,8 @@ export const createListScriptProcessesTool = (env: Env) =>
       processCount: z.number(),
       nextPageToken: z.string().optional(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });
@@ -209,7 +211,7 @@ export const createListScriptProcessesTool = (env: Env) =>
 // Get Running Processes Tool
 // ============================================
 export const createGetRunningProcessesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_running_processes",
     description:
       "Gets all currently running processes for the authenticated user. Paginates through all results to ensure no running processes are missed. Useful for monitoring active script executions.",
@@ -231,7 +233,8 @@ export const createGetRunningProcessesTool = (env: Env) =>
       ),
       runningCount: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new AppsScriptClient({
         accessToken: getAccessToken(env),
       });

@@ -3,13 +3,13 @@
  * Get detailed information about a specific Replicate model
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../main";
 import { createReplicateClient } from "../lib/replicate";
 import { GetModelInputSchema, CompleteModelDetailsSchema } from "../lib/types";
 
 export const createGetModelTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_MODEL",
     description:
       "Get detailed information about a specific Replicate model. " +
@@ -17,7 +17,8 @@ export const createGetModelTool = (env: Env) =>
       "example inputs/outputs, latest version details, and schema information.",
     inputSchema: GetModelInputSchema,
     outputSchema: CompleteModelDetailsSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { model } = context;
 
       // Parse owner/name from model string

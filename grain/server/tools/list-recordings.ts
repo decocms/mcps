@@ -1,11 +1,11 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
 import { GrainClient, GrainAPIError } from "../lib/grain-client.ts";
 import type { Env } from "../types/env.ts";
 
 export const createListRecordingsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "LIST_RECORDINGS",
     description:
       "List and search through your Grain meeting recordings. " +
@@ -60,7 +60,8 @@ export const createListRecordingsTool = (env: Env) =>
       ),
       cursor: z.string().nullable().describe("Next page cursor, null if last"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         const client = new GrainClient({ apiKey: getGrainApiKey(env) });
         const response = await client.listRecordings({

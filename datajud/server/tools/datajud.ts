@@ -8,7 +8,7 @@
  */
 import type { Env } from "../main.ts";
 import { createDatajudClient } from "./utils/datajud.ts";
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   searchProcessesInputSchema,
   searchProcessesOutputSchema,
@@ -35,13 +35,14 @@ function resolveTribunal(
  * SEARCH_PROCESSES - Search processes in Datajud with filters
  */
 export const createSearchProcessesTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "SEARCH_PROCESSES",
     description:
       "Search judicial processes in Datajud with filters. Allows filtering by class, subject, court, filing date, and other fields from the Data Transfer Model (MTD). Returns a list of processes with their metadata.",
     inputSchema: searchProcessesInputSchema,
     outputSchema: searchProcessesOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { tribunal: customTribunal, filters, size, from, sort } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 
@@ -79,13 +80,14 @@ export const createSearchProcessesTool = (env: Env) =>
  * GET_PROCESS - Search for a specific process by number
  */
 export const createGetProcessTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_PROCESS",
     description:
       "Search for a specific judicial process by process number in Datajud. Returns all available process metadata, including class, subjects, movements, court, etc.",
     inputSchema: getProcessInputSchema,
     outputSchema: getProcessOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { tribunal: customTribunal, numeroProcesso } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 
@@ -117,13 +119,14 @@ export const createGetProcessTool = (env: Env) =>
  * AGGREGATE_STATISTICS - Execute aggregations and generate statistics
  */
 export const createAggregateStatisticsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "AGGREGATE_STATISTICS",
     description:
       "Execute aggregations and generate statistics about judicial processes in Datajud. Allows calculating counts, averages, sums, and other metrics grouped by fields such as class, subject, court, filing year, etc. Uses Elasticsearch aggregation syntax.",
     inputSchema: aggregateStatisticsInputSchema,
     outputSchema: aggregateStatisticsOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { tribunal: customTribunal, aggregations, filters } = context;
       const state = env.DECO_REQUEST_CONTEXT.state;
 

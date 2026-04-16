@@ -2,13 +2,13 @@
  * Content Operations Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { DocsClient, getAccessToken } from "../lib/docs-client.ts";
 
 export const createInsertTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "insert_text",
     description:
       "Insert text at a specific position in the document. Index 1 is the beginning.",
@@ -24,7 +24,8 @@ export const createInsertTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.insertText(context.documentId, context.text, context.index);
       return {
@@ -35,7 +36,7 @@ export const createInsertTextTool = (env: Env) =>
   });
 
 export const createDeleteContentTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "delete_content",
     description: "Delete content from a range in the document.",
     inputSchema: z
@@ -51,7 +52,8 @@ export const createDeleteContentTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       await client.deleteContent(
         context.documentId,
@@ -66,7 +68,7 @@ export const createDeleteContentTool = (env: Env) =>
   });
 
 export const createReplaceTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "replace_text",
     description: "Find and replace all occurrences of text in the document.",
     inputSchema: z.object({
@@ -82,7 +84,8 @@ export const createReplaceTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const result = await client.replaceAllText(
         context.documentId,
@@ -97,7 +100,7 @@ export const createReplaceTextTool = (env: Env) =>
   });
 
 export const createAppendTextTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "append_text",
     description: "Append text to the end of the document.",
     inputSchema: z.object({
@@ -108,7 +111,8 @@ export const createAppendTextTool = (env: Env) =>
       success: z.boolean(),
       message: z.string(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new DocsClient({ accessToken: getAccessToken(env) });
       const doc = await client.getDocument(context.documentId);
       const endIndex = client.getEndIndex(doc) - 1;

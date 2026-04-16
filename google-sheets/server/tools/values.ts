@@ -2,14 +2,14 @@
  * Value/Data Operations Tools
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { SheetsClient, getAccessToken } from "../lib/sheets-client.ts";
 import { processHeaders } from "../lib/utils.ts";
 
 export const createReadRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "read_range",
     description:
       "Read values from a range in a spreadsheet. Use A1 notation (e.g., 'Sheet1!A1:D10' or 'A1:D10').",
@@ -27,7 +27,8 @@ export const createReadRangeTool = (env: Env) =>
       rowCount: z.number(),
       columnCount: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.readRange(
         context.spreadsheetId,
@@ -47,7 +48,7 @@ export const createReadRangeTool = (env: Env) =>
   });
 
 export const createWriteRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "write_range",
     description:
       "Write values to a range in a spreadsheet. Overwrites existing data.",
@@ -71,7 +72,8 @@ export const createWriteRangeTool = (env: Env) =>
       updatedCells: z.number(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.writeRange(
         context.spreadsheetId,
@@ -90,7 +92,7 @@ export const createWriteRangeTool = (env: Env) =>
   });
 
 export const createAppendRowsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "append_rows",
     description:
       "Append rows to the end of a table/range in a spreadsheet. Automatically finds the last row.",
@@ -109,7 +111,8 @@ export const createAppendRowsTool = (env: Env) =>
       updatedCells: z.number(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.appendRows(
         context.spreadsheetId,
@@ -128,7 +131,7 @@ export const createAppendRowsTool = (env: Env) =>
   });
 
 export const createClearRangeTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "clear_range",
     description: "Clear all values from a range (keeps formatting).",
     inputSchema: z.object({
@@ -139,7 +142,8 @@ export const createClearRangeTool = (env: Env) =>
       clearedRange: z.string(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.clearRange(
         context.spreadsheetId,
@@ -150,7 +154,7 @@ export const createClearRangeTool = (env: Env) =>
   });
 
 export const createBatchReadTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "batch_read",
     description: "Read multiple ranges from a spreadsheet in a single request.",
     inputSchema: z.object({
@@ -169,7 +173,8 @@ export const createBatchReadTool = (env: Env) =>
         }),
       ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.batchGetValues(
         context.spreadsheetId,
@@ -186,7 +191,7 @@ export const createBatchReadTool = (env: Env) =>
   });
 
 export const createBatchWriteTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "batch_write",
     description:
       "Write to multiple ranges in a spreadsheet in a single request.",
@@ -209,7 +214,8 @@ export const createBatchWriteTool = (env: Env) =>
       totalUpdatedSheets: z.number(),
       success: z.boolean(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.batchUpdateValues(
         context.spreadsheetId,
@@ -231,7 +237,7 @@ export const createBatchWriteTool = (env: Env) =>
 // ============================================
 
 export const createReadFormulasTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "read_formulas",
     description:
       "Read formulas from a range in a spreadsheet. Unlike read_range which returns calculated values, this returns the actual formulas (e.g., '=SUM(A1:A10)' instead of '100').",
@@ -253,7 +259,8 @@ export const createReadFormulasTool = (env: Env) =>
       rowCount: z.number(),
       columnCount: z.number(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.readFormulas(
         context.spreadsheetId,
@@ -277,7 +284,7 @@ export const createReadFormulasTool = (env: Env) =>
 // ============================================
 
 export const createGetSheetHeadersTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "get_sheet_headers",
     description:
       "Get structured header information from a sheet. Returns column labels, header-to-index mapping, and header values array. Useful for understanding column structure before querying data.",
@@ -305,7 +312,8 @@ export const createGetSheetHeadersTool = (env: Env) =>
       headerValues: z.array(z.string()).describe("Array of header values"),
       columnCount: z.number().describe("Number of columns with headers"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.getSheetHeaders(
         context.spreadsheetId,
@@ -331,7 +339,7 @@ export const createGetSheetHeadersTool = (env: Env) =>
 // ============================================
 
 export const createSearchDataTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "search_data",
     description:
       "Search for a term across columns in a sheet. Returns matching rows with row numbers. Useful for finding specific data without knowing the exact location.",
@@ -370,7 +378,8 @@ export const createSearchDataTool = (env: Env) =>
         .describe("Matching rows"),
       totalMatches: z.number().describe("Total number of matches found"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const client = new SheetsClient({ accessToken: getAccessToken(env) });
       const result = await client.searchInSheet(
         context.spreadsheetId,

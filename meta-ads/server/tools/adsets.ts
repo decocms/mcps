@@ -9,7 +9,7 @@
  * - META_ADS_DELETE_ADSET: Delete an ad set
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getMetaAccessToken } from "../main.ts";
@@ -30,7 +30,7 @@ const targetingSummarySchema = z.object({
  * Get ad sets for an ad account
  */
 export const createGetAdSetsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_ADSETS",
     description:
       "Get ad sets for a Meta Ads account. Can filter by campaign ID. Returns ad set details including targeting, budget, and optimization settings.",
@@ -68,7 +68,8 @@ export const createGetAdSetsTool = (env: Env) =>
       ),
       count: z.number().describe("Number of ad sets returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -113,7 +114,7 @@ export const createGetAdSetsTool = (env: Env) =>
  * Get details of a specific ad set
  */
 export const createGetAdSetDetailsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_GET_ADSET_DETAILS",
     description:
       "Get detailed information about a specific Meta Ads ad set including full targeting details, budget, schedule, and optimization settings.",
@@ -176,7 +177,9 @@ export const createGetAdSetDetailsTool = (env: Env) =>
         .optional(),
       promoted_object: z.record(z.string(), z.unknown()).optional(),
     }),
-    execute: async ({ context }) => {
+    // @ts-expect-error: ctx is always passed by runtime
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -269,7 +272,7 @@ const targetingInputSchema = z.object({
  * Create a new ad set
  */
 export const createCreateAdSetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_CREATE_ADSET",
     description:
       "Create a new Meta Ads ad set. This is STEP 2 of 5 to create ads. REQUIRES: A campaign_id from CREATE_CAMPAIGN. FLOW: 1) CREATE_CAMPAIGN → 2) CREATE_ADSET → 3) UPLOAD_AD_IMAGE (optional) → 4) CREATE_AD_CREATIVE → 5) CREATE_AD. Define targeting, budget, optimization goal, and billing settings.",
@@ -392,7 +395,8 @@ export const createCreateAdSetTool = (env: Env) =>
         .boolean()
         .describe("Whether the ad set was created successfully"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -424,7 +428,7 @@ export const createCreateAdSetTool = (env: Env) =>
  * Update an existing ad set
  */
 export const createUpdateAdSetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_UPDATE_ADSET",
     description:
       "Update an existing Meta Ads ad set. Can change targeting, budget, status, or optimization settings.",
@@ -493,7 +497,8 @@ export const createUpdateAdSetTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the update was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 
@@ -521,7 +526,7 @@ export const createUpdateAdSetTool = (env: Env) =>
  * Delete an ad set
  */
 export const createDeleteAdSetTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "META_ADS_DELETE_ADSET",
     description:
       "Delete a Meta Ads ad set. This action cannot be undone. All ads in the ad set will also be deleted.",
@@ -531,7 +536,8 @@ export const createDeleteAdSetTool = (env: Env) =>
     outputSchema: z.object({
       success: z.boolean().describe("Whether the deletion was successful"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const accessToken = await getMetaAccessToken(env);
       const client = createMetaAdsClient({ accessToken });
 

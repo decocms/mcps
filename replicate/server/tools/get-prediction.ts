@@ -3,7 +3,7 @@
  * Retrieve the status and results of a prediction by ID
  */
 
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main";
 import { createReplicateClient } from "../lib/replicate";
@@ -13,7 +13,7 @@ import {
 } from "../lib/types";
 
 export const createGetPredictionTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_PREDICTION",
     description:
       "Get the current status and results of a prediction by its ID. " +
@@ -21,7 +21,8 @@ export const createGetPredictionTool = (env: Env) =>
       "or to retrieve results after receiving a webhook notification.",
     inputSchema: GetPredictionInputSchema,
     outputSchema: z.object(CompletePredictionOutputSchema),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { predictionId } = context;
 
       const client = createReplicateClient(env);

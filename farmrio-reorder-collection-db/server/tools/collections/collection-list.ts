@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import z from "zod";
 import { getDb } from "../../database/index.ts";
 import type { Env } from "../../types/env.ts";
@@ -27,12 +27,13 @@ const outputSchema = z
   .strict();
 
 export const collectionListTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "collection_list",
     description: "Lista collections com filtros opcionais.",
     inputSchema,
     outputSchema,
-    execute: async ({ context }: { context: unknown }) => {
+    execute: async ({ context }: { context: unknown }, ctx) => {
+      ensureAuthenticated(ctx!);
       try {
         validateToken(env);
         const input = inputSchema.parse(context);

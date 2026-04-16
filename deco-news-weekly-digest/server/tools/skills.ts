@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { BLOG_POSTS_SKILL } from "../skills/blog-posts.ts";
 
@@ -13,7 +13,7 @@ import { BLOG_POSTS_SKILL } from "../skills/blog-posts.ts";
  * GET_BLOG_POST_SKILL - Returns the complete guide for writing weekly digest articles
  */
 export const getBlogPostSkillTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GET_BLOG_POST_SKILL",
     description:
       "Returns the complete guide for creating weekly digest articles for decoNews. " +
@@ -43,7 +43,8 @@ export const getBlogPostSkillTool = (_env: Env) =>
         .describe("The weekly digest writing skill/guide content"),
       section: z.string().describe("The section that was returned"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { section } = context;
 
       if (section === "all") {

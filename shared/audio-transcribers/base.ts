@@ -1,4 +1,4 @@
-import { createPrivateTool } from "@decocms/runtime/mastra";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import {
   applyMiddlewares,
   Contract,
@@ -48,14 +48,15 @@ export function createAudioTranscriberTools<TEnv extends AudioTranscriberEnv>(
   options: CreateAudioTranscriberOptions<TEnv>,
 ) {
   const transcribeAudio = (env: TEnv) =>
-    createPrivateTool({
+    createTool({
       id: "TRANSCRIBE_AUDIO",
       description:
         options.metadata.description ||
         `Transcribe audio using ${options.metadata.provider}`,
       inputSchema: TranscribeAudioInputSchema,
       outputSchema: TranscribeAudioOutputSchema,
-      execute: async ({ context }: { context: TranscribeAudioInput }) => {
+      execute: async ({ context }: { context: TranscribeAudioInput }, ctx) => {
+        ensureAuthenticated(ctx!);
         const doExecute = async () => {
           const contract = options.getContract(env);
 

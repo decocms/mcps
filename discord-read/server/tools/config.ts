@@ -4,7 +4,7 @@
  * Tools for saving and managing Discord bot configuration.
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import {
@@ -21,7 +21,7 @@ import { isSupabaseConfigured } from "../lib/supabase-client.ts";
  * Save Discord bot configuration
  */
 export const createSaveConfigTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_SAVE_CONFIG",
     description:
       "Save Discord bot configuration (token, authorized guilds, AI model settings). This persists configuration so you don't need to provide the token again.",
@@ -160,7 +160,7 @@ export const createSaveConfigTool = (env: Env) =>
  * Update Discord bot configuration (partial update)
  */
 export const createUpdateConfigTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_UPDATE_CONFIG",
     description:
       "Update specific fields in Discord bot configuration without needing to provide all fields. Use this to update system prompt, model settings, etc.",
@@ -282,7 +282,7 @@ export const createUpdateConfigTool = (env: Env) =>
  * Load Discord bot configuration
  */
 export const createLoadConfigTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_LOAD_CONFIG",
     description:
       "Load saved Discord bot configuration from Supabase. Returns the stored bot token and settings.",
@@ -365,7 +365,7 @@ export const createLoadConfigTool = (env: Env) =>
  * Delete Discord bot configuration
  */
 export const createDeleteConfigTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_DELETE_CONFIG",
     description:
       "Delete saved Discord bot configuration from Supabase. This will remove the stored token and settings.",
@@ -409,7 +409,7 @@ export const createDeleteConfigTool = (env: Env) =>
  * Get cache statistics
  */
 export const createCacheStatsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_CONFIG_CACHE_STATS",
     description: "Get Discord configuration cache statistics",
     annotations: { readOnlyHint: true },
@@ -422,7 +422,8 @@ export const createCacheStatsTool = (env: Env) =>
         ttl: z.number(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       return getCacheStats();
     },
   });
@@ -431,7 +432,7 @@ export const createCacheStatsTool = (env: Env) =>
  * Clear configuration cache
  */
 export const createClearCacheTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_CONFIG_CLEAR_CACHE",
     description:
       "Clear Discord configuration cache. Forces reload from Supabase on next access.",
@@ -443,7 +444,8 @@ export const createClearCacheTool = (env: Env) =>
         message: z.string(),
       })
       .strict(),
-    execute: async () => {
+    execute: async (_input, ctx) => {
+      ensureAuthenticated(ctx!);
       clearConfigCache();
       return {
         success: true,
@@ -460,7 +462,7 @@ export const createClearCacheTool = (env: Env) =>
  * "session expired" problem.
  */
 export const createGenerateApiKeyTool = (_env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "DISCORD_GENERATE_API_KEY",
     description:
       "Generate a persistent Mesh API Key for this Discord bot. This solves the 'session expired' problem by creating a key that never expires. The bot will automatically use this key for LLM and other API calls.",

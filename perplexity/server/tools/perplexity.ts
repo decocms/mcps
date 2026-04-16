@@ -8,7 +8,7 @@
  * - perplexity_search    → /search endpoint (raw web results)
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { getPerplexityApiKey } from "../lib/env.ts";
@@ -74,7 +74,7 @@ const reasoningEffortField = z
 // ============================================================================
 
 export const createAskTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "perplexity_ask",
     description:
       "Answer a question using web-grounded AI (Sonar Pro model). " +
@@ -96,7 +96,8 @@ export const createAskTool = (env: Env) =>
           "AI-generated text response with numbered citation references",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getPerplexityApiKey(env);
       const options: ChatOptions = {
         ...(context.search_recency_filter && {
@@ -125,7 +126,7 @@ export const createAskTool = (env: Env) =>
 // ============================================================================
 
 export const createResearchTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "perplexity_research",
     description:
       "Conduct deep, multi-source research on a topic (Sonar Deep Research model). " +
@@ -146,7 +147,8 @@ export const createResearchTool = (env: Env) =>
           "AI-generated text response with numbered citation references",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getPerplexityApiKey(env);
       const stripThinking = context.strip_thinking === true;
       const options: ChatOptions = {
@@ -170,7 +172,7 @@ export const createResearchTool = (env: Env) =>
 // ============================================================================
 
 export const createReasonTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "perplexity_reason",
     description:
       "Analyze a question using step-by-step reasoning with web grounding (Sonar Reasoning Pro model). " +
@@ -193,7 +195,8 @@ export const createReasonTool = (env: Env) =>
           "AI-generated text response with numbered citation references",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getPerplexityApiKey(env);
       const stripThinking = context.strip_thinking === true;
       const options: ChatOptions = {
@@ -223,7 +226,7 @@ export const createReasonTool = (env: Env) =>
 // ============================================================================
 
 export const createSearchTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "perplexity_search",
     description:
       "Search the web and return a ranked list of results with titles, URLs, snippets, and dates. " +
@@ -260,7 +263,8 @@ export const createSearchTool = (env: Env) =>
           "Formatted search results, each with title, URL, snippet, and date",
         ),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const apiKey = getPerplexityApiKey(env);
       const results = await performSearch(
         apiKey,

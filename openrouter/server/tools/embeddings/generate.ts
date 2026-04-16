@@ -3,14 +3,14 @@
  * Submit an embedding request to the OpenRouter embeddings router
  */
 
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool, ensureAuthenticated } from "@decocms/runtime/tools";
 import { getOpenRouterApiKey } from "server/lib/env.ts";
 import { z } from "zod";
 import type { Env } from "../../main.ts";
 import { OpenRouter } from "@openrouter/sdk";
 
 export const createGenerateEmbeddingsTool = (env: Env) =>
-  createPrivateTool({
+  createTool({
     id: "GENERATE_EMBEDDINGS",
     description:
       "Generate vector embeddings for text input using OpenRouter's embeddings API. " +
@@ -46,7 +46,8 @@ export const createGenerateEmbeddingsTool = (env: Env) =>
     outputSchema: z.object({
       data: z.unknown(),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context }, ctx) => {
+      ensureAuthenticated(ctx!);
       const { input, model, encoding_format, dimensions } = context;
       const sdk = new OpenRouter({ apiKey: getOpenRouterApiKey(env) });
 
