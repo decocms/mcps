@@ -168,6 +168,7 @@ export function buildUpstreamTools(
             name: toolDef.name,
             arguments: context as Record<string, unknown>,
           });
+          console.log(`[mcp-proxy] callTool result for ${toolDef.name}:`, JSON.stringify(result, null, 2));
           const contents = result.content as
             | Array<{ type: string; text?: string }>
             | undefined;
@@ -185,11 +186,10 @@ export function buildUpstreamTools(
           }
 
           const parsed = safeJsonParse(msg);
-          if (parsed) {
-            return parsed;
+          if (!parsed) {
+            throw new Error(`Failed to parse: ${msg}`);
           }
-
-          return msg ?? null;
+          return parsed;
         } finally {
           client.close().catch(() => {});
         }
