@@ -16,7 +16,6 @@ import { appendAssistantMessage } from "../../lib/thread.ts";
 import {
   sendMessage,
   replyInThread,
-  getBotInfo,
   getThreadReplies,
   sendThinkingMessage,
   processSlackFiles,
@@ -26,7 +25,6 @@ import {
   getUserInfo,
 } from "../../lib/slack-client.ts";
 import type {
-  SlackEvent,
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";

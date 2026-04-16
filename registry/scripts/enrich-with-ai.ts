@@ -131,9 +131,6 @@ async function enrichMcpWithAI(
   const name = server.name;
   const description = server.description || server.short_description || "";
   const repoUrl = server.repository?.url || "";
-  const hasRemote = (server.remotes?.length ?? 0) > 0;
-  const isNpm = server.remotes?.some((r) => r.type === "npm") ?? false;
-  const isVerified = server.verified;
 
   // Serialize remotes for the prompt
   const remotesInfo =

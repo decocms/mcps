@@ -117,7 +117,7 @@ async function main() {
     // ── Apply icon overrides ──────────────────────────────────
     console.log("\n── ICON OVERRIDES ──");
     let iconCount = 0;
-    for (const server of [...(current || [])]) {
+    for (const server of current || []) {
       const override = VERIFIED_SERVER_OVERRIDES[server.name];
       if (!override?.icons) continue;
 

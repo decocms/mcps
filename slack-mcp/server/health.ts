@@ -236,7 +236,7 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
       } else {
         const { WebClient } = await import("@slack/web-api");
         const tempClient = new WebClient(config.botToken);
-        const authResult = await tempClient.auth.test();
+        await tempClient.auth.test();
         layers.push({
           layer: "slack_api",
           status: "ok",
@@ -312,7 +312,6 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
           const reader = resp.body!.getReader();
           const decoder = new TextDecoder();
           let gotText = false;
-          let responsePreview = "";
 
           try {
             let buffer = "";
@@ -335,7 +334,6 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
                     (event.type === "text" && event.text)
                   ) {
                     gotText = true;
-                    responsePreview += event.delta || event.text || "";
                   }
                 } catch {
                   // ignore parse errors
@@ -385,7 +383,7 @@ async function runDeepCheck(): Promise<ConnectionHealth[]> {
           });
           callbackReachable = resp.status < 500;
           callbackDetail = `callback=${resp.status}, triggers=${triggerState.activeTriggerTypes.length}`;
-        } catch (fetchErr) {
+        } catch {
           callbackDetail = `callback unreachable, triggers=${triggerState.activeTriggerTypes.length}`;
         }
 

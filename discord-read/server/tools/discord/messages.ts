@@ -593,7 +593,7 @@ export const createPurgeChannelMessagesTool = (env: Env) =>
               console.log(
                 `🧹 [Purge] Bulk deleted ${chunk.length} recent messages`,
               );
-            } catch (error) {
+            } catch {
               console.log(
                 `⚠️ [Purge] Bulk delete failed, falling back to individual delete`,
               );

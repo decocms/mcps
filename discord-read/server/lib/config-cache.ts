@@ -9,7 +9,6 @@ import {
   loadConnectionConfig,
   saveConnectionConfig,
   deleteConnectionConfig,
-  type DiscordConnectionRow,
 } from "./supabase-client.ts";
 
 /**

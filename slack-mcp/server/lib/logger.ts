@@ -180,71 +180,66 @@ export class HyperDXLogger {
    */
   private async sendToHyperDX(logEntry: Record<string, unknown>) {
     console.log(`[HyperDX] 📤 Sending log to ${this.hyperDxEndpoint}...`);
-    try {
-      const response = await fetch(this.hyperDxEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: this.apiKey!,
-        },
-        body: JSON.stringify({
-          resourceLogs: [
-            {
-              resource: {
-                attributes: [
-                  {
-                    key: "service.name",
-                    value: { stringValue: this.service },
-                  },
-                ],
-              },
-              scopeLogs: [
+    const response = await fetch(this.hyperDxEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: this.apiKey!,
+      },
+      body: JSON.stringify({
+        resourceLogs: [
+          {
+            resource: {
+              attributes: [
                 {
-                  scope: { name: this.service },
-                  logRecords: [
-                    {
-                      timeUnixNano: `${Date.now() * 1000000}`,
-                      severityNumber:
-                        (
-                          {
-                            debug: 5,
-                            info: 9,
-                            warn: 13,
-                            error: 17,
-                          } as Record<string, number>
-                        )[String(logEntry.level || "info")] ?? 9,
-                      severityText: String(
-                        logEntry.level || "info",
-                      ).toUpperCase(),
-                      body: { stringValue: String(logEntry.body) },
-                      attributes: Object.entries(logEntry)
-                        .filter(([key]) => key !== "body" && key !== "level")
-                        .map(([key, value]) => ({
-                          key,
-                          value: { stringValue: String(value) },
-                        })),
-                    },
-                  ],
+                  key: "service.name",
+                  value: { stringValue: this.service },
                 },
               ],
             },
-          ],
-        }),
-      });
+            scopeLogs: [
+              {
+                scope: { name: this.service },
+                logRecords: [
+                  {
+                    timeUnixNano: `${Date.now() * 1000000}`,
+                    severityNumber:
+                      (
+                        {
+                          debug: 5,
+                          info: 9,
+                          warn: 13,
+                          error: 17,
+                        } as Record<string, number>
+                      )[String(logEntry.level || "info")] ?? 9,
+                    severityText: String(
+                      logEntry.level || "info",
+                    ).toUpperCase(),
+                    body: { stringValue: String(logEntry.body) },
+                    attributes: Object.entries(logEntry)
+                      .filter(([key]) => key !== "body" && key !== "level")
+                      .map(([key, value]) => ({
+                        key,
+                        value: { stringValue: String(value) },
+                      })),
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
-      const body = await response.text();
-      if (!response.ok) {
-        throw new Error(
-          `HyperDX API returned ${response.status}: ${response.statusText} - ${body}`,
-        );
-      }
-      console.log(
-        `[HyperDX] ✅ Log sent successfully (${response.status}) - Response: ${body || "(empty)"}`,
+    const body = await response.text();
+    if (!response.ok) {
+      throw new Error(
+        `HyperDX API returned ${response.status}: ${response.statusText} - ${body}`,
       );
-    } catch (error) {
-      // Re-throw to be caught by caller
-      throw error;
     }
+    console.log(
+      `[HyperDX] ✅ Log sent successfully (${response.status}) - Response: ${body || "(empty)"}`,
+    );
   }
 }
 

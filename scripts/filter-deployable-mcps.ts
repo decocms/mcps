@@ -26,7 +26,7 @@ if (!mcpsJson) {
 let mcps: string[];
 try {
   mcps = JSON.parse(mcpsJson);
-} catch (error) {
+} catch {
   console.error("❌ Error: Invalid JSON array provided");
   process.exit(1);
 }

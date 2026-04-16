@@ -262,7 +262,7 @@ app.post("/slack/interactive", async (c) => {
 async function processConnectionEventAsync(
   payload: SlackWebhookPayload,
   connectionConfig: SlackConnectionConfig,
-  traceId: string,
+  _traceId: string,
 ): Promise<void> {
   if (!payload.event) {
     return;
