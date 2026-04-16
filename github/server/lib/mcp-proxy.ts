@@ -15,15 +15,6 @@ import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getAppInstallationToken } from "./github-app-auth.ts";
 
-function safeJsonParse(text: string | undefined): unknown | null {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
 const DEFAULT_UPSTREAM_URL = "https://api.githubcopilot.com/mcp/";
 
 /**
@@ -164,35 +155,10 @@ export function buildUpstreamTools(
 
         const client = await connectUpstreamClient(currentToken);
         try {
-          const result = await client.callTool({
+          return await client.callTool({
             name: toolDef.name,
             arguments: context as Record<string, unknown>,
           });
-          console.log(
-            `[mcp-proxy] callTool result for ${toolDef.name}:`,
-            JSON.stringify(result, null, 2),
-          );
-          const contents = result.content as
-            | Array<{ type: string; text?: string }>
-            | undefined;
-          const msg = contents?.find(
-            (c): c is { type: "text"; text: string } =>
-              c.type === "text" && typeof c.text === "string",
-          )?.text;
-
-          if (result.isError) {
-            throw new Error(msg || "Something went wrong");
-          }
-
-          if (result.structuredContent) {
-            return result.structuredContent;
-          }
-
-          const parsed = safeJsonParse(msg);
-          if (!parsed) {
-            throw new Error(`Failed to parse: ${msg}`);
-          }
-          return parsed;
         } finally {
           client.close().catch(() => {});
         }
