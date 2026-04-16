@@ -168,7 +168,10 @@ export function buildUpstreamTools(
             name: toolDef.name,
             arguments: context as Record<string, unknown>,
           });
-          console.log(`[mcp-proxy] callTool result for ${toolDef.name}:`, JSON.stringify(result, null, 2));
+          console.log(
+            `[mcp-proxy] callTool result for ${toolDef.name}:`,
+            JSON.stringify(result, null, 2),
+          );
           const contents = result.content as
             | Array<{ type: string; text?: string }>
             | undefined;
