@@ -61,13 +61,8 @@ export function setBotUserIdForTeam(teamId: string, userId: string): void {
 
 export const app = new Hono();
 
-app.get("/health", async (c) => {
-  const health = await getHealthStatus();
-  // Only return 503 for hard errors — "degraded" (warnings) returns 200
-  // so PagerDuty only pages on real outages
-  const statusCode = health.status === "error" ? 503 : 200;
-  c.header("X-Health-Summary", health.summary);
-  return c.json(health, statusCode);
+app.get("/health", (c) => {
+  return c.json(getHealthStatus());
 });
 
 app.get("/temp-files/:id", async (c) => {
