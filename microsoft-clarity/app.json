@@ -1,0 +1,32 @@
+{
+  "scopeName": "deco",
+  "name": "microsoft-clarity",
+  "friendlyName": "Microsoft Clarity",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-microsoft-clarity.decocache.com/mcp"
+  },
+  "description": "official Microsoft Clarity MCP integration for analytics, session recordings, and documentation access.",
+  "icon": "https://claritystatic.azureedge.net/images/logo.ico",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": [
+      "Analytics",
+      "Productivity"
+    ],
+    "official": true,
+    "tags": [
+      "clarity",
+      "analytics",
+      "ux",
+      "microsoft"
+    ],
+    "short_description": "Microsoft Clarity analytics and recordings",
+    "mesh_description": "**Microsoft Clarity MCP Server** provides AI-driven access to your website analytics and user behavioral data. \n\n**Key Features**\n- **Natural Language Analytics**: Query traffic, engagement, and scroll depth metrics using plain English.\n- **Session Search**: List and filter session recordings based on advanced behavior criteria (rage clicks, dead clicks, device type, etc.).\n- **Expert Documentation**: Get instant answers about Clarity setup and features directly from the official documentation.\n\n**Use Cases**\n- Marketing analysis to optimize campaign performance.\n- UX research to identify navigation friction and drop-off points.\n- Technical debugging using JavaScript error reports and performance heatmaps.\n\n**Authentication**\nRequires a **Microsoft Clarity API token** generated from your project settings (Settings -> Data Export).\n\n**Limits**\nEach project allows **10 API requests per day**, with a limit of **3 days' data** and up to **3 dimensions per request**."
+  }
+}
