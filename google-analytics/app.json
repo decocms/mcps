@@ -1,0 +1,32 @@
+{
+  "scopeName": "deco",
+  "name": "google-analytics",
+  "friendlyName": "Google Analytics",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-analytics.decocache.com/mcp"
+  },
+  "description": "Integrate with Google Analytics 4 (GA4) to query reports, fetch realtime data, and manage analytics properties.",
+  "icon": "https://developers.google.com/favicon.ico",
+  "unlisted": false,
+  "auth": {
+    "type": "oauth2"
+  },
+  "metadata": {
+    "categories": [
+      "Analytics",
+      "Marketing",
+      "Data"
+    ],
+    "official": false,
+    "tags": [
+      "google",
+      "analytics",
+      "ga4",
+      "data",
+      "reporting"
+    ],
+    "short_description": "Integrate with Google Analytics 4 (GA4) to query reports, fetch realtime data, and manage analytics properties.",
+    "mesh_description": "The Google Analytics 4 (GA4) MCP provides comprehensive programmatic access to your Analytics data. **Key Features** - Query custom reports with dimensions and metrics using the Data API. Fetch realtime active users data. Retrieve metadata for custom dimensions and metrics. Navigate your account hierarchy. **Use Cases** - Perfect for marketers and developers needing to automate analytics reporting, identify top-performing content, or monitor active audiences directly from the LLM. **Authentication** - Uses OAuth 2.0 with Google Analytics read-only scope for secure access."
+  }
+}
