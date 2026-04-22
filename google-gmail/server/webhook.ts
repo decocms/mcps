@@ -1,0 +1,72 @@
+/**
+ * Gmail Webhook HTTP Handler
+ *
+ * Receives Google Pub/Sub push notifications for Gmail mailbox changes
+ * and routes them to the correct connection via triggers.notify().
+ */
+
+import { getConnectionForEmail } from "./lib/email-connection-map.ts";
+import { triggers } from "./lib/trigger-store.ts";
+
+interface PubSubPushMessage {
+  message: {
+    data: string; // base64-encoded JSON: { emailAddress, historyId }
+    messageId: string;
+    publishTime: string;
+  };
+  subscription: string;
+}
+
+interface GmailNotification {
+  emailAddress: string;
+  historyId: string;
+}
+
+export async function handleGmailWebhook(req: Request): Promise<Response> {
+  let body: PubSubPushMessage;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (!body.message?.data) {
+    return Response.json({ error: "Missing message data" }, { status: 400 });
+  }
+
+  let notification: GmailNotification;
+  try {
+    const decoded = Buffer.from(body.message.data, "base64").toString("utf-8");
+    notification = JSON.parse(decoded);
+  } catch {
+    return Response.json(
+      { error: "Invalid notification data" },
+      { status: 400 },
+    );
+  }
+
+  const { emailAddress, historyId } = notification;
+  if (!emailAddress) {
+    return Response.json({ ok: true, skipped: "no_email_address" });
+  }
+
+  const connectionId = getConnectionForEmail(emailAddress);
+  if (!connectionId) {
+    console.log(
+      `[Gmail Webhook] No connection mapping for ${emailAddress}, skipping`,
+    );
+    return Response.json({ ok: true, skipped: "no_mapping" });
+  }
+
+  console.log(
+    `[Gmail Webhook] Notification for ${emailAddress} (historyId: ${historyId}) → connection ${connectionId}`,
+  );
+
+  triggers.notify(connectionId, "gmail.message.received", {
+    event: "gmail.message.received",
+    emailAddress,
+    historyId,
+  });
+
+  return Response.json({ ok: true, event: "gmail.message.received" });
+}

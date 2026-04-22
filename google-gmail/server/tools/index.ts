@@ -9,12 +9,14 @@
  * - threadTools: Thread management (list, get, trash, untrash, modify, delete)
  * - labelTools: Label management (list, get, create, update, delete)
  * - draftTools: Draft management (list, get, create, update, send, delete)
+ * - triggers: TRIGGER_LIST / TRIGGER_CONFIGURE for Mesh automations
  */
 
 import { messageTools } from "./messages.ts";
 import { threadTools } from "./threads.ts";
 import { labelTools } from "./labels.ts";
 import { draftTools } from "./drafts.ts";
+import { triggers } from "../lib/trigger-store.ts";
 
 // Export all tools from all modules
 export const tools = [
@@ -26,4 +28,6 @@ export const tools = [
   ...labelTools,
   // Draft management tools
   ...draftTools,
+  // Trigger tools (register/unregister event triggers)
+  () => triggers.tools(),
 ];
