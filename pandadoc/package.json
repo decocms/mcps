@@ -1,0 +1,23 @@
+{
+  "name": "pandadoc",
+  "version": "1.0.0",
+  "description": "MCP proxy for PandaDoc official MCP server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "1.2.5"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

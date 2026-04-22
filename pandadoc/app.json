@@ -1,0 +1,24 @@
+{
+  "scopeName": "deco",
+  "name": "pandadoc",
+  "friendlyName": "PandaDoc",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-pandadoc.decocache.com/mcp"
+  },
+  "description": "Integração com PandaDoc para gerenciar documentos, templates e assinaturas eletrônicas.",
+  "icon": "https://assets.decocache.com/mcp/pandadoc.svg",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["Productivity"],
+    "official": false,
+    "tags": ["pandadoc", "documents", "esignature", "contracts"],
+    "short_description": "Manage PandaDoc documents, templates and e-signatures.",
+    "mesh_description": "PandaDoc MCP proxy that allows AI agents to interact with your PandaDoc account. Supports listing documents, creating documents from templates, sending for signature, and tracking document status.\n\nThis MCP acts as a proxy to the official PandaDoc MCP server, handling authentication transparently."
+  }
+}
