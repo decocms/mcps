@@ -126,6 +126,15 @@
       "shared/**"
     ]
   },
+  "pandadoc": {
+    "site": "pandadoc",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "pandadoc/**",
+      "shared/**"
+    ]
+  },
   "hyperdx": {
     "site": "hyperdx",
     "entrypoint": "./dist/server/main.js",
