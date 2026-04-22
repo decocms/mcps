@@ -7,7 +7,7 @@
     "url": "https://sites-pandadoc.decocache.com/mcp"
   },
   "description": "Integração com PandaDoc para gerenciar documentos, templates e assinaturas eletrônicas.",
-  "icon": "https://assets.decocache.com/mcp/pandadoc.svg",
+  "icon": "https://avatars.githubusercontent.com/u/6977091?s=200&v=4",
   "unlisted": false,
   "auth": {
     "type": "token",
