@@ -45,7 +45,15 @@ async function handler(req: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  // Forward all /mcp* requests to PandaDoc
+  // Only proxy /mcp* routes
+  if (!url.pathname.startsWith("/mcp")) {
+    return new Response(JSON.stringify({ error: "Not found" }), {
+      status: 404,
+      headers: { "content-type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
+  // Forward /mcp* requests to PandaDoc
   const authorization = req.headers.get("Authorization") ?? "";
   const token = extractToken(authorization);
 
