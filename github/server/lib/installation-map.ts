@@ -10,7 +10,11 @@ interface KVNamespaceLike {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
   delete(key: string): Promise<void>;
-  list(options?: { prefix?: string; cursor?: string }): Promise<{
+  list(options?: {
+    prefix?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{
     keys: Array<{ name: string }>;
     list_complete: boolean;
     cursor?: string;
@@ -21,6 +25,7 @@ export interface InstallationStore {
   get(installationId: number): Promise<string | undefined>;
   set(installationId: number, connectionId: string): Promise<void>;
   removeByConnection(connectionId: string): Promise<void>;
+  hasAnyForConnection(connectionId: string): Promise<boolean>;
 }
 
 class MemoryInstallationStore implements InstallationStore {
@@ -40,6 +45,13 @@ class MemoryInstallationStore implements InstallationStore {
         this.map.delete(id);
       }
     }
+  }
+
+  async hasAnyForConnection(connectionId: string): Promise<boolean> {
+    for (const conn of this.map.values()) {
+      if (conn === connectionId) return true;
+    }
+    return false;
   }
 }
 
@@ -91,6 +103,14 @@ class KvInstallationStore implements InstallationStore {
       cursor = list_complete ? undefined : nextCursor;
     } while (cursor);
   }
+
+  async hasAnyForConnection(connectionId: string): Promise<boolean> {
+    const { keys } = await this.kv.list({
+      prefix: `connection:${connectionId}:`,
+      limit: 1,
+    });
+    return keys.length > 0;
+  }
 }
 
 const memoryStore = new MemoryInstallationStore();
@@ -99,6 +119,23 @@ export function getInstallationStore(
   kv: KVNamespaceLike | undefined,
 ): InstallationStore {
   return kv ? new KvInstallationStore(kv) : memoryStore;
+}
+
+/**
+ * Opportunistic bootstrap: if this connection has no installation mappings
+ * yet, run captureInstallationMappings. A single KV list() when mappings
+ * already exist (common case), one GitHub API round-trip per installation
+ * when they don't (one-time per connection).
+ *
+ * Safe to call on every MCP request — cheap when already populated.
+ */
+export async function ensureInstallationMappings(
+  token: string,
+  connectionId: string,
+  store: InstallationStore,
+): Promise<void> {
+  if (await store.hasAnyForConnection(connectionId)) return;
+  await captureInstallationMappings(token, connectionId, store);
 }
 
 /**

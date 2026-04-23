@@ -14,6 +14,10 @@ import { createTool, type AppContext } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getAppInstallationToken } from "./github-app-auth.ts";
+import {
+  ensureInstallationMappings,
+  getInstallationStore,
+} from "./installation-map.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://api.githubcopilot.com/mcp/";
 
@@ -154,10 +158,23 @@ export function buildUpstreamTools(
       description: toolDef.description || `GitHub tool: ${toolDef.name}`,
       inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
       execute: async ({ context }, ctx) => {
-        const currentToken = (ctx as unknown as AppContext<Env>).env
-          .MESH_REQUEST_CONTEXT?.authorization;
+        const env = (ctx as unknown as AppContext<Env>).env;
+        const currentToken = env.MESH_REQUEST_CONTEXT?.authorization;
+        const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
         if (!currentToken) {
           throw new Error("GitHub authorization token not found");
+        }
+
+        // Repair any connection whose installation mappings are missing
+        // (e.g. first OAuth happened before the User-Agent fix was
+        // deployed, so the original captureInstallationMappings silently
+        // 403'd). Cheap — one KV list() when already populated.
+        if (connectionId) {
+          await ensureInstallationMappings(
+            currentToken,
+            connectionId,
+            getInstallationStore(env.INSTALLATIONS),
+          );
         }
 
         const client = await connectUpstreamClient(currentToken);

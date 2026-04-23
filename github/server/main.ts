@@ -16,7 +16,7 @@ import {
   refreshAccessToken,
 } from "./lib/github-client.ts";
 import {
-  captureInstallationMappings,
+  ensureInstallationMappings,
   getInstallationStore,
 } from "./lib/installation-map.ts";
 import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
@@ -129,7 +129,7 @@ async function getRuntime(): Promise<Runtime> {
             const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
             if (token && connectionId) {
               const store = getInstallationStore(env.INSTALLATIONS);
-              await captureInstallationMappings(token, connectionId, store);
+              await ensureInstallationMappings(token, connectionId, store);
             }
           },
           state: StateSchema,
