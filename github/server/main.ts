@@ -147,7 +147,11 @@ async function getRuntime(): Promise<Runtime> {
  * Intercept webhook and MCP resource requests before they reach runtime.fetch.
  * The Deco runtime doesn't support resources natively, so we proxy them upstream.
  */
-async function handle(req: Request, env: Env, ctx: unknown): Promise<Response> {
+async function handle(
+  req: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   // Make the KV binding visible to the trigger store's module-level
   // storage for this request.
   setTriggerKV(env.INSTALLATIONS);
@@ -156,7 +160,7 @@ async function handle(req: Request, env: Env, ctx: unknown): Promise<Response> {
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {
-    return handleGitHubWebhook(req, env);
+    return handleGitHubWebhook(req, env, ctx);
   }
 
   // Proxy MCP resource requests to upstream
@@ -172,7 +176,11 @@ async function handle(req: Request, env: Env, ctx: unknown): Promise<Response> {
   }
 
   const runtime = await getRuntime();
-  return runtime.fetch(req, env, ctx as Parameters<Runtime["fetch"]>[2]);
+  return runtime.fetch(
+    req,
+    env,
+    ctx as unknown as Parameters<Runtime["fetch"]>[2],
+  );
 }
 
 export default {
