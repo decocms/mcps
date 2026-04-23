@@ -29,6 +29,7 @@ function connectUpstreamClient(token: string): Promise<Client> {
       requestInit: {
         headers: {
           Authorization: `Bearer ${token}`,
+          "User-Agent": "deco-cms-github-mcp",
         },
       },
     },
