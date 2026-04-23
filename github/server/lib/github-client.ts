@@ -26,6 +26,7 @@ async function postToGitHub(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      "User-Agent": "deco-cms-github-mcp",
     },
     body: JSON.stringify(body),
   });

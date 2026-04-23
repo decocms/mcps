@@ -154,6 +154,7 @@ export async function getAppInstallationToken(): Promise<string> {
         Authorization: `Bearer ${jwt}`,
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "deco-cms-github-mcp",
       },
     },
   );
@@ -186,6 +187,7 @@ export async function getAppInstallationToken(): Promise<string> {
         Authorization: `Bearer ${jwt}`,
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "deco-cms-github-mcp",
       },
     },
   );
