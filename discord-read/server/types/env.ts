@@ -3,13 +3,10 @@
  */
 
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { AgentOf, BindingOf, type DefaultEnv } from "@decocms/runtime";
+import { AgentOf, type DefaultEnv } from "@decocms/runtime";
 import z from "zod";
 
 export const StateSchema = z.object({
-  // Bindings obrigatórias
-  CONNECTION: BindingOf("@deco/connection"),
-
   // AI Configuration — AgentOf() resolves to a client with .STREAM()
   AGENT: AgentOf(),
 
@@ -138,14 +135,6 @@ export const StateSchema = z.object({
     })
     .optional()
     .describe("How the bot responds to messages"),
-
-  // HyperDX Configuration
-  HYPERDX_API_KEY: z
-    .string()
-    .optional()
-    .describe(
-      "HyperDX API key for advanced logging and observability. If not provided, logs will only go to stdout.",
-    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
