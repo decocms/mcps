@@ -105,30 +105,36 @@ function jsonSchemaToZod(inputSchema?: {
 type ToolsDef = Awaited<ReturnType<Client["listTools"]>>["tools"];
 
 /**
- * Discover upstream tool definitions at startup using a GitHub App
- * installation token. Throws on failure — the server should not boot
- * if tool discovery fails.
+ * Discover upstream tool definitions lazily using a GitHub App installation
+ * token. On Cloudflare Workers, secrets aren't populated at module-init
+ * time, so we defer the first call until the fetch handler runs and cache
+ * the result for the isolate's lifetime. On failure, the promise is reset
+ * so the next request retries rather than permanently failing the isolate.
  */
-async function discoverUpstreamToolDefs(): Promise<ToolsDef> {
-  console.log("[MCP Proxy] Discovering upstream tools at startup...");
-  const token = await getAppInstallationToken();
-  const client = await connectUpstreamClient(token);
-  try {
-    const result = await client.listTools();
-    console.log(`[MCP Proxy] Discovered ${result.tools.length} upstream tools`);
-    return result.tools;
-  } finally {
-    client.close().catch(() => {});
-  }
-}
+let upstreamToolDefsPromise: Promise<ToolsDef> | null = null;
 
-/**
- * Top-level promise that resolves to the upstream tool definitions.
- * Awaited in tools/index.ts before the server starts accepting requests.
- * If this fails, the server process crashes — by design.
- */
-export const upstreamToolDefsReady: Promise<ToolsDef> =
-  discoverUpstreamToolDefs();
+export function getUpstreamToolDefs(): Promise<ToolsDef> {
+  if (!upstreamToolDefsPromise) {
+    upstreamToolDefsPromise = (async () => {
+      console.log("[MCP Proxy] Discovering upstream tools...");
+      const token = await getAppInstallationToken();
+      const client = await connectUpstreamClient(token);
+      try {
+        const result = await client.listTools();
+        console.log(
+          `[MCP Proxy] Discovered ${result.tools.length} upstream tools`,
+        );
+        return result.tools;
+      } finally {
+        client.close().catch(() => {});
+      }
+    })().catch((err) => {
+      upstreamToolDefsPromise = null;
+      throw err;
+    });
+  }
+  return upstreamToolDefsPromise;
+}
 
 // ============================================================================
 // Upstream tool creation
@@ -147,8 +153,8 @@ export function buildUpstreamTools(
       description: toolDef.description || `GitHub tool: ${toolDef.name}`,
       inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
       execute: async ({ context }, ctx) => {
-        const currentToken = (ctx as AppContext<Env>).env.MESH_REQUEST_CONTEXT
-          ?.authorization;
+        const currentToken = (ctx as unknown as AppContext<Env>).env
+          .MESH_REQUEST_CONTEXT?.authorization;
         if (!currentToken) {
           throw new Error("GitHub authorization token not found");
         }

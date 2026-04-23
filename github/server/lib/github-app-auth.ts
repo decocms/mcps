@@ -3,12 +3,12 @@
  *
  * Generates a JWT from GITHUB_APP_ID + GITHUB_PRIVATE_KEY,
  * then exchanges it for an installation access token.
- * Used at startup to discover upstream MCP tools.
+ *
+ * Env vars are read lazily (per call) so this works on Cloudflare Workers
+ * where process.env isn't populated at module-init time.
  */
 
 import crypto from "node:crypto";
-
-const GITHUB_APP_ID = process.env.GITHUB_APP_ID || "";
 
 function normalizePrivateKey(rawKey: string): string {
   let key = rawKey.trim();
@@ -82,10 +82,6 @@ function normalizePrivateKey(rawKey: string): string {
   return key;
 }
 
-const GITHUB_PRIVATE_KEY = normalizePrivateKey(
-  process.env.GITHUB_PRIVATE_KEY || "",
-);
-
 function base64url(data: Buffer | string): string {
   const buf = typeof data === "string" ? Buffer.from(data) : data;
   return buf.toString("base64url");
@@ -96,7 +92,10 @@ function base64url(data: Buffer | string): string {
  * Valid for 10 minutes (GitHub's maximum).
  */
 function createAppJWT(): string {
-  if (!GITHUB_APP_ID || !GITHUB_PRIVATE_KEY) {
+  const appId = process.env.GITHUB_APP_ID || "";
+  const privateKey = normalizePrivateKey(process.env.GITHUB_PRIVATE_KEY || "");
+
+  if (!appId || !privateKey) {
     throw new Error(
       "GitHub App credentials not configured. " +
         "Set GITHUB_APP_ID and GITHUB_PRIVATE_KEY environment variables.",
@@ -109,7 +108,7 @@ function createAppJWT(): string {
     JSON.stringify({
       iat: now - 60, // 60s clock skew allowance
       exp: now + 600, // 10 minutes
-      iss: GITHUB_APP_ID,
+      iss: appId,
     }),
   );
 
@@ -118,7 +117,7 @@ function createAppJWT(): string {
 
   try {
     const signingKey = crypto.createPrivateKey({
-      key: GITHUB_PRIVATE_KEY,
+      key: privateKey,
       format: "pem",
     });
     signature = crypto
@@ -126,8 +125,8 @@ function createAppJWT(): string {
       .update(signingInput)
       .sign(signingKey, "base64url");
   } catch (error) {
-    const hasPemHeader = GITHUB_PRIVATE_KEY.includes("-----BEGIN");
-    const keyLen = GITHUB_PRIVATE_KEY.length;
+    const hasPemHeader = privateKey.includes("-----BEGIN");
+    const keyLen = privateKey.length;
     throw new Error(
       `Invalid GITHUB_PRIVATE_KEY (length=${keyLen}, hasPemHeader=${hasPemHeader}). ` +
         "Expected a GitHub App PEM private key, " +
