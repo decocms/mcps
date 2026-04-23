@@ -11,7 +11,10 @@
 
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { withRuntime } from "@decocms/runtime";
-import { exchangeCodeForToken } from "./lib/github-client.ts";
+import {
+  exchangeCodeForToken,
+  refreshAccessToken,
+} from "./lib/github-client.ts";
 import {
   captureInstallationMappings,
   getInstallationStore,
@@ -25,6 +28,22 @@ import { handleGitHubWebhook } from "./webhook.ts";
 type Runtime = ReturnType<
   typeof withRuntime<Env, typeof StateSchema, Registry>
 >;
+
+/**
+ * Lazily read OAuth credentials — on Workers, process.env isn't populated
+ * at module-init time, so we must resolve per-call.
+ */
+function getOAuthCredentials(): { clientId: string; clientSecret: string } {
+  const clientId = process.env.GITHUB_CLIENT_ID || "";
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET || "";
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "GitHub OAuth credentials not configured. " +
+        "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
+    );
+  }
+  return { clientId, clientSecret };
+}
 
 let runtimePromise: Promise<Runtime> | null = null;
 
@@ -60,15 +79,7 @@ async function getRuntime(): Promise<Runtime> {
           },
 
           exchangeCode: async ({ code, redirect_uri }) => {
-            const clientId = process.env.GITHUB_CLIENT_ID || "";
-            const clientSecret = process.env.GITHUB_CLIENT_SECRET || "";
-
-            if (!clientId || !clientSecret) {
-              throw new Error(
-                "GitHub OAuth credentials not configured. " +
-                  "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
-              );
-            }
+            const { clientId, clientSecret } = getOAuthCredentials();
 
             const tokenResponse = await exchangeCodeForToken(
               code,
@@ -80,6 +91,29 @@ async function getRuntime(): Promise<Runtime> {
             return {
               access_token: tokenResponse.access_token,
               token_type: tokenResponse.token_type,
+              expires_in: tokenResponse.expires_in,
+              refresh_token: tokenResponse.refresh_token,
+              refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
+              scope: tokenResponse.scope,
+            };
+          },
+
+          refreshToken: async (refreshToken) => {
+            const { clientId, clientSecret } = getOAuthCredentials();
+
+            const tokenResponse = await refreshAccessToken(
+              refreshToken,
+              clientId,
+              clientSecret,
+            );
+
+            return {
+              access_token: tokenResponse.access_token,
+              token_type: tokenResponse.token_type,
+              expires_in: tokenResponse.expires_in,
+              refresh_token: tokenResponse.refresh_token,
+              refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
+              scope: tokenResponse.scope,
             };
           },
         },
