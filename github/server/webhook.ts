@@ -156,6 +156,11 @@ export async function handleGitHubWebhook(
       event: fullEventType,
       subject,
       sender: payload.sender?.login,
+      // `repo` is the canonical key — matches the trigger params schema
+      // defined in trigger-store.ts (`z.object({ repo: z.string() })`) so
+      // Mesh's paramsMatch (strict `data[key] === value`) can filter by
+      // repository. `repository` is kept as an alias for payload clarity.
+      repo: payload.repository?.full_name,
       repository: payload.repository?.full_name,
       action: payload.action,
       payload,
