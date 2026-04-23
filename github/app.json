@@ -4,7 +4,7 @@
   "friendlyName": "GitHub",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-github-mcp.decocache.com/mcp"
+    "url": "https://github-mcp.decocms.com/mcp"
   },
   "description": "OAuth proxy for the official GitHub MCP Server — authenticates via GitHub App OAuth and exposes 30+ tools (repos, issues, PRs, code search, and more)",
   "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
