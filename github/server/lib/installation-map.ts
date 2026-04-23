@@ -1,42 +1,110 @@
 /**
- * In-memory mapping from GitHub installation ID to Mesh connection ID.
+ * Installation → Connection ID mapping store.
  *
- * Populated during onChange when we discover which installations
- * the user's OAuth token has access to.
+ * Backed by Workers KV when available (durable across isolates), with an
+ * in-memory Map fallback for local dev. The KV binding is injected per-request
+ * from env.INSTALLATIONS.
  */
 
-const installationMap = new Map<number, string>();
-
-export function setInstallationMapping(
-  installationId: number,
-  connectionId: string,
-): void {
-  installationMap.set(installationId, connectionId);
+interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+  list(options?: {
+    prefix?: string;
+    cursor?: string;
+  }): Promise<{
+    keys: Array<{ name: string }>;
+    list_complete: boolean;
+    cursor?: string;
+  }>;
 }
 
-export function getConnectionForInstallation(
-  installationId: number,
-): string | undefined {
-  return installationMap.get(installationId);
+export interface InstallationStore {
+  get(installationId: number): Promise<string | undefined>;
+  set(installationId: number, connectionId: string): Promise<void>;
+  removeByConnection(connectionId: string): Promise<void>;
 }
 
-export function removeConnectionMappings(connectionId: string): void {
-  for (const [installationId, connId] of installationMap) {
-    if (connId === connectionId) {
-      installationMap.delete(installationId);
+class MemoryInstallationStore implements InstallationStore {
+  private map = new Map<number, string>();
+
+  async get(installationId: number): Promise<string | undefined> {
+    return this.map.get(installationId);
+  }
+
+  async set(installationId: number, connectionId: string): Promise<void> {
+    this.map.set(installationId, connectionId);
+  }
+
+  async removeByConnection(connectionId: string): Promise<void> {
+    for (const [id, conn] of this.map) {
+      if (conn === connectionId) {
+        this.map.delete(id);
+      }
     }
   }
 }
 
+class KvInstallationStore implements InstallationStore {
+  // KV keys:
+  //   `installation:${installationId}` → connectionId
+  //   `connection:${connectionId}:${installationId}` → "1" (reverse index)
+  constructor(private kv: KVNamespaceLike) {}
+
+  async get(installationId: number): Promise<string | undefined> {
+    const v = await this.kv.get(`installation:${installationId}`);
+    return v ?? undefined;
+  }
+
+  async set(installationId: number, connectionId: string): Promise<void> {
+    await Promise.all([
+      this.kv.put(`installation:${installationId}`, connectionId),
+      this.kv.put(`connection:${connectionId}:${installationId}`, "1"),
+    ]);
+  }
+
+  async removeByConnection(connectionId: string): Promise<void> {
+    const prefix = `connection:${connectionId}:`;
+    let cursor: string | undefined;
+    do {
+      const {
+        keys,
+        list_complete,
+        cursor: nextCursor,
+      } = await this.kv.list({ prefix, cursor });
+      await Promise.all(
+        keys.flatMap((k) => {
+          const installationId = k.name.slice(prefix.length);
+          return [
+            this.kv.delete(`installation:${installationId}`),
+            this.kv.delete(k.name),
+          ];
+        }),
+      );
+      cursor = list_complete ? undefined : nextCursor;
+    } while (cursor);
+  }
+}
+
+const memoryStore = new MemoryInstallationStore();
+
+export function getInstallationStore(
+  kv: KVNamespaceLike | undefined,
+): InstallationStore {
+  return kv ? new KvInstallationStore(kv) : memoryStore;
+}
+
 /**
- * Fetch the user's GitHub App installations and store mappings.
+ * Fetch the user's GitHub App installations and persist mappings.
+ * Swaps mappings atomically after successful fetch of all pages.
  */
 export async function captureInstallationMappings(
   token: string,
   connectionId: string,
+  store: InstallationStore,
 ): Promise<void> {
   try {
-    // Fetch all pages first, then swap mappings atomically
     const allInstallations: Array<{ id: number; account: { login: string } }> =
       [];
     let page = 1;
@@ -71,11 +139,10 @@ export async function captureInstallationMappings(
       page++;
     }
 
-    // Only clear old mappings after all pages fetched successfully
-    removeConnectionMappings(connectionId);
+    await store.removeByConnection(connectionId);
 
     for (const installation of allInstallations) {
-      setInstallationMapping(installation.id, connectionId);
+      await store.set(installation.id, connectionId);
       console.log(
         `[Installation] Mapped ${installation.id} (${installation.account.login}) → ${connectionId}`,
       );

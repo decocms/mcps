@@ -42,6 +42,32 @@ This document lists all secrets required to deploy MCPs via GitHub Actions.
     - `pages_read_engagement` - Read associated pages
     - `business_management` - Access business accounts
 
+### MCP: `github` (Cloudflare Workers — `deploy-github.yml`)
+Unlike the other MCPs, github deploys directly via `wrangler deploy` in
+its own workflow. The GitHub Action only needs Cloudflare credentials:
+
+- **`CLOUDFLARE_API_TOKEN`**: Workers deploy token (create at
+  https://dash.cloudflare.com/profile/api-tokens with "Edit Cloudflare
+  Workers" template)
+- **`CLOUDFLARE_ACCOUNT_ID`**: your Cloudflare account id
+
+Application secrets are stored directly on the worker via
+`wrangler secret put` — one-time setup, not passed through Actions.
+Bulk upload via `wrangler secret bulk .secrets.json` (gitignored):
+
+```
+cd github
+bunx wrangler secret bulk .secrets.json
+```
+
+Required keys in `.secrets.json`: `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`,
+`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_WEBHOOK_SECRET`.
+
+Trigger state persists in the `INSTALLATIONS` Workers KV namespace
+(`triggers:*` prefix), so no Mesh/Studio credentials are needed.
+
+Obtain the GitHub values at https://github.com/settings/apps → your app.
+
 ## How to Add Secrets on GitHub
 
 1. Go to your repository on GitHub

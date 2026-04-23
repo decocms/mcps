@@ -4,4 +4,6 @@ dist
 .env.*
 !.env.example
 !server/.env.example
+.secrets.json
+.wrangler/
 

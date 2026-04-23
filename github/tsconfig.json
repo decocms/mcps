@@ -23,11 +23,11 @@
     "noUncheckedSideEffectImports": true,
     /* Types */
     "types": [
-      "@types/node"
+      "@types/node",
+      "@cloudflare/workers-types"
     ]
   },
   "include": [
     "server"
   ]
 }
-

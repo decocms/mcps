@@ -8,15 +8,6 @@
       "shared/**"
     ]
   },
-  "github": {
-    "site": "github-mcp",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watch": [
-      "github/**",
-      "shared/**"
-    ]
-  },
   "openrouter": {
     "site": "openrouter",
     "entrypoint": "./dist/server/main.js",

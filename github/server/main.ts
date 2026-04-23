@@ -1,97 +1,128 @@
 /**
- * GitHub MCP Server
+ * GitHub MCP Server — Cloudflare Workers entrypoint
  *
  * OAuth proxy that exposes the full GitHub MCP toolset (30+ tools)
  * through GitHub App OAuth authentication.
+ *
+ * Secrets come from wrangler (exposed via process.env under nodejs_compat)
+ * and are read lazily per-request because they aren't populated at module
+ * init time on Workers.
  */
 
 import type { Registry } from "@decocms/mcps-shared/registry";
-import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import { exchangeCodeForToken } from "./lib/github-client.ts";
-import { captureInstallationMappings } from "./lib/installation-map.ts";
+import {
+  captureInstallationMappings,
+  getInstallationStore,
+} from "./lib/installation-map.ts";
 import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
-import { tools } from "./tools/index.ts";
+import { setTriggerKV } from "./lib/trigger-store.ts";
+import { getTools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 import { handleGitHubWebhook } from "./webhook.ts";
 
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
+type Runtime = ReturnType<
+  typeof withRuntime<Env, typeof StateSchema, Registry>
+>;
 
-const runtime = withRuntime<Env, typeof StateSchema, Registry>({
-  oauth: {
-    mode: "PKCE",
-    authorizationServer: "https://github.com",
+let runtimePromise: Promise<Runtime> | null = null;
 
-    authorizationUrl: (callbackUrl) => {
-      const callbackUrlObj = new URL(callbackUrl);
-      const state = callbackUrlObj.searchParams.get("state");
+async function getRuntime(): Promise<Runtime> {
+  if (!runtimePromise) {
+    runtimePromise = (async () => {
+      const tools = await getTools();
 
-      // Remove state from redirect_uri — pass it as a separate param
-      callbackUrlObj.searchParams.delete("state");
-      const redirectUri = callbackUrlObj.toString();
+      return withRuntime<Env, typeof StateSchema, Registry>({
+        oauth: {
+          mode: "PKCE",
+          authorizationServer: "https://github.com",
 
-      const url = new URL("https://github.com/login/oauth/authorize");
-      url.searchParams.set("client_id", GITHUB_CLIENT_ID);
-      url.searchParams.set("redirect_uri", redirectUri);
-      url.searchParams.set("scope", "repo read:org read:user");
+          authorizationUrl: (callbackUrl) => {
+            const clientId = process.env.GITHUB_CLIENT_ID || "";
+            const callbackUrlObj = new URL(callbackUrl);
+            const state = callbackUrlObj.searchParams.get("state");
 
-      if (state) {
-        url.searchParams.set("state", state);
-      }
+            // Remove state from redirect_uri — pass it as a separate param
+            callbackUrlObj.searchParams.delete("state");
+            const redirectUri = callbackUrlObj.toString();
 
-      return url.toString();
-    },
+            const url = new URL("https://github.com/login/oauth/authorize");
+            url.searchParams.set("client_id", clientId);
+            url.searchParams.set("redirect_uri", redirectUri);
+            url.searchParams.set("scope", "repo read:org read:user");
 
-    exchangeCode: async ({ code, redirect_uri }) => {
-      if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-        throw new Error(
-          "GitHub OAuth credentials not configured. " +
-            "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
-        );
-      }
+            if (state) {
+              url.searchParams.set("state", state);
+            }
 
-      const tokenResponse = await exchangeCodeForToken(
-        code,
-        GITHUB_CLIENT_ID,
-        GITHUB_CLIENT_SECRET,
-        redirect_uri,
-      );
+            return url.toString();
+          },
 
-      return {
-        access_token: tokenResponse.access_token,
-        token_type: tokenResponse.token_type,
-      };
-    },
-  },
+          exchangeCode: async ({ code, redirect_uri }) => {
+            const clientId = process.env.GITHUB_CLIENT_ID || "";
+            const clientSecret = process.env.GITHUB_CLIENT_SECRET || "";
 
-  configuration: {
-    onChange: async (env) => {
-      const token = env.MESH_REQUEST_CONTEXT?.authorization;
-      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      if (token && connectionId) {
-        await captureInstallationMappings(token, connectionId);
-      }
-    },
-    state: StateSchema,
-  },
+            if (!clientId || !clientSecret) {
+              throw new Error(
+                "GitHub OAuth credentials not configured. " +
+                  "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
+              );
+            }
 
-  tools,
-  prompts: [],
-});
+            const tokenResponse = await exchangeCodeForToken(
+              code,
+              clientId,
+              clientSecret,
+              redirect_uri,
+            );
 
-const port = process.env.PORT || 8001;
+            return {
+              access_token: tokenResponse.access_token,
+              token_type: tokenResponse.token_type,
+            };
+          },
+        },
+
+        configuration: {
+          onChange: async (env) => {
+            const token = env.MESH_REQUEST_CONTEXT?.authorization;
+            const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+            if (token && connectionId) {
+              const store = getInstallationStore(env.INSTALLATIONS);
+              await captureInstallationMappings(token, connectionId, store);
+            }
+          },
+          state: StateSchema,
+        },
+
+        tools,
+        prompts: [],
+      });
+    })().catch((err) => {
+      // Reset on failure so the next request can retry (e.g. transient
+      // GitHub App auth or upstream discovery failure).
+      runtimePromise = null;
+      throw err;
+    });
+  }
+  return runtimePromise;
+}
 
 /**
- * Wrap runtime.fetch to intercept MCP resource requests before the SDK handles them.
+ * Intercept webhook and MCP resource requests before they reach runtime.fetch.
  * The Deco runtime doesn't support resources natively, so we proxy them upstream.
  */
-const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
+async function handle(req: Request, env: Env, ctx: unknown): Promise<Response> {
+  // Make the KV binding visible to the trigger store's module-level
+  // storage for this request.
+  setTriggerKV(env.INSTALLATIONS);
+
   const url = new URL(req.url);
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {
-    return handleGitHubWebhook(req);
+    return handleGitHubWebhook(req, env);
   }
 
   // Proxy MCP resource requests to upstream
@@ -106,23 +137,10 @@ const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
     if (proxied) return proxied;
   }
 
-  return runtime.fetch(req, env, ctx);
+  const runtime = await getRuntime();
+  return runtime.fetch(req, env, ctx as Parameters<Runtime["fetch"]>[2]);
+}
+
+export default {
+  fetch: handle,
 };
-
-serve(wrappedFetch);
-
-console.log(`
-╔══════════════════════════════════════════════════════════╗
-║               GitHub MCP Server Started                  ║
-╠══════════════════════════════════════════════════════════╣
-║  OAuth proxy for the official GitHub MCP Server          ║
-╚══════════════════════════════════════════════════════════╝
-
-🚀 Server listening on http://localhost:${port}/mcp
-
-📋 Environment Variables:
-   GITHUB_APP_ID         - GitHub App ID
-   GITHUB_PRIVATE_KEY    - GitHub App private key (PEM)
-   GITHUB_CLIENT_ID      - GitHub App Client ID (OAuth)
-   GITHUB_CLIENT_SECRET  - GitHub App Client Secret (OAuth)
-`);

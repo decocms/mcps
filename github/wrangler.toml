@@ -1,0 +1,21 @@
+name = "github-mcp"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Durable mapping from GitHub installation ID to Mesh connection ID.
+# Isolates on Workers are ephemeral, so an in-memory Map would lose
+# mappings between webhook deliveries and cold starts.
+#
+# Create with: bunx wrangler kv namespace create INSTALLATIONS
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "INSTALLATIONS"
+id = "c81656fe0e4347d39205c0f2103ca5c9"

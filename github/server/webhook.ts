@@ -5,20 +5,22 @@
  * and routes them to the correct connection.
  */
 
-import { getConnectionForInstallation } from "./lib/installation-map.ts";
-import { verifyGitHubWebhook } from "./lib/webhook.ts";
+import { getInstallationStore } from "./lib/installation-map.ts";
 import { triggers } from "./lib/trigger-store.ts";
+import { verifyGitHubWebhook } from "./lib/webhook.ts";
+import type { Env } from "./types/env.ts";
 
-const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
-
-export async function handleGitHubWebhook(req: Request): Promise<Response> {
+export async function handleGitHubWebhook(
+  req: Request,
+  env: Env,
+): Promise<Response> {
   const rawBody = await req.text();
   const signatureHeader = req.headers.get("x-hub-signature-256");
 
   const { verified, payload } = await verifyGitHubWebhook(
     rawBody,
     signatureHeader,
-    GITHUB_WEBHOOK_SECRET,
+    process.env.GITHUB_WEBHOOK_SECRET || "",
   );
 
   if (!verified || !payload) {
@@ -30,7 +32,8 @@ export async function handleGitHubWebhook(req: Request): Promise<Response> {
     return Response.json({ ok: true, skipped: "no_installation_id" });
   }
 
-  const connectionId = getConnectionForInstallation(installationId);
+  const store = getInstallationStore(env.INSTALLATIONS);
+  const connectionId = await store.get(installationId);
   if (!connectionId) {
     return Response.json({ ok: true, skipped: "no_mapping" });
   }
