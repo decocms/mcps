@@ -20,6 +20,7 @@ import { handleGitHubWebhook } from "./webhook.ts";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
+const REQUESTED_SCOPES = "repo read:org read:user";
 
 function assertOAuthCredentials(): void {
   if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
@@ -46,7 +47,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       const url = new URL("https://github.com/login/oauth/authorize");
       url.searchParams.set("client_id", GITHUB_CLIENT_ID);
       url.searchParams.set("redirect_uri", redirectUri);
-      url.searchParams.set("scope", "repo read:org read:user");
+      url.searchParams.set("scope", REQUESTED_SCOPES);
 
       if (state) {
         url.searchParams.set("state", state);
@@ -71,7 +72,9 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         expires_in: tokenResponse.expires_in,
         refresh_token: tokenResponse.refresh_token,
         refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
-        scope: tokenResponse.scope,
+        // GitHub App user-to-server tokens don't echo `scope` — fall back to
+        // the scopes we requested so the mesh can store/display them per RFC 6749 §5.1.
+        scope: tokenResponse.scope || REQUESTED_SCOPES,
       };
     },
 
@@ -90,7 +93,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         expires_in: tokenResponse.expires_in,
         refresh_token: tokenResponse.refresh_token,
         refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
-        scope: tokenResponse.scope,
+        scope: tokenResponse.scope || REQUESTED_SCOPES,
       };
     },
   },
