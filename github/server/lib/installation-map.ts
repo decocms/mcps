@@ -55,10 +55,19 @@ class KvInstallationStore implements InstallationStore {
   }
 
   async set(installationId: number, connectionId: string): Promise<void> {
-    await Promise.all([
+    // Read the existing owner first so we can tear down its reverse-index
+    // entry — otherwise a later removeByConnection(oldOwner) would match
+    // the stale connection:${oldOwner}:${id} key and wipe the forward
+    // mapping we're about to write for the new owner.
+    const existing = await this.kv.get(`installation:${installationId}`);
+    const ops: Promise<void>[] = [
       this.kv.put(`installation:${installationId}`, connectionId),
       this.kv.put(`connection:${connectionId}:${installationId}`, "1"),
-    ]);
+    ];
+    if (existing && existing !== connectionId) {
+      ops.push(this.kv.delete(`connection:${existing}:${installationId}`));
+    }
+    await Promise.all(ops);
   }
 
   async removeByConnection(connectionId: string): Promise<void> {
