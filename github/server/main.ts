@@ -29,6 +29,8 @@ type Runtime = ReturnType<
   typeof withRuntime<Env, typeof StateSchema, Registry>
 >;
 
+const REQUESTED_SCOPES = "repo read:org read:user";
+
 /**
  * Lazily read OAuth credentials — on Workers, process.env isn't populated
  * at module-init time, so we must resolve per-call.
@@ -69,7 +71,7 @@ async function getRuntime(): Promise<Runtime> {
             const url = new URL("https://github.com/login/oauth/authorize");
             url.searchParams.set("client_id", clientId);
             url.searchParams.set("redirect_uri", redirectUri);
-            url.searchParams.set("scope", "repo read:org read:user");
+            url.searchParams.set("scope", REQUESTED_SCOPES);
 
             if (state) {
               url.searchParams.set("state", state);
@@ -94,7 +96,10 @@ async function getRuntime(): Promise<Runtime> {
               expires_in: tokenResponse.expires_in,
               refresh_token: tokenResponse.refresh_token,
               refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
-              scope: tokenResponse.scope,
+              // GitHub App user-to-server tokens don't echo `scope` — fall
+              // back to the scopes we requested so the mesh can store /
+              // display them per RFC 6749 §5.1.
+              scope: tokenResponse.scope || REQUESTED_SCOPES,
             };
           },
 
@@ -113,7 +118,7 @@ async function getRuntime(): Promise<Runtime> {
               expires_in: tokenResponse.expires_in,
               refresh_token: tokenResponse.refresh_token,
               refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
-              scope: tokenResponse.scope,
+              scope: tokenResponse.scope || REQUESTED_SCOPES,
             };
           },
         },
