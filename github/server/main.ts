@@ -8,7 +8,10 @@
 import type { Registry } from "@decocms/mcps-shared/registry";
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
-import { exchangeCodeForToken } from "./lib/github-client.ts";
+import {
+  exchangeCodeForToken,
+  refreshAccessToken,
+} from "./lib/github-client.ts";
 import { captureInstallationMappings } from "./lib/installation-map.ts";
 import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
 import { tools } from "./tools/index.ts";
@@ -17,6 +20,15 @@ import { handleGitHubWebhook } from "./webhook.ts";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
+
+function assertOAuthCredentials(): void {
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    throw new Error(
+      "GitHub OAuth credentials not configured. " +
+        "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
+    );
+  }
+}
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   oauth: {
@@ -44,12 +56,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     },
 
     exchangeCode: async ({ code, redirect_uri }) => {
-      if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-        throw new Error(
-          "GitHub OAuth credentials not configured. " +
-            "Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
-        );
-      }
+      assertOAuthCredentials();
 
       const tokenResponse = await exchangeCodeForToken(
         code,
@@ -61,6 +68,29 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       return {
         access_token: tokenResponse.access_token,
         token_type: tokenResponse.token_type,
+        expires_in: tokenResponse.expires_in,
+        refresh_token: tokenResponse.refresh_token,
+        refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
+        scope: tokenResponse.scope,
+      };
+    },
+
+    refreshToken: async (refreshToken) => {
+      assertOAuthCredentials();
+
+      const tokenResponse = await refreshAccessToken(
+        refreshToken,
+        GITHUB_CLIENT_ID,
+        GITHUB_CLIENT_SECRET,
+      );
+
+      return {
+        access_token: tokenResponse.access_token,
+        token_type: tokenResponse.token_type,
+        expires_in: tokenResponse.expires_in,
+        refresh_token: tokenResponse.refresh_token,
+        refresh_token_expires_in: tokenResponse.refresh_token_expires_in,
+        scope: tokenResponse.scope,
       };
     },
   },
