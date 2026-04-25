@@ -13,6 +13,7 @@ import {
   createGetServiceHealthTool,
   createCompareTimeRangesTool,
   createDiscoverDataTool,
+  createResolveTimeRangeTool,
 } from "./hyperdx.ts";
 import { alertTools } from "./alerts.ts";
 import { dashboardTools } from "./dashboards.ts";
@@ -27,6 +28,7 @@ export const tools = [
   createGetServiceHealthTool,
   createCompareTimeRangesTool,
   createDiscoverDataTool,
+  createResolveTimeRangeTool,
   ...alertTools,
   ...dashboardTools,
 ];

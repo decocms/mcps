@@ -11,6 +11,12 @@ import type { Env } from "../main.ts";
 import { createHyperDXClient } from "../lib/client.ts";
 import { getHyperDXApiKey } from "../lib/env.ts";
 import {
+  resolveTime,
+  resolveTimeRange,
+  TIME_INPUT_DESCRIPTION,
+  TimeInputSchema,
+} from "../lib/time.ts";
+import {
   queryChartDataInputSchema,
   queryChartDataOutputSchema,
 } from "../lib/types.ts";
@@ -29,16 +35,14 @@ export const createSearchLogsTool = (_env: Env) =>
         .describe(
           "Search query (e.g., 'level:error', 'service:admin', 'level:error service:api').",
         ),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 15 * 60 * 1000)
-        .describe("Start time in ms. Defaults to 15 minutes ago."),
-      endTime: z
-        .number()
-        .optional()
+        .describe(
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 15 minutes ago.`,
+        ),
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
       limit: z
         .number()
         .optional()
@@ -59,9 +63,14 @@ export const createSearchLogsTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
+
       const response = await client.queryChartSeries({
-        startTime: context.startTime,
-        endTime: context.endTime,
+        startTime,
+        endTime,
         series: [
           {
             dataSource: "events",
@@ -110,16 +119,14 @@ export const createGetLogDetailsTool = (_env: Env) =>
         .describe(
           "Fields to group by and return. Defaults to ['body', 'service', 'site']. Other useful fields: trace_id, span_id, userEmail, env, level.",
         ),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 15 * 60 * 1000)
-        .describe("Start time in ms. Defaults to 15 minutes ago."),
-      endTime: z
-        .number()
-        .optional()
+        .describe(
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 15 minutes ago.`,
+        ),
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
       limit: z
         .number()
         .optional()
@@ -142,9 +149,14 @@ export const createGetLogDetailsTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
+
       const response = await client.queryChartSeries({
-        startTime: context.startTime,
-        endTime: context.endTime,
+        startTime,
+        endTime,
         series: [
           {
             dataSource: "events",
@@ -184,8 +196,11 @@ export const createQueryChartDataTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
-      const { startTime, endTime, granularity, series, seriesReturnType } =
-        context;
+      const { granularity, series, seriesReturnType } = context;
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
 
       const response = await client.queryChartSeries({
         startTime,
@@ -273,16 +288,14 @@ export const createQuerySpansTool = (_env: Env) =>
         .optional()
         .default("5 minute")
         .describe("Time bucket granularity. Defaults to 5 minutes."),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 60 * 60 * 1000)
-        .describe("Start time in ms. Defaults to 1 hour ago."),
-      endTime: z
-        .number()
-        .optional()
+        .describe(
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 1 hour ago.`,
+        ),
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
       limit: z
         .number()
         .optional()
@@ -296,14 +309,19 @@ export const createQuerySpansTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
+
       // Ensure we only query spans (not logs) by requiring duration:>0
       const spanFilter = context.query
         ? `duration:>0 ${context.query}`
         : "duration:>0";
 
       const response = await client.queryChartSeries({
-        startTime: context.startTime,
-        endTime: context.endTime,
+        startTime,
+        endTime,
         granularity: context.granularity,
         series: [
           {
@@ -394,16 +412,14 @@ export const createQueryMetricsTool = (_env: Env) =>
         .optional()
         .default("5 minute")
         .describe("Time bucket granularity. Defaults to 5 minutes."),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 60 * 60 * 1000)
-        .describe("Start time in ms. Defaults to 1 hour ago."),
-      endTime: z
-        .number()
-        .optional()
+        .describe(
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 1 hour ago.`,
+        ),
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
     }),
     outputSchema: z.object({
       data: z.array(z.record(z.string(), z.unknown())),
@@ -412,9 +428,14 @@ export const createQueryMetricsTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
+
       const response = await client.queryChartSeries({
-        startTime: context.startTime,
-        endTime: context.endTime,
+        startTime,
+        endTime,
         granularity: context.granularity,
         series: [
           {
@@ -456,16 +477,14 @@ export const createGetServiceHealthTool = (_env: Env) =>
         .optional()
         .default("5 minute")
         .describe("Time bucket granularity. Defaults to 5 minutes."),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 60 * 60 * 1000)
-        .describe("Start time in ms. Defaults to 1 hour ago."),
-      endTime: z
-        .number()
-        .optional()
+        .describe(
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 1 hour ago.`,
+        ),
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
     }),
     outputSchema: z.object({
       description: z.string(),
@@ -475,9 +494,14 @@ export const createGetServiceHealthTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
+
       const response = await client.queryChartSeries({
-        startTime: context.startTime,
-        endTime: context.endTime,
+        startTime,
+        endTime,
         granularity: context.granularity,
         series: [
           {
@@ -535,12 +559,18 @@ export const createCompareTimeRangesTool = (_env: Env) =>
         .describe(
           "Field to aggregate (required for avg, p50, p95, p99, max, sum — e.g., 'duration').",
         ),
-      currentStart: z.number().describe("Start of the current period in ms."),
-      currentEnd: z.number().describe("End of the current period in ms."),
-      priorStart: z
-        .number()
-        .describe("Start of the prior/baseline period in ms."),
-      priorEnd: z.number().describe("End of the prior/baseline period in ms."),
+      currentStart: TimeInputSchema.describe(
+        `Start of the current period. ${TIME_INPUT_DESCRIPTION}`,
+      ),
+      currentEnd: TimeInputSchema.describe(
+        `End of the current period. ${TIME_INPUT_DESCRIPTION}`,
+      ),
+      priorStart: TimeInputSchema.describe(
+        `Start of the prior/baseline period. ${TIME_INPUT_DESCRIPTION}`,
+      ),
+      priorEnd: TimeInputSchema.describe(
+        `End of the prior/baseline period. ${TIME_INPUT_DESCRIPTION}`,
+      ),
       groupBy: z
         .array(z.string())
         .optional()
@@ -581,16 +611,26 @@ export const createCompareTimeRangesTool = (_env: Env) =>
         groupBy: context.groupBy,
       };
 
+      // Resolve all four time inputs against a single `now` so "now-1h"-style
+      // relative values across current/prior stay aligned.
+      const sharedNow = Date.now();
+      const currentStart = resolveTime(context.currentStart, {
+        now: sharedNow,
+      });
+      const currentEnd = resolveTime(context.currentEnd, { now: sharedNow });
+      const priorStart = resolveTime(context.priorStart, { now: sharedNow });
+      const priorEnd = resolveTime(context.priorEnd, { now: sharedNow });
+
       // Query both periods in parallel with separate time windows
       const [currentRes, priorRes] = await Promise.all([
         client.queryChartSeries({
-          startTime: context.currentStart,
-          endTime: context.currentEnd,
+          startTime: currentStart,
+          endTime: currentEnd,
           series: [seriesConfig],
         }),
         client.queryChartSeries({
-          startTime: context.priorStart,
-          endTime: context.priorEnd,
+          startTime: priorStart,
+          endTime: priorEnd,
           series: [seriesConfig],
         }),
       ]);
@@ -661,18 +701,14 @@ export const createDiscoverDataTool = (_env: Env) =>
         .describe(
           "Domain-specific keywords or field names to search for. The tool will run targeted queries to find how these appear in the data. Example: 'section loader cloud.provider rendering build vtex shopify'. Separate with spaces.",
         ),
-      startTime: z
-        .number()
-        .optional()
+      startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 6 * 60 * 60 * 1000)
         .describe(
-          "Start time in ms. Defaults to 6 hours ago for broader coverage.",
+          `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 6 hours ago for broader coverage.`,
         ),
-      endTime: z
-        .number()
-        .optional()
+      endTime: TimeInputSchema.optional()
         .default(() => Date.now())
-        .describe("End time in ms. Defaults to now."),
+        .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
     }),
     outputSchema: z.object({
       services: z
@@ -744,7 +780,11 @@ export const createDiscoverDataTool = (_env: Env) =>
       const apiKey = getHyperDXApiKey(runtimeContext.env as Env);
       const client = createHyperDXClient({ apiKey });
 
-      const { startTime, endTime, hints } = context;
+      const { hints } = context;
+      const { startTime, endTime } = resolveTimeRange(
+        context.startTime,
+        context.endTime,
+      );
 
       // Parse hints into individual keywords
       const hintWords = hints
@@ -1179,6 +1219,68 @@ If you are setting up monitoring for the first time, follow this flow:
     },
   });
 
+/**
+ * RESOLVE_TIME_RANGE - Preview how a time expression resolves to epoch ms.
+ *
+ * A cheap no-side-effects tool so the agent can confirm its interpretation
+ * of user phrasing ("around 14:00 GMT-3 today") before committing to a chart
+ * query. Accepts the same flexible time inputs as every other tool.
+ */
+export const createResolveTimeRangeTool = (_env: Env) =>
+  createTool({
+    id: "RESOLVE_TIME_RANGE",
+    description:
+      "Resolve a pair of time expressions to epoch milliseconds. No side effects, no API cost — call this freely whenever the user's time phrasing is ambiguous (e.g. 'around 14:00 GMT-3') to preview the exact window before running a heavier query. Accepts numbers, ISO 8601 with timezone, 'now'/'now±<duration>', and shorthand like '1h', '30m'. Throws an actionable error on unparseable input (e.g. naive ISO without timezone) so you can correct and retry safely.",
+    inputSchema: z.object({
+      startTime: TimeInputSchema.describe(
+        `Start time. ${TIME_INPUT_DESCRIPTION}`,
+      ),
+      endTime: TimeInputSchema.describe(`End time. ${TIME_INPUT_DESCRIPTION}`),
+    }),
+    outputSchema: z.object({
+      startTime: z.number().describe("Resolved start in epoch milliseconds."),
+      endTime: z.number().describe("Resolved end in epoch milliseconds."),
+      startIso: z.string().describe("Resolved start as ISO 8601 (UTC)."),
+      endIso: z.string().describe("Resolved end as ISO 8601 (UTC)."),
+      durationMs: z.number().describe("endTime − startTime in milliseconds."),
+      humanReadable: z
+        .string()
+        .describe("Human summary of the resolved window."),
+    }),
+    execute: async ({ context }) => {
+      const sharedNow = Date.now();
+      const startTime = resolveTime(context.startTime, { now: sharedNow });
+      const endTime = resolveTime(context.endTime, { now: sharedNow });
+      const durationMs = endTime - startTime;
+
+      const formatDuration = (ms: number): string => {
+        const abs = Math.abs(ms);
+        if (abs < 60_000) return `${Math.round(abs / 1000)}s`;
+        if (abs < 3_600_000) return `${Math.round(abs / 60_000)}m`;
+        if (abs < 86_400_000) {
+          return `${(abs / 3_600_000).toFixed(1)}h`;
+        }
+        return `${(abs / 86_400_000).toFixed(1)}d`;
+      };
+
+      const startIso = new Date(startTime).toISOString();
+      const endIso = new Date(endTime).toISOString();
+      const humanReadable =
+        durationMs >= 0
+          ? `${startIso} → ${endIso} (${formatDuration(durationMs)})`
+          : `Invalid: endTime precedes startTime by ${formatDuration(durationMs)}`;
+
+      return {
+        startTime,
+        endTime,
+        startIso,
+        endIso,
+        durationMs,
+        humanReadable,
+      };
+    },
+  });
+
 // Export all tools as an array
 export const hyperdxTools = [
   createSearchLogsTool,
@@ -1189,6 +1291,7 @@ export const hyperdxTools = [
   createGetServiceHealthTool,
   createCompareTimeRangesTool,
   createDiscoverDataTool,
+  createResolveTimeRangeTool,
   // SUGGEST_AUTOMATIONS is not a separate tool — it's a section of the DISCOVER_DATA agentPrompt.
   // After running DISCOVER_DATA, the agent has all the context needed to suggest automations
   // using CREATE_ALERT and CREATE_DASHBOARD tools directly.
