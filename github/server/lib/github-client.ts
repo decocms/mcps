@@ -2,6 +2,8 @@
  * GitHub OAuth helpers
  */
 
+import { OAuthInvalidGrantError } from "@decocms/runtime";
+
 export interface GitHubTokenResponse {
   access_token: string;
   token_type: string;
@@ -83,16 +85,63 @@ export function exchangeCodeForToken(
 /**
  * Exchange a refresh token for a new access token.
  * Only works for GitHub Apps that issue expiring user tokens.
+ *
+ * Throws `OAuthInvalidGrantError` for the spec-compliant permanent-failure
+ * cases (`invalid_grant` / `bad_refresh_token`) so the runtime's `/token`
+ * handler can map it to `400 invalid_grant` and let mesh evict the cached
+ * refresh_token. Anything else (5xx, network, malformed body) propagates
+ * as a plain `Error` and surfaces as `500` — treated as transient by mesh.
  */
-export function refreshAccessToken(
+export async function refreshAccessToken(
   refreshToken: string,
   clientId: string,
   clientSecret: string,
 ): Promise<GitHubTokenResponse> {
-  return postToGitHub({
-    client_id: clientId,
-    client_secret: clientSecret,
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
+  const response = await fetch(GITHUB_TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": "deco-cms-github-mcp",
+    },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
   });
+
+  // Per RFC 6749 §5.2 the canonical signal is the body's `error` field, not
+  // the HTTP status — and GitHub historically returns `200 { error: "..." }`
+  // when `Accept: application/json` is set. Read the body before branching
+  // on status so we can recognise the typed error in either shape.
+  const data = (await response.json().catch(() => ({}))) as
+    | RawGitHubTokenResponse
+    | Record<string, never>;
+
+  if (data.error === "invalid_grant" || data.error === "bad_refresh_token") {
+    throw new OAuthInvalidGrantError(data.error, data.error_description);
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `GitHub OAuth failed: ${response.status} - ${data.error ?? "unknown"}`,
+    );
+  }
+
+  if (data.error) {
+    throw new Error(
+      `GitHub OAuth error: ${data.error_description || data.error}`,
+    );
+  }
+
+  return {
+    access_token: data.access_token,
+    token_type: data.token_type || "Bearer",
+    expires_in: data.expires_in,
+    refresh_token: data.refresh_token,
+    refresh_token_expires_in: data.refresh_token_expires_in,
+    scope: data.scope,
+  };
 }
