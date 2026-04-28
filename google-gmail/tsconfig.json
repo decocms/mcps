@@ -19,7 +19,7 @@
     "paths": {
       "@decocms/mcps-shared/*": ["../shared/*"]
     },
-    "types": ["bun-types"]
+    "types": ["@cloudflare/workers-types", "node"]
   },
   "include": [
     "server/**/*.ts",
@@ -30,4 +30,3 @@
     "dist"
   ]
 }
-

@@ -3,9 +3,10 @@
  *
  * This MCP provides tools for interacting with Gmail API,
  * including message management, thread operations, labels, and drafts.
+ *
+ * Deployed as a Cloudflare Worker with KV for email→connection mappings.
  */
 import { withRuntime } from "@decocms/runtime";
-import { serve } from "@decocms/mcps-shared/serve";
 import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
 import { tools } from "./tools/index.ts";
@@ -18,8 +19,6 @@ import {
 import { handleGmailWebhook } from "./webhook.ts";
 
 export type { Env };
-
-const GMAIL_PUBSUB_TOPIC = process.env.GMAIL_PUBSUB_TOPIC || "";
 
 const runtime = withRuntime<Env>({
   tools: tools as any,
@@ -37,11 +36,10 @@ const runtime = withRuntime<Env>({
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
       if (!token || !connectionId) return;
 
-      // Strip Bearer prefix if present
       const accessToken = token.replace(/^Bearer\s+/i, "");
+      const kv = env.EMAIL_MAP;
 
       try {
-        // Fetch user profile to get email address
         const profileRes = await fetch(ENDPOINTS.PROFILE, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -58,15 +56,14 @@ const runtime = withRuntime<Env>({
           historyId: string;
         };
 
-        // Map email → connectionId
-        removeConnectionMappings(connectionId);
-        setEmailMapping(profile.emailAddress, connectionId);
+        await removeConnectionMappings(kv, connectionId);
+        await setEmailMapping(kv, profile.emailAddress, connectionId);
         console.log(
           `[Gmail onChange] Mapped ${profile.emailAddress} → ${connectionId}`,
         );
 
-        // Set up Gmail push notifications via users.watch()
-        if (GMAIL_PUBSUB_TOPIC) {
+        const pubsubTopic = process.env.GMAIL_PUBSUB_TOPIC || "";
+        if (pubsubTopic) {
           const watchRes = await fetch(ENDPOINTS.WATCH, {
             method: "POST",
             headers: {
@@ -74,7 +71,7 @@ const runtime = withRuntime<Env>({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              topicName: GMAIL_PUBSUB_TOPIC,
+              topicName: pubsubTopic,
               labelIds: ["INBOX"],
             }),
           });
@@ -108,10 +105,10 @@ const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
   const url = new URL(req.url);
 
   if (req.method === "POST" && url.pathname === "/webhooks/gmail") {
-    return handleGmailWebhook(req);
+    return handleGmailWebhook(req, env.EMAIL_MAP);
   }
 
   return runtime.fetch(req, env, ctx);
 };
 
-serve(wrappedFetch);
+export default { fetch: wrappedFetch };
