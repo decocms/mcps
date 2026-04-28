@@ -1,23 +1,39 @@
 /**
- * In-memory mapping from Gmail email address to Mesh connection ID.
+ * KV-backed mapping from Gmail email address to Mesh connection ID.
  *
- * Populated during onChange when we fetch the user's Gmail profile.
+ * Uses Cloudflare KV (EMAIL_MAP binding) for persistence across
+ * Worker isolates and restarts.
  */
 
-const emailMap = new Map<string, string>();
+const KV_PREFIX = "email:";
 
-export function setEmailMapping(email: string, connectionId: string): void {
-  emailMap.set(email.toLowerCase(), connectionId);
+export async function setEmailMapping(
+  kv: KVNamespace,
+  email: string,
+  connectionId: string,
+): Promise<void> {
+  await kv.put(`${KV_PREFIX}${email.toLowerCase()}`, connectionId);
 }
 
-export function getConnectionForEmail(email: string): string | undefined {
-  return emailMap.get(email.toLowerCase());
+export async function getConnectionForEmail(
+  kv: KVNamespace,
+  email: string,
+): Promise<string | undefined> {
+  const value = await kv.get(`${KV_PREFIX}${email.toLowerCase()}`);
+  return value ?? undefined;
 }
 
-export function removeConnectionMappings(connectionId: string): void {
-  for (const [email, connId] of emailMap) {
-    if (connId === connectionId) {
-      emailMap.delete(email);
+export async function removeConnectionMappings(
+  kv: KVNamespace,
+  connectionId: string,
+): Promise<void> {
+  const listed = await kv.list({ prefix: KV_PREFIX });
+  const deletes: Promise<void>[] = [];
+  for (const key of listed.keys) {
+    const value = await kv.get(key.name);
+    if (value === connectionId) {
+      deletes.push(kv.delete(key.name));
     }
   }
+  await Promise.all(deletes);
 }

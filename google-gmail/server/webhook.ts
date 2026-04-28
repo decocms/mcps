@@ -22,7 +22,10 @@ interface GmailNotification {
   historyId: string;
 }
 
-export async function handleGmailWebhook(req: Request): Promise<Response> {
+export async function handleGmailWebhook(
+  req: Request,
+  kv: KVNamespace,
+): Promise<Response> {
   let body: PubSubPushMessage;
   try {
     body = await req.json();
@@ -36,7 +39,7 @@ export async function handleGmailWebhook(req: Request): Promise<Response> {
 
   let notification: GmailNotification;
   try {
-    const decoded = Buffer.from(body.message.data, "base64").toString("utf-8");
+    const decoded = atob(body.message.data);
     notification = JSON.parse(decoded);
   } catch {
     return Response.json(
@@ -50,7 +53,7 @@ export async function handleGmailWebhook(req: Request): Promise<Response> {
     return Response.json({ ok: true, skipped: "no_email_address" });
   }
 
-  const connectionId = getConnectionForEmail(emailAddress);
+  const connectionId = await getConnectionForEmail(kv, emailAddress);
   if (!connectionId) {
     console.log(
       `[Gmail Webhook] No connection mapping for ${emailAddress}, skipping`,

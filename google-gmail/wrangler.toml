@@ -1,0 +1,12 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "google-gmail"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+
+[[kv_namespaces]]
+binding = "EMAIL_MAP"
+id = "PLACEHOLDER_KV_NAMESPACE_ID"
+
+[vars]
+GMAIL_PUBSUB_TOPIC = ""

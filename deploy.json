@@ -430,5 +430,14 @@
       "veo/**",
       "shared/**"
     ]
+  },
+  "google-gmail": {
+    "site": "google-gmail",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "cloudflare-workers",
+    "watch": [
+      "google-gmail/**",
+      "shared/**"
+    ]
   }
 }

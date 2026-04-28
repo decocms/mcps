@@ -36,6 +36,8 @@ export interface Env {
   SELF?: unknown;
   /** Whether running locally */
   IS_LOCAL?: boolean;
+  /** Cloudflare KV namespace for email → connectionId mappings */
+  EMAIL_MAP: KVNamespace;
 }
 
 /**
