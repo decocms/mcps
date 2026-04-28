@@ -21,7 +21,7 @@ import { handleGmailWebhook } from "./webhook.ts";
 export type { Env };
 
 const runtime = withRuntime<Env>({
-  tools: tools as any,
+  tools,
   oauth: createGoogleOAuth({
     scopes: [
       GOOGLE_SCOPES.GMAIL_READONLY,
@@ -104,8 +104,9 @@ const runtime = withRuntime<Env>({
 const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
   const url = new URL(req.url);
 
-  if (req.method === "POST" && url.pathname === "/webhooks/gmail") {
-    return handleGmailWebhook(req, env.EMAIL_MAP);
+  if (req.method === "POST" && url.pathname.startsWith("/webhooks/gmail")) {
+    const webhookSecret = process.env.GMAIL_WEBHOOK_SECRET || "";
+    return handleGmailWebhook(req, env.EMAIL_MAP, webhookSecret);
   }
 
   return runtime.fetch(req, env, ctx);

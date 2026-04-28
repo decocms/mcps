@@ -3,6 +3,10 @@
  *
  * Receives Google Pub/Sub push notifications for Gmail mailbox changes
  * and routes them to the correct connection via triggers.notify().
+ *
+ * Authentication: Pub/Sub push subscriptions should be configured with
+ * ?token=<GMAIL_WEBHOOK_SECRET> as a query parameter. This handler
+ * validates the token before processing.
  */
 
 import { getConnectionForEmail } from "./lib/email-connection-map.ts";
@@ -25,7 +29,16 @@ interface GmailNotification {
 export async function handleGmailWebhook(
   req: Request,
   kv: KVNamespace,
+  webhookSecret: string,
 ): Promise<Response> {
+  if (webhookSecret) {
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token");
+    if (token !== webhookSecret) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   let body: PubSubPushMessage;
   try {
     body = await req.json();
