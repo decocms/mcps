@@ -3,23 +3,32 @@
  *
  * Uses Cloudflare KV (EMAIL_MAP binding) for persistence across
  * Worker isolates and restarts.
+ *
+ * Stores two keys per mapping for O(1) lookup in both directions:
+ *   email:<addr>  → connectionId
+ *   conn:<connId> → email address
  */
 
-const KV_PREFIX = "email:";
+const EMAIL_PREFIX = "email:";
+const CONN_PREFIX = "conn:";
 
 export async function setEmailMapping(
   kv: KVNamespace,
   email: string,
   connectionId: string,
 ): Promise<void> {
-  await kv.put(`${KV_PREFIX}${email.toLowerCase()}`, connectionId);
+  const normalizedEmail = email.toLowerCase();
+  await Promise.all([
+    kv.put(`${EMAIL_PREFIX}${normalizedEmail}`, connectionId),
+    kv.put(`${CONN_PREFIX}${connectionId}`, normalizedEmail),
+  ]);
 }
 
 export async function getConnectionForEmail(
   kv: KVNamespace,
   email: string,
 ): Promise<string | undefined> {
-  const value = await kv.get(`${KV_PREFIX}${email.toLowerCase()}`);
+  const value = await kv.get(`${EMAIL_PREFIX}${email.toLowerCase()}`);
   return value ?? undefined;
 }
 
@@ -27,13 +36,10 @@ export async function removeConnectionMappings(
   kv: KVNamespace,
   connectionId: string,
 ): Promise<void> {
-  const listed = await kv.list({ prefix: KV_PREFIX });
-  const deletes: Promise<void>[] = [];
-  for (const key of listed.keys) {
-    const value = await kv.get(key.name);
-    if (value === connectionId) {
-      deletes.push(kv.delete(key.name));
-    }
-  }
-  await Promise.all(deletes);
+  const email = await kv.get(`${CONN_PREFIX}${connectionId}`);
+  if (!email) return;
+  await Promise.all([
+    kv.delete(`${EMAIL_PREFIX}${email}`),
+    kv.delete(`${CONN_PREFIX}${connectionId}`),
+  ]);
 }
