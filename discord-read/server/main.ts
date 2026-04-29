@@ -36,6 +36,7 @@ const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 console.log("=".repeat(80));
 console.log("[STARTUP] Discord MCP Server initializing...");
 console.log(`[STARTUP] Instance ID: ${INSTANCE_ID}`);
+console.log(`[STARTUP] K8s pod: ${process.env.HOSTNAME || "n/a"}`);
 console.log(`[STARTUP] Node.js version: ${process.version}`);
 console.log(`[STARTUP] Bun version: ${Bun.version}`);
 console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
