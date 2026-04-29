@@ -208,9 +208,15 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   // value -> a hardcoded sane default. Mesh's resolveDefaultModels
   // otherwise picks whatever the org happens to have first, which on
   // this account is a free-tier OpenRouter model that returns empty
-  // for tool-using agents. The default below works through any
-  // OpenRouter / direct Anthropic credential and produces text.
-  const DEFAULT_MODEL_ID = "anthropic/claude-sonnet-4";
+  // for tool-using agents.
+  //
+  // openai/gpt-4o is the safe default: OpenRouter routes it to OpenAI
+  // (or compatible providers) that accept the OpenAI-style tool_choice
+  // payload Mesh sends. anthropic/claude-sonnet-4 fails here with
+  // "No endpoints found that support the provided 'tool_choice' value"
+  // because OpenRouter routes it to Anthropic which uses a different
+  // tool_choice schema than what Mesh emits.
+  const DEFAULT_MODEL_ID = "openai/gpt-4o";
   const modelId =
     modelMeta?.value ??
     modelMeta?.id ??
