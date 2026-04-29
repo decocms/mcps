@@ -219,13 +219,13 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
     asStr(providerMeta?.id) ||
     instance?.modelProviderId ||
     undefined;
-  // openai/gpt-4o is the safe default: OpenRouter routes it to OpenAI
-  // (or compatible providers) that accept the OpenAI-style tool_choice
-  // payload Mesh sends. anthropic/claude-sonnet-4 fails here with
-  // "No endpoints found that support the provided 'tool_choice' value"
-  // because OpenRouter routes it to Anthropic which uses a different
-  // tool_choice schema than what Mesh emits.
-  const DEFAULT_MODEL_ID = "openai/gpt-4o";
+  // openai/gpt-4o-mini is the safe default: OpenRouter routes it
+  // consistently to providers that accept the OpenAI-style tool_choice
+  // Mesh emits, it has lower failure rates than gpt-4o for tool-using
+  // agents (gpt-4o frequently surfaces "no result" through OpenRouter
+  // routing), and it's cheap enough to absorb retries. Operators can
+  // override via state.LANGUAGE_MODEL or instance.modelId.
+  const DEFAULT_MODEL_ID = "openai/gpt-4o-mini";
   const modelId =
     asStr(modelMeta?.value) ||
     asStr(modelMeta?.id) ||
@@ -245,7 +245,12 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
 
   return {
     STREAM: async (params) => {
-      const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
+      // Use the runtime/stream endpoint — same one the AGENT binding
+      // hits via @decocms/runtime — so Mesh's monitoring/admin shows
+      // these calls under the same trace surface as Studio chat.
+      // Functionally equivalent to /decopilot/stream (both wrap
+      // streamCore), but operators can correlate logs.
+      const url = `${meshUrl}/api/${orgPath}/decopilot/runtime/stream`;
       // Include explicit models when we have both credentialId and a
       // model id — without them Mesh's resolveDefaultModels picks the
       // first AI provider key + first model in the org, which on this
