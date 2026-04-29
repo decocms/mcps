@@ -204,7 +204,18 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
   const credentialId =
     providerMeta?.value ?? providerMeta?.id ?? instance?.modelProviderId;
-  const modelId = modelMeta?.value ?? modelMeta?.id ?? instance?.modelId;
+  // Fallback chain for the model id: state binding -> stashed instance
+  // value -> a hardcoded sane default. Mesh's resolveDefaultModels
+  // otherwise picks whatever the org happens to have first, which on
+  // this account is a free-tier OpenRouter model that returns empty
+  // for tool-using agents. The default below works through any
+  // OpenRouter / direct Anthropic credential and produces text.
+  const DEFAULT_MODEL_ID = "anthropic/claude-sonnet-4";
+  const modelId =
+    modelMeta?.value ??
+    modelMeta?.id ??
+    instance?.modelId ??
+    (credentialId ? DEFAULT_MODEL_ID : undefined);
   const meshUrl = ctx?.meshUrl;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orgPath = (ctx as any)?.organizationSlug || ctx?.organizationId;
