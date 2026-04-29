@@ -62,6 +62,11 @@ interface AgentClient {
     // agents) and runs against the model we ask for.
     credentialId?: string;
     thinking?: { id: string; title?: string };
+    // Auto/readonly/plan. The SDK falls back to the agent's binding
+    // config when this is missing, which on this org is "readonly" —
+    // that surfaces an interactive approval prompt to the end user
+    // (Discord can't render interactive prompts, so the agent stalls).
+    toolApprovalLevel?: "auto" | "readonly" | "plan";
   }) => Promise<
     AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>
   >;
@@ -561,6 +566,15 @@ export async function streamAgentResponse(
     const modelParams = tierThinking
       ? { credentialId: tierCredentialId, thinking: tierThinking }
       : {};
+    // Force auto-approval — the agent binding's persisted config on this
+    // org is "readonly", which makes Mesh surface an interactive approval
+    // prompt for every tool call. Discord can't render that UI so the
+    // agent stalls. Discord interactions are inherently bot-driven, so
+    // auto-approval is the right default here.
+    const sharedParams = {
+      ...modelParams,
+      toolApprovalLevel: "auto" as const,
+    };
 
     let bindingErr: unknown;
     if (binding) {
@@ -571,7 +585,7 @@ export async function streamAgentResponse(
         return await binding.STREAM({
           messages: uiMessages,
           ...(currentThreadId ? { thread_id: currentThreadId } : {}),
-          ...modelParams,
+          ...sharedParams,
         });
       } catch (err) {
         bindingErr = err;
@@ -589,7 +603,7 @@ export async function streamAgentResponse(
       return await direct.STREAM({
         messages: uiMessages,
         ...(currentThreadId ? { thread_id: currentThreadId } : {}),
-        ...modelParams,
+        ...sharedParams,
       });
     }
 
