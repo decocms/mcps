@@ -172,7 +172,15 @@ export async function loadAllConnectionConfigs(): Promise<
     throw new Error("Supabase client not initialized");
   }
 
-  const { data, error } = await client.from("discord_connections").select("*");
+  // Order by updated_at DESC so the most recently saved config wins when
+  // multiple rows share the same bot_token. The bootstrap dedups by token
+  // and picks the first row it sees as "owner"; without ordering, Postgres
+  // returns rows in physical order which is non-deterministic. With this
+  // ordering the freshest, fully-configured row always becomes the owner.
+  const { data, error } = await client
+    .from("discord_connections")
+    .select("*")
+    .order("updated_at", { ascending: false });
 
   if (error) {
     throw new Error(`Failed to load configs: ${error.message}`);
