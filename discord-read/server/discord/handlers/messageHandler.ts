@@ -314,6 +314,9 @@ async function handleDefaultAgent(
 
   logger.info("Processing AI agent request", {
     trace_id: traceId,
+    connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+    botUserId: message.client.user?.id,
+    botTag: message.client.user?.tag,
     messageId: message.id,
     guildId: message.guild?.id,
     guildName: message.guild?.name,
@@ -597,6 +600,9 @@ async function handleDefaultAgent(
   } catch (error) {
     logger.error("AI agent error", {
       trace_id: traceId,
+      connectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
+      botUserId: message.client.user?.id,
+      botTag: message.client.user?.tag,
       messageId: message.id,
       guildId: message.guild?.id,
       channelId: message.channel.id,
@@ -634,8 +640,20 @@ async function handleDefaultAgent(
       errorResponse = `⚠️ Bot não está totalmente inicializado. Tente novamente em alguns segundos.`;
     } else if (errorMsg.includes("timed out") || errorMsg.includes("aborted")) {
       errorResponse = `⏱️ A requisição demorou muito. Tente novamente.`;
+    } else if (
+      errorMsg.toLowerCase().includes("agent not configured") ||
+      errorMsg.includes("AGENT binding")
+    ) {
+      errorResponse = `🔧 O agente de IA não está configurado nesta conexão. Avise o admin.`;
     } else {
       errorResponse = `❌ Erro ao processar sua mensagem.`;
+    }
+
+    // Diagnostic flag: append underlying error to chat for active debugging.
+    // Why: the catch-all above hides the real cause. Operators need a fast loop.
+    // How to apply: set DEBUG_ERRORS_TO_CHAT=true in the connection's StateSchema.
+    if (env.MESH_REQUEST_CONTEXT?.state?.DEBUG_ERRORS_TO_CHAT) {
+      errorResponse += `\n\`\`\`\n${errorMsg.slice(0, 500)}\n\`\`\``;
     }
 
     // Update thinking message with error, or send new message

@@ -146,6 +146,14 @@ export const StateSchema = z.object({
     .describe(
       "HyperDX API key for advanced logging and observability. If not provided, logs will only go to stdout.",
     ),
+
+  // Diagnostics
+  DEBUG_ERRORS_TO_CHAT: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, append the underlying error message to the user-facing reply when the bot fails. Use only when actively debugging — exposes internal details.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
