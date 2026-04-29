@@ -201,15 +201,22 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   // After Mesh fires onChange, state.* bindings are Proxies that only
   // expose their methods. Fall back to the values we stashed on the
   // instance during onChange / bootstrap.
-  // Use || (not ??) so empty strings fall through. State bindings often
-  // arrive as `{value: ""}` placeholders before the operator sets them
-  // in Mesh admin; ?? would lock onto the empty string and prevent the
-  // instance/default fallback from kicking in.
+  // Only accept string values from state metadata. After Mesh resolves
+  // bindings, `state.LANGUAGE_MODEL` (and similar) becomes an MCP client
+  // where `.value` is a *function*, not the underlying connection id —
+  // so naive truthy checks would feed the function source string into
+  // the request body and Mesh would reject the request with
+  // "expected string, received undefined" once JSON.stringify drops it.
+  const asStr = (v: unknown): string | undefined =>
+    typeof v === "string" && v.length > 0 ? v : undefined;
   const agentId =
-    agentMeta?.value || agentMeta?.id || instance?.agentId || undefined;
+    asStr(agentMeta?.value) ||
+    asStr(agentMeta?.id) ||
+    instance?.agentId ||
+    undefined;
   const credentialId =
-    providerMeta?.value ||
-    providerMeta?.id ||
+    asStr(providerMeta?.value) ||
+    asStr(providerMeta?.id) ||
     instance?.modelProviderId ||
     undefined;
   // openai/gpt-4o is the safe default: OpenRouter routes it to OpenAI
@@ -220,8 +227,8 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   // tool_choice schema than what Mesh emits.
   const DEFAULT_MODEL_ID = "openai/gpt-4o";
   const modelId =
-    modelMeta?.value ||
-    modelMeta?.id ||
+    asStr(modelMeta?.value) ||
+    asStr(modelMeta?.id) ||
     instance?.modelId ||
     (credentialId ? DEFAULT_MODEL_ID : undefined);
   const meshUrl = ctx?.meshUrl;
