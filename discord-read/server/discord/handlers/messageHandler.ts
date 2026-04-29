@@ -489,6 +489,29 @@ async function handleDefaultAgent(
       fullUserInput += `\n\n${textFileContent}`;
     }
 
+    // Prepend Discord context directly into the user message. We already
+    // include the same data in the system prompt, but Mesh-side agents
+    // often have their own system instructions that take priority and
+    // cause our system messages to be ignored. Putting the IDs in the
+    // user-visible content guarantees the agent sees them and can pass
+    // them to Discord MCP tools (DISCORD_GET_MEMBER, DISCORD_SEND_MESSAGE,
+    // etc.) without asking the user for them.
+    const contextHeader = isDM
+      ? `[Discord DM | speaker: ${message.author.username} (user_id: ${message.author.id})]`
+      : [
+          "[Discord context]",
+          message.guild?.name && message.guild?.id
+            ? `- guild: ${message.guild.name} (guild_id: ${message.guild.id})`
+            : null,
+          channelName && message.channel.id
+            ? `- channel: #${channelName} (channel_id: ${message.channel.id})`
+            : null,
+          `- speaker: ${message.author.username} (user_id: ${message.author.id})`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+    fullUserInput = `${contextHeader}\n\n${fullUserInput}`;
+
     // Add user message with images if present
     const userMessage: {
       role: "user";
