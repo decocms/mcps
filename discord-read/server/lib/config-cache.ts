@@ -28,6 +28,11 @@ export interface DiscordConfig {
   authorizedGuilds?: string[]; // List of guild IDs that can use this bot
   ownerId?: string; // Discord user ID of the bot owner
   commandPrefix?: string; // Command prefix (default: "!")
+  // Full StateSchema snapshot (excluding bindings like AGENT/CONNECTION).
+  // Used to rebuild env.MESH_REQUEST_CONTEXT.state on pod restart so fields
+  // like CONTEXT_CONFIG, RESPONSE_CONFIG, BOT_SUPER_ADMINS, ALLOW_DM, etc.
+  // survive without waiting for Mesh onChange to fire.
+  state?: Record<string, unknown>;
   configuredAt?: string;
   updatedAt?: string;
 }
@@ -75,6 +80,7 @@ export async function getDiscordConfig(
     authorizedGuilds: row.authorized_guilds || undefined,
     ownerId: row.owner_id || undefined,
     commandPrefix: row.command_prefix || "!",
+    state: row.state ?? undefined,
     configuredAt: row.configured_at,
     updatedAt: row.updated_at,
   };

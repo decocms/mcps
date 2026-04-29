@@ -48,6 +48,33 @@ console.log("=".repeat(80));
 const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
 let autoRestartInterval: ReturnType<typeof setInterval> | null = null;
 
+// Keys in StateSchema that come from runtime bindings, not config — these
+// can't be JSON-serialized and must NOT be persisted to Supabase.
+const STATE_BINDING_KEYS = new Set(["CONNECTION", "AGENT"]);
+
+/**
+ * Extract a JSON-serializable snapshot of the current Mesh state, excluding
+ * bindings (CONNECTION, AGENT) which are runtime-only proxies. Persisted to
+ * `discord_connections.state` so a fresh pod can rebuild MESH_REQUEST_CONTEXT
+ * without waiting for the next onChange.
+ */
+function extractPersistableState(
+  state: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!state) return {};
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (STATE_BINDING_KEYS.has(key)) continue;
+    try {
+      JSON.stringify(value);
+      out[key] = value;
+    } catch {
+      // skip non-serializable values
+    }
+  }
+  return out;
+}
+
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
     onChange: async (env) => {
@@ -148,6 +175,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           }
         }
 
+        const persistableState = extractPersistableState(state);
+
         const configToSave: DiscordConfig = {
           ...(existingConfig || {}),
           connectionId: mergedConnectionId,
@@ -165,6 +194,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
               : existingConfig?.authorizedGuilds,
           ownerId: botOwnerId || existingConfig?.ownerId,
           commandPrefix,
+          state: persistableState,
           updatedAt: new Date().toISOString(),
         };
 
@@ -354,7 +384,12 @@ async function bootstrapFromSupabase(): Promise<void> {
         commandPrefix: row.command_prefix || "!",
       });
 
-      // Build a synthetic env so ensureBotRunning can resolve the token
+      // Build a synthetic env so ensureBotRunning can resolve the token.
+      // state is restored from row.state (the StateSchema snapshot persisted
+      // on the last onChange). Bindings (AGENT, CONNECTION) stay missing
+      // until the real onChange re-injects them — but everything else
+      // (CONTEXT_CONFIG, RESPONSE_CONFIG, BOT_SUPER_ADMINS, ALLOW_DM,
+      // DEBUG_ERRORS_TO_CHAT, ...) is available immediately.
       const syntheticEnv = {
         MESH_REQUEST_CONTEXT: {
           connectionId,
@@ -362,7 +397,7 @@ async function bootstrapFromSupabase(): Promise<void> {
           meshUrl,
           token: meshApiKey || undefined,
           authorization: `Bearer ${row.bot_token}`,
-          state: {},
+          state: row.state ?? {},
         },
       } as unknown as Env;
 

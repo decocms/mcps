@@ -23,6 +23,9 @@ export interface DiscordConnectionRow {
   authorized_guilds: string[] | null; // Array of guild IDs
   owner_id: string | null; // Discord user ID of bot owner
   command_prefix: string;
+  // Full StateSchema snapshot (excluding bindings). Lets the bot rebuild its
+  // runtime state on pod restart without waiting for Mesh onChange to fire.
+  state: Record<string, unknown> | null;
   configured_at: string;
   updated_at: string;
 }
@@ -93,6 +96,7 @@ export async function saveConnectionConfig(config: {
   authorizedGuilds?: string[];
   ownerId?: string;
   commandPrefix?: string;
+  state?: Record<string, unknown>; // Full StateSchema snapshot (no bindings)
 }): Promise<void> {
   const client = getSupabaseClient();
   if (!client) {
@@ -114,6 +118,7 @@ export async function saveConnectionConfig(config: {
     authorized_guilds: config.authorizedGuilds || null,
     owner_id: config.ownerId || null,
     command_prefix: config.commandPrefix || "!",
+    state: config.state ?? null,
     configured_at: now,
     updated_at: now,
   };
