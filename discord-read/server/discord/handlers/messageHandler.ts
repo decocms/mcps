@@ -515,13 +515,14 @@ async function handleDefaultAgent(
 
     let responseContent: string;
 
-    // Use AgentOf STREAM for both streaming and non-streaming modes.
-    // Mesh enforces per-user ownership on agent threads — if we shared a
-    // single thread per Discord channel, only the user who first messaged
-    // would be able to write, and everyone else would get
-    // "You are not allowed to write to this thread". Scope by author id.
-    const threadId = `discord-${message.channel.id}-${message.author.id}`;
-    const stream = await streamAgentResponse(env, llmMessages, threadId);
+    // Don't pass thread_id to the Mesh agent — Mesh treats threads as
+    // pre-existing entities (it doesn't create them on demand) and applies
+    // ownership rules. Letting the agent run without a thread_id starts a
+    // fresh session per message; channel context is preserved via the
+    // recent-messages fetch injected into the system prompt above, so the
+    // bot still sees the conversation. This trades persistent agent memory
+    // for reliability across multiple users in the same Discord channel.
+    const stream = await streamAgentResponse(env, llmMessages);
 
     if (thinkingMsg && useStreaming) {
       // Streaming mode: consume async iterable, update thinking message at the end
