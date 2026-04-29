@@ -515,8 +515,12 @@ async function handleDefaultAgent(
 
     let responseContent: string;
 
-    // Use AgentOf STREAM for both streaming and non-streaming modes
-    const threadId = `discord-${message.channel.id}`;
+    // Use AgentOf STREAM for both streaming and non-streaming modes.
+    // Mesh enforces per-user ownership on agent threads — if we shared a
+    // single thread per Discord channel, only the user who first messaged
+    // would be able to write, and everyone else would get
+    // "You are not allowed to write to this thread". Scope by author id.
+    const threadId = `discord-${message.channel.id}-${message.author.id}`;
     const stream = await streamAgentResponse(env, llmMessages, threadId);
 
     if (thinkingMsg && useStreaming) {
