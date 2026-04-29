@@ -430,5 +430,14 @@
       "veo/**",
       "shared/**"
     ]
+  },
+  "figma": {
+    "site": "figma",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "figma/**",
+      "shared/**"
+    ]
   }
 }
