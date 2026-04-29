@@ -48,15 +48,21 @@ console.log("=".repeat(80));
 const AUTO_RESTART_INTERVAL_MS = 60 * 60 * 1000;
 let autoRestartInterval: ReturnType<typeof setInterval> | null = null;
 
-// Keys in StateSchema that come from runtime bindings, not config — these
-// can't be JSON-serialized and must NOT be persisted to Supabase.
-const STATE_BINDING_KEYS = new Set(["CONNECTION", "AGENT"]);
-
 /**
- * Extract a JSON-serializable snapshot of the current Mesh state, excluding
- * bindings (CONNECTION, AGENT) which are runtime-only proxies. Persisted to
- * `discord_connections.state` so a fresh pod can rebuild MESH_REQUEST_CONTEXT
- * without waiting for the next onChange.
+ * Extract a JSON-serializable snapshot of the current Mesh state.
+ *
+ * Why: bootstrap (post-deploy / fresh pod) needs to rebuild
+ * MESH_REQUEST_CONTEXT.state from Supabase before Mesh fires onChange. The
+ * trick is the SOURCE: when `onChange(env, config)` is called, `env.state`
+ * has resolved Proxies (which serialize to `{}`), but `config.state` has the
+ * raw `{__type, value, ...}` metadata for bindings. By preferring
+ * `config.state` upstream, we get serializable metadata for AGENT/CONNECTION
+ * bindings — including `state.AGENT.value` which is the agent_id we need
+ * for the direct-HTTP fallback in `llm.ts` when the binding proxy isn't
+ * available yet.
+ *
+ * Function-typed values (anything that survived as a Proxy) are dropped via
+ * the JSON.stringify check.
  */
 function extractPersistableState(
   state: Record<string, unknown> | undefined,
@@ -64,7 +70,6 @@ function extractPersistableState(
   if (!state) return {};
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(state)) {
-    if (STATE_BINDING_KEYS.has(key)) continue;
     try {
       JSON.stringify(value);
       out[key] = value;
@@ -77,7 +82,8 @@ function extractPersistableState(
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
-    onChange: async (env) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onChange: async (env, config?: any) => {
       const traceId = HyperDXLogger.generateTraceId();
       const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
 
@@ -93,7 +99,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       // Set database env for shared module
       setDatabaseEnv(env);
 
-      // Get configuration from state
+      // Prefer the raw config.state (has binding metadata like {__type, value})
+      // over env.state (which has resolved Proxies that serialize to {} and
+      // hide the agent_id). Fall back to env.state when config isn't passed.
+      const rawState = config?.state ?? env.MESH_REQUEST_CONTEXT?.state;
       const state = env.MESH_REQUEST_CONTEXT?.state;
       const meshUrl = env.MESH_REQUEST_CONTEXT?.meshUrl;
       const organizationId = env.MESH_REQUEST_CONTEXT?.organizationId;
@@ -175,7 +184,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
           }
         }
 
-        const persistableState = extractPersistableState(state);
+        const persistableState = extractPersistableState(rawState);
 
         const configToSave: DiscordConfig = {
           ...(existingConfig || {}),

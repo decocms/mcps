@@ -97,30 +97,142 @@ function toUIMessages(messages: DiscordChatMessage[]) {
 }
 
 /**
- * Stream an agent response using the AgentOf() STREAM binding.
- * Returns an async iterable of messages with parts.
+ * Direct-HTTP fallback for the agent. Hits the older /decopilot/stream
+ * endpoint instead of /decopilot/runtime/stream — the older one does not
+ * require a pre-existing Mesh thread/taskId, so it works on bootstrap
+ * BEFORE Mesh has fired onChange to inject the resolved AGENT proxy.
+ *
+ * Reads agent_id, mesh_url, organization_id and a bearer token from the
+ * persisted state — the binding metadata `{__type, value}` form is what we
+ * keep in `discord_connections.state` (see extractPersistableState upstream).
+ */
+function getDirectHttpAgent(env: Env): AgentClient | null {
+  const ctx = env.MESH_REQUEST_CONTEXT;
+  const state = ctx?.state as Record<string, unknown> | undefined;
+  const agentMeta = state?.AGENT as { id?: string; value?: string } | undefined;
+  const agentId = agentMeta?.value ?? agentMeta?.id;
+  const meshUrl = ctx?.meshUrl;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orgPath = (ctx as any)?.organizationSlug || ctx?.organizationId;
+  const token = ctx?.token;
+
+  if (!agentId || !meshUrl || !orgPath || !token) {
+    return null;
+  }
+
+  return {
+    STREAM: async (params) => {
+      const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
+      console.log(`[LLM] Direct HTTP call to ${url} (agent ${agentId})`);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          messages: params.messages,
+          agent: { id: agentId },
+          stream: true,
+          toolApprovalLevel: "auto",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Direct HTTP decopilot call failed (${response.status}): ${errorText}`,
+        );
+      }
+
+      return sseResponseToAsyncIterable(response);
+    },
+  };
+}
+
+async function* sseResponseToAsyncIterable(
+  response: Response,
+): AsyncGenerator<{ parts: Array<{ type: string; text?: string }> }> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let textContent = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === "[DONE]") continue;
+
+        try {
+          const event = JSON.parse(data);
+          if (event.type === "text-delta" && typeof event.delta === "string") {
+            textContent += event.delta;
+            yield { parts: [{ type: "text", text: textContent }] };
+          } else if (event.type === "text" && typeof event.text === "string") {
+            textContent = event.text;
+            yield { parts: [{ type: "text", text: textContent }] };
+          }
+        } catch {
+          // ignore unparseable SSE lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
+ * Stream an agent response. Tries the resolved AGENT binding first (fast,
+ * uses the runtime stream endpoint), falls back to direct HTTP against the
+ * older /decopilot/stream endpoint when the binding is missing or fails —
+ * which is the case on a fresh pod that has not yet received an onChange.
  */
 export async function streamAgentResponse(
   env: Env,
   messages: DiscordChatMessage[],
   threadId?: string,
 ) {
-  const agent = getAgent(env);
-  if (!agent) {
-    throw new Error(
-      "Agent not configured.\n\n" +
-        "🔧 **How to fix:**\n" +
-        "1. Open **Mesh Dashboard**\n" +
-        "2. Go to this MCP's configuration\n" +
-        "3. Configure **AGENT** binding\n" +
-        "4. Click **Save** to apply",
-    );
+  const uiMessages = toUIMessages(messages);
+
+  const binding = getAgent(env);
+  if (binding) {
+    try {
+      return await binding.STREAM({
+        messages: uiMessages,
+        ...(threadId ? { thread_id: threadId } : {}),
+      });
+    } catch (err) {
+      console.warn(
+        "[LLM] Binding STREAM failed, falling back to direct HTTP:",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
 
-  return agent.STREAM({
-    messages: toUIMessages(messages),
-    ...(threadId ? { thread_id: threadId } : {}),
-  });
+  const direct = getDirectHttpAgent(env);
+  if (direct) {
+    return direct.STREAM({ messages: uiMessages });
+  }
+
+  throw new Error(
+    "Agent not configured.\n\n" +
+      "🔧 **How to fix:**\n" +
+      "1. Open **Mesh Dashboard**\n" +
+      "2. Go to this MCP's configuration\n" +
+      "3. Configure **AGENT** binding\n" +
+      "4. Click **Save** to apply",
+  );
 }
 
 /**
