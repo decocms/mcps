@@ -284,9 +284,29 @@ async function* sseResponseToAsyncIterable(
           } else if (event.type === "text" && typeof event.text === "string") {
             textContent = event.text;
             yield { parts: [{ type: "text", text: textContent }] };
+          } else if (event.type === "error") {
+            // Mesh streams agent-side errors as `error` events instead of
+            // failing the HTTP response. Surface these so the catch path
+            // in streamAgentResponse can render the real cause to chat.
+            const msg =
+              typeof event.errorText === "string"
+                ? event.errorText
+                : typeof event.error === "string"
+                  ? event.error
+                  : typeof event.message === "string"
+                    ? event.message
+                    : JSON.stringify(event);
+            throw new Error(`Mesh SSE error event: ${msg}`);
           }
-        } catch {
-          // ignore unparseable SSE lines
+        } catch (err) {
+          // Re-throw real errors (e.g. agent failures captured above).
+          // Swallow only JSON.parse failures on partial SSE lines.
+          if (
+            err instanceof Error &&
+            err.message.startsWith("Mesh SSE error")
+          ) {
+            throw err;
+          }
         }
       }
     }
