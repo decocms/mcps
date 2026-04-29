@@ -40,6 +40,15 @@ export interface BotInstance {
   // Stash it here so llm.ts can still feed agent_id to ensureMeshThread
   // and to the direct-HTTP fallback.
   agentId?: string;
+  // Same Proxy-resolution problem applies to the model bindings. Stash
+  // raw values from state.MODEL_PROVIDER (the AI provider credential id)
+  // and state.LANGUAGE_MODEL (the model id, e.g. "anthropic/claude-sonnet-4-5")
+  // so llm.ts can include an explicit `models` block in the STREAM
+  // request — without it Mesh falls back to resolveDefaultModels which
+  // picks the first org credential's first model (often a free-tier
+  // OpenRouter model that returns empty for tool-using agents).
+  modelProviderId?: string;
+  modelId?: string;
 }
 
 // The registry — keyed by connectionId

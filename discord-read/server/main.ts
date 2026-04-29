@@ -162,19 +162,33 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
-      // Stash the Mesh agent id on the instance from the RAW config.state
-      // (which still has `AGENT: {__type, value, ...}` metadata). After this
-      // onChange returns, env.state.AGENT is replaced by a resolved Proxy
-      // that no longer exposes `.value`, so we'd lose the id otherwise.
+      // Stash the Mesh agent id, model provider credential id, and model
+      // id on the instance from the RAW config.state (which still has the
+      // {__type, value} metadata). After this onChange returns, those keys
+      // in env.state are replaced by resolved Proxies that hide `.value`,
+      // so we'd lose them otherwise.
       if (connectionId) {
-        const rawAgent = (rawState as Record<string, unknown> | undefined)
-          ?.AGENT as { id?: string; value?: string } | undefined;
+        const rs = rawState as Record<string, unknown> | undefined;
+        const rawAgent = rs?.AGENT as
+          | { id?: string; value?: string }
+          | undefined;
+        const rawProvider = rs?.MODEL_PROVIDER as
+          | { id?: string; value?: string }
+          | undefined;
+        const rawModel = rs?.LANGUAGE_MODEL as
+          | { id?: string; value?: string }
+          | undefined;
         const agentIdFromRaw = rawAgent?.value ?? rawAgent?.id;
-        if (agentIdFromRaw) {
+        const providerIdFromRaw = rawProvider?.value ?? rawProvider?.id;
+        const modelIdFromRaw = rawModel?.value ?? rawModel?.id;
+
+        if (agentIdFromRaw || providerIdFromRaw || modelIdFromRaw) {
           const instance = getOrCreateInstance(connectionId, env);
-          instance.agentId = agentIdFromRaw;
+          if (agentIdFromRaw) instance.agentId = agentIdFromRaw;
+          if (providerIdFromRaw) instance.modelProviderId = providerIdFromRaw;
+          if (modelIdFromRaw) instance.modelId = modelIdFromRaw;
           console.log(
-            `[CONFIG] Stashed agent_id for ${connectionId}: ${agentIdFromRaw}`,
+            `[CONFIG] Stashed for ${connectionId}: agent=${agentIdFromRaw ?? "n/a"} provider=${providerIdFromRaw ?? "n/a"} model=${modelIdFromRaw ?? "n/a"}`,
           );
         }
       }
@@ -430,22 +444,31 @@ async function bootstrapFromSupabase(): Promise<void> {
       // Ensure instance is created (superAdmins come from StateSchema on next onChange)
       const instance = getOrCreateInstance(connectionId, syntheticEnv);
 
-      // Stash agent_id from the persisted state.AGENT metadata so the LLM
-      // path can call ensureMeshThread + direct HTTP fallback on the very
-      // first message — without waiting for Mesh to fire onChange.
-      const persistedAgent = (
-        row.state as Record<string, unknown> | null | undefined
-      )?.AGENT as { id?: string; value?: string } | undefined;
+      // Stash agent_id, model provider, and model id from the persisted
+      // state metadata so the LLM path can supply explicit `models` in the
+      // STREAM request — without it Mesh falls back to its default model
+      // resolution which can pick a low-quality free-tier model that
+      // returns empty for tool-using agents.
+      const rs = row.state as Record<string, unknown> | null | undefined;
+      const persistedAgent = rs?.AGENT as
+        | { id?: string; value?: string }
+        | undefined;
       const persistedAgentId = persistedAgent?.value ?? persistedAgent?.id;
+      const persistedProvider = rs?.MODEL_PROVIDER as
+        | { id?: string; value?: string }
+        | undefined;
+      const persistedProviderId =
+        persistedProvider?.value ?? persistedProvider?.id;
+      const persistedModel = rs?.LANGUAGE_MODEL as
+        | { id?: string; value?: string }
+        | undefined;
+      const persistedModelId = persistedModel?.value ?? persistedModel?.id;
       console.log(
-        `[BOOTSTRAP] ${connectionId} agent stash: stateType=${typeof row.state} stateNull=${row.state === null} agentMetaKeys=${persistedAgent ? Object.keys(persistedAgent).join(",") : "none"} persistedAgentId=${persistedAgentId ?? "null"}`,
+        `[BOOTSTRAP] ${connectionId} stash: stateType=${typeof row.state} stateNull=${row.state === null} agentId=${persistedAgentId ?? "null"} providerId=${persistedProviderId ?? "null"} modelId=${persistedModelId ?? "null"}`,
       );
-      if (persistedAgentId) {
-        instance.agentId = persistedAgentId;
-        console.log(
-          `[BOOTSTRAP] ${connectionId} instance.agentId set to ${persistedAgentId}`,
-        );
-      }
+      if (persistedAgentId) instance.agentId = persistedAgentId;
+      if (persistedProviderId) instance.modelProviderId = persistedProviderId;
+      if (persistedModelId) instance.modelId = persistedModelId;
 
       // If another connection already started a client for this token, share it
       const ownerConnectionId = tokenToOwner.get(row.bot_token);

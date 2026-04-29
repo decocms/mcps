@@ -190,12 +190,21 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   const ctx = env.MESH_REQUEST_CONTEXT;
   const state = ctx?.state as Record<string, unknown> | undefined;
   const agentMeta = state?.AGENT as { id?: string; value?: string } | undefined;
+  const providerMeta = state?.MODEL_PROVIDER as
+    | { id?: string; value?: string }
+    | undefined;
+  const modelMeta = state?.LANGUAGE_MODEL as
+    | { id?: string; value?: string }
+    | undefined;
   const connectionId = ctx?.connectionId;
   const instance = connectionId ? getInstance(connectionId) : undefined;
-  // After Mesh fires onChange, state.AGENT is a Proxy with only .STREAM —
-  // .value is undefined. Fall back to the agentId we stashed on the
+  // After Mesh fires onChange, state.* bindings are Proxies that only
+  // expose their methods. Fall back to the values we stashed on the
   // instance during onChange / bootstrap.
   const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
+  const credentialId =
+    providerMeta?.value ?? providerMeta?.id ?? instance?.modelProviderId;
+  const modelId = modelMeta?.value ?? modelMeta?.id ?? instance?.modelId;
   const meshUrl = ctx?.meshUrl;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orgPath = (ctx as any)?.organizationSlug || ctx?.organizationId;
@@ -211,7 +220,16 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   return {
     STREAM: async (params) => {
       const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
-      console.log(`[LLM] Direct HTTP call to ${url} (agent ${agentId})`);
+      // Include explicit models when we have both credentialId and a
+      // model id — without them Mesh's resolveDefaultModels picks the
+      // first AI provider key + first model in the org, which on this
+      // org is a free-tier OpenRouter model that returns empty for
+      // tool-using agents. With both fields the request locks the
+      // model to whatever the operator configured in Mesh state.
+      const includeModels = !!credentialId && !!modelId;
+      console.log(
+        `[LLM] Direct HTTP call to ${url} (agent=${agentId} credentialId=${credentialId ?? "null"} modelId=${modelId ?? "null"} includeModels=${includeModels})`,
+      );
 
       const response = await fetch(url, {
         method: "POST",
@@ -226,6 +244,14 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
           agent: { id: agentId },
           stream: true,
           toolApprovalLevel: "auto",
+          ...(includeModels
+            ? {
+                models: {
+                  credentialId,
+                  thinking: { id: modelId, title: modelId },
+                },
+              }
+            : {}),
           ...(params.thread_id ? { thread_id: params.thread_id } : {}),
         }),
       });
