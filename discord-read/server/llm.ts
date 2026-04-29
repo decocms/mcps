@@ -97,14 +97,94 @@ function toUIMessages(messages: DiscordChatMessage[]) {
 }
 
 /**
- * Direct-HTTP fallback for the agent. Hits the older /decopilot/stream
- * endpoint instead of /decopilot/runtime/stream — the older one does not
- * require a pre-existing Mesh thread/taskId, so it works on bootstrap
- * BEFORE Mesh has fired onChange to inject the resolved AGENT proxy.
+ * Resolve the SELF MCP url for the current org so we can call Mesh's
+ * built-in collection tools (COLLECTION_THREADS_CREATE, etc.). Prefer the
+ * CONNECTION binding metadata (its `value` is `<orgId>_self`), fall back
+ * to constructing it from organizationId.
+ */
+function getSelfMcpUrl(env: Env): string | null {
+  const ctx = env.MESH_REQUEST_CONTEXT;
+  const meshUrl = ctx?.meshUrl;
+  if (!meshUrl) return null;
+
+  const state = ctx?.state as Record<string, unknown> | undefined;
+  const conn = state?.CONNECTION as { value?: string } | undefined;
+  const selfConnId =
+    conn?.value ?? (ctx?.organizationId ? `${ctx.organizationId}_self` : null);
+  if (!selfConnId) return null;
+
+  return `${meshUrl}/mcp/${selfConnId}`;
+}
+
+/**
+ * Ensure a Mesh agent thread exists with the given id. Mesh's streamCore
+ * (in /api/{org}/decopilot/{,runtime/}stream) refuses to run unless the
+ * thread already exists — the route loader is expected to create it via
+ * COLLECTION_THREADS_CREATE first. The create call is idempotent (Mesh
+ * uses INSERT ... ON CONFLICT DO NOTHING on the thread id), so calling it
+ * before every STREAM is safe.
+ *
+ * created_by on the thread is stamped with the userId derived from
+ * ctx.auth — when the bot calls this with its mesh_api_key the userId is
+ * stable, so the same thread can be reused across all Discord users
+ * without hitting "you are not the owner".
+ */
+async function ensureMeshThread(
+  env: Env,
+  threadId: string,
+  agentId: string,
+): Promise<boolean> {
+  const url = getSelfMcpUrl(env);
+  const token = env.MESH_REQUEST_CONTEXT?.token;
+  if (!url || !token) return false;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "x-mesh-token": token,
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "COLLECTION_THREADS_CREATE",
+          arguments: { data: { id: threadId, virtual_mcp_id: agentId } },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      console.warn(
+        `[LLM] ensureMeshThread non-2xx (${response.status}): ${text.slice(0, 300)}`,
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn(
+      "[LLM] ensureMeshThread failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return false;
+  }
+}
+
+/**
+ * Direct-HTTP fallback for the agent. Hits /decopilot/stream with a
+ * thread_id that we have already ensured exists via ensureMeshThread.
+ * Used when the resolved AGENT binding is missing (fresh pod that has
+ * not yet received an onChange) or fails at runtime.
  *
  * Reads agent_id, mesh_url, organization_id and a bearer token from the
- * persisted state — the binding metadata `{__type, value}` form is what we
- * keep in `discord_connections.state` (see extractPersistableState upstream).
+ * persisted state — the binding metadata `{__type, value}` form is what
+ * we keep in `discord_connections.state` (see extractPersistableState
+ * upstream in main.ts).
  */
 function getDirectHttpAgent(env: Env): AgentClient | null {
   const ctx = env.MESH_REQUEST_CONTEXT;
@@ -125,16 +205,6 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
       const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
       console.log(`[LLM] Direct HTTP call to ${url} (agent ${agentId})`);
 
-      // Mesh's streamCore requires a taskId. Both /runtime/stream and the
-      // older /decopilot/stream endpoints reject calls without one, and the
-      // public SDK never sets it. Generate a fresh UUID per call as an
-      // empirical attempt — if Mesh accepts arbitrary task IDs we proceed,
-      // if not we will see a clearer error than "taskId is required".
-      const taskId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `discord-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -148,8 +218,7 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
           agent: { id: agentId },
           stream: true,
           toolApprovalLevel: "auto",
-          task_id: taskId,
-          taskId: taskId,
+          ...(params.thread_id ? { thread_id: params.thread_id } : {}),
         }),
       });
 
@@ -206,10 +275,23 @@ async function* sseResponseToAsyncIterable(
 }
 
 /**
- * Stream an agent response. Tries the resolved AGENT binding first (fast,
- * uses the runtime stream endpoint), falls back to direct HTTP against the
- * older /decopilot/stream endpoint when the binding is missing or fails —
- * which is the case on a fresh pod that has not yet received an onChange.
+ * Stream an agent response.
+ *
+ * Mesh's streamCore requires a pre-existing thread (taskId) — the route
+ * loader is expected to create one via COLLECTION_THREADS_CREATE before
+ * calling STREAM. We do that here, idempotently, so the bot works on a
+ * fresh pod without any manual setup in Mesh UI.
+ *
+ * Order of operations:
+ *  1. Derive a deterministic thread_id (caller-supplied, or one of our
+ *     defaults) so subsequent messages from the same Discord user/channel
+ *     reuse the same Mesh thread (and conversation memory).
+ *  2. Ensure the thread exists in Mesh (idempotent). created_by on the
+ *     thread is stamped with the bot's API-key user, which is stable, so
+ *     ownership checks pass for every Discord user mapping into it.
+ *  3. Try the resolved AGENT binding first (fast, in-process).
+ *  4. Fall back to direct HTTP against /decopilot/stream when the binding
+ *     is missing or fails — same agent_id, same thread_id.
  */
 export async function streamAgentResponse(
   env: Env,
@@ -217,6 +299,16 @@ export async function streamAgentResponse(
   threadId?: string,
 ) {
   const uiMessages = toUIMessages(messages);
+  const ctx = env.MESH_REQUEST_CONTEXT;
+  const state = ctx?.state as Record<string, unknown> | undefined;
+  const agentMeta = state?.AGENT as { id?: string; value?: string } | undefined;
+  const agentId = agentMeta?.value ?? agentMeta?.id;
+
+  // Best-effort thread creation. On failure we still try STREAM — Mesh
+  // will throw a precise error if the thread really must exist.
+  if (threadId && agentId) {
+    await ensureMeshThread(env, threadId, agentId);
+  }
 
   const binding = getAgent(env);
   if (binding) {
@@ -235,7 +327,10 @@ export async function streamAgentResponse(
 
   const direct = getDirectHttpAgent(env);
   if (direct) {
-    return direct.STREAM({ messages: uiMessages });
+    return direct.STREAM({
+      messages: uiMessages,
+      ...(threadId ? { thread_id: threadId } : {}),
+    });
   }
 
   throw new Error(

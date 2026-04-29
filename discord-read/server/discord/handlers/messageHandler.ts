@@ -515,14 +515,13 @@ async function handleDefaultAgent(
 
     let responseContent: string;
 
-    // Don't pass thread_id to the Mesh agent — Mesh treats threads as
-    // pre-existing entities (it doesn't create them on demand) and applies
-    // ownership rules. Letting the agent run without a thread_id starts a
-    // fresh session per message; channel context is preserved via the
-    // recent-messages fetch injected into the system prompt above, so the
-    // bot still sees the conversation. This trades persistent agent memory
-    // for reliability across multiple users in the same Discord channel.
-    const stream = await streamAgentResponse(env, llmMessages);
+    // Mesh requires a pre-existing thread (taskId). streamAgentResponse
+    // creates it idempotently before calling STREAM, with created_by stamped
+    // as the bot's API-key user so ownership is consistent across all
+    // Discord users that map into this thread. Scope by (channel, author)
+    // so each user has independent agent memory per channel.
+    const threadId = `discord-${message.channel.id}-${message.author.id}`;
+    const stream = await streamAgentResponse(env, llmMessages, threadId);
 
     if (thinkingMsg && useStreaming) {
       // Streaming mode: consume async iterable, update thinking message at the end
