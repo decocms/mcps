@@ -201,15 +201,17 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   // After Mesh fires onChange, state.* bindings are Proxies that only
   // expose their methods. Fall back to the values we stashed on the
   // instance during onChange / bootstrap.
-  const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
+  // Use || (not ??) so empty strings fall through. State bindings often
+  // arrive as `{value: ""}` placeholders before the operator sets them
+  // in Mesh admin; ?? would lock onto the empty string and prevent the
+  // instance/default fallback from kicking in.
+  const agentId =
+    agentMeta?.value || agentMeta?.id || instance?.agentId || undefined;
   const credentialId =
-    providerMeta?.value ?? providerMeta?.id ?? instance?.modelProviderId;
-  // Fallback chain for the model id: state binding -> stashed instance
-  // value -> a hardcoded sane default. Mesh's resolveDefaultModels
-  // otherwise picks whatever the org happens to have first, which on
-  // this account is a free-tier OpenRouter model that returns empty
-  // for tool-using agents.
-  //
+    providerMeta?.value ||
+    providerMeta?.id ||
+    instance?.modelProviderId ||
+    undefined;
   // openai/gpt-4o is the safe default: OpenRouter routes it to OpenAI
   // (or compatible providers) that accept the OpenAI-style tool_choice
   // payload Mesh sends. anthropic/claude-sonnet-4 fails here with
@@ -218,9 +220,9 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   // tool_choice schema than what Mesh emits.
   const DEFAULT_MODEL_ID = "openai/gpt-4o";
   const modelId =
-    modelMeta?.value ??
-    modelMeta?.id ??
-    instance?.modelId ??
+    modelMeta?.value ||
+    modelMeta?.id ||
+    instance?.modelId ||
     (credentialId ? DEFAULT_MODEL_ID : undefined);
   const meshUrl = ctx?.meshUrl;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
