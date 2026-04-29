@@ -55,9 +55,111 @@ interface AgentClient {
       parts: Array<Record<string, unknown>>;
     }>;
     thread_id?: string;
+    // The SDK's streamAgent (decopilot.ts) reads these to build the
+    // `models` block of the request body. When they're set, Mesh skips
+    // resolveDefaultModels (which picks the org's first key + first
+    // model = often a free-tier model that returns empty for tool-using
+    // agents) and runs against the model we ask for.
+    credentialId?: string;
+    thinking?: { id: string; title?: string };
   }) => Promise<
     AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>
   >;
+}
+
+/**
+ * Slot returned by Mesh's ORGANIZATION_SETTINGS_GET for a Simple Mode
+ * tier ("fast" | "smart" | "thinking"). Studio reads these on the
+ * frontend and includes them in chat requests; the server's
+ * streamCore route does NOT consult simple_mode itself, so any client
+ * that wants the org's preferred model must pass it explicitly.
+ */
+interface SimpleModeSlot {
+  keyId: string;
+  modelId: string;
+  title?: string;
+}
+interface SimpleModeConfig {
+  enabled: boolean;
+  chat: {
+    fast: SimpleModeSlot | null;
+    smart: SimpleModeSlot | null;
+    thinking: SimpleModeSlot | null;
+  };
+}
+
+const simpleModeCache = new Map<
+  string,
+  { value: SimpleModeConfig | null; expiresAt: number }
+>();
+const SIMPLE_MODE_TTL_MS = 5 * 60 * 1000;
+
+async function getOrgSimpleMode(env: Env): Promise<SimpleModeConfig | null> {
+  const ctx = env.MESH_REQUEST_CONTEXT;
+  const orgId = ctx?.organizationId;
+  if (!orgId) return null;
+
+  const cached = simpleModeCache.get(orgId);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const url = getSelfMcpUrl(env);
+  const token = ctx?.token;
+  if (!url || !token) return null;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "x-mesh-token": token,
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "ORGANIZATION_SETTINGS_GET",
+          arguments: {},
+        },
+      }),
+    });
+    if (!response.ok) {
+      console.warn(
+        `[LLM] ORGANIZATION_SETTINGS_GET non-2xx ${response.status}`,
+      );
+      simpleModeCache.set(orgId, {
+        value: null,
+        expiresAt: Date.now() + SIMPLE_MODE_TTL_MS,
+      });
+      return null;
+    }
+    const body = (await response.json()) as {
+      result?: {
+        structuredContent?: { simple_mode?: SimpleModeConfig | null };
+      };
+    };
+    const simpleMode = body.result?.structuredContent?.simple_mode ?? null;
+    simpleModeCache.set(orgId, {
+      value: simpleMode,
+      expiresAt: Date.now() + SIMPLE_MODE_TTL_MS,
+    });
+    console.log(
+      `[LLM] Loaded simple_mode for ${orgId}: enabled=${simpleMode?.enabled} smart=${simpleMode?.chat.smart?.modelId ?? "n/a"} fast=${simpleMode?.chat.fast?.modelId ?? "n/a"} thinking=${simpleMode?.chat.thinking?.modelId ?? "n/a"}`,
+    );
+    return simpleMode;
+  } catch (err) {
+    console.warn(
+      "[LLM] getOrgSimpleMode failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+    simpleModeCache.set(orgId, {
+      value: null,
+      expiresAt: Date.now() + SIMPLE_MODE_TTL_MS,
+    });
+    return null;
+  }
 }
 
 function getAgent(env: Env): AgentClient | null {
@@ -248,18 +350,19 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
       // Use the runtime/stream endpoint — same one the AGENT binding
       // hits via @decocms/runtime — so Mesh's monitoring/admin shows
       // these calls under the same trace surface as Studio chat.
-      // Functionally equivalent to /decopilot/stream (both wrap
-      // streamCore), but operators can correlate logs.
       const url = `${meshUrl}/api/${orgPath}/decopilot/runtime/stream`;
-      // Include explicit models when we have both credentialId and a
-      // model id — without them Mesh's resolveDefaultModels picks the
-      // first AI provider key + first model in the org, which on this
-      // org is a free-tier OpenRouter model that returns empty for
-      // tool-using agents. With both fields the request locks the
-      // model to whatever the operator configured in Mesh state.
-      const includeModels = !!credentialId && !!modelId;
+      // Caller (streamAgentResponse) may already pass an explicit model
+      // selection from Mesh's Simple Mode (Fast/Smart/Thinking). Prefer
+      // those over our local fallbacks.
+      const finalCredentialId = params.credentialId ?? credentialId;
+      const finalThinking = params.thinking
+        ? params.thinking
+        : modelId
+          ? { id: modelId, title: modelId }
+          : undefined;
+      const includeModels = !!finalCredentialId && !!finalThinking;
       console.log(
-        `[LLM] Direct HTTP call to ${url} (agent=${agentId} credentialId=${credentialId ?? "null"} modelId=${modelId ?? "null"} includeModels=${includeModels})`,
+        `[LLM] Direct HTTP call to ${url} (agent=${agentId} credentialId=${finalCredentialId ?? "null"} modelId=${finalThinking?.id ?? "null"} includeModels=${includeModels})`,
       );
 
       const response = await fetch(url, {
@@ -278,8 +381,8 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
           ...(includeModels
             ? {
                 models: {
-                  credentialId,
-                  thinking: { id: modelId, title: modelId },
+                  credentialId: finalCredentialId,
+                  thinking: finalThinking,
                 },
               }
             : {}),
@@ -407,8 +510,30 @@ export async function streamAgentResponse(
   const instance = connectionId ? getInstance(connectionId) : undefined;
   const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
 
+  // Resolve the model from the org's Simple Mode setting. Studio reads
+  // simple_mode on its frontend and passes the chosen tier in the request
+  // body; the server's streamCore route does NOT consult it on its own.
+  // We replicate Studio's behaviour here so the bot uses the operator-
+  // selected model instead of the org's resolveDefaultModels first-key
+  // fallback (which on this org is a free-tier OpenRouter that returns
+  // empty for tool-using agents).
+  const tierRaw = (state?.SIMPLE_MODE_TIER as string | undefined) || "smart";
+  const tier: "fast" | "smart" | "thinking" =
+    tierRaw === "fast" || tierRaw === "thinking" ? tierRaw : "smart";
+  const simpleMode = await getOrgSimpleMode(env);
+  const simpleSlot = simpleMode?.enabled
+    ? (simpleMode.chat[tier] ??
+      simpleMode.chat.smart ??
+      simpleMode.chat.fast ??
+      simpleMode.chat.thinking)
+    : null;
+  const tierCredentialId = simpleSlot?.keyId;
+  const tierThinking = simpleSlot
+    ? { id: simpleSlot.modelId, title: simpleSlot.title || simpleSlot.modelId }
+    : undefined;
+
   console.log(
-    `[LLM] streamAgentResponse: connectionId=${connectionId} agentMetaKeys=${agentMeta ? Object.keys(agentMeta).join(",") : "none"} agentMetaValue=${agentMeta?.value ?? "undefined"} instanceAgentId=${instance?.agentId ?? "undefined"} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"}`,
+    `[LLM] streamAgentResponse: connectionId=${connectionId} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"} tier=${tier} simpleModelId=${tierThinking?.id ?? "n/a"}`,
   );
 
   const binding = getAgent(env);
@@ -420,6 +545,11 @@ export async function streamAgentResponse(
   // when the binding throws, the direct-HTTP path runs and exposes the
   // raw SSE / 5xx body for debugging in Lens.
   //
+  // Both paths receive the same model selection. The SDK's streamAgent
+  // (decopilot.ts) only includes the `models` block in the request body
+  // when params.thinking?.id is set — so passing it here is what lets
+  // Mesh skip resolveDefaultModels and run the operator-picked model.
+  //
   // The outer try/catch on this helper handles claim-conflict retries
   // (Mesh refuses concurrent runs on the same thread during rolling
   // deploys).
@@ -427,6 +557,10 @@ export async function streamAgentResponse(
     if (currentThreadId && agentId) {
       await ensureMeshThread(env, currentThreadId, agentId);
     }
+
+    const modelParams = tierThinking
+      ? { credentialId: tierCredentialId, thinking: tierThinking }
+      : {};
 
     let bindingErr: unknown;
     if (binding) {
@@ -437,6 +571,7 @@ export async function streamAgentResponse(
         return await binding.STREAM({
           messages: uiMessages,
           ...(currentThreadId ? { thread_id: currentThreadId } : {}),
+          ...modelParams,
         });
       } catch (err) {
         bindingErr = err;
@@ -454,6 +589,7 @@ export async function streamAgentResponse(
       return await direct.STREAM({
         messages: uiMessages,
         ...(currentThreadId ? { thread_id: currentThreadId } : {}),
+        ...modelParams,
       });
     }
 
