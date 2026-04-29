@@ -367,15 +367,31 @@ export async function collectStreamText(
   stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
 ): Promise<string> {
   let text = "";
+  let messageCount = 0;
+  const partTypeCounts: Record<string, number> = {};
+
   for await (const message of stream) {
-    // Each streamed message contains the full accumulated text so far,
-    // not a delta. We always take the latest snapshot.
+    messageCount++;
     for (const part of message.parts) {
-      if (part.type === "text" && part.text) {
-        text = part.text;
+      partTypeCounts[part.type] = (partTypeCounts[part.type] ?? 0) + 1;
+      // Vercel AI SDK can emit text in several part shapes depending on
+      // version: `text`, `text-delta`, `reasoning`, `step-text`. Capture
+      // anything that looks textual so the agent's final answer survives
+      // even when it lands on a non-canonical part type.
+      const candidate =
+        part.type === "text" || part.type === "reasoning"
+          ? part.text
+          : (part as Record<string, unknown>).text;
+      if (typeof candidate === "string" && candidate.length > 0) {
+        text = candidate;
       }
     }
   }
+
+  console.log(
+    `[LLM] stream consumed: messages=${messageCount} parts=${JSON.stringify(partTypeCounts)} textLen=${text.length}`,
+  );
+
   return text;
 }
 
