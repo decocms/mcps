@@ -249,6 +249,9 @@ async function* sseResponseToAsyncIterable(
   const decoder = new TextDecoder();
   let buffer = "";
   let textContent = "";
+  let rawLineCount = 0;
+  let dataLineCount = 0;
+  const eventTypeCounts: Record<string, number> = {};
 
   try {
     while (true) {
@@ -259,12 +262,22 @@ async function* sseResponseToAsyncIterable(
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
+        rawLineCount++;
+        // Verbose diagnostic so we can see exactly what Mesh's SSE
+        // emits. Cap each line at 300 chars so a giant tool result
+        // does not flood the log.
+        if (line.length > 0) {
+          console.log(`[LLM SSE] ${line.slice(0, 300)}`);
+        }
         if (!line.startsWith("data: ")) continue;
+        dataLineCount++;
         const data = line.slice(6).trim();
         if (!data || data === "[DONE]") continue;
 
         try {
           const event = JSON.parse(data);
+          const t = typeof event.type === "string" ? event.type : "(no type)";
+          eventTypeCounts[t] = (eventTypeCounts[t] ?? 0) + 1;
           if (event.type === "text-delta" && typeof event.delta === "string") {
             textContent += event.delta;
             yield { parts: [{ type: "text", text: textContent }] };
@@ -279,6 +292,9 @@ async function* sseResponseToAsyncIterable(
     }
   } finally {
     reader.releaseLock();
+    console.log(
+      `[LLM SSE] done. rawLines=${rawLineCount} dataLines=${dataLineCount} eventTypes=${JSON.stringify(eventTypeCounts)} textLen=${textContent.length}`,
+    );
   }
 }
 
@@ -320,27 +336,41 @@ export async function streamAgentResponse(
     await ensureMeshThread(env, threadId, agentId);
   }
 
+  // Try direct HTTP first while we are diagnosing the empty-stream issue.
+  // The binding's readUIMessageStream parser may be swallowing content
+  // we cannot see; the direct path lets us log raw SSE lines from Mesh.
+  // Falls back to the binding if direct cannot be assembled (e.g. agent_id
+  // missing).
+  const direct = getDirectHttpAgent(env);
+  if (direct) {
+    try {
+      console.log("[LLM] streamAgentResponse: trying direct HTTP first");
+      return await direct.STREAM({
+        messages: uiMessages,
+        ...(threadId ? { thread_id: threadId } : {}),
+      });
+    } catch (err) {
+      console.warn(
+        "[LLM] Direct HTTP STREAM failed, falling back to binding:",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  }
+
   const binding = getAgent(env);
   if (binding) {
     try {
+      console.log("[LLM] streamAgentResponse: trying binding STREAM");
       return await binding.STREAM({
         messages: uiMessages,
         ...(threadId ? { thread_id: threadId } : {}),
       });
     } catch (err) {
       console.warn(
-        "[LLM] Binding STREAM failed, falling back to direct HTTP:",
+        "[LLM] Binding STREAM failed:",
         err instanceof Error ? err.message : String(err),
       );
     }
-  }
-
-  const direct = getDirectHttpAgent(env);
-  if (direct) {
-    return direct.STREAM({
-      messages: uiMessages,
-      ...(threadId ? { thread_id: threadId } : {}),
-    });
   }
 
   // Both binding and direct HTTP returned null. Build a precise message
