@@ -125,10 +125,21 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
       const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
       console.log(`[LLM] Direct HTTP call to ${url} (agent ${agentId})`);
 
+      // Mesh's streamCore requires a taskId. Both /runtime/stream and the
+      // older /decopilot/stream endpoints reject calls without one, and the
+      // public SDK never sets it. Generate a fresh UUID per call as an
+      // empirical attempt — if Mesh accepts arbitrary task IDs we proceed,
+      // if not we will see a clearer error than "taskId is required".
+      const taskId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `discord-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-mesh-token": token,
           Authorization: `Bearer ${token}`,
           Accept: "application/json, text/event-stream",
         },
@@ -137,6 +148,8 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
           agent: { id: agentId },
           stream: true,
           toolApprovalLevel: "auto",
+          task_id: taskId,
+          taskId: taskId,
         }),
       });
 
