@@ -34,16 +34,12 @@ export const createSharedLinkTool = createTool({
       .optional(),
   }),
   execute: async ({ context }, ctx) =>
-    dropboxFetch(
-      envFromCtx(ctx),
-      "sharing/create_shared_link_with_settings",
-      {
-        body: {
-          path: context.path,
-          settings: context.settings,
-        },
+    dropboxFetch(envFromCtx(ctx), "sharing/create_shared_link_with_settings", {
+      body: {
+        path: context.path,
+        settings: context.settings,
       },
-    ),
+    }),
 });
 
 export const listSharedLinksTool = createTool({

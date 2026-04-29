@@ -40,9 +40,7 @@ interface RawTokenResponse extends DropboxTokenResponse {
   error_description?: string;
 }
 
-async function postToken(
-  body: URLSearchParams,
-): Promise<DropboxTokenResponse> {
+async function postToken(body: URLSearchParams): Promise<DropboxTokenResponse> {
   const response = await fetch(DROPBOX_TOKEN_ENDPOINT, {
     method: "POST",
     headers: {

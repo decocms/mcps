@@ -155,7 +155,12 @@ export const downloadFileTool = createTool({
     // memory caps; ~128MB on the standard plan).
     const metadata = (await dropboxFetch(env, "files/get_metadata", {
       body: { path: context.path },
-    })) as { ".tag"?: string; size?: number; name?: string; path_lower?: string };
+    })) as {
+      ".tag"?: string;
+      size?: number;
+      name?: string;
+      path_lower?: string;
+    };
 
     if (metadata[".tag"] !== "file") {
       throw new Error(
@@ -229,11 +234,15 @@ export const uploadFileTool = createTool({
     content_base64: z
       .string()
       .optional()
-      .describe("Base64-encoded file contents. Mutually exclusive with content_text."),
+      .describe(
+        "Base64-encoded file contents. Mutually exclusive with content_text.",
+      ),
     content_text: z
       .string()
       .optional()
-      .describe("UTF-8 plain text contents. Mutually exclusive with content_base64."),
+      .describe(
+        "UTF-8 plain text contents. Mutually exclusive with content_base64.",
+      ),
     mode: z
       .enum(["add", "overwrite", "update"])
       .optional()
