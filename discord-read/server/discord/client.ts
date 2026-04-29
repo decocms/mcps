@@ -316,15 +316,21 @@ function registerEventHandlers(client: Client, instance: BotInstance): void {
     setDatabaseEnv(currentEnv);
 
     try {
-      // Index message (async, fire-and-forget)
-      console.log(
-        `[Message] Indexing message ${message.id} from ${message.author.username}`,
-      );
-      indexMessage(message, isDM)
-        .then(() => console.log(`[Message] Indexed message ${message.id}`))
-        .catch((e) =>
-          console.log(`[Message] Failed to index ${message.id}:`, e.message),
+      // Index message (async, fire-and-forget). Gated by
+      // state.INDEX_MESSAGES_TO_DB (default true) so operators can run
+      // the bot in read-only mode without filling Supabase.
+      const indexEnabled =
+        currentEnv.MESH_REQUEST_CONTEXT?.state?.INDEX_MESSAGES_TO_DB !== false;
+      if (indexEnabled) {
+        console.log(
+          `[Message] Indexing message ${message.id} from ${message.author.username}`,
         );
+        indexMessage(message, isDM)
+          .then(() => console.log(`[Message] Indexed message ${message.id}`))
+          .catch((e) =>
+            console.log(`[Message] Failed to index ${message.id}:`, e.message),
+          );
+      }
 
       // Publish message.created event via triggers
       publishMessageCreated(currentEnv, message);
@@ -507,8 +513,12 @@ function registerEventHandlers(client: Client, instance: BotInstance): void {
   client.on("messageDelete", async (message) => {
     if (!message.guild) return;
     const currentEnv = instance.env;
+    const indexEnabled =
+      currentEnv.MESH_REQUEST_CONTEXT?.state?.INDEX_MESSAGES_TO_DB !== false;
     try {
-      await handleMessageDelete(message);
+      if (indexEnabled) {
+        await handleMessageDelete(message);
+      }
       if (!message.partial) {
         publishMessageDeleted(currentEnv, message as Message);
       }
@@ -519,6 +529,10 @@ function registerEventHandlers(client: Client, instance: BotInstance): void {
 
   // Bulk message delete event
   client.on("messageDeleteBulk", async (messages) => {
+    const currentEnv = instance.env;
+    const indexEnabled =
+      currentEnv.MESH_REQUEST_CONTEXT?.state?.INDEX_MESSAGES_TO_DB !== false;
+    if (!indexEnabled) return;
     try {
       const messagesMap = new Map(messages.entries());
       await handleMessageDeleteBulk(messagesMap);
@@ -531,8 +545,12 @@ function registerEventHandlers(client: Client, instance: BotInstance): void {
   client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild) return;
     const currentEnv = instance.env;
+    const indexEnabled =
+      currentEnv.MESH_REQUEST_CONTEXT?.state?.INDEX_MESSAGES_TO_DB !== false;
     try {
-      await handleMessageUpdate(oldMessage, newMessage);
+      if (indexEnabled) {
+        await handleMessageUpdate(oldMessage, newMessage);
+      }
       if (oldMessage.partial) await oldMessage.fetch();
       if (newMessage.partial) await newMessage.fetch();
       if (!oldMessage.partial && !newMessage.partial) {

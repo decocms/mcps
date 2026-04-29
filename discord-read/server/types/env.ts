@@ -154,6 +154,13 @@ export const StateSchema = z.object({
     .describe(
       "When true, append the underlying error message to the user-facing reply when the bot fails. Use only when actively debugging — exposes internal details.",
     ),
+
+  INDEX_MESSAGES_TO_DB: z
+    .boolean()
+    .default(true)
+    .describe(
+      "When true (default), every Discord message the bot sees is upserted into Supabase (guilds, discord_channel, discord_member, discord_message) and edits/deletes are reflected. Set to false to skip all DB writes — useful for read-only deployments, smaller installs, or when you want to keep the DB free of message archives.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;
