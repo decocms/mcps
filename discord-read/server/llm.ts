@@ -414,32 +414,50 @@ export async function streamAgentResponse(
   const binding = getAgent(env);
   const direct = getDirectHttpAgent(env);
 
-  // Run a single attempt with a given thread_id. We isolate this so the
-  // outer try/catch can retry with a fresh thread_id when Mesh refuses
-  // the run because another pod claimed it (rolling deploys, brief
-  // multi-pod windows, etc.).
+  // Run a single attempt with a given thread_id. Binding is tried first
+  // so Mesh admin's monitoring/observability surfaces the call (it only
+  // traces requests that arrive through the @decocms/runtime SDK proxy);
+  // when the binding throws, the direct-HTTP path runs and exposes the
+  // raw SSE / 5xx body for debugging in Lens.
+  //
+  // The outer try/catch on this helper handles claim-conflict retries
+  // (Mesh refuses concurrent runs on the same thread during rolling
+  // deploys).
   const attemptStream = async (currentThreadId: string | undefined) => {
     if (currentThreadId && agentId) {
       await ensureMeshThread(env, currentThreadId, agentId);
     }
+
+    let bindingErr: unknown;
+    if (binding) {
+      console.log(
+        `[LLM] streamAgentResponse: trying binding STREAM first (thread_id=${currentThreadId ?? "none"})`,
+      );
+      try {
+        return await binding.STREAM({
+          messages: uiMessages,
+          ...(currentThreadId ? { thread_id: currentThreadId } : {}),
+        });
+      } catch (err) {
+        bindingErr = err;
+        console.warn(
+          "[LLM] Binding STREAM failed, falling back to direct HTTP:",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
+
     if (direct) {
       console.log(
-        `[LLM] streamAgentResponse: trying direct HTTP first (thread_id=${currentThreadId ?? "none"})`,
+        `[LLM] streamAgentResponse: trying direct HTTP fallback (thread_id=${currentThreadId ?? "none"})`,
       );
       return await direct.STREAM({
         messages: uiMessages,
         ...(currentThreadId ? { thread_id: currentThreadId } : {}),
       });
     }
-    if (binding) {
-      console.log(
-        `[LLM] streamAgentResponse: trying binding STREAM (thread_id=${currentThreadId ?? "none"})`,
-      );
-      return await binding.STREAM({
-        messages: uiMessages,
-        ...(currentThreadId ? { thread_id: currentThreadId } : {}),
-      });
-    }
+
+    if (bindingErr) throw bindingErr;
     return null;
   };
 
