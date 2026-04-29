@@ -354,46 +354,81 @@ export async function streamAgentResponse(
     `[LLM] streamAgentResponse: connectionId=${connectionId} agentMetaKeys=${agentMeta ? Object.keys(agentMeta).join(",") : "none"} agentMetaValue=${agentMeta?.value ?? "undefined"} instanceAgentId=${instance?.agentId ?? "undefined"} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"}`,
   );
 
-  // Best-effort thread creation. On failure we still try STREAM — Mesh
-  // will throw a precise error if the thread really must exist.
-  if (threadId && agentId) {
-    await ensureMeshThread(env, threadId, agentId);
-  }
-
-  // Try direct HTTP first while we are diagnosing the empty-stream issue.
-  // The binding's readUIMessageStream parser may be swallowing content
-  // we cannot see; the direct path lets us log raw SSE lines from Mesh.
-  // Falls back to the binding if direct cannot be assembled (e.g. agent_id
-  // missing).
+  const binding = getAgent(env);
   const direct = getDirectHttpAgent(env);
-  if (direct) {
-    try {
-      console.log("[LLM] streamAgentResponse: trying direct HTTP first");
+
+  // Run a single attempt with a given thread_id. We isolate this so the
+  // outer try/catch can retry with a fresh thread_id when Mesh refuses
+  // the run because another pod claimed it (rolling deploys, brief
+  // multi-pod windows, etc.).
+  const attemptStream = async (currentThreadId: string | undefined) => {
+    if (currentThreadId && agentId) {
+      await ensureMeshThread(env, currentThreadId, agentId);
+    }
+    if (direct) {
+      console.log(
+        `[LLM] streamAgentResponse: trying direct HTTP first (thread_id=${currentThreadId ?? "none"})`,
+      );
       return await direct.STREAM({
         messages: uiMessages,
-        ...(threadId ? { thread_id: threadId } : {}),
+        ...(currentThreadId ? { thread_id: currentThreadId } : {}),
       });
-    } catch (err) {
-      console.warn(
-        "[LLM] Direct HTTP STREAM failed, falling back to binding:",
-        err instanceof Error ? err.message : String(err),
-      );
     }
-  }
-
-  const binding = getAgent(env);
-  if (binding) {
-    try {
-      console.log("[LLM] streamAgentResponse: trying binding STREAM");
+    if (binding) {
+      console.log(
+        `[LLM] streamAgentResponse: trying binding STREAM (thread_id=${currentThreadId ?? "none"})`,
+      );
       return await binding.STREAM({
         messages: uiMessages,
-        ...(threadId ? { thread_id: threadId } : {}),
+        ...(currentThreadId ? { thread_id: currentThreadId } : {}),
       });
+    }
+    return null;
+  };
+
+  // Detect the runtime errors that mean "this thread is busy on another
+  // pod" so we know to retry with a fresh, never-used thread id.
+  const isClaimConflict = (err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return (
+      msg.includes("already running on another pod") ||
+      msg.includes("Failed to claim run")
+    );
+  };
+
+  if (binding || direct) {
+    try {
+      const stream = await attemptStream(threadId);
+      if (stream) return stream;
     } catch (err) {
-      console.warn(
-        "[LLM] Binding STREAM failed:",
-        err instanceof Error ? err.message : String(err),
-      );
+      if (!isClaimConflict(err)) {
+        // Real failure — surface it via the outer fallback chain so the
+        // catch in messageHandler renders a useful message.
+        console.warn(
+          "[LLM] STREAM failed (non-claim):",
+          err instanceof Error ? err.message : String(err),
+        );
+      } else {
+        // Mesh's runRegistry is holding the thread for another pod (rolling
+        // deploy, stale lock). Retry once with a thread id we are certain
+        // has never been claimed before — this loses the agent's persistent
+        // memory for this turn but unblocks the user.
+        const retryThreadId = `${threadId ?? "discord-bot"}-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`;
+        console.warn(
+          `[LLM] Run claim conflict; retrying with fresh thread_id=${retryThreadId}`,
+        );
+        try {
+          const retryStream = await attemptStream(retryThreadId);
+          if (retryStream) return retryStream;
+        } catch (retryErr) {
+          console.warn(
+            "[LLM] Retry STREAM also failed:",
+            retryErr instanceof Error ? retryErr.message : String(retryErr),
+          );
+        }
+      }
     }
   }
 
