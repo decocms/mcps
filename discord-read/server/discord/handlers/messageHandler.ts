@@ -495,9 +495,15 @@ async function handleDefaultAgent(
     // cause our system messages to be ignored. Putting the IDs in the
     // user-visible content guarantees the agent sees them and can pass
     // them to Discord MCP tools (DISCORD_GET_MEMBER, DISCORD_SEND_MESSAGE,
-    // etc.) without asking the user for them.
-    const contextHeader = isDM
-      ? `[Discord DM | speaker: ${message.author.username} (user_id: ${message.author.id})]`
+    // etc.) without asking the user for them. The channel-specific
+    // prompt (configured via discord_channel_context in Supabase) is
+    // appended to the same block so it survives the agent's own system
+    // instructions for the same reason.
+    const contextLines: Array<string | null> = isDM
+      ? [
+          "[Discord DM]",
+          `- speaker: ${message.author.username} (user_id: ${message.author.id})`,
+        ]
       : [
           "[Discord context]",
           message.guild?.name && message.guild?.id
@@ -507,9 +513,11 @@ async function handleDefaultAgent(
             ? `- channel: #${channelName} (channel_id: ${message.channel.id})`
             : null,
           `- speaker: ${message.author.username} (user_id: ${message.author.id})`,
-        ]
-          .filter(Boolean)
-          .join("\n");
+        ];
+    if (channelPrompt) {
+      contextLines.push("", "[Channel-specific instructions]", channelPrompt);
+    }
+    const contextHeader = contextLines.filter(Boolean).join("\n");
     fullUserInput = `${contextHeader}\n\n${fullUserInput}`;
 
     // Add user message with images if present
