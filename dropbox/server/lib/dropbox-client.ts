@@ -39,11 +39,8 @@ export function getAccessToken(env: Env): string {
       "Missing authorization header. Please authenticate with Dropbox first.",
     );
   }
-  const match = auth.match(/^Bearer\s+(.+)$/i);
-  if (!match || !match[1].trim()) {
-    throw new Error("Invalid authorization header. Expected Bearer token.");
-  }
-  return match[1].trim();
+  // Mesh may deliver the token raw or with a "Bearer " prefix — strip if present.
+  return auth.replace(/^Bearer\s+/i, "").trim();
 }
 
 /** Convenience for tool execute(): pull env off the AppContext ctx arg. */
