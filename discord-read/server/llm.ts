@@ -197,6 +197,9 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   const token = ctx?.token;
 
   if (!agentId || !meshUrl || !orgPath || !token) {
+    console.warn(
+      `[LLM] getDirectHttpAgent returning null. agentId=${!!agentId} meshUrl=${!!meshUrl} orgPath=${!!orgPath} token=${!!token} stateKeys=${state ? Object.keys(state).join(",") : "none"} agentMetaKeys=${agentMeta ? Object.keys(agentMeta).join(",") : "none"}`,
+    );
     return null;
   }
 
@@ -333,14 +336,20 @@ export async function streamAgentResponse(
     });
   }
 
-  throw new Error(
-    "Agent not configured.\n\n" +
-      "🔧 **How to fix:**\n" +
-      "1. Open **Mesh Dashboard**\n" +
-      "2. Go to this MCP's configuration\n" +
-      "3. Configure **AGENT** binding\n" +
-      "4. Click **Save** to apply",
-  );
+  // Both binding and direct HTTP returned null. Build a precise message
+  // so the operator (with DEBUG_ERRORS_TO_CHAT on) sees exactly which
+  // input is missing instead of the generic "Agent not configured".
+  const diag = {
+    binding: !!binding,
+    agentId: agentId ?? null,
+    meshUrl: !!ctx?.meshUrl,
+    orgPath:
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      !!((ctx as any)?.organizationSlug || ctx?.organizationId),
+    token: !!ctx?.token,
+    stateKeys: state ? Object.keys(state) : [],
+  };
+  throw new Error(`Agent not configured. Debug: ${JSON.stringify(diag)}`);
 }
 
 /**
