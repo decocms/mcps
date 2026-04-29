@@ -33,6 +33,13 @@ export interface BotInstance {
   channelContextCache: Map<string, CachedChannelContext>;
   superAdmins: string[];
   whisperConfig: WhisperConfig | null;
+  // Stable agent identifier extracted from the raw config.state.AGENT
+  // metadata (`{__type, value}`). After Mesh fires onChange the runtime
+  // env exposes state.AGENT as a Proxy that only carries .STREAM — the
+  // underlying `value` (= the Mesh agent id) is no longer reachable.
+  // Stash it here so llm.ts can still feed agent_id to ensureMeshThread
+  // and to the direct-HTTP fallback.
+  agentId?: string;
 }
 
 // The registry — keyed by connectionId

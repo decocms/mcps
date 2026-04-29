@@ -190,7 +190,12 @@ function getDirectHttpAgent(env: Env): AgentClient | null {
   const ctx = env.MESH_REQUEST_CONTEXT;
   const state = ctx?.state as Record<string, unknown> | undefined;
   const agentMeta = state?.AGENT as { id?: string; value?: string } | undefined;
-  const agentId = agentMeta?.value ?? agentMeta?.id;
+  const connectionId = ctx?.connectionId;
+  const instance = connectionId ? getInstance(connectionId) : undefined;
+  // After Mesh fires onChange, state.AGENT is a Proxy with only .STREAM —
+  // .value is undefined. Fall back to the agentId we stashed on the
+  // instance during onChange / bootstrap.
+  const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
   const meshUrl = ctx?.meshUrl;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orgPath = (ctx as any)?.organizationSlug || ctx?.organizationId;
@@ -305,7 +310,9 @@ export async function streamAgentResponse(
   const ctx = env.MESH_REQUEST_CONTEXT;
   const state = ctx?.state as Record<string, unknown> | undefined;
   const agentMeta = state?.AGENT as { id?: string; value?: string } | undefined;
-  const agentId = agentMeta?.value ?? agentMeta?.id;
+  const connectionId = ctx?.connectionId;
+  const instance = connectionId ? getInstance(connectionId) : undefined;
+  const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
 
   // Best-effort thread creation. On failure we still try STREAM — Mesh
   // will throw a precise error if the thread really must exist.

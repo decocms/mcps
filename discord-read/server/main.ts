@@ -162,6 +162,23 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         );
       }
 
+      // Stash the Mesh agent id on the instance from the RAW config.state
+      // (which still has `AGENT: {__type, value, ...}` metadata). After this
+      // onChange returns, env.state.AGENT is replaced by a resolved Proxy
+      // that no longer exposes `.value`, so we'd lose the id otherwise.
+      if (connectionId) {
+        const rawAgent = (rawState as Record<string, unknown> | undefined)
+          ?.AGENT as { id?: string; value?: string } | undefined;
+        const agentIdFromRaw = rawAgent?.value ?? rawAgent?.id;
+        if (agentIdFromRaw) {
+          const instance = getOrCreateInstance(connectionId, env);
+          instance.agentId = agentIdFromRaw;
+          console.log(
+            `[CONFIG] Stashed agent_id for ${connectionId}: ${agentIdFromRaw}`,
+          );
+        }
+      }
+
       // Sync to config-cache — merge with existing config for missing fields
       const existingConfig = connectionId
         ? await getDiscordConfig(connectionId)
@@ -412,6 +429,17 @@ async function bootstrapFromSupabase(): Promise<void> {
 
       // Ensure instance is created (superAdmins come from StateSchema on next onChange)
       const instance = getOrCreateInstance(connectionId, syntheticEnv);
+
+      // Stash agent_id from the persisted state.AGENT metadata so the LLM
+      // path can call ensureMeshThread + direct HTTP fallback on the very
+      // first message — without waiting for Mesh to fire onChange.
+      const persistedAgent = (
+        row.state as Record<string, unknown> | null | undefined
+      )?.AGENT as { id?: string; value?: string } | undefined;
+      const persistedAgentId = persistedAgent?.value ?? persistedAgent?.id;
+      if (persistedAgentId) {
+        instance.agentId = persistedAgentId;
+      }
 
       // If another connection already started a client for this token, share it
       const ownerConnectionId = tokenToOwner.get(row.bot_token);
