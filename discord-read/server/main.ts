@@ -437,8 +437,14 @@ async function bootstrapFromSupabase(): Promise<void> {
         row.state as Record<string, unknown> | null | undefined
       )?.AGENT as { id?: string; value?: string } | undefined;
       const persistedAgentId = persistedAgent?.value ?? persistedAgent?.id;
+      console.log(
+        `[BOOTSTRAP] ${connectionId} agent stash: stateType=${typeof row.state} stateNull=${row.state === null} agentMetaKeys=${persistedAgent ? Object.keys(persistedAgent).join(",") : "none"} persistedAgentId=${persistedAgentId ?? "null"}`,
+      );
       if (persistedAgentId) {
         instance.agentId = persistedAgentId;
+        console.log(
+          `[BOOTSTRAP] ${connectionId} instance.agentId set to ${persistedAgentId}`,
+        );
       }
 
       // If another connection already started a client for this token, share it

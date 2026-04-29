@@ -330,6 +330,10 @@ export async function streamAgentResponse(
   const instance = connectionId ? getInstance(connectionId) : undefined;
   const agentId = agentMeta?.value ?? agentMeta?.id ?? instance?.agentId;
 
+  console.log(
+    `[LLM] streamAgentResponse: connectionId=${connectionId} agentMetaKeys=${agentMeta ? Object.keys(agentMeta).join(",") : "none"} agentMetaValue=${agentMeta?.value ?? "undefined"} instanceAgentId=${instance?.agentId ?? "undefined"} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"}`,
+  );
+
   // Best-effort thread creation. On failure we still try STREAM — Mesh
   // will throw a precise error if the thread really must exist.
   if (threadId && agentId) {
