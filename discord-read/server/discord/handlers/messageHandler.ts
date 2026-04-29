@@ -517,10 +517,17 @@ async function handleDefaultAgent(
 
     // Mesh requires a pre-existing thread (taskId). streamAgentResponse
     // creates it idempotently before calling STREAM, with created_by stamped
-    // as the bot's API-key user so ownership is consistent across all
-    // Discord users that map into this thread. Scope by (channel, author)
-    // so each user has independent agent memory per channel.
-    const threadId = `discord-${message.channel.id}-${message.author.id}`;
+    // as the bot's API-key user.
+    //
+    // The thread_id is namespaced with the bot's Discord user id so it
+    // (a) never collides with threads created by Mesh Studio sessions or by
+    //     prior versions of this bot under different auth contexts —
+    //     COLLECTION_THREADS_CREATE is INSERT...ON CONFLICT DO NOTHING and
+    //     does not update created_by, so a stale row owned by a different
+    //     userId would permanently block writes ("you are not the owner");
+    // (b) keeps independent agent memory per (bot, channel, user).
+    const botUserId = message.client.user?.id ?? "unknown-bot";
+    const threadId = `discord-bot-${botUserId}-${message.channel.id}-${message.author.id}`;
     const stream = await streamAgentResponse(env, llmMessages, threadId);
 
     if (thinkingMsg && useStreaming) {
