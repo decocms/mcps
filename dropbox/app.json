@@ -1,0 +1,30 @@
+{
+  "scopeName": "deco",
+  "name": "dropbox-mcp",
+  "friendlyName": "Dropbox",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://dropbox-mcp.decocms.com/mcp"
+  },
+  "description": "Dropbox MCP — OAuth-authenticated tools for files, folders, sharing, and account info via Dropbox API v2",
+  "icon": "https://aem.dropbox.com/cms/content/dam/dropbox/www/en-us/branding/dropbox-logo-glyph-blue.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": [
+      "Productivity",
+      "Storage"
+    ],
+    "official": false,
+    "tags": [
+      "dropbox",
+      "files",
+      "storage",
+      "cloud-storage",
+      "sharing",
+      "documents",
+      "sync"
+    ],
+    "short_description": "Dropbox file operations, sharing, and account info via OAuth",
+    "mesh_description": "The Dropbox MCP exposes Dropbox API v2 to AI agents via OAuth 2.0 with PKCE and offline refresh tokens. Tools cover file/folder browsing (list_folder, search, get_metadata), content I/O (download, upload, temporary links), mutations (create_folder, move, copy, delete, restore, list_revisions), sharing (create_shared_link, list_shared_links, share_folder, add_folder_member), and account info (get_current_account, get_space_usage). Uses least-privilege scopes (account_info.read, files.metadata.{read,write}, files.content.{read,write}, sharing.{read,write})."
+  }
+}

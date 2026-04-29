@@ -1,0 +1,15 @@
+name = "dropbox-mcp"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "dropbox-mcp.decocms.com", custom_domain = true },
+]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true

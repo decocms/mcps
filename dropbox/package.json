@@ -1,0 +1,31 @@
+{
+  "name": "dropbox",
+  "version": "1.0.0",
+  "description": "Dropbox MCP — OAuth-authenticated tools for Dropbox API v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx wrangler dev",
+    "check": "tsc --noEmit",
+    "test": "bun test",
+    "build": "bunx wrangler deploy --dry-run --outdir=dist",
+    "deploy": "bunx wrangler deploy"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.4.0",
+    "@decocms/runtime": "^1.6.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251014.0",
+    "@decocms/mcps-shared": "1.0.0",
+    "@types/bun": "^1.2.14",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.28.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
