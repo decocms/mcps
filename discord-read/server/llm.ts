@@ -102,14 +102,27 @@ const SIMPLE_MODE_TTL_MS = 5 * 60 * 1000;
 async function getOrgSimpleMode(env: Env): Promise<SimpleModeConfig | null> {
   const ctx = env.MESH_REQUEST_CONTEXT;
   const orgId = ctx?.organizationId;
-  if (!orgId) return null;
+  if (!orgId) {
+    console.warn("[LLM] getOrgSimpleMode: no organizationId in context");
+    return null;
+  }
 
   const cached = simpleModeCache.get(orgId);
-  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  if (cached && cached.expiresAt > Date.now()) {
+    console.log(
+      `[LLM] simple_mode cache hit for ${orgId}: enabled=${cached.value?.enabled ?? "null"}`,
+    );
+    return cached.value;
+  }
 
   const url = getSelfMcpUrl(env);
   const token = ctx?.token;
-  if (!url || !token) return null;
+  if (!url || !token) {
+    console.warn(
+      `[LLM] getOrgSimpleMode: missing url=${!!url} token=${!!token}`,
+    );
+    return null;
+  }
 
   try {
     const response = await fetch(url, {
@@ -131,13 +144,13 @@ async function getOrgSimpleMode(env: Env): Promise<SimpleModeConfig | null> {
       }),
     });
     if (!response.ok) {
+      const text = await response.text().catch(() => "");
       console.warn(
-        `[LLM] ORGANIZATION_SETTINGS_GET non-2xx ${response.status}`,
+        `[LLM] ORGANIZATION_SETTINGS_GET non-2xx ${response.status}: ${text.slice(0, 300)}`,
       );
-      simpleModeCache.set(orgId, {
-        value: null,
-        expiresAt: Date.now() + SIMPLE_MODE_TTL_MS,
-      });
+      // Don't cache failures — retry on the next message so a transient
+      // SELF MCP outage doesn't pin the bot to the default model for 5
+      // minutes.
       return null;
     }
     const body = (await response.json()) as {
@@ -159,10 +172,6 @@ async function getOrgSimpleMode(env: Env): Promise<SimpleModeConfig | null> {
       "[LLM] getOrgSimpleMode failed:",
       err instanceof Error ? err.message : String(err),
     );
-    simpleModeCache.set(orgId, {
-      value: null,
-      expiresAt: Date.now() + SIMPLE_MODE_TTL_MS,
-    });
     return null;
   }
 }
@@ -532,13 +541,52 @@ export async function streamAgentResponse(
       simpleMode.chat.fast ??
       simpleMode.chat.thinking)
     : null;
+  // Build the model params with a robust fallback chain so the binding
+  // path always sends a `models` block. Order:
+  //  1. simple_mode tier (Studio's choice, org-level default)
+  //  2. state.LANGUAGE_MODEL.value (operator override on the connection)
+  //  3. instance.modelId stash (set in bootstrap from row.state)
+  //  4. hardcoded DEFAULT_MODEL_ID (openai/gpt-4o-mini) when there's a
+  //     credential to attach it to
+  // Without this, when simple_mode resolution fails the binding sends no
+  // `models` block and Mesh's resolveDefaultModels picks the org's first
+  // AI key + first model = often a free-tier OpenRouter that returns
+  // empty for tool-using agents.
+  const stateModelMeta = state?.LANGUAGE_MODEL as
+    | { id?: string; value?: string }
+    | undefined;
+  const stateProviderMeta = state?.MODEL_PROVIDER as
+    | { id?: string; value?: string }
+    | undefined;
+  const asStr = (v: unknown): string | undefined =>
+    typeof v === "string" && v.length > 0 ? v : undefined;
+  const FALLBACK_MODEL_ID = "openai/gpt-4o-mini";
+
   const tierCredentialId = simpleSlot?.keyId;
-  const tierThinking = simpleSlot
-    ? { id: simpleSlot.modelId, title: simpleSlot.title || simpleSlot.modelId }
+  const tierModelId = simpleSlot?.modelId;
+  const tierTitle = simpleSlot?.title;
+
+  const finalCredentialId =
+    tierCredentialId ||
+    asStr(stateProviderMeta?.value) ||
+    asStr(stateProviderMeta?.id) ||
+    instance?.modelProviderId;
+
+  const finalModelId =
+    tierModelId ||
+    asStr(stateModelMeta?.value) ||
+    asStr(stateModelMeta?.id) ||
+    instance?.modelId ||
+    (finalCredentialId ? FALLBACK_MODEL_ID : undefined);
+
+  const finalTitle = tierTitle || finalModelId;
+
+  const tierThinking = finalModelId
+    ? { id: finalModelId, title: finalTitle || finalModelId }
     : undefined;
 
   console.log(
-    `[LLM] streamAgentResponse: connectionId=${connectionId} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"} tier=${tier} simpleModelId=${tierThinking?.id ?? "n/a"}`,
+    `[LLM] streamAgentResponse: connectionId=${connectionId} resolvedAgentId=${agentId ?? "null"} threadId=${threadId ?? "null"} tier=${tier} simpleModelId=${tierModelId ?? "n/a"} finalModelId=${finalModelId ?? "n/a"} finalCredentialId=${finalCredentialId ?? "n/a"}`,
   );
 
   const binding = getAgent(env);
@@ -563,9 +611,10 @@ export async function streamAgentResponse(
       await ensureMeshThread(env, currentThreadId, agentId);
     }
 
-    const modelParams = tierThinking
-      ? { credentialId: tierCredentialId, thinking: tierThinking }
-      : {};
+    const modelParams =
+      tierThinking && finalCredentialId
+        ? { credentialId: finalCredentialId, thinking: tierThinking }
+        : {};
     // Force auto-approval — the agent binding's persisted config on this
     // org is "readonly", which makes Mesh surface an interactive approval
     // prompt for every tool call. Discord can't render that UI so the
