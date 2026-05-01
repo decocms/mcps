@@ -40,16 +40,16 @@ export const updateProductSpecifications = (env: Env) =>
   createTool({
     id: "VTEX_UPDATE_PRODUCT_SPECIFICATIONS",
     description:
-      "Replace all specifications for a product (bulk PUT). Pass the complete set — values not included are removed. Caller does GET → merge → PUT for partial updates. Counterpart of VTEX_GET_PRODUCT_SPECIFICATIONS.",
+      "Replace all specifications for a product. Pass the complete set — values not included are removed. Caller does GET → merge → POST for partial updates. Counterpart of VTEX_GET_PRODUCT_SPECIFICATIONS.",
     inputSchema,
     outputSchema,
     execute: async ({ context }) => {
       const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
-      const url = `https://${credentials.accountName}.vtexcommercestable.com.br/api/catalog/pvt/product/${context.productId}/specification`;
-      console.log("[VTEX] PUT", url);
+      const url = `https://${credentials.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/products/${context.productId}/specification`;
+      console.log("[VTEX] POST", url);
 
       const response = await fetch(url, {
-        method: "PUT",
+        method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
