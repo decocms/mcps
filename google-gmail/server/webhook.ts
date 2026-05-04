@@ -24,10 +24,7 @@ import {
   type MessageMetadata,
 } from "./lib/gmail-history.ts";
 import { getAccessTokenForConnection } from "./lib/google-token.ts";
-import {
-  getLastHistoryId,
-  setLastHistoryId,
-} from "./lib/oauth-store.ts";
+import { getLastHistoryId, setLastHistoryId } from "./lib/oauth-store.ts";
 import type { Env } from "./types/env.ts";
 
 interface PubSubPushMessage {

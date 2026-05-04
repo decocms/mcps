@@ -227,7 +227,9 @@ async function scheduled(
 ): Promise<void> {
   setTriggerKV(env.EMAIL_MAP);
   setOAuthKV(env.EMAIL_MAP);
-  console.log(`[Cron] tick cron=${event.cron} scheduledTime=${event.scheduledTime}`);
+  console.log(
+    `[Cron] tick cron=${event.cron} scheduledTime=${event.scheduledTime}`,
+  );
   ctx.waitUntil(renewAllWatches(env));
 }
 
