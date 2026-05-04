@@ -10,7 +10,6 @@
 
 import { ENDPOINTS } from "../constants.ts";
 import { getAccessTokenForConnection } from "./google-token.ts";
-import { setLastHistoryId } from "./oauth-store.ts";
 import type { Env } from "../types/env.ts";
 
 const CONN_PREFIX = "conn:";
@@ -65,14 +64,13 @@ async function renewWatchForConnection(
 
   const data = (await res.json()) as WatchResponse;
 
-  // Re-anchor the historyId so any messages that arrived between the
-  // previous watch expiring and this renewal aren't replayed against a
-  // stale starting point. (Gmail only retains ~7 days of history; if
-  // we're up-to-date we'd be re-querying empty space anyway.)
-  await setLastHistoryId(env.EMAIL_MAP, connectionId, data.historyId);
-
+  // Deliberately *not* touching `history:<connectionId>` here. The
+  // webhook handler is the only writer of the high-water mark — if
+  // we re-anchor on every 6h tick we'd silently drop any unprocessed
+  // history between the last webhook and now. The webhook itself
+  // re-anchors on stale 404s.
   console.log(
-    `[Cron] ✓ renewed watch for connection=${connectionId}, expires ${data.expiration}`,
+    `[Cron] ✓ renewed watch for connection=${connectionId}, expires ${data.expiration} (returned historyId=${data.historyId})`,
   );
   return { ok: true };
 }

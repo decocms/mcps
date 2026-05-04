@@ -112,7 +112,12 @@ function buildEventData(
     emailAddress,
     messageId: meta.id,
     threadId: meta.threadId,
-    from: meta.from,
+    // `from` is the canonical key for the trigger filter — bare
+    // lowercased address so mesh's strict `data.from === param.from`
+    // can match `from: "alice@example.com"`. Raw header is preserved
+    // as `fromHeader` for display.
+    from: meta.fromAddress,
+    fromHeader: meta.from,
     to: meta.to,
     subject: meta.subject,
     snippet: meta.snippet,
@@ -135,6 +140,12 @@ async function processNotification(
   if (!triggerState) {
     console.log(
       `[Webhook] ⚠ delivery=${deliveryId} no trigger state for connection=${connectionId} — nobody subscribed`,
+    );
+    return;
+  }
+  if (!triggerState.activeTriggerTypes.includes(EVENT_TYPE)) {
+    console.log(
+      `[Webhook] ⚠ delivery=${deliveryId} ${EVENT_TYPE} not active for connection=${connectionId} — skipping`,
     );
     return;
   }
@@ -203,15 +214,21 @@ export async function handleGmailWebhook(
   env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
+  // Fail closed. An empty secret used to skip the check entirely, which
+  // let an unauthenticated caller spoof Pub/Sub deliveries for any
+  // mapped email. Treat missing secret as a deployment misconfig.
   const webhookSecret = process.env.GMAIL_WEBHOOK_SECRET || "";
-
-  if (webhookSecret) {
-    const url = new URL(req.url);
-    const token = url.searchParams.get("token");
-    if (token !== webhookSecret) {
-      console.warn(`[Webhook] ✗ rejected: invalid or missing token`);
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!webhookSecret) {
+    console.error(
+      "[Webhook] ✗ GMAIL_WEBHOOK_SECRET not set — refusing delivery",
+    );
+    return Response.json({ error: "Misconfigured worker" }, { status: 500 });
+  }
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token");
+  if (token !== webhookSecret) {
+    console.warn(`[Webhook] ✗ rejected: invalid or missing token`);
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: PubSubPushMessage;

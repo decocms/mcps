@@ -11,7 +11,11 @@ export interface MessageMetadata {
   threadId: string;
   labelIds: string[];
   snippet: string;
+  /** Raw `From` header value, e.g. `"Alice" <alice@example.com>`. */
   from?: string;
+  /** Bare lowercased sender address parsed out of `from`. Used as the
+   *  canonical key for the `from` trigger filter (mesh does strict ===). */
+  fromAddress?: string;
   to?: string;
   subject?: string;
   date?: string;
@@ -118,6 +122,23 @@ function headerValue(
 }
 
 /**
+ * Extract the bare email address from an RFC 5322 From header value.
+ * Handles `"Name" <addr@example.com>`, `Name <addr@example.com>`, and
+ * raw `addr@example.com`. Returns the address lowercased so the trigger
+ * filter (mesh does strict ===) is case-insensitive on the user's
+ * configured value.
+ */
+export function extractEmailAddress(
+  headerValue: string | undefined,
+): string | undefined {
+  if (!headerValue) return undefined;
+  const angle = headerValue.match(/<([^>]+)>/);
+  const raw = (angle ? angle[1] : headerValue).trim().toLowerCase();
+  // Cheap sanity check — must look like an email
+  return raw.includes("@") ? raw : undefined;
+}
+
+/**
  * Fetch metadata-only payload for a single message — fast and cheap
  * (no body), enough to populate from/subject/snippet for the trigger.
  */
@@ -146,12 +167,14 @@ export async function getMessageMetadata(
   const raw = (await res.json()) as RawMessage;
   const headers = raw.payload?.headers ?? [];
 
+  const fromHeader = headerValue(headers, "From");
   return {
     id: raw.id,
     threadId: raw.threadId,
     labelIds: raw.labelIds ?? [],
     snippet: raw.snippet ?? "",
-    from: headerValue(headers, "From"),
+    from: fromHeader,
+    fromAddress: extractEmailAddress(fromHeader),
     to: headerValue(headers, "To"),
     subject: headerValue(headers, "Subject"),
     date: headerValue(headers, "Date"),

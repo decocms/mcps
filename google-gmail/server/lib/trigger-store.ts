@@ -50,19 +50,20 @@ export const triggers = createTriggers({
     {
       type: "gmail.message.received",
       description:
-        "Triggered when a new email lands in INBOX. Optionally filter by sender or subject substring.",
+        "Triggered when a new email lands in INBOX. Optional exact-match filter on the sender's address.",
+      // Mesh's paramsMatch does strict `data[key] === value` (see
+      // apps/mesh/src/automations/event-trigger-engine.ts), so only
+      // exact-equality filters are useful here. Substring matching
+      // (e.g. "subject contains 'invoice'") and array-contains (e.g.
+      // "labelIds includes IMPORTANT") would need first-class support
+      // in mesh; the full payload is still in `data` for downstream
+      // filtering inside the workflow itself.
       params: z.object({
         from: z
           .string()
           .optional()
           .describe(
-            "Match only when the sender's address contains this substring (case-insensitive). Leave empty to match any sender.",
-          ),
-        subject_contains: z
-          .string()
-          .optional()
-          .describe(
-            "Match only when the subject contains this substring (case-insensitive). Leave empty to match any subject.",
+            "Match only emails sent from this exact address (e.g. alice@example.com). Leave empty for any sender.",
           ),
       }),
     },
