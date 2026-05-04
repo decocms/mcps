@@ -14,6 +14,13 @@ enabled = true
 enabled = true
 invocation_logs = true
 
+# Gmail's `users.watch` expires within 7 days. Renew every 6 hours so a
+# transient API failure doesn't take down notifications for an entire
+# day. The scheduled() handler iterates every connection in EMAIL_MAP
+# and re-issues watch() with a freshly-refreshed access token.
+[triggers]
+crons = ["0 */6 * * *"]
+
 # Email → connection mapping (and `triggers:*` subscription state under
 # the same namespace). Workers isolates are ephemeral, so we can't keep
 # this in memory between webhook deliveries / cold starts.
