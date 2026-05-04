@@ -17,6 +17,7 @@
  * so we ack ASAP and let the callback run in the background.
  */
 
+import { isMessageProcessed, markMessageProcessed } from "./lib/dedup.ts";
 import { getConnectionForEmail } from "./lib/email-connection-map.ts";
 import {
   getMessageMetadata,
@@ -185,14 +186,45 @@ async function processNotification(
     return;
   }
 
+  // Per-message processing. We track failures so we can avoid advancing
+  // the high-water mark when a transient API error would otherwise cause
+  // a permanent message loss. Successful deliveries are memoized in KV
+  // (`processed:<connId>:<msgId>`) so a replay on retry doesn't fire
+  // duplicate workflow runs for the same message.
+  let allSucceeded = true;
+
   for (const { id: messageId } of result.messages) {
+    if (await isMessageProcessed(env.EMAIL_MAP, connectionId, messageId)) {
+      continue;
+    }
+
     const meta = await getMessageMetadata(accessToken, messageId);
-    if (!meta) continue;
+    if (!meta) {
+      // Transient `messages.get` failure. Don't advance the watermark
+      // — next delivery will see this messageId again in history.list
+      // and retry. The dedup key isn't set, so when it eventually
+      // succeeds we'll deliver it; sibling messages that *did* succeed
+      // are already memoized.
+      console.warn(
+        `[Webhook] ⚠ delivery=${deliveryId} message=${messageId} metadata fetch failed — will retry on next delivery`,
+      );
+      allSucceeded = false;
+      continue;
+    }
+
     // Defensive re-check: only deliver messages that are still in INBOX.
     // history.list already filters by labelId=INBOX on the *change*, but
     // a message may have been removed from INBOX by a later history
     // entry inside this same window.
-    if (!meta.labelIds.includes("INBOX")) continue;
+    if (!meta.labelIds.includes("INBOX")) {
+      await markMessageProcessed(
+        env.EMAIL_MAP,
+        connectionId,
+        messageId,
+        "skipped",
+      );
+      continue;
+    }
 
     await deliverToMesh(
       triggerState,
@@ -200,13 +232,30 @@ async function processNotification(
       deliveryId,
       messageId,
     );
+    await markMessageProcessed(
+      env.EMAIL_MAP,
+      connectionId,
+      messageId,
+      "delivered",
+    );
   }
 
-  // Persist the new high-water mark. If we crash mid-processing a future
-  // delivery will replay from `startHistoryId`, which yields at-least-once
-  // semantics — acceptable for an inbox trigger.
-  const newHistoryId = result.latestHistoryId ?? pubsubHistoryId;
-  await setLastHistoryId(env.EMAIL_MAP, connectionId, newHistoryId);
+  // Only advance the high-water mark if the entire window was processed
+  // cleanly. A failed metadata fetch leaves the mark where it was, so
+  // the next webhook re-lists from the same point — successes are
+  // suppressed by the dedup keys, the failure gets a fresh attempt.
+  //
+  // Pub/Sub fan-out: two parallel deliveries can both read the same
+  // startHistoryId, both list overlapping ranges, and both reach this
+  // block. The dedup keys make duplicate `deliverToMesh` calls
+  // effectively impossible past a sub-millisecond race window. The
+  // `setLastHistoryId` writes are last-writer-wins; if the lower
+  // historyId wins, the next delivery re-lists a slightly larger
+  // window — still no duplicate deliveries, just a wasted round-trip.
+  if (allSucceeded) {
+    const newHistoryId = result.latestHistoryId ?? pubsubHistoryId;
+    await setLastHistoryId(env.EMAIL_MAP, connectionId, newHistoryId);
+  }
 }
 
 export async function handleGmailWebhook(

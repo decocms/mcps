@@ -50,20 +50,31 @@ export const triggers = createTriggers({
     {
       type: "gmail.message.received",
       description:
-        "Triggered when a new email lands in INBOX. Optional exact-match filter on the sender's address.",
-      // Mesh's paramsMatch does strict `data[key] === value` (see
-      // apps/mesh/src/automations/event-trigger-engine.ts), so only
-      // exact-equality filters are useful here. Substring matching
-      // (e.g. "subject contains 'invoice'") and array-contains (e.g.
-      // "labelIds includes IMPORTANT") would need first-class support
-      // in mesh; the full payload is still in `data` for downstream
-      // filtering inside the workflow itself.
+        "Triggered when a new email lands in INBOX. Optional filters on sender address or Gmail label.",
+      // Mesh's paramsMatch (see studio/apps/mesh/src/automations/event-
+      // trigger-engine.ts) supports strict `data[key] === value` plus
+      // an array-includes sugar: when `data[key]` is an array and the
+      // user's param value is a scalar, it matches via `array.includes`.
+      // That's why `labelIds` works as a string filter even though the
+      // emitted payload is an array.
+      //
+      // Substring matching (`{ op: "contains" }`) is also supported by
+      // mesh but requires the user to enter operator-object JSON in the
+      // trigger config UI, which isn't ergonomic yet — adding fields
+      // like `subject_contains` will land once the UI / runtime grow
+      // first-class support for declaring matcher kinds per field.
       params: z.object({
         from: z
           .string()
           .optional()
           .describe(
             "Match only emails sent from this exact address (e.g. alice@example.com). Leave empty for any sender.",
+          ),
+        labelIds: z
+          .string()
+          .optional()
+          .describe(
+            "Match only emails carrying this Gmail label id (e.g. INBOX, IMPORTANT, STARRED, or a custom label id). Leave empty for any label.",
           ),
       }),
     },
