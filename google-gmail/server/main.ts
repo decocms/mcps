@@ -14,19 +14,10 @@
 import { withRuntime } from "@decocms/runtime";
 import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
-import { ENDPOINTS, GOOGLE_SCOPES } from "./constants.ts";
-import {
-  removeConnectionMappings,
-  setEmailMapping,
-} from "./lib/email-connection-map.ts";
-import {
-  claimPendingRefreshToken,
-  setLastHistoryId,
-  setOAuthKV,
-  setRefreshTokenForConnection,
-  stashPendingRefreshToken,
-} from "./lib/oauth-store.ts";
+import { GOOGLE_SCOPES } from "./constants.ts";
+import { setOAuthKV, stashPendingRefreshToken } from "./lib/oauth-store.ts";
 import { renewAllWatches } from "./lib/scheduled.ts";
+import { ensureGmailSetup } from "./lib/setup.ts";
 import { setTriggerKV } from "./lib/trigger-store.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, type Registry, StateSchema } from "./types/env.ts";
@@ -78,116 +69,20 @@ function getRuntime(): Runtime {
     oauth: buildOAuth(),
     configuration: {
       state: StateSchema,
+      // Mesh only invokes ON_MCP_CONFIGURATION (which fires this) when
+      // the user actually saves config state. With an empty StateSchema
+      // the user can authenticate and configure a trigger without ever
+      // touching that path, so onChange isn't a reliable setup hook on
+      // its own — every tool also runs the same idempotent setup via
+      // getAccessTokenWithSetup. Keeping onChange wired means setup
+      // *also* runs when the user does change config, which is cheaper
+      // than waiting for the first tool call.
       onChange: async (env) => {
         const token = env.MESH_REQUEST_CONTEXT?.authorization;
         const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
         if (!token || !connectionId) return;
-
-        if (!env.EMAIL_MAP) {
-          console.warn(
-            "[Gmail onChange] EMAIL_MAP binding missing — skipping mapping/watch setup",
-          );
-          return;
-        }
-
         const accessToken = token.replace(/^Bearer\s+/i, "");
-
-        try {
-          const profileRes = await fetch(ENDPOINTS.PROFILE, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-
-          if (!profileRes.ok) {
-            console.error(
-              `[Gmail onChange] Failed to fetch profile: ${profileRes.status}`,
-            );
-            return;
-          }
-
-          const profile = (await profileRes.json()) as {
-            emailAddress: string;
-            historyId: string;
-          };
-
-          // Drop any stale email→connection mapping owned by *this*
-          // connection before writing the new one (handles rebinding to
-          // a different mailbox).
-          await removeConnectionMappings(env.EMAIL_MAP, connectionId);
-          await setEmailMapping(
-            env.EMAIL_MAP,
-            profile.emailAddress,
-            connectionId,
-          );
-          console.log(
-            `[Gmail onChange] Mapped ${profile.emailAddress} → ${connectionId}`,
-          );
-
-          // Claim the refresh_token stashed at exchangeCode time and
-          // re-key it under the connectionId so webhook/cron contexts
-          // can pick it up.
-          const refreshToken = await claimPendingRefreshToken(
-            env.EMAIL_MAP,
-            accessToken,
-          );
-          if (refreshToken) {
-            await setRefreshTokenForConnection(
-              env.EMAIL_MAP,
-              connectionId,
-              refreshToken,
-            );
-            console.log(
-              `[Gmail onChange] Persisted refresh_token for connection=${connectionId}`,
-            );
-          } else {
-            console.warn(
-              `[Gmail onChange] No pending refresh_token for connection=${connectionId} — webhook delivery will fail until the user reauthenticates`,
-            );
-          }
-
-          const pubsubTopic = process.env.GMAIL_PUBSUB_TOPIC || "";
-          if (!pubsubTopic) {
-            console.warn(
-              "[Gmail onChange] GMAIL_PUBSUB_TOPIC not set — skipping users.watch (no webhook delivery)",
-            );
-            return;
-          }
-
-          const watchRes = await fetch(ENDPOINTS.WATCH, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              topicName: pubsubTopic,
-              labelIds: ["INBOX"],
-            }),
-          });
-
-          if (watchRes.ok) {
-            const watchData = (await watchRes.json()) as {
-              historyId: string;
-              expiration: string;
-            };
-            // Anchor the historyId so the first webhook delivery has a
-            // valid startHistoryId to diff against.
-            await setLastHistoryId(
-              env.EMAIL_MAP,
-              connectionId,
-              watchData.historyId,
-            );
-            console.log(
-              `[Gmail onChange] Watch registered for ${profile.emailAddress}, expires ${watchData.expiration}`,
-            );
-          } else {
-            const error = await watchRes.text();
-            console.error(
-              `[Gmail onChange] users.watch failed: ${watchRes.status} - ${error}`,
-            );
-          }
-        } catch (error) {
-          console.error("[Gmail onChange] Error:", error);
-        }
+        await ensureGmailSetup(env, accessToken, connectionId);
       },
     },
     tools,

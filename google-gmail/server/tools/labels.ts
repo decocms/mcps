@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
+import { GmailClient, getAccessTokenWithSetup } from "../lib/gmail-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -56,7 +56,7 @@ export const createListLabelsTool = (env: Env) =>
     }),
     execute: async ({ context: _context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const labels = await client.listLabels();
@@ -89,7 +89,7 @@ export const createGetLabelTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const label = await client.getLabel(context.id);
@@ -132,7 +132,7 @@ export const createCreateLabelTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       // Gmail API requires BOTH textColor and backgroundColor when setting colors
@@ -187,7 +187,7 @@ export const createUpdateLabelTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       // Gmail API requires BOTH textColor and backgroundColor when setting colors
@@ -232,7 +232,7 @@ export const createDeleteLabelTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.deleteLabel(context.id);

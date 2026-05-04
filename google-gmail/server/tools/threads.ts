@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
+import { GmailClient, getAccessTokenWithSetup } from "../lib/gmail-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -82,7 +82,7 @@ export const createListThreadsTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.listThreads({
@@ -121,7 +121,7 @@ export const createGetThreadTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const thread = await client.getThread({
@@ -174,7 +174,7 @@ export const createTrashThreadTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.trashThread(context.id);
@@ -204,7 +204,7 @@ export const createUntrashThreadTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.untrashThread(context.id);
@@ -244,7 +244,7 @@ export const createModifyThreadTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.modifyThread({
@@ -278,7 +278,7 @@ export const createDeleteThreadTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.deleteThread(context.id);

@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
+import { GmailClient, getAccessTokenWithSetup } from "../lib/gmail-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -95,7 +95,7 @@ export const createListMessagesTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.listMessages({
@@ -159,7 +159,7 @@ export const createGetMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const rawMessage = await client.getMessage({
@@ -216,7 +216,7 @@ export const createSendMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.sendMessage({
@@ -284,7 +284,7 @@ Search Examples:
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       // First, list message IDs matching the query
@@ -328,7 +328,7 @@ export const createTrashMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.trashMessage(context.id);
@@ -357,7 +357,7 @@ export const createUntrashMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.untrashMessage(context.id);
@@ -387,7 +387,7 @@ export const createDeleteMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.deleteMessage(context.id);
@@ -434,7 +434,7 @@ export const createModifyMessageTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.modifyMessage({
@@ -492,7 +492,7 @@ Supports up to 1000 email IDs per call.`,
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.batchModifyMessages({
