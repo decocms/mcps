@@ -630,5 +630,10 @@ export class GmailClient {
   }
 }
 
-// Re-export getGoogleAccessToken from env.ts for convenience
+// Re-export getGoogleAccessToken from env.ts for convenience.
+// Tools should prefer `getAccessTokenWithSetup` from `./setup.ts` —
+// it threads the bearer token through the idempotent per-connection
+// setup so first-time use lazily registers the Pub/Sub watch even
+// when mesh never invoked configuration.onChange.
 export { getGoogleAccessToken as getAccessToken } from "./env.ts";
+export { getAccessTokenWithSetup } from "./setup.ts";

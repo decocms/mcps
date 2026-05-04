@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
-import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
+import { GmailClient, getAccessTokenWithSetup } from "../lib/gmail-client.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -59,7 +59,7 @@ export const createListDraftsTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.listDrafts({
@@ -95,7 +95,7 @@ export const createGetDraftTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const draft = await client.getDraft(context.id, "full");
@@ -141,7 +141,7 @@ export const createCreateDraftTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const draft = await client.createDraft({
@@ -190,7 +190,7 @@ export const createUpdateDraftTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const draft = await client.updateDraft(context.id, {
@@ -233,7 +233,7 @@ export const createSendDraftTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       const result = await client.sendDraft(context.id);
@@ -264,7 +264,7 @@ export const createDeleteDraftTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const client = new GmailClient({
-        accessToken: getAccessToken(env),
+        accessToken: await getAccessTokenWithSetup(env),
       });
 
       await client.deleteDraft(context.id);
