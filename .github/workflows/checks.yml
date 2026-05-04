@@ -48,3 +48,12 @@ jobs:
             exit 0
           fi
           bun run ./scripts/check.ts $MCPS
+
+      - name: Run tests
+        run: |
+          MCPS="${{ steps.changed.outputs.mcps }}"
+          if [ -z "$MCPS" ]; then
+            echo "No changed MCPs detected, skipping tests"
+            exit 0
+          fi
+          bun run ./scripts/test.ts $MCPS
