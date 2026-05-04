@@ -1,16 +1,25 @@
-#:schema node_modules/wrangler/config-schema.json
-name = "google-gmail"
+name = "google-gmail-mcp"
 main = "server/main.ts"
 compatibility_date = "2025-06-17"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_flags = ["nodejs_compat"]
 
+routes = [
+  { pattern = "google-gmail-mcp.decocms.com", custom_domain = true },
+]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Email → connection mapping (and `triggers:*` subscription state under
+# the same namespace). Workers isolates are ephemeral, so we can't keep
+# this in memory between webhook deliveries / cold starts.
+#
+# Create with: bunx wrangler kv namespace create EMAIL_MAP
+# Then paste the returned id below.
 [[kv_namespaces]]
 binding = "EMAIL_MAP"
-id = "PLACEHOLDER_KV_NAMESPACE_ID"
-
-[vars]
-GMAIL_PUBSUB_TOPIC = ""
-
-# Set via `wrangler secret put GMAIL_WEBHOOK_SECRET`
-# Then configure Pub/Sub push subscription URL as:
-#   https://<worker>/webhooks/gmail?token=<secret>
+id = "e40b3fbbff0b45b2adcc3d868c18f760"

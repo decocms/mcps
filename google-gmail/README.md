@@ -237,23 +237,27 @@ Combine queries: `from:john subject:meeting is:unread`
 ## Project Structure
 
 ```
-gmail/
+google-gmail/
 ├── server/
-│   ├── main.ts              # Entry point with OAuth
+│   ├── main.ts              # Cloudflare Workers entrypoint, OAuth, webhook routing
+│   ├── webhook.ts           # Pub/Sub push handler → mesh callback
 │   ├── constants.ts         # API URLs and constants
 │   ├── lib/
-│   │   ├── gmail-client.ts  # API client
-│   │   ├── types.ts         # TypeScript types
-│   │   └── env.ts           # Access token helper
-│   └── tools/
-│       ├── index.ts         # Exports all tools
-│       ├── messages.ts      # Message tools
-│       ├── threads.ts       # Thread tools
-│       ├── labels.ts        # Label tools
-│       └── drafts.ts        # Draft tools
-├── shared/
-│   └── deco.gen.ts          # Generated types
-├── app.json                 # MCP configuration
+│   │   ├── gmail-client.ts        # Gmail API client
+│   │   ├── types.ts               # Gmail types
+│   │   ├── env.ts                 # Access token helper
+│   │   ├── email-connection-map.ts # KV-backed email ↔ connection mapping
+│   │   └── trigger-store.ts        # Trigger definitions + KV-backed storage
+│   ├── tools/
+│   │   ├── index.ts        # Aggregated tool exports
+│   │   ├── messages.ts
+│   │   ├── threads.ts
+│   │   ├── labels.ts
+│   │   └── drafts.ts
+│   └── types/
+│       └── env.ts          # Env type (DefaultEnv + bindings + secrets)
+├── app.json                # MCP registry metadata
+├── wrangler.toml           # Cloudflare Workers config (KV, custom domain)
 ├── package.json
 ├── tsconfig.json
 └── README.md

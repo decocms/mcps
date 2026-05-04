@@ -1,69 +1,100 @@
 /**
- * Gmail MCP Server
+ * Gmail MCP Server — Cloudflare Workers entrypoint
  *
- * This MCP provides tools for interacting with Gmail API,
- * including message management, thread operations, labels, and drafts.
+ * Exposes Gmail API tools through Google OAuth and receives Pub/Sub
+ * push notifications for mailbox changes. State (email→connection
+ * mapping and trigger subscriptions) lives in the EMAIL_MAP KV
+ * namespace.
  *
- * Deployed as a Cloudflare Worker with KV for email→connection mappings.
+ * Secrets come from wrangler (exposed via process.env under
+ * nodejs_compat) and are read lazily per-request because they aren't
+ * populated at module init time on Workers.
  */
+
 import { withRuntime } from "@decocms/runtime";
 import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
-import { tools } from "./tools/index.ts";
 import { ENDPOINTS, GOOGLE_SCOPES } from "./constants.ts";
-import type { Env } from "../shared/deco.gen.ts";
 import {
-  setEmailMapping,
   removeConnectionMappings,
+  setEmailMapping,
 } from "./lib/email-connection-map.ts";
+import { setTriggerKV } from "./lib/trigger-store.ts";
+import { tools } from "./tools/index.ts";
+import { type Env, StateSchema, type Registry } from "./types/env.ts";
 import { handleGmailWebhook } from "./webhook.ts";
 
-export type { Env };
+type Runtime = ReturnType<
+  typeof withRuntime<Env, typeof StateSchema, Registry>
+>;
 
-const runtime = withRuntime<Env>({
-  tools,
-  oauth: createGoogleOAuth({
-    scopes: [
-      GOOGLE_SCOPES.GMAIL_READONLY,
-      GOOGLE_SCOPES.GMAIL_SEND,
-      GOOGLE_SCOPES.GMAIL_MODIFY,
-      GOOGLE_SCOPES.GMAIL_LABELS,
-    ],
-  }),
-  configuration: {
-    onChange: async (env) => {
-      const token = env.MESH_REQUEST_CONTEXT?.authorization;
-      const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
-      if (!token || !connectionId) return;
+let runtime: Runtime | null = null;
 
-      const accessToken = token.replace(/^Bearer\s+/i, "");
-      const kv = env.EMAIL_MAP;
+function getRuntime(): Runtime {
+  if (runtime) return runtime;
+  runtime = withRuntime<Env, typeof StateSchema, Registry>({
+    oauth: createGoogleOAuth({
+      scopes: [
+        GOOGLE_SCOPES.GMAIL_READONLY,
+        GOOGLE_SCOPES.GMAIL_SEND,
+        GOOGLE_SCOPES.GMAIL_MODIFY,
+        GOOGLE_SCOPES.GMAIL_LABELS,
+      ],
+    }),
+    configuration: {
+      state: StateSchema,
+      onChange: async (env) => {
+        const token = env.MESH_REQUEST_CONTEXT?.authorization;
+        const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
+        if (!token || !connectionId) return;
 
-      try {
-        const profileRes = await fetch(ENDPOINTS.PROFILE, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-
-        if (!profileRes.ok) {
-          console.error(
-            `[Gmail onChange] Failed to fetch profile: ${profileRes.status}`,
+        if (!env.EMAIL_MAP) {
+          console.warn(
+            "[Gmail onChange] EMAIL_MAP binding missing — skipping mapping/watch setup",
           );
           return;
         }
 
-        const profile = (await profileRes.json()) as {
-          emailAddress: string;
-          historyId: string;
-        };
+        const accessToken = token.replace(/^Bearer\s+/i, "");
 
-        await removeConnectionMappings(kv, connectionId);
-        await setEmailMapping(kv, profile.emailAddress, connectionId);
-        console.log(
-          `[Gmail onChange] Mapped ${profile.emailAddress} → ${connectionId}`,
-        );
+        try {
+          const profileRes = await fetch(ENDPOINTS.PROFILE, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
 
-        const pubsubTopic = process.env.GMAIL_PUBSUB_TOPIC || "";
-        if (pubsubTopic) {
+          if (!profileRes.ok) {
+            console.error(
+              `[Gmail onChange] Failed to fetch profile: ${profileRes.status}`,
+            );
+            return;
+          }
+
+          const profile = (await profileRes.json()) as {
+            emailAddress: string;
+            historyId: string;
+          };
+
+          // Drop any stale email→connection mapping owned by *this*
+          // connection before writing the new one (handles a connection
+          // being re-bound to a different mailbox).
+          await removeConnectionMappings(env.EMAIL_MAP, connectionId);
+          await setEmailMapping(
+            env.EMAIL_MAP,
+            profile.emailAddress,
+            connectionId,
+          );
+          console.log(
+            `[Gmail onChange] Mapped ${profile.emailAddress} → ${connectionId}`,
+          );
+
+          const pubsubTopic = process.env.GMAIL_PUBSUB_TOPIC || "";
+          if (!pubsubTopic) {
+            console.warn(
+              "[Gmail onChange] GMAIL_PUBSUB_TOPIC not set — skipping users.watch (no webhook delivery)",
+            );
+            return;
+          }
+
           const watchRes = await fetch(ENDPOINTS.WATCH, {
             method: "POST",
             headers: {
@@ -87,29 +118,42 @@ const runtime = withRuntime<Env>({
           } else {
             const error = await watchRes.text();
             console.error(
-              `[Gmail onChange] Failed to register watch: ${watchRes.status} - ${error}`,
+              `[Gmail onChange] users.watch failed: ${watchRes.status} - ${error}`,
             );
           }
+        } catch (error) {
+          console.error("[Gmail onChange] Error:", error);
         }
-      } catch (error) {
-        console.error("[Gmail onChange] Error:", error);
-      }
+      },
     },
-  },
-});
+    tools,
+    prompts: [],
+  });
+  return runtime;
+}
 
-/**
- * Wrap runtime.fetch to intercept Gmail webhook requests.
- */
-const wrappedFetch: typeof runtime.fetch = async (req, env, ctx) => {
+async function handle(
+  req: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
+  // Make the KV binding visible to the trigger store's module-level
+  // storage for this request.
+  setTriggerKV(env.EMAIL_MAP);
+
   const url = new URL(req.url);
 
   if (req.method === "POST" && url.pathname.startsWith("/webhooks/gmail")) {
-    const webhookSecret = process.env.GMAIL_WEBHOOK_SECRET || "";
-    return handleGmailWebhook(req, env.EMAIL_MAP, webhookSecret);
+    return handleGmailWebhook(req, env, ctx);
   }
 
-  return runtime.fetch(req, env, ctx);
-};
+  return getRuntime().fetch(
+    req,
+    env,
+    ctx as unknown as Parameters<Runtime["fetch"]>[2],
+  );
+}
 
-export default { fetch: wrappedFetch };
+export default {
+  fetch: handle,
+};
