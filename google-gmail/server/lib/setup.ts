@@ -85,7 +85,10 @@ export async function ensureGmailSetup(
     }
 
     if (!existingRefresh) {
-      const refreshToken = await claimPendingRefreshToken(kv, accessToken);
+      const refreshToken = await claimPendingRefreshToken(
+        kv,
+        profile.emailAddress,
+      );
       if (refreshToken) {
         await setRefreshTokenForConnection(kv, connectionId, refreshToken);
         console.log(
@@ -93,7 +96,7 @@ export async function ensureGmailSetup(
         );
       } else {
         console.warn(
-          `[Gmail setup] No pending refresh_token for connection=${connectionId} — webhook delivery will fail until the user reauthenticates`,
+          `[Gmail setup] No pending refresh_token for ${profile.emailAddress} (connection=${connectionId}) — webhook delivery will fail until the user reauthenticates`,
         );
       }
     }

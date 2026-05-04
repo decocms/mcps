@@ -14,7 +14,7 @@
 import { withRuntime } from "@decocms/runtime";
 import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
-import { GOOGLE_SCOPES } from "./constants.ts";
+import { ENDPOINTS, GOOGLE_SCOPES } from "./constants.ts";
 import { setOAuthKV, stashPendingRefreshToken } from "./lib/oauth-store.ts";
 import { renewAllWatches } from "./lib/scheduled.ts";
 import { ensureGmailSetup } from "./lib/setup.ts";
@@ -41,7 +41,9 @@ function buildOAuth() {
 
   // Wrap exchangeCode so we can stash the refresh_token before it
   // disappears into mesh-managed storage. We don't have a connectionId
-  // here yet — onChange will claim the stashed entry once it does.
+  // yet, so we key by the user's Gmail address — looked up via the
+  // profile API with the just-issued access_token. Setup will claim
+  // the entry once it knows both the email and the connectionId.
   const wrappedExchange = async (
     params: { code: string; code_verifier?: string; redirect_uri?: string },
     env?: unknown,
@@ -49,10 +51,20 @@ function buildOAuth() {
     const result = await base.exchangeCode(params, env);
     if (result.access_token && result.refresh_token) {
       try {
-        await stashPendingRefreshToken(
-          result.access_token,
-          result.refresh_token,
-        );
+        const profileRes = await fetch(ENDPOINTS.PROFILE, {
+          headers: { Authorization: `Bearer ${result.access_token}` },
+        });
+        if (!profileRes.ok) {
+          console.error(
+            `[OAuth] profile fetch failed at exchangeCode: ${profileRes.status}`,
+          );
+        } else {
+          const profile = (await profileRes.json()) as { emailAddress: string };
+          await stashPendingRefreshToken(
+            profile.emailAddress,
+            result.refresh_token,
+          );
+        }
       } catch (err) {
         console.error("[OAuth] failed to stash refresh_token:", err);
       }

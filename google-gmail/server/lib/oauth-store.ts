@@ -2,16 +2,19 @@
  * OAuth state persisted in EMAIL_MAP KV.
  *
  * KV key layout (under the EMAIL_MAP namespace):
- *   pending_refresh:<sha256(access_token)> → refresh_token   (TTL ~1h)
- *   refresh:<connectionId>                  → refresh_token
- *   history:<connectionId>                  → last historyId we observed
+ *   pending_refresh:<emailAddress> → refresh_token   (TTL ~24h)
+ *   refresh:<connectionId>          → refresh_token
+ *   history:<connectionId>          → last historyId we observed
  *
  * Why the two-step pending → claim dance: Google returns the refresh_token
  * inside `oauth.exchangeCode`, but at that point the runtime hasn't bound a
- * connectionId yet. We stash the refresh_token keyed by a hash of the
- * access_token (which we *do* see again, in `MESH_REQUEST_CONTEXT.authorization`
- * during `configuration.onChange`) and claim it from there once we know the
- * connectionId. KV TTL covers the case where the user abandons setup mid-flow.
+ * connectionId yet. We stash the refresh_token keyed by the user's Gmail
+ * address (which we look up via the profile API at exchangeCode time, since
+ * the access_token Google just gave us is freshly valid). Setup later calls
+ * the profile API too — same email — and claims the entry. Keying by email
+ * survives mesh refreshing the access_token between exchangeCode and the
+ * first observed tool call (an earlier hash-of-access_token scheme silently
+ * lost the claim in that case).
  */
 
 interface KVNamespaceLike {
@@ -28,7 +31,7 @@ const PENDING_REFRESH_PREFIX = "pending_refresh:";
 const REFRESH_PREFIX = "refresh:";
 const HISTORY_PREFIX = "history:";
 
-const PENDING_TTL_SECONDS = 60 * 60; // 1h — covers slow OAuth completions
+const PENDING_TTL_SECONDS = 24 * 60 * 60; // 24h
 
 // Module-local KV reference, set per-request from the fetch handler. The
 // OAuth callbacks (exchangeCode/refreshToken) are invoked by the runtime
@@ -44,32 +47,29 @@ export function getOAuthKV(): KVNamespaceLike | undefined {
   return oauthKV;
 }
 
-async function hashToken(token: string): Promise<string> {
-  const buf = new TextEncoder().encode(token);
-  const digest = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+function pendingKey(email: string): string {
+  return PENDING_REFRESH_PREFIX + email.toLowerCase();
 }
 
 export async function stashPendingRefreshToken(
-  accessToken: string,
+  email: string,
   refreshToken: string,
 ): Promise<void> {
   const kv = oauthKV;
   if (!kv) return;
-  const key = PENDING_REFRESH_PREFIX + (await hashToken(accessToken));
-  await kv.put(key, refreshToken, { expirationTtl: PENDING_TTL_SECONDS });
+  await kv.put(pendingKey(email), refreshToken, {
+    expirationTtl: PENDING_TTL_SECONDS,
+  });
 }
 
 export async function claimPendingRefreshToken(
   kv: KVNamespaceLike,
-  accessToken: string,
+  email: string,
 ): Promise<string | undefined> {
-  const key = PENDING_REFRESH_PREFIX + (await hashToken(accessToken));
-  const refreshToken = await kv.get(key);
+  const k = pendingKey(email);
+  const refreshToken = await kv.get(k);
   if (refreshToken) {
-    await kv.delete(key);
+    await kv.delete(k);
   }
   return refreshToken ?? undefined;
 }
