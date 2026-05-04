@@ -296,6 +296,15 @@
       "shared/**"
     ]
   },
+  "discord": {
+    "site": "discord",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "discord/**",
+      "shared/**"
+    ]
+  },
   "mcp-studio": {
     "site": "mcp-studio",
     "entrypoint": "./dist/server/main.js",

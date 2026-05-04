@@ -1,0 +1,20 @@
+{
+  "scopeName": "deco",
+  "name": "discord",
+  "friendlyName": "Discord (Events)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-discord.decocache.com/mcp"
+  },
+  "description": "Event-driven Discord MCP. Emits every Discord event as a Studio trigger; provides management tools for the agent to send messages, manage channels, members, roles, webhooks, and respond to interactive components (buttons, selects, modals).",
+  "icon": "https://assets.decocache.com/decocms/c84a9954-d171-4b02-8bf2-906ad913b16e/discord-logo.jpeg",
+  "unlisted": false,
+  "auth": null,
+  "metadata": {
+    "categories": ["Communication", "Automation"],
+    "official": false,
+    "tags": ["discord", "events", "triggers", "interactions", "buttons", "messages", "roles", "members", "server-management", "webhooks"],
+    "short_description": "Event-driven Discord bot. Emits every Discord event for Studio agents to react to via triggers, and exposes tools to manage the server.",
+    "mesh_description": "Pure event-driven Discord MCP. The bot listens to all Discord events (messages, members, reactions, threads, channels, roles, button clicks, select menus, modal submissions, slash commands) and emits them as Studio triggers — your agent decides what to do. Provides a complete management toolkit: send/edit messages with interactive components (buttons, selects, modals), manage channels, members, roles, moderation (kick/ban/timeout), and webhooks. Auto-defers Discord interactions within 100ms so your agent has 15 minutes to respond, regardless of LLM latency. Multi-tenant safe: bot tokens persist in Supabase and survive pod restarts; DMs are scoped to the originating connection only."
+  }
+}
