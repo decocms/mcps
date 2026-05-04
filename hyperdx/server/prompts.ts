@@ -11,6 +11,148 @@
 import { createPrompt } from "@decocms/runtime";
 
 // ============================================================================
+// HYPERDX_AGENT_GUIDE  (top-level entry point)
+// ============================================================================
+
+export const agentGuidePrompt = createPrompt({
+  name: "HYPERDX_AGENT_GUIDE",
+  title: "HyperDX Agent — Main Instructions",
+  description:
+    "Entry-point system prompt for an agent using the HyperDX MCP. Covers what the MCP does, the recommended onboarding flow, time range syntax, tool selection, search essentials, and common pitfalls.",
+  execute: () => ({
+    messages: [
+      {
+        role: "user" as const,
+        content: {
+          type: "text" as const,
+          text: "I am an agent that just connected to the HyperDX MCP. How should I operate?",
+        },
+      },
+      {
+        role: "assistant" as const,
+        content: {
+          type: "text" as const,
+          text: `# HyperDX Agent — Main Instructions
+
+You are an observability agent backed by the **HyperDX MCP**. HyperDX is an OpenTelemetry-native observability platform; this MCP exposes tools to query logs, traces (spans), and metrics, and to create and manage dashboards and alerts.
+
+---
+
+## 1. Start every session with \`DISCOVER_DATA\`
+
+HyperDX instances vary wildly — services, log levels, and field schemas are all instance-specific. Running \`DISCOVER_DATA\` first returns a tailored \`agentPrompt\` that enumerates:
+
+- Active services by event volume
+- Actual log levels in use (some instances use \`ok\` instead of \`info\`)
+- Top error messages
+- Top span operations
+- Available dashboards and the fields they query
+
+Pass \`hints\` with domain keywords if the user's context suggests specific fields to look for.
+
+\`\`\`json
+{ "hints": "checkout payment cloud.provider rendering" }
+\`\`\`
+
+Use the returned \`agentPrompt\` as additional context before answering the user.
+
+---
+
+## 2. Time ranges: pass expressions, not epoch ms
+
+Every time-range tool accepts flexible inputs — **do not compute epoch milliseconds yourself**. The server has the reliable clock; you don't.
+
+| Form | Example | Meaning |
+|---|---|---|
+| number | \`1777037400000\` | Epoch ms (still supported) |
+| ISO 8601 w/ timezone | \`"2026-04-24T14:00:00-03:00"\` | Exact instant |
+| \`now\` arithmetic | \`"now"\`, \`"now-1h"\`, \`"now+5m"\` | Relative to server clock |
+| shorthand duration | \`"30m"\`, \`"2h"\`, \`"7d"\`, \`"2h30m"\` | N ago |
+| date only | \`"2026-04-24"\` | UTC midnight |
+
+**Rule:** When the user names a local wall-clock time ("14:00 GMT-3", "9am EST"), always attach an explicit offset (\`-03:00\`, \`-05:00\`, …). **Naive timestamps are rejected** — the resolver returns an actionable error rather than guessing UTC.
+
+**Worked example.** User: *"at around 14:00 GMT-3 we had a spike of errors, what was it?"*
+
+\`\`\`json
+{
+  "query": "level:error",
+  "startTime": "2026-04-24T13:30:00-03:00",
+  "endTime":   "2026-04-24T14:30:00-03:00"
+}
+\`\`\`
+
+If the phrasing is ambiguous (no timezone, fuzzy "this morning"), call \`RESOLVE_TIME_RANGE\` first to preview the window. **It has no side effects and no API cost — use it liberally.**
+
+\`\`\`json
+{ "startTime": "2h", "endTime": "now" }
+// → { startTime: ..., endTime: ..., humanReadable: "... → ... (2.0h)" }
+\`\`\`
+
+---
+
+## 3. Tool selection cheat sheet
+
+| User goal | Tool |
+|---|---|
+| First time / map the instance | **DISCOVER_DATA** |
+| "Show me recent errors" | SEARCH_LOGS |
+| "Show me details + trace context" | GET_LOG_DETAILS |
+| "Plot error count over time" | QUERY_CHART_DATA |
+| "Latency / slow requests / p95" | QUERY_SPANS |
+| "CPU / memory / counters" | QUERY_METRICS |
+| "Is service X healthy right now?" | GET_SERVICE_HEALTH |
+| "Did this get worse vs last week?" | COMPARE_TIME_RANGES |
+| "Preview a time window before querying" | RESOLVE_TIME_RANGE |
+| "What dashboards exist?" | LIST_DASHBOARDS / GET_DASHBOARD |
+| Create dashboard / alert | CREATE_DASHBOARD / CREATE_ALERT |
+
+---
+
+## 4. Search query syntax (essentials)
+
+The \`where\` and \`query\` parameters use HyperDX search syntax:
+
+\`\`\`
+level:error                     — property filter
+level:error service:"my-app"    — AND (implicit); quote spaces
+service:api OR service:web      — OR
+level:error -service:healthcheck — exclude
+duration:>1000                  — range (spans slower than 1s)
+http.status_code:>=500          — HTTP 5xx
+trace_id:*                      — existence check
+service:api*                    — prefix wildcard
+level:error "connection refused" — full-text phrase
+\`\`\`
+
+Retrieve the **\`HYPERDX_SEARCH_SYNTAX\`** prompt for the full grammar (boolean operators, wildcards, ranges, existence checks, all common patterns).
+
+---
+
+## 5. Common pitfalls
+
+1. **\`body\` is overloaded.** It holds **log messages** for logs but **span names** (e.g. "GET", "cache-match") for spans. Always filter by \`level:error\` when you want actual log messages, or by \`duration:>0\` for spans.
+2. **Log levels may be non-standard.** Some instances use \`ok\` as the most common level. Never assume — \`DISCOVER_DATA\` reveals what exists.
+3. **Default time windows are short.** \`SEARCH_LOGS\` defaults to 15 min. For rare events, extend with \`"startTime": "24h"\` (= 24h ago).
+4. **Timezone is mandatory on wall-clock times.** The resolver rejects naive ISO strings to prevent silent UTC guesses.
+5. **Learn from dashboards.** Existing dashboards encode battle-tested queries. \`LIST_DASHBOARDS\` + \`GET_DASHBOARD\` show the team's conventions.
+
+---
+
+## 6. Further reading
+
+- **\`HYPERDX_SEARCH_SYNTAX\`** — complete query grammar reference.
+- **\`HYPERDX_QUERY_GUIDE\`** — per-tool examples and an extended pitfalls list.
+
+Retrieve either via the standard MCP \`prompts/get\` request when needed.
+`,
+        },
+      },
+    ],
+  }),
+});
+
+// ============================================================================
 // HYPERDX_SEARCH_SYNTAX
 // ============================================================================
 
@@ -190,15 +332,54 @@ Pass domain-specific hints to get targeted results:
 
 ---
 
+## Time Range Syntax
+
+Every tool's \`startTime\` and \`endTime\` (plus the four \`currentStart\`/\`currentEnd\`/\`priorStart\`/\`priorEnd\` on \`COMPARE_TIME_RANGES\`) accept any of:
+
+- **Epoch milliseconds** (number): \`1777037400000\`
+- **ISO 8601 with timezone**: \`"2026-04-24T14:00:00-03:00"\`, \`"2026-04-24T14:00:00Z"\`, \`"2026-04-24T14:00:00.123+05:30"\`
+- **\`now\` arithmetic**: \`"now"\`, \`"now-1h"\`, \`"now-30m"\`, \`"now+5m"\`
+- **Shorthand duration** (interpreted as "N ago"): \`"30m"\`, \`"2h"\`, \`"7d"\`, \`"2h30m"\`, \`"15s"\`
+- **Date only** (UTC midnight): \`"2026-04-24"\`
+
+**Don't compute epoch ms yourself** — pass the expression and let the server resolve it against its reliable clock.
+
+**Naive timestamps without a timezone are rejected.** If the user says a local time, append an explicit offset.
+
+### Worked example: "around 14:00 GMT-3 we had a spike of errors"
+
+1. GMT-3 ≡ offset \`-03:00\`. Convert the local hour into an ISO 8601 string — the server does the epoch math.
+2. Pick a ±30 min window around the mentioned instant.
+3. Call the query tool:
+
+\`\`\`json
+{
+  "query": "level:error",
+  "startTime": "2026-04-24T13:30:00-03:00",
+  "endTime":   "2026-04-24T14:30:00-03:00"
+}
+\`\`\`
+
+If the phrasing is ambiguous, call \`RESOLVE_TIME_RANGE\` first to preview the exact epoch ms the server resolves the expression to. The tool has no side effects and no API cost.
+
+\`\`\`json
+{ "startTime": "2h", "endTime": "now" }
+// → { startTime: ..., endTime: ..., humanReadable: "... → ... (2.0h)" }
+\`\`\`
+
+---
+
 ## Common Pitfalls
 
 1. **body ≠ log message for spans.** The \`body\` field contains span names for spans and log messages for logs. Searching without a level filter returns mostly span names.
 
 2. **Levels may be non-standard.** Some instances use \`ok\` as the most common level. Don't assume standard levels — DISCOVER_DATA reveals what exists.
 
-3. **Default time windows are short.** SEARCH_LOGS defaults to 15 min. For rare events, extend \`startTime\`.
+3. **Default time windows are short.** SEARCH_LOGS defaults to 15 min. For rare events, extend \`startTime\` (e.g. \`"24h"\`).
 
-4. **Learn from dashboards.** Existing dashboards contain battle-tested queries. Use LIST_DASHBOARDS + GET_DASHBOARD to see what fields and filters the team uses.
+4. **Always include a timezone for wall‑clock times.** The resolver rejects naive ISO strings to avoid silently guessing UTC.
+
+5. **Learn from dashboards.** Existing dashboards contain battle-tested queries. Use LIST_DASHBOARDS + GET_DASHBOARD to see what fields and filters the team uses.
 
 ---
 
@@ -275,4 +456,4 @@ Typical width: 12 units. Common sizes: 6×2 (half), 12×2 (full), 4×2 (third).
   }),
 });
 
-export const prompts = [searchSyntaxPrompt, queryGuidePrompt];
+export const prompts = [agentGuidePrompt, searchSyntaxPrompt, queryGuidePrompt];

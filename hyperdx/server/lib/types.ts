@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import { TIME_INPUT_DESCRIPTION, TimeInputSchema } from "./time.ts";
 
 // ============================================================================
 // HyperDX API Types
@@ -129,18 +130,14 @@ const SerieSchema = z.object({
 });
 
 export const queryChartDataInputSchema = z.object({
-  startTime: z
-    .number()
-    .optional()
+  startTime: TimeInputSchema.optional()
     .default(() => Date.now() - 15 * 60 * 1000)
     .describe(
-      "Start time in milliseconds since epoch. Defaults to 15 minutes ago.",
+      `Start time. ${TIME_INPUT_DESCRIPTION} Defaults to 15 minutes ago.`,
     ),
-  endTime: z
-    .number()
-    .optional()
+  endTime: TimeInputSchema.optional()
     .default(() => Date.now())
-    .describe("End time in milliseconds since epoch. Defaults to now."),
+    .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
   granularity: GranularitySchema.optional()
     .default("1 minute")
     .describe("Time bucket granularity for aggregation. Defaults to 1 minute."),
