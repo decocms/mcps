@@ -41,6 +41,16 @@ export const ENDPOINTS = {
   DRAFT: (draftId: string) =>
     `${GMAIL_API_BASE}/drafts/${encodeURIComponent(draftId)}`,
   DRAFT_SEND: `${GMAIL_API_BASE}/drafts/send`,
+
+  // Push notifications
+  WATCH: `${GMAIL_API_BASE}/watch`,
+  STOP: `${GMAIL_API_BASE}/stop`,
+
+  // History
+  HISTORY: `${GMAIL_API_BASE}/history`,
+
+  // Profile
+  PROFILE: `${GMAIL_API_BASE}/profile`,
 };
 
 // Default pagination

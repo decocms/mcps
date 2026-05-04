@@ -6,7 +6,7 @@
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
+import type { Env } from "../types/env.ts";
 import { GmailClient, getAccessToken } from "../lib/gmail-client.ts";
 
 // ============================================================================

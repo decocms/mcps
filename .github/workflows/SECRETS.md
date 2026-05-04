@@ -68,6 +68,49 @@ Trigger state persists in the `INSTALLATIONS` Workers KV namespace
 
 Obtain the GitHub values at https://github.com/settings/apps → your app.
 
+### MCP: `google-gmail` (Cloudflare Workers — `deploy-google-gmail.yml`)
+Same pattern as github / dropbox: deploys via `wrangler deploy` in its
+own workflow, only needs Cloudflare credentials in Actions:
+
+- **`CLOUDFLARE_API_TOKEN`**: Workers deploy token
+- **`CLOUDFLARE_ACCOUNT_ID`**: your Cloudflare account id
+
+Worker-side secrets (set once via `wrangler secret put` or bulk upload):
+
+```
+cd google-gmail
+bunx wrangler secret bulk .secrets.json
+```
+
+Required keys in `.secrets.json`:
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth credentials
+  for the project (https://console.cloud.google.com/apis/credentials)
+- `GMAIL_PUBSUB_TOPIC` — fully-qualified Pub/Sub topic, e.g.
+  `projects/<project>/topics/gmail-push`. The Gmail API publishes
+  mailbox-change events here. Grant the system service account
+  `gmail-api-push@system.gserviceaccount.com` the Pub/Sub Publisher
+  role on this topic.
+- `GMAIL_WEBHOOK_SECRET` — random string used as a `?token=` query
+  param on the Pub/Sub push subscription URL. Configure the push
+  subscription endpoint as
+  `https://google-gmail-mcp.decocms.com/webhooks/gmail?token=<secret>`.
+
+State (email → connection mapping plus `triggers:*` subscriptions)
+persists in the `EMAIL_MAP` Workers KV namespace bound in
+`google-gmail/wrangler.toml`. Create with
+`bunx wrangler kv namespace create EMAIL_MAP` and paste the id into
+`wrangler.toml`.
+
+#### Google Cloud setup checklist
+1. Enable the **Gmail API** in the project.
+2. Create the Pub/Sub **topic** (`gmail-push` works) and grant
+   `gmail-api-push@system.gserviceaccount.com` the *Pub/Sub Publisher*
+   role on it.
+3. Create a **push subscription** for that topic with endpoint
+   `https://google-gmail-mcp.decocms.com/webhooks/gmail?token=<GMAIL_WEBHOOK_SECRET>`.
+4. The OAuth consent screen / authorized redirect URIs must include
+   the deco mesh callback the worker uses for Google PKCE.
+
 ## How to Add Secrets on GitHub
 
 1. Go to your repository on GitHub
